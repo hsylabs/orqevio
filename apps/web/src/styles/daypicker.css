@@ -1,0 +1,83 @@
+.orq-daypicker {
+  --rdp-accent-color: var(--accent);
+  font-size: 13px;
+  padding: 0 4px;
+}
+.orq-daypicker .rdp-months {
+  position: relative;
+}
+.orq-daypicker .rdp-month_caption {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  font-family: var(--font-display);
+  font-weight: 560;
+  font-size: 15px;
+  text-transform: capitalize;
+  padding-left: 6px;
+}
+.orq-daypicker .rdp-nav {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 2px;
+}
+.orq-daypicker .rdp-button_previous,
+.orq-daypicker .rdp-button_next {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--ink-3);
+}
+.orq-daypicker .rdp-button_previous:hover,
+.orq-daypicker .rdp-button_next:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.orq-daypicker .rdp-chevron {
+  fill: currentColor;
+  width: 14px;
+  height: 14px;
+}
+.orq-daypicker .rdp-month_grid {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 4px;
+}
+.orq-daypicker .rdp-weekday {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  height: 28px;
+}
+.orq-daypicker .rdp-day {
+  padding: 1px;
+  text-align: center;
+}
+.orq-daypicker .rdp-day_button {
+  width: 36px;
+  height: 34px;
+  border-radius: 9px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  transition: background-color 0.12s;
+}
+.orq-daypicker .rdp-day_button:hover {
+  background: var(--hover);
+}
+.orq-daypicker .rdp-outside .rdp-day_button {
+  color: var(--ink-4);
+}
+.orq-daypicker .rdp-today .rdp-day_button {
+  color: var(--accent);
+  font-weight: 650;
+}
+.orq-daypicker .rdp-selected .rdp-day_button {
+  background: var(--ink);
+  color: var(--sheet);
+  font-weight: 600;
+}

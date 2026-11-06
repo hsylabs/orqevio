@@ -19,7 +19,7 @@ async function connect(token: string) {
   const client = new McpClient({ name: 'test', version: '1.0.0' })
   const transport = new StreamableHTTPClientTransport(new URL('http://localhost:3000/mcp'), {
     requestInit: { headers: { Authorization: `Bearer ${token}` } },
-    fetch: (url, init) => h.app.request(String(url), init as RequestInit),
+    fetch: async (url, init) => h.app.request(String(url), init as RequestInit),
   })
   await client.connect(transport)
   return client

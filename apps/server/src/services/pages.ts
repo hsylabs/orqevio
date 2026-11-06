@@ -199,12 +199,13 @@ export class PageService {
       throw badRequest('baseVersion is required when updating content')
     }
     const page = await this.deps.db.transaction(async (tx) => {
+      // `version` tracks the body only, so renaming a page never conflicts with someone editing it.
       const patch: Record<string, unknown> = {
         updatedAt: new Date(),
         updatedByUserId: actor.userId,
         updatedByTokenId: actor.kind === 'agent' ? actor.tokenId : null,
-        version: sql`${pages.version} + 1`,
       }
+      if (data.content !== undefined) patch.version = sql`${pages.version} + 1`
       if (data.title !== undefined) patch.title = data.title
       if (data.icon !== undefined) patch.icon = data.icon
       if (data.content !== undefined) {

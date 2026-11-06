@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -39,7 +40,8 @@ export function loadEnv(overrides: Partial<Env> = {}): Env {
     dataDir: path.resolve(process.env.DATA_DIR ?? 'data'),
     // In the bundled build `here` is apps/server/dist; in dev it is apps/server/src.
     webDist: path.resolve(process.env.WEB_DIST ?? path.join(here, '../../web/dist')),
-    migrationsDir: path.resolve(process.env.MIGRATIONS_DIR ?? path.join(here, '../drizzle')),
+    // Bundled build: dist/drizzle. Dev: apps/server/drizzle.
+    migrationsDir: path.resolve(process.env.MIGRATIONS_DIR ?? (existsSync(path.join(here, 'drizzle')) ? path.join(here, 'drizzle') : path.join(here, '../drizzle'))),
     trustProxy: bool(process.env.TRUST_PROXY, false),
     secureCookies: bool(process.env.SECURE_COOKIES, appUrls[0]!.startsWith('https://')),
     maxUploadBytes: Number(process.env.MAX_UPLOAD_MB ?? 20) * 1024 * 1024,

@@ -25,6 +25,9 @@ describe('documents', () => {
     expect(stale.status).toBe(409)
     expect(stale.body.error.details.currentVersion).toBe(2)
     expect((await client.patch(`/api/pages/${root.body.id}`, { content: 'no version' })).status).toBe(400)
+    // Renaming does not bump the content version, so it never conflicts with an open editor.
+    const renamed = await client.patch(`/api/pages/${root.body.id}`, { title: 'Especificación' })
+    expect(renamed.body.version).toBe(2)
 
     const page = await client.get(`/api/pages/${root.body.id}`)
     expect(page.body.cards).toEqual([expect.objectContaining({ id: card.body.id, sources: ['mention'] })])

@@ -1,0 +1,277 @@
+/* Document typography: editorial headings (Fraunces) over a calm reading body. */
+.orq-prose {
+  outline: none;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.72;
+  min-height: 40vh;
+  padding-bottom: 30vh;
+  word-wrap: break-word;
+}
+.orq-prose--compact {
+  font-size: 14px;
+  line-height: 1.62;
+  min-height: 96px;
+  padding-bottom: 8px;
+}
+.orq-prose > * + * {
+  margin-top: 0.7em;
+}
+.orq-prose h1,
+.orq-prose h2,
+.orq-prose h3 {
+  font-family: var(--font-display);
+  font-variation-settings: 'SOFT' 60;
+  font-weight: 560;
+  letter-spacing: -0.018em;
+  line-height: 1.22;
+  color: var(--ink);
+}
+.orq-prose h1 {
+  font-size: 1.85em;
+  margin-top: 1.5em;
+}
+.orq-prose h2 {
+  font-size: 1.45em;
+  margin-top: 1.35em;
+}
+.orq-prose h3 {
+  font-size: 1.18em;
+  margin-top: 1.2em;
+}
+.orq-prose--compact h1 {
+  font-size: 1.4em;
+  margin-top: 1em;
+}
+.orq-prose--compact h2 {
+  font-size: 1.22em;
+  margin-top: 1em;
+}
+.orq-prose--compact h3 {
+  font-size: 1.08em;
+  margin-top: 0.9em;
+}
+.orq-prose > :first-child {
+  margin-top: 0;
+}
+.orq-prose strong {
+  font-weight: 640;
+}
+.orq-prose a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--accent) 55%, transparent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.orq-prose a:hover {
+  text-decoration-color: var(--accent);
+}
+/* Internal references render as compact chips. */
+.orq-prose a[href^='/card/'],
+.orq-prose a[href^='/doc/'] {
+  display: inline;
+  text-decoration: none;
+  padding: 1px 7px 1px 6px;
+  border-radius: 7px;
+  background: var(--sunken);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-weight: 520;
+  font-size: 0.94em;
+  white-space: nowrap;
+}
+.orq-prose a[href^='/card/']::before,
+.orq-prose a[href^='/doc/']::before {
+  display: inline-block;
+  margin-right: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  color: var(--accent);
+}
+.orq-prose a[href^='/card/']::before {
+  content: '▤';
+}
+.orq-prose a[href^='/doc/']::before {
+  content: '¶';
+}
+.orq-prose a[href^='/card/']:hover,
+.orq-prose a[href^='/doc/']:hover {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 35%, transparent);
+}
+.orq-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  padding: 0.12em 0.36em;
+  border-radius: 6px;
+  background: var(--sunken);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.orq-prose pre {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--sunken);
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow-x: auto;
+}
+.orq-prose pre code {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  font-size: inherit;
+}
+.orq-prose blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 2px 0 2px 16px;
+  color: var(--ink-2);
+  font-family: var(--font-display);
+  font-variation-settings: 'SOFT' 80;
+  font-size: 1.08em;
+}
+.orq-prose hr {
+  border: none;
+  height: 1px;
+  background: var(--line-strong);
+  margin: 1.8em 0;
+}
+.orq-prose ul,
+.orq-prose ol {
+  padding-left: 1.4em;
+}
+.orq-prose ul {
+  list-style: disc;
+}
+.orq-prose ol {
+  list-style: decimal;
+}
+.orq-prose li::marker {
+  color: var(--ink-3);
+}
+.orq-prose li > p {
+  margin: 0;
+}
+.orq-prose li + li {
+  margin-top: 0.2em;
+}
+.orq-prose ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0.1em;
+}
+.orq-prose ul[data-type='taskList'] > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.orq-prose ul[data-type='taskList'] > li > label {
+  flex-shrink: 0;
+  margin-top: 0.32em;
+  user-select: none;
+}
+.orq-prose ul[data-type='taskList'] > li > div {
+  flex: 1;
+  min-width: 0;
+}
+.orq-prose ul[data-type='taskList'] > li input[type='checkbox'] {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  border: 1.5px solid var(--line-strong);
+  background: var(--surface);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+.orq-prose ul[data-type='taskList'] > li input[type='checkbox']:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 76%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.orq-prose ul[data-type='taskList'] > li[data-checked='true'] > div {
+  color: var(--ink-3);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-4);
+}
+.orq-prose table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 0.93em;
+  table-layout: fixed;
+}
+.orq-prose .tableWrapper {
+  overflow-x: auto;
+  margin: 1em 0;
+}
+.orq-prose th,
+.orq-prose td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 7px 11px;
+  vertical-align: top;
+  text-align: left;
+  position: relative;
+}
+.orq-prose th:last-child,
+.orq-prose td:last-child {
+  border-right: none;
+}
+.orq-prose tr:last-child td {
+  border-bottom: none;
+}
+.orq-prose th {
+  background: var(--sunken);
+  font-weight: 600;
+  font-size: 0.92em;
+  color: var(--ink-2);
+}
+.orq-prose th p,
+.orq-prose td p {
+  margin: 0;
+}
+.orq-prose .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  pointer-events: none;
+}
+.orq-prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--line);
+  margin: 1.2em 0;
+}
+.orq-prose img.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.orq-prose .is-empty::before,
+.orq-prose p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--ink-4);
+}
+.orq-prose .ProseMirror-gapcursor::after {
+  border-top-color: var(--ink);
+}
+.ProseMirror-dropcursor {
+  background: var(--accent) !important;
+}

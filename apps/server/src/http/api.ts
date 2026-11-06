@@ -62,6 +62,12 @@ export function createApi(env: Env) {
     return c.body(null, 204)
   })
   api.get('/auth/me', async (c) => c.json(await c.get('services').accounts.me(requireActor(c))))
+  // Same as /auth/me but answers 200 for anonymous visitors (avoids noisy 401s on public screens).
+  api.get('/auth/session', async (c) => {
+    const actor = c.get('actor')
+    if (!actor || actor.kind !== 'user') return c.json({ user: null, workspaces: [] })
+    return c.json(await c.get('services').accounts.me(actor))
+  })
 
   // ── Account ─────────────────────────────────────────────────────
   api.patch('/account', async (c) => c.json(await c.get('services').accounts.update(requireActor(c), await json(c))))
