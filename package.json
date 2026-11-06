@@ -1,0 +1,23 @@
+{
+  "name": "orqevio",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @orqevio/server --filter @orqevio/web dev",
+    "build": "pnpm --filter @orqevio/web build && pnpm --filter @orqevio/server build",
+    "start": "pnpm --filter @orqevio/server start",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter @orqevio/web test:e2e",
+    "db:generate": "pnpm --filter @orqevio/server db:generate",
+    "db:migrate": "pnpm --filter @orqevio/server db:migrate"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "4.1.12"
+  }
+}
