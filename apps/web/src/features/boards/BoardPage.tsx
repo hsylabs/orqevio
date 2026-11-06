@@ -7,10 +7,12 @@ import {
   type DragOverEvent,
   DragOverlay,
   type DragStartEvent,
+  MeasuringStrategy,
+  getFirstCollision,
+  type KeyboardCoordinateGetter,
   KeyboardSensor,
   PointerSensor,
   closestCenter,
-  closestCorners,
   pointerWithin,
   rectIntersection,
   useSensor,
@@ -47,10 +49,10 @@ interface Filter {
   due: DueFilter
 }
 
-const announcementsFor = (title: (id: string | number) => string): Announcements => ({
-  onDragStart: ({ active }) => `Has cogido ${title(active.id)}.`,
-  onDragOver: ({ active, over }) => (over ? `${title(active.id)} está sobre ${title(over.id)}.` : `${title(active.id)} no está sobre una zona válida.`),
-  onDragEnd: ({ active, over }) => (over ? `${title(active.id)} se ha soltado sobre ${title(over.id)}.` : `${title(active.id)} se ha soltado.`),
+const announcementsFor = (title: (id: string | number) => string, where: (id: string | number) => string): Announcements => ({
+  onDragStart: ({ active }) => `Has cogido ${title(active.id)}. ${where(active.id)}.`,
+  onDragOver: ({ active, over }) => (over ? `${title(active.id)}: ${where(active.id)}.` : `${title(active.id)} no está sobre una zona válida.`),
+  onDragEnd: ({ active, over }) => (over ? `${title(active.id)} se ha soltado. ${where(active.id)}.` : `${title(active.id)} se ha soltado.`),
   onDragCancel: ({ active }) => `Movimiento de ${title(active.id)} cancelado.`,
 })
 
@@ -106,9 +108,34 @@ export function BoardPage() {
     [filter],
   )
 
+  // Keyboard dragging: ←/→ jump to the neighbouring column, ↑/↓ reorder within it.
+  const itemsRef = useRef(items)
+  itemsRef.current = items
+  const orderRef = useRef(columnOrder)
+  orderRef.current = columnOrder
+  // Column the keyboard-dragged item is heading to; updated synchronously so rapid key presses stay correct.
+  const keyboardColumn = useRef<string | null>(null)
+  const coordinateGetter = useCallback<KeyboardCoordinateGetter>((event, args) => {
+    const { active, droppableRects, droppableContainers } = args.context
+    if (active && (event.code === 'ArrowRight' || event.code === 'ArrowLeft')) {
+      event.preventDefault()
+      const order = orderRef.current
+      const isColumn = active.data.current?.type === 'column'
+      const activeId = String(active.id)
+      const current = keyboardColumn.current ?? (isColumn ? activeId : order.find((col) => itemsRef.current[col]?.includes(activeId)) ?? null)
+      const target = current ? order[order.indexOf(current) + (event.code === 'ArrowRight' ? 1 : -1)] : undefined
+      // Rects may not be measured yet right after lifting; fall back to the DOM node.
+      const rect = target ? (droppableRects.get(target) ?? droppableContainers.get(target)?.node.current?.getBoundingClientRect()) : undefined
+      if (!target || !rect) return args.currentCoordinates
+      keyboardColumn.current = target
+      return isColumn ? { x: rect.left, y: rect.top } : { x: rect.left + 8, y: rect.top + 52 }
+    }
+    return sortableKeyboardCoordinates(event, args)
+  }, [])
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates, keyboardCodes: { start: ['Space'], cancel: ['Escape'], end: ['Space'] } }),
+    useSensor(KeyboardSensor, { coordinateGetter, keyboardCodes: { start: ['Space'], cancel: ['Escape'], end: ['Space'] } }),
   )
 
   const findColumn = useCallback(
@@ -116,24 +143,61 @@ export function BoardPage() {
     [items],
   )
 
+  // Collision strategy for multiple sortable containers (after dnd-kit's reference example):
+  // prefer cards inside the hovered column and keep the last target while layouts settle,
+  // which avoids oscillation right after a card changes column.
+  const lastOverId = useRef<string | null>(null)
+  const recentlyMoved = useRef(false)
   const collision: CollisionDetection = useCallback((args) => {
     if (args.active.data.current?.type === 'column') {
       return closestCenter({ ...args, droppableContainers: args.droppableContainers.filter((c) => c.data.current?.type === 'column') })
     }
-    const hits = pointerWithin(args)
-    const candidates = hits.length ? hits : rectIntersection(args)
-    if (!candidates.length) return closestCorners(args)
-    const card = candidates.find((h) => args.droppableContainers.find((c) => c.id === h.id)?.data.current?.type === 'card' && h.id !== args.active.id)
-    return [card ?? candidates[0]!]
+    const pointerHits = pointerWithin(args)
+    const hits = pointerHits.length > 0 ? pointerHits : rectIntersection(args)
+    let overId = getFirstCollision(hits, 'id')
+    if (overId != null) {
+      const columnItems = itemsRef.current[String(overId)]
+      if (columnItems && columnItems.length > 0) {
+        const closest = closestCenter({
+          ...args,
+          droppableContainers: args.droppableContainers.filter((c) => c.id !== overId && columnItems.includes(String(c.id))),
+        })[0]
+        if (closest) overId = closest.id
+      }
+      lastOverId.current = String(overId)
+      return [{ id: overId }]
+    }
+    if (recentlyMoved.current) lastOverId.current = String(args.active.id)
+    return lastOverId.current ? [{ id: lastOverId.current }] : []
   }, [])
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      recentlyMoved.current = false
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [items])
 
   const title = (id: string | number) => {
     const key = String(id)
     return cardsById.get(key)?.title ? `la tarjeta «${cardsById.get(key)!.title}»` : columnsById.get(key) ? `la columna «${columnsById.get(key)!.name}»` : 'el elemento'
   }
 
+  const where = (id: string | number) => {
+    const key = String(id)
+    if (columnsById.has(key)) {
+      const order = orderRef.current
+      return `posición ${order.indexOf(key) + 1} de ${order.length}`
+    }
+    const col = orderRef.current.find((c) => itemsRef.current[c]?.includes(key))
+    if (!col) return ''
+    const list = itemsRef.current[col]!
+    return `columna «${columnsById.get(col)?.name ?? ''}», posición ${list.indexOf(key) + 1} de ${list.length}`
+  }
+
   function onDragStart({ active: a }: DragStartEvent) {
     dragging.current = true
+    keyboardColumn.current = null
     snapshot.current = { columnOrder, items }
     setActive({ id: String(a.id), type: a.data.current?.type === 'column' ? 'column' : 'card' })
   }
@@ -142,19 +206,25 @@ export function BoardPage() {
     if (!over || a.data.current?.type !== 'card') return
     const activeId = String(a.id)
     const overId = String(over.id)
-    const from = findColumn(activeId)
-    const to = findColumn(overId)
-    if (!from || !to || from === to) return
+    // Resolve containers from the latest state inside the updater: handlers can run
+    // with a stale closure, and recomputing here keeps the update idempotent.
     setItems((prev) => {
-      const target = prev[to]!
+      const locate = (id: string) => (id in prev ? id : Object.keys(prev).find((col) => prev[col]!.includes(id)))
+      const from = locate(activeId)
+      const to = locate(overId)
+      if (!from || !to || from === to) return prev
+      const target = prev[to]!.filter((id) => id !== activeId)
       const overIndex = target.indexOf(overId)
       const below = a.rect.current.translated && over.rect ? a.rect.current.translated.top > over.rect.top + over.rect.height / 2 : false
       const index = overId in prev ? target.length : overIndex >= 0 ? overIndex + (below ? 1 : 0) : target.length
-      return {
+      const next = {
         ...prev,
         [from]: prev[from]!.filter((id) => id !== activeId),
         [to]: [...target.slice(0, index), activeId, ...target.slice(index)],
       }
+      itemsRef.current = next
+      recentlyMoved.current = true
+      return next
     })
   }
 
@@ -176,6 +246,7 @@ export function BoardPage() {
 
   function onDragEnd({ active: a, over }: DragEndEvent) {
     dragging.current = false
+    keyboardColumn.current = null
     setActive(null)
     if (!over || !data) return
     const activeId = String(a.id)
@@ -191,14 +262,16 @@ export function BoardPage() {
       return
     }
 
-    const column = findColumn(activeId)
+    const latest = itemsRef.current
+    const column = activeId in latest ? undefined : Object.keys(latest).find((col) => latest[col]!.includes(activeId))
     if (!column) return
-    let list = items[column]!
+    let list = latest[column]!
     const oldIndex = list.indexOf(activeId)
     const overIndex = list.indexOf(overId)
     if (overIndex >= 0 && overIndex !== oldIndex) {
       list = arrayMove(list, oldIndex, overIndex)
-      setItems((prev) => ({ ...prev, [column]: list }))
+      const moved = list
+      setItems((prev) => ({ ...prev, [column]: moved }))
     }
     const index = list.indexOf(activeId)
     const original = data.cards.find((c) => c.id === activeId)
@@ -209,6 +282,7 @@ export function BoardPage() {
 
   function onDragCancel() {
     dragging.current = false
+    keyboardColumn.current = null
     setActive(null)
     if (snapshot.current) {
       setColumnOrder(snapshot.current.columnOrder)
@@ -352,8 +426,9 @@ export function BoardPage() {
             onDragOver={onDragOver}
             onDragEnd={onDragEnd}
             onDragCancel={onDragCancel}
+            measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
             accessibility={{
-              announcements: announcementsFor(title),
+              announcements: announcementsFor(title, where),
               screenReaderInstructions: { draggable: 'Para mover, pulsa espacio. Usa las flechas para desplazarte y espacio de nuevo para soltar. Escape cancela.' },
             }}
           >
