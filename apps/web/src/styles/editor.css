@@ -267,7 +267,7 @@
   float: left;
   height: 0;
   pointer-events: none;
-  color: var(--ink-4);
+  color: var(--ink-3);
 }
 .orq-prose .ProseMirror-gapcursor::after {
   border-top-color: var(--ink);

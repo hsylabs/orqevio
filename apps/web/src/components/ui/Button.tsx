@@ -13,7 +13,7 @@ const variants: Record<Variant, string> = {
   secondary: 'border border-line bg-surface text-ink shadow-sm hover:border-line-strong hover:bg-[color-mix(in_oklab,var(--surface)_96%,var(--ink))]',
   ghost: 'text-ink-2 hover:bg-hover hover:text-ink active:bg-press',
   danger: 'bg-danger text-white hover:brightness-110 active:translate-y-px',
-  agent: 'bg-agent text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.2)] hover:brightness-110 active:translate-y-px',
+  agent: 'bg-agent text-agent-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.2)] hover:brightness-110 active:translate-y-px',
 }
 
 const sizes: Record<Size, string> = {

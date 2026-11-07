@@ -14,7 +14,7 @@ export function DueChip({ dueAt, className }: { dueAt: string; className?: strin
       className={cn(
         'inline-flex h-[20px] items-center gap-1 rounded-[6px] px-1.5 text-[11.5px] font-medium tabular',
         state === 'overdue' && 'bg-danger-soft text-danger',
-        state === 'today' && 'bg-accent-soft text-accent',
+        state === 'today' && 'bg-accent-soft text-accent-text',
         state === 'soon' && 'bg-[color-mix(in_oklab,var(--warn)_14%,transparent)] text-warn',
         state === 'later' && 'text-ink-3',
         className,
@@ -72,7 +72,7 @@ export const CardView = memo(function CardView({ card, labels, overlay, ghost }:
       )}
     >
       {agent && (
-        <span className="animate-pop absolute -top-2.5 right-2 inline-flex h-5 items-center gap-1 rounded-full bg-agent px-2 text-[10.5px] font-semibold text-white shadow-md">
+        <span className="animate-pop absolute -top-2.5 right-2 inline-flex h-5 items-center gap-1 rounded-full bg-agent px-2 text-[10.5px] font-semibold text-agent-ink shadow-md">
           <Bot className="size-3" />
           {agent}
         </span>

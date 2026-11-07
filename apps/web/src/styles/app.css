@@ -21,17 +21,19 @@
   --line-strong: #d4cec1;
   --ink: #1c1a16;
   --ink-2: #57524a;
-  --ink-3: #8a8478;
-  --ink-4: #b3ad9f;
+  --ink-3: #6e685d;
+  --ink-4: #8f897b;
   --accent: #e5532a;
   --accent-strong: #c9431d;
   --accent-soft: #fbe6dd;
   --accent-ink: #ffffff;
-  --agent: #3f5bf6;
+  --accent-text: #b83a16;
+  --agent: #3450e6;
+  --agent-ink: #ffffff;
   --agent-soft: #e7ebfe;
-  --ok: #2f8f5b;
-  --warn: #b5781a;
-  --danger: #d0372d;
+  --ok: #22764a;
+  --warn: #8a5a0e;
+  --danger: #bd3029;
   --danger-soft: #fbe4e1;
   --shadow-sm: 0 1px 0 rgb(28 26 22 / 0.04), 0 1px 2px rgb(28 26 22 / 0.06);
   --shadow-md: 0 1px 0 rgb(28 26 22 / 0.03), 0 4px 12px -2px rgb(28 26 22 / 0.08), 0 2px 4px -2px rgb(28 26 22 / 0.06);
@@ -63,13 +65,15 @@
   --line-strong: #3a3732;
   --ink: #edeae3;
   --ink-2: #b4aea2;
-  --ink-3: #807a6f;
-  --ink-4: #5a554d;
+  --ink-3: #958f83;
+  --ink-4: #736d63;
   --accent: #ff6b3f;
   --accent-strong: #ff865f;
   --accent-soft: #3b2219;
   --accent-ink: #1a0f0b;
+  --accent-text: #ff7a52;
   --agent: #8097ff;
+  --agent-ink: #0e1330;
   --agent-soft: #1d2342;
   --ok: #4cbf83;
   --warn: #e0a643;
@@ -106,13 +110,15 @@
     --line-strong: #3a3732;
     --ink: #edeae3;
     --ink-2: #b4aea2;
-    --ink-3: #807a6f;
-    --ink-4: #5a554d;
+    --ink-3: #958f83;
+    --ink-4: #736d63;
     --accent: #ff6b3f;
     --accent-strong: #ff865f;
     --accent-soft: #3b2219;
     --accent-ink: #1a0f0b;
+    --accent-text: #ff7a52;
     --agent: #8097ff;
+    --agent-ink: #0e1330;
     --agent-soft: #1d2342;
     --ok: #4cbf83;
     --warn: #e0a643;
@@ -153,6 +159,8 @@
   --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
   --color-accent-ink: var(--accent-ink);
+  --color-accent-text: var(--accent-text);
+  --color-agent-ink: var(--agent-ink);
   --color-agent: var(--agent);
   --color-agent-soft: var(--agent-soft);
   --color-ok: var(--ok);
@@ -240,7 +248,7 @@
   }
 
   .field {
-    @apply h-9 w-full rounded-[9px] border border-line bg-surface px-3 text-[14px] text-ink outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-ink-4;
+    @apply h-9 w-full rounded-[9px] border border-line bg-surface px-3 text-[14px] text-ink outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-ink-3;
   }
   .field:hover {
     border-color: var(--line-strong);

@@ -183,7 +183,7 @@ function DocBody({ page }: { page: PageDTO }) {
         ]}
         actions={
           <>
-            <span className={cn('mr-2 text-[12px] max-sm:hidden', status === 'error' ? 'text-danger' : 'text-ink-4')} aria-live="polite">
+            <span className={cn('mr-2 text-[12px] max-sm:hidden', status === 'error' ? 'text-danger' : 'text-ink-3')} aria-live="polite">
               {statusLabel}
             </span>
             <MenuRoot>
@@ -250,7 +250,7 @@ function DocBody({ page }: { page: PageDTO }) {
                   }
                 }
               }}
-              className="mt-2 block w-full resize-none overflow-hidden bg-transparent font-display text-[40px] leading-[1.1] font-medium tracking-[-0.025em] outline-none placeholder:text-ink-4 sm:text-[44px]"
+              className="mt-2 block w-full resize-none overflow-hidden bg-transparent font-display text-[40px] leading-[1.1] font-medium tracking-[-0.025em] outline-none placeholder:text-ink-3 sm:text-[44px]"
             />
           </div>
 
@@ -280,7 +280,7 @@ function DocBody({ page }: { page: PageDTO }) {
                 >
                   <SquareKanban className="size-3.5 shrink-0 text-accent" />
                   <span className="truncate font-medium">{c.title}</span>
-                  <span className="shrink-0 text-ink-4">{c.columnName}</span>
+                  <span className="shrink-0 text-ink-3">{c.columnName}</span>
                   {c.dueAt && <DueChip dueAt={c.dueAt} className="-mr-1" />}
                 </Link>
               ))}
@@ -331,7 +331,7 @@ function DocBody({ page }: { page: PageDTO }) {
                         <CornerDownRight className="size-3.5 text-ink-4" />
                         <span className="text-[15px]">{c.icon ?? <FileText className="size-4 text-ink-3" />}</span>
                         <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">{c.title || 'Sin título'}</span>
-                        <span className="text-[11.5px] text-ink-4">{relativeTime(c.updatedAt)}</span>
+                        <span className="text-[11.5px] text-ink-3">{relativeTime(c.updatedAt)}</span>
                       </Link>
                     ))}
                   </div>

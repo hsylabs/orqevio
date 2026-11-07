@@ -46,6 +46,9 @@ export function AppShell() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey
+      if (e.key === 'Escape' && !isDesktop()) {
+        setSidebarOpen(false)
+      }
       if (mod && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setPaletteOpen((o) => !o)

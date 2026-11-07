@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file-if-exists=../../.env src/db/migrate-cli.ts"
+    "db:migrate": "tsx --env-file-if-exists=../../.env src/db/migrate-cli.ts",
+    "admin": "tsx --env-file-if-exists=../../.env src/cli.ts"
   },
   "dependencies": {
     "@hono/node-server": "2.1.6",

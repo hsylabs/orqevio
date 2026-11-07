@@ -1,6 +1,6 @@
 import type { HomeDTO, OverviewDTO, PaletteColor, WorkspaceDTO } from '@orqevio/shared'
 import { projectCreateInput, projectUpdateInput, workspaceInput } from '@orqevio/shared'
-import { and, asc, count, desc, eq, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, isNotNull, isNull, lte, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { actorRef, hasScope } from '../auth/actor'
 import { boards, cards, columns, pages, projects, workspaceMembers, workspaces } from '../db/schema'
@@ -246,18 +246,5 @@ export class WorkspaceService {
       { action: 'project.deleted', entityType: 'project', entityId: projectId, summary: current.name },
       { projectId, structure: true },
     )
-  }
-
-  async workspaceIdsFor(userId: string) {
-    const rows = await this.deps.db
-      .select({ id: workspaceMembers.workspaceId })
-      .from(workspaceMembers)
-      .where(eq(workspaceMembers.userId, userId))
-    return rows.map((r) => r.id)
-  }
-
-  async projectsIn(workspaceIds: string[]) {
-    if (workspaceIds.length === 0) return []
-    return this.deps.db.select().from(projects).where(inArray(projects.workspaceId, workspaceIds))
   }
 }

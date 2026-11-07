@@ -553,7 +553,7 @@ function FilterPopover({ filter, onChange, labels }: { filter: Filter; onChange:
       trigger={
         <Button variant={count ? 'secondary' : 'ghost'} size="sm" icon={<ListFilter />}>
           <span className="max-sm:hidden">Filtrar</span>
-          {count > 0 && <span className="grid size-4.5 place-items-center rounded-full bg-accent font-mono text-[10px] text-accent-ink">{count}</span>}
+          {count > 0 && <span className="grid size-4.5 place-items-center rounded-full bg-ink font-mono text-[10px] text-sheet">{count}</span>}
         </Button>
       }
     >

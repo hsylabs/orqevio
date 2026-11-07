@@ -146,7 +146,7 @@ function AddItem({ onAdd }: { onAdd: (text: string) => Promise<void> }) {
         placeholder="Nuevo elemento y Enter"
         aria-label="Nuevo elemento"
         maxLength={500}
-        className="h-8 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-ink-4"
+        className="h-8 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-ink-3"
       />
     </form>
   )

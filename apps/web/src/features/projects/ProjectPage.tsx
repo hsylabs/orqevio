@@ -101,7 +101,7 @@ export function ProjectPage() {
                       <Link to={`/w/${workspaceId}/d/${p.id}`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-hover">
                         <span className="w-5 text-center text-[16px]">{p.icon ?? <FileText className="size-4 text-ink-3" />}</span>
                         <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{p.title || 'Sin título'}</span>
-                        {childCount(p.id) > 0 && <span className="text-[12px] text-ink-4">{plural(childCount(p.id), 'subpágina', 'subpáginas')}</span>}
+                        {childCount(p.id) > 0 && <span className="text-[12px] text-ink-3">{plural(childCount(p.id), 'subpágina', 'subpáginas')}</span>}
                       </Link>
                     </li>
                   ))}
@@ -121,7 +121,7 @@ export function ProjectPage() {
                       <Link to={`/w/${workspaceId}/d/${p.id}`} className="flex items-center gap-2.5 rounded-[9px] px-2 py-1.5 hover:bg-hover">
                         <span className="w-4 text-center text-[13px]">{p.icon ?? <FileText className="size-3.5 text-ink-3" />}</span>
                         <span className="min-w-0 flex-1 truncate text-[13.5px]">{p.title || 'Sin título'}</span>
-                        <span className="text-[11.5px] text-ink-4">{relativeTime(p.updatedAt)}</span>
+                        <span className="text-[11.5px] text-ink-3">{relativeTime(p.updatedAt)}</span>
                       </Link>
                     </li>
                   ))}

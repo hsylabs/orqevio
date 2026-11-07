@@ -75,7 +75,7 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
             className={cn('flex min-w-0 flex-1 items-center gap-2 rounded-[7px] py-1 text-left', !dragDisabled && 'cursor-grab active:cursor-grabbing')}
           >
             <span className="truncate text-[13px] font-semibold text-ink">{column.name}</span>
-            <span className="font-mono text-[11px] text-ink-4 tabular">{cards.length}</span>
+            <span className="font-mono text-[11px] text-ink-3 tabular">{cards.length}</span>
           </button>
         )}
         <button type="button" onClick={() => setComposing(true)} aria-label={`Añadir tarjeta a ${column.name}`} className="grid size-7 place-items-center rounded-[7px] text-ink-3 hover:bg-hover hover:text-ink">
@@ -108,7 +108,7 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
             <SortableCard key={card.id} card={card} labels={labels} onOpen={onOpenCard} disabled={dragDisabled} />
           ))}
           {cards.length === 0 && !composing && (
-            <li className="list-none rounded-[10px] border border-dashed border-line-strong/70 px-3 py-5 text-center text-[12px] text-ink-4">
+            <li className="list-none rounded-[10px] border border-dashed border-line-strong/70 px-3 py-5 text-center text-[12px] text-ink-3">
               {filtered ? 'Nada coincide con el filtro' : 'Suelta tarjetas aquí'}
             </li>
           )}
@@ -175,10 +175,10 @@ function Composer({ onSubmit, onClose }: { onSubmit: (title: string) => Promise<
         placeholder="¿Qué hay que hacer?"
         aria-label="Título de la tarjeta"
         maxLength={300}
-        className="block w-full resize-none bg-transparent text-[13.5px] leading-snug outline-none placeholder:text-ink-4"
+        className="block w-full resize-none bg-transparent text-[13.5px] leading-snug outline-none placeholder:text-ink-3"
       />
       <div className="mt-1.5 flex items-center justify-between">
-        <span className="text-[11px] text-ink-4">
+        <span className="text-[11px] text-ink-3">
           <kbd className="kbd">↵</kbd> añadir · <kbd className="kbd">esc</kbd> cerrar
         </span>
         <button type="submit" disabled={!title.trim() || busy} className="h-7 rounded-[8px] bg-ink px-2.5 text-[12px] font-medium text-sheet disabled:opacity-40">

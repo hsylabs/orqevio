@@ -48,7 +48,7 @@ export function MovePageDialog({ open, onOpenChange, pageId, projectName, pages,
         <button type="button" disabled={current?.parentId === null} onClick={() => void move(null)} className="flex items-center gap-2.5 rounded-[9px] px-2.5 py-2 text-left text-[13.5px] hover:bg-hover disabled:opacity-40">
           <FolderOpen className="size-4 text-ink-3" />
           <span className="font-medium">{projectName}</span>
-          <span className="text-[12px] text-ink-4">raíz del proyecto</span>
+          <span className="text-[12px] text-ink-3">raíz del proyecto</span>
         </button>
         {ordered.map(({ page, depth }) => (
           <button

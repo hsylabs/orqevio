@@ -8,8 +8,8 @@ const external = Object.keys(pkg.dependencies ?? {}).filter((name) => !name.star
 
 await rm('dist', { recursive: true, force: true })
 await build({
-  entryPoints: ['src/index.ts'],
-  outfile: 'dist/index.js',
+  entryPoints: { index: 'src/index.ts', cli: 'src/cli.ts' },
+  outdir: 'dist',
   bundle: true,
   platform: 'node',
   target: 'node22',

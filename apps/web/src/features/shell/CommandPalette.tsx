@@ -57,7 +57,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                 value={query}
                 onValueChange={setQuery}
                 placeholder="Busca tareas, documentos o acciones…"
-                className="h-14 flex-1 bg-transparent text-[15.5px] outline-none placeholder:text-ink-4"
+                className="h-14 flex-1 bg-transparent text-[15.5px] outline-none placeholder:text-ink-3"
               />
               <kbd className="kbd">esc</kbd>
             </div>
@@ -180,7 +180,7 @@ function Item({ value, icon, children, onSelect, hint, keywords }: { value: stri
     >
       <span className="grid size-[18px] shrink-0 place-items-center text-ink-3 [&>svg]:size-[16px]">{icon}</span>
       <span className="min-w-0 flex-1">{children}</span>
-      {hint && <span className="max-w-[40%] shrink-0 truncate text-[12px] text-ink-4">{hint}</span>}
+      {hint && <span className="max-w-[40%] shrink-0 truncate text-[12px] text-ink-3">{hint}</span>}
     </Command.Item>
   )
 }

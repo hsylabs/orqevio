@@ -204,15 +204,15 @@ function TokenCard({ token, onRevoke, onShowActivity, inactive }: { token: Token
       </div>
       <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3 text-[11.5px]">
         <div>
-          <dt className="text-ink-4">Último uso</dt>
+          <dt className="text-ink-3">Último uso</dt>
           <dd className="text-ink-2">{token.lastUsedAt ? relativeTime(token.lastUsedAt) : 'Nunca'}</dd>
         </div>
         <div>
-          <dt className="text-ink-4">Creado</dt>
+          <dt className="text-ink-3">Creado</dt>
           <dd className="text-ink-2">{shortDate(token.createdAt)}</dd>
         </div>
         <div>
-          <dt className="text-ink-4">{token.revokedAt ? 'Revocado' : 'Caduca'}</dt>
+          <dt className="text-ink-3">{token.revokedAt ? 'Revocado' : 'Caduca'}</dt>
           <dd className="text-ink-2">{token.revokedAt ? shortDate(token.revokedAt) : token.expiresAt ? shortDate(token.expiresAt) : 'Nunca'}</dd>
         </div>
       </dl>
@@ -225,7 +225,7 @@ function TokenCard({ token, onRevoke, onShowActivity, inactive }: { token: Token
 
 function ScopePill({ label, level }: { label: string; level: 'none' | 'read' | 'write' }) {
   return (
-    <span className={cn('inline-flex h-6 items-center rounded-full px-2 text-[11.5px] font-medium', level === 'none' ? 'bg-sunken text-ink-4' : level === 'read' ? 'bg-agent-soft text-agent' : 'bg-agent text-white')}>
+    <span className={cn('inline-flex h-6 items-center rounded-full px-2 text-[11.5px] font-medium', level === 'none' ? 'bg-sunken text-ink-3' : level === 'read' ? 'bg-agent-soft text-agent' : 'bg-agent text-agent-ink')}>
       {label}: {LEVEL_LABEL[level]}
     </span>
   )

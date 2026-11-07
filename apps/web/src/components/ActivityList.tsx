@@ -25,7 +25,7 @@ export function ActivityList({ items, workspaceId, compact, showSummary = true }
               <span className={a.actor.kind === 'agent' ? 'font-medium text-agent' : 'font-medium text-ink'}>{a.actor.name}</span>{' '}
               {activityVerb(a.action)} {summary}
               {detail && <span className="text-ink-3"> · {detail}</span>}
-              <span className="mt-0.5 block text-[11.5px] text-ink-4">
+              <span className="mt-0.5 block text-[11.5px] text-ink-3">
                 <time dateTime={a.createdAt}>{relativeTime(a.createdAt)}</time>
                 {a.actor.kind === 'agent' && ' · vía MCP'}
               </span>

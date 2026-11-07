@@ -76,7 +76,7 @@ export function LinkedPages({ card }: { card: CardDetailDTO }) {
       >
         <div className="flex items-center gap-2 border-b border-line px-2 pb-2">
           <Search className="size-4 text-ink-3" />
-          <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar páginas…" aria-label="Buscar páginas" className="h-7 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-ink-4" />
+          <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar páginas…" aria-label="Buscar páginas" className="h-7 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-ink-3" />
         </div>
         <div className="max-h-[260px] overflow-y-auto pt-1">
           {suggestions.filter((s) => !linked.has(s.id)).length === 0 ? (
@@ -88,7 +88,7 @@ export function LinkedPages({ card }: { card: CardDetailDTO }) {
                 <button key={s.id} type="button" onClick={() => void link(s.id)} className="flex w-full items-center gap-2.5 rounded-[8px] px-2 py-1.5 text-left hover:bg-hover">
                   <span className="grid w-4 place-items-center text-[13px] text-ink-3">{s.icon ?? <FileText className="size-4" />}</span>
                   <span className="min-w-0 flex-1 truncate text-[13.5px]">{s.title || 'Sin título'}</span>
-                  <span className="shrink-0 text-[11.5px] text-ink-4">{s.hint}</span>
+                  <span className="shrink-0 text-[11.5px] text-ink-3">{s.hint}</span>
                 </button>
               ))
           )}

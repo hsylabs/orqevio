@@ -162,7 +162,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
             <Bot className="size-3" /> {agent} está editando
           </span>
         )}
-        <span className="ml-auto text-[11.5px] text-ink-4" aria-live="polite">
+        <span className="ml-auto text-[11.5px] text-ink-3" aria-live="polite">
           {saving === 'saving' ? 'Guardando…' : saving === 'saved' ? 'Guardado' : ''}
         </span>
         <MenuRoot>
@@ -263,7 +263,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
                         </span>
                       ))
                     ) : (
-                      <span className="text-[13px] text-ink-4">Añadir etiquetas</span>
+                      <span className="text-[13px] text-ink-3">Añadir etiquetas</span>
                     )}
                   </button>
                 }
@@ -275,7 +275,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
                 onChange={(dueAt) => void update({ dueAt })}
                 trigger={
                   <button type="button" className="flex h-8 items-center rounded-[8px] px-1.5 text-left hover:bg-hover">
-                    {card.dueAt ? <DueChip dueAt={card.dueAt} /> : <span className="text-[13px] text-ink-4">Sin fecha</span>}
+                    {card.dueAt ? <DueChip dueAt={card.dueAt} /> : <span className="text-[13px] text-ink-3">Sin fecha</span>}
                   </button>
                 }
               />
@@ -283,7 +283,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
             <Row icon={<Avatar name={card.createdBy?.name ?? '?'} kind={card.createdBy?.kind ?? 'user'} size={15} />} label="Creada por">
               <span className="px-1.5 text-[13px] text-ink-2">
                 <span className={card.createdBy?.kind === 'agent' ? 'font-medium text-agent' : undefined}>{card.createdBy?.name ?? 'Desconocido'}</span>
-                <span className="text-ink-4"> · {relativeTime(card.createdAt)}</span>
+                <span className="text-ink-3"> · {relativeTime(card.createdAt)}</span>
               </span>
             </Row>
           </div>
@@ -328,7 +328,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
             </button>
           }
         >
-          {card.checklists.length ? <Checklists card={card} /> : <p className="text-[13px] text-ink-4">Divide la tarea en pasos que puedas marcar.</p>}
+          {card.checklists.length ? <Checklists card={card} /> : <p className="text-[13px] text-ink-3">Divide la tarea en pasos que puedas marcar.</p>}
         </Section>
 
         <Section title="Documentos vinculados">

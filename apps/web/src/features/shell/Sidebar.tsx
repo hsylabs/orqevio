@@ -259,12 +259,12 @@ function ProjectItem({ project }: { project: ProjectTreeDTO }) {
       {open && (
         <div className="relative ml-[13px] border-l border-line pl-1.5">
           {project.boards.map((b) => (
-            <TreeLink key={b.id} to={`${base}/b/${b.id}`} icon={<SquareKanban />} label={b.name} trailing={b.cardCount ? <span className="font-mono text-[10.5px] text-ink-4">{b.cardCount}</span> : null} />
+            <TreeLink key={b.id} to={`${base}/b/${b.id}`} icon={<SquareKanban />} label={b.name} trailing={b.cardCount ? <span className="font-mono text-[10.5px] text-ink-3">{b.cardCount}</span> : null} />
           ))}
           {roots.map((p) => (
             <PageItem key={p.id} page={p} all={project.pages} projectId={project.id} depth={0} />
           ))}
-          {project.boards.length === 0 && roots.length === 0 && <p className="px-2 py-1.5 text-[12px] text-ink-4">Vacío</p>}
+          {project.boards.length === 0 && roots.length === 0 && <p className="px-2 py-1.5 text-[12px] text-ink-3">Vacío</p>}
         </div>
       )}
       <ProjectSettingsDialog project={project} open={settingsOpen} onOpenChange={setSettingsOpen} />

@@ -66,7 +66,7 @@ export function HomePage() {
                       <span className={cn('grid size-8 shrink-0 place-items-center rounded-[9px] [&_svg]:size-4', s.done ? 'bg-ok/12 text-ok' : 'bg-sunken text-ink-2')}>{s.done ? <Check /> : s.icon}</span>
                       <span className="min-w-0">
                         <span className={cn('block text-[13.5px] font-medium', s.done && 'text-ink-3 line-through decoration-ink-4')}>
-                          <span className="mr-1 font-mono text-[11px] text-ink-4">{i + 1}</span>
+                          <span className="mr-1 font-mono text-[11px] text-ink-3">{i + 1}</span>
                           {s.title}
                         </span>
                         <span className="block text-[12px] text-ink-3">{s.body}</span>
@@ -121,7 +121,7 @@ export function HomePage() {
                         <span className="block truncate text-[13.5px] font-medium">{p.title || 'Sin título'}</span>
                         <span className="block truncate text-[12px] text-ink-3">{p.projectName}</span>
                       </span>
-                      <span className="shrink-0 text-[11.5px] text-ink-4">{relativeTime(p.updatedAt)}</span>
+                      <span className="shrink-0 text-[11.5px] text-ink-3">{relativeTime(p.updatedAt)}</span>
                     </Link>
                   </li>
                 ))}

@@ -33,7 +33,7 @@ export function MenuItem({ icon, children, onSelect, danger, shortcut, disabled 
     >
       {icon}
       <span className="flex-1 truncate">{children}</span>
-      {shortcut && <span className="font-mono text-[11px] text-ink-4">{shortcut}</span>}
+      {shortcut && <span className="font-mono text-[11px] text-ink-3">{shortcut}</span>}
     </M.Item>
   )
 }

@@ -94,7 +94,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           {PILLARS.map((p, i) => (
             <li key={p.title} className="animate-rise" style={{ animationDelay: `${120 + i * 60}ms` }}>
               <p className="flex items-center gap-2 text-[13px] font-semibold">
-                <span className="font-mono text-[11px] text-ink-4">0{i + 1}</span>
+                <span className="font-mono text-[11px] text-ink-3">0{i + 1}</span>
                 {p.title}
               </p>
               <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{p.body}</p>

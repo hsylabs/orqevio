@@ -10,7 +10,7 @@ export function PasswordText({ value, className }: { value: string; className?: 
   return (
     <span className={cn('font-mono break-all', className)}>
       {[...value].map((ch, i) => (
-        <span key={i} className={/[0-9]/.test(ch) ? 'text-agent' : /[^a-zA-Z0-9]/.test(ch) ? 'text-accent' : undefined}>
+        <span key={i} className={/[0-9]/.test(ch) ? 'text-agent' : /[^a-zA-Z0-9]/.test(ch) ? 'text-accent-text' : undefined}>
           {ch}
         </span>
       ))}
@@ -85,7 +85,7 @@ export function Generator({ onUse }: { onUse?: (password: string) => void }) {
             className={cn('flex items-center justify-between rounded-[10px] border px-3 py-2 text-left text-[13px] transition-colors', opts[key] ? 'border-ink/20 bg-surface text-ink shadow-sm' : 'border-line text-ink-3')}
           >
             {label}
-            <span className="font-mono text-[11.5px] text-ink-4">{sample}</span>
+            <span className="font-mono text-[11.5px] text-ink-3">{sample}</span>
           </button>
         ))}
       </div>
