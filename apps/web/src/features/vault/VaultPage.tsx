@@ -1,6 +1,6 @@
 import { PALETTE, type VaultStateDTO } from '@orqevio/shared'
 import { useQuery } from '@tanstack/react-query'
-import { ExternalLink, Eye, EyeOff, KeyRound, LockKeyhole, Pencil, Plus, Search, ShieldCheck, Star, StickyNote, Trash, Dices, Ellipsis, Clock } from 'lucide-react'
+import { ExternalLink, Eye, EyeOff, KeyRound, LockKeyhole, Pencil, Plus, Search, ShieldCheck, Star, StickyNote, Trash, Dices, Ellipsis, Clock, Download, FileUp } from 'lucide-react'
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
@@ -19,12 +19,13 @@ import { keys, queryClient } from '../../lib/queries'
 import { PageHeader } from '../shell/PageHeader'
 import { useWorkspace } from '../shell/workspace'
 import { WrongSecretError, changeMasterPassword, encryptItem } from './crypto'
+import { ExportDialog, ImportDialog } from './TransferDialogs'
 import { Generator, PasswordText } from './Generator'
-import { getSession, lockVault, setAutoLock, setSessionItems, useAutoLockRemaining, useVaultSession } from './session'
+import { getSession, lockVault, setAutoLock, updateSessionItems, useAutoLockRemaining, useVaultSession } from './session'
 import { type VaultBlocker, vaultBlockers } from '../../lib/browser'
 import { estimateMasterPassword } from './strength'
 import { type TotpProblem, groupCode, parseTotp, totp } from './totp'
-import { type VaultItem, type VaultItemType, emptyItem } from './types'
+import { ITEM_LIMITS, type VaultItem, type VaultItemType, emptyItem } from './types'
 import { VaultSetup, VaultUnlock } from './VaultGate'
 
 const CLIPBOARD_MS = 30_000
@@ -110,6 +111,8 @@ function UnlockedActions({ state }: { state: VaultStateDTO }) {
   const session = useVaultSession()
   const [changeOpen, setChangeOpen] = useState(false)
   const [generatorOpen, setGeneratorOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
 
   async function changeAutoLock(value: string) {
     const minutes = Number(value)
@@ -136,6 +139,12 @@ function UnlockedActions({ state }: { state: VaultStateDTO }) {
           <MenuItem icon={<KeyRound />} onSelect={() => setChangeOpen(true)}>
             Cambiar contraseña maestra
           </MenuItem>
+          <MenuItem icon={<FileUp />} onSelect={() => setImportOpen(true)}>
+            Importar…
+          </MenuItem>
+          <MenuItem icon={<Download />} onSelect={() => setExportOpen(true)}>
+            Exportar…
+          </MenuItem>
           <MenuSeparator />
           <MenuLabel>Bloqueo automático</MenuLabel>
           <MenuRadioGroup value={String(session.autoLockMinutes)} onValueChange={changeAutoLock}>
@@ -151,6 +160,8 @@ function UnlockedActions({ state }: { state: VaultStateDTO }) {
         Bloquear
       </Button>
       <ChangeMasterDialog open={changeOpen} onOpenChange={setChangeOpen} state={state} />
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} state={state} />
       <Dialog open={generatorOpen} onOpenChange={setGeneratorOpen} title="Generador de contraseñas" description="Aleatoriedad criptográfica del navegador, sin sesgo.">
         <Generator />
       </Dialog>
@@ -197,8 +208,7 @@ function Unlocked() {
     try {
       const data = await encryptItem(s.key, s.userId, next)
       await put(`/vault/items/${next.id}`, { data })
-      const exists = s.items.some((i) => i.id === next.id)
-      setSessionItems(exists ? s.items.map((i) => (i.id === next.id ? next : i)) : [...s.items, next])
+      updateSessionItems(s.key, (items) => (items.some((i) => i.id === next.id) ? items.map((i) => (i.id === next.id ? next : i)) : [...items, next]))
       setSelectedId(next.id)
       return true
     } catch (error) {
@@ -209,10 +219,11 @@ function Unlocked() {
 
   async function remove(item: VaultItem) {
     if (!(await confirm({ title: `¿Eliminar «${item.title}»?`, description: 'Se borrará de forma definitiva de tu bóveda.', confirmLabel: 'Eliminar', danger: true }))) return
+    const { key } = getSession()
+    if (!key) return
     try {
       await del(`/vault/items/${item.id}`)
-      const s = getSession()
-      setSessionItems(s.items.filter((i) => i.id !== item.id))
+      updateSessionItems(key, (items) => items.filter((i) => i.id !== item.id))
       setSelectedId(null)
     } catch (error) {
       toast.error(errorMessage(error))
@@ -511,10 +522,10 @@ function ItemEditor({ initial, onSave, onCancel }: { initial: VaultItem; onSave:
   return (
     <form onSubmit={submit} className="animate-rise mx-auto flex w-full max-w-[620px] flex-col gap-4 px-6 py-8 sm:px-10">
       <h1 className="font-display text-[24px] font-medium">{initial.title ? 'Editar' : item.type === 'login' ? 'Nueva credencial' : 'Nueva nota segura'}</h1>
-      <Field label="Nombre" value={item.title} onChange={(e) => set('title', e.target.value)} placeholder={item.type === 'login' ? 'p. ej. Banco, GitHub, Wi-Fi oficina' : 'p. ej. Códigos de respaldo'} autoFocus maxLength={200} />
+      <Field label="Nombre" value={item.title} onChange={(e) => set('title', e.target.value)} placeholder={item.type === 'login' ? 'p. ej. Banco, GitHub, Wi-Fi oficina' : 'p. ej. Códigos de respaldo'} autoFocus maxLength={ITEM_LIMITS.title} />
       {item.type === 'login' && (
         <>
-          <Field label="Usuario o correo" value={item.username} onChange={(e) => set('username', e.target.value)} autoComplete="off" spellCheck={false} maxLength={500} />
+          <Field label="Usuario o correo" value={item.username} onChange={(e) => set('username', e.target.value)} autoComplete="off" spellCheck={false} maxLength={ITEM_LIMITS.username} />
           <Field
             label="Contraseña"
             type={show ? 'text' : 'password'}
@@ -523,7 +534,7 @@ function ItemEditor({ initial, onSave, onCancel }: { initial: VaultItem; onSave:
             autoComplete="new-password"
             spellCheck={false}
             className="[&_input]:pr-[72px] [&_input]:font-mono"
-            maxLength={1000}
+            maxLength={ITEM_LIMITS.password}
             trailing={
               <span className="flex items-center gap-0.5 pr-0.5">
                 <button type="button" onClick={() => setShow((s) => !s)} aria-label={show ? 'Ocultar' : 'Mostrar'} className="grid size-8 place-items-center rounded-[8px] text-ink-3 hover:bg-hover hover:text-ink">
@@ -551,7 +562,7 @@ function ItemEditor({ initial, onSave, onCancel }: { initial: VaultItem; onSave:
               </span>
             }
           />
-          <Field label="Sitio web" value={item.url} onChange={(e) => set('url', e.target.value)} placeholder="ejemplo.com" inputMode="url" autoComplete="off" spellCheck={false} maxLength={2000} />
+          <Field label="Sitio web" value={item.url} onChange={(e) => set('url', e.target.value)} placeholder="ejemplo.com" inputMode="url" autoComplete="off" spellCheck={false} maxLength={ITEM_LIMITS.url} />
           <Field
             label="Verificación en dos pasos (TOTP)"
             value={item.totp}
@@ -562,13 +573,13 @@ function ItemEditor({ initial, onSave, onCancel }: { initial: VaultItem; onSave:
             autoComplete="off"
             spellCheck={false}
             className="[&_input]:font-mono"
-            maxLength={2000}
+            maxLength={ITEM_LIMITS.totp}
           />
         </>
       )}
       <label className="flex flex-col gap-1.5">
         <span className="text-[12.5px] font-medium text-ink-2">{item.type === 'note' ? 'Contenido' : 'Notas'}</span>
-        <textarea value={item.notes} onChange={(e) => set('notes', e.target.value)} rows={item.type === 'note' ? 10 : 4} maxLength={20_000} className="field h-auto resize-y py-2 leading-relaxed" />
+        <textarea value={item.notes} onChange={(e) => set('notes', e.target.value)} rows={item.type === 'note' ? 10 : 4} maxLength={ITEM_LIMITS.notes} className="field h-auto resize-y py-2 leading-relaxed" />
       </label>
       <div className="flex justify-end gap-2 pt-2">
         <Button variant="ghost" onClick={onCancel}>
