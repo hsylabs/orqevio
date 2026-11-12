@@ -8,6 +8,7 @@ import type { Deps } from './deps'
 import { PageService } from './pages'
 import { SearchService } from './search'
 import { TokenService } from './tokens'
+import { UpdateService } from './updates'
 import { VaultService } from './vault'
 import { WorkspaceService } from './workspaces'
 
@@ -32,6 +33,7 @@ export function createServices(deps: Deps) {
     tokens: new TokenService(deps, access),
     vault: new VaultService(deps, access),
     accounts: new AccountService(deps, access, workspaces),
+    updates: new UpdateService(deps, access),
   }
 }
 

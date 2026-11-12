@@ -18,7 +18,7 @@ export const SETUP_CODE = 'test-setup-code-1234'
 export async function createHarness() {
   process.env.APP_URL = ORIGIN
   const dataDir = await mkdtemp(path.join(tmpdir(), 'orqevio-test-'))
-  const env = loadEnv({ dataDir, databasePath: path.join(dataDir, 'orqevio.db'), webDist: path.join(dataDir, 'no-web'), setupCode: SETUP_CODE })
+  const env = loadEnv({ dataDir, databasePath: path.join(dataDir, 'orqevio.db'), webDist: path.join(dataDir, 'no-web'), setupCode: SETUP_CODE, updateCheck: false })
   const { db, close } = openDatabase(env.databasePath)
   runMigrations(db, env.migrationsDir)
   const bus = new RealtimeBus()

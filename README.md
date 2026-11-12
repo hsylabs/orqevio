@@ -254,6 +254,11 @@ Cada versión tiene número y notas (`CHANGELOG.md` y las releases de GitHub), y
 | Docker | `docker compose pull` y `docker compose up -d` | El volumen `orqevio-data` |
 | Desde el código | `git pull`, `pnpm install`, `pnpm build` y reinicia | La carpeta `DATA_DIR` |
 
+**Aviso en la app.** En **Ajustes → Esta copia** ves tu versión y, cuando sale una nueva, cómo actualizar según cómo instalaste la copia; el menú de usuario lo marca con un punto.
+- **Qué consulta:** el servidor de tu copia pregunta a `registry.npmjs.org` cuál es la última versión publicada de `create-orqevio`, como mucho cada 12 horas y solo mientras usas la app. Guarda la respuesta, así que reiniciar no provoca consultas de más.
+- **Qué envía:** es una petición GET sin ningún dato tuyo.
+- **Desactivarlo:** con `UPDATE_CHECK=off`. Solo lo ve el propietario, nunca los agentes.
+
 ## Conectar agentes por MCP
 
 1. En Orqevio, ve a **Agentes → Conectar un agente**, elige permisos y caducidad, y copia el token.
@@ -338,8 +343,9 @@ Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Despu�
 | `TRUST_PROXY` | `false` | Confiar en `X-Forwarded-For` (detrás de un proxy inverso). |
 | `SECURE_COOKIES` | según `APP_URL` | Fuerza cookies `Secure`. |
 | `SETUP_CODE` | generado al arrancar | Código para reclamar la copia la primera vez. Si lo cambias, permite recuperar el acceso. |
+| `UPDATE_CHECK` | `on` | Comprueba en `registry.npmjs.org` si hay versiones nuevas para avisarte. `off` lo desactiva. |
 
-En Cloudflare solo se usan `SETUP_CODE` (secreto obligatorio), `APP_URL` (opcional; por defecto, el origen de cada visita) y `MAX_UPLOAD_MB`. El resto no aplica: los datos viven en el Durable Object y en R2.
+En Cloudflare solo se usan `SETUP_CODE` (secreto obligatorio), `APP_URL` (opcional; por defecto, el origen de cada visita), `MAX_UPLOAD_MB` y `UPDATE_CHECK`. El resto no aplica: los datos viven en el Durable Object y en R2.
 
 ## Limitaciones conocidas
 

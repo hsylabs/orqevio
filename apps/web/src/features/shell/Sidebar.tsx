@@ -31,7 +31,7 @@ import { usePrompt } from '../../components/ui/prompt'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { errorMessage, patch, post } from '../../lib/api'
 import { cn } from '../../lib/cn'
-import { keys } from '../../lib/queries'
+import { keys, useUpdates } from '../../lib/queries'
 import { useAgentLive } from '../../lib/realtime'
 import { applyTheme, localPref, setLocalPref } from '../../lib/theme'
 import { lockVault, useVaultLocked } from '../vault/session'
@@ -351,6 +351,7 @@ function PageItem({ page, all, projectId, depth }: { page: PageNodeDTO; all: Pag
 
 function UserMenu() {
   const { me, workspaceId } = useWorkspace()
+  const updateAvailable = useUpdates().data?.updateAvailable ?? false
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [theme, setTheme] = useState(me.user.theme)
@@ -378,13 +379,19 @@ function UserMenu() {
     <MenuRoot>
       <MenuTrigger asChild>
         <button type="button" className="flex h-10 items-center gap-2.5 rounded-[10px] px-1.5 text-left transition-colors hover:bg-hover data-[state=open]:bg-hover">
-          <Avatar name={me.user.name} size={26} />
+          <span className="relative">
+            <Avatar name={me.user.name} size={26} />
+            {updateAvailable && <span aria-label="Hay una versión nueva de Orqevio" className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-accent ring-2 ring-desk" />}
+          </span>
           <span className="min-w-0 flex-1 truncate text-[13px] leading-tight font-medium">{me.user.name}</span>
         </button>
       </MenuTrigger>
       <MenuContent align="start" side="top" className="w-[240px]">
         <MenuItem icon={<Settings />} onSelect={() => navigate(`/w/${workspaceId}/settings`)}>
-          Ajustes
+          <span className="flex items-center justify-between gap-2">
+            Ajustes
+            {updateAvailable && <span className="rounded-full bg-accent-soft px-1.5 py-px text-[11px] font-medium text-accent">Nueva versión</span>}
+          </span>
         </MenuItem>
         <MenuSeparator />
         <MenuLabel>Apariencia</MenuLabel>

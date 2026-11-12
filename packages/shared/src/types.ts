@@ -26,6 +26,26 @@ export interface WorkspaceDTO {
   createdAt: string
 }
 
+/** How this copy was installed, which decides how it is updated. */
+export const INSTALL_KINDS = ['cli', 'button', 'docker', 'source', 'cloudflare'] as const
+export type InstallKind = (typeof INSTALL_KINDS)[number]
+
+/** ORQEVIO_INSTALL as set by each installation path, or `fallback` when missing or unknown. */
+export const installKind = (value: string | undefined, fallback: InstallKind): InstallKind =>
+  (INSTALL_KINDS as readonly string[]).includes(value ?? '') ? (value as InstallKind) : fallback
+
+export interface UpdateStatusDTO {
+  current: string
+  /** Latest published version, or null when unknown (check disabled, offline, not published yet). */
+  latest: string | null
+  updateAvailable: boolean
+  install: InstallKind
+  /** Worker name of a Cloudflare copy installed with the command, for the update command. */
+  copyName: string | null
+  /** Notes of the latest version. */
+  releaseUrl: string | null
+}
+
 export interface MeDTO {
   user: UserDTO
   workspaces: WorkspaceDTO[]

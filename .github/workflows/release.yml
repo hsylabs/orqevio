@@ -62,7 +62,9 @@ jobs:
 
   npm:
     name: Publish to npm
-    needs: verify
+    # After the Docker image: copies learn about a version from create-orqevio,
+    # published last, so the notice never offers an image that is not out yet.
+    needs: [verify, docker]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Add protection rules (required reviewers) to this environment in the repository settings.
