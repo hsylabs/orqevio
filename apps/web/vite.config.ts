@@ -9,7 +9,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': { target: api, changeOrigin: false },
+      // ws: live updates (/api/workspaces/:id/live) are WebSocket connections.
+      '/api': { target: api, changeOrigin: false, ws: true },
       '/mcp': { target: api, changeOrigin: false },
     },
   },
