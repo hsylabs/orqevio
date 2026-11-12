@@ -17,6 +17,7 @@ Primera versión.
 
 ### Bóveda
 - Credenciales y notas cifradas de extremo a extremo, con generador de contraseñas, clave de recuperación y bloqueo automático.
+- Códigos de verificación en dos pasos (TOTP): pega la clave secreta o el enlace `otpauth://` y la bóveda muestra el código con su cuenta atrás. Se calculan en el navegador.
 
 ### Tu copia
 - Sin registro ni correo: la copia se reclama con un código de configuración y se entra con una clave de acceso de 160 bits.
