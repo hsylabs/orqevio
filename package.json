@@ -1,6 +1,7 @@
 {
-  "name": "orqevio",
+  "name": "orqevio-monorepo",
   "private": true,
+  "license": "FSL-1.1-ALv2",
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "engines": {
@@ -9,6 +10,7 @@
   "scripts": {
     "dev": "pnpm --parallel --filter @orqevio/server --filter @orqevio/web dev",
     "build": "pnpm --filter @orqevio/web build && pnpm --filter @orqevio/server build",
+    "build:cloudflare": "pnpm --filter @orqevio/web build && pnpm --filter orqevio build && pnpm --filter create-orqevio build",
     "start": "pnpm --filter @orqevio/server start",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",

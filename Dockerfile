@@ -11,6 +11,8 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
 COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
+COPY packages/orqevio/package.json packages/orqevio/
+COPY packages/create-orqevio/package.json packages/create-orqevio/
 RUN pnpm install --frozen-lockfile
 
 COPY . .
