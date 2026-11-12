@@ -26,6 +26,7 @@ Uso:
 
 Opciones:
   --name <nombre>   Nombre de la copia (por defecto, ${DEFAULT_NAME}). Forma parte de su dirección.
+  --account <id>    Cuenta de Cloudflare que usar, si tienes varias (o CLOUDFLARE_ACCOUNT_ID)
   -h, --help        Muestra esta ayuda
   -v, --version     Muestra la versión de Orqevio que se instala
 
@@ -47,7 +48,7 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
     io.err(`${(error as Error).message}\n\n${HELP}`)
     return 2
   }
-  const { command, name: givenName, help, version } = parsed
+  const { command, name: givenName, account: givenAccount, help, version } = parsed
   if (help) {
     io.out(HELP)
     return 0
@@ -79,11 +80,16 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
   }
 
   io.out(`\nOrqevio ${orqevio.version} · ${TITLES[command]} «${name}»\n`)
-  if (!(await ensureSignedIn(io))) return 1
+  const accounts = await signIn(io)
+  if (!accounts) return 1
+  const account = await chooseAccount(accounts, givenAccount ?? process.env.CLOUDFLARE_ACCOUNT_ID, io)
+  if (!account) return 1
+  // Every later call uses this account, so Wrangler never has to ask (it cannot while its output is captured).
+  const env = { CLOUDFLARE_ACCOUNT_ID: account }
 
-  const exists = await workerExists(name)
+  const exists = await workerExists(name, env, io)
   if (exists === null) {
-    io.err('No he podido consultar tu cuenta de Cloudflare. Revisa el mensaje de arriba y vuelve a intentarlo.')
+    io.err('No he podido consultar tu cuenta de Cloudflare. Vuelve a intentarlo en unos minutos.')
     return 1
   }
   let mode = command
@@ -99,7 +105,7 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
     io.err(`No encuentro una copia llamada «${name}» en esta cuenta. Para instalarla: npx create-orqevio${nameFlag(name)}`)
     return 1
   }
-  return mode === 'recover' ? recover(name, io) : deploy(mode === 'update' ? 'update' : 'install', name, orqevio, io)
+  return mode === 'recover' ? recover(name, env, io) : deploy(mode === 'update' ? 'update' : 'install', name, orqevio, env, io)
 }
 
 const TITLES: Record<Exclude<Command, 'config'>, string> = {
@@ -114,6 +120,7 @@ function parse(argv: string[]) {
     allowPositionals: true,
     options: {
       name: { type: 'string' },
+      account: { type: 'string' },
       help: { type: 'boolean', short: 'h' },
       version: { type: 'boolean', short: 'v' },
     },
@@ -121,36 +128,73 @@ function parse(argv: string[]) {
   if (positionals.length > 1) throw new Error(`Sobra «${positionals[1]}».`)
   const command = (positionals[0] ?? 'install') as Command
   if (!['install', 'update', 'recover', 'config'].includes(command)) throw new Error(`No conozco la orden «${command}».`)
-  return { command, name: values.name, help: values.help ?? false, version: values.version ?? false }
+  return { command, name: values.name, account: values.account, help: values.help ?? false, version: values.version ?? false }
 }
 
 const nameFlag = (name: string) => (name === DEFAULT_NAME ? '' : ` --name ${name}`)
 
-async function ensureSignedIn(io: Io) {
-  const who = await runWrangler(['whoami', '--json'], { capture: true })
-  if (isSignedIn(who.stdout)) return true
-  io.out('Inicia sesión en Cloudflare en el navegador que se va a abrir…\n')
-  const login = await runWrangler(['login'])
-  if (login.code === 0 && isSignedIn((await runWrangler(['whoami', '--json'], { capture: true })).stdout)) return true
-  io.err('No se ha completado el inicio de sesión en Cloudflare.')
-  return false
+interface Account {
+  id: string
+  name: string
 }
 
-function isSignedIn(stdout: string) {
-  const json = stdout.slice(stdout.indexOf('{'), stdout.lastIndexOf('}') + 1)
+/** Signs in with Wrangler's own login when needed; returns the accounts this login can use. */
+async function signIn(io: Io): Promise<Account[] | null> {
+  let accounts = await whoami()
+  if (!accounts) {
+    io.out('Inicia sesión en Cloudflare en el navegador que se va a abrir…\n')
+    if ((await runWrangler(['login'])).code === 0) accounts = await whoami()
+  }
+  if (!accounts) io.err('No se ha completado el inicio de sesión en Cloudflare.')
+  return accounts
+}
+
+async function whoami(): Promise<Account[] | null> {
+  const { stdout } = await runWrangler(['whoami', '--json'], { capture: true })
   try {
-    return (JSON.parse(json) as { loggedIn?: boolean }).loggedIn === true
+    const info = JSON.parse(stdout.slice(stdout.indexOf('{'), stdout.lastIndexOf('}') + 1)) as { loggedIn?: boolean; accounts?: Account[] }
+    return info.loggedIn === true ? (info.accounts ?? []) : null
   } catch {
-    return false
+    return null
   }
 }
 
+async function chooseAccount(accounts: Account[], wanted: string | undefined, io: Io): Promise<string | null> {
+  if (wanted) {
+    const match = accounts.find((a) => a.id === wanted || a.name === wanted)
+    // An API token may not list its account: trust an explicit ID.
+    if (match || !accounts.length) return match?.id ?? wanted
+    io.err(`Esta sesión no tiene acceso a la cuenta «${wanted}». Cuentas disponibles:\n${accountList(accounts)}`)
+    return null
+  }
+  if (accounts.length === 1) return accounts[0]!.id
+  if (!accounts.length) {
+    io.err('Tu sesión de Cloudflare no tiene ninguna cuenta disponible.')
+    return null
+  }
+  if (!io.ask) {
+    io.err(`Tienes varias cuentas de Cloudflare. Elige una con --account <id>:\n${accountList(accounts)}`)
+    return null
+  }
+  io.out(`Tienes varias cuentas de Cloudflare:\n${accounts.map((a, i) => `  ${i + 1}. ${a.name}`).join('\n')}`)
+  for (;;) {
+    const answer = (await io.ask(`¿Cuál uso? (1-${accounts.length}): `)).trim()
+    const index = Number(answer) - 1
+    if (Number.isInteger(index) && accounts[index]) return accounts[index]!.id
+    if (!answer) return null
+  }
+}
+
+const accountList = (accounts: Account[]) => accounts.map((a) => `  ${a.name}: ${a.id}`).join('\n')
+
 /** true or false, or null when the account could not be queried. */
-async function workerExists(name: string): Promise<boolean | null> {
-  const run = await runWrangler(['deployments', 'list', '--name', name, '--json'], { capture: true })
+async function workerExists(name: string, env: Record<string, string>, io?: Io): Promise<boolean | null> {
+  const run = await runWrangler(['deployments', 'list', '--name', name, '--json'], { capture: true, env })
   if (run.code === 0) return true
   // Cloudflare's API answers 10007 for a Worker that does not exist.
-  return /\b10007\b/.test(run.stdout + run.stderr) ? false : null
+  if (/\b10007\b/.test(run.stdout + run.stderr)) return false
+  io?.err((run.stderr || run.stdout).trim())
+  return null
 }
 
 /** A private temporary folder for the generated configuration and the secrets file, removed even on Ctrl+C. */
@@ -170,7 +214,7 @@ async function withWorkspace<T>(work: (dir: string) => Promise<T>) {
   }
 }
 
-async function deploy(mode: 'install' | 'update', name: string, orqevio: ReturnType<typeof loadOrqevio>, io: Io) {
+async function deploy(mode: 'install' | 'update', name: string, orqevio: ReturnType<typeof loadOrqevio>, env: Record<string, string>, io: Io) {
   return withWorkspace(async (dir) => {
     const configFile = path.join(dir, 'wrangler.json')
     await writeFile(configFile, JSON.stringify(copyConfig(orqevio.base, orqevio.dir, name), null, 2))
@@ -183,7 +227,7 @@ async function deploy(mode: 'install' | 'update', name: string, orqevio: ReturnT
       args.push('--secrets-file', secretsFile)
     }
     const outputFile = path.join(dir, 'output.ndjson')
-    const run = await runWrangler(args, { cwd: dir, env: { WRANGLER_OUTPUT_FILE_PATH: outputFile } })
+    const run = await runWrangler(args, { cwd: dir, env: { ...env, WRANGLER_OUTPUT_FILE_PATH: outputFile } })
     if (run.code !== 0) {
       io.err('\nNo se ha podido desplegar. Revisa el mensaje de Wrangler de arriba; puedes repetir la orden sin perder nada.')
       return 1
@@ -215,10 +259,10 @@ async function deploy(mode: 'install' | 'update', name: string, orqevio: ReturnT
   })
 }
 
-async function recover(name: string, io: Io) {
+async function recover(name: string, env: Record<string, string>, io: Io) {
   const setupCode = generateSetupCode()
   // The code goes through stdin, never on the command line.
-  const run = await runWrangler(['secret', 'put', 'SETUP_CODE', '--name', name], { input: setupCode })
+  const run = await runWrangler(['secret', 'put', 'SETUP_CODE', '--name', name], { input: setupCode, env })
   if (run.code !== 0) {
     io.err('\nNo se ha podido cambiar el código. Revisa el mensaje de Wrangler de arriba.')
     return 1

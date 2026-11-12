@@ -40,7 +40,7 @@ afterEach(() => {
 function setState(value: Record<string, unknown>) {
   writeFileSync(state, JSON.stringify({ loggedIn: true, exists: false, ...value }))
 }
-const calls = (): Array<{ args: string[]; cwd: string; metrics: string | null; secrets?: { content: string; mode: number }; config?: Record<string, any>; stdin?: string }> =>
+const calls = (): Array<{ args: string[]; cwd: string; metrics: string | null; account: string | null; secrets?: { content: string; mode: number }; config?: Record<string, any>; stdin?: string }> =>
   existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((line) => JSON.parse(line)) : []
 const commands = () => calls().map((c) => c.args.slice(0, 2).join(' '))
 
@@ -77,7 +77,10 @@ describe('create-orqevio', () => {
       assets: { directory: path.join(orqevio.dir, 'web'), binding: 'ASSETS' },
       r2_buckets: [{ binding: 'UPLOADS', bucket_name: 'ana-uploads' }],
       no_bundle: true,
+      // Variables set in the Cloudflare dashboard survive deploys.
+      keep_vars: true,
     })
+    expect(calls().filter((c) => c.args[0] !== 'whoami' && c.args[0] !== 'login').every((c) => c.account === 'acc-1')).toBe(true)
     const code = deploy.secrets!.content.match(/^SETUP_CODE=(.+)\n$/)![1]!
     expect(code).toMatch(CODE)
     if (process.platform !== 'win32') expect(deploy.secrets!.mode).toBe(0o600)
@@ -150,12 +153,48 @@ describe('create-orqevio', () => {
     expect((await run(['--name', 'ana'])).err).toContain('No se ha completado el inicio de sesión')
 
     setState({ accountError: true })
-    expect((await run(['--name', 'ana'])).err).toContain('No he podido consultar tu cuenta')
+    const query = await run(['--name', 'ana'])
+    expect(query.err).toContain('No he podido consultar tu cuenta')
+    // Wrangler's own diagnostic is shown, not swallowed.
+    expect(query.err).toContain('Authentication error [code: 10000]')
 
     setState({ deployFails: true })
     const failed = await run(['--name', 'ana'])
     expect(failed.code).toBe(1)
     expect(failed.err).toContain('No se ha podido desplegar')
+  })
+
+  it('asks which account to use when the login has several, and uses it for every call', async () => {
+    const accounts = [
+      { id: 'acc-1', name: 'Personal' },
+      { id: 'acc-2', name: 'Empresa' },
+    ]
+    setState({ accounts })
+    const result = await run(['--name', 'ana'], ['2'])
+    expect(result.code).toBe(0)
+    expect(result.out).toContain('2. Empresa')
+    const accountCalls = calls().filter((c) => c.args[0] !== 'whoami')
+    expect(accountCalls.length).toBeGreaterThan(1)
+    expect(accountCalls.every((c) => c.account === 'acc-2')).toBe(true)
+
+    // Without a terminal, it lists them instead of guessing.
+    setState({ accounts })
+    const blind = await run(['--name', 'ana'])
+    expect(blind.code).toBe(1)
+    expect(blind.err).toContain('Empresa: acc-2')
+
+    // --account (by id or name) or CLOUDFLARE_ACCOUNT_ID choose it up front.
+    setState({ accounts })
+    expect((await run(['--name', 'ana', '--account', 'Empresa'])).code).toBe(0)
+    expect(calls().at(-1)!.account).toBe('acc-2')
+    setState({ accounts })
+    process.env.CLOUDFLARE_ACCOUNT_ID = 'acc-1'
+    expect((await run(['--name', 'ana'])).code).toBe(0)
+    expect(calls().at(-1)!.account).toBe('acc-1')
+    setState({ accounts })
+    const unknown = await run(['--name', 'ana', '--account', 'otra'])
+    expect(unknown.code).toBe(1)
+    expect(unknown.err).toContain('no tiene acceso a la cuenta «otra»')
   })
 
   it('respects telemetry the user turned on', async () => {

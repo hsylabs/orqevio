@@ -20,5 +20,7 @@
   "r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "orqevio-uploads" }],
   // Claims the copy the first time (and recovers access when changed): deploys fail without it.
   "secrets": { "required": ["SETUP_CODE"] },
+  // Variables set in the Cloudflare dashboard (APP_URL, MAX_UPLOAD_MB) survive deploys.
+  "keep_vars": true,
   "observability": { "enabled": true }
 }

@@ -41,5 +41,7 @@ export function copyConfig(base: BaseConfig, distDir: string, name: string) {
     main: path.join(distDir, base.main),
     assets: { ...base.assets, directory: path.join(distDir, base.assets.directory) },
     r2_buckets: base.r2_buckets.map((bucket) => (bucket.binding === 'UPLOADS' ? { ...bucket, bucket_name: bucketName(name) } : bucket)),
+    // Variables the owner set in the Cloudflare dashboard (APP_URL, MAX_UPLOAD_MB) survive updates.
+    keep_vars: true,
   }
 }

@@ -135,6 +135,8 @@ npx create-orqevio@latest recover
 Si pierdes la clave, genera un código nuevo. Úsalo en **«¿Has perdido la clave?»**, en la pantalla de acceso.
 
 - **Varias copias:** añade `--name <nombre>` a cualquiera de las órdenes.
+- **Varias cuentas de Cloudflare:** el instalador te pregunta cuál usar; también puedes indicarla con `--account <id>` o `CLOUDFLARE_ACCOUNT_ID`.
+- **Tus ajustes se conservan:** las variables que pongas en el panel de Cloudflare (`APP_URL`, `MAX_UPLOAD_MB`) sobreviven a las actualizaciones.
 - **Privacidad:** el instalador desactiva la telemetría anónima de Wrangler, salvo que tú la hayas activado.
 - **Lo que hace exactamente:**
   - Wrangler trabaja en una carpeta temporal privada, nunca en la carpeta en la que estás.

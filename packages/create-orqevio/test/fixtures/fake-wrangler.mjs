@@ -8,7 +8,7 @@ const state = JSON.parse(readFileSync(statePath, 'utf8'))
 const save = () => writeFileSync(statePath, JSON.stringify(state))
 const flag = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined)
 
-const record = { args, cwd: process.cwd(), metrics: process.env.WRANGLER_SEND_METRICS ?? null }
+const record = { args, cwd: process.cwd(), metrics: process.env.WRANGLER_SEND_METRICS ?? null, account: process.env.CLOUDFLARE_ACCOUNT_ID ?? null }
 const secretsFile = flag('--secrets-file')
 if (secretsFile) record.secrets = { content: readFileSync(secretsFile, 'utf8'), mode: statSync(secretsFile).mode & 0o777 }
 const config = flag('--config')
@@ -17,9 +17,16 @@ if (!process.stdin.isTTY && args[0] === 'secret') record.stdin = readFileSync(0,
 appendFileSync(process.env.FAKE_WRANGLER_LOG, `${JSON.stringify(record)}\n`)
 
 const [command, sub] = args
+const accounts = state.accounts ?? [{ id: 'acc-1', name: 'Ana' }]
 if (command === 'whoami') {
-  process.stdout.write(`${JSON.stringify({ loggedIn: state.loggedIn })}\n`)
+  process.stdout.write(`${JSON.stringify(state.loggedIn ? { loggedIn: true, accounts } : { loggedIn: false })}\n`)
   process.exit(state.loggedIn ? 0 : 1)
+}
+// Like Wrangler: with several accounts and no CLOUDFLARE_ACCOUNT_ID, account commands
+// can only ask interactively, which they cannot do with captured output.
+if (command !== 'login' && accounts.length > 1 && !process.env.CLOUDFLARE_ACCOUNT_ID) {
+  process.stderr.write('✘ [ERROR] More than one account available but unable to select one in non-interactive mode.\n')
+  process.exit(1)
 }
 if (command === 'login') {
   state.loggedIn = state.loginWorks !== false
