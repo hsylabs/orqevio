@@ -33,11 +33,16 @@ export function loadOrqevio(from = import.meta.url) {
   return { dir: path.join(dir, 'dist'), version, base }
 }
 
+/** How the app tells this copy to update itself (see ORQEVIO_INSTALL in apps/server/src/env.ts). */
+export type InstallKind = 'cli' | 'button'
+
 /** Wrangler configuration for one copy: its own Worker name and bucket, pointing at the package files. */
-export function copyConfig(base: BaseConfig, distDir: string, name: string) {
+export function copyConfig(base: BaseConfig, distDir: string, name: string, install: InstallKind = 'cli') {
   return {
     ...base,
     name,
+    // Other variables set in the dashboard are kept (keep_vars below).
+    vars: { ...(base.vars as Record<string, string> | undefined), ORQEVIO_INSTALL: install, ORQEVIO_COPY_NAME: name },
     main: path.join(distDir, base.main),
     assets: { ...base.assets, directory: path.join(distDir, base.assets.directory) },
     r2_buckets: base.r2_buckets.map((bucket) => (bucket.binding === 'UPLOADS' ? { ...bucket, bucket_name: bucketName(name) } : bucket)),

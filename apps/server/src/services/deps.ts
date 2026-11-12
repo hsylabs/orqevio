@@ -8,4 +8,6 @@ export interface Deps {
   bus: RealtimePublisher
   env: Env
   storage: AttachmentStorage
+  /** Outgoing requests (the update check); tests pass their own. */
+  fetch?: typeof fetch
 }

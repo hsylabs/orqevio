@@ -12,6 +12,7 @@ import { del, errorMessage, patch, post } from '../../lib/api'
 import { keys } from '../../lib/queries'
 import { applyTheme } from '../../lib/theme'
 import { AccessKeyReveal } from '../auth/AccessKeyReveal'
+import { CopyVersion } from './CopyVersion'
 import { PageHeader } from '../shell/PageHeader'
 import { useWorkspace } from '../shell/workspace'
 import { lockVault } from '../vault/session'
@@ -160,6 +161,10 @@ export function SettingsPage() {
               </form>
             </Section>
           )}
+
+          <Section title="Esta copia" description="La versión de Orqevio que usas. La copia comprueba si hay versiones nuevas como mucho cada 12 horas.">
+            <CopyVersion />
+          </Section>
 
           <Section title="Borrar esta copia" description="Borra tus espacios, tu bóveda y tus tokens de forma permanente. La copia volverá a pedir el código de configuración.">
             <Button variant="ghost" className="text-danger hover:bg-danger-soft hover:text-danger" onClick={() => setDeleteOpen(true)}>

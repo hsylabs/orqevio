@@ -2,9 +2,11 @@
 
 Una versión se publica al subir su etiqueta (`v0.2.0`) a `main`. El flujo `.github/workflows/release.yml` comprueba la versión y pasa las pruebas, y después publica:
 
-1. los paquetes npm `orqevio` y `create-orqevio`, con procedencia verificable;
-2. la imagen Docker `ghcr.io/hsylabs/orqevio` (amd64 y arm64);
-3. la release de GitHub, con las notas de `CHANGELOG.md`. Va al final, para que nunca anuncie algo que aún no se puede instalar.
+1. la imagen Docker `ghcr.io/hsylabs/orqevio` (amd64 y arm64);
+2. los paquetes npm `orqevio` y, por último, `create-orqevio`, con procedencia verificable;
+3. la release de GitHub, con las notas de `CHANGELOG.md`.
+
+**El orden importa:** cada copia descubre las versiones nuevas por la etiqueta `latest` de `create-orqevio`. Como se publica después de la imagen y de `orqevio`, el aviso de la app nunca ofrece algo que aún no se puede instalar.
 
 ## Una sola vez, antes de la primera versión
 

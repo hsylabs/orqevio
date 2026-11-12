@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { type InstallKind, installKind } from '@orqevio/shared'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -28,7 +29,14 @@ export interface Env {
    * changes). When unset, a one-off code is generated and printed at startup.
    */
   setupCode: string | null
+  /** How this copy was installed (ORQEVIO_INSTALL, set by each installation path). */
+  install: InstallKind
+  /** Worker name of a copy installed with `npx create-orqevio` (ORQEVIO_COPY_NAME). */
+  copyName: string | null
+  /** Whether the copy looks up the latest published version (UPDATE_CHECK, on by default). */
+  updateCheck: boolean
 }
+
 
 export function loadEnv(overrides: Partial<Env> = {}): Env {
   const nodeEnv = (process.env.NODE_ENV as Env['nodeEnv']) ?? 'development'
@@ -51,6 +59,9 @@ export function loadEnv(overrides: Partial<Env> = {}): Env {
     secureCookies: bool(process.env.SECURE_COOKIES, appUrls[0]!.startsWith('https://')),
     maxUploadBytes: Number(process.env.MAX_UPLOAD_MB ?? 20) * 1024 * 1024,
     setupCode: process.env.SETUP_CODE?.trim() || null,
+    install: installKind(process.env.ORQEVIO_INSTALL, 'source'),
+    copyName: process.env.ORQEVIO_COPY_NAME?.trim() || null,
+    updateCheck: bool(process.env.UPDATE_CHECK, true),
     ...overrides,
   }
   return env

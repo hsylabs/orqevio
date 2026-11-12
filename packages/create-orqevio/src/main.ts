@@ -295,7 +295,7 @@ async function deployRepo(orqevio: ReturnType<typeof loadOrqevio>, dryRun: boole
     io.err(`El nombre del Worker en wrangler.jsonc («${name}») no vale. ${problem}`)
     return 1
   }
-  const config = copyConfig(orqevio.base, orqevio.dir, name)
+  const config = copyConfig(orqevio.base, orqevio.dir, name, 'button')
   const bucket = repo.r2_buckets?.find((b) => b.binding === 'UPLOADS')?.bucket_name
   if (bucket) config.r2_buckets = config.r2_buckets.map((b) => (b.binding === 'UPLOADS' ? { ...b, bucket_name: bucket } : b))
   return withWorkspace(async (dir) => {

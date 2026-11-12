@@ -10,6 +10,7 @@ import type {
   PageDTO,
   SearchResultDTO,
   TokenDTO,
+  UpdateStatusDTO,
 } from '@orqevio/shared'
 import { QueryClient, keepPreviousData, useQuery } from '@tanstack/react-query'
 import { ApiError, get } from './api'
@@ -36,6 +37,7 @@ export const keys = {
   page: (id: string) => ['page', id] as const,
   search: (wid: string, q: string) => ['search', wid, q] as const,
   tokens: ['tokens'] as const,
+  updates: ['updates'] as const,
   activity: (wid: string, filter: string) => ['activity', wid, filter] as const,
   vault: ['vault'] as const,
   vaultItems: ['vault-items'] as const,
@@ -97,6 +99,22 @@ export const useSearch = (wid: string, q: string, type?: 'card' | 'page') =>
   })
 
 export const useTokens = () => useQuery({ queryKey: keys.tokens, queryFn: ({ signal }) => get<TokenDTO[]>('/tokens', signal) })
+
+/**
+ * Asked once an hour while the app is open, so a version published meanwhile
+ * shows up without reloading; the copy itself checks the registry at most every
+ * 12 hours, so this costs nothing outside.
+ */
+const UPDATES_EVERY_MS = 60 * 60 * 1000
+export const useUpdates = () =>
+  useQuery({
+    queryKey: keys.updates,
+    queryFn: ({ signal }) => get<UpdateStatusDTO>('/updates', signal),
+    staleTime: UPDATES_EVERY_MS,
+    refetchInterval: UPDATES_EVERY_MS,
+    refetchOnWindowFocus: false,
+    retry: false,
+  })
 
 export const useActivity = (wid: string, opts: { agentsOnly?: boolean; tokenId?: string } = {}) => {
   const params = new URLSearchParams({ limit: '40' })
