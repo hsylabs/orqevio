@@ -133,6 +133,8 @@ function parse(argv: string[]) {
   if (positionals.length > 1) throw new Error(`Sobra «${positionals[1]}».`)
   const command = (positionals[0] ?? 'install') as Command
   if (!['install', 'update', 'recover', 'config', 'deploy-repo'].includes(command)) throw new Error(`No conozco la orden «${command}».`)
+  // Only deploy-repo can deploy without changing anything; anywhere else the flag would be ignored.
+  if (values['dry-run'] && command !== 'deploy-repo') throw new Error('--dry-run solo vale con deploy-repo.')
   return {
     command,
     name: values.name,

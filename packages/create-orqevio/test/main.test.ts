@@ -59,6 +59,12 @@ describe('create-orqevio', () => {
     expect((await run(['--help'])).out).toContain('npx create-orqevio@latest update')
     expect((await run(['--version'])).out).toBe('9.9.9')
     expect((await run(['borrar'])).code).toBe(2)
+    // A dry run that would really deploy is refused.
+    for (const command of [[], ['update'], ['recover']]) {
+      const dry = await run([...command, '--dry-run', '--name', 'ana'])
+      expect(dry.code).toBe(2)
+      expect(dry.err).toContain('--dry-run solo vale con deploy-repo')
+    }
     const bad = await run(['--name', 'Mi Copia'])
     expect(bad.code).toBe(2)
     expect(bad.err).toContain('«Mi Copia» no vale como nombre')
