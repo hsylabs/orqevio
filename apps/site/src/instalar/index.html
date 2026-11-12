@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Instalar Orqevio · Tu copia en Cloudflare o con Docker</title>
+    <meta name="description" content="Instala tu copia de Orqevio con un comando en tu cuenta de Cloudflare, con el botón «Deploy to Cloudflare» o con Docker en tu servidor. Guía paso a paso, primer acceso y actualizaciones." />
+    <meta name="theme-color" content="#F2EFE8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121110" media="(prefers-color-scheme: dark)" />
+    <link rel="canonical" href="https://orqevio.com/instalar/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/fonts.css" />
+    <link rel="stylesheet" href="/site.css" />
+    <script src="/site.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#contenido">Saltar al contenido</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/" aria-label="Orqevio, inicio">
+          <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect class="logo-bg" width="32" height="32" rx="9" fill="#1C1A16" /><path class="logo-orbit" d="M22.4 9.6A9 9 0 1 0 25 16" fill="none" stroke="#F5F3EE" stroke-width="3.2" stroke-linecap="round" /><circle cx="23.6" cy="8.4" r="2.6" fill="#E5532A" /></svg>
+          Orqevio
+        </a>
+        <nav class="nav" aria-label="Principal">
+          <a href="/instalar/" aria-current="page">Instalar</a>
+          <a class="hide-small" href="/privacidad/">Privacidad</a>
+          <a href="https://github.com/hsylabs/orqevio">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <div class="page-head">
+        <div class="wrap">
+          <span class="eyebrow">Guía de instalación</span>
+          <h1>Instala tu copia</h1>
+          <p class="lead">Elige dónde vive: en tu cuenta de Cloudflare, con un comando o con un botón, o en tu servidor con Docker. En los tres casos la copia es tuya y el resultado es el mismo.</p>
+          <nav class="toc" aria-label="En esta página">
+            <a href="#comando">Con un comando</a>
+            <a href="#boton">Con el botón</a>
+            <a href="#docker">Con Docker</a>
+            <a href="#acceso">Primer acceso</a>
+            <a href="#agentes">Conectar agentes</a>
+            <a href="#actualizar">Actualizar</a>
+            <a href="#costes">Costes</a>
+          </nav>
+        </div>
+      </div>
+
+      <div class="wrap prose">
+        <h2 id="comando">Con un comando <span class="badge">Recomendada</span></h2>
+        <p>Tu copia se instala en tu propia cuenta de Cloudflare: un Worker con la web, la API y el MCP, una base de datos SQLite y un bucket R2 para los adjuntos.</p>
+        <p><strong>Necesitas</strong> una cuenta de Cloudflare (el plan gratuito basta) y Node.js 22.12 o superior.</p>
+        <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
+        <ol>
+          <li>Se abre el navegador para que inicies sesión en Cloudflare.</li>
+          <li>Eliges un nombre para la copia (por defecto, <code>orqevio</code>), que forma parte de su dirección.</li>
+          <li>El instalador despliega la copia y crea su bucket.</li>
+          <li>Te muestra la dirección (<code>https://orqevio.&lt;tu-subdominio&gt;.workers.dev</code>) y un <strong>código de configuración</strong> de un solo uso.</li>
+        </ol>
+        <p>Abre la dirección y sigue el <a href="#acceso">primer acceso</a>.</p>
+        <ul>
+          <li><strong>Varias copias:</strong> añade <code>--name &lt;nombre&gt;</code> a cualquier orden.</li>
+          <li><strong>Varias cuentas de Cloudflare:</strong> el instalador te pregunta cuál usar, o indícala con <code>--account &lt;id&gt;</code>.</li>
+          <li><strong>Privacidad:</strong> el instalador desactiva la telemetría de Wrangler, salvo que tú la hayas activado, y trabaja en una carpeta temporal que borra al terminar.</li>
+        </ul>
+
+        <h2 id="boton">Con el botón</h2>
+        <p>Si prefieres tener tu copia en un repositorio propio de GitHub o GitLab:</p>
+        <a class="deploy" href="https://deploy.workers.cloudflare.com/?url=https://github.com/hsylabs/orqevio/tree/main/templates/cloudflare">Deploy to Cloudflare</a>
+        <p>Cloudflare crea en tu cuenta de GitHub o GitLab un repositorio pequeño, te pide el código de configuración (<code>SETUP_CODE</code>), que eliges tú, y despliega la copia. Después:</p>
+        <ul>
+          <li>Cada cambio en ese repositorio se despliega solo.</li>
+          <li>Dependabot te propone las versiones nuevas de Orqevio en un pull request; al fusionarlo, tu copia se actualiza.</li>
+          <li>Si pierdes la clave, cambia el secreto <code>SETUP_CODE</code> en el panel de Cloudflare y usa «¿Has perdido la clave?» en la pantalla de acceso.</li>
+        </ul>
+
+        <h2 id="docker">Con Docker en tu servidor</h2>
+        <p>Un único contenedor (para amd64 y arm64) con su base de datos SQLite y los adjuntos en un volumen. Descarga la configuración:</p>
+        <div class="command"><pre><code><span class="prompt">$ </span>curl -fsSLO https://raw.githubusercontent.com/hsylabs/orqevio/main/docker-compose.yml</code></pre></div>
+        <div class="command"><pre><code><span class="prompt">$ </span>curl -fsSL -o .env https://raw.githubusercontent.com/hsylabs/orqevio/main/.env.example</code></pre></div>
+        <p>Edita <code>.env</code>: pon en <code>APP_URL</code> la dirección pública de tu copia (por ejemplo, <code>https://orqevio.tu-dominio.com</code>) y, si quieres, un <code>SETUP_CODE</code> propio de al menos 12 letras o dígitos. Después:</p>
+        <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
+        <p>La copia escucha en el puerto 3000. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx o Traefik) y añade <code>TRUST_PROXY=true</code> a <code>.env</code>.</p>
+        <p><strong>Copias de seguridad:</strong> copia el volumen <code>orqevio-data</code> con la copia parada, o haz una copia en caliente de la base de datos con <code>sqlite3</code> y guarda también la carpeta <code>uploads</code>.</p>
+
+        <h2 id="acceso">Primer acceso</h2>
+        <ol>
+          <li><strong>Reclama tu copia.</strong> Abre su dirección y escribe el código de configuración y tu nombre. En Cloudflare te lo da el instalador; con Docker, es el <code>SETUP_CODE</code> de <code>.env</code> o, si no pusiste ninguno, el que aparece en el registro del contenedor (<code>docker compose logs app</code>).</li>
+          <li><strong>Guarda tu clave de acceso.</strong> Orqevio genera una clave aleatoria de 160 bits y la muestra una sola vez. Guárdala en tu gestor de contraseñas: es lo único que necesitas para entrar desde cualquier dispositivo.</li>
+          <li><strong>Si la pierdes,</strong> genera un código nuevo con <code>npx create-orqevio@latest recover</code> (Cloudflare) o <code>docker compose exec app node dist/cli.js reset-access</code> (Docker), y úsalo en «¿Has perdido la clave?». Tu bóveda no se ve afectada: su contraseña maestra nunca la conoce el servidor.</li>
+        </ol>
+
+        <h2 id="agentes">Conectar agentes</h2>
+        <p>La dirección MCP de tu copia es <code>https://&lt;tu-copia&gt;/mcp</code>.</p>
+        <ul>
+          <li><strong>Claude en la web, el escritorio y el móvil:</strong> añade un conector personalizado con esa dirección. Tu copia te pedirá permiso en una pantalla donde eliges el espacio y qué puede hacer. Tu copia tiene que ser accesible por HTTPS desde Internet; en Cloudflare ya lo es.</li>
+          <li><strong>Claude Code, Cursor, VS Code y otros:</strong> en <strong>Agentes → Conectar un agente</strong> creas un token y la app te da la configuración para pegar.</li>
+        </ul>
+        <p class="note agent">Ningún agente puede leer la bóveda, ni siquiera cifrada, y ninguno puede borrar: solo archivar, y tú puedes restaurar.</p>
+
+        <h2 id="actualizar">Actualizar</h2>
+        <p>Tu copia te avisa en <strong>Ajustes → Esta copia</strong> cuando hay una versión nueva, con el paso exacto para tu instalación. Tus datos, tu clave y tu bóveda se conservan siempre.</p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th scope="col">Instalación</th><th scope="col">Cómo actualizar</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Con un comando</td><td><code>npx create-orqevio@latest update</code></td></tr>
+              <tr><td>Con el botón</td><td>Fusiona el pull request de Dependabot en tu repositorio</td></tr>
+              <tr><td>Con Docker</td><td><code>docker compose pull</code> y <code>docker compose up -d</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="costes">Costes</h2>
+        <p>Orqevio no cuesta nada. Con Docker pagas tu servidor. En Cloudflare, el plan gratuito basta para uso personal:</p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th scope="col">Recurso</th><th scope="col">Plan gratuito</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Peticiones</td><td>100 000 al día</td></tr>
+              <tr><td>CPU</td><td>10 ms por petición; el uso normal se queda en 1–5 ms</td></tr>
+              <tr><td>Base de datos</td><td>1 GB por copia</td></tr>
+              <tr><td>Adjuntos (R2)</td><td>10 GB y 1 millón de escrituras al mes</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Límites de noviembre de 2026. Consulta los vigentes en la documentación de Cloudflare.</p>
+      </div>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>© 2026 HSY Labs</span>
+        <nav aria-label="Pie de página">
+          <a href="/instalar/">Instalar</a>
+          <a href="/privacidad/">Privacidad</a>
+          <a href="https://github.com/hsylabs/orqevio">GitHub</a>
+          <a href="https://github.com/hsylabs/orqevio/blob/main/LICENSE.md">Licencia</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>
