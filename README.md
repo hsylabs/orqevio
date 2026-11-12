@@ -255,7 +255,7 @@ Cada versión tiene número y notas (`CHANGELOG.md` y las releases de GitHub), y
 | Desde el código | `git pull`, `pnpm install`, `pnpm build` y reinicia | La carpeta `DATA_DIR` |
 
 **Aviso en la app.** En **Ajustes → Esta copia** ves tu versión y, cuando sale una nueva, cómo actualizar según cómo instalaste la copia; el menú de usuario lo marca con un punto.
-- **Qué consulta:** el servidor de tu copia pregunta a `registry.npmjs.org` cuál es la última versión publicada, como mucho cada 12 horas y solo mientras usas la app.
+- **Qué consulta:** el servidor de tu copia pregunta a `registry.npmjs.org` cuál es la última versión publicada de `create-orqevio`, como mucho cada 12 horas y solo mientras usas la app. Guarda la respuesta, así que reiniciar no provoca consultas de más.
 - **Qué envía:** es una petición GET sin ningún dato tuyo.
 - **Desactivarlo:** con `UPDATE_CHECK=off`. Solo lo ve el propietario, nunca los agentes.
 

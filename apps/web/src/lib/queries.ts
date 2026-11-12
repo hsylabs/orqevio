@@ -100,9 +100,21 @@ export const useSearch = (wid: string, q: string, type?: 'card' | 'page') =>
 
 export const useTokens = () => useQuery({ queryKey: keys.tokens, queryFn: ({ signal }) => get<TokenDTO[]>('/tokens', signal) })
 
-/** The copy checks for new versions itself (at most every 12 hours); once per hour is plenty here. */
+/**
+ * Asked once an hour while the app is open, so a version published meanwhile
+ * shows up without reloading; the copy itself checks the registry at most every
+ * 12 hours, so this costs nothing outside.
+ */
+const UPDATES_EVERY_MS = 60 * 60 * 1000
 export const useUpdates = () =>
-  useQuery({ queryKey: keys.updates, queryFn: ({ signal }) => get<UpdateStatusDTO>('/updates', signal), staleTime: 60 * 60 * 1000, refetchOnWindowFocus: false, retry: false })
+  useQuery({
+    queryKey: keys.updates,
+    queryFn: ({ signal }) => get<UpdateStatusDTO>('/updates', signal),
+    staleTime: UPDATES_EVERY_MS,
+    refetchInterval: UPDATES_EVERY_MS,
+    refetchOnWindowFocus: false,
+    retry: false,
+  })
 
 export const useActivity = (wid: string, opts: { agentsOnly?: boolean; tokenId?: string } = {}) => {
   const params = new URLSearchParams({ limit: '40' })

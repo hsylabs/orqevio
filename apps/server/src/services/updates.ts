@@ -1,12 +1,16 @@
 import type { UpdateStatusDTO } from '@orqevio/shared'
+import { eq } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
+import { copyState } from '../db/schema'
 import { VERSION } from '../version'
 import type { Access } from './access'
 import type { Deps } from './deps'
 
-// The npm package is published with every release (see RELEASING.md), so its
-// "latest" tag is the newest version of every kind of copy.
-const REGISTRY = 'https://registry.npmjs.org/orqevio/latest'
+// The release workflow publishes create-orqevio last, after the Docker image and
+// the orqevio package (see RELEASING.md): once its "latest" tag moves, every kind
+// of copy can install that version.
+const REGISTRY = 'https://registry.npmjs.org/create-orqevio/latest'
+const CACHE_KEY = 'update_check'
 const RELEASES = 'https://github.com/hsylabs/orqevio/releases/tag/v'
 const FRESH_MS = 12 * 60 * 60 * 1000
 const RETRY_MS = 60 * 60 * 1000
@@ -28,13 +32,19 @@ export function isNewer(a: string, b: string) {
   return pa[4].localeCompare(pb[4], 'en', { numeric: true }) > 0
 }
 
+interface CachedCheck {
+  latest: string | null
+  at: number
+}
+
 /**
  * Tells the owner when a newer version is out. The copy itself asks the npm
  * registry (a plain GET, nothing about the copy is sent), at most every 12 hours
- * and only while someone uses the app; UPDATE_CHECK=off turns it off.
+ * and only while someone uses the app; UPDATE_CHECK=off turns it off. The last
+ * answer is kept in the database, so restarts (and Durable Object hibernation)
+ * do not cause extra requests.
  */
 export class UpdateService {
-  private cache: { latest: string | null; at: number } | null = null
   private pending: Promise<string | null> | null = null
 
   constructor(
@@ -51,14 +61,38 @@ export class UpdateService {
   }
 
   private async latest() {
-    const cached = this.cache
+    const cached = this.readCache()
     if (cached && Date.now() - cached.at < (cached.latest ? FRESH_MS : RETRY_MS)) return cached.latest
-    this.pending ??= this.fetchLatest().finally(() => {
-      this.pending = null
-    })
-    const latest = await this.pending
-    this.cache = { latest, at: Date.now() }
-    return latest
+    this.pending ??= this.fetchLatest()
+      .then((latest) => {
+        this.writeCache({ latest, at: Date.now() })
+        return latest
+      })
+      .finally(() => {
+        this.pending = null
+      })
+    return this.pending
+  }
+
+  private readCache(): CachedCheck | null {
+    const row = this.deps.db.select({ value: copyState.value }).from(copyState).where(eq(copyState.key, CACHE_KEY)).get()
+    if (!row) return null
+    try {
+      const cached = JSON.parse(row.value) as CachedCheck
+      return typeof cached.at === 'number' ? cached : null
+    } catch {
+      return null
+    }
+  }
+
+  private writeCache(check: CachedCheck) {
+    const value = JSON.stringify(check)
+    const updatedAt = new Date()
+    this.deps.db
+      .insert(copyState)
+      .values({ key: CACHE_KEY, value, updatedAt })
+      .onConflictDoUpdate({ target: copyState.key, set: { value, updatedAt } })
+      .run()
   }
 
   private async fetchLatest(): Promise<string | null> {

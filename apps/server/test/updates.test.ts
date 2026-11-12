@@ -1,4 +1,5 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { copyState } from '../src/db/schema'
 import { loadEnv } from '../src/env'
 import { Access } from '../src/services/access'
 import type { Deps } from '../src/services/deps'
@@ -8,15 +9,23 @@ import { Client, type Harness, createHarness, signInOwner } from './harness'
 
 const owner = { kind: 'user', userId: 'u', name: 'Ana', sessionId: 's' } as const
 
-function service(answers: Array<Response | Error>, env: Partial<ReturnType<typeof loadEnv>> = {}) {
-  const calls: string[] = []
+let h: Harness
+beforeAll(async () => {
+  h = await createHarness()
+})
+afterAll(async () => h.close())
+beforeEach(() => {
+  h.db.delete(copyState).run()
+})
+
+function service(answers: Array<Response | Error>, env: Partial<ReturnType<typeof loadEnv>> = {}, calls: string[] = []) {
   const fetch = (async (url: string) => {
     calls.push(String(url))
     const next = answers.shift() ?? new Error('no more answers')
     if (next instanceof Error) throw next
     return next
   }) as unknown as typeof globalThis.fetch
-  const deps = { env: loadEnv({ install: 'cli', copyName: 'ana', updateCheck: true, ...env }), fetch } as unknown as Deps
+  const deps = { db: h.db, env: loadEnv({ install: 'cli', copyName: 'ana', updateCheck: true, ...env }), fetch } as unknown as Deps
   return { updates: new UpdateService(deps, new Access(deps)), calls }
 }
 const published = (version: string) => new Response(JSON.stringify({ name: 'orqevio', version }), { headers: { 'Content-Type': 'application/json' } })
@@ -44,19 +53,37 @@ describe('update notice', () => {
       copyName: 'ana',
       releaseUrl: 'https://github.com/hsylabs/orqevio/releases/tag/v99.0.0',
     })
-    expect(calls).toEqual(['https://registry.npmjs.org/orqevio/latest'])
+    // create-orqevio is published last, once every kind of copy can update.
+    expect(calls).toEqual(['https://registry.npmjs.org/create-orqevio/latest'])
     await Promise.all([updates.status(owner), updates.status(owner)])
     expect(calls).toHaveLength(1)
   })
 
+  it('remembers the last answer across restarts, as on a Durable Object waking up', async () => {
+    const calls: string[] = []
+    await service([published('99.0.0')], {}, calls).updates.status(owner)
+    // A new service instance (a restart) reads the stored answer instead of asking again.
+    expect(await service([published('98.0.0')], {}, calls).updates.status(owner)).toMatchObject({ latest: '99.0.0' })
+    expect(calls).toHaveLength(1)
+    // A failure is stored too, so it is not retried on every wake-up either.
+    h.db.delete(copyState).run()
+    await service([new Error('offline')], {}, calls).updates.status(owner)
+    expect(await service([published('99.0.0')], {}, calls).updates.status(owner)).toMatchObject({ latest: null })
+    expect(calls).toHaveLength(2)
+  })
+
   it('stays quiet when up to date, offline or not published yet', async () => {
+    const reset = () => h.db.delete(copyState).run()
     expect(await service([published(VERSION)]).updates.status(owner)).toMatchObject({ latest: VERSION, updateAvailable: false, releaseUrl: null })
+    reset()
     const offline = service([new Error('offline'), published('99.0.0')])
     expect(await offline.updates.status(owner)).toMatchObject({ latest: null, updateAvailable: false })
     // A failure is remembered for a while instead of retried on every request.
     expect(await offline.updates.status(owner)).toMatchObject({ latest: null })
     expect(offline.calls).toHaveLength(1)
+    reset()
     expect(await service([new Response('Not Found', { status: 404 })]).updates.status(owner)).toMatchObject({ latest: null, updateAvailable: false })
+    reset()
     expect(await service([published('not-a-version')]).updates.status(owner)).toMatchObject({ latest: null })
   })
 
@@ -68,12 +95,6 @@ describe('update notice', () => {
 })
 
 describe('GET /api/updates', () => {
-  let h: Harness
-  beforeAll(async () => {
-    h = await createHarness()
-  })
-  afterAll(async () => h.close())
-
   it('is only for the owner in the app', async () => {
     expect((await new Client(h).get('/api/updates')).status).toBe(401)
     const { client, workspaceId } = await signInOwner(h)

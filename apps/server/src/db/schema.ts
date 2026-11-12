@@ -46,6 +46,16 @@ export const instance = sqliteTable(
   (t) => [check('instance_single_row', sql`${t.id} = 1`)],
 )
 
+/**
+ * Small facts about the copy itself that must survive restarts (and, on
+ * Cloudflare, Durable Object hibernation), such as the last update check.
+ */
+export const copyState = sqliteTable('copy_state', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: updatedAt(),
+})
+
 export const sessions = sqliteTable(
   'sessions',
   {
