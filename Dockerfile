@@ -3,6 +3,8 @@
 FROM node:22-alpine AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
 RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
+# Toolchain for better-sqlite3, in case no prebuilt binary matches this platform.
+RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./

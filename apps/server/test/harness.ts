@@ -1,11 +1,10 @@
 import { randomBytes } from 'node:crypto'
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { sql } from 'drizzle-orm'
 import { createApp } from '../src/app'
 import { sha256 } from '../src/auth/crypto'
-import { createDatabase, runMigrations } from '../src/db/client'
+import { openDatabase, runMigrations } from '../src/db/client'
 import { sessions, users, workspaceMembers, workspaces } from '../src/db/schema'
 import { loadEnv } from '../src/env'
 import { RealtimeBus } from '../src/lib/realtime'
@@ -15,18 +14,14 @@ import { createServices } from '../src/services'
 export const ORIGIN = 'http://localhost:3000'
 export const SETUP_CODE = 'test-setup-code-1234'
 
+/** Each test file gets a fresh copy: its own SQLite file and upload folder. */
 export async function createHarness() {
   process.env.APP_URL = ORIGIN
-  const databaseUrl = process.env.TEST_DATABASE_URL ?? 'postgres://orqevio:orqevio@localhost:5432/orqevio_test'
   const dataDir = await mkdtemp(path.join(tmpdir(), 'orqevio-test-'))
-  const env = loadEnv({ databaseUrl, dataDir, webDist: path.join(dataDir, 'no-web'), setupCode: SETUP_CODE })
-  const { db, pool } = createDatabase(databaseUrl)
-  await db.execute(sql`DROP SCHEMA IF EXISTS public CASCADE`)
-  await db.execute(sql`DROP SCHEMA IF EXISTS drizzle CASCADE`)
-  await db.execute(sql`CREATE SCHEMA public`)
-  await runMigrations(db, env.migrationsDir)
-  const bus = new RealtimeBus(databaseUrl, pool)
-  await bus.start()
+  const env = loadEnv({ dataDir, databasePath: path.join(dataDir, 'orqevio.db'), webDist: path.join(dataDir, 'no-web'), setupCode: SETUP_CODE })
+  const { db, close } = openDatabase(env.databasePath)
+  runMigrations(db, env.migrationsDir)
+  const bus = new RealtimeBus()
   const services = createServices({ db, bus, env, storage: new LocalStorage(path.join(dataDir, 'uploads')) })
   const app = createApp(env, services)
   return {
@@ -38,8 +33,8 @@ export async function createHarness() {
     /** Filled by the first signUp() of a test file, which claims the copy. */
     owner: null as null | { accessKey: string; userId: string; workspaceId: string },
     async close() {
-      await bus.stop()
-      await pool.end()
+      close()
+      await rm(dataDir, { recursive: true, force: true })
     },
   }
 }

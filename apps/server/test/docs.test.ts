@@ -68,6 +68,41 @@ describe('documents', () => {
     expect((await client.get(`/api/workspaces/${workspaceId}/search?q=%25`)).body).toEqual([])
   })
 
+  it('full-text search ignores accents and case, ranks titles first and respects boundaries', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const search = async (q: string) =>
+      (await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent(q)}`)).body as Array<{ id: string; type: string; title: string }>
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Revisar la canción del anuncio' })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Otra tarea', description: 'Mencionar la CANCION en la reunión' })
+    const archived = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Canción archivada' })
+    await client.post(`/api/cards/${archived.body.id}/archive`)
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Guion', content: 'Letra de la cancion principal.' })
+
+    // Accents and case do not matter, and the card with the word in its title comes first.
+    const cards = (await search('Cancion')).filter((r) => r.type === 'card').map((r) => r.title)
+    expect(cards).toEqual(['Revisar la canción del anuncio', 'Otra tarea'])
+    expect((await search('canci')).map((r) => r.type).sort()).toEqual(['card', 'card', 'page'])
+    // Every word has to match.
+    expect((await search('cancion reunion')).map((r) => r.title)).toEqual(['Otra tarea'])
+    // Quotes and FTS operators are plain text: "OR" is just another word that must match.
+    expect(await search('"canción"')).toHaveLength(3)
+    expect(await search('canción OR')).toEqual([])
+    expect(await search('* - "')).toEqual([])
+    expect((await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent('C++ (x) NEAR/2')}`)).status).toBe(200)
+    // Updates and deletions keep the index in sync.
+    const page = (await search('principal'))[0]!
+    const { body } = await client.get(`/api/pages/${page.id}`)
+    await client.patch(`/api/pages/${page.id}`, { content: 'Texto nuevo', baseVersion: body.version })
+    expect(await search('principal')).toEqual([])
+    expect((await search('nuevo')).map((r) => r.title)).toEqual(['Guion'])
+    await client.del(`/api/pages/${page.id}`)
+    expect(await search('nuevo')).toEqual([])
+    // Other workspaces are never searched.
+    const other = await signUp(h, 'Otra persona')
+    expect((await other.client.get(`/api/workspaces/${other.workspaceId}/search?q=cancion`)).body).toEqual([])
+  })
+
   it('stores attachments, sniffs their type and protects access', async () => {
     const { client, workspaceId } = await signUp(h)
     const { projectId } = await seedBoard(client, workspaceId)

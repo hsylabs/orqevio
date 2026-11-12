@@ -1,8 +1,11 @@
+import { mkdirSync } from 'node:fs'
+import path from 'node:path'
 import { loadEnv } from '../env'
-import { createDatabase, runMigrations } from './client'
+import { openDatabase, runMigrations } from './client'
 
 const env = loadEnv()
-const { db, pool } = createDatabase(env.databaseUrl)
-await runMigrations(db, env.migrationsDir)
-await pool.end()
+mkdirSync(path.dirname(env.databasePath), { recursive: true })
+const { db, close } = openDatabase(env.databasePath)
+runMigrations(db, env.migrationsDir)
+close()
 console.log('Migrations applied')

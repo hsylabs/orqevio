@@ -1,34 +1,23 @@
 import { sql } from 'drizzle-orm'
-import {
-  type AnyPgColumn,
-  boolean,
-  check,
-  customType,
-  index,
-  integer,
-  jsonb,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from 'drizzle-orm/pg-core'
+import { type AnySQLiteColumn, check, index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 /**
- * Fractional-index keys must sort by byte value, independent of the
- * database locale, so every ordering column uses the "C" collation.
+ * SQLite schema. The same schema runs on a local file (Node/Docker) and in a
+ * Cloudflare Durable Object. Identifiers are random UUIDs stored as text, and
+ * timestamps are milliseconds since the epoch.
+ *
+ * Fractional-index `position` keys must sort by byte value: SQLite's default
+ * BINARY collation does exactly that.
  */
-const position = customType<{ data: string }>({
-  dataType: () => 'text COLLATE "C"',
-})
-
-const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
-const updatedAt = () => timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+const id = () => text('id').primaryKey().$defaultFn(() => crypto.randomUUID())
+const timestamp = (name: string) => integer(name, { mode: 'timestamp_ms' })
+const createdAt = () => timestamp('created_at').notNull().$defaultFn(() => new Date())
+const updatedAt = () => timestamp('updated_at').notNull().$defaultFn(() => new Date())
+const position = (name: string) => text(name)
 
 // ── Identity ─────────────────────────────────────────────────────
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
+export const users = sqliteTable('users', {
+  id: id(),
   name: text('name').notNull(),
   theme: text('theme', { enum: ['system', 'light', 'dark'] }).notNull().default('system'),
   createdAt: createdAt(),
@@ -39,54 +28,54 @@ export const users = pgTable('users', {
  * A copy of Orqevio has a single owner. The row exists once the copy is claimed
  * with the setup code; the owner then opens it with the generated access key.
  */
-export const instance = pgTable(
+export const instance = sqliteTable(
   'instance',
   {
     /** Always 1: the table holds at most one row. */
     id: integer('id').primaryKey().default(1),
-    ownerId: uuid('owner_id')
+    ownerId: text('owner_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     /** SHA-256 of the normalised access key; the key itself is never stored. */
     accessKeyHash: text('access_key_hash').notNull(),
     /** SHA-256 of the setup code that claimed (or last recovered) the copy. */
     setupCodeHash: text('setup_code_hash').notNull(),
-    claimedAt: timestamp('claimed_at', { withTimezone: true }).notNull().defaultNow(),
-    keyChangedAt: timestamp('key_changed_at', { withTimezone: true }).notNull().defaultNow(),
+    claimedAt: timestamp('claimed_at').notNull().$defaultFn(() => new Date()),
+    keyChangedAt: timestamp('key_changed_at').notNull().$defaultFn(() => new Date()),
   },
   (t) => [check('instance_single_row', sql`${t.id} = 1`)],
 )
 
-export const sessions = pgTable(
+export const sessions = sqliteTable(
   'sessions',
   {
     /** SHA-256 of the cookie token; the token itself is never stored. */
     id: text('id').primaryKey(),
-    userId: uuid('user_id')
+    userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     userAgent: text('user_agent'),
     createdAt: createdAt(),
-    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
-    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    lastSeenAt: timestamp('last_seen_at').notNull().$defaultFn(() => new Date()),
+    expiresAt: timestamp('expires_at').notNull(),
   },
   (t) => [index('sessions_user_idx').on(t.userId)],
 )
 
-export const workspaces = pgTable('workspaces', {
-  id: uuid('id').primaryKey().defaultRandom(),
+export const workspaces = sqliteTable('workspaces', {
+  id: id(),
   name: text('name').notNull(),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 })
 
-export const workspaceMembers = pgTable(
+export const workspaceMembers = sqliteTable(
   'workspace_members',
   {
-    workspaceId: uuid('workspace_id')
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    userId: uuid('user_id')
+    userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     role: text('role', { enum: ['owner', 'editor'] }).notNull(),
@@ -95,34 +84,34 @@ export const workspaceMembers = pgTable(
   (t) => [primaryKey({ columns: [t.workspaceId, t.userId] }), index('workspace_members_user_idx').on(t.userId)],
 )
 
-export const apiTokens = pgTable(
+export const apiTokens = sqliteTable(
   'api_tokens',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id')
+    id: id(),
+    userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    workspaceId: uuid('workspace_id')
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     tokenHash: text('token_hash').notNull(),
     prefix: text('prefix').notNull(),
-    scopes: text('scopes').array().notNull(),
+    scopes: text('scopes', { mode: 'json' }).$type<string[]>().notNull(),
     createdAt: createdAt(),
-    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
-    expiresAt: timestamp('expires_at', { withTimezone: true }),
-    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    lastUsedAt: timestamp('last_used_at'),
+    expiresAt: timestamp('expires_at'),
+    revokedAt: timestamp('revoked_at'),
   },
   (t) => [uniqueIndex('api_tokens_hash_idx').on(t.tokenHash), index('api_tokens_user_idx').on(t.userId)],
 )
 
 // ── Projects & boards ────────────────────────────────────────────
-export const projects = pgTable(
+export const projects = sqliteTable(
   'projects',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    workspaceId: uuid('workspace_id')
+    id: id(),
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
@@ -135,14 +124,14 @@ export const projects = pgTable(
   (t) => [index('projects_workspace_idx').on(t.workspaceId)],
 )
 
-export const boards = pgTable(
+export const boards = sqliteTable(
   'boards',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    workspaceId: uuid('workspace_id')
+    id: id(),
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    projectId: uuid('project_id')
+    projectId: text('project_id')
       .notNull()
       .references(() => projects.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
@@ -153,14 +142,14 @@ export const boards = pgTable(
   (t) => [index('boards_project_idx').on(t.projectId)],
 )
 
-export const columns = pgTable(
+export const columns = sqliteTable(
   'board_columns',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    workspaceId: uuid('workspace_id')
+    id: id(),
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    boardId: uuid('board_id')
+    boardId: text('board_id')
       .notNull()
       .references(() => boards.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
@@ -170,26 +159,26 @@ export const columns = pgTable(
   (t) => [index('columns_board_idx').on(t.boardId)],
 )
 
-export const cards = pgTable(
+export const cards = sqliteTable(
   'cards',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    workspaceId: uuid('workspace_id')
+    id: id(),
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    boardId: uuid('board_id')
+    boardId: text('board_id')
       .notNull()
       .references(() => boards.id, { onDelete: 'cascade' }),
-    columnId: uuid('column_id')
+    columnId: text('column_id')
       .notNull()
       .references(() => columns.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     description: text('description').notNull().default(''),
     position: position('position').notNull(),
-    dueAt: timestamp('due_at', { withTimezone: true }),
-    archivedAt: timestamp('archived_at', { withTimezone: true }),
-    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
-    createdByTokenId: uuid('created_by_token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
+    dueAt: timestamp('due_at'),
+    archivedAt: timestamp('archived_at'),
+    createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdByTokenId: text('created_by_token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -197,18 +186,17 @@ export const cards = pgTable(
     index('cards_column_idx').on(t.columnId, t.position),
     index('cards_board_idx').on(t.boardId),
     index('cards_due_idx').on(t.workspaceId, t.dueAt),
-    index('cards_title_trgm_idx').using('gin', sql`${t.title} gin_trgm_ops`),
   ],
 )
 
-export const labels = pgTable(
+export const labels = sqliteTable(
   'labels',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    workspaceId: uuid('workspace_id')
+    id: id(),
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    boardId: uuid('board_id')
+    boardId: text('board_id')
       .notNull()
       .references(() => boards.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
@@ -218,27 +206,27 @@ export const labels = pgTable(
   (t) => [index('labels_board_idx').on(t.boardId)],
 )
 
-export const cardLabels = pgTable(
+export const cardLabels = sqliteTable(
   'card_labels',
   {
-    cardId: uuid('card_id')
+    cardId: text('card_id')
       .notNull()
       .references(() => cards.id, { onDelete: 'cascade' }),
-    labelId: uuid('label_id')
+    labelId: text('label_id')
       .notNull()
       .references(() => labels.id, { onDelete: 'cascade' }),
   },
   (t) => [primaryKey({ columns: [t.cardId, t.labelId] }), index('card_labels_label_idx').on(t.labelId)],
 )
 
-export const checklists = pgTable(
+export const checklists = sqliteTable(
   'checklists',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    workspaceId: uuid('workspace_id')
+    id: id(),
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    cardId: uuid('card_id')
+    cardId: text('card_id')
       .notNull()
       .references(() => cards.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
@@ -248,18 +236,18 @@ export const checklists = pgTable(
   (t) => [index('checklists_card_idx').on(t.cardId)],
 )
 
-export const checklistItems = pgTable(
+export const checklistItems = sqliteTable(
   'checklist_items',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    workspaceId: uuid('workspace_id')
+    id: id(),
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    checklistId: uuid('checklist_id')
+    checklistId: text('checklist_id')
       .notNull()
       .references(() => checklists.id, { onDelete: 'cascade' }),
     text: text('text').notNull(),
-    done: boolean('done').notNull().default(false),
+    done: integer('done', { mode: 'boolean' }).notNull().default(false),
     position: position('position').notNull(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -268,47 +256,45 @@ export const checklistItems = pgTable(
 )
 
 // ── Documents ────────────────────────────────────────────────────
-export const pages = pgTable(
+export const pages = sqliteTable(
   'pages',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    workspaceId: uuid('workspace_id')
+    id: id(),
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    projectId: uuid('project_id')
+    projectId: text('project_id')
       .notNull()
       .references(() => projects.id, { onDelete: 'cascade' }),
-    parentId: uuid('parent_id').references((): AnyPgColumn => pages.id, { onDelete: 'cascade' }),
+    parentId: text('parent_id').references((): AnySQLiteColumn => pages.id, { onDelete: 'cascade' }),
     title: text('title').notNull().default(''),
     icon: text('icon'),
     content: text('content').notNull().default(''),
     version: integer('version').notNull().default(1),
     position: position('position').notNull(),
-    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
-    createdByTokenId: uuid('created_by_token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
-    updatedByUserId: uuid('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
-    updatedByTokenId: uuid('updated_by_token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
+    createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdByTokenId: text('created_by_token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
+    updatedByUserId: text('updated_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    updatedByTokenId: text('updated_by_token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
     index('pages_project_idx').on(t.projectId, t.parentId),
     index('pages_workspace_updated_idx').on(t.workspaceId, t.updatedAt),
-    index('pages_title_trgm_idx').using('gin', sql`${t.title} gin_trgm_ops`),
-    index('pages_content_trgm_idx').using('gin', sql`${t.content} gin_trgm_ops`),
   ],
 )
 
-export const cardPageLinks = pgTable(
+export const cardPageLinks = sqliteTable(
   'card_page_links',
   {
-    cardId: uuid('card_id')
+    cardId: text('card_id')
       .notNull()
       .references(() => cards.id, { onDelete: 'cascade' }),
-    pageId: uuid('page_id')
+    pageId: text('page_id')
       .notNull()
       .references(() => pages.id, { onDelete: 'cascade' }),
-    workspaceId: uuid('workspace_id')
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     /** `manual`: linked explicitly. `mention`: referenced inside the page body. */
@@ -318,42 +304,42 @@ export const cardPageLinks = pgTable(
   (t) => [primaryKey({ columns: [t.cardId, t.pageId, t.source] }), index('card_page_links_page_idx').on(t.pageId)],
 )
 
-export const attachments = pgTable(
+export const attachments = sqliteTable(
   'attachments',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    workspaceId: uuid('workspace_id')
+    id: id(),
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
-    pageId: uuid('page_id').references(() => pages.id, { onDelete: 'cascade' }),
-    cardId: uuid('card_id').references(() => cards.id, { onDelete: 'cascade' }),
+    pageId: text('page_id').references(() => pages.id, { onDelete: 'cascade' }),
+    cardId: text('card_id').references(() => cards.id, { onDelete: 'cascade' }),
     filename: text('filename').notNull(),
     mimeType: text('mime_type').notNull(),
     size: integer('size').notNull(),
     storageKey: text('storage_key').notNull(),
-    createdByUserId: uuid('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
     createdAt: createdAt(),
   },
   (t) => [index('attachments_page_idx').on(t.pageId), index('attachments_card_idx').on(t.cardId)],
 )
 
 // ── Activity (audit trail for people and agents) ─────────────────
-export const activity = pgTable(
+export const activity = sqliteTable(
   'activity',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    workspaceId: uuid('workspace_id')
+    id: id(),
+    workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     actorKind: text('actor_kind', { enum: ['user', 'agent'] }).notNull(),
-    actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
-    actorTokenId: uuid('actor_token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
+    actorUserId: text('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    actorTokenId: text('actor_token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
     actorName: text('actor_name').notNull(),
     action: text('action').notNull(),
     entityType: text('entity_type').notNull(),
-    entityId: uuid('entity_id').notNull(),
+    entityId: text('entity_id').notNull(),
     summary: text('summary').notNull(),
-    meta: jsonb('meta').$type<Record<string, string | number | boolean | null>>().notNull().default({}),
+    meta: text('meta', { mode: 'json' }).$type<Record<string, string | number | boolean | null>>().notNull().$defaultFn(() => ({})),
     createdAt: createdAt(),
   },
   (t) => [
@@ -364,11 +350,11 @@ export const activity = pgTable(
 )
 
 // ── Vault (ciphertext only; keys never reach the server) ─────────
-export const vaults = pgTable('vaults', {
-  userId: uuid('user_id')
+export const vaults = sqliteTable('vaults', {
+  userId: text('user_id')
     .primaryKey()
     .references(() => users.id, { onDelete: 'cascade' }),
-  kdf: jsonb('kdf').$type<{
+  kdf: text('kdf', { mode: 'json' }).$type<{
     algorithm: 'argon2id'
     salt: string
     memoryKiB: number
@@ -382,12 +368,12 @@ export const vaults = pgTable('vaults', {
   updatedAt: updatedAt(),
 })
 
-export const vaultItems = pgTable(
+export const vaultItems = sqliteTable(
   'vault_items',
   {
     /** Generated client-side so it can be bound into the AES-GCM associated data. */
-    id: uuid('id').primaryKey(),
-    userId: uuid('user_id')
+    id: text('id').primaryKey(),
+    userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     data: text('data').notNull(),

@@ -69,9 +69,9 @@ export class PageService {
       const parent = await this.load(actor, data.parentId)
       if (parent.projectId !== projectId) throw badRequest('The parent page belongs to another project')
     }
-    const page = await this.deps.db.transaction(async (tx) => {
-      const position = await positionAt(tx, pages, siblingsOf(projectId, data.parentId ?? null), undefined)
-      const [row] = await tx
+    const page = this.deps.db.transaction((tx) => {
+      const position = positionAt(tx, pages, siblingsOf(projectId, data.parentId ?? null), undefined)
+      const row = tx
         .insert(pages)
         .values({
           workspaceId: project.workspaceId,
@@ -87,8 +87,9 @@ export class PageService {
           updatedByTokenId: actor.kind === 'agent' ? actor.tokenId : null,
         })
         .returning()
-      if (data.content) await this.syncMentions(tx, row!)
-      return row!
+        .get()
+      if (data.content) this.syncMentions(tx, row)
+      return row
     })
     await this.activity.record(
       actor,
@@ -178,14 +179,14 @@ export class PageService {
 
   private async breadcrumbs(page: PageRow) {
     if (!page.parentId) return []
-    const rows = await this.deps.db.execute<{ id: string; title: string; icon: string | null; depth: number }>(sql`
+    const rows = this.deps.db.all<{ id: string; title: string; icon: string | null; depth: number }>(sql`
       WITH RECURSIVE chain AS (
         SELECT id, parent_id, title, icon, 1 AS depth FROM pages WHERE id = ${page.parentId}
         UNION ALL
         SELECT p.id, p.parent_id, p.title, p.icon, c.depth + 1 FROM pages p JOIN chain c ON p.id = c.parent_id WHERE c.depth < 32
       )
       SELECT id, title, icon, depth FROM chain ORDER BY depth DESC`)
-    return rows.rows.map((r) => ({ id: r.id, title: r.title, icon: r.icon }))
+    return rows.map((r) => ({ id: r.id, title: r.title, icon: r.icon }))
   }
 
   /**
@@ -198,7 +199,7 @@ export class PageService {
     if (data.content !== undefined && data.baseVersion === undefined && !opts.allowBlindWrite && !opts.append) {
       throw badRequest('baseVersion is required when updating content')
     }
-    const page = await this.deps.db.transaction(async (tx) => {
+    const page = this.deps.db.transaction((tx) => {
       // `version` tracks the body only, so renaming a page never conflicts with someone editing it.
       const patch: Record<string, unknown> = {
         updatedAt: new Date(),
@@ -210,17 +211,17 @@ export class PageService {
       if (data.icon !== undefined) patch.icon = data.icon
       if (data.content !== undefined) {
         patch.content = opts.append
-          ? sql`CASE WHEN ${pages.content} = '' THEN ${data.content} ELSE ${pages.content} || E'\n\n' || ${data.content} END`
+          ? sql`CASE WHEN ${pages.content} = '' THEN ${data.content} ELSE ${pages.content} || ${'\n\n'} || ${data.content} END`
           : data.content
       }
       const guard =
         data.baseVersion !== undefined ? and(eq(pages.id, pageId), eq(pages.version, data.baseVersion)) : eq(pages.id, pageId)
-      const [row] = await tx.update(pages).set(patch).where(guard).returning()
+      const row = tx.update(pages).set(patch).where(guard).returning().get()
       if (!row) {
-        const [latest] = await tx.select({ version: pages.version }).from(pages).where(eq(pages.id, pageId))
+        const latest = tx.select({ version: pages.version }).from(pages).where(eq(pages.id, pageId)).get()
         throw conflict('This page was modified since you loaded it', { currentVersion: latest?.version ?? null })
       }
-      if (data.content !== undefined) await this.syncMentions(tx, row)
+      if (data.content !== undefined) this.syncMentions(tx, row)
       return row
     })
     const structural = (data.title !== undefined && data.title !== current.title) || (data.icon !== undefined && data.icon !== current.icon)
@@ -240,14 +241,14 @@ export class PageService {
       const parent = await this.load(actor, parentId)
       if (parent.projectId !== page.projectId) throw badRequest('Pages can only be moved within their project')
       // Reject cycles: the new parent cannot be the page itself or one of its descendants.
-      const descendants = await this.deps.db.execute<{ id: string }>(sql`
+      const descendants = this.deps.db.all<{ id: string }>(sql`
         WITH RECURSIVE sub AS (
           SELECT id FROM pages WHERE id = ${pageId}
           UNION ALL SELECT p.id FROM pages p JOIN sub s ON p.parent_id = s.id
         ) SELECT id FROM sub`)
-      if (descendants.rows.some((r) => r.id === parentId)) throw badRequest('A page cannot be moved inside itself')
+      if (descendants.some((r) => r.id === parentId)) throw badRequest('A page cannot be moved inside itself')
     }
-    const position = await positionAt(this.deps.db, pages, siblingsOf(page.projectId, parentId), index, pageId)
+    const position = positionAt(this.deps.db, pages, siblingsOf(page.projectId, parentId), index, pageId)
     await this.deps.db.update(pages).set({ parentId, position }).where(eq(pages.id, pageId))
     await this.activity.record(
       actor,
@@ -269,19 +270,20 @@ export class PageService {
     )
   }
 
-  /** Keeps `mention` links in sync with the card references found in the page body. */
-  private async syncMentions(db: DbOrTx, page: PageRow) {
+  /** Keeps `mention` links in sync with the card references found in the page body. Runs inside the save transaction. */
+  private syncMentions(db: DbOrTx, page: PageRow) {
     const { cards: referenced } = extractReferences(page.content)
-    await db.delete(cardPageLinks).where(and(eq(cardPageLinks.pageId, page.id), eq(cardPageLinks.source, 'mention')))
+    db.delete(cardPageLinks).where(and(eq(cardPageLinks.pageId, page.id), eq(cardPageLinks.source, 'mention'))).run()
     if (referenced.length === 0) return
-    const valid = await db
+    const valid = db
       .select({ id: cards.id })
       .from(cards)
       .where(and(inArray(cards.id, referenced.slice(0, 200)), eq(cards.workspaceId, page.workspaceId)))
+      .all()
     if (valid.length === 0) return
-    await db
-      .insert(cardPageLinks)
+    db.insert(cardPageLinks)
       .values(valid.map((c) => ({ cardId: c.id, pageId: page.id, workspaceId: page.workspaceId, source: 'mention' as const })))
       .onConflictDoNothing()
+      .run()
   }
 }

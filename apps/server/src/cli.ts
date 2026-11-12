@@ -6,13 +6,13 @@
  */
 import { eq } from 'drizzle-orm'
 import { generateAccessKey, secretFingerprint } from './auth/crypto'
-import { createDatabase } from './db/client'
+import { openDatabase } from './db/client'
 import { instance, sessions, users } from './db/schema'
 import { loadEnv } from './env'
 
 const [command] = process.argv.slice(2)
 const env = loadEnv()
-const { db, pool } = createDatabase(env.databaseUrl)
+const { db, close } = openDatabase(env.databasePath)
 
 try {
   const [row] = await db
@@ -32,9 +32,9 @@ try {
       process.exitCode = 1
     } else {
       const accessKey = generateAccessKey()
-      await db.transaction(async (tx) => {
-        await tx.update(instance).set({ accessKeyHash: secretFingerprint(accessKey), keyChangedAt: new Date() }).where(eq(instance.id, 1))
-        await tx.delete(sessions).where(eq(sessions.userId, row.ownerId))
+      db.transaction((tx) => {
+        tx.update(instance).set({ accessKeyHash: secretFingerprint(accessKey), keyChangedAt: new Date() }).where(eq(instance.id, 1)).run()
+        tx.delete(sessions).where(eq(sessions.userId, row.ownerId)).run()
       })
       console.log(`New access key: ${accessKey}`)
       console.log('Every session was signed out. Save the key in a password manager; it is not shown again.')
@@ -44,5 +44,5 @@ try {
     process.exitCode = command ? 1 : 0
   }
 } finally {
-  await pool.end()
+  close()
 }

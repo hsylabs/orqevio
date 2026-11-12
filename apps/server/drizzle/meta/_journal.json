@@ -1,19 +1,19 @@
 {
   "version": "7",
-  "dialect": "postgresql",
+  "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
-      "version": "7",
-      "when": 1794006276939,
+      "version": "6",
+      "when": 1794497965835,
       "tag": "0000_init",
       "breakpoints": true
     },
     {
       "idx": 1,
-      "version": "7",
-      "when": 1794496793671,
-      "tag": "0001_access_key",
+      "version": "6",
+      "when": 1794497966583,
+      "tag": "0001_search",
       "breakpoints": true
     }
   ]
