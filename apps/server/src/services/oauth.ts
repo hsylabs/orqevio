@@ -250,7 +250,7 @@ export class OAuthService {
     const fail = (why: string) => new OAuthError('invalid_client', `The application's description at ${url.host} ${why}`)
     let body: string
     try {
-      const response = await (this.deps.fetch ?? fetch)(url, { redirect: 'manual', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(5000) })
+      const response = await (this.deps.publicFetch ?? this.deps.fetch ?? fetch)(url, { redirect: 'manual', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(5000) })
       if (response.status !== 200) {
         await response.body?.cancel()
         throw fail(`answered with status ${response.status}`)
@@ -444,7 +444,11 @@ export class OAuthService {
       .set({ rotatedAt: now })
       .where(and(eq(oauthTokens.id, row.token.id), isNull(oauthTokens.rotatedAt)))
       .returning({ id: oauthTokens.id })
-    if (!rotated) throw invalidGrant()
+    if (!rotated) {
+      // Another request exchanged this refresh token at the same moment: a replay all the same.
+      await this.revokeGrant(grant.id)
+      throw invalidGrant('This refresh token was already used, so the access has been revoked')
+    }
     await db.update(apiTokens).set({ expiresAt: new Date(now.getTime() + REFRESH_TTL_MS) }).where(eq(apiTokens.id, grant.id))
     return this.issue(grant.id, grant.scopes)
   }

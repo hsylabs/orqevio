@@ -188,6 +188,14 @@ describe('connecting an application with OAuth', () => {
     expect((await token({ grant_type: 'refresh_token', refresh_token: next.body.refresh_token, client_id: clientId })).body.error).toBe('invalid_grant')
   })
 
+  it('revokes the access when the same refresh token is exchanged twice at once', async () => {
+    const { clientId, tokens } = await connectApp()
+    const form = { grant_type: 'refresh_token', refresh_token: tokens.refresh_token, client_id: clientId }
+    const results = await Promise.all([token(form), token(form)])
+    expect(results.some((r) => r.body.error === 'invalid_grant')).toBe(true)
+    for (const issued of results.filter((r) => r.status === 200)) expect(await mcpStatus(issued.body.access_token)).toBe(401)
+  })
+
   it('stops working when revoked in «Agentes» or by the application', async () => {
     const first = await connectApp()
     const grant = (await owner.get('/api/tokens')).body.find((t: { oauth: { clientId: string } | null }) => t.oauth?.clientId === first.clientId)
