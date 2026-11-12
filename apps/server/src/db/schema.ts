@@ -281,6 +281,8 @@ export const pages = sqliteTable(
   },
   (t) => [
     index('pages_project_idx').on(t.projectId, t.parentId),
+    // Deleting a page cascades to its children: without this index each delete scans every page.
+    index('pages_parent_idx').on(t.parentId),
     index('pages_workspace_updated_idx').on(t.workspaceId, t.updatedAt),
   ],
 )

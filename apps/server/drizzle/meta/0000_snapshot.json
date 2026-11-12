@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c2ebdc04-732c-46ab-9976-9b80fddf66df",
+  "id": "4ccde4bb-8c56-4fc8-b2ed-0ac81b85bbbb",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "activity": {
@@ -1447,6 +1447,13 @@
           "name": "pages_project_idx",
           "columns": [
             "project_id",
+            "parent_id"
+          ],
+          "isUnique": false
+        },
+        "pages_parent_idx": {
+          "name": "pages_parent_idx",
+          "columns": [
             "parent_id"
           ],
           "isUnique": false

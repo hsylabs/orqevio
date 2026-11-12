@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { pages } from '../src/db/schema'
 import { type Harness, createHarness, seedBoard, signUp } from './harness'
 
 let h: Harness
@@ -101,6 +102,34 @@ describe('documents', () => {
     // Other workspaces are never searched.
     const other = await signUp(h, 'Otra persona')
     expect((await other.client.get(`/api/workspaces/${other.workspaceId}/search?q=cancion`)).body).toEqual([])
+  })
+
+  it('ranks title matches first even when their bodies are long', async () => {
+    const { client, workspaceId } = await signUp(h, 'Ranking')
+    const { columns } = await seedBoard(client, workspaceId)
+    for (let i = 0; i < 20; i++) await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: `Relleno ${i}`, description: 'nada que ver' })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Otra tarea', description: 'cancion' })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Canción', description: 'palabra '.repeat(1000) })
+    const res = await client.get(`/api/workspaces/${workspaceId}/search?q=cancion&type=card`)
+    expect(res.body.map((r: { title: string }) => r.title)).toEqual(['Canción', 'Otra tarea'])
+  })
+
+  it('keeps saving and cascading deletes fast with thousands of indexed pages', async () => {
+    const { client, workspaceId } = await signUp(h, 'Volumen')
+    const { projectId } = await seedBoard(client, workspaceId)
+    h.db.transaction((tx) => {
+      for (let i = 0; i < 8000; i++) {
+        tx.insert(pages)
+          .values({ workspaceId, projectId, title: `Nota ${i}`, content: `contenido ${i}`, position: `a${String(i).padStart(5, '0')}` })
+          .run()
+      }
+    })
+    expect((await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent('nota 7999')}&type=page`)).body).toHaveLength(1)
+    const started = Date.now()
+    expect((await client.del(`/api/projects/${projectId}`)).status).toBe(204)
+    // A full scan of the index per deleted page would take several seconds here.
+    expect(Date.now() - started).toBeLessThan(1000)
+    expect((await client.get(`/api/workspaces/${workspaceId}/search?q=nota&type=page`)).body).toEqual([])
   })
 
   it('stores attachments, sniffs their type and protects access', async () => {

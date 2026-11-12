@@ -45,6 +45,8 @@ export class SearchService {
     const terms = searchTerms(rawQuery.trim().slice(0, 100))
     if (terms.length === 0) return []
     const match = ftsQuery(terms)
+    // Results whose title alone matches every word come first, whatever BM25 says about long bodies.
+    const titleMatch = `title : (${match})`
     const limit = Math.min(opts.limit ?? 20, 50)
     const types = opts.types ?? ['card', 'page']
     const results: SearchResultDTO[] = []
@@ -63,12 +65,14 @@ export class SearchService {
         SELECT c.id, c.title, c.description, b.id AS boardId, b.name AS boardName, col.name AS columnName,
                p.id AS projectId, p.name AS projectName
         FROM cards_fts
-        JOIN cards c ON c.id = cards_fts.entity_id
+        JOIN cards_fts_map m ON m.id = cards_fts.rowid
+        JOIN cards c ON c.id = m.entity_id
         JOIN boards b ON b.id = c.board_id
         JOIN board_columns col ON col.id = c.column_id
         JOIN projects p ON p.id = b.project_id
         WHERE cards_fts MATCH ${match} AND c.workspace_id = ${workspaceId} AND c.archived_at IS NULL
-        ORDER BY bm25(cards_fts, 0, 10, 1), c.updated_at DESC
+        ORDER BY cards_fts.rowid NOT IN (SELECT rowid FROM cards_fts WHERE cards_fts MATCH ${titleMatch}),
+                 bm25(cards_fts, 10, 1), c.updated_at DESC
         LIMIT ${limit}`)
       for (const r of rows) {
         results.push({
@@ -90,10 +94,12 @@ export class SearchService {
       const rows = this.deps.db.all<{ id: string; title: string; icon: string | null; content: string; projectId: string; projectName: string }>(sql`
         SELECT pg.id, pg.title, pg.icon, pg.content, p.id AS projectId, p.name AS projectName
         FROM pages_fts
-        JOIN pages pg ON pg.id = pages_fts.entity_id
+        JOIN pages_fts_map m ON m.id = pages_fts.rowid
+        JOIN pages pg ON pg.id = m.entity_id
         JOIN projects p ON p.id = pg.project_id
         WHERE pages_fts MATCH ${match} AND pg.workspace_id = ${workspaceId}
-        ORDER BY bm25(pages_fts, 0, 10, 1), pg.updated_at DESC
+        ORDER BY pages_fts.rowid NOT IN (SELECT rowid FROM pages_fts WHERE pages_fts MATCH ${titleMatch}),
+                 bm25(pages_fts, 10, 1), pg.updated_at DESC
         LIMIT ${limit}`)
       for (const r of rows) {
         results.push({

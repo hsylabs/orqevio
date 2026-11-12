@@ -202,6 +202,7 @@ CREATE TABLE `pages` (
 );
 --> statement-breakpoint
 CREATE INDEX `pages_project_idx` ON `pages` (`project_id`,`parent_id`);--> statement-breakpoint
+CREATE INDEX `pages_parent_idx` ON `pages` (`parent_id`);--> statement-breakpoint
 CREATE INDEX `pages_workspace_updated_idx` ON `pages` (`workspace_id`,`updated_at`);--> statement-breakpoint
 CREATE TABLE `projects` (
 	`id` text PRIMARY KEY NOT NULL,

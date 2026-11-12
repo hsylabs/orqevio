@@ -1,6 +1,6 @@
 {
-  "id": "775e8477-772c-4e71-8e9b-8d991e66127d",
-  "prevId": "c2ebdc04-732c-46ab-9976-9b80fddf66df",
+  "id": "1bf7d20e-1585-463f-977c-5ee14f6558e2",
+  "prevId": "4ccde4bb-8c56-4fc8-b2ed-0ac81b85bbbb",
   "version": "6",
   "dialect": "sqlite",
   "tables": {
@@ -1447,6 +1447,13 @@
           "name": "pages_project_idx",
           "columns": [
             "project_id",
+            "parent_id"
+          ],
+          "isUnique": false
+        },
+        "pages_parent_idx": {
+          "name": "pages_parent_idx",
+          "columns": [
             "parent_id"
           ],
           "isUnique": false
