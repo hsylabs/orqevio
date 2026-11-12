@@ -1,6 +1,6 @@
 import { PALETTE, type VaultStateDTO } from '@orqevio/shared'
 import { useQuery } from '@tanstack/react-query'
-import { ExternalLink, Eye, EyeOff, KeyRound, LockKeyhole, Pencil, Plus, Search, ShieldCheck, Star, StickyNote, Trash, Dices, Ellipsis, Clock } from 'lucide-react'
+import { ExternalLink, Eye, EyeOff, KeyRound, LockKeyhole, Pencil, Plus, Search, ShieldCheck, Star, StickyNote, Trash, Dices, Ellipsis, Clock, Download, FileUp } from 'lucide-react'
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
@@ -19,6 +19,7 @@ import { keys, queryClient } from '../../lib/queries'
 import { PageHeader } from '../shell/PageHeader'
 import { useWorkspace } from '../shell/workspace'
 import { WrongSecretError, changeMasterPassword, encryptItem } from './crypto'
+import { ExportDialog, ImportDialog } from './TransferDialogs'
 import { Generator, PasswordText } from './Generator'
 import { getSession, lockVault, setAutoLock, setSessionItems, useAutoLockRemaining, useVaultSession } from './session'
 import { estimateMasterPassword } from './strength'
@@ -78,6 +79,8 @@ function UnlockedActions({ state }: { state: VaultStateDTO }) {
   const session = useVaultSession()
   const [changeOpen, setChangeOpen] = useState(false)
   const [generatorOpen, setGeneratorOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
 
   async function changeAutoLock(value: string) {
     const minutes = Number(value)
@@ -104,6 +107,12 @@ function UnlockedActions({ state }: { state: VaultStateDTO }) {
           <MenuItem icon={<KeyRound />} onSelect={() => setChangeOpen(true)}>
             Cambiar contraseña maestra
           </MenuItem>
+          <MenuItem icon={<FileUp />} onSelect={() => setImportOpen(true)}>
+            Importar…
+          </MenuItem>
+          <MenuItem icon={<Download />} onSelect={() => setExportOpen(true)}>
+            Exportar…
+          </MenuItem>
           <MenuSeparator />
           <MenuLabel>Bloqueo automático</MenuLabel>
           <MenuRadioGroup value={String(session.autoLockMinutes)} onValueChange={changeAutoLock}>
@@ -119,6 +128,8 @@ function UnlockedActions({ state }: { state: VaultStateDTO }) {
         Bloquear
       </Button>
       <ChangeMasterDialog open={changeOpen} onOpenChange={setChangeOpen} state={state} />
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} state={state} />
       <Dialog open={generatorOpen} onOpenChange={setGeneratorOpen} title="Generador de contraseñas" description="Aleatoriedad criptográfica del navegador, sin sesgo.">
         <Generator />
       </Dialog>
