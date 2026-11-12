@@ -12,30 +12,20 @@ const isoDate = z.iso.datetime({ offset: true })
 
 export const MAX_MARKDOWN = 200_000
 
-// ── Auth & account ──────────────────────────────────────────────
-export const passwordSchema = z
-  .string()
-  .min(10, 'Use at least 10 characters')
-  .max(256, 'Too long')
+// ── Access & account ────────────────────────────────────────────
+// A copy of Orqevio has a single owner: it is claimed once with the setup code
+// chosen at install time, and then opened with the generated access key.
+const secret = z.string().trim().min(1, 'Required').max(256)
 
-export const registerInput = z.object({
-  name: name(80),
-  email: z.email().trim().toLowerCase().max(254),
-  password: passwordSchema,
-})
-export const loginInput = z.object({
-  email: z.email().trim().toLowerCase().max(254),
-  password: z.string().min(1).max(256),
-})
+export const claimInput = z.object({ setupCode: secret, name: name(80) })
+export const unlockInput = z.object({ accessKey: secret })
+export const recoverInput = z.object({ setupCode: secret })
+export const rotateAccessKeyInput = z.object({ currentAccessKey: secret })
+export const confirmAccessKeyInput = z.object({ accessKey: secret })
 export const updateAccountInput = z.object({
   name: name(80).optional(),
   theme: z.enum(['system', 'light', 'dark']).optional(),
 })
-export const changePasswordInput = z.object({
-  currentPassword: z.string().min(1).max(256),
-  newPassword: passwordSchema,
-})
-export const confirmPasswordInput = z.object({ password: z.string().min(1).max(256) })
 
 // ── Workspaces & projects ───────────────────────────────────────
 export const workspaceInput = z.object({ name: name(60) })
@@ -131,8 +121,8 @@ export const vaultKeysInput = z.object({
 export const vaultItemInput = z.object({ data: envelopeSchema })
 export const vaultSettingsInput = z.object({ autoLockMinutes: z.union([z.literal(1), z.literal(5), z.literal(15), z.literal(30), z.literal(60)]) })
 
-export type RegisterInput = z.infer<typeof registerInput>
-export type LoginInput = z.infer<typeof loginInput>
+export type ClaimInput = z.infer<typeof claimInput>
+export type UnlockInput = z.infer<typeof unlockInput>
 export type ProjectCreateInput = z.infer<typeof projectCreateInput>
 export type CardCreateInput = z.infer<typeof cardCreateInput>
 export type CardUpdateInput = z.infer<typeof cardUpdateInput>

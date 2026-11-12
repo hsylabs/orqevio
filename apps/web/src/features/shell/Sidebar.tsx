@@ -379,10 +379,7 @@ function UserMenu() {
       <MenuTrigger asChild>
         <button type="button" className="flex h-10 items-center gap-2.5 rounded-[10px] px-1.5 text-left transition-colors hover:bg-hover data-[state=open]:bg-hover">
           <Avatar name={me.user.name} size={26} />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] leading-tight font-medium">{me.user.name}</span>
-            <span className="block truncate text-[11.5px] leading-tight text-ink-3">{me.user.email}</span>
-          </span>
+          <span className="min-w-0 flex-1 truncate text-[13px] leading-tight font-medium">{me.user.name}</span>
         </button>
       </MenuTrigger>
       <MenuContent align="start" side="top" className="w-[240px]">

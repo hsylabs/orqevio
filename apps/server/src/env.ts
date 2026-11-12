@@ -22,6 +22,11 @@ export interface Env {
   trustProxy: boolean
   secureCookies: boolean
   maxUploadBytes: number
+  /**
+   * Secret that claims this copy the first time (and recovers access when it
+   * changes). When unset, a one-off code is generated and printed at startup.
+   */
+  setupCode: string | null
 }
 
 export function loadEnv(overrides: Partial<Env> = {}): Env {
@@ -45,6 +50,7 @@ export function loadEnv(overrides: Partial<Env> = {}): Env {
     trustProxy: bool(process.env.TRUST_PROXY, false),
     secureCookies: bool(process.env.SECURE_COOKIES, appUrls[0]!.startsWith('https://')),
     maxUploadBytes: Number(process.env.MAX_UPLOAD_MB ?? 20) * 1024 * 1024,
+    setupCode: process.env.SETUP_CODE?.trim() || null,
     ...overrides,
   }
   return env

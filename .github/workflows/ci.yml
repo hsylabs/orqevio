@@ -68,6 +68,8 @@ jobs:
     env:
       DATABASE_URL: postgres://orqevio:orqevio@localhost:5432/orqevio_e2e
       APP_URL: http://localhost:3000
+      # Shared by the server and the setup test that claims the fresh copy.
+      SETUP_CODE: e2e-setup-code-1234
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6

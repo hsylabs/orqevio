@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
   boolean,
+  check,
   customType,
   index,
   integer,
@@ -26,18 +27,34 @@ const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull(
 const updatedAt = () => timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
 
 // ── Identity ─────────────────────────────────────────────────────
-export const users = pgTable(
-  'users',
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  theme: text('theme', { enum: ['system', 'light', 'dark'] }).notNull().default('system'),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+})
+
+/**
+ * A copy of Orqevio has a single owner. The row exists once the copy is claimed
+ * with the setup code; the owner then opens it with the generated access key.
+ */
+export const instance = pgTable(
+  'instance',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    email: text('email').notNull(),
-    name: text('name').notNull(),
-    passwordHash: text('password_hash').notNull(),
-    theme: text('theme', { enum: ['system', 'light', 'dark'] }).notNull().default('system'),
-    createdAt: createdAt(),
-    updatedAt: updatedAt(),
+    /** Always 1: the table holds at most one row. */
+    id: integer('id').primaryKey().default(1),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** SHA-256 of the normalised access key; the key itself is never stored. */
+    accessKeyHash: text('access_key_hash').notNull(),
+    /** SHA-256 of the setup code that claimed (or last recovered) the copy. */
+    setupCodeHash: text('setup_code_hash').notNull(),
+    claimedAt: timestamp('claimed_at', { withTimezone: true }).notNull().defaultNow(),
+    keyChangedAt: timestamp('key_changed_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('users_email_idx').on(t.email)],
+  (t) => [check('instance_single_row', sql`${t.id} = 1`)],
 )
 
 export const sessions = pgTable(

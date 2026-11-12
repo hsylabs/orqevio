@@ -8,9 +8,6 @@ import type { Env } from '../env'
 import type { Access } from '../services/access'
 import type { AppEnv } from './types'
 
-const loginLimiter = new RateLimiter(10, 15 * 60 * 1000)
-const registerLimiter = new RateLimiter(10, 60 * 60 * 1000)
-
 function limit(limiter: RateLimiter, key: string) {
   const wait = limiter.hit(key)
   if (wait > 0) throw new AppError(429, 'rate_limited', `Too many attempts. Try again in ${Math.ceil(wait / 60)} min.`)
@@ -26,6 +23,9 @@ async function json(c: { req: { json: () => Promise<unknown> } }) {
 
 export function createApi(env: Env) {
   const api = new Hono<AppEnv>()
+  // Brute force is hopeless against a 160-bit key, but repeated attempts are still slowed down.
+  const loginLimiter = new RateLimiter(10, 15 * 60 * 1000)
+  const setupLimiter = new RateLimiter(10, 60 * 60 * 1000)
 
   api.use('*', originGuard)
   api.use('*', resolveActor)
@@ -39,21 +39,26 @@ export function createApi(env: Env) {
     if (!c.res.headers.has('Cache-Control')) c.header('Cache-Control', 'no-store')
   })
 
-  // ── Auth ────────────────────────────────────────────────────────
-  api.post('/auth/register', async (c) => {
-    limit(registerLimiter, clientIp(c))
-    const { user, session } = await c.get('services').accounts.register(await json(c), c.req.header('user-agent') ?? null)
+  // ── Access ──────────────────────────────────────────────────────
+  api.post('/auth/claim', async (c) => {
+    limit(setupLimiter, clientIp(c))
+    const { user, accessKey, session } = await c.get('services').accounts.claim(await json(c), c.req.header('user-agent') ?? null)
     setSessionCookie(c, session.token, session.expiresAt)
-    return c.json({ user }, 201)
+    return c.json({ user, accessKey }, 201)
   })
   api.post('/auth/login', async (c) => {
-    const body = (await json(c)) as { email?: unknown }
-    const key = `${clientIp(c)}:${String(body?.email ?? '').toLowerCase()}`
+    const key = clientIp(c)
     limit(loginLimiter, key)
-    const { user, session } = await c.get('services').accounts.login(body, c.req.header('user-agent') ?? null)
+    const { user, session } = await c.get('services').accounts.login(await json(c), c.req.header('user-agent') ?? null)
     loginLimiter.reset(key)
     setSessionCookie(c, session.token, session.expiresAt)
     return c.json({ user })
+  })
+  api.post('/auth/recover', async (c) => {
+    limit(setupLimiter, clientIp(c))
+    const { user, accessKey, session } = await c.get('services').accounts.recover(await json(c), c.req.header('user-agent') ?? null)
+    setSessionCookie(c, session.token, session.expiresAt)
+    return c.json({ user, accessKey })
   })
   api.post('/auth/logout', async (c) => {
     const actor = c.get('actor')
@@ -62,19 +67,16 @@ export function createApi(env: Env) {
     return c.body(null, 204)
   })
   api.get('/auth/me', async (c) => c.json(await c.get('services').accounts.me(requireActor(c))))
-  // Same as /auth/me but answers 200 for anonymous visitors (avoids noisy 401s on public screens).
+  // Like /auth/me, but answers 200 for visitors: the sign-in screens need to know whether the copy is claimed.
   api.get('/auth/session', async (c) => {
     const actor = c.get('actor')
-    if (!actor || actor.kind !== 'user') return c.json({ user: null, workspaces: [] })
+    if (!actor || actor.kind !== 'user') return c.json({ user: null, workspaces: [], ...(await c.get('services').accounts.state()) })
     return c.json(await c.get('services').accounts.me(actor))
   })
 
   // ── Account ─────────────────────────────────────────────────────
   api.patch('/account', async (c) => c.json(await c.get('services').accounts.update(requireActor(c), await json(c))))
-  api.post('/account/password', async (c) => {
-    await c.get('services').accounts.changePassword(requireActor(c), await json(c))
-    return c.body(null, 204)
-  })
+  api.post('/account/access-key', async (c) => c.json(await c.get('services').accounts.rotateAccessKey(requireActor(c), await json(c))))
   api.post('/account/delete', async (c) => {
     await c.get('services').accounts.remove(requireActor(c), await json(c))
     clearSessionCookie(c)
@@ -325,10 +327,10 @@ export function createApi(env: Env) {
   vault.post('/reset', async (c) => {
     const actor = requireActor(c)
     const services = c.get('services')
-    const body = (await json(c)) as { password?: unknown }
+    const body = (await json(c)) as { accessKey?: unknown }
     const access: Access = services.access
     access.requireUser(actor)
-    await services.accounts.verify(actor.userId, String(body?.password ?? ''))
+    await services.accounts.verifyAccessKey(actor.userId, String(body?.accessKey ?? ''))
     await services.vault.reset(actor)
     return c.body(null, 204)
   })

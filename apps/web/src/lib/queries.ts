@@ -1,5 +1,6 @@
 import type {
   ActivityDTO,
+  AnonymousSessionDTO,
   BoardDTO,
   CardDetailDTO,
   CardSummaryDTO,
@@ -26,6 +27,7 @@ export const queryClient = new QueryClient({
 
 export const keys = {
   me: ['me'] as const,
+  access: ['access'] as const,
   overview: (wid: string) => ['overview', wid] as const,
   home: (wid: string) => ['home', wid] as const,
   board: (id: string) => ['board', id] as const,
@@ -48,6 +50,14 @@ export const useMe = () =>
       return session as MeDTO
     },
     staleTime: 60_000,
+  })
+
+/** Raw session, including whether this copy is claimed yet (sign-in screens). */
+export const useAccessState = () =>
+  useQuery({
+    queryKey: keys.access,
+    queryFn: ({ signal }) => get<MeDTO | AnonymousSessionDTO>('/auth/session', signal),
+    staleTime: 0,
   })
 
 export const useOverview = (wid: string | undefined) =>
