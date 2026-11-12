@@ -1,11 +1,11 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// E2E_BROWSERS=firefox,webkit runs the suite in other engines (CI installs them);
-// the first one also claims the copy. Chromium alone by default.
+// E2E_BROWSER=firefox (or webkit, Safari's engine) runs the suite in another engine
+// (CI installs them). One per run: the suite expects a fresh copy, and the vault belongs
+// to the owner, not to a workspace. Chromium by default.
 const ENGINES = { chromium: devices['Desktop Chrome'], firefox: devices['Desktop Firefox'], webkit: devices['Desktop Safari'] }
-type Engine = keyof typeof ENGINES
-const browsers = (process.env.E2E_BROWSERS ?? 'chromium').split(',').map((b) => b.trim()) as Engine[]
-for (const b of browsers) if (!(b in ENGINES)) throw new Error(`Unknown browser in E2E_BROWSERS: ${b}`)
+const browser = (process.env.E2E_BROWSER ?? 'chromium') as keyof typeof ENGINES
+if (!(browser in ENGINES)) throw new Error(`E2E_BROWSER must be chromium, firefox or webkit, not ${browser}`)
 const viewport = { width: 1440, height: 900 }
 
 /**
@@ -31,12 +31,12 @@ export default defineConfig({
     timezoneId: 'Europe/Madrid',
   },
   projects: [
-    { name: 'setup', testMatch: 'setup.e2e.ts', use: { ...ENGINES[browsers[0]!], viewport } },
-    ...browsers.map((name) => ({
-      name,
+    { name: 'setup', testMatch: 'setup.e2e.ts', use: { ...ENGINES[browser], viewport } },
+    {
+      name: browser,
       dependencies: ['setup'],
       testIgnore: 'setup.e2e.ts',
-      use: { ...ENGINES[name], viewport, storageState: 'e2e/.auth/owner.json' },
-    })),
+      use: { ...ENGINES[browser], viewport, storageState: 'e2e/.auth/owner.json' },
+    },
   ],
 })

@@ -327,11 +327,14 @@ La misma batería se pasa contra el runtime de Cloudflare en local (`pnpm --filt
 E2E_BASE_URL=http://127.0.0.1:8787 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-La CI ejecuta las dos y, además, repite la batería contra el servidor de Node en Firefox y en WebKit (el motor de Safari). En local, instala esos navegadores y elige con `E2E_BROWSERS`:
+La CI ejecuta las dos y, además, repite la batería contra el servidor de Node en Firefox y en WebKit (el motor de Safari), cada uno con una copia limpia. En local, instala el navegador y elígelo con `E2E_BROWSER`, también contra una copia recién creada:
 
 ```bash
-pnpm --filter @orqevio/web exec playwright install firefox webkit
-E2E_BROWSERS=firefox,webkit SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
+pnpm --filter @orqevio/web exec playwright install firefox
+```
+
+```bash
+E2E_BROWSER=firefox SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
 Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, pegar una imagen en un documento y adjuntar archivos a una tarjeta, el ciclo completo de la bóveda (con recuperación) y un agente MCP trabajando en directo sobre el tablero. Fallan si aparece cualquier error en la consola del navegador.

@@ -82,7 +82,7 @@ jobs:
       APP_URL: http://localhost:3000
       DATA_DIR: ${{ github.workspace }}/.e2e-data
       SETUP_CODE: e2e-setup-code-1234
-      E2E_BROWSERS: ${{ matrix.browser }}
+      E2E_BROWSER: ${{ matrix.browser }}
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
