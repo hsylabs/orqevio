@@ -1,10 +1,12 @@
 import { mkdir } from 'node:fs/promises'
+import type { Server } from 'node:http'
 import path from 'node:path'
 import { serve } from '@hono/node-server'
 import { createApp } from './app'
 import { normalizeSecret } from './auth/crypto'
 import { openDatabase, runMigrations } from './db/client'
 import { loadEnv } from './env'
+import { attachLiveUpdates } from './http/live'
 import { RealtimeBus } from './lib/realtime'
 import { LocalStorage } from './lib/storage'
 import { createServices } from './services'
@@ -24,6 +26,7 @@ const app = createApp(env, services)
 const server = serve({ fetch: app.fetch, port: env.port, hostname: env.host }, (info) => {
   console.log(`Orqevio listening on http://${info.address}:${info.port} (public URL ${env.appUrls[0]})`)
 })
+const live = attachLiveUpdates(server as Server, env, services)
 
 if (env.setupCode && normalizeSecret(env.setupCode).length < 12) {
   console.warn('SETUP_CODE has fewer than 12 letters or digits; choose a longer one.')
@@ -43,6 +46,7 @@ sweep.unref()
 async function shutdown(signal: string) {
   console.log(`${signal} received, shutting down`)
   clearInterval(sweep)
+  for (const client of live.clients) client.close(1001, 'server_shutdown')
   server.close()
   close()
   process.exit(0)

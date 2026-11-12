@@ -10,7 +10,7 @@ import { AppError } from './lib/errors'
 import { handleMcp } from './mcp/http'
 import type { Services } from './services'
 
-const CSP = {
+const baseCsp = {
   defaultSrc: ["'self'"],
   scriptSrc: ["'self'", "'wasm-unsafe-eval'"],
   styleSrc: ["'self'", "'unsafe-inline'"],
@@ -26,6 +26,12 @@ const CSP = {
 
 export function createApp(env: Env, services: Services) {
   const app = new Hono<AppEnv>()
+  // Live updates use WebSocket; list the app's own ws(s) origins explicitly, since
+  // not every browser lets 'self' cover them.
+  const CSP = {
+    ...baseCsp,
+    connectSrc: ["'self'", ...env.appUrls.map((url) => url.replace(/^http/, 'ws'))],
+  }
 
   app.use('*', async (c, next) => {
     c.set('services', services)

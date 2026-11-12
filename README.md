@@ -42,14 +42,14 @@ packages/shared Esquemas zod, permisos y tipos compartidos por API, MCP y client
                  └──────────────► Servicios de dominio ◄────┘
                                  (permisos y validación)
                                           │
-                        SQLite (un archivo) ── eventos en memoria ──► SSE en tiempo real
+                        SQLite (un archivo) ── eventos en memoria ──► WebSocket en tiempo real
 ```
 
 - **Una sola capa de dominio.** La API REST de la aplicación y las herramientas MCP llaman exactamente a los mismos servicios. Cada operación comprueba el acceso al espacio y el permiso concreto (`tasks:read`, `tasks:write`, `docs:read`, `docs:write`), así que las reglas se aplican una única vez.
 - **Markdown como formato canónico.** Documentos y descripciones se guardan en Markdown (GFM). Es portable, legible y lo que mejor entienden los LLM. Las referencias internas son enlaces normales: `[Título](/card/<id>)` y `[Título](/doc/<id>)`.
 - **Una copia, un archivo.** Cada copia es de una persona y guarda todo en SQLite: un único archivo (`DATA_DIR/orqevio.db`) más la carpeta de adjuntos. Las transacciones son síncronas, el mismo modelo que tendrá la versión para Cloudflare.
 - **Búsqueda de texto completo.** Índices FTS5 sobre títulos y contenido de tarjetas y documentos, sin distinguir mayúsculas ni acentos («cancion» encuentra «Canción»), con el título por delante.
-- **Tiempo real sin infraestructura extra.** Cada cambio se reparte en memoria a los navegadores conectados por Server-Sent Events.
+- **Tiempo real sin infraestructura extra.** Cada cambio se reparte en memoria a los navegadores conectados por WebSocket (`/api/workspaces/:id/live`). La conexión solo se acepta con sesión y desde los orígenes de `APP_URL`; el navegador envía un latido cada 25 s, que también vuelve a comprobar la sesión, y se reconecta solo. Si pones Orqevio detrás de un proxy inverso, este debe permitir WebSocket (Caddy y Traefik lo hacen por defecto; en Nginx añade las cabeceras `Upgrade` y `Connection`).
 - **Orden estable.** Columnas, tarjetas, páginas y checklists usan índices fraccionarios (`COLLATE "C"`), de modo que mover un elemento actualiza una sola fila.
 
 ## Modelo de seguridad

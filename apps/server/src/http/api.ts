@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
-import { streamSSE } from 'hono/streaming'
 import { AppError, badRequest } from '../lib/errors'
 import { RateLimiter } from '../lib/rate-limit'
 import { clearSessionCookie, clientIp, originGuard, requireActor, resolveActor, sessionOnly, setSessionCookie } from './middleware'
@@ -121,40 +120,6 @@ export function createApi(env: Env) {
       }),
     )
   })
-  api.get('/workspaces/:id/events', async (c) => {
-    const actor = requireActor(c)
-    const services = c.get('services')
-    const access: Access = services.access
-    access.requireUser(actor)
-    const workspaceId = c.req.param('id')
-    await access.workspace(actor, workspaceId)
-    c.header('Cache-Control', 'no-store')
-    c.header('X-Accel-Buffering', 'no')
-    return streamSSE(c, async (stream) => {
-      const queue: string[] = []
-      let wake: (() => void) | null = null
-      const unsubscribe = services.realtime.subscribe(workspaceId, (event) => {
-        queue.push(JSON.stringify(event))
-        wake?.()
-      })
-      stream.onAbort(() => {
-        unsubscribe()
-        wake?.()
-      })
-      await stream.writeSSE({ event: 'ready', data: '{}' })
-      while (!stream.aborted && !stream.closed) {
-        while (queue.length) await stream.writeSSE({ event: 'change', data: queue.shift()! })
-        await new Promise<void>((resolve) => {
-          wake = resolve
-          setTimeout(resolve, 25_000)
-        })
-        wake = null
-        if (queue.length === 0 && !stream.aborted) await stream.writeSSE({ event: 'ping', data: '' })
-      }
-      unsubscribe()
-    })
-  })
-
   // ── Projects ────────────────────────────────────────────────────
   api.post('/workspaces/:id/projects', async (c) =>
     c.json(await c.get('services').workspaces.createProject(requireActor(c), c.req.param('id'), await json(c)), 201),
