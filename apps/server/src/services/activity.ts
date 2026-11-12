@@ -1,5 +1,5 @@
 import type { ActivityDTO, EntityType, RealtimeEvent } from '@orqevio/shared'
-import { and, desc, eq, gt, lt } from 'drizzle-orm'
+import { and, desc, eq, gt, lt, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { actorRef } from '../auth/actor'
 import { activity } from '../db/schema'
@@ -102,7 +102,8 @@ export class ActivityService {
       .select()
       .from(activity)
       .where(and(...filters))
-      .orderBy(desc(activity.createdAt))
+      // Timestamps have millisecond precision: insertion order breaks ties.
+      .orderBy(desc(activity.createdAt), desc(sql`rowid`))
       .limit(Math.min(opts.limit ?? 30, 100))
     return rows.map(toActivityDTO)
   }

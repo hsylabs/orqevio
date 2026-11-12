@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { pages } from '../src/db/schema'
 import { type Harness, createHarness, seedBoard, signUp } from './harness'
 
 let h: Harness
@@ -66,6 +67,69 @@ describe('documents', () => {
     const page = res.body.find((r: { type: string }) => r.type === 'page')
     expect(page.excerpt).toContain('facturación mensual')
     expect((await client.get(`/api/workspaces/${workspaceId}/search?q=%25`)).body).toEqual([])
+  })
+
+  it('full-text search ignores accents and case, ranks titles first and respects boundaries', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const search = async (q: string) =>
+      (await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent(q)}`)).body as Array<{ id: string; type: string; title: string }>
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Revisar la canción del anuncio' })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Otra tarea', description: 'Mencionar la CANCION en la reunión' })
+    const archived = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Canción archivada' })
+    await client.post(`/api/cards/${archived.body.id}/archive`)
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Guion', content: 'Letra de la cancion principal.' })
+
+    // Accents and case do not matter, and the card with the word in its title comes first.
+    const cards = (await search('Cancion')).filter((r) => r.type === 'card').map((r) => r.title)
+    expect(cards).toEqual(['Revisar la canción del anuncio', 'Otra tarea'])
+    expect((await search('canci')).map((r) => r.type).sort()).toEqual(['card', 'card', 'page'])
+    // Every word has to match.
+    expect((await search('cancion reunion')).map((r) => r.title)).toEqual(['Otra tarea'])
+    // Quotes and FTS operators are plain text: "OR" is just another word that must match.
+    expect(await search('"canción"')).toHaveLength(3)
+    expect(await search('canción OR')).toEqual([])
+    expect(await search('* - "')).toEqual([])
+    expect((await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent('C++ (x) NEAR/2')}`)).status).toBe(200)
+    // Updates and deletions keep the index in sync.
+    const page = (await search('principal'))[0]!
+    const { body } = await client.get(`/api/pages/${page.id}`)
+    await client.patch(`/api/pages/${page.id}`, { content: 'Texto nuevo', baseVersion: body.version })
+    expect(await search('principal')).toEqual([])
+    expect((await search('nuevo')).map((r) => r.title)).toEqual(['Guion'])
+    await client.del(`/api/pages/${page.id}`)
+    expect(await search('nuevo')).toEqual([])
+    // Other workspaces are never searched.
+    const other = await signUp(h, 'Otra persona')
+    expect((await other.client.get(`/api/workspaces/${other.workspaceId}/search?q=cancion`)).body).toEqual([])
+  })
+
+  it('ranks title matches first even when their bodies are long', async () => {
+    const { client, workspaceId } = await signUp(h, 'Ranking')
+    const { columns } = await seedBoard(client, workspaceId)
+    for (let i = 0; i < 20; i++) await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: `Relleno ${i}`, description: 'nada que ver' })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Otra tarea', description: 'cancion' })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Canción', description: 'palabra '.repeat(1000) })
+    const res = await client.get(`/api/workspaces/${workspaceId}/search?q=cancion&type=card`)
+    expect(res.body.map((r: { title: string }) => r.title)).toEqual(['Canción', 'Otra tarea'])
+  })
+
+  it('keeps saving and cascading deletes fast with thousands of indexed pages', async () => {
+    const { client, workspaceId } = await signUp(h, 'Volumen')
+    const { projectId } = await seedBoard(client, workspaceId)
+    h.db.transaction((tx) => {
+      for (let i = 0; i < 8000; i++) {
+        tx.insert(pages)
+          .values({ workspaceId, projectId, title: `Nota ${i}`, content: `contenido ${i}`, position: `a${String(i).padStart(5, '0')}` })
+          .run()
+      }
+    })
+    expect((await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent('nota 7999')}&type=page`)).body).toHaveLength(1)
+    const started = Date.now()
+    expect((await client.del(`/api/projects/${projectId}`)).status).toBe(204)
+    // A full scan of the index per deleted page would take several seconds here.
+    expect(Date.now() - started).toBeLessThan(1000)
+    expect((await client.get(`/api/workspaces/${workspaceId}/search?q=nota&type=page`)).body).toEqual([])
   })
 
   it('stores attachments, sniffs their type and protects access', async () => {

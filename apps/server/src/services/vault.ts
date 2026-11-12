@@ -112,12 +112,12 @@ export class VaultService {
   /** Irreversibly wipes the vault (used when both the master password and recovery key are lost). */
   async reset(actor: Actor) {
     this.guard(actor)
-    await this.deps.db.transaction(async (tx) => {
-      await tx.delete(vaultItems).where(eq(vaultItems.userId, actor.userId))
-      await tx
-        .update(vaults)
+    this.deps.db.transaction((tx) => {
+      tx.delete(vaultItems).where(eq(vaultItems.userId, actor.userId)).run()
+      tx.update(vaults)
         .set({ kdf: null, wrappedKey: null, recoveryWrappedKey: null, updatedAt: new Date() })
         .where(eq(vaults.userId, actor.userId))
+        .run()
     })
   }
 }

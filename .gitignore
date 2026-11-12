@@ -10,3 +10,4 @@ playwright-report/
 *.log
 .DS_Store
 apps/web/e2e/.auth/
+.e2e-data/

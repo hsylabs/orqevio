@@ -56,10 +56,10 @@ export class WorkspaceService {
   async create(actor: Actor, input: unknown): Promise<WorkspaceDTO> {
     this.access.requireUser(actor)
     const { name } = parse(workspaceInput, input)
-    return this.deps.db.transaction(async (tx) => {
-      const [w] = await tx.insert(workspaces).values({ name }).returning()
-      await tx.insert(workspaceMembers).values({ workspaceId: w!.id, userId: actor.userId, role: 'owner' })
-      return toWorkspaceDTO(w!, 'owner')
+    return this.deps.db.transaction((tx) => {
+      const w = tx.insert(workspaces).values({ name }).returning().get()
+      tx.insert(workspaceMembers).values({ workspaceId: w.id, userId: actor.userId, role: 'owner' }).run()
+      return toWorkspaceDTO(w, 'owner')
     })
   }
 
@@ -111,7 +111,7 @@ export class WorkspaceService {
             projectId: boards.projectId,
             name: boards.name,
             position: boards.position,
-            cardCount: sql<number>`(select count(*)::int from ${cards} where ${cards.boardId} = ${boards.id} and ${cards.archivedAt} is null)`,
+            cardCount: sql<number>`(select count(*) from ${cards} where ${cards.boardId} = ${boards.id} and ${cards.archivedAt} is null)`,
           })
           .from(boards)
           .where(eq(boards.workspaceId, workspaceId))
@@ -201,13 +201,13 @@ export class WorkspaceService {
     this.access.requireUser(actor)
     await this.access.workspace(actor, workspaceId)
     const data = parse(projectCreateInput, input)
-    const project = await this.deps.db.transaction(async (tx) => {
-      const position = await positionAt(tx, projects, eq(projects.workspaceId, workspaceId), undefined)
-      const [p] = await tx
+    const project = this.deps.db.transaction((tx) => {
+      const position = positionAt(tx, projects, eq(projects.workspaceId, workspaceId), undefined)
+      return tx
         .insert(projects)
         .values({ workspaceId, name: data.name, color: data.color, description: data.description ?? null, position })
         .returning()
-      return p!
+        .get()
     })
     await this.activity.record(
       actor,

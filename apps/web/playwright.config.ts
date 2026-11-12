@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test'
 /**
  * End-to-end tests run against a running Orqevio server (production build) on
  * an unclaimed copy with a fresh database:
- *   pnpm build && pnpm start          # in another terminal, with DATABASE_URL and SETUP_CODE set
+ *   pnpm build && pnpm start          # in another terminal, with SETUP_CODE set (and an empty DATA_DIR)
  *   pnpm test:e2e                     # with the same SETUP_CODE
  * Override the target with E2E_BASE_URL. The "setup" project claims the copy
  * once and the other tests reuse the owner's session.

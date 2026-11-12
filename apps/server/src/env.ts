@@ -13,7 +13,8 @@ export interface Env {
   nodeEnv: 'development' | 'production' | 'test'
   port: number
   host: string
-  databaseUrl: string
+  /** SQLite database file; defaults to DATA_DIR/orqevio.db. */
+  databasePath: string
   /** Public origins allowed to send cookie-authenticated requests. The first one is canonical. */
   appUrls: string[]
   dataDir: string
@@ -31,18 +32,17 @@ export interface Env {
 
 export function loadEnv(overrides: Partial<Env> = {}): Env {
   const nodeEnv = (process.env.NODE_ENV as Env['nodeEnv']) ?? 'development'
-  const databaseUrl = overrides.databaseUrl ?? process.env.DATABASE_URL
-  if (!databaseUrl) throw new Error('DATABASE_URL is required')
   const appUrls = (process.env.APP_URL ?? 'http://localhost:3000')
     .split(',')
     .map((u) => new URL(u.trim()).origin)
+  const dataDir = path.resolve(overrides.dataDir ?? process.env.DATA_DIR ?? 'data')
   const env: Env = {
     nodeEnv,
     port: Number(process.env.PORT ?? 3000),
     host: process.env.HOST ?? '0.0.0.0',
-    databaseUrl,
     appUrls,
-    dataDir: path.resolve(process.env.DATA_DIR ?? 'data'),
+    dataDir,
+    databasePath: path.resolve(process.env.DATABASE_PATH ?? path.join(dataDir, 'orqevio.db')),
     // In the bundled build `here` is apps/server/dist; in dev it is apps/server/src.
     webDist: path.resolve(process.env.WEB_DIST ?? path.join(here, '../../web/dist')),
     // Bundled build: dist/drizzle. Dev: apps/server/drizzle.

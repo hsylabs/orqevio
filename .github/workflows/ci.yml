@@ -18,22 +18,6 @@ jobs:
     name: Typecheck, tests and build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: orqevio
-          POSTGRES_PASSWORD: orqevio
-          POSTGRES_DB: orqevio_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U orqevio"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 12
-    env:
-      TEST_DATABASE_URL: postgres://orqevio:orqevio@localhost:5432/orqevio_test
     steps:
       - uses: actions/checkout@v7
       # Installs the pnpm version pinned in package.json ("packageManager").
@@ -51,24 +35,10 @@ jobs:
     name: End-to-end tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: orqevio
-          POSTGRES_PASSWORD: orqevio
-          POSTGRES_DB: orqevio_e2e
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U orqevio"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 12
     env:
-      DATABASE_URL: postgres://orqevio:orqevio@localhost:5432/orqevio_e2e
       APP_URL: http://localhost:3000
-      # Shared by the server and the setup test that claims the fresh copy.
+      # A fresh SQLite copy in a temporary folder; the setup test claims it with this code.
+      DATA_DIR: ${{ github.workspace }}/.e2e-data
       SETUP_CODE: e2e-setup-code-1234
     steps:
       - uses: actions/checkout@v7

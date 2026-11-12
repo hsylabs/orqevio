@@ -24,15 +24,6 @@ const CSP = {
   objectSrc: ["'none'"],
 }
 
-/** Postgres error code, looking through Drizzle's query error wrapper. */
-function pgErrorCode(error: unknown): string | null {
-  for (let e: unknown = error, depth = 0; e && typeof e === 'object' && depth < 3; e = (e as { cause?: unknown }).cause, depth++) {
-    const code = (e as { code?: unknown }).code
-    if (typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)) return code
-  }
-  return null
-}
-
 export function createApp(env: Env, services: Services) {
   const app = new Hono<AppEnv>()
 
@@ -58,10 +49,6 @@ export function createApp(env: Env, services: Services) {
   app.onError((error, c) => {
     if (error instanceof AppError) {
       return c.json({ error: { code: error.code, message: error.message, details: error.details } }, error.status)
-    }
-    // Malformed identifiers reaching Postgres (e.g. "/api/cards/not-a-uuid").
-    if (pgErrorCode(error) === '22P02') {
-      return c.json({ error: { code: 'not_found', message: 'Resource not found' } }, 404)
     }
     console.error('[http] unhandled error', error)
     return c.json({ error: { code: 'internal', message: 'Something went wrong' } }, 500)

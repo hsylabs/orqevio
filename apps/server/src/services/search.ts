@@ -1,22 +1,37 @@
 import type { SearchResultDTO } from '@orqevio/shared'
 import { markdownToPlainText } from '@orqevio/shared'
-import { and, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
-import { boards, cards, columns, pages, projects } from '../db/schema'
 import type { Access } from './access'
 import type { Deps } from './deps'
 
-const escapeLike = (value: string) => value.replace(/[\\%_]/g, (m) => `\\${m}`)
+/** Lowercase, without accents: the same folding the FTS5 tokenizer applies. */
+const fold = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 
-function excerpt(text: string, query: string, size = 140) {
+/** Words of the query that can be searched (at least one letter or digit). */
+export function searchTerms(raw: string) {
+  return raw
+    .split(/\s+/)
+    .map((t) => t.replace(/"/g, ''))
+    .filter((t) => /[\p{L}\p{N}]/u.test(t))
+    .slice(0, 8)
+}
+
+/** FTS5 query: every word must match the start of a word ("diseñ" finds "Diseño"). */
+export const ftsQuery = (terms: string[]) => terms.map((t) => `"${t}"*`).join(' ')
+
+function excerpt(text: string, terms: string[], size = 140) {
   const plain = markdownToPlainText(text)
   if (!plain) return ''
-  const at = plain.toLowerCase().indexOf(query.toLowerCase())
-  if (at < 0) return plain.slice(0, size)
+  const folded = fold(plain)
+  const at = Math.min(...terms.map((t) => folded.indexOf(fold(t))).filter((i) => i >= 0))
+  if (!Number.isFinite(at)) return plain.slice(0, size)
   const start = Math.max(0, at - 40)
   return `${start > 0 ? '…' : ''}${plain.slice(start, start + size)}${start + size < plain.length ? '…' : ''}`
 }
+
+const titleHit = (title: string, terms: string[]) => terms.some((t) => fold(title).includes(fold(t)))
 
 export class SearchService {
   constructor(
@@ -24,42 +39,47 @@ export class SearchService {
     private readonly access: Access,
   ) {}
 
-  /** Substring search over card and page titles/bodies, accelerated by trigram indexes. */
+  /** Full-text search over card and page titles and bodies (FTS5), titles ranked first. */
   async search(actor: Actor, workspaceId: string, rawQuery: string, opts: { types?: Array<'card' | 'page'>; limit?: number } = {}) {
     await this.access.workspace(actor, workspaceId)
-    const query = rawQuery.trim().slice(0, 100)
-    if (query.length === 0) return []
-    const pattern = `%${escapeLike(query)}%`
+    const terms = searchTerms(rawQuery.trim().slice(0, 100))
+    if (terms.length === 0) return []
+    const match = ftsQuery(terms)
+    // Results whose title alone matches every word come first, whatever BM25 says about long bodies.
+    const titleMatch = `title : (${match})`
     const limit = Math.min(opts.limit ?? 20, 50)
     const types = opts.types ?? ['card', 'page']
     const results: SearchResultDTO[] = []
 
     if (types.includes('card') && hasScope(actor, 'tasks:read')) {
-      const rows = await this.deps.db
-        .select({
-          id: cards.id,
-          title: cards.title,
-          description: cards.description,
-          boardId: boards.id,
-          boardName: boards.name,
-          columnName: columns.name,
-          projectId: projects.id,
-          projectName: projects.name,
-          titleHit: sql<boolean>`${cards.title} ilike ${pattern}`,
-        })
-        .from(cards)
-        .innerJoin(boards, eq(boards.id, cards.boardId))
-        .innerJoin(columns, eq(columns.id, cards.columnId))
-        .innerJoin(projects, eq(projects.id, boards.projectId))
-        .where(and(eq(cards.workspaceId, workspaceId), isNull(cards.archivedAt), or(ilike(cards.title, pattern), ilike(cards.description, pattern))))
-        .orderBy(desc(sql`${cards.title} ilike ${pattern}`), desc(cards.updatedAt))
-        .limit(limit)
+      const rows = this.deps.db.all<{
+        id: string
+        title: string
+        description: string
+        boardId: string
+        boardName: string
+        columnName: string
+        projectId: string
+        projectName: string
+      }>(sql`
+        SELECT c.id, c.title, c.description, b.id AS boardId, b.name AS boardName, col.name AS columnName,
+               p.id AS projectId, p.name AS projectName
+        FROM cards_fts
+        JOIN cards_fts_map m ON m.id = cards_fts.rowid
+        JOIN cards c ON c.id = m.entity_id
+        JOIN boards b ON b.id = c.board_id
+        JOIN board_columns col ON col.id = c.column_id
+        JOIN projects p ON p.id = b.project_id
+        WHERE cards_fts MATCH ${match} AND c.workspace_id = ${workspaceId} AND c.archived_at IS NULL
+        ORDER BY cards_fts.rowid NOT IN (SELECT rowid FROM cards_fts WHERE cards_fts MATCH ${titleMatch}),
+                 bm25(cards_fts, 10, 1), c.updated_at DESC
+        LIMIT ${limit}`)
       for (const r of rows) {
         results.push({
           type: 'card',
           id: r.id,
           title: r.title,
-          excerpt: r.titleHit ? markdownToPlainText(r.description).slice(0, 140) : excerpt(r.description, query),
+          excerpt: titleHit(r.title, terms) ? markdownToPlainText(r.description).slice(0, 140) : excerpt(r.description, terms),
           icon: null,
           projectId: r.projectId,
           projectName: r.projectName,
@@ -71,27 +91,22 @@ export class SearchService {
     }
 
     if (types.includes('page') && hasScope(actor, 'docs:read')) {
-      const rows = await this.deps.db
-        .select({
-          id: pages.id,
-          title: pages.title,
-          icon: pages.icon,
-          content: pages.content,
-          projectId: projects.id,
-          projectName: projects.name,
-          titleHit: sql<boolean>`${pages.title} ilike ${pattern}`,
-        })
-        .from(pages)
-        .innerJoin(projects, eq(projects.id, pages.projectId))
-        .where(and(eq(pages.workspaceId, workspaceId), or(ilike(pages.title, pattern), ilike(pages.content, pattern))))
-        .orderBy(desc(sql`${pages.title} ilike ${pattern}`), desc(pages.updatedAt))
-        .limit(limit)
+      const rows = this.deps.db.all<{ id: string; title: string; icon: string | null; content: string; projectId: string; projectName: string }>(sql`
+        SELECT pg.id, pg.title, pg.icon, pg.content, p.id AS projectId, p.name AS projectName
+        FROM pages_fts
+        JOIN pages_fts_map m ON m.id = pages_fts.rowid
+        JOIN pages pg ON pg.id = m.entity_id
+        JOIN projects p ON p.id = pg.project_id
+        WHERE pages_fts MATCH ${match} AND pg.workspace_id = ${workspaceId}
+        ORDER BY pages_fts.rowid NOT IN (SELECT rowid FROM pages_fts WHERE pages_fts MATCH ${titleMatch}),
+                 bm25(pages_fts, 10, 1), pg.updated_at DESC
+        LIMIT ${limit}`)
       for (const r of rows) {
         results.push({
           type: 'page',
           id: r.id,
           title: r.title,
-          excerpt: r.titleHit ? markdownToPlainText(r.content).slice(0, 140) : excerpt(r.content, query),
+          excerpt: titleHit(r.title, terms) ? markdownToPlainText(r.content).slice(0, 140) : excerpt(r.content, terms),
           icon: r.icon,
           projectId: r.projectId,
           projectName: r.projectName,

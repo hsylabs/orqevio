@@ -30,7 +30,7 @@ La decisión central: **la bóveda está aislada de los agentes**. Ningún token
 ```
 apps/web        React 19 + Vite · TanStack Query · React Router · Tailwind CSS 4
                 TipTap 3 (Markdown nativo) · dnd-kit · Radix UI · cmdk
-apps/server     Node 22 · Hono · Drizzle ORM · PostgreSQL · SDK oficial de MCP
+apps/server     Node 22 · Hono · Drizzle ORM · SQLite (FTS5) · SDK oficial de MCP
 packages/shared Esquemas zod, permisos y tipos compartidos por API, MCP y cliente
 ```
 
@@ -42,12 +42,14 @@ packages/shared Esquemas zod, permisos y tipos compartidos por API, MCP y client
                  └──────────────► Servicios de dominio ◄────┘
                                  (permisos y validación)
                                           │
-                             PostgreSQL ── LISTEN/NOTIFY ──► SSE en tiempo real
+                        SQLite (un archivo) ── eventos en memoria ──► SSE en tiempo real
 ```
 
 - **Una sola capa de dominio.** La API REST de la aplicación y las herramientas MCP llaman exactamente a los mismos servicios. Cada operación comprueba el acceso al espacio y el permiso concreto (`tasks:read`, `tasks:write`, `docs:read`, `docs:write`), así que las reglas se aplican una única vez.
 - **Markdown como formato canónico.** Documentos y descripciones se guardan en Markdown (GFM). Es portable, legible y lo que mejor entienden los LLM. Las referencias internas son enlaces normales: `[Título](/card/<id>)` y `[Título](/doc/<id>)`.
-- **Tiempo real sin infraestructura extra.** Cada cambio se publica con `NOTIFY` de PostgreSQL y cada réplica lo reenvía a sus clientes por Server-Sent Events.
+- **Una copia, un archivo.** Cada copia es de una persona y guarda todo en SQLite: un único archivo (`DATA_DIR/orqevio.db`) más la carpeta de adjuntos. Las transacciones son síncronas, el mismo modelo que tendrá la versión para Cloudflare.
+- **Búsqueda de texto completo.** Índices FTS5 sobre títulos y contenido de tarjetas y documentos, sin distinguir mayúsculas ni acentos («cancion» encuentra «Canción»), con el título por delante.
+- **Tiempo real sin infraestructura extra.** Cada cambio se reparte en memoria a los navegadores conectados por Server-Sent Events.
 - **Orden estable.** Columnas, tarjetas, páginas y checklists usan índices fraccionarios (`COLLATE "C"`), de modo que mover un elemento actualiza una sola fila.
 
 ## Modelo de seguridad
@@ -87,17 +89,19 @@ clave de la bóveda ── AES-256-GCM, datos asociados = usuario + id del eleme
 cp .env.example .env
 ```
 
-Edita `.env`: define `APP_URL` con la URL pública (por ejemplo `https://orqevio.tu-dominio.com`), una `POSTGRES_PASSWORD` larga y aleatoria y un `SETUP_CODE` propio (opcional; ver «Acceso a tu copia»).
+Edita `.env`: define `APP_URL` con la URL pública (por ejemplo `https://orqevio.tu-dominio.com`) y un `SETUP_CODE` propio (opcional; ver «Acceso a tu copia»).
 
 ```bash
 docker compose up -d --build
 ```
 
-La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx, Traefik) y, en ese caso, añade `TRUST_PROXY=true`. Los adjuntos se guardan en el volumen `app-data` y la base de datos en `db-data`.
+La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx, Traefik) y, en ese caso, añade `TRUST_PROXY=true`. La base de datos SQLite y los adjuntos se guardan en el volumen `orqevio-data`.
+
+**Copias de seguridad.** Basta con copiar el volumen con la app parada, o hacer una copia en caliente con `sqlite3 /data/orqevio.db ".backup '/data/copia.db'"` y guardar también la carpeta `uploads`.
 
 ### En local para desarrollo
 
-Requisitos: Node 22.12 o superior, pnpm 10 y PostgreSQL 14 o superior con la extensión `pg_trgm` disponible (incluida en las distribuciones habituales).
+Requisitos: Node 22.12 o superior y pnpm 10. No hace falta ninguna base de datos externa: SQLite viene con el servidor (`better-sqlite3` se compila al instalar si no hay binario para tu sistema).
 
 ```bash
 pnpm install
@@ -107,7 +111,7 @@ pnpm install
 cp .env.example .env
 ```
 
-En `.env`, ajusta `DATABASE_URL` y usa `APP_URL=http://localhost:5173,http://localhost:3000`.
+En `.env`, usa `APP_URL=http://localhost:5173,http://localhost:3000`. Los datos de desarrollo se guardan en `apps/server/data/`.
 
 ```bash
 pnpm dev
@@ -203,7 +207,7 @@ pnpm typecheck
 pnpm test
 ```
 
-`pnpm test` ejecuta las pruebas unitarias (criptografía de la bóveda, generador y enlaces) y las de integración del servidor contra PostgreSQL real (acceso con código de configuración y clave, CSRF, aislamiento entre espacios, permisos por token, bóveda inaccesible con tokens, herramientas MCP con el cliente oficial y tiempo real). Usa `TEST_DATABASE_URL`, con valor por defecto `postgres://orqevio:orqevio@localhost:5432/orqevio_test`; **la base de datos de pruebas se vacía en cada ejecución**.
+`pnpm test` ejecuta las pruebas unitarias (criptografía de la bóveda, generador y enlaces) y las de integración del servidor contra SQLite real (acceso con código de configuración y clave, CSRF, aislamiento entre espacios, permisos por token, bóveda inaccesible con tokens, herramientas MCP con el cliente oficial y tiempo real). Cada archivo de pruebas crea su propia copia en una carpeta temporal y la borra al terminar.
 
 Pruebas de extremo a extremo con Playwright, con el servidor de producción en marcha sobre una base de datos **vacía** y el mismo `SETUP_CODE` en el servidor y en las pruebas (por defecto `e2e-setup-code-1234`):
 
@@ -217,14 +221,13 @@ Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Despu�
 
 | Variable | Por defecto | Descripción |
 | --- | --- | --- |
-| `DATABASE_URL` | — | Conexión a PostgreSQL (obligatoria). |
 | `APP_URL` | `http://localhost:3000` | Orígenes públicos separados por comas. Con `https://` activa cookies `Secure` y HSTS. |
 | `PORT` / `HOST` | `3000` / `0.0.0.0` | Dirección de escucha. |
-| `DATA_DIR` | `./data` | Carpeta de adjuntos (`DATA_DIR/uploads`). |
+| `DATA_DIR` | `./data` | Carpeta de datos: base SQLite (`orqevio.db`) y adjuntos (`uploads/`). |
+| `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Ruta del archivo SQLite, si quieres separarlo de los adjuntos. |
 | `MAX_UPLOAD_MB` | `20` | Tamaño máximo por archivo. |
 | `TRUST_PROXY` | `false` | Confiar en `X-Forwarded-For` (detrás de un proxy inverso). |
 | `SECURE_COOKIES` | según `APP_URL` | Fuerza cookies `Secure`. |
-| `DATABASE_POOL_SIZE` | `10` | Conexiones del pool. |
 | `SETUP_CODE` | generado al arrancar | Código para reclamar la copia la primera vez. Si lo cambias, permite recuperar el acceso. |
 
 ## Limitaciones conocidas
@@ -232,7 +235,8 @@ Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Despu�
 - **Uso individual por espacio.** El modelo de datos ya contempla miembros y roles, pero no hay invitaciones ni asignación de tarjetas a personas: el producto está pensado para ti y tus agentes.
 - **Sin coedición simultánea.** No hay edición colaborativa en tiempo real tipo CRDT; los conflictos se detectan por versión y se resuelven explícitamente.
 - **Autenticación MCP por token Bearer.** No se implementa el flujo OAuth 2.1 de MCP, así que los clientes que solo admiten OAuth (por ejemplo, los conectores personalizados de la web de Claude) no pueden conectarse directamente; Claude Code, Cursor, VS Code y Claude Desktop (con `mcp-remote`) sí.
-- **Adjuntos en disco local.** Para varias réplicas hace falta un volumen compartido; no hay controlador de S3. El límite de intentos se mantiene en memoria por instancia.
+- **Un solo proceso por copia.** SQLite, los adjuntos en disco y el tiempo real en memoria asumen una única instancia del servidor por copia, que es el modelo de Orqevio (una copia por persona).
+- **Sin migración desde PostgreSQL.** Las versiones de desarrollo anteriores usaban PostgreSQL; no hay herramienta para pasar esos datos a SQLite.
 - **Una persona por copia.** No hay registro ni correo; si se pierde la clave de acceso, se recupera desde el servidor (CLI o un `SETUP_CODE` nuevo).
 - **Bóveda personal.** No se comparte entre personas y no incluye importación/exportación ni códigos TOTP.
 - **Imágenes externas.** Las imágenes de documentos que apuntan a otros dominios se cargan desde su origen.

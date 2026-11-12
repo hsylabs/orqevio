@@ -1,21 +1,21 @@
 import { mkdir } from 'node:fs/promises'
+import path from 'node:path'
 import { serve } from '@hono/node-server'
 import { createApp } from './app'
 import { normalizeSecret } from './auth/crypto'
-import { createDatabase, runMigrations } from './db/client'
+import { openDatabase, runMigrations } from './db/client'
 import { loadEnv } from './env'
 import { RealtimeBus } from './lib/realtime'
 import { LocalStorage } from './lib/storage'
 import { createServices } from './services'
 
 const env = loadEnv()
-const { db, pool } = createDatabase(env.databaseUrl)
-
-await runMigrations(db, env.migrationsDir)
 await mkdir(env.dataDir, { recursive: true })
+await mkdir(path.dirname(env.databasePath), { recursive: true })
+const { db, close } = openDatabase(env.databasePath)
+runMigrations(db, env.migrationsDir)
 
-const bus = new RealtimeBus(env.databaseUrl, pool)
-await bus.start()
+const bus = new RealtimeBus()
 
 const storage = new LocalStorage(`${env.dataDir}/uploads`)
 const services = createServices({ db, bus, env, storage })
@@ -44,8 +44,7 @@ async function shutdown(signal: string) {
   console.log(`${signal} received, shutting down`)
   clearInterval(sweep)
   server.close()
-  await bus.stop()
-  await pool.end()
+  close()
   process.exit(0)
 }
 process.on('SIGINT', () => void shutdown('SIGINT'))

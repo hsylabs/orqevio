@@ -72,25 +72,26 @@ export class AccountService {
     const expected = secretFingerprint(this.currentSetupCode())
     if (!safeEqual(secretFingerprint(setupCode), expected)) throw invalidSetupCode()
     const accessKey = generateAccessKey()
-    const user = await this.deps.db.transaction(async (tx) => {
-      // Data from an earlier version (with accounts) is kept: its oldest user becomes the owner.
-      const [existing] = await tx.select().from(users).orderBy(asc(users.createdAt)).limit(1)
-      let owner: typeof users.$inferSelect | undefined
+    const user = this.deps.db.transaction((tx) => {
+      // Users left without an owner (e.g. after an upgrade) are kept: the oldest one becomes the owner.
+      const existing = tx.select().from(users).orderBy(asc(users.createdAt)).limit(1).get()
+      let owner: typeof users.$inferSelect
       if (existing) {
-        ;[owner] = await tx.update(users).set({ name, updatedAt: new Date() }).where(eq(users.id, existing.id)).returning()
+        owner = tx.update(users).set({ name, updatedAt: new Date() }).where(eq(users.id, existing.id)).returning().get()!
       } else {
-        ;[owner] = await tx.insert(users).values({ name }).returning()
+        owner = tx.insert(users).values({ name }).returning().get()
         const firstName = name.split(/\s+/)[0] ?? name
-        const [w] = await tx.insert(workspaces).values({ name: `Espacio de ${firstName}`.slice(0, 60) }).returning()
-        await tx.insert(workspaceMembers).values({ workspaceId: w!.id, userId: owner!.id, role: 'owner' })
+        const w = tx.insert(workspaces).values({ name: `Espacio de ${firstName}`.slice(0, 60) }).returning().get()
+        tx.insert(workspaceMembers).values({ workspaceId: w.id, userId: owner.id, role: 'owner' }).run()
       }
-      const claimed = await tx
+      const claimed = tx
         .insert(instance)
-        .values({ id: 1, ownerId: owner!.id, accessKeyHash: secretFingerprint(accessKey), setupCodeHash: expected })
+        .values({ id: 1, ownerId: owner.id, accessKeyHash: secretFingerprint(accessKey), setupCodeHash: expected })
         .onConflictDoNothing()
         .returning({ id: instance.id })
+        .all()
       if (claimed.length === 0) throw new AppError(409, 'already_claimed', 'This copy already has an owner')
-      return owner!
+      return owner
     })
     this.generatedSetupCode = null
     return { user: toUserDTO(user), accessKey, session: await this.createSession(user.id, userAgent) }
@@ -119,14 +120,15 @@ export class AccountService {
     if (!safeEqual(secretFingerprint(setupCode), secretFingerprint(configured))) throw invalidSetupCode()
     const accessKey = generateAccessKey()
     // The new setup code is consumed atomically: of two concurrent recoveries, only the first one wins.
-    const consumed = await this.deps.db.transaction(async (tx) => {
-      const updated = await tx
+    const consumed = this.deps.db.transaction((tx) => {
+      const updated = tx
         .update(instance)
         .set({ accessKeyHash: secretFingerprint(accessKey), setupCodeHash: secretFingerprint(configured), keyChangedAt: new Date() })
         .where(and(eq(instance.id, 1), eq(instance.setupCodeHash, row.setupCodeHash)))
         .returning({ id: instance.id })
+        .all()
       if (updated.length === 0) return false
-      await tx.delete(sessions).where(eq(sessions.userId, row.ownerId))
+      tx.delete(sessions).where(eq(sessions.userId, row.ownerId)).run()
       return true
     })
     if (!consumed) throw invalidSetupCode()
@@ -152,14 +154,11 @@ export class AccountService {
 
   private async replaceKey(ownerId: string, keepSessionId?: string) {
     const accessKey = generateAccessKey()
-    await this.deps.db.transaction(async (tx) => {
-      await tx
-        .update(instance)
-        .set({ accessKeyHash: secretFingerprint(accessKey), keyChangedAt: new Date() })
-        .where(eq(instance.id, 1))
-      await tx
-        .delete(sessions)
+    this.deps.db.transaction((tx) => {
+      tx.update(instance).set({ accessKeyHash: secretFingerprint(accessKey), keyChangedAt: new Date() }).where(eq(instance.id, 1)).run()
+      tx.delete(sessions)
         .where(keepSessionId ? and(eq(sessions.userId, ownerId), ne(sessions.id, keepSessionId)) : eq(sessions.userId, ownerId))
+        .run()
     })
     return accessKey
   }
@@ -229,9 +228,9 @@ export class AccountService {
       .select({ id: workspaceMembers.workspaceId })
       .from(workspaceMembers)
       .where(and(eq(workspaceMembers.userId, actor.userId), eq(workspaceMembers.role, 'owner')))
-    await this.deps.db.transaction(async (tx) => {
-      for (const w of owned) await tx.delete(workspaces).where(eq(workspaces.id, w.id))
-      await tx.delete(users).where(eq(users.id, actor.userId))
+    this.deps.db.transaction((tx) => {
+      for (const w of owned) tx.delete(workspaces).where(eq(workspaces.id, w.id)).run()
+      tx.delete(users).where(eq(users.id, actor.userId)).run()
     })
     for (const w of owned) await this.deps.storage.deleteWorkspace(w.id)
     // Without SETUP_CODE, the copy needs a fresh one-off code to be claimed again; it is only shown in the server log.
