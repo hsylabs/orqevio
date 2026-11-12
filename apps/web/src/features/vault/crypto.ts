@@ -204,5 +204,6 @@ export async function encryptItem(vaultKey: CryptoKey, userId: string, item: Vau
 export async function decryptItem(vaultKey: CryptoKey, userId: string, id: string, envelope: string): Promise<VaultItem> {
   const item = JSON.parse(dec.decode(await open(vaultKey, envelope, itemAad(userId, id)))) as VaultItem
   if (item.id !== id) throw new WrongSecretError('Item identity mismatch')
-  return item
+  // Items saved before a field existed decrypt without it.
+  return { ...item, totp: item.totp ?? '' }
 }

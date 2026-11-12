@@ -9,6 +9,8 @@ export interface VaultItem {
   password: string
   url: string
   notes: string
+  /** Two-step verification secret: an otpauth:// link or a base32 secret ('' when none). */
+  totp: string
   favorite: boolean
   createdAt: string
   updatedAt: string
@@ -16,5 +18,5 @@ export interface VaultItem {
 
 export const emptyItem = (type: VaultItemType): VaultItem => {
   const now = new Date().toISOString()
-  return { id: crypto.randomUUID(), type, title: '', username: '', password: '', url: '', notes: '', favorite: false, createdAt: now, updatedAt: now }
+  return { id: crypto.randomUUID(), type, title: '', username: '', password: '', url: '', notes: '', totp: '', favorite: false, createdAt: now, updatedAt: now }
 }
