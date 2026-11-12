@@ -1,6 +1,5 @@
 import type { AccessLevel, CreatedTokenDTO } from '@orqevio/shared'
 import { scopesFromLevels } from '@orqevio/shared'
-import { ShieldAlert } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
@@ -11,13 +10,8 @@ import { Segmented } from '../../components/ui/Segmented'
 import { errorMessage, post } from '../../lib/api'
 import { keys, queryClient } from '../../lib/queries'
 import { useWorkspace } from '../shell/workspace'
+import { AccessRows } from './AccessRows'
 import { ConnectKit } from './ConnectKit'
-
-const LEVELS: Array<{ value: AccessLevel; label: string }> = [
-  { value: 'none', label: 'Sin acceso' },
-  { value: 'read', label: 'Leer' },
-  { value: 'write', label: 'Leer y escribir' },
-]
 
 export function CreateTokenDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { workspaceId, me } = useWorkspace()
@@ -83,21 +77,7 @@ export function CreateTokenDialog({ open, onOpenChange }: { open: boolean; onOpe
     <Dialog open={open} onOpenChange={close} title="Conectar un agente" description={`Crea un token para «${workspace?.name ?? 'este espacio'}». Solo podrá acceder a este espacio y a lo que permitas aquí.`} width="max-w-[520px]">
       <form onSubmit={submit} className="flex flex-col gap-5">
         <Field label="Nombre del agente" value={name} onChange={(e) => setName(e.target.value)} placeholder="p. ej. Claude Code, Cursor, Asistente de soporte" autoFocus maxLength={60} />
-        <div className="flex flex-col gap-3 rounded-[14px] border border-line bg-surface p-4">
-          <AccessRow label="Tareas" hint="Tableros, columnas, tarjetas y checklists" value={tasks} onChange={setTasks} />
-          <div className="h-px bg-line" />
-          <AccessRow label="Documentos" hint="Páginas y su contenido en Markdown" value={docs} onChange={setDocs} />
-          <div className="h-px bg-line" />
-          <div className="flex items-center justify-between gap-3">
-            <span>
-              <span className="block text-[13.5px] font-medium">Bóveda</span>
-              <span className="block text-[12px] text-ink-3">Nunca accesible para agentes</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-sunken px-2.5 py-1 text-[12px] font-medium text-ink-3">
-              <ShieldAlert className="size-3.5" /> Bloqueada
-            </span>
-          </div>
-        </div>
+        <AccessRows tasks={tasks} docs={docs} onTasks={setTasks} onDocs={setDocs} />
         <div className="flex items-center justify-between gap-3">
           <span className="text-[13px] font-medium text-ink-2">Caducidad</span>
           <Segmented
@@ -124,17 +104,5 @@ export function CreateTokenDialog({ open, onOpenChange }: { open: boolean; onOpe
         </div>
       </form>
     </Dialog>
-  )
-}
-
-function AccessRow({ label, hint, value, onChange }: { label: string; hint: string; value: AccessLevel; onChange: (v: AccessLevel) => void }) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <span>
-        <span className="block text-[13.5px] font-medium">{label}</span>
-        <span className="block text-[12px] text-ink-3">{hint}</span>
-      </span>
-      <Segmented size="sm" label={`Acceso a ${label}`} value={value} onChange={onChange} options={LEVELS} />
-    </div>
   )
 }

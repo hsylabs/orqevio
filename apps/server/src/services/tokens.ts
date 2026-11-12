@@ -22,6 +22,7 @@ const toTokenDTO = (t: typeof apiTokens.$inferSelect, workspaceName: string): To
   lastUsedAt: t.lastUsedAt?.toISOString() ?? null,
   expiresAt: t.expiresAt?.toISOString() ?? null,
   revokedAt: t.revokedAt?.toISOString() ?? null,
+  oauth: t.oauthClientId ? { clientId: t.oauthClientId, redirectUri: t.oauthRedirectUri ?? '' } : null,
 })
 
 export class TokenService {
@@ -97,8 +98,11 @@ export class TokenService {
         ),
       )
       .limit(1)
-    if (!row) return null
-    const t = row.token
+    return row ? this.actorFor(row.token, now) : null
+  }
+
+  /** The agent acting with a valid token (or OAuth grant); records when it was last used. */
+  async actorFor(t: typeof apiTokens.$inferSelect, now: Date): Promise<AgentActor> {
     // Throttle last-used writes to one per minute per token.
     const last = this.lastTouched.get(t.id) ?? 0
     if (now.getTime() - last > 60_000) {

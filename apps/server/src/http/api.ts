@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { AppError, badRequest } from '../lib/errors'
 import { RateLimiter } from '../lib/rate-limit'
+import { endpointFor } from './oauth'
 import { clearSessionCookie, clientIp, originGuard, requireActor, resolveActor, sessionOnly, setSessionCookie } from './middleware'
 import type { Env } from '../env'
 import type { Access } from '../services/access'
@@ -278,6 +279,10 @@ export function createApi(env: Env) {
     await c.get('services').attachments.remove(requireActor(c), c.req.param('id'))
     return c.body(null, 204)
   })
+
+  // ── OAuth consent (session only) ────────────────────────────────
+  api.post('/oauth/request', async (c) => c.json(await c.get('services').oauth.request(requireActor(c), await json(c), endpointFor(c.get('config'), c.req.url))))
+  api.post('/oauth/decision', async (c) => c.json(await c.get('services').oauth.decide(requireActor(c), await json(c), endpointFor(c.get('config'), c.req.url))))
 
   // ── Agent tokens (session only) ─────────────────────────────────
   api.get('/tokens', async (c) => c.json(await c.get('services').tokens.list(requireActor(c))))

@@ -282,6 +282,8 @@ export interface TokenDTO {
   lastUsedAt: string | null
   expiresAt: string | null
   revokedAt: string | null
+  /** Set when an application connected through OAuth instead of with a pasted token. */
+  oauth: { clientId: string; redirectUri: string } | null
 }
 
 export interface CreatedTokenDTO extends TokenDTO {
@@ -320,4 +322,27 @@ export interface RealtimeEvent {
 
 export interface ApiErrorBody {
   error: { code: string; message: string; details?: unknown }
+}
+
+// ── OAuth (connecting MCP clients without pasting a token) ──────
+/** An application asking for access, as the consent screen shows it. */
+export interface OAuthClientDTO {
+  id: string
+  /** What the application calls itself; not verified. */
+  name: string
+  /** Host that published the application's metadata (Client ID Metadata Document); null when it registered itself. */
+  publishedBy: string | null
+  /** Where the browser returns once you decide. */
+  redirectUri: string
+}
+
+export type OAuthRequestDTO =
+  | { kind: 'consent'; client: OAuthClientDTO; scopes: Scope[] }
+  /** Shown to the owner and never sent back: the application is unknown, or the return address is not its own. */
+  | { kind: 'problem'; problem: 'unknown_client' | 'bad_redirect'; detail: string }
+  /** The request cannot go ahead; the application is told why at this address. */
+  | { kind: 'redirect'; redirect: string }
+
+export interface OAuthDecisionDTO {
+  redirect: string
 }

@@ -52,6 +52,8 @@ export const router = createBrowserRouter([
   { path: '/register', element: <Navigate to="/setup" replace /> },
   { path: '/card/:id', element: <ReferenceRedirect type="card" /> },
   { path: '/doc/:id', element: <ReferenceRedirect type="doc" /> },
+  // OAuth authorization endpoint: the consent screen for MCP clients such as Claude.
+  { path: '/oauth/authorize', lazy: async () => ({ Component: (await import('./features/oauth/ConsentPage')).ConsentPage }), hydrateFallbackElement: <FullScreenLoader /> },
   {
     path: '/w/:wid',
     element: <AppShell />,

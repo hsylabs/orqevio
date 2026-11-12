@@ -9,7 +9,7 @@ Orqevio reúne cuatro piezas y solo esas cuatro:
 | **Tareas** | Espacios, proyectos, tableros Kanban, columnas, tarjetas, etiquetas, fechas, checklists, archivo y adjuntos. |
 | **Documentación** | Páginas jerárquicas con editor por bloques que guarda Markdown, tablas sencillas, imágenes y archivos, y enlaces directos con tareas. |
 | **Bóveda** | Credenciales y notas privadas cifradas de extremo a extremo, códigos de verificación en dos pasos (TOTP), importación y exportación, generador de contraseñas, clave de recuperación y bloqueo automático. |
-| **Agentes (MCP)** | Servidor MCP con tokens por espacio y permisos diferenciados para consultar documentación, crear tareas y reorganizar tableros. |
+| **Agentes (MCP)** | Servidor MCP con permisos diferenciados por espacio para consultar documentación, crear tareas y reorganizar tableros. Se conecta con OAuth (por ejemplo, como conector de Claude) o con un token. |
 
 La decisión central: **la bóveda está aislada de los agentes**. Ningún token puede acceder a ella, ni siquiera a su contenido cifrado, y el servidor nunca conoce los secretos.
 
@@ -36,7 +36,7 @@ packages/shared Esquemas zod, permisos y tipos compartidos por API, MCP y client
 ```
 
 ```
-          Navegador (sesión)                       Cliente MCP (token Bearer)
+          Navegador (sesión)                Cliente MCP (OAuth o token Bearer)
                  │                                          │
            REST /api/*                                 POST /mcp
                  │                                          │
@@ -86,6 +86,7 @@ clave de la bóveda ── AES-256-GCM, datos asociados = usuario + id del eleme
 - Cada token pertenece a un único espacio y tiene permisos por área: tareas y documentos (sin acceso, lectura, o lectura y escritura). Se muestra una sola vez y se guarda su hash.
 - Cada agente solo ve las herramientas que permite su token. Los agentes **no pueden borrar**: solo archivar tarjetas, que puedes restaurar.
 - Toda acción queda registrada con su autor (persona o agente) y es visible en la app. Los tokens se pueden revocar al instante y caducar a los 30, 90 o 365 días.
+- Las aplicaciones conectadas con OAuth reciben los permisos que eliges en la pantalla de consentimiento. Esa pantalla indica a qué dirección volverás y si la identidad de la aplicación está publicada o es autodeclarada. Nunca se envía nada a una dirección que la aplicación no haya registrado.
 
 ## Puesta en marcha
 
@@ -261,6 +262,19 @@ Cada versión tiene número y notas (`CHANGELOG.md` y las releases de GitHub), y
 
 ## Conectar agentes por MCP
 
+Hay dos formas de conectar un cliente: con OAuth, sin copiar nada, o con un token que creas en la app.
+
+### Con OAuth (Claude en la web, el escritorio y el móvil)
+
+Los clientes que admiten la autorización OAuth de MCP solo necesitan la dirección `https://tu-dominio/mcp`. En Claude, añade un **conector personalizado** con esa dirección. Al conectar, tu copia muestra una pantalla de consentimiento donde eliges el espacio y los permisos, igual que al crear un token. El acceso aparece en **Agentes** y puedes revocarlo cuando quieras.
+
+- **Autorización.** Sigue la especificación de autorización de MCP (revisión 2026-07-28): OAuth 2.1 con PKCE `S256`, metadatos del recurso protegido (RFC 9728) y del servidor de autorización (RFC 8414), indicadores de recurso (RFC 8707) y parámetro `iss` en la respuesta (RFC 9207).
+- **Registro de clientes.** Los clientes se identifican con un Client ID Metadata Document, una URL `https` que tu copia lee sin seguir redirecciones. También pueden registrarse con Dynamic Client Registration (RFC 7591), que no guarda nada: el `client_id` lleva firmadas sus direcciones de vuelta.
+- **Tokens.** Solo se admiten clientes públicos. El token de acceso dura una hora y solo vale para `/mcp`, nunca para la API REST ni para la bóveda. El de refresco es de un solo uso: si alguien presenta uno ya usado, o un código de autorización por segunda vez, el acceso se revoca. Un acceso que no se usa en 30 días caduca.
+- **Requisito.** Los conectores de Claude se conectan desde los servidores de Anthropic, así que tu copia debe ser accesible desde Internet por HTTPS. Una copia en Cloudflare ya lo es.
+
+### Con un token
+
 1. En Orqevio, ve a **Agentes → Conectar un agente**, elige permisos y caducidad, y copia el token.
 2. Pega la configuración que te ofrece la propia app. Ejemplos:
 
@@ -301,7 +315,7 @@ claude mcp add --transport http orqevio https://tu-dominio/mcp --header "Authori
 | Documentos · escritura | `create_page`, `update_page` (reemplazar con `base_version`, o añadir al final) |
 | Escritura + lectura de ambas áreas | `link_card_to_page` |
 
-El endpoint es MCP Streamable HTTP sin estado (`POST /mcp`). La misma API REST también acepta los tokens con los mismos permisos, salvo cuenta, tokens y bóveda, que exigen sesión en el navegador.
+El endpoint es MCP Streamable HTTP sin estado (`POST /mcp`). La misma API REST también acepta los tokens creados en la app con los mismos permisos, salvo cuenta, tokens y bóveda, que exigen sesión en el navegador. Los tokens de OAuth solo valen para `/mcp`.
 
 ## Pruebas
 
@@ -337,7 +351,7 @@ pnpm --filter @orqevio/web exec playwright install firefox
 E2E_BROWSER=firefox SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, pegar una imagen en un documento y adjuntar archivos a una tarjeta, el ciclo completo de la bóveda (con recuperación) y un agente MCP trabajando en directo sobre el tablero. Fallan si aparece cualquier error en la consola del navegador.
+Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, pegar una imagen en un documento y adjuntar archivos a una tarjeta, el ciclo completo de la bóveda (con recuperación), un agente MCP trabajando en directo sobre el tablero y un cliente que se conecta con OAuth tras la pantalla de consentimiento. Fallan si aparece cualquier error en la consola del navegador.
 
 ## Configuración
 
@@ -359,7 +373,7 @@ En Cloudflare solo se usan `SETUP_CODE` (secreto obligatorio), `APP_URL` (opcion
 
 - **Uso individual por espacio.** El modelo de datos ya contempla miembros y roles, pero no hay invitaciones ni asignación de tarjetas a personas: el producto está pensado para ti y tus agentes.
 - **Sin coedición simultánea.** No hay edición colaborativa en tiempo real tipo CRDT; los conflictos se detectan por versión y se resuelven explícitamente.
-- **Autenticación MCP por token Bearer.** No se implementa el flujo OAuth 2.1 de MCP, así que los clientes que solo admiten OAuth (por ejemplo, los conectores personalizados de la web de Claude) no pueden conectarse directamente; Claude Code, Cursor, VS Code y Claude Desktop (con `mcp-remote`) sí.
+- **OAuth solo para clientes públicos.** No se admiten clientes confidenciales (`client_secret_*`, `private_key_jwt`) ni el flujo `client_credentials`; los clientes MCP habituales, incluidos los conectores de Claude, son públicos.
 - **Un solo proceso por copia.** SQLite, los adjuntos en disco y el tiempo real en memoria asumen una única instancia del servidor por copia, que es el modelo de Orqevio (una copia por persona).
 - **Copias de seguridad en Cloudflare.** Aún no hay exportación desde la app: los datos quedan en el Durable Object y en el bucket R2 de tu cuenta.
 - **Sin migración desde PostgreSQL.** Las versiones de desarrollo anteriores usaban PostgreSQL; no hay herramienta para pasar esos datos a SQLite.

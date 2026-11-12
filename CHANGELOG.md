@@ -13,6 +13,7 @@ Primera versión.
 - Documentos jerárquicos en Markdown con editor por bloques, tablas, imágenes y enlaces directos a tareas.
 - Búsqueda de texto completo sin distinguir mayúsculas ni acentos.
 - Servidor MCP con tokens por espacio y permisos diferenciados; la bóveda queda fuera del alcance de los agentes.
+- Conexión por OAuth para clientes MCP como los conectores de Claude: basta con la dirección `/mcp`, tu copia pide permiso en una pantalla de consentimiento y el acceso se revoca desde «Agentes».
 - Cambios en directo por WebSocket, también los de los agentes.
 
 ### Bóveda

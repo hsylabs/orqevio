@@ -10,6 +10,7 @@ import { RealtimeBus } from './lib/realtime'
 import { LocalStorage } from './lib/storage-local'
 import { attachLiveUpdates } from './node/live'
 import { nodePlatform } from './node/platform'
+import { publicFetch } from './node/public-fetch'
 import { createServices } from './services'
 
 const env = loadEnv()
@@ -21,7 +22,7 @@ runMigrations(db, env.migrationsDir)
 const bus = new RealtimeBus()
 
 const storage = new LocalStorage(`${env.dataDir}/uploads`)
-const services = createServices({ db, bus, env, storage })
+const services = createServices({ db, bus, env, storage, publicFetch })
 const app = createApp(env, services, nodePlatform(env))
 
 const server = serve({ fetch: app.fetch, port: env.port, hostname: env.host }, (info) => {

@@ -112,8 +112,59 @@ export const apiTokens = sqliteTable(
     lastUsedAt: timestamp('last_used_at'),
     expiresAt: timestamp('expires_at'),
     revokedAt: timestamp('revoked_at'),
+    /**
+     * Set when the access was granted through OAuth: the client and the address it
+     * returned to. Such a row is the grant; its tokens live in oauth_tokens, and
+     * token_hash holds the hash of a value that is never handed out.
+     */
+    oauthClientId: text('oauth_client_id'),
+    oauthRedirectUri: text('oauth_redirect_uri'),
   },
   (t) => [uniqueIndex('api_tokens_hash_idx').on(t.tokenHash), index('api_tokens_user_idx').on(t.userId)],
+)
+
+/** OAuth authorization codes: single use, valid for a few minutes. */
+export const oauthCodes = sqliteTable(
+  'oauth_codes',
+  {
+    /** SHA-256 of the code. */
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    clientId: text('client_id').notNull(),
+    clientName: text('client_name').notNull(),
+    redirectUri: text('redirect_uri').notNull(),
+    /** PKCE S256 challenge. */
+    codeChallenge: text('code_challenge').notNull(),
+    scopes: text('scopes', { mode: 'json' }).$type<string[]>().notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    usedAt: timestamp('used_at'),
+    /** The grant the code was exchanged for: presenting the code again revokes it. */
+    tokenId: text('token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
+  },
+  (t) => [index('oauth_codes_expires_idx').on(t.expiresAt)],
+)
+
+/** Access and refresh tokens of OAuth grants. */
+export const oauthTokens = sqliteTable(
+  'oauth_tokens',
+  {
+    /** SHA-256 of the token. */
+    id: text('id').primaryKey(),
+    tokenId: text('token_id')
+      .notNull()
+      .references(() => apiTokens.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: ['access', 'refresh'] }).notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    /** Refresh tokens are single use: set when exchanged; presenting it again revokes the grant. */
+    rotatedAt: timestamp('rotated_at'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('oauth_tokens_grant_idx').on(t.tokenId)],
 )
 
 // ── Projects & boards ────────────────────────────────────────────
