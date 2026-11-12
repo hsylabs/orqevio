@@ -92,7 +92,8 @@ const PONG_TIMEOUT_MS = 10_000
  */
 export function useRealtime(workspaceId: string | undefined, selfId: string | undefined) {
   useEffect(() => {
-    if (!workspaceId) return
+    // Wait for the user too: opening before it is known would mean reconnecting right away.
+    if (!workspaceId || !selfId) return
     let socket: WebSocket | null = null
     let retry: ReturnType<typeof setTimeout> | undefined
     let ping: ReturnType<typeof setInterval> | undefined
@@ -150,7 +151,14 @@ export function useRealtime(workspaceId: string | undefined, selfId: string | un
       closed = true
       clearTimeout(retry)
       stopTimers()
-      socket?.close()
+      const ws = socket
+      if (ws?.readyState === WebSocket.CONNECTING) {
+        // Closing during the handshake makes Safari log an error: close once it has opened.
+        ws.onmessage = null
+        ws.onopen = () => ws.close()
+      } else {
+        ws?.close()
+      }
     }
   }, [workspaceId, selfId])
 }

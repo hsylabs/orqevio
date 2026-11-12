@@ -5,6 +5,10 @@ import { type Page, test as base, expect } from '@playwright/test'
 export const test = base.extend<{ consoleErrors: string[] }>({
   consoleErrors: [
     async ({ page }, use) => {
+      // Every browser blocks CSP violations, but not all of them log one: report them all.
+      await page.addInitScript(() =>
+        document.addEventListener('securitypolicyviolation', (e) => console.error(`CSP violation: ${e.effectiveDirective} blocked ${e.blockedURI || 'inline code'} in ${e.sourceFile}`)),
+      )
       const errors: string[] = []
       page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
       page.on('console', (m) => {
