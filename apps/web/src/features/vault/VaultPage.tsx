@@ -22,6 +22,7 @@ import { WrongSecretError, changeMasterPassword, encryptItem } from './crypto'
 import { ExportDialog, ImportDialog } from './TransferDialogs'
 import { Generator, PasswordText } from './Generator'
 import { getSession, lockVault, setAutoLock, updateSessionItems, useAutoLockRemaining, useVaultSession } from './session'
+import { type VaultBlocker, vaultBlockers } from '../../lib/browser'
 import { estimateMasterPassword } from './strength'
 import { type TotpProblem, groupCode, parseTotp, totp } from './totp'
 import { ITEM_LIMITS, type VaultItem, type VaultItemType, emptyItem } from './types'
@@ -33,12 +34,15 @@ export function VaultPage() {
   const { me } = useWorkspace()
   const state = useQuery({ queryKey: keys.vault, queryFn: ({ signal }) => get<VaultStateDTO>('/vault', signal) })
   const session = useVaultSession()
+  const blockers = useMemo(() => vaultBlockers(), [])
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PageHeader crumbs={[{ label: 'Bóveda' }]} actions={session.key && state.data ? <UnlockedActions state={state.data} /> : undefined} />
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {!state.data ? (
+        {blockers.length > 0 ? (
+          <VaultUnsupported blockers={blockers} />
+        ) : !state.data ? (
           <div className="grid h-full place-items-center">
             <div className="skeleton size-24 rounded-full" />
           </div>
@@ -50,6 +54,34 @@ export function VaultPage() {
           <VaultUnlock userId={me.user.id} state={state.data} />
         )}
       </div>
+    </div>
+  )
+}
+
+const BLOCKER_TEXT: Record<VaultBlocker, string> = {
+  secure_context:
+    'Has abierto Orqevio por una conexión sin cifrar (http://). Los navegadores solo permiten el cifrado de la bóveda en conexiones seguras: abre tu copia por https:// (por ejemplo, detrás de Caddy, Nginx o Traefik) o, en el mismo equipo, por http://localhost.',
+  webcrypto: 'Este navegador no ofrece WebCrypto, con el que la bóveda cifra tus datos.',
+  workers: 'Este navegador no admite Web Workers, que la bóveda usa para derivar tu clave sin bloquear la página.',
+  webassembly: 'Este navegador no admite WebAssembly, que la bóveda usa para derivar tu clave con Argon2id.',
+}
+
+/** Shown instead of a generic error when the browser cannot run the vault; the rest of the app still works. */
+function VaultUnsupported({ blockers }: { blockers: VaultBlocker[] }) {
+  const insecure = blockers.includes('secure_context')
+  return (
+    <div className="mx-auto flex max-w-[520px] flex-col items-center px-6 py-16 text-center">
+      <span className="grid size-12 place-items-center rounded-[14px] bg-sunken text-ink-2">
+        <LockKeyhole className="size-6" />
+      </span>
+      <h1 className="mt-5 font-display text-[24px] font-medium">{insecure ? 'La bóveda necesita una conexión segura' : 'La bóveda no funciona en este navegador'}</h1>
+      <ul className="mt-4 flex flex-col gap-2 text-[14px] leading-relaxed text-ink-2">
+        {blockers.map((b) => (
+          <li key={b}>{BLOCKER_TEXT[b]}</li>
+        ))}
+      </ul>
+      {!insecure && <p className="mt-4 text-[13px] text-ink-3">Usa una versión actual de Chrome, Edge, Firefox o Safari.</p>}
+      <p className="mt-4 text-[13px] text-ink-3">Tus tareas y documentos siguen funcionando con normalidad.</p>
     </div>
   )
 }

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacidad · Orqevio</title>
+    <meta name="description" content="orqevio.com no guarda datos de nadie: sin cookies, sin analítica y sin formularios. Cada copia de Orqevio es de su dueño y vive en su cuenta de Cloudflare o en su servidor." />
+    <meta name="theme-color" content="#F2EFE8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121110" media="(prefers-color-scheme: dark)" />
+    <link rel="canonical" href="https://orqevio.com/privacidad/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/fonts.css" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <a class="skip" href="#contenido">Saltar al contenido</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/" aria-label="Orqevio, inicio">
+          <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect class="logo-bg" width="32" height="32" rx="9" fill="#1C1A16" /><path class="logo-orbit" d="M22.4 9.6A9 9 0 1 0 25 16" fill="none" stroke="#F5F3EE" stroke-width="3.2" stroke-linecap="round" /><circle cx="23.6" cy="8.4" r="2.6" fill="#E5532A" /></svg>
+          Orqevio
+        </a>
+        <nav class="nav" aria-label="Principal">
+          <a href="/instalar/">Instalar</a>
+          <a class="hide-small" href="/privacidad/" aria-current="page">Privacidad</a>
+          <a href="https://github.com/hsylabs/orqevio">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <div class="page-head">
+        <div class="wrap">
+          <span class="eyebrow">Política de privacidad</span>
+          <h1>Tus datos no pasan por aquí</h1>
+          <p class="lead">orqevio.com no guarda datos de nadie. Cada copia de Orqevio es de su dueño y vive en su cuenta de Cloudflare o en su servidor.</p>
+        </div>
+      </div>
+
+      <div class="wrap prose">
+        <h2 id="web">Esta web</h2>
+        <ul>
+          <li><strong>Sin cookies, sin analítica y sin formularios.</strong> No hay registro ni nada que rellenar, y no medimos visitas.</li>
+          <li><strong>Sin recursos de terceros.</strong> Las fuentes, los estilos y el script de copiar se sirven desde orqevio.com.</li>
+          <li><strong>Alojamiento.</strong> La web se sirve desde Cloudflare. Como cualquier servidor web, Cloudflare procesa datos técnicos de cada visita, como la dirección IP, para entregar las páginas y protegerlas de abusos, según su <a href="https://www.cloudflare.com/privacypolicy/">política de privacidad</a>. No activamos registros de visitas.</li>
+        </ul>
+
+        <h2 id="copia">Tu copia de Orqevio</h2>
+        <ul>
+          <li><strong>Es tuya.</strong> Vive en tu cuenta de Cloudflare o en tu servidor. HSY Labs no tiene acceso a ella ni a nada de lo que guardas.</li>
+          <li><strong>Sin telemetría.</strong> Orqevio no envía datos de uso a nadie.</li>
+          <li><strong>Tu bóveda se cifra en tu navegador.</strong> Ni el servidor de tu copia puede leerla.</li>
+        </ul>
+        <p>Tu copia solo se conecta a otros sitios en estos casos:</p>
+        <ul>
+          <li><strong>Avisos de actualización.</strong> Como mucho cada 12 horas, y solo mientras la usas, pregunta a <code>registry.npmjs.org</code> cuál es la última versión publicada. Es una petición sin ningún dato tuyo. Se desactiva con <code>UPDATE_CHECK=off</code>.</li>
+          <li><strong>Aplicaciones que conectas con OAuth.</strong> Al conectar una, como Claude, tu copia lee la descripción que esa aplicación publica en su propio sitio.</li>
+          <li><strong>Imágenes externas.</strong> Las imágenes de otros sitios que insertes en un documento las carga tu navegador desde su origen.</li>
+        </ul>
+        <p>Los agentes que conectas, como Claude, reciben lo que leen en tu copia, según los permisos que les das y las condiciones de su proveedor.</p>
+
+        <h2 id="instalacion">Al instalar y actualizar</h2>
+        <ul>
+          <li><strong>npm y GitHub.</strong> El instalador y la imagen de Docker se descargan de <code>registry.npmjs.org</code> y de <code>ghcr.io</code>, según las políticas de esos servicios.</li>
+          <li><strong>Cloudflare.</strong> El instalador usa Wrangler, la herramienta oficial de Cloudflare, con tu propia sesión. Desactiva su telemetría anónima, salvo que tú la hayas activado.</li>
+        </ul>
+
+        <h2 id="contacto">Contacto</h2>
+        <p>Orqevio es un proyecto de HSY Labs. Para cualquier consulta sobre privacidad, escríbenos a través del <a href="https://github.com/hsylabs/orqevio">repositorio de GitHub</a>.</p>
+        <p>Última actualización: 12 de noviembre de 2026.</p>
+      </div>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>© 2026 HSY Labs</span>
+        <nav aria-label="Pie de página">
+          <a href="/instalar/">Instalar</a>
+          <a href="/privacidad/">Privacidad</a>
+          <a href="https://github.com/hsylabs/orqevio">GitHub</a>
+          <a href="https://github.com/hsylabs/orqevio/blob/main/LICENSE.md">Licencia</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

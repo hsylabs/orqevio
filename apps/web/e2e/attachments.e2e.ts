@@ -18,7 +18,10 @@ test('pasting or attaching a file stores it as an attachment', async ({ page }) 
     const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
     const data = new DataTransfer()
     data.items.add(new File([bytes], 'captura de pantalla.png', { type: 'image/png' }))
-    editor.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
+    // Firefox drops the clipboardData given to the constructor of a synthetic event, so set it on the event.
+    const paste = new ClipboardEvent('paste', { bubbles: true, cancelable: true })
+    Object.defineProperty(paste, 'clipboardData', { value: data })
+    editor.dispatchEvent(paste)
   }, PIXEL)
   const response = await upload
   expect(response.status()).toBe(201)

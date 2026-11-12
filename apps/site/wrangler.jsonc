@@ -1,0 +1,14 @@
+// orqevio.com: static files only, served by Cloudflare (no Worker code runs).
+//   pnpm --filter @orqevio/site build && npx wrangler deploy   (from apps/site)
+// Then attach the orqevio.com custom domain in the Cloudflare dashboard.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "orqevio-site",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "observability": { "enabled": false }
+}

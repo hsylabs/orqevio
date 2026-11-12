@@ -341,7 +341,15 @@ La misma batería se pasa contra el runtime de Cloudflare en local (`pnpm --filt
 E2E_BASE_URL=http://127.0.0.1:8787 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-La CI ejecuta las dos.
+La CI ejecuta las dos y, además, repite la batería contra el servidor de Node en Firefox y en WebKit (el motor de Safari), cada uno con una copia limpia. En local, instala el navegador y elígelo con `E2E_BROWSER`, también contra una copia recién creada:
+
+```bash
+pnpm --filter @orqevio/web exec playwright install firefox
+```
+
+```bash
+E2E_BROWSER=firefox SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
+```
 
 Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, pegar una imagen en un documento y adjuntar archivos a una tarjeta, el ciclo completo de la bóveda (con recuperación), un agente MCP trabajando en directo sobre el tablero y un cliente que se conecta con OAuth tras la pantalla de consentimiento. Fallan si aparece cualquier error en la consola del navegador.
 
@@ -372,7 +380,7 @@ En Cloudflare solo se usan `SETUP_CODE` (secreto obligatorio), `APP_URL` (opcion
 - **Una persona por copia.** No hay registro ni correo; si se pierde la clave de acceso, se recupera desde el servidor (CLI o un `SETUP_CODE` nuevo).
 - **Bóveda personal.** No se comparte entre personas. Importa los CSV de los navegadores y los formatos de Bitwarden; no lee los de otros gestores (1Password, KeePass…), salvo que los conviertas antes a uno de esos.
 - **Imágenes externas.** Las imágenes de documentos que apuntan a otros dominios se cargan desde su origen.
-- **Navegadores modernos.** Se requiere WebCrypto, Web Workers y WebAssembly (versiones actuales de Chrome, Edge, Firefox y Safari).
+- **Navegadores modernos y conexión segura para la bóveda.** La app se prueba en Chromium, Firefox y WebKit (el motor de Safari). La bóveda necesita WebCrypto, Web Workers y WebAssembly, y los navegadores solo ofrecen WebCrypto por HTTPS o en `localhost`: si abres tu copia por `http://` desde otra dirección (por ejemplo, la IP de tu red local), la bóveda lo explica y el resto de la app sigue funcionando.
 
 ## Estructura del repositorio
 
@@ -392,4 +400,7 @@ packages/shared/src  esquemas, permisos, tipos y utilidades de enlaces
 packages/orqevio     paquete desplegable en Cloudflare (Worker, web y configuración base)
 packages/create-orqevio  instalador: npx create-orqevio (instalar, actualizar, recuperar)
 templates/cloudflare plantilla del botón «Deploy to Cloudflare» (wrangler.jsonc y package.json generados)
+apps/site            la web pública orqevio.com: páginas estáticas sin cookies ni analítica
 ```
+
+**La web pública.** `pnpm --filter @orqevio/site build` genera `apps/site/dist` con las páginas y las mismas fuentes que la app, servidas desde el propio sitio. `pnpm --filter @orqevio/site preview` la sirve en local con Wrangler. Para publicarla, desde `apps/site` ejecuta `npx wrangler deploy` y asocia el dominio en el panel de Cloudflare. Sus pruebas comprueban los enlaces, las fuentes, las cabeceras de seguridad y que la guía de instalación diga lo mismo que este README.
