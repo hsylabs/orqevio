@@ -24,6 +24,7 @@ RUN pnpm build \
 # ── Runtime ───────────────────────────────────────────────────────
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production \
+    ORQEVIO_INSTALL=docker \
     PORT=3000 \
     HOST=0.0.0.0 \
     DATA_DIR=/data \

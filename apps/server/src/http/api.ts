@@ -82,6 +82,7 @@ export function createApi(env: Env) {
     return c.body(null, 204)
   })
   api.get('/auth/me', async (c) => c.json(await c.get('services').accounts.me(requireActor(c))))
+  api.get('/updates', async (c) => c.json(await c.get('services').updates.status(requireActor(c))))
   // Like /auth/me, but answers 200 for visitors: the sign-in screens need to know whether the copy is claimed.
   api.get('/auth/session', async (c) => {
     const actor = c.get('actor')

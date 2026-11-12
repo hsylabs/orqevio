@@ -1,3 +1,4 @@
+import { installKind } from '@orqevio/shared'
 import type { Env } from '../env'
 import type { OrqevioCopy } from './copy'
 
@@ -11,6 +12,11 @@ export interface Bindings {
   /** Optional: public origins, comma-separated. Defaults to the origin of each request. */
   APP_URL?: string
   MAX_UPLOAD_MB?: string
+  /** Set by the installer ("cli") or the Deploy to Cloudflare template ("button"). */
+  ORQEVIO_INSTALL?: string
+  ORQEVIO_COPY_NAME?: string
+  /** "off" stops the copy from looking up the latest published version. */
+  UPDATE_CHECK?: string
 }
 
 export function workerEnv(bindings: Bindings): Env {
@@ -32,5 +38,8 @@ export function workerEnv(bindings: Bindings): Env {
     secureCookies: true,
     maxUploadBytes: Number(bindings.MAX_UPLOAD_MB ?? 20) * 1024 * 1024,
     setupCode: bindings.SETUP_CODE?.trim() || null,
+    install: installKind(bindings.ORQEVIO_INSTALL, 'cloudflare'),
+    copyName: bindings.ORQEVIO_COPY_NAME?.trim() || null,
+    updateCheck: !['0', 'false', 'no', 'off'].includes((bindings.UPDATE_CHECK ?? '').toLowerCase()),
   }
 }

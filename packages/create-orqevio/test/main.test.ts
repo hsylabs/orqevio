@@ -86,6 +86,8 @@ describe('create-orqevio', () => {
       no_bundle: true,
       // Variables set in the Cloudflare dashboard survive deploys.
       keep_vars: true,
+      // The app tells the owner how this copy updates.
+      vars: { ORQEVIO_INSTALL: 'cli', ORQEVIO_COPY_NAME: 'ana' },
     })
     expect(calls().filter((c) => c.args[0] !== 'whoami' && c.args[0] !== 'login').every((c) => c.account === 'acc-1')).toBe(true)
     const code = deploy.secrets!.content.match(/^SETUP_CODE=(.+)\n$/)![1]!
@@ -224,7 +226,13 @@ describe('create-orqevio', () => {
     // Workers Builds provides the credentials: no sign-in or account questions.
     expect(commands()).toEqual(['deploy --config', 'deploy --config'])
     const [deploy, dry] = calls()
-    expect(deploy!.config).toMatchObject({ name: 'mi-copia', r2_buckets: [{ binding: 'UPLOADS', bucket_name: 'mis-adjuntos' }], migrations: [{ tag: 'v1' }, { tag: 'v2' }], keep_vars: true })
+    expect(deploy!.config).toMatchObject({
+      name: 'mi-copia',
+      r2_buckets: [{ binding: 'UPLOADS', bucket_name: 'mis-adjuntos' }],
+      migrations: [{ tag: 'v1' }, { tag: 'v2' }],
+      keep_vars: true,
+      vars: { ORQEVIO_INSTALL: 'button', ORQEVIO_COPY_NAME: 'mi-copia' },
+    })
     expect(deploy!.args).not.toContain('--secrets-file')
     expect(dry!.args).toContain('--dry-run')
 
