@@ -1,6 +1,7 @@
 // Embeds the Drizzle migrations (drizzle/) in a module the Durable Object can import,
 // since a Worker has no filesystem. Run after `drizzle-kit generate`; a test checks it is current.
-import { readFileSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
 const journal = JSON.parse(readFileSync(new URL('../drizzle/meta/_journal.json', import.meta.url), 'utf8'))
 const migrations = {}
@@ -12,3 +13,13 @@ export default ${JSON.stringify({ journal: { entries: journal.entries }, migrati
 `
 writeFileSync(new URL('../src/worker/migrations.gen.ts', import.meta.url), source)
 console.log(`Embedded ${journal.entries.length} migrations`)
+
+// Migrations run on every copy when it starts, so a published one must never change:
+// record each new migration's fingerprint (existing entries are never rewritten) and
+// a test fails if a recorded migration is edited.
+const checksumsUrl = new URL('../drizzle/checksums.json', import.meta.url)
+const checksums = existsSync(checksumsUrl) ? JSON.parse(readFileSync(checksumsUrl, 'utf8')) : {}
+for (const entry of journal.entries) {
+  checksums[entry.tag] ??= createHash('sha256').update(migrations[`m${String(entry.idx).padStart(4, '0')}`]).digest('hex')
+}
+writeFileSync(checksumsUrl, `${JSON.stringify(checksums, null, 2)}\n`)

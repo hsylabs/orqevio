@@ -1,10 +1,14 @@
 # Your own copy of Orqevio: a single container with its SQLite database and
 # attachments in the `orqevio-data` volume.
-#   cp .env.example .env   # set APP_URL and, optionally, SETUP_CODE
-#   docker compose up -d --build
+#   cp .env.example .env     # set APP_URL and, optionally, SETUP_CODE
+#   docker compose up -d     # runs the published image
+# Update to the latest version (data is kept; migrations run on start):
+#   docker compose pull && docker compose up -d
+# Pin a version with ORQEVIO_VERSION=0.1.0 in .env. To build this repository
+# instead of pulling: docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 services:
   app:
-    build: .
+    image: ghcr.io/hsylabs/orqevio:${ORQEVIO_VERSION:-latest}
     restart: unless-stopped
     environment:
       APP_URL: ${APP_URL:-http://localhost:3000}

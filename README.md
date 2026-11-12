@@ -98,7 +98,13 @@ cp .env.example .env
 Edita `.env`: define `APP_URL` con la URL pública (por ejemplo `https://orqevio.tu-dominio.com`) y un `SETUP_CODE` propio (opcional; ver «Acceso a tu copia»).
 
 ```bash
-docker compose up -d --build
+docker compose up -d
+```
+
+Usa la imagen publicada (`ghcr.io/hsylabs/orqevio`, para amd64 y arm64). Para fijar una versión, añade `ORQEVIO_VERSION=0.1.0` a `.env`. Hasta la primera versión publicada, o si prefieres construirla tú desde este repositorio:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
 La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx, Traefik) y, en ese caso, añade `TRUST_PROXY=true`. La base de datos SQLite y los adjuntos se guardan en el volumen `orqevio-data`.
@@ -236,6 +242,17 @@ node apps/server/dist/cli.js reset-access
 También puedes definir un `SETUP_CODE` nuevo, reiniciar la copia y usar **«¿Has perdido la clave?»** en la pantalla de acceso. En ambos casos se cierran todas las sesiones.
 
 `node dist/cli.js status` muestra si la copia está reclamada y por quién. Nada de esto afecta a la bóveda: su contraseña maestra nunca la conoce el servidor.
+
+## Actualizaciones
+
+Cada versión tiene número y notas (`CHANGELOG.md` y las releases de GitHub), y se publica a la vez en npm y como imagen Docker. Al arrancar, cada copia aplica sus migraciones. Las migraciones siempre son compatibles hacia atrás y nunca se modifican una vez publicadas; un test lo vigila.
+
+| Instalación | Cómo actualizar | Qué se conserva |
+| --- | --- | --- |
+| Comando (Cloudflare) | `npx create-orqevio@latest update` | Datos, clave, bóveda y variables del panel |
+| Botón (Cloudflare) | Fusiona el pull request de Dependabot en tu repositorio | Lo mismo |
+| Docker | `docker compose pull` y `docker compose up -d` | El volumen `orqevio-data` |
+| Desde el código | `git pull`, `pnpm install`, `pnpm build` y reinicia | La carpeta `DATA_DIR` |
 
 ## Conectar agentes por MCP
 

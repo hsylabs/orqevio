@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "description": "Orqevio ready to deploy on Cloudflare: the Worker bundle, the web app and the base Wrangler configuration. Install it with `npx create-orqevio`.",
   "license": "FSL-1.1-ALv2",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hsylabs/orqevio.git",
+    "directory": "packages/orqevio"
+  },
+  "homepage": "https://github.com/hsylabs/orqevio#readme",
+  "bugs": {
+    "url": "https://github.com/hsylabs/orqevio/issues"
+  },
   "type": "module",
   "files": [
     "dist"
