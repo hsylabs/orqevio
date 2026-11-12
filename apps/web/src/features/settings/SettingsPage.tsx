@@ -168,7 +168,8 @@ export function SettingsPage() {
           </Section>
         </div>
       </div>
-      <Dialog open={newKey !== null} onOpenChange={(open) => !open && setNewKey(null)} title="Tu nueva clave de acceso" description="La anterior ya no sirve y se han cerrado tus demás sesiones. Se muestra una sola vez.">
+      {/* The old key no longer works: the dialog only closes once the new one is confirmed as saved. */}
+      <Dialog open={newKey !== null} onOpenChange={() => {}} hideClose title="Tu nueva clave de acceso" description="La anterior ya no sirve y se han cerrado tus demás sesiones. Se muestra una sola vez.">
         {newKey && (
           <AccessKeyReveal
             accessKey={newKey}

@@ -15,6 +15,10 @@ test('replace the access key from Settings', async ({ page }) => {
   const newKey = (await dialog.getByLabel('Clave de acceso', { exact: true }).innerText()).trim()
   expect(newKey).toMatch(/^([0-9A-Z]{4}-){7}[0-9A-Z]{4}$/)
   expect(newKey).not.toBe(oldKey)
+  // It cannot be dismissed before confirming that the new key is saved.
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('button', { name: 'Cerrar' })).toHaveCount(0)
   await dialog.getByLabel(/La he guardado en un lugar seguro/).check()
   await dialog.getByRole('button', { name: 'Hecho' }).click()
   await expect(dialog).toBeHidden()
