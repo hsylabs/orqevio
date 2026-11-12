@@ -69,6 +69,49 @@ jobs:
         if: failure()
         run: cat "$RUNNER_TEMP/server.log"
 
+  e2e-browsers:
+    # The same suite in Firefox and Safari's engine (WebKit), each against a fresh copy.
+    name: End-to-end tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    env:
+      APP_URL: http://localhost:3000
+      DATA_DIR: ${{ github.workspace }}/.e2e-data
+      SETUP_CODE: e2e-setup-code-1234
+      E2E_BROWSERS: ${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Install ${{ matrix.browser }} for Playwright
+        run: pnpm --filter @orqevio/web exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Start the production server
+        run: |
+          nohup pnpm start > "$RUNNER_TEMP/server.log" 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -fsS http://localhost:3000/healthz > /dev/null; then
+              echo "Server is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become ready in 60 seconds"
+          cat "$RUNNER_TEMP/server.log"
+          exit 1
+      - run: pnpm test:e2e
+      - name: Show server log
+        if: failure()
+        run: cat "$RUNNER_TEMP/server.log"
+
   e2e-cloudflare:
     name: End-to-end tests (Cloudflare package)
     runs-on: ubuntu-latest

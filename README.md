@@ -327,7 +327,12 @@ La misma batería se pasa contra el runtime de Cloudflare en local (`pnpm --filt
 E2E_BASE_URL=http://127.0.0.1:8787 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-La CI ejecuta las dos.
+La CI ejecuta las dos y, además, repite la batería contra el servidor de Node en Firefox y en WebKit (el motor de Safari). En local, instala esos navegadores y elige con `E2E_BROWSERS`:
+
+```bash
+pnpm --filter @orqevio/web exec playwright install firefox webkit
+E2E_BROWSERS=firefox,webkit SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
+```
 
 Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, pegar una imagen en un documento y adjuntar archivos a una tarjeta, el ciclo completo de la bóveda (con recuperación) y un agente MCP trabajando en directo sobre el tablero. Fallan si aparece cualquier error en la consola del navegador.
 
@@ -358,7 +363,7 @@ En Cloudflare solo se usan `SETUP_CODE` (secreto obligatorio), `APP_URL` (opcion
 - **Una persona por copia.** No hay registro ni correo; si se pierde la clave de acceso, se recupera desde el servidor (CLI o un `SETUP_CODE` nuevo).
 - **Bóveda personal.** No se comparte entre personas y no incluye importación ni exportación.
 - **Imágenes externas.** Las imágenes de documentos que apuntan a otros dominios se cargan desde su origen.
-- **Navegadores modernos.** Se requiere WebCrypto, Web Workers y WebAssembly (versiones actuales de Chrome, Edge, Firefox y Safari).
+- **Navegadores modernos y conexión segura para la bóveda.** La app se prueba en Chromium, Firefox y WebKit (el motor de Safari). La bóveda necesita WebCrypto, Web Workers y WebAssembly, y los navegadores solo ofrecen WebCrypto por HTTPS o en `localhost`: si abres tu copia por `http://` desde otra dirección (por ejemplo, la IP de tu red local), la bóveda lo explica y el resto de la app sigue funcionando.
 
 ## Estructura del repositorio
 

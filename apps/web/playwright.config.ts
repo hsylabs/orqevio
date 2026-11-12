@@ -1,5 +1,13 @@
 import { defineConfig, devices } from '@playwright/test'
 
+// E2E_BROWSERS=firefox,webkit runs the suite in other engines (CI installs them);
+// the first one also claims the copy. Chromium alone by default.
+const ENGINES = { chromium: devices['Desktop Chrome'], firefox: devices['Desktop Firefox'], webkit: devices['Desktop Safari'] }
+type Engine = keyof typeof ENGINES
+const browsers = (process.env.E2E_BROWSERS ?? 'chromium').split(',').map((b) => b.trim()) as Engine[]
+for (const b of browsers) if (!(b in ENGINES)) throw new Error(`Unknown browser in E2E_BROWSERS: ${b}`)
+const viewport = { width: 1440, height: 900 }
+
 /**
  * End-to-end tests run against a running Orqevio server (production build) on
  * an unclaimed copy with a fresh database:
@@ -23,12 +31,12 @@ export default defineConfig({
     timezoneId: 'Europe/Madrid',
   },
   projects: [
-    { name: 'setup', testMatch: 'setup.e2e.ts', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
-    {
-      name: 'chromium',
+    { name: 'setup', testMatch: 'setup.e2e.ts', use: { ...ENGINES[browsers[0]!], viewport } },
+    ...browsers.map((name) => ({
+      name,
       dependencies: ['setup'],
       testIgnore: 'setup.e2e.ts',
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 }, storageState: 'e2e/.auth/owner.json' },
-    },
+      use: { ...ENGINES[name], viewport, storageState: 'e2e/.auth/owner.json' },
+    })),
   ],
 })
