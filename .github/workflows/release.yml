@@ -1,0 +1,150 @@
+name: Release
+
+# Publishes a version when its tag (v1.2.3) is pushed: the npm packages
+# (orqevio, create-orqevio), the Docker image (ghcr.io/<owner>/orqevio) and the
+# GitHub release with the notes from CHANGELOG.md. See RELEASING.md.
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify the version
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: version
+        name: Read the version from the tag
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then echo "prerelease=true" >> "$GITHUB_OUTPUT"; else echo "prerelease=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Only release what is on main
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "The tag is not on main."; exit 1; }
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check that every package carries the version and that it has notes
+        run: node scripts/release/check-version.mjs "${{ steps.version.outputs.version }}" --notes release-notes.md
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm build:cloudflare
+      - name: Pack the npm packages
+        run: |
+          mkdir -p packs
+          for package in orqevio create-orqevio; do (cd "packages/$package" && pnpm pack --pack-destination "$GITHUB_WORKSPACE/packs"); done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release
+          path: |
+            packs/*.tgz
+            release-notes.md
+          if-no-files-found: error
+
+  npm:
+    name: Publish to npm
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Add protection rules (required reviewers) to this environment in the repository settings.
+    environment: release
+    permissions:
+      contents: read
+      id-token: write # trusted publishing; npm adds the provenance attestation
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Use an npm with trusted publishing (11.5.1 or later)
+        run: npm install --global npm@11
+      - uses: actions/download-artifact@v8
+        with:
+          name: release
+      - name: Publish orqevio, then create-orqevio (which depends on it)
+        env:
+          TAG: ${{ needs.verify.outputs.prerelease == 'true' && 'next' || 'latest' }}
+          # Only needed until trusted publishing is configured for both packages.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm publish packs/orqevio-*.tgz --access public --tag "$TAG"
+          npm publish packs/create-orqevio-*.tgz --access public --tag "$TAG"
+
+  docker:
+    name: Publish the Docker image
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ needs.verify.outputs.prerelease != 'true' }}
+          labels: |
+            org.opencontainers.image.title=Orqevio
+            org.opencontainers.image.licenses=FSL-1.1-ALv2
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: mode=max
+          sbom: true
+
+  release:
+    name: Publish the GitHub release
+    # Last, so a release (and the in-app update notice) never points at packages that are not out yet.
+    needs: [verify, npm, docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release
+      - name: Create the release with the notes from CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.verify.outputs.version }}
+          PRERELEASE: ${{ needs.verify.outputs.prerelease }}
+        run: |
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --title "Orqevio $VERSION" --notes-file release-notes.md "${flags[@]}"
