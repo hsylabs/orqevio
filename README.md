@@ -8,7 +8,7 @@ Orqevio reúne cuatro piezas y solo esas cuatro:
 | --- | --- |
 | **Tareas** | Espacios, proyectos, tableros Kanban, columnas, tarjetas, etiquetas, fechas, checklists, archivo y adjuntos. |
 | **Documentación** | Páginas jerárquicas con editor por bloques que guarda Markdown, tablas sencillas, imágenes y archivos, y enlaces directos con tareas. |
-| **Bóveda** | Credenciales y notas privadas cifradas de extremo a extremo, códigos de verificación en dos pasos (TOTP), generador de contraseñas, clave de recuperación y bloqueo automático. |
+| **Bóveda** | Credenciales y notas privadas cifradas de extremo a extremo, códigos de verificación en dos pasos (TOTP), importación y exportación, generador de contraseñas, clave de recuperación y bloqueo automático. |
 | **Agentes (MCP)** | Servidor MCP con permisos diferenciados por espacio para consultar documentación, crear tareas y reorganizar tableros. Se conecta con OAuth (por ejemplo, como conector de Claude) o con un token. |
 
 La decisión central: **la bóveda está aislada de los agentes**. Ningún token puede acceder a ella, ni siquiera a su contenido cifrado, y el servidor nunca conoce los secretos.
@@ -370,7 +370,7 @@ En Cloudflare solo se usan `SETUP_CODE` (secreto obligatorio), `APP_URL` (opcion
 - **Copias de seguridad en Cloudflare.** Aún no hay exportación desde la app: los datos quedan en el Durable Object y en el bucket R2 de tu cuenta.
 - **Sin migración desde PostgreSQL.** Las versiones de desarrollo anteriores usaban PostgreSQL; no hay herramienta para pasar esos datos a SQLite.
 - **Una persona por copia.** No hay registro ni correo; si se pierde la clave de acceso, se recupera desde el servidor (CLI o un `SETUP_CODE` nuevo).
-- **Bóveda personal.** No se comparte entre personas y no incluye importación ni exportación.
+- **Bóveda personal.** No se comparte entre personas. Importa los CSV de los navegadores y los formatos de Bitwarden; no lee los de otros gestores (1Password, KeePass…), salvo que los conviertas antes a uno de esos.
 - **Imágenes externas.** Las imágenes de documentos que apuntan a otros dominios se cargan desde su origen.
 - **Navegadores modernos.** Se requiere WebCrypto, Web Workers y WebAssembly (versiones actuales de Chrome, Edge, Firefox y Safari).
 

@@ -50,9 +50,16 @@ export function lockVault() {
   emit()
 }
 
-export function setSessionItems(items: VaultItem[]) {
-  session = { ...session, items }
+/**
+ * Changes the items of the session that holds `key`. Ignored (false) once that
+ * session is locked or replaced, so work that outlives a lock cannot put
+ * decrypted items back in memory.
+ */
+export function updateSessionItems(key: CryptoKey, change: (items: VaultItem[]) => VaultItem[]) {
+  if (session.key !== key) return false
+  session = { ...session, items: change(session.items) }
   emit()
+  return true
 }
 
 export function setAutoLock(minutes: number) {

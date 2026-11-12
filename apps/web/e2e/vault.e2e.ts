@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import { expect, openNewWorkspace, test } from './helpers'
 
 /** RFC 6238 codes for the counters around now, as an authenticator app would compute them. */
@@ -79,4 +80,64 @@ test('end-to-end encrypted vault', async ({ page }) => {
   // The secret is encrypted with the rest of the item.
   const stored = await page.evaluate(async () => (await (await fetch('/api/vault/items')).json()) as Array<{ data: string }>)
   expect(stored.map((r) => r.data).join(' ')).not.toContain('GEZDGNBV')
+
+  // Import a browser export: new entries come in, copies of existing ones are skipped.
+  const options = page.getByRole('button', { name: 'Opciones de la bóveda' })
+  await options.click()
+  await page.getByRole('menuitem', { name: 'Importar…' }).click()
+  const importDialog = page.getByRole('dialog', { name: 'Importar a la bóveda' })
+  const chooser = page.waitForEvent('filechooser')
+  await importDialog.getByRole('button', { name: 'Elegir archivo' }).click()
+  await (await chooser).setFiles({
+    name: 'Contraseñas de Chrome.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('name,url,username,password,note\nCorreo,https://mail.example.com,lucia,"m,a""il",\nBanco,,lucia@example.com,S3cr3to-muy-largo!,\n'),
+  })
+  await expect(importDialog.getByRole('status')).toContainText('Desde Chrome o Edge')
+  await expect(importDialog.getByRole('status')).toContainText('1 credencial nueva')
+  await expect(importDialog.getByRole('status')).toContainText('1 elemento ya estaba en tu bóveda')
+  await importDialog.getByRole('button', { name: 'Importar 1 elemento' }).click()
+  await expect(importDialog).toBeHidden()
+  await expect(page.getByRole('list', { name: 'Elementos de la bóveda' }).getByText('Correo')).toBeVisible()
+
+  // Export, encrypted: only the master password opens it.
+  await options.click()
+  await page.getByRole('menuitem', { name: 'Exportar…' }).click()
+  const exportDialog = page.getByRole('dialog', { name: 'Exportar la bóveda' })
+  await exportDialog.getByLabel('Contraseña maestra').fill('no-es-esta')
+  await exportDialog.getByRole('button', { name: 'Exportar cifrada' }).click()
+  await expect(exportDialog.getByText('Contraseña maestra incorrecta.')).toBeVisible({ timeout: 30_000 })
+  await exportDialog.getByLabel('Contraseña maestra').fill('otra frase maestra larga')
+  const encryptedDownload = page.waitForEvent('download')
+  await exportDialog.getByRole('button', { name: 'Exportar cifrada' }).click()
+  const encryptedFile = await encryptedDownload
+  expect(encryptedFile.suggestedFilename()).toMatch(/^orqevio-boveda-cifrada-\d{4}-\d{2}-\d{2}\.json$/)
+  const encryptedText = await readFile((await encryptedFile.path())!, 'utf8')
+  expect(JSON.parse(encryptedText)).toMatchObject({ format: 'orqevio-vault-export', count: 3, kdf: { algorithm: 'argon2id' } })
+  expect(encryptedText).not.toContain('Correo')
+
+  // Export without encryption needs the warning to be acknowledged.
+  await options.click()
+  await page.getByRole('menuitem', { name: 'Exportar…' }).click()
+  await exportDialog.getByRole('radio', { name: 'Sin cifrar' }).click()
+  await exportDialog.getByLabel('Contraseña maestra').fill('otra frase maestra larga')
+  await expect(exportDialog.getByRole('button', { name: 'Exportar sin cifrar' })).toBeDisabled()
+  await exportDialog.getByLabel(/Entiendo que el archivo no está cifrado/).check()
+  const plainDownload = page.waitForEvent('download')
+  await exportDialog.getByRole('button', { name: 'Exportar sin cifrar' }).click()
+  const plain = JSON.parse(await readFile((await (await plainDownload).path())!, 'utf8'))
+  expect(plain.encrypted).toBe(false)
+  expect(plain.items.map((i: { name: string }) => i.name).sort()).toEqual(['Banco', 'Correo', 'GitHub'])
+  expect(plain.items.find((i: { name: string }) => i.name === 'GitHub').login.totp).toContain('otpauth://totp/GitHub')
+
+  // The encrypted copy comes back with its password, and everything in it is already here.
+  await options.click()
+  await page.getByRole('menuitem', { name: 'Importar…' }).click()
+  const again = page.waitForEvent('filechooser')
+  await importDialog.getByRole('button', { name: 'Elegir archivo' }).click()
+  await (await again).setFiles({ name: 'copia.json', mimeType: 'application/json', buffer: Buffer.from(encryptedText) })
+  await importDialog.getByLabel('Contraseña de la copia').fill('otra frase maestra larga')
+  await importDialog.getByRole('button', { name: 'Descifrar' }).click()
+  await expect(importDialog.getByRole('status')).toContainText('3 elementos ya estaban en tu bóveda', { timeout: 30_000 })
+  await expect(importDialog.getByRole('button', { name: 'Importar 0 elementos' })).toBeDisabled()
 })

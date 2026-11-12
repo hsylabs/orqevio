@@ -109,6 +109,8 @@ export const kdfSchema = z.object({
   iterations: z.number().int().min(2).max(20),
   parallelism: z.number().int().min(1).max(8),
 })
+/** Items a vault can hold. */
+export const MAX_VAULT_ITEMS = 5000
 export const envelopeSchema = z
   .string()
   .regex(/^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Invalid envelope')
