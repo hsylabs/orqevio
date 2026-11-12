@@ -105,9 +105,55 @@ La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detr�
 
 **Copias de seguridad.** Basta con copiar el volumen con la app parada, o hacer una copia en caliente con `sqlite3 /data/orqevio.db ".backup '/data/copia.db'"` y guardar también la carpeta `uploads`.
 
-### En Cloudflare (vista previa)
+### En Cloudflare (con un comando)
 
-La instalación con un comando (`npx create-orqevio`) está en preparación. Mientras tanto, puedes desplegar tu copia a mano en tu propia cuenta de Cloudflare. El plan gratuito basta para uso personal (límites a noviembre de 2026):
+Tu copia vive en tu propia cuenta de Cloudflare: un Worker con la web, la API y el MCP, un Durable Object con su base de datos SQLite y un bucket R2 para los adjuntos. Necesitas una cuenta de Cloudflare (el plan gratuito basta) y Node 22.12 o superior.
+
+```bash
+npx create-orqevio
+```
+
+El instalador:
+
+1. Abre el navegador para que inicies sesión en Cloudflare (inicio de sesión oficial de Wrangler).
+2. Te pide un nombre para la copia (por defecto, `orqevio`), que forma parte de su dirección.
+3. Despliega la copia y crea su bucket R2.
+4. Te muestra su dirección (`https://orqevio.<tu-subdominio>.workers.dev`) y un **código de configuración** de un solo uso, generado al azar.
+
+Abre la dirección, escribe el código y tu nombre: Orqevio te dará tu clave de acceso. Desde ese momento el código ya no sirve.
+
+```bash
+npx create-orqevio@latest update
+```
+
+Actualiza tu copia a la última versión. Tus datos, tu clave y tu bóveda se conservan.
+
+```bash
+npx create-orqevio@latest recover
+```
+
+Si pierdes la clave, genera un código nuevo. Úsalo en **«¿Has perdido la clave?»**, en la pantalla de acceso.
+
+- **Varias copias:** añade `--name <nombre>` a cualquiera de las órdenes.
+- **Privacidad:** el instalador desactiva la telemetría anónima de Wrangler, salvo que tú la hayas activado.
+- **Lo que hace exactamente:**
+  - Wrangler trabaja en una carpeta temporal privada, nunca en la carpeta en la que estás.
+  - El código de configuración se sube como secreto del Worker y la carpeta se borra al terminar, también si interrumpes el proceso.
+- **Antes de la primera versión publicada en npm:** los paquetes `create-orqevio` y `orqevio` aún no están publicados. Mientras tanto, ejecuta el instalador desde el repositorio:
+
+```bash
+pnpm install
+```
+
+```bash
+pnpm build:cloudflare
+```
+
+```bash
+node packages/create-orqevio/dist/cli.js
+```
+
+El plan gratuito de Cloudflare basta para uso personal (límites a noviembre de 2026):
 
 | Recurso | Plan gratuito |
 | --- | --- |
@@ -117,36 +163,11 @@ La instalación con un comando (`npx create-orqevio`) está en preparación. Mie
 | Base de datos (SQLite del Durable Object) | 1 GB por copia (5 GB en total por cuenta) |
 | Adjuntos (R2) | 10 GB y 1 millón de escrituras al mes |
 
-Requisitos: una cuenta de Cloudflare, Node 22.12 o superior y pnpm 10.
-
-```bash
-pnpm install
-```
-
-```bash
-pnpm build
-```
-
-```bash
-cd apps/server
-```
-
-```bash
-npx wrangler login
-```
-
-Crea, **fuera del repositorio**, un archivo con una sola línea `SETUP_CODE=tu-código` (al menos 12 letras o dígitos) y despliega con él. Wrangler sube el código como secreto y crea el bucket R2 `orqevio-uploads` si no existe (aprovisionamiento automático, en beta; si no lo hace, créalo antes con `npx wrangler r2 bucket create orqevio-uploads`):
-
-```bash
-npx wrangler deploy --secrets-file ../../../orqevio-secrets.env
-```
-
-Después borra ese archivo. Wrangler muestra la dirección de tu copia (`https://orqevio.<tu-subdominio>.workers.dev`); ábrela y reclámala con el código.
-
-- **`SETUP_CODE` es obligatorio en Cloudflare.** El Durable Object se reinicia a menudo, así que un código generado en memoria no serviría: sin el secreto, la copia no se puede reclamar y el despliegue falla.
-- **Recuperar el acceso.** Cambia el secreto (`npx wrangler secret put SETUP_CODE`) y usa **«¿Has perdido la clave?»** en la pantalla de acceso. La CLI `reset-access` es solo para servidores propios.
-- **Tu dominio.** Por defecto la app acepta el origen con el que se la visita. Si usas un dominio propio y quieres fijarlo, define `APP_URL` como variable del Worker.
-- **Probarlo en local** sin cuenta: crea `apps/server/.dev.vars` con `SETUP_CODE=...` y ejecuta `pnpm --filter @orqevio/server dev:worker` (queda en `http://localhost:8787`).
+**Notas**
+- **`SETUP_CODE` es obligatorio en Cloudflare.** El Durable Object se reinicia a menudo, así que un código generado en memoria no serviría. El instalador lo crea por ti; sin él, el despliegue falla.
+- **Tu dominio.** Por defecto, la app acepta el origen con el que se la visita. Si usas un dominio propio y quieres fijarlo, define `APP_URL` como variable del Worker.
+- **Probarlo en local sin cuenta:** crea `apps/server/.dev.vars` con `SETUP_CODE=...` y ejecuta `pnpm --filter @orqevio/server dev:worker`. La copia queda en `http://localhost:8787`.
+- **A mano, sin el instalador:** desde `apps/server`, tras `pnpm build`, ejecuta `npx wrangler deploy --secrets-file <archivo>`, con un archivo fuera del repositorio que contenga `SETUP_CODE=...`. Wrangler crea el bucket R2 si no existe.
 
 ### En local para desarrollo
 
@@ -182,11 +203,12 @@ pnpm start
 
 1. **Primera vez.** Abre la URL de la copia e introduce el código de configuración y tu nombre:
    - Si definiste `SETUP_CODE`, es ese valor. Usa al menos 12 letras o dígitos.
-   - Si no, el servidor genera uno al arrancar y lo muestra en su registro (`docker compose logs app`). Sirve hasta que la copia se reclama o el servidor se reinicia. En Cloudflare, `SETUP_CODE` es obligatorio.
+   - Si no, el servidor genera uno al arrancar y lo muestra en su registro (`docker compose logs app`). Sirve hasta que la copia se reclama o el servidor se reinicia.
+   - En Cloudflare, te lo da el instalador.
 2. **Tu clave de acceso.** Orqevio genera una clave aleatoria de 160 bits y la muestra **una sola vez**. Guárdala en tu gestor de contraseñas: es lo único que necesitas para entrar desde cualquier dispositivo. Al escribirla dan igual las mayúsculas y los guiones.
 3. **Cambiarla.** En **Ajustes → Clave de acceso** puedes generar una nueva; se cierran tus demás sesiones.
 
-Si pierdes la clave, quien administra la copia puede generar otra:
+Si pierdes la clave, quien administra la copia puede generar otra (en Cloudflare, con `npx create-orqevio@latest recover`):
 
 ```bash
 docker compose exec app node dist/cli.js reset-access
@@ -264,7 +286,7 @@ Pruebas de extremo a extremo con Playwright, con el servidor de producción en m
 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-La misma batería se pasa contra el runtime de Cloudflare en local (`pnpm --filter @orqevio/server dev:worker`, con el mismo código en `apps/server/.dev.vars`):
+La misma batería se pasa contra el runtime de Cloudflare en local (`pnpm --filter @orqevio/server dev:worker`, con el mismo código en `apps/server/.dev.vars`). La CI la pasa contra el paquete que despliega el instalador:
 
 ```bash
 E2E_BASE_URL=http://127.0.0.1:8787 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
@@ -317,4 +339,6 @@ apps/web/src
   components/ sistema de diseño (botones, diálogos, menús, editor…)
   lib/        cliente de API, consultas, tiempo real y formato
 packages/shared/src  esquemas, permisos, tipos y utilidades de enlaces
+packages/orqevio     paquete desplegable en Cloudflare (Worker, web y configuración base)
+packages/create-orqevio  instalador: npx create-orqevio (instalar, actualizar, recuperar)
 ```

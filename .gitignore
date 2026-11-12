@@ -16,3 +16,6 @@ apps/web/e2e/.auth/
 .wrangler/
 .dev.vars
 dist-worker/
+
+# Copied from the root by the package builds
+packages/*/LICENSE.md
