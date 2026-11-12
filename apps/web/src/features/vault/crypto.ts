@@ -95,6 +95,7 @@ async function open(key: CryptoKey, envelope: string, aad: string): Promise<Uint
 }
 
 const keyAad = (userId: string) => `orqevio/vault-key/v1/${userId}`
+const EXPORT_AAD = 'orqevio/vault-export/v1'
 const recoveryAad = (userId: string) => `orqevio/vault-recovery/v1/${userId}`
 const itemAad = (userId: string, itemId: string) => `orqevio/item/v1/${userId}/${itemId}`
 
@@ -206,4 +207,26 @@ export async function decryptItem(vaultKey: CryptoKey, userId: string, id: strin
   if (item.id !== id) throw new WrongSecretError('Item identity mismatch')
   // Items saved before a field existed decrypt without it.
   return { ...item, totp: item.totp ?? '' }
+}
+
+// ── Encrypted exports ───────────────────────────────────────────
+/** A vault export that only the password it was made with can open (Argon2id, fresh salt). */
+export interface EncryptedExport {
+  format: 'orqevio-vault-export'
+  version: 1
+  exportedAt: string
+  count: number
+  kdf: KdfParams
+  data: string
+}
+
+export async function sealExport(plaintext: string, password: string, count: number): Promise<EncryptedExport> {
+  const kdf: KdfParams = { ...DEFAULT_KDF, salt: toB64u(randomBytes(16)) }
+  const data = await seal(await passwordKek(password, kdf), enc.encode(plaintext), EXPORT_AAD)
+  return { format: 'orqevio-vault-export', version: 1, exportedAt: new Date().toISOString(), count, kdf, data }
+}
+
+/** Throws WrongSecretError when the password is not the one the export was made with. */
+export async function openExport(file: EncryptedExport, password: string): Promise<string> {
+  return dec.decode(await open(await passwordKek(password, file.kdf), file.data, EXPORT_AAD))
 }

@@ -18,6 +18,8 @@ Primera versión.
 ### Bóveda
 - Credenciales y notas cifradas de extremo a extremo, con generador de contraseñas, clave de recuperación y bloqueo automático.
 - Códigos de verificación en dos pasos (TOTP): pega la clave secreta o el enlace `otpauth://` y la bóveda muestra el código con su cuenta atrás. Se calculan en el navegador.
+- Importar desde el CSV de Chrome, Edge, Firefox y Safari, y desde el CSV o el JSON sin cifrar de Bitwarden, sin duplicar lo que ya tienes.
+- Exportar una copia cifrada con tu contraseña maestra o, tras confirmar un aviso, sin cifrar (JSON de Bitwarden). Todo se procesa en el navegador.
 
 ### Tu copia
 - Sin registro ni correo: la copia se reclama con un código de configuración y se entra con una clave de acceso de 160 bits.
