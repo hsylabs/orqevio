@@ -1,0 +1,53 @@
+// Generated from Orqevio's apps/server/wrangler.jsonc. On every deploy, `npm run deploy`
+// reads only "name" and the UPLOADS "bucket_name" from this file: bindings, migrations and
+// compatibility settings come from the installed package, so updating it is all it takes.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "orqevio",
+  "main": "node_modules/orqevio/dist/worker/index.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "directory": "node_modules/orqevio/dist/web",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/*",
+      "!/assets/*"
+    ]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "COPY",
+        "class_name": "OrqevioCopy"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "OrqevioCopy"
+      ]
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS",
+      "bucket_name": "orqevio-uploads"
+    }
+  ],
+  "secrets": {
+    "required": [
+      "SETUP_CODE"
+    ]
+  },
+  "keep_vars": true,
+  "observability": {
+    "enabled": true
+  },
+  "no_bundle": true
+}

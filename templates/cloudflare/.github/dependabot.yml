@@ -1,0 +1,12 @@
+# Proposes a pull request when a new version of Orqevio is out. Merging it
+# deploys the update (Workers Builds); your data, key and vault are kept.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    allow:
+      - dependency-name: create-orqevio
+    commit-message:
+      prefix: Orqevio

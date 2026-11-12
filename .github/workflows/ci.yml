@@ -93,6 +93,14 @@ jobs:
         run: |
           node packages/create-orqevio/dist/cli.js config --name ci-copy > "$RUNNER_TEMP/wrangler.json"
           pnpm --filter create-orqevio exec wrangler deploy --dry-run --config "$RUNNER_TEMP/wrangler.json" --outdir "$RUNNER_TEMP/bundle"
+      - name: Check the Deploy to Cloudflare template with the packed packages
+        run: |
+          mkdir -p "$RUNNER_TEMP/packs"
+          for package in orqevio create-orqevio; do (cd "packages/$package" && pnpm pack --pack-destination "$RUNNER_TEMP/packs"); done
+          cp -r templates/cloudflare "$RUNNER_TEMP/template"
+          cd "$RUNNER_TEMP/template"
+          npm install --no-audit --no-fund "$RUNNER_TEMP"/packs/orqevio-*.tgz "$RUNNER_TEMP"/packs/create-orqevio-*.tgz
+          npm run deploy -- --dry-run
       - name: Install Chromium for Playwright
         run: pnpm --filter @orqevio/web exec playwright install --with-deps chromium
       - name: Start the copy locally
