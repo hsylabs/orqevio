@@ -25,3 +25,4 @@ Primera versión.
 - Sin registro ni correo: la copia se reclama con un código de configuración y se entra con una clave de acceso de 160 bits.
 - Instalación en tu cuenta de Cloudflare con `npx create-orqevio`, o con el botón «Deploy to Cloudflare».
 - Instalación en tu servidor con Docker; los datos viven en un único archivo SQLite.
+- Probada en Chromium, Firefox y WebKit (el motor de Safari). Si la abres por `http://` desde otra dirección, la bóveda explica que necesita HTTPS y el resto de la app sigue funcionando.

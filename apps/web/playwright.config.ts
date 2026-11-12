@@ -1,5 +1,13 @@
 import { defineConfig, devices } from '@playwright/test'
 
+// E2E_BROWSER=firefox (or webkit, Safari's engine) runs the suite in another engine
+// (CI installs them). One per run: the suite expects a fresh copy, and the vault belongs
+// to the owner, not to a workspace. Chromium by default.
+const ENGINES = { chromium: devices['Desktop Chrome'], firefox: devices['Desktop Firefox'], webkit: devices['Desktop Safari'] }
+const browser = (process.env.E2E_BROWSER ?? 'chromium') as keyof typeof ENGINES
+if (!(browser in ENGINES)) throw new Error(`E2E_BROWSER must be chromium, firefox or webkit, not ${browser}`)
+const viewport = { width: 1440, height: 900 }
+
 /**
  * End-to-end tests run against a running Orqevio server (production build) on
  * an unclaimed copy with a fresh database:
@@ -23,12 +31,12 @@ export default defineConfig({
     timezoneId: 'Europe/Madrid',
   },
   projects: [
-    { name: 'setup', testMatch: 'setup.e2e.ts', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
+    { name: 'setup', testMatch: 'setup.e2e.ts', use: { ...ENGINES[browser], viewport } },
     {
-      name: 'chromium',
+      name: browser,
       dependencies: ['setup'],
       testIgnore: 'setup.e2e.ts',
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 }, storageState: 'e2e/.auth/owner.json' },
+      use: { ...ENGINES[browser], viewport, storageState: 'e2e/.auth/owner.json' },
     },
   ],
 })
