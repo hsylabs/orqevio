@@ -22,6 +22,7 @@ import { WrongSecretError, changeMasterPassword, encryptItem } from './crypto'
 import { Generator, PasswordText } from './Generator'
 import { getSession, lockVault, setAutoLock, setSessionItems, useAutoLockRemaining, useVaultSession } from './session'
 import { estimateMasterPassword } from './strength'
+import { type TotpProblem, groupCode, parseTotp, totp } from './totp'
 import { type VaultItem, type VaultItemType, emptyItem } from './types'
 import { VaultSetup, VaultUnlock } from './VaultGate'
 
@@ -359,6 +360,7 @@ function ItemDetail({ item, onEdit, onDelete, onToggleFavorite, onBack }: { item
             >
               {item.password ? reveal ? <PasswordText value={item.password} className="text-[14.5px]" /> : <span className="font-mono tracking-[0.2em] text-ink-2">••••••••••••</span> : <span className="text-ink-4">—</span>}
             </DetailField>
+            {item.totp && <TotpField value={item.totp} />}
             <DetailField
               label="Sitio web"
               actions={
@@ -387,15 +389,88 @@ function ItemDetail({ item, onEdit, onDelete, onToggleFavorite, onBack }: { item
   )
 }
 
+const TOTP_PROBLEMS: Record<TotpProblem, string> = {
+  empty: 'Escribe la clave secreta o el enlace otpauth://.',
+  not_totp: 'Solo se admiten códigos que cambian con el tiempo (TOTP).',
+  bad_secret: 'La clave secreta solo puede tener letras de la A a la Z y números del 2 al 7.',
+  too_short: 'La clave secreta es demasiado corta.',
+  bad_parameters: 'El enlace otpauth:// tiene parámetros que no son válidos.',
+}
+
+/** The current code, refreshed every second; computed here, never on the server. */
+function TotpField({ value }: { value: string }) {
+  const config = useMemo(() => parseTotp(value), [value])
+  const [now, setNow] = useState(() => Date.now())
+  const [current, setCurrent] = useState<{ code: string; remaining: number } | null>(null)
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+  useEffect(() => {
+    if (typeof config === 'string') return
+    let alive = true
+    void totp(config, now).then((next) => alive && setCurrent(next))
+    return () => {
+      alive = false
+    }
+  }, [config, now])
+  if (typeof config === 'string') {
+    return (
+      <DetailField label="Código de verificación">
+        <span className="text-danger">{TOTP_PROBLEMS[config]}</span>
+      </DetailField>
+    )
+  }
+  return (
+    <DetailField
+      label="Código de verificación"
+      actions={current ? <CopyButton value={current.code} label="Copiar código" clearAfterMs={CLIPBOARD_MS} message="Código copiado · se borrará del portapapeles en 30 s" /> : null}
+    >
+      {current ? (
+        <span className="flex items-center gap-3">
+          <span aria-label="Código de verificación actual" className="font-mono text-[18px] tracking-[0.12em] text-ink">
+            {groupCode(current.code)}
+          </span>
+          <span className={cn('text-[12px] tabular-nums', current.remaining <= 5 ? 'text-warn' : 'text-ink-3')} aria-label={`Cambia en ${current.remaining} segundos`}>
+            {current.remaining} s
+          </span>
+        </span>
+      ) : (
+        <span className="text-ink-4">…</span>
+      )}
+    </DetailField>
+  )
+}
+
 function ItemEditor({ initial, onSave, onCancel }: { initial: VaultItem; onSave: (item: VaultItem) => Promise<void>; onCancel: () => void }) {
   const [item, setItem] = useState(initial)
   const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
   const [genOpen, setGenOpen] = useState(false)
+  const [totpError, setTotpError] = useState<string | null>(null)
   const set = <K extends keyof VaultItem>(key: K, value: VaultItem[K]) => setItem((i) => ({ ...i, [key]: value }))
+
+  function changeTotp(value: string) {
+    setTotpError(null)
+    const parsed = parseTotp(value)
+    setItem((i) => {
+      const next = { ...i, totp: value }
+      // An otpauth:// link names the service and the account: fill them in when empty.
+      if (typeof parsed !== 'string') {
+        if (!i.title.trim() && parsed.issuer) next.title = parsed.issuer
+        if (!i.username.trim() && parsed.account) next.username = parsed.account
+      }
+      return next
+    })
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
+    const problem = item.type === 'login' && item.totp.trim() ? parseTotp(item.totp) : null
+    if (typeof problem === 'string') {
+      setTotpError(TOTP_PROBLEMS[problem])
+      return
+    }
     setBusy(true)
     await onSave(item)
     setBusy(false)
@@ -445,6 +520,18 @@ function ItemEditor({ initial, onSave, onCancel }: { initial: VaultItem; onSave:
             }
           />
           <Field label="Sitio web" value={item.url} onChange={(e) => set('url', e.target.value)} placeholder="ejemplo.com" inputMode="url" autoComplete="off" spellCheck={false} maxLength={2000} />
+          <Field
+            label="Verificación en dos pasos (TOTP)"
+            value={item.totp}
+            onChange={(e) => changeTotp(e.target.value)}
+            placeholder="Clave secreta o enlace otpauth://"
+            hint="La clave que te muestra el servicio al activar la verificación en dos pasos, junto al código QR."
+            error={totpError}
+            autoComplete="off"
+            spellCheck={false}
+            className="[&_input]:font-mono"
+            maxLength={2000}
+          />
         </>
       )}
       <label className="flex flex-col gap-1.5">
