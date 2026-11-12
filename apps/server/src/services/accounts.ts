@@ -207,7 +207,7 @@ export class AccountService {
     this.access.requireUser(actor)
     const [user] = await this.deps.db.select().from(users).where(eq(users.id, actor.userId))
     if (!user) throw unauthorized()
-    return { user: toUserDTO(user), workspaces: await this.workspaces.list(actor) }
+    return { user: toUserDTO(user), workspaces: await this.workspaces.list(actor), limits: { maxUploadBytes: this.deps.env.maxUploadBytes } }
   }
 
   async update(actor: Actor, input: unknown): Promise<UserDTO> {

@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import WebSocket from 'ws'
 import { sha256 } from '../src/auth/crypto'
 import { sessions } from '../src/db/schema'
-import { attachLiveUpdates } from '../src/http/live'
+import { attachLiveUpdates } from '../src/node/live'
 import { type Harness, ORIGIN, createHarness, seedBoard, signInOwner, signUp } from './harness'
 
 let h: Harness
@@ -17,7 +17,7 @@ beforeAll(async () => {
   h = await createHarness()
   server = serve({ fetch: h.app.fetch, port: 0, hostname: '127.0.0.1' })
   await new Promise<void>((resolve) => server.once('listening', () => resolve()))
-  attachLiveUpdates(server as never, h.env, h.services)
+  attachLiveUpdates(server as never, h.env, h.services, h.bus)
   base = `ws://127.0.0.1:${(server.address() as AddressInfo).port}`
 })
 afterAll(async () => {

@@ -1,4 +1,4 @@
-import type { ApiErrorBody } from '@orqevio/shared'
+import { type ApiErrorBody, UPLOAD_NAME_HEADER } from '@orqevio/shared'
 
 export class ApiError extends Error {
   constructor(
@@ -15,10 +15,15 @@ type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 /** Thin fetch wrapper for the Orqevio API (same-origin, cookie session). */
 export async function api<T = unknown>(method: Method, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
-  const init: RequestInit = { method, credentials: 'same-origin', signal, headers: { Accept: 'application/json' } }
-  if (body instanceof FormData) init.body = body
-  else if (body !== undefined) {
-    ;(init.headers as Record<string, string>)['Content-Type'] = 'application/json'
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  const init: RequestInit = { method, credentials: 'same-origin', signal, headers }
+  if (body instanceof Blob) {
+    // Files go as the raw body, so the server can stream them to storage.
+    init.body = body
+    headers['Content-Type'] = body.type || 'application/octet-stream'
+    if (body instanceof File) headers[UPLOAD_NAME_HEADER] = encodeURIComponent(body.name)
+  } else if (body !== undefined) {
+    headers['Content-Type'] = 'application/json'
     init.body = JSON.stringify(body)
   }
   let res: Response
@@ -63,6 +68,7 @@ export function errorMessage(error: unknown): string {
       rate_limited: 'Demasiados intentos. Espera unos minutos.',
       network: 'No hay conexión con el servidor.',
       file_too_large: 'El archivo supera el tamaño máximo permitido.',
+      upload_incomplete: 'La subida se interrumpió. Vuelve a intentarlo.',
       last_workspace: 'Necesitas conservar al menos un espacio.',
     }
     if (known[error.code]) return known[error.code]!

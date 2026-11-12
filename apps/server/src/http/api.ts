@@ -1,3 +1,4 @@
+import { UPLOAD_NAME_HEADER } from '@orqevio/shared'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { AppError, badRequest } from '../lib/errors'
@@ -6,6 +7,16 @@ import { clearSessionCookie, clientIp, originGuard, requireActor, resolveActor, 
 import type { Env } from '../env'
 import type { Access } from '../services/access'
 import type { AppEnv } from './types'
+
+/** File names travel percent-encoded, since HTTP headers only carry ASCII reliably. */
+function decodeFileName(header: string | undefined) {
+  if (!header) return 'file'
+  try {
+    return decodeURIComponent(header)
+  } catch {
+    return 'file'
+  }
+}
 
 function limit(limiter: RateLimiter, key: string) {
   const wait = limiter.hit(key)
@@ -30,7 +41,7 @@ export function createApi(env: Env) {
   api.use('*', originGuard)
   api.use('*', resolveActor)
   api.use('*', async (c, next) => {
-    // Uploads have their own, larger limit.
+    // Uploads are streamed to storage and checked against MAX_UPLOAD_MB by the attachment service.
     if (c.req.path.endsWith('/attachments') && c.req.method === 'POST') return next()
     return bodyLimit({ maxSize: 2 * 1024 * 1024, onError: () => { throw new AppError(413, 'too_large', 'Request body too large') } })(c, next)
   })
@@ -233,21 +244,18 @@ export function createApi(env: Env) {
   })
 
   // ── Attachments ─────────────────────────────────────────────────
-  const uploadLimit = bodyLimit({
-    maxSize: env.maxUploadBytes + 64 * 1024,
-    onError: () => {
-      throw new AppError(413, 'file_too_large', `Files are limited to ${Math.round(env.maxUploadBytes / 1048576)} MB`)
-    },
-  })
   for (const [path, target] of [
     ['/pages/:id/attachments', 'pageId'],
     ['/cards/:id/attachments', 'cardId'],
   ] as const) {
-    api.post(path, uploadLimit, async (c) => {
-      const body = await c.req.parseBody()
-      const file = body.file
-      if (!(file instanceof File)) throw badRequest('Send the file in a "file" field')
-      const dto = await c.get('services').attachments.upload(requireActor(c), { [target]: c.req.param('id') }, file)
+    api.post(path, async (c) => {
+      const length = c.req.header('content-length')
+      const dto = await c.get('services').attachments.upload(requireActor(c), { [target]: c.req.param('id') }, {
+        body: c.req.raw.body,
+        size: length === undefined || !/^\d+$/.test(length) ? Number.NaN : Number(length),
+        name: decodeFileName(c.req.header(UPLOAD_NAME_HEADER)),
+        type: c.req.header('content-type') ?? '',
+      })
       return c.json(dto, 201)
     })
   }

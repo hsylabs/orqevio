@@ -29,6 +29,8 @@ export interface WorkspaceDTO {
 export interface MeDTO {
   user: UserDTO
   workspaces: WorkspaceDTO[]
+  /** Limits of this copy, so the app can refuse what the server would reject. */
+  limits: { maxUploadBytes: number }
 }
 
 /** Whether this copy has an owner yet, and whether a new setup code allows recovering access. */

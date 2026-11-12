@@ -2,11 +2,16 @@ import type { RealtimeEvent } from '@orqevio/shared'
 
 type Listener = (event: RealtimeEvent) => void
 
+/** What services need: tell the browsers connected to a workspace that something changed. */
+export interface RealtimePublisher {
+  publish(workspaceId: string, event: RealtimeEvent): void
+}
+
 /**
  * Workspace-scoped event bus. A copy of Orqevio runs as a single process, so
  * events are fanned out in memory to the browsers connected to it.
  */
-export class RealtimeBus {
+export class RealtimeBus implements RealtimePublisher {
   private readonly listeners = new Map<string, Set<Listener>>()
 
   subscribe(workspaceId: string, listener: Listener) {

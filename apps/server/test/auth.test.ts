@@ -44,6 +44,7 @@ describe('access to a copy', () => {
     const me = await client.get('/api/auth/me')
     expect(me.body.workspaces).toHaveLength(1)
     expect(me.body.workspaces[0].name).toBe('Espacio de Marta')
+    expect(me.body.limits).toEqual({ maxUploadBytes: h.env.maxUploadBytes })
     h.owner = { accessKey: res.body.accessKey, userId: me.body.user.id, workspaceId: me.body.workspaces[0].id }
 
     const again = await new Client(h).post('/api/auth/claim', { setupCode: SETUP_CODE, name: 'Intrusa' })
