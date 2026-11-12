@@ -8,7 +8,12 @@ import { type VaultItem, emptyItem } from './types'
  * JSON, which keeps every field and most password managers can import.
  */
 
-export const MAX_IMPORT_BYTES = 10 * 1024 * 1024
+/**
+ * Largest file an import reads. It fits the encrypted export of a full vault
+ * (MAX_VAULT_ITEMS items with every field at the editor's limits, in
+ * single-byte characters); an export above it is flagged when it is made.
+ */
+export const MAX_IMPORT_BYTES = 256 * 1024 * 1024
 
 export type ImportProblem = 'empty' | 'unknown_format' | 'bitwarden_encrypted' | 'no_items'
 
@@ -187,9 +192,11 @@ function fromBitwardenItems(entries: BitwardenItem[]) {
 
 /** Reads an export file; tells which format it is, or why it cannot be read. */
 export function readImport(text: string): ImportOutcome {
-  const trimmed = text.replace(/^﻿/, '').trim()
-  if (!trimmed) return { kind: 'problem', problem: 'empty' }
-  const outcome = trimmed.startsWith('{') ? fromJson(trimmed) : fromCsv(trimmed)
+  // Trimming is only for detection: a CSV's last field may end in spaces that belong to a password.
+  const body = text.replace(/^﻿/, '')
+  const start = body.trimStart()
+  if (!start) return { kind: 'problem', problem: 'empty' }
+  const outcome = start.startsWith('{') ? fromJson(start) : fromCsv(body)
   return outcome.kind === 'items' && outcome.items.length === 0 && outcome.unsupported === 0 ? { kind: 'problem', problem: 'no_items' } : outcome
 }
 

@@ -6,12 +6,13 @@ import { Dialog } from '../../components/ui/Dialog'
 import { Field } from '../../components/ui/Field'
 import { Segmented } from '../../components/ui/Segmented'
 import type { VaultStateDTO } from '@orqevio/shared'
-import { errorMessage, put } from '../../lib/api'
+import { errorMessage } from '../../lib/api'
 import { plural } from '../../lib/format'
-import { type EncryptedExport, WrongSecretError, encryptItem, openExport, sealExport, unlockWithPassword } from './crypto'
-import { getSession, setSessionItems } from './session'
+import { type EncryptedExport, WrongSecretError, openExport, sealExport, unlockWithPassword } from './crypto'
+import { getSession } from './session'
 import { type ImportProblem, type ImportedItems, MAX_IMPORT_BYTES, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from './transfer'
 import type { VaultItem } from './types'
+import { VaultLockedError, importItems } from './upload'
 
 const PROBLEMS: Record<ImportProblem, string> = {
   empty: 'El archivo está vacío.',
@@ -20,39 +21,19 @@ const PROBLEMS: Record<ImportProblem, string> = {
   no_items: 'El archivo no contiene credenciales ni notas.',
 }
 
+/** Saves `text` as a file; returns its size in bytes. */
 function download(name: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
+  const blob = new Blob([text], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
   link.download = name
   link.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+  return blob.size
 }
 
 const today = () => new Date().toISOString().slice(0, 10)
-
-/** Encrypts and uploads items, a few at a time. Returns the ones the server accepted. */
-async function upload(items: VaultItem[], onProgress: (done: number) => void) {
-  const { key, userId } = getSession()
-  if (!key || !userId) throw new Error('La bóveda está bloqueada.')
-  const saved: VaultItem[] = []
-  let failed = 0
-  let next = 0
-  async function worker() {
-    while (next < items.length) {
-      const item = items[next++]!
-      try {
-        await put(`/vault/items/${item.id}`, { data: await encryptItem(key!, userId!, item) })
-        saved.push(item)
-      } catch {
-        failed++
-      }
-      onProgress(saved.length + failed)
-    }
-  }
-  await Promise.all(Array.from({ length: 4 }, worker))
-  return { saved, failed }
-}
 
 export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const input = useRef<HTMLInputElement>(null)
@@ -78,7 +59,7 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   async function choose(file: File) {
     reset()
     if (file.size > MAX_IMPORT_BYTES) {
-      setError('El archivo es demasiado grande (más de 10 MB).')
+      setError(`El archivo es demasiado grande (más de ${MAX_IMPORT_BYTES / 1024 / 1024} MB).`)
       return
     }
     const outcome = readImport(await file.text())
@@ -109,15 +90,13 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     if (!review) return
     setBusy(true)
     try {
-      const { saved, failed } = await upload(review.fresh, setProgress)
-      const session = getSession()
-      setSessionItems([...session.items, ...saved])
+      const { saved, failed } = await importItems(review.fresh, setProgress)
       if (failed) toast.error(`${plural(failed, 'elemento no se ha podido importar', 'elementos no se han podido importar')}. Vuelve a importar el archivo: los ya importados se omitirán.`)
-      if (saved.length) toast.success(`${plural(saved.length, 'elemento importado', 'elementos importados')}`)
+      if (saved) toast.success(`${plural(saved, 'elemento importado', 'elementos importados')}`)
       onOpenChange(false)
       reset()
     } catch (err) {
-      toast.error(errorMessage(err))
+      toast.error(err instanceof VaultLockedError ? 'La bóveda se ha bloqueado antes de terminar la importación. Desbloquéala y vuelve a importar el archivo: lo ya importado se omitirá.' : errorMessage(err))
     } finally {
       setBusy(false)
     }
@@ -228,17 +207,19 @@ export function ExportDialog({ open, onOpenChange, state }: { open: boolean; onO
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    const { userId, items } = getSession()
-    if (!userId) return
+    const { key, userId, items } = getSession()
+    if (!key || !userId) return
     setBusy(true)
     setError(null)
     try {
       // Both kinds ask for the master password: whoever exports must know it.
       await unlockWithPassword(state, password, userId)
       const payload = JSON.stringify(toBitwardenJson(items), null, 2)
-      if (kind === 'encrypted') download(`orqevio-boveda-cifrada-${today()}.json`, JSON.stringify(await sealExport(payload, password, items.length), null, 2))
-      else download(`orqevio-boveda-sin-cifrar-${today()}.json`, payload)
+      const text = kind === 'encrypted' ? JSON.stringify(await sealExport(payload, password, items.length), null, 2) : payload
+      if (getSession().key !== key) throw new VaultLockedError()
+      const size = download(`orqevio-boveda-${kind === 'encrypted' ? 'cifrada' : 'sin-cifrar'}-${today()}.json`, text)
       toast.success(`${plural(items.length, 'elemento exportado', 'elementos exportados')}`)
+      if (size > MAX_IMPORT_BYTES) toast.warning(`La copia ocupa más de ${MAX_IMPORT_BYTES / 1024 / 1024} MB: Orqevio no podrá importarla.`)
       close()
     } catch (err) {
       setError(err instanceof WrongSecretError ? 'Contraseña maestra incorrecta.' : errorMessage(err))

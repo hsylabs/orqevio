@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { WrongSecretError, openExport, sealExport } from '../src/features/vault/crypto'
-import { parseCsv, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from '../src/features/vault/transfer'
-import { type VaultItem, emptyItem } from '../src/features/vault/types'
+import { MAX_IMPORT_BYTES, parseCsv, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from '../src/features/vault/transfer'
+import { ITEM_LIMITS, type VaultItem, emptyItem } from '../src/features/vault/types'
+import { MAX_VAULT_ITEMS } from '@orqevio/shared'
 
 function items(text: string) {
   const outcome = readImport(text)
@@ -29,6 +30,11 @@ describe('importing', () => {
     ])
     // Older Chrome exports have no note column.
     expect(items('name,url,username,password\nBanco,banco.es,ana,1234\n').items[0]).toMatchObject({ title: 'Banco', notes: '' })
+  })
+
+  it('keeps spaces at the end of the last value of the file', () => {
+    expect(items('name,url,username,password\nEjemplo,https://example.com,alicia,secreto  \r\n').items[0]!.password).toBe('secreto  ')
+    expect(items('\n\nname,url,username,password\nEjemplo,example.com,alicia,  secreto  ').items[0]!.password).toBe('  secreto  ')
   })
 
   it('reads the CSV of Firefox, naming entries after their site and keeping their dates', () => {
@@ -108,6 +114,18 @@ describe('exporting', () => {
     const back = items(JSON.stringify(toBitwardenJson(vault)))
     expect(back.items.map(withDates)).toEqual(vault.map(withDates))
   })
+
+  it('can import the encrypted export of a full vault', async () => {
+    const full: VaultItem = { ...emptyItem('login'), ...Object.fromEntries(Object.entries(ITEM_LIMITS).map(([field, max]) => [field, 'a'.repeat(max)])) }
+    const size = (list: VaultItem[]) => JSON.stringify(toBitwardenJson(list), null, 2).length
+    const perItem = size([full, full]) - size([full])
+    const plaintext = size([full]) + perItem * (MAX_VAULT_ITEMS - 1)
+    // An encrypted export is the plaintext in base64 (plus the GCM tag) and a small header.
+    const encrypted = (bytes: number) => Math.ceil(((bytes + 16) * 4) / 3) + 1024
+    const sample = JSON.stringify(toBitwardenJson([full]), null, 2)
+    expect(JSON.stringify(await sealExport(sample, 'caballo correcto pila grapa', 1), null, 2).length).toBeLessThanOrEqual(encrypted(sample.length))
+    expect(encrypted(plaintext)).toBeLessThan(MAX_IMPORT_BYTES)
+  }, 30_000)
 
   it('encrypts an export that only the master password opens', async () => {
     const file = await sealExport(JSON.stringify(toBitwardenJson(vault)), 'caballo correcto pila grapa', vault.length)

@@ -16,6 +16,9 @@ export interface VaultItem {
   updatedAt: string
 }
 
+/** Longest value the editor accepts for each field. */
+export const ITEM_LIMITS = { title: 200, username: 500, password: 1000, url: 2000, totp: 2000, notes: 20_000 } as const
+
 export const emptyItem = (type: VaultItemType): VaultItem => {
   const now = new Date().toISOString()
   return { id: crypto.randomUUID(), type, title: '', username: '', password: '', url: '', notes: '', totp: '', favorite: false, createdAt: now, updatedAt: now }

@@ -1,5 +1,5 @@
 import type { VaultItemRecordDTO, VaultStateDTO } from '@orqevio/shared'
-import { vaultItemInput, vaultKeysInput, vaultSettingsInput } from '@orqevio/shared'
+import { MAX_VAULT_ITEMS, vaultItemInput, vaultKeysInput, vaultSettingsInput } from '@orqevio/shared'
 import { and, asc, eq, isNotNull } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { vaultItems, vaults } from '../db/schema'
@@ -7,8 +7,6 @@ import { conflict, forbidden, notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { Deps } from './deps'
-
-const MAX_ITEMS = 5000
 
 /**
  * The vault stores opaque, client-side encrypted envelopes. The server has no
@@ -89,7 +87,7 @@ export class VaultService {
     if (owner && owner.userId !== actor.userId) throw notFound('Item')
     if (!owner) {
       const count = await this.deps.db.$count(vaultItems, eq(vaultItems.userId, actor.userId))
-      if (count >= MAX_ITEMS) throw conflict(`The vault is limited to ${MAX_ITEMS} items`)
+      if (count >= MAX_VAULT_ITEMS) throw conflict(`The vault is limited to ${MAX_VAULT_ITEMS} items`)
     }
     const now = new Date()
     const [row] = await this.deps.db
