@@ -1,9 +1,16 @@
+# Patterns here only match from the build context root unless prefixed with **/.
 **/node_modules
 **/dist
 **/test-results
 **/playwright-report
 .git
-.env
-.env.*
-data
+# Local data, secrets and state: never part of an image.
+**/data
+**/.env
+**/.env.*
+!.env.example
+**/.dev.vars*
+**/.wrangler
+**/dist-worker
+**/e2e/.auth
 *.log

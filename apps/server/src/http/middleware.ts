@@ -1,9 +1,9 @@
-import { getConnInfo } from '@hono/node-server/conninfo'
 import type { Context, MiddlewareHandler } from 'hono'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import type { Actor } from '../auth/actor'
 import type { Env } from '../env'
 import { AppError, forbidden, unauthorized } from '../lib/errors'
+import { allowedOrigins } from './security'
 import { SESSION_TTL_MS } from '../services/accounts'
 import type { AppEnv } from './types'
 
@@ -33,16 +33,9 @@ export function bearerToken(c: Context) {
   return match ? match[1]! : ''
 }
 
+/** Client address for rate limiting, resolved by the runtime (see `Platform.clientIp`). */
 export function clientIp(c: Context<AppEnv>) {
-  if (c.get('config').trustProxy) {
-    const forwarded = c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
-    if (forwarded) return forwarded
-  }
-  try {
-    return getConnInfo(c).remote.address ?? 'unknown'
-  } catch {
-    return 'unknown'
-  }
+  return c.get('clientIp')
 }
 
 /** Resolves the caller from a bearer agent token or the session cookie. */
@@ -78,7 +71,7 @@ const UNSAFE = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 export const originGuard: MiddlewareHandler<AppEnv> = async (c, next) => {
   if (UNSAFE.has(c.req.method) && bearerToken(c) === null) {
     const origin = c.req.header('origin')
-    const allowed = c.get('config').appUrls
+    const allowed = allowedOrigins(c.get('config'), c.req.url)
     if (origin) {
       if (!allowed.includes(origin)) throw forbidden('Cross-origin request rejected', 'bad_origin')
     } else {

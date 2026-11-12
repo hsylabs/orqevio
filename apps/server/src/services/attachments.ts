@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { attachments, cards, pages } from '../db/schema'
 import { AppError, badRequest, notFound } from '../lib/errors'
+import { LengthMismatchError, exactLength, peek } from '../lib/upload-stream'
 import type { Access } from './access'
 import type { ActivityService } from './activity'
 import type { Deps } from './deps'
@@ -20,6 +21,15 @@ export const toAttachmentDTO = (a: typeof attachments.$inferSelect): AttachmentD
   isImage: INLINE_IMAGES.has(a.mimeType),
   createdAt: a.createdAt.toISOString(),
 })
+
+/** A file sent as the raw request body. */
+export interface IncomingFile {
+  body: ReadableStream<Uint8Array> | null
+  /** Content-Length; NaN when the client did not send it. */
+  size: number
+  name: string
+  type: string
+}
 
 function safeFilename(name: string) {
   const cleaned = name.replace(/[\\/\u0000-\u001f\u007f"]/g, '_').trim().slice(0, 180)
@@ -38,6 +48,11 @@ function sniff(bytes: Uint8Array, declared: string): string {
   return /^[\w.+-]+\/[\w.+-]+$/.test(declared) ? declared : 'application/octet-stream'
 }
 
+function rethrowLength(error: unknown): never {
+  if (error instanceof LengthMismatchError) throw new AppError(400, 'upload_incomplete', 'The upload was interrupted or did not match its size')
+  throw error
+}
+
 export class AttachmentService {
   constructor(
     private readonly deps: Deps,
@@ -45,10 +60,17 @@ export class AttachmentService {
     private readonly activity: ActivityService,
   ) {}
 
-  async upload(actor: Actor, target: { pageId?: string; cardId?: string }, file: File): Promise<AttachmentDTO> {
+  /**
+   * Streams the file straight to storage: memory and CPU stay flat whatever its
+   * size, which matters on Cloudflare (128 MB per copy, CPU billed per request).
+   */
+  async upload(actor: Actor, target: { pageId?: string; cardId?: string }, file: IncomingFile): Promise<AttachmentDTO> {
     this.access.requireUser(actor)
-    if (!file || typeof file.arrayBuffer !== 'function') throw badRequest('A file is required')
-    if (file.size === 0) throw badRequest('The file is empty')
+    if (/^multipart\/form-data/i.test(file.type)) {
+      throw new AppError(415, 'raw_upload_required', 'Send the file itself as the request body, with its name in the X-File-Name header')
+    }
+    if (!Number.isSafeInteger(file.size) || file.size < 0) throw new AppError(411, 'length_required', 'Content-Length is required')
+    if (file.size === 0 || !file.body) throw badRequest('The file is empty')
     if (file.size > this.deps.env.maxUploadBytes) {
       throw new AppError(413, 'file_too_large', `Files are limited to ${Math.round(this.deps.env.maxUploadBytes / 1048576)} MB`)
     }
@@ -69,10 +91,11 @@ export class AttachmentService {
     } else {
       throw badRequest('pageId or cardId is required')
     }
-    const bytes = new Uint8Array(await file.arrayBuffer())
     const id = randomUUID()
     const storageKey = `${workspaceId}/${id}`
-    await this.deps.storage.put(storageKey, bytes)
+    const { head, stream } = await peek(file.body.pipeThrough(exactLength(file.size)), 12).catch(rethrowLength)
+    const mimeType = sniff(head, file.type.split(';')[0]!.trim().toLowerCase())
+    await this.deps.storage.put(storageKey, stream, file.size, mimeType).catch(rethrowLength)
     const [row] = await this.deps.db
       .insert(attachments)
       .values({
@@ -81,8 +104,8 @@ export class AttachmentService {
         pageId: target.pageId ?? null,
         cardId: target.pageId ? null : (target.cardId ?? null),
         filename: safeFilename(file.name),
-        mimeType: sniff(bytes, file.type),
-        size: bytes.byteLength,
+        mimeType,
+        size: file.size,
         storageKey,
         createdByUserId: actor.userId,
       })
@@ -96,7 +119,9 @@ export class AttachmentService {
     const [row] = await this.deps.db.select().from(attachments).where(eq(attachments.id, attachmentId))
     if (!row) throw notFound('Attachment')
     await this.access.workspace(actor, row.workspaceId)
-    return { meta: row, inline: INLINE_IMAGES.has(row.mimeType), body: this.deps.storage.stream(row.storageKey) }
+    const body = await this.deps.storage.stream(row.storageKey)
+    if (!body) throw notFound('Attachment')
+    return { meta: row, inline: INLINE_IMAGES.has(row.mimeType), body }
   }
 
   async remove(actor: Actor, attachmentId: string) {

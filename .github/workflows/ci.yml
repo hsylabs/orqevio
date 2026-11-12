@@ -68,3 +68,45 @@ jobs:
       - name: Show server log
         if: failure()
         run: cat "$RUNNER_TEMP/server.log"
+
+  e2e-cloudflare:
+    name: End-to-end tests (Cloudflare runtime)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # The same suite against the Worker + Durable Object + R2 runtime, run
+      # locally by Wrangler (workerd): no Cloudflare account is involved.
+      E2E_BASE_URL: http://127.0.0.1:8787
+      SETUP_CODE: e2e-setup-code-1234
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Check the Worker bundle
+        run: pnpm --filter @orqevio/server check:worker
+      - name: Install Chromium for Playwright
+        run: pnpm --filter @orqevio/web exec playwright install --with-deps chromium
+      - name: Start the Worker locally
+        working-directory: apps/server
+        run: |
+          nohup pnpm exec wrangler dev --local --port 8787 --ip 127.0.0.1 --var "SETUP_CODE:$SETUP_CODE" > "$RUNNER_TEMP/worker.log" 2>&1 &
+          for _ in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8787/healthz > /dev/null; then
+              echo "Worker is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Worker did not become ready in 90 seconds"
+          cat "$RUNNER_TEMP/worker.log"
+          exit 1
+      - run: pnpm test:e2e
+      - name: Show Worker log
+        if: failure()
+        run: cat "$RUNNER_TEMP/worker.log"

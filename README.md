@@ -30,7 +30,8 @@ La decisión central: **la bóveda está aislada de los agentes**. Ningún token
 ```
 apps/web        React 19 + Vite · TanStack Query · React Router · Tailwind CSS 4
                 TipTap 3 (Markdown nativo) · dnd-kit · Radix UI · cmdk
-apps/server     Node 22 · Hono · Drizzle ORM · SQLite (FTS5) · SDK oficial de MCP
+apps/server     Hono · Drizzle ORM · SQLite (FTS5) · SDK oficial de MCP
+                Node 22 (Docker) o Cloudflare Workers + Durable Objects + R2
 packages/shared Esquemas zod, permisos y tipos compartidos por API, MCP y cliente
 ```
 
@@ -47,9 +48,14 @@ packages/shared Esquemas zod, permisos y tipos compartidos por API, MCP y client
 
 - **Una sola capa de dominio.** La API REST de la aplicación y las herramientas MCP llaman exactamente a los mismos servicios. Cada operación comprueba el acceso al espacio y el permiso concreto (`tasks:read`, `tasks:write`, `docs:read`, `docs:write`), así que las reglas se aplican una única vez.
 - **Markdown como formato canónico.** Documentos y descripciones se guardan en Markdown (GFM). Es portable, legible y lo que mejor entienden los LLM. Las referencias internas son enlaces normales: `[Título](/card/<id>)` y `[Título](/doc/<id>)`.
-- **Una copia, un archivo.** Cada copia es de una persona y guarda todo en SQLite: un único archivo (`DATA_DIR/orqevio.db`) más la carpeta de adjuntos. Las transacciones son síncronas, el mismo modelo que tendrá la versión para Cloudflare.
+- **Una copia, una base de datos.** Cada copia es de una persona y guarda todo en SQLite, con transacciones síncronas. El mismo código corre en dos sitios:
+  - **Servidor propio (Docker o Node):** un único archivo (`DATA_DIR/orqevio.db`) más la carpeta de adjuntos.
+  - **Cloudflare:** un Worker sirve la web y envía `/api` y `/mcp` a un único Durable Object, que guarda los datos en su propio SQLite; los adjuntos van a R2.
+- **Adjuntos en streaming.** El navegador envía el archivo tal cual (no como formulario) y el servidor lo pasa directamente al disco o a R2, comprobando su tamaño y su tipo real. La memoria y la CPU no dependen del tamaño del archivo.
 - **Búsqueda de texto completo.** Índices FTS5 sobre títulos y contenido de tarjetas y documentos, sin distinguir mayúsculas ni acentos («cancion» encuentra «Canción»), con el título por delante.
-- **Tiempo real sin infraestructura extra.** Cada cambio se reparte en memoria a los navegadores conectados por WebSocket (`/api/workspaces/:id/live`). La conexión solo se acepta con sesión y desde los orígenes de `APP_URL`; el navegador envía un latido cada 25 s, que también vuelve a comprobar la sesión, y se reconecta solo. Si pones Orqevio detrás de un proxy inverso, este debe permitir WebSocket (Caddy y Traefik lo hacen por defecto; en Nginx añade las cabeceras `Upgrade` y `Connection`).
+- **Tiempo real sin infraestructura extra.** Cada cambio se reparte a los navegadores conectados por WebSocket (`/api/workspaces/:id/live`). La conexión solo se acepta con sesión y desde los orígenes de la app; el navegador envía un latido cada 25 s y se reconecta solo.
+  - **En Node,** cada latido vuelve a comprobar la sesión. Si pones Orqevio detrás de un proxy inverso, este debe permitir WebSocket (Caddy y Traefik lo hacen por defecto; en Nginx añade las cabeceras `Upgrade` y `Connection`).
+  - **En Cloudflare,** las conexiones hibernan: el latido lo contesta la plataforma sin despertar al Durable Object, así que una copia inactiva no consume. El acceso se comprueba al conectar, antes de entregar cada cambio y justo después de cerrar sesión, cambiar la clave o recuperar el acceso.
 - **Orden estable.** Columnas, tarjetas, páginas y checklists usan índices fraccionarios (`COLLATE "C"`), de modo que mover un elemento actualiza una sola fila.
 
 ## Modelo de seguridad
@@ -99,6 +105,49 @@ La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detr�
 
 **Copias de seguridad.** Basta con copiar el volumen con la app parada, o hacer una copia en caliente con `sqlite3 /data/orqevio.db ".backup '/data/copia.db'"` y guardar también la carpeta `uploads`.
 
+### En Cloudflare (vista previa)
+
+La instalación con un comando (`npx create-orqevio`) está en preparación. Mientras tanto, puedes desplegar tu copia a mano en tu propia cuenta de Cloudflare. El plan gratuito basta para uso personal (límites a noviembre de 2026):
+
+| Recurso | Plan gratuito |
+| --- | --- |
+| Peticiones (Worker y Durable Object) | 100 000 al día |
+| CPU | 10 ms por petición; el uso normal y el MCP se quedan en 1–5 ms |
+| Duración del Durable Object | 13 000 GB-s al día; mientras nadie usa la copia, hiberna y no cuenta |
+| Base de datos (SQLite del Durable Object) | 1 GB por copia (5 GB en total por cuenta) |
+| Adjuntos (R2) | 10 GB y 1 millón de escrituras al mes |
+
+Requisitos: una cuenta de Cloudflare, Node 22.12 o superior y pnpm 10.
+
+```bash
+pnpm install
+```
+
+```bash
+pnpm build
+```
+
+```bash
+cd apps/server
+```
+
+```bash
+npx wrangler login
+```
+
+Crea, **fuera del repositorio**, un archivo con una sola línea `SETUP_CODE=tu-código` (al menos 12 letras o dígitos) y despliega con él. Wrangler sube el código como secreto y crea el bucket R2 `orqevio-uploads` si no existe (aprovisionamiento automático, en beta; si no lo hace, créalo antes con `npx wrangler r2 bucket create orqevio-uploads`):
+
+```bash
+npx wrangler deploy --secrets-file ../../../orqevio-secrets.env
+```
+
+Después borra ese archivo. Wrangler muestra la dirección de tu copia (`https://orqevio.<tu-subdominio>.workers.dev`); ábrela y reclámala con el código.
+
+- **`SETUP_CODE` es obligatorio en Cloudflare.** El Durable Object se reinicia a menudo, así que un código generado en memoria no serviría: sin el secreto, la copia no se puede reclamar y el despliegue falla.
+- **Recuperar el acceso.** Cambia el secreto (`npx wrangler secret put SETUP_CODE`) y usa **«¿Has perdido la clave?»** en la pantalla de acceso. La CLI `reset-access` es solo para servidores propios.
+- **Tu dominio.** Por defecto la app acepta el origen con el que se la visita. Si usas un dominio propio y quieres fijarlo, define `APP_URL` como variable del Worker.
+- **Probarlo en local** sin cuenta: crea `apps/server/.dev.vars` con `SETUP_CODE=...` y ejecuta `pnpm --filter @orqevio/server dev:worker` (queda en `http://localhost:8787`).
+
 ### En local para desarrollo
 
 Requisitos: Node 22.12 o superior y pnpm 10. No hace falta ninguna base de datos externa: SQLite viene con el servidor (`better-sqlite3` se compila al instalar si no hay binario para tu sistema).
@@ -133,7 +182,7 @@ pnpm start
 
 1. **Primera vez.** Abre la URL de la copia e introduce el código de configuración y tu nombre:
    - Si definiste `SETUP_CODE`, es ese valor. Usa al menos 12 letras o dígitos.
-   - Si no, el servidor genera uno al arrancar y lo muestra en su registro (`docker compose logs app`). Sirve hasta que la copia se reclama o el servidor se reinicia.
+   - Si no, el servidor genera uno al arrancar y lo muestra en su registro (`docker compose logs app`). Sirve hasta que la copia se reclama o el servidor se reinicia. En Cloudflare, `SETUP_CODE` es obligatorio.
 2. **Tu clave de acceso.** Orqevio genera una clave aleatoria de 160 bits y la muestra **una sola vez**. Guárdala en tu gestor de contraseñas: es lo único que necesitas para entrar desde cualquier dispositivo. Al escribirla dan igual las mayúsculas y los guiones.
 3. **Cambiarla.** En **Ajustes → Clave de acceso** puedes generar una nueva; se cierran tus demás sesiones.
 
@@ -215,7 +264,15 @@ Pruebas de extremo a extremo con Playwright, con el servidor de producción en m
 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, el ciclo completo de la bóveda (con recuperación) y un agente MCP trabajando en directo sobre el tablero. Fallan si aparece cualquier error en la consola del navegador.
+La misma batería se pasa contra el runtime de Cloudflare en local (`pnpm --filter @orqevio/server dev:worker`, con el mismo código en `apps/server/.dev.vars`):
+
+```bash
+E2E_BASE_URL=http://127.0.0.1:8787 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
+```
+
+La CI ejecuta las dos.
+
+Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, pegar una imagen en un documento y adjuntar archivos a una tarjeta, el ciclo completo de la bóveda (con recuperación) y un agente MCP trabajando en directo sobre el tablero. Fallan si aparece cualquier error en la consola del navegador.
 
 ## Configuración
 
@@ -230,12 +287,15 @@ Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Despu�
 | `SECURE_COOKIES` | según `APP_URL` | Fuerza cookies `Secure`. |
 | `SETUP_CODE` | generado al arrancar | Código para reclamar la copia la primera vez. Si lo cambias, permite recuperar el acceso. |
 
+En Cloudflare solo se usan `SETUP_CODE` (secreto obligatorio), `APP_URL` (opcional; por defecto, el origen de cada visita) y `MAX_UPLOAD_MB`. El resto no aplica: los datos viven en el Durable Object y en R2.
+
 ## Limitaciones conocidas
 
 - **Uso individual por espacio.** El modelo de datos ya contempla miembros y roles, pero no hay invitaciones ni asignación de tarjetas a personas: el producto está pensado para ti y tus agentes.
 - **Sin coedición simultánea.** No hay edición colaborativa en tiempo real tipo CRDT; los conflictos se detectan por versión y se resuelven explícitamente.
 - **Autenticación MCP por token Bearer.** No se implementa el flujo OAuth 2.1 de MCP, así que los clientes que solo admiten OAuth (por ejemplo, los conectores personalizados de la web de Claude) no pueden conectarse directamente; Claude Code, Cursor, VS Code y Claude Desktop (con `mcp-remote`) sí.
 - **Un solo proceso por copia.** SQLite, los adjuntos en disco y el tiempo real en memoria asumen una única instancia del servidor por copia, que es el modelo de Orqevio (una copia por persona).
+- **Copias de seguridad en Cloudflare.** Aún no hay exportación desde la app: los datos quedan en el Durable Object y en el bucket R2 de tu cuenta.
 - **Sin migración desde PostgreSQL.** Las versiones de desarrollo anteriores usaban PostgreSQL; no hay herramienta para pasar esos datos a SQLite.
 - **Una persona por copia.** No hay registro ni correo; si se pierde la clave de acceso, se recupera desde el servidor (CLI o un `SETUP_CODE` nuevo).
 - **Bóveda personal.** No se comparte entre personas y no incluye importación/exportación ni códigos TOTP.
@@ -250,6 +310,8 @@ apps/server/src
   http/       rutas REST, middleware de sesión, CSRF y aislamiento de la bóveda
   mcp/        servidor MCP y transporte HTTP
   db/         esquema Drizzle y migraciones (apps/server/drizzle)
+  node/       arranque en Node: archivos estáticos y WebSocket
+  worker/     arranque en Cloudflare: Worker, Durable Object, R2 y migraciones incrustadas
 apps/web/src
   features/   shell, home, projects, boards, docs, vault, agents, settings
   components/ sistema de diseño (botones, diálogos, menús, editor…)

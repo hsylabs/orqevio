@@ -23,7 +23,6 @@ export function createServices(deps: Deps) {
   return {
     access,
     activity,
-    realtime: deps.bus,
     cards,
     workspaces,
     boards: new BoardService(deps, access, activity, cards),

@@ -1,11 +1,11 @@
 import type { Database } from '../db/client'
 import type { Env } from '../env'
-import type { RealtimeBus } from '../lib/realtime'
-import type { LocalStorage } from '../lib/storage'
+import type { RealtimePublisher } from '../lib/realtime'
+import type { AttachmentStorage } from '../lib/storage'
 
 export interface Deps {
   db: Database
-  bus: RealtimeBus
+  bus: RealtimePublisher
   env: Env
-  storage: LocalStorage
+  storage: AttachmentStorage
 }

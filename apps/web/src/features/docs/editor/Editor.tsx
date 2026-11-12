@@ -1,4 +1,4 @@
-import type { AttachmentDTO, SearchResultDTO } from '@orqevio/shared'
+import type { AttachmentDTO, MeDTO, SearchResultDTO } from '@orqevio/shared'
 import { cardHref, docHref } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { TableKit } from '@tiptap/extension-table'
@@ -11,8 +11,9 @@ import StarterKit from '@tiptap/starter-kit'
 import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { api, errorMessage, get } from '../../../lib/api'
+import { ApiError, api, errorMessage, get } from '../../../lib/api'
 import { cn } from '../../../lib/cn'
+import { keys, queryClient } from '../../../lib/queries'
 import { FormatMenu } from './FormatMenu'
 import { Mentions, SlashCommands } from './extensions'
 import { SuggestionMenu } from './SuggestionMenu'
@@ -41,9 +42,11 @@ interface EditorProps {
 const SAFE_PROTOCOL = /^(https?:|mailto:|\/(?!\/))/i
 
 export async function uploadFile(file: File, target: UploadTarget): Promise<AttachmentDTO> {
-  const form = new FormData()
-  form.append('file', file)
-  return api<AttachmentDTO>('POST', `/${target.type === 'page' ? 'pages' : 'cards'}/${target.id}/attachments`, form)
+  // The server refuses oversized files before reading them, which browsers report as a
+  // network error; checking first gives the real reason.
+  const limit = queryClient.getQueryData<MeDTO>(keys.me)?.limits.maxUploadBytes
+  if (limit !== undefined && file.size > limit) throw new ApiError(413, 'file_too_large', 'File too large')
+  return api<AttachmentDTO>('POST', `/${target.type === 'page' ? 'pages' : 'cards'}/${target.id}/attachments`, file)
 }
 
 function insertAttachment(editor: TiptapEditor, attachment: AttachmentDTO, pos?: number) {

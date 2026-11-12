@@ -8,7 +8,7 @@ import { openDatabase, runMigrations } from '../src/db/client'
 import { sessions, users, workspaceMembers, workspaces } from '../src/db/schema'
 import { loadEnv } from '../src/env'
 import { RealtimeBus } from '../src/lib/realtime'
-import { LocalStorage } from '../src/lib/storage'
+import { LocalStorage } from '../src/lib/storage-local'
 import { createServices } from '../src/services'
 
 export const ORIGIN = 'http://localhost:3000'
@@ -54,7 +54,8 @@ export class Client {
     const h = init.headers as Record<string, string>
     if (this.cookie) h.Cookie = this.cookie
     if (this.bearer) h.Authorization = `Bearer ${this.bearer}`
-    if (body instanceof FormData) init.body = body
+    if (body instanceof FormData || body instanceof Uint8Array || body instanceof Blob) init.body = body as RequestInit['body']
+    else if (body instanceof ReadableStream) Object.assign(init, { body, duplex: 'half' })
     else if (body !== undefined) {
       h['Content-Type'] = 'application/json'
       init.body = JSON.stringify(body)
@@ -73,6 +74,12 @@ export class Client {
       json = text
     }
     return { status: res.status, body: json, headers: res.headers }
+  }
+
+  /** Uploads like the web app does: the raw file as the body, its name in X-File-Name. */
+  upload = (url: string, data: Uint8Array | string, { name = 'file.bin', type = 'application/octet-stream', length }: { name?: string; type?: string; length?: number } = {}) => {
+    const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data
+    return this.request('POST', url, bytes, { 'Content-Type': type, 'Content-Length': String(length ?? bytes.byteLength), 'X-File-Name': encodeURIComponent(name) })
   }
 
   get = (url: string) => this.request('GET', url)

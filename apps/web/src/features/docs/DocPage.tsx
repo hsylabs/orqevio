@@ -143,7 +143,14 @@ function DocBody({ page }: { page: PageDTO }) {
     () =>
       onPageEvent((event) => {
         if (event.pageId !== page.id || event.action === 'page.deleted') return
-        if (event.version !== undefined && event.version <= version.current) return
+        // Only changes to the text carry a version. Attachments and links leave it
+        // alone: refresh the side lists, never the editor, or a just-pasted image
+        // could be wiped before it is saved.
+        if (event.version === undefined) {
+          void queryClient.invalidateQueries({ queryKey: keys.page(page.id) })
+          return
+        }
+        if (event.version <= version.current) return
         const self = event.actor.kind === 'user' && event.actor.id === me.user.id
         if (self && saving.current) return
         if (dirty.current) setConflict({ by: event.actor.name })
