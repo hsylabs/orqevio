@@ -1,8 +1,11 @@
-import type { AddressInfo } from 'node:net'
+import { type AddressInfo, connect as tcpConnect } from 'node:net'
 import { serve } from '@hono/node-server'
 import { LIVE_CLOSE, type LiveMessage } from '@orqevio/shared'
+import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import WebSocket from 'ws'
+import { sha256 } from '../src/auth/crypto'
+import { sessions } from '../src/db/schema'
 import { attachLiveUpdates } from '../src/http/live'
 import { type Harness, ORIGIN, createHarness, seedBoard, signInOwner, signUp } from './harness'
 
@@ -71,6 +74,44 @@ describe('live updates over WebSocket', () => {
 
     live.ws.send('ping')
     await until(() => live.messages.includes('pong'))
+    live.ws.close()
+    await live.closed
+  })
+
+  it('survives malformed upgrade requests', async () => {
+    const { port } = server.address() as AddressInfo
+    const reply = await new Promise<string>((resolve, reject) => {
+      const socket = tcpConnect(port, '127.0.0.1', () => {
+        socket.write('GET // HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n')
+      })
+      let data = ''
+      socket.on('data', (chunk) => (data += chunk.toString()))
+      socket.on('end', () => resolve(data))
+      socket.on('error', reject)
+    })
+    expect(reply).toMatch(/^HTTP\/1\.1 404/)
+    expect((await h.app.request('/healthz')).status).toBe(200)
+    const { client, workspaceId } = await signInOwner(h)
+    const live = await connect(workspaceId, { Origin: ORIGIN, Cookie: client.cookie })
+    if ('status' in live) throw new Error(`refused: ${live.status}`)
+    live.ws.close()
+    await live.closed
+  })
+
+  it('pings do not extend the session, so the next HTTP request still renews the cookie', async () => {
+    const { client, workspaceId } = await signInOwner(h)
+    const token = decodeURIComponent(client.cookie.split('=').slice(1).join('='))
+    const stale = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+    await h.db.update(sessions).set({ lastSeenAt: stale }).where(eq(sessions.id, sha256(token)))
+    const live = await connect(workspaceId, { Origin: ORIGIN, Cookie: client.cookie })
+    if ('status' in live) throw new Error(`refused: ${live.status}`)
+    live.ws.send('ping')
+    await until(() => live.messages.includes('pong'))
+    const [row] = await h.db.select().from(sessions).where(eq(sessions.id, sha256(token)))
+    expect(row!.lastSeenAt.getTime()).toBe(stale.getTime())
+    const res = await client.get('/api/auth/me')
+    expect(res.status).toBe(200)
+    expect(res.headers.get('set-cookie')).toBeTruthy()
     live.ws.close()
     await live.closed
   })

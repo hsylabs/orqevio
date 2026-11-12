@@ -41,7 +41,8 @@ export function attachLiveUpdates(server: Server, env: Env, services: Services) 
 
   async function authorize(token: string | null, workspaceId: string) {
     if (!token) return 401 as const
-    const session = await services.accounts.authenticate(token)
+    // Never extends the session here: only an HTTP response can renew the cookie.
+    const session = await services.accounts.authenticate(token, { refresh: false })
     if (!session) return 401 as const
     try {
       await services.access.workspace(session.actor, workspaceId)
@@ -52,8 +53,15 @@ export function attachLiveUpdates(server: Server, env: Env, services: Services) 
   }
 
   server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => {
-    const url = new URL(req.url ?? '/', 'http://localhost')
-    const match = PATH.exec(url.pathname)
+    let pathname: string
+    try {
+      pathname = new URL(req.url ?? '/', 'http://localhost').pathname
+    } catch {
+      // Malformed request targets such as "//" must not take the server down.
+      reject(socket, 404, 'Not Found')
+      return
+    }
+    const match = PATH.exec(pathname)
     if (!match) {
       reject(socket, 404, 'Not Found')
       return

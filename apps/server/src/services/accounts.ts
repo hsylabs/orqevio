@@ -177,7 +177,12 @@ export class AccountService {
   }
 
   /** Validates a session cookie, sliding its expiry at most once a day. */
-  async authenticate(token: string): Promise<{ actor: UserActor; refreshed: Date | null } | null> {
+  /**
+   * Resolves a session token. Once a day it also extends the session, which the
+   * caller must pass on to the browser cookie; callers that cannot set a cookie
+   * (the live connection) pass `refresh: false` and leave that to the next request.
+   */
+  async authenticate(token: string, { refresh = true } = {}): Promise<{ actor: UserActor; refreshed: Date | null } | null> {
     if (token.length < 20 || token.length > 100) return null
     const now = new Date()
     const [row] = await this.deps.db
@@ -187,7 +192,7 @@ export class AccountService {
       .where(and(eq(sessions.id, sha256(token)), gt(sessions.expiresAt, now)))
     if (!row) return null
     let refreshed: Date | null = null
-    if (now.getTime() - row.session.lastSeenAt.getTime() > SESSION_REFRESH_MS) {
+    if (refresh && now.getTime() - row.session.lastSeenAt.getTime() > SESSION_REFRESH_MS) {
       refreshed = new Date(now.getTime() + SESSION_TTL_MS)
       await this.deps.db.update(sessions).set({ lastSeenAt: now, expiresAt: refreshed }).where(eq(sessions.id, row.session.id))
     }
