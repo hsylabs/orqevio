@@ -45,8 +45,12 @@ export const useMe = () =>
   useQuery({
     queryKey: keys.me,
     queryFn: async ({ signal }) => {
-      const session = await get<MeDTO | { user: null }>('/auth/session', signal)
-      if (!session.user) throw new ApiError(401, 'unauthorized', 'Authentication required')
+      const session = await get<MeDTO | AnonymousSessionDTO>('/auth/session', signal)
+      if (!session.user) {
+        // Keep the sign-in screens' view in sync, so they never act on a stale signed-in state.
+        queryClient.setQueryData(keys.access, session)
+        throw new ApiError(401, 'unauthorized', 'Authentication required')
+      }
       return session as MeDTO
     },
     staleTime: 60_000,

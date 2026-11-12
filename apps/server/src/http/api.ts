@@ -23,7 +23,8 @@ async function json(c: { req: { json: () => Promise<unknown> } }) {
 
 export function createApi(env: Env) {
   const api = new Hono<AppEnv>()
-  // Brute force is hopeless against a 160-bit key, but repeated attempts are still slowed down.
+  // Brute force is hopeless against a 160-bit key, but failed attempts are still slowed down;
+  // a success resets the counter.
   const loginLimiter = new RateLimiter(10, 15 * 60 * 1000)
   const setupLimiter = new RateLimiter(10, 60 * 60 * 1000)
 
@@ -41,8 +42,10 @@ export function createApi(env: Env) {
 
   // ── Access ──────────────────────────────────────────────────────
   api.post('/auth/claim', async (c) => {
-    limit(setupLimiter, clientIp(c))
+    const key = clientIp(c)
+    limit(setupLimiter, key)
     const { user, accessKey, session } = await c.get('services').accounts.claim(await json(c), c.req.header('user-agent') ?? null)
+    setupLimiter.reset(key)
     setSessionCookie(c, session.token, session.expiresAt)
     return c.json({ user, accessKey }, 201)
   })
@@ -55,8 +58,10 @@ export function createApi(env: Env) {
     return c.json({ user })
   })
   api.post('/auth/recover', async (c) => {
-    limit(setupLimiter, clientIp(c))
+    const key = clientIp(c)
+    limit(setupLimiter, key)
     const { user, accessKey, session } = await c.get('services').accounts.recover(await json(c), c.req.header('user-agent') ?? null)
+    setupLimiter.reset(key)
     setSessionCookie(c, session.token, session.expiresAt)
     return c.json({ user, accessKey })
   })

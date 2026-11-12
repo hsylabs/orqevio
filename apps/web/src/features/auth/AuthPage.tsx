@@ -154,7 +154,8 @@ export function AuthPage({ mode }: { mode: 'login' | 'setup' }) {
     )
   }
 
-  if (access.isPending) return <FullScreenLoader />
+  // Decide from a fresh answer: a cached one may predate a session revoked on another device.
+  if (!access.isFetchedAfterMount) return <FullScreenLoader />
   const session = access.data as Session | undefined
   if (session?.user) return <Navigate to={next} replace />
   const claimed = session ? session.claimed : true

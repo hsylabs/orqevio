@@ -117,7 +117,19 @@ export class AccountService {
     const configured = this.deps.env.setupCode
     if (!row || !configured || !this.isRecoverable(row)) throw invalidSetupCode()
     if (!safeEqual(secretFingerprint(setupCode), secretFingerprint(configured))) throw invalidSetupCode()
-    const accessKey = await this.replaceKey(row.ownerId, { setupCodeHash: secretFingerprint(configured) })
+    const accessKey = generateAccessKey()
+    // The new setup code is consumed atomically: of two concurrent recoveries, only the first one wins.
+    const consumed = await this.deps.db.transaction(async (tx) => {
+      const updated = await tx
+        .update(instance)
+        .set({ accessKeyHash: secretFingerprint(accessKey), setupCodeHash: secretFingerprint(configured), keyChangedAt: new Date() })
+        .where(and(eq(instance.id, 1), eq(instance.setupCodeHash, row.setupCodeHash)))
+        .returning({ id: instance.id })
+      if (updated.length === 0) return false
+      await tx.delete(sessions).where(eq(sessions.userId, row.ownerId))
+      return true
+    })
+    if (!consumed) throw invalidSetupCode()
     const user = await this.owner(row.ownerId)
     return { user: toUserDTO(user), accessKey, session: await this.createSession(user.id, userAgent) }
   }
@@ -127,7 +139,7 @@ export class AccountService {
     this.access.requireUser(actor)
     const { currentAccessKey } = parse(rotateAccessKeyInput, input)
     const row = await this.verifyAccessKey(actor.userId, currentAccessKey)
-    const accessKey = await this.replaceKey(row.ownerId, {}, actor.sessionId)
+    const accessKey = await this.replaceKey(row.ownerId, actor.sessionId)
     return { accessKey }
   }
 
@@ -135,15 +147,15 @@ export class AccountService {
   async resetAccess() {
     const row = await this.instanceRow()
     if (!row) return null
-    return this.replaceKey(row.ownerId, {})
+    return this.replaceKey(row.ownerId)
   }
 
-  private async replaceKey(ownerId: string, extra: { setupCodeHash?: string }, keepSessionId?: string) {
+  private async replaceKey(ownerId: string, keepSessionId?: string) {
     const accessKey = generateAccessKey()
     await this.deps.db.transaction(async (tx) => {
       await tx
         .update(instance)
-        .set({ accessKeyHash: secretFingerprint(accessKey), keyChangedAt: new Date(), ...extra })
+        .set({ accessKeyHash: secretFingerprint(accessKey), keyChangedAt: new Date() })
         .where(eq(instance.id, 1))
       await tx
         .delete(sessions)
@@ -222,6 +234,11 @@ export class AccountService {
       await tx.delete(users).where(eq(users.id, actor.userId))
     })
     for (const w of owned) await this.deps.storage.deleteWorkspace(w.id)
+    // Without SETUP_CODE, the copy needs a fresh one-off code to be claimed again; it is only shown in the server log.
+    if (!this.deps.env.setupCode) {
+      this.generatedSetupCode = generateSetupCode()
+      console.log(`This copy is not claimed anymore. Setup code: ${this.generatedSetupCode} (valid until the copy is claimed or the server restarts)`)
+    }
   }
 
   /** Confirms a sensitive action with the access key; only the owner has one. */

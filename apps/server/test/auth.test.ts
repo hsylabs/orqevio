@@ -118,6 +118,22 @@ describe('access to a copy', () => {
     }
   })
 
+  it('lets only one of two simultaneous recoveries with the same code succeed', async () => {
+    h.env.setupCode = 'another-new-setup-code'
+    try {
+      const [a, b] = await Promise.all([
+        new Client(h).post('/api/auth/recover', { setupCode: 'another-new-setup-code' }),
+        new Client(h).post('/api/auth/recover', { setupCode: 'another-new-setup-code' }),
+      ])
+      expect([a.status, b.status].sort()).toEqual([200, 403])
+      const winner = a.status === 200 ? a : b
+      expect((await new Client(h).post('/api/auth/login', { accessKey: winner.body.accessKey })).status).toBe(200)
+      h.owner!.accessKey = winner.body.accessKey
+    } finally {
+      h.env.setupCode = SETUP_CODE
+    }
+  })
+
   it('isolates workspaces between users', async () => {
     const a = await signUp(h, 'Persona A')
     const b = await signUp(h, 'Persona B')
@@ -141,6 +157,22 @@ describe('access to a copy', () => {
     h.owner = null
     const { workspaceId } = await signUp(h, 'Nueva Dueña')
     expect(workspaceId).toBeTruthy()
+  })
+
+  it('without SETUP_CODE, a new one-off code is issued when the copy becomes unclaimed again', async () => {
+    const { client, accessKey } = await signInOwner(h)
+    h.env.setupCode = null
+    try {
+      expect((await client.post('/api/account/delete', { accessKey })).status).toBe(204)
+      h.owner = null
+      const notice = await h.services.accounts.setupNotice()
+      expect(notice?.generatedCode).toMatch(/^[0-9A-Z]{4}(-[0-9A-Z]{4}){3}$/)
+      const claim = await new Client(h).post('/api/auth/claim', { setupCode: notice!.generatedCode, name: 'Otra Dueña' })
+      expect(claim.status).toBe(201)
+      h.owner = { accessKey: claim.body.accessKey, userId: claim.body.user.id, workspaceId: '' }
+    } finally {
+      h.env.setupCode = SETUP_CODE
+    }
   })
 
   it('slows down repeated sign-in attempts', async () => {
