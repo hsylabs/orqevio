@@ -4,7 +4,7 @@ import { type Bindings, workerEnv } from './env'
 export { OrqevioCopy } from './copy'
 
 /** Everything with data goes to the copy's Durable Object; the rest is the web app. */
-const TO_COPY = /^\/(?:api\/|mcp$|healthz$)/
+const TO_COPY = /^\/(?:api\/|mcp$|healthz$|oauth\/(?:register|token|revoke)$|\.well-known\/oauth-)/
 
 export default {
   async fetch(request, env) {

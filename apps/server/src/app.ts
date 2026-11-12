@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import type { Env } from './env'
 import { createApi } from './http/api'
+import { createOAuthRoutes } from './http/oauth'
 import { allowedOrigins, securityHeaders } from './http/security'
 import type { AppEnv, Platform } from './http/types'
 import { AppError } from './lib/errors'
@@ -39,6 +40,7 @@ export function createApp(env: Env, services: Services, platform: Platform = {})
   })
 
   app.get('/healthz', (c) => c.json({ ok: true }))
+  app.route('/', createOAuthRoutes())
   app.route('/api', createApi(env))
   app.all('/mcp', handleMcp)
 

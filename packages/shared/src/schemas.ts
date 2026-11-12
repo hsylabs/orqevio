@@ -131,3 +131,11 @@ export type PageUpdateInput = z.infer<typeof pageUpdateInput>
 export type TokenCreateInput = z.infer<typeof tokenCreateInput>
 export type KdfParams = z.infer<typeof kdfSchema>
 export type VaultKeysInput = z.infer<typeof vaultKeysInput>
+
+/** Parameters of an OAuth authorization request, as received on the consent page. */
+export const oauthRequestInput = z.object({ params: z.record(z.string(), z.string().max(4000)) })
+export const oauthDecisionInput = oauthRequestInput.extend({
+  allow: z.boolean(),
+  workspaceId: z.string().optional(),
+  scopes: z.array(z.enum(SCOPES)).max(SCOPES.length).optional(),
+})

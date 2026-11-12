@@ -16,6 +16,7 @@ import { PageHeader } from '../shell/PageHeader'
 import { useWorkspace } from '../shell/workspace'
 import { CreateTokenDialog } from './CreateTokenDialog'
 import { mcpUrl } from './ConnectKit'
+import { destination } from '../oauth/destination'
 
 const LEVEL_LABEL = { none: 'Sin acceso', read: 'Lectura', write: 'Lectura y escritura' } as const
 
@@ -83,6 +84,9 @@ export function AgentsPage() {
                 <code className="min-w-0 flex-1 truncate font-mono text-[13px]">{mcpUrl()}</code>
                 <CopyButton value={mcpUrl()} label="Copiar endpoint" message="Endpoint copiado" />
               </div>
+              <p className="mt-3 max-w-[560px] text-[13px] leading-relaxed text-ink-3">
+                En Claude (web, escritorio y móvil) añade un conector personalizado con este endpoint: no necesitas token, te pedirá permiso aquí. Funciona igual con cualquier cliente que admita OAuth.
+              </p>
             </div>
             <aside className="relative overflow-hidden rounded-[16px] border border-line bg-surface p-5 shadow-sm">
               <div className="flex items-center gap-3">
@@ -106,7 +110,7 @@ export function AgentsPage() {
           </div>
 
           <section className="mt-12">
-            <h2 className="mb-3 text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">Tokens activos</h2>
+            <h2 className="mb-3 text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">Accesos activos</h2>
             {tokens.data && active.length === 0 ? (
               <button type="button" onClick={() => setCreateOpen(true)} className="flex w-full items-center gap-4 rounded-[16px] border border-dashed border-line-strong p-6 text-left transition-colors hover:border-agent/50 hover:bg-agent-soft/40">
                 <span className="grid size-11 place-items-center rounded-[12px] bg-agent-soft text-agent">
@@ -187,7 +191,11 @@ function TokenCard({ token, onRevoke, onShowActivity, inactive }: { token: Token
         <Avatar name={token.name} kind="agent" size={36} />
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-[14.5px] font-semibold">{token.name}</h3>
-          <p className="font-mono text-[11.5px] text-ink-3">{token.prefix}…</p>
+          {token.oauth ? (
+            <p className="truncate text-[11.5px] text-ink-3">Conectado con OAuth · vuelve a {destination(token.oauth.redirectUri).label}</p>
+          ) : (
+            <p className="font-mono text-[11.5px] text-ink-3">{token.prefix}…</p>
+          )}
         </div>
         {onRevoke && (
           <Button variant="ghost" size="xs" icon={<TrashIcon />} onClick={onRevoke} className="hover:text-danger">
@@ -212,7 +220,7 @@ function TokenCard({ token, onRevoke, onShowActivity, inactive }: { token: Token
           <dd className="text-ink-2">{shortDate(token.createdAt)}</dd>
         </div>
         <div>
-          <dt className="text-ink-3">{token.revokedAt ? 'Revocado' : 'Caduca'}</dt>
+          <dt className="text-ink-3">{token.revokedAt ? 'Revocado' : token.oauth ? 'Caduca si no se usa' : 'Caduca'}</dt>
           <dd className="text-ink-2">{token.revokedAt ? shortDate(token.revokedAt) : token.expiresAt ? shortDate(token.expiresAt) : 'Nunca'}</dd>
         </div>
       </dl>

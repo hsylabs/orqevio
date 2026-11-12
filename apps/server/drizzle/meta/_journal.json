@@ -22,6 +22,13 @@
       "when": 1794506462603,
       "tag": "0002_copy_state",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794509293646,
+      "tag": "0003_oauth",
+      "breakpoints": true
     }
   ]
 }
