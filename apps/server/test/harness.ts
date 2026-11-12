@@ -1,21 +1,25 @@
+import { randomBytes } from 'node:crypto'
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { sql } from 'drizzle-orm'
 import { createApp } from '../src/app'
+import { sha256 } from '../src/auth/crypto'
 import { createDatabase, runMigrations } from '../src/db/client'
+import { sessions, users, workspaceMembers, workspaces } from '../src/db/schema'
 import { loadEnv } from '../src/env'
 import { RealtimeBus } from '../src/lib/realtime'
 import { LocalStorage } from '../src/lib/storage'
 import { createServices } from '../src/services'
 
 export const ORIGIN = 'http://localhost:3000'
+export const SETUP_CODE = 'test-setup-code-1234'
 
 export async function createHarness() {
   process.env.APP_URL = ORIGIN
   const databaseUrl = process.env.TEST_DATABASE_URL ?? 'postgres://orqevio:orqevio@localhost:5432/orqevio_test'
   const dataDir = await mkdtemp(path.join(tmpdir(), 'orqevio-test-'))
-  const env = loadEnv({ databaseUrl, dataDir, webDist: path.join(dataDir, 'no-web') })
+  const env = loadEnv({ databaseUrl, dataDir, webDist: path.join(dataDir, 'no-web'), setupCode: SETUP_CODE })
   const { db, pool } = createDatabase(databaseUrl)
   await db.execute(sql`DROP SCHEMA IF EXISTS public CASCADE`)
   await db.execute(sql`DROP SCHEMA IF EXISTS drizzle CASCADE`)
@@ -28,8 +32,11 @@ export async function createHarness() {
   return {
     app,
     db,
+    env,
     services,
     bus,
+    /** Filled by the first signUp() of a test file, which claims the copy. */
+    owner: null as null | { accessKey: string; userId: string; workspaceId: string },
     async close() {
       await bus.stop()
       await pool.end()
@@ -80,14 +87,37 @@ export class Client {
   del = (url: string) => this.request('DELETE', url)
 }
 
-let counter = 0
+/**
+ * The first call claims the copy and returns its owner. Later calls add extra
+ * members directly in the database, each with its own workspace and session, so
+ * tests stay isolated and permission checks between people keep their coverage.
+ */
 export async function signUp(harness: Harness, name = 'Ana López') {
   const client = new Client(harness)
-  const email = `user${Date.now()}${counter++}@example.com`
-  const res = await client.post('/api/auth/register', { name, email, password: 'correct-horse-battery' })
-  if (res.status !== 201) throw new Error(`register failed: ${JSON.stringify(res.body)}`)
+  if (!harness.owner) {
+    const res = await client.post('/api/auth/claim', { setupCode: SETUP_CODE, name })
+    if (res.status !== 201) throw new Error(`claim failed: ${JSON.stringify(res.body)}`)
+    const me = await client.get('/api/auth/me')
+    harness.owner = { accessKey: res.body.accessKey, userId: me.body.user.id, workspaceId: me.body.workspaces[0].id }
+    return { client, user: me.body.user, workspaceId: harness.owner.workspaceId, accessKey: res.body.accessKey as string }
+  }
+  const [user] = await harness.db.insert(users).values({ name }).returning()
+  const [workspace] = await harness.db.insert(workspaces).values({ name: `Espacio de ${name.split(/\s+/)[0]}` }).returning()
+  await harness.db.insert(workspaceMembers).values({ workspaceId: workspace!.id, userId: user!.id, role: 'owner' })
+  const token = randomBytes(32).toString('base64url')
+  await harness.db.insert(sessions).values({ id: sha256(token), userId: user!.id, expiresAt: new Date(Date.now() + 86_400_000) })
+  client.cookie = `orq_session=${token}`
   const me = await client.get('/api/auth/me')
-  return { client, email, user: me.body.user, workspaceId: me.body.workspaces[0].id as string }
+  return { client, user: me.body.user, workspaceId: workspace!.id, accessKey: null }
+}
+
+/** A new browser-like client signed in as the owner with the access key. */
+export async function signInOwner(harness: Harness) {
+  if (!harness.owner) await signUp(harness)
+  const client = new Client(harness)
+  const res = await client.post('/api/auth/login', { accessKey: harness.owner!.accessKey })
+  if (res.status !== 200) throw new Error(`login failed: ${JSON.stringify(res.body)}`)
+  return { client, workspaceId: harness.owner!.workspaceId, accessKey: harness.owner!.accessKey }
 }
 
 export async function seedBoard(client: Client, workspaceId: string) {

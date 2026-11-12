@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { type Page, test as base, expect } from '@playwright/test'
 
 /** Test fixture that fails the test on any uncaught page error or console error. */
@@ -17,14 +18,21 @@ export const test = base.extend<{ consoleErrors: string[] }>({
 })
 export { expect }
 
-export async function signUp(page: Page, name = 'Lucía Martín') {
-  await page.goto('/register')
-  await page.getByLabel('Nombre').fill(name)
-  await page.getByLabel('Correo electrónico').fill(`e2e-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@example.com`)
-  await page.getByLabel('Contraseña', { exact: true }).fill('una-clave-segura-123')
-  await page.getByRole('button', { name: 'Crear cuenta' }).click()
-  await page.waitForURL(/\/w\/[0-9a-f-]{36}/)
-  return page.url().split('/w/')[1]!.split('/')[0]!
+/** Must match the server's SETUP_CODE; the CI sets both. */
+export const SETUP_CODE = process.env.SETUP_CODE ?? 'e2e-setup-code-1234'
+/** Browser state of the owner, saved by setup.e2e.ts once the copy is claimed. */
+export const OWNER_STATE = path.join(process.cwd(), 'e2e/.auth/owner.json')
+/** The owner's current access key, written by setup.e2e.ts. */
+export const ACCESS_KEY_FILE = path.join(process.cwd(), 'e2e/.auth/access-key.txt')
+
+/** Each test works in a workspace of its own inside the shared copy. */
+export async function openNewWorkspace(page: Page, name: string) {
+  const res = await page.request.post('/api/workspaces', { data: { name } })
+  expect(res.status(), await res.text()).toBe(201)
+  const { id } = (await res.json()) as { id: string }
+  await page.goto(`/w/${id}`)
+  await expect(page.getByRole('button', { name: 'Nuevo proyecto' }).first()).toBeVisible()
+  return id
 }
 
 export async function createProject(page: Page, name: string) {

@@ -56,17 +56,17 @@ export const del = <T>(path: string) => api<T>('DELETE', path)
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     const known: Record<string, string> = {
-      invalid_credentials: 'Correo o contraseña incorrectos.',
+      invalid_access_key: 'La clave de acceso no es correcta.',
+      invalid_setup_code: 'El código de configuración no es correcto.',
+      already_claimed: 'Esta copia ya está configurada. Entra con tu clave de acceso.',
+      not_claimed: 'Esta copia aún no está configurada.',
       rate_limited: 'Demasiados intentos. Espera unos minutos.',
       network: 'No hay conexión con el servidor.',
-      invalid_password: 'La contraseña no es correcta.',
       file_too_large: 'El archivo supera el tamaño máximo permitido.',
       last_workspace: 'Necesitas conservar al menos un espacio.',
     }
     if (known[error.code]) return known[error.code]!
-    if (error.status === 409 && /email/i.test(error.message)) return 'Ya existe una cuenta con ese correo.'
     if (error.status === 404) return 'No se ha encontrado el elemento.'
-    if (error.status === 400 && /password/i.test(error.message)) return 'La contraseña debe tener al menos 10 caracteres.'
     if (error.status >= 500) return 'Algo ha fallado en el servidor. Inténtalo de nuevo.'
     return error.message
   }

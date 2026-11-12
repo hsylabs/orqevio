@@ -258,13 +258,13 @@ function VaultRecover({ userId, state, onBack }: { userId: string; state: VaultS
 }
 
 function ResetVaultDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  const [password, setPassword] = useState('')
+  const [accessKey, setAccessKey] = useState('')
   const [busy, setBusy] = useState(false)
   async function reset(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
     try {
-      await post('/vault/reset', { password })
+      await post('/vault/reset', { accessKey })
       await queryClient.invalidateQueries({ queryKey: keys.vault })
       onOpenChange(false)
       toast.success('Bóveda restablecida. Puedes configurarla de nuevo.')
@@ -282,12 +282,12 @@ function ResetVaultDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
       description="Sin la contraseña maestra ni la clave de recuperación, nadie puede descifrar tus datos, tampoco nosotros. Restablecer borra todos los elementos de forma irreversible."
     >
       <form onSubmit={reset} className="flex flex-col gap-4">
-        <Field label="Contraseña de tu cuenta" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" autoFocus hint="Confirma que eres tú con la contraseña de acceso (no la maestra)." />
+        <Field label="Clave de acceso" type="password" value={accessKey} onChange={(e) => setAccessKey(e.target.value)} autoComplete="current-password" autoFocus spellCheck={false} className="[&_input]:font-mono" hint="Confirma que eres tú con la clave de acceso de esta copia (no con la contraseña maestra)." />
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button type="submit" variant="danger" loading={busy} disabled={!password}>
+          <Button type="submit" variant="danger" loading={busy} disabled={!accessKey}>
             Borrar y restablecer
           </Button>
         </div>

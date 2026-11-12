@@ -11,6 +11,7 @@ import { useConfirm } from '../../components/ui/confirm'
 import { del, errorMessage, patch, post } from '../../lib/api'
 import { keys } from '../../lib/queries'
 import { applyTheme } from '../../lib/theme'
+import { AccessKeyReveal } from '../auth/AccessKeyReveal'
 import { PageHeader } from '../shell/PageHeader'
 import { useWorkspace } from '../shell/workspace'
 import { lockVault } from '../vault/session'
@@ -36,10 +37,10 @@ export function SettingsPage() {
   const [name, setName] = useState(me.user.name)
   const [theme, setTheme] = useState<Theme>(me.user.theme)
   const [workspaceName, setWorkspaceName] = useState(workspace?.name ?? '')
-  const [current, setCurrent] = useState('')
-  const [next, setNext] = useState('')
+  const [currentKey, setCurrentKey] = useState('')
+  const [newKey, setNewKey] = useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteKey, setDeleteKey] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
 
   async function run(key: string, fn: () => Promise<unknown>, success: string) {
@@ -75,14 +76,13 @@ export function SettingsPage() {
               }}
             >
               <Field label="Nombre" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
-              <Field label="Correo electrónico" value={me.user.email} disabled readOnly />
               <Button type="submit" variant="primary" className="self-start" loading={busy === 'profile'} disabled={!name.trim() || name.trim() === me.user.name}>
                 Guardar
               </Button>
             </form>
           </Section>
 
-          <Section title="Apariencia" description="Se sincroniza con tu cuenta.">
+          <Section title="Apariencia" description="Se guarda en tu copia y se aplica en todos tus dispositivos.">
             <Segmented
               label="Tema"
               value={theme}
@@ -99,21 +99,26 @@ export function SettingsPage() {
             />
           </Section>
 
-          <Section title="Contraseña de acceso" description="Al cambiarla se cerrarán tus otras sesiones. No afecta a la contraseña maestra de la bóveda.">
+          <Section title="Clave de acceso" description="Es lo que usas para entrar en esta copia. Al generar una nueva se cierran tus demás sesiones. No afecta a la contraseña maestra de la bóveda.">
             <form
               className="flex flex-col gap-4"
               onSubmit={async (e: FormEvent) => {
                 e.preventDefault()
-                if (await run('password', () => post('/account/password', { currentPassword: current, newPassword: next }), 'Contraseña actualizada')) {
-                  setCurrent('')
-                  setNext('')
+                setBusy('access-key')
+                try {
+                  const res = await post<{ accessKey: string }>('/account/access-key', { currentAccessKey: currentKey })
+                  setCurrentKey('')
+                  setNewKey(res.accessKey)
+                } catch (error) {
+                  toast.error(errorMessage(error))
+                } finally {
+                  setBusy(null)
                 }
               }}
             >
-              <Field label="Contraseña actual" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
-              <Field label="Nueva contraseña" type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} hint="Mínimo 10 caracteres." />
-              <Button type="submit" variant="primary" className="self-start" loading={busy === 'password'} disabled={!current || next.length < 10}>
-                Cambiar contraseña
+              <Field label="Clave actual" type="password" autoComplete="current-password" spellCheck={false} className="[&_input]:font-mono" value={currentKey} onChange={(e) => setCurrentKey(e.target.value)} />
+              <Button type="submit" variant="primary" className="self-start" loading={busy === 'access-key'} disabled={!currentKey.trim()}>
+                Generar una clave nueva
               </Button>
             </form>
           </Section>
@@ -156,32 +161,45 @@ export function SettingsPage() {
             </Section>
           )}
 
-          <Section title="Eliminar cuenta" description="Borra tu cuenta, tus espacios, tu bóveda y tus tokens de forma permanente.">
+          <Section title="Borrar esta copia" description="Borra tus espacios, tu bóveda y tus tokens de forma permanente. La copia volverá a pedir el código de configuración.">
             <Button variant="ghost" className="text-danger hover:bg-danger-soft hover:text-danger" onClick={() => setDeleteOpen(true)}>
-              Eliminar mi cuenta
+              Borrar todos mis datos
             </Button>
           </Section>
         </div>
       </div>
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen} title="Eliminar tu cuenta" description="Esta acción es irreversible. Escribe tu contraseña de acceso para confirmar.">
+      {/* The old key no longer works: the dialog only closes once the new one is confirmed as saved. */}
+      <Dialog open={newKey !== null} onOpenChange={() => {}} hideClose title="Tu nueva clave de acceso" description="La anterior ya no sirve y se han cerrado tus demás sesiones. Se muestra una sola vez.">
+        {newKey && (
+          <AccessKeyReveal
+            accessKey={newKey}
+            confirmLabel="Hecho"
+            onDone={() => {
+              setNewKey(null)
+              toast.success('Clave de acceso actualizada')
+            }}
+          />
+        )}
+      </Dialog>
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen} title="Borrar esta copia" description="Esta acción es irreversible. Escribe tu clave de acceso para confirmar.">
         <form
           className="flex flex-col gap-4"
           onSubmit={async (e: FormEvent) => {
             e.preventDefault()
-            if (await run('delete', () => post('/account/delete', { password: deletePassword }), 'Cuenta eliminada')) {
+            if (await run('delete', () => post('/account/delete', { accessKey: deleteKey }), 'Datos borrados')) {
               lockVault()
               queryClient.clear()
-              navigate('/register', { replace: true })
+              navigate('/setup', { replace: true })
             }
           }}
         >
-          <Field label="Contraseña" type="password" autoComplete="current-password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} autoFocus />
+          <Field label="Clave de acceso" type="password" autoComplete="current-password" spellCheck={false} className="[&_input]:font-mono" value={deleteKey} onChange={(e) => setDeleteKey(e.target.value)} autoFocus />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit" variant="danger" loading={busy === 'delete'} disabled={!deletePassword}>
-              Eliminar definitivamente
+            <Button type="submit" variant="danger" loading={busy === 'delete'} disabled={!deleteKey}>
+              Borrar definitivamente
             </Button>
           </div>
         </form>

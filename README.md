@@ -13,6 +13,8 @@ Orqevio reúne cuatro piezas y solo esas cuatro:
 
 La decisión central: **la bóveda está aislada de los agentes**. Ningún token puede acceder a ella, ni siquiera a su contenido cifrado, y el servidor nunca conoce los secretos.
 
+**Cada copia de Orqevio es de una sola persona.** No hay registro ni correo: la primera vez se reclama con un código de configuración y, a partir de ahí, se entra con una clave de acceso.
+
 ---
 
 ## Experiencia
@@ -50,12 +52,12 @@ packages/shared Esquemas zod, permisos y tipos compartidos por API, MCP y client
 
 ## Modelo de seguridad
 
-**Cuenta y sesiones**
-- Contraseñas con Argon2id (parámetros OWASP) y tiempo de respuesta igualado si la cuenta no existe.
+**Acceso y sesiones**
+- Sin registro ni contraseñas: la copia se reclama una vez con el código de configuración y se entra con una clave aleatoria de 160 bits. El servidor solo guarda la huella SHA-256 de ambos y los compara en tiempo constante.
 - Sesión en cookie `HttpOnly`, `SameSite=Lax` y `Secure` (prefijo `__Host-` con HTTPS). En la base de datos solo se guarda su hash SHA-256.
-- Las escrituras con cookie solo se aceptan desde los orígenes de `APP_URL` (protección CSRF). Cambiar la contraseña cierra las demás sesiones.
+- Las escrituras con cookie solo se aceptan desde los orígenes de `APP_URL` (protección CSRF). Cambiar la clave de acceso cierra las demás sesiones, y recuperar el acceso las cierra todas.
 - Cabeceras estrictas: CSP sin scripts en línea, `frame-ancestors 'none'`, `nosniff`, HSTS con HTTPS y Permissions-Policy.
-- Límite de intentos en el inicio de sesión y el registro, y límite de peticiones por token en MCP.
+- Límite de intentos al entrar, al reclamar la copia y al recuperar el acceso, y límite de peticiones por token en MCP.
 
 **Bóveda (conocimiento cero)**
 
@@ -85,7 +87,7 @@ clave de la bóveda ── AES-256-GCM, datos asociados = usuario + id del eleme
 cp .env.example .env
 ```
 
-Edita `.env`: define `APP_URL` con la URL pública (por ejemplo `https://orqevio.tu-dominio.com`) y una `POSTGRES_PASSWORD` larga y aleatoria.
+Edita `.env`: define `APP_URL` con la URL pública (por ejemplo `https://orqevio.tu-dominio.com`), una `POSTGRES_PASSWORD` larga y aleatoria y un `SETUP_CODE` propio (opcional; ver «Acceso a tu copia»).
 
 ```bash
 docker compose up -d --build
@@ -123,21 +125,29 @@ pnpm build
 pnpm start
 ```
 
-### Administración
+### Acceso a tu copia
 
-Si alguien olvida su contraseña de acceso (no hay envío de correo), genera una temporal desde el servidor:
+1. **Primera vez.** Abre la URL de la copia e introduce el código de configuración y tu nombre:
+   - Si definiste `SETUP_CODE`, es ese valor. Usa al menos 12 letras o dígitos.
+   - Si no, el servidor genera uno al arrancar y lo muestra en su registro (`docker compose logs app`). Sirve hasta que la copia se reclama o el servidor se reinicia.
+2. **Tu clave de acceso.** Orqevio genera una clave aleatoria de 160 bits y la muestra **una sola vez**. Guárdala en tu gestor de contraseñas: es lo único que necesitas para entrar desde cualquier dispositivo. Al escribirla dan igual las mayúsculas y los guiones.
+3. **Cambiarla.** En **Ajustes → Clave de acceso** puedes generar una nueva; se cierran tus demás sesiones.
+
+Si pierdes la clave, quien administra la copia puede generar otra:
 
 ```bash
-node apps/server/dist/cli.js reset-password persona@ejemplo.com
+docker compose exec app node dist/cli.js reset-access
 ```
 
-En la imagen de Docker:
+Sin Docker:
 
 ```bash
-docker compose exec app node dist/cli.js reset-password persona@ejemplo.com
+node apps/server/dist/cli.js reset-access
 ```
 
-Esto no afecta a la bóveda: su contraseña maestra nunca la conoce el servidor.
+También puedes definir un `SETUP_CODE` nuevo, reiniciar la copia y usar **«¿Has perdido la clave?»** en la pantalla de acceso. En ambos casos se cierran todas las sesiones.
+
+`node dist/cli.js status` muestra si la copia está reclamada y por quién. Nada de esto afecta a la bóveda: su contraseña maestra nunca la conoce el servidor.
 
 ## Conectar agentes por MCP
 
@@ -193,15 +203,15 @@ pnpm typecheck
 pnpm test
 ```
 
-`pnpm test` ejecuta las pruebas unitarias (criptografía de la bóveda, generador y enlaces) y las de integración del servidor contra PostgreSQL real (autenticación, CSRF, aislamiento entre espacios, permisos por token, bóveda inaccesible con tokens, herramientas MCP con el cliente oficial y tiempo real). Usa `TEST_DATABASE_URL`, con valor por defecto `postgres://orqevio:orqevio@localhost:5432/orqevio_test`; **la base de datos de pruebas se vacía en cada ejecución**.
+`pnpm test` ejecuta las pruebas unitarias (criptografía de la bóveda, generador y enlaces) y las de integración del servidor contra PostgreSQL real (acceso con código de configuración y clave, CSRF, aislamiento entre espacios, permisos por token, bóveda inaccesible con tokens, herramientas MCP con el cliente oficial y tiempo real). Usa `TEST_DATABASE_URL`, con valor por defecto `postgres://orqevio:orqevio@localhost:5432/orqevio_test`; **la base de datos de pruebas se vacía en cada ejecución**.
 
-Pruebas de extremo a extremo con Playwright, con el servidor de producción en marcha:
+Pruebas de extremo a extremo con Playwright, con el servidor de producción en marcha sobre una base de datos **vacía** y el mismo `SETUP_CODE` en el servidor y en las pruebas (por defecto `e2e-setup-code-1234`):
 
 ```bash
-pnpm test:e2e
+SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-Cubren el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, el ciclo completo de la bóveda (con recuperación) y un agente MCP trabajando en directo sobre el tablero. Fallan si aparece cualquier error en la consola del navegador.
+Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, el ciclo completo de la bóveda (con recuperación) y un agente MCP trabajando en directo sobre el tablero. Fallan si aparece cualquier error en la consola del navegador.
 
 ## Configuración
 
@@ -215,6 +225,7 @@ Cubren el tablero (incluido arrastrar con ratón y con teclado), documentos con 
 | `TRUST_PROXY` | `false` | Confiar en `X-Forwarded-For` (detrás de un proxy inverso). |
 | `SECURE_COOKIES` | según `APP_URL` | Fuerza cookies `Secure`. |
 | `DATABASE_POOL_SIZE` | `10` | Conexiones del pool. |
+| `SETUP_CODE` | generado al arrancar | Código para reclamar la copia la primera vez. Si lo cambias, permite recuperar el acceso. |
 
 ## Limitaciones conocidas
 
@@ -222,7 +233,7 @@ Cubren el tablero (incluido arrastrar con ratón y con teclado), documentos con 
 - **Sin coedición simultánea.** No hay edición colaborativa en tiempo real tipo CRDT; los conflictos se detectan por versión y se resuelven explícitamente.
 - **Autenticación MCP por token Bearer.** No se implementa el flujo OAuth 2.1 de MCP, así que los clientes que solo admiten OAuth (por ejemplo, los conectores personalizados de la web de Claude) no pueden conectarse directamente; Claude Code, Cursor, VS Code y Claude Desktop (con `mcp-remote`) sí.
 - **Adjuntos en disco local.** Para varias réplicas hace falta un volumen compartido; no hay controlador de S3. El límite de intentos se mantiene en memoria por instancia.
-- **Sin correo electrónico.** No hay recuperación de la contraseña de acceso por email; se usa el CLI de administración.
+- **Una persona por copia.** No hay registro ni correo; si se pierde la clave de acceso, se recupera desde el servidor (CLI o un `SETUP_CODE` nuevo).
 - **Bóveda personal.** No se comparte entre personas y no incluye importación/exportación ni códigos TOTP.
 - **Imágenes externas.** Las imágenes de documentos que apuntan a otros dominios se cargan desde su origen.
 - **Navegadores modernos.** Se requiere WebCrypto, Web Workers y WebAssembly (versiones actuales de Chrome, Edge, Firefox y Safari).

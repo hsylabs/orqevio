@@ -1,5 +1,6 @@
 import type {
   ActivityDTO,
+  AnonymousSessionDTO,
   BoardDTO,
   CardDetailDTO,
   CardSummaryDTO,
@@ -26,6 +27,7 @@ export const queryClient = new QueryClient({
 
 export const keys = {
   me: ['me'] as const,
+  access: ['access'] as const,
   overview: (wid: string) => ['overview', wid] as const,
   home: (wid: string) => ['home', wid] as const,
   board: (id: string) => ['board', id] as const,
@@ -43,11 +45,23 @@ export const useMe = () =>
   useQuery({
     queryKey: keys.me,
     queryFn: async ({ signal }) => {
-      const session = await get<MeDTO | { user: null }>('/auth/session', signal)
-      if (!session.user) throw new ApiError(401, 'unauthorized', 'Authentication required')
+      const session = await get<MeDTO | AnonymousSessionDTO>('/auth/session', signal)
+      if (!session.user) {
+        // Keep the sign-in screens' view in sync, so they never act on a stale signed-in state.
+        queryClient.setQueryData(keys.access, session)
+        throw new ApiError(401, 'unauthorized', 'Authentication required')
+      }
       return session as MeDTO
     },
     staleTime: 60_000,
+  })
+
+/** Raw session, including whether this copy is claimed yet (sign-in screens). */
+export const useAccessState = () =>
+  useQuery({
+    queryKey: keys.access,
+    queryFn: ({ signal }) => get<MeDTO | AnonymousSessionDTO>('/auth/session', signal),
+    staleTime: 0,
   })
 
 export const useOverview = (wid: string | undefined) =>

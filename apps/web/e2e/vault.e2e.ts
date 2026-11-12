@@ -1,9 +1,9 @@
-import { expect, signUp, test } from './helpers'
+import { expect, openNewWorkspace, test } from './helpers'
 
 test('end-to-end encrypted vault', async ({ page }) => {
   test.setTimeout(90_000)
-  await signUp(page)
-  await page.getByRole('link', { name: 'Bóveda' }).click()
+  await openNewWorkspace(page, 'Bóveda E2E')
+  await page.getByRole('link', { name: /^Bóveda/ }).click()
   await page.getByLabel('Contraseña maestra', { exact: true }).fill('caballo correcto pila grapa')
   await page.getByLabel('Repite la contraseña maestra').fill('caballo correcto pila grapa')
   await page.getByRole('button', { name: 'Crear bóveda' }).click()

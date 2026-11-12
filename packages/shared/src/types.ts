@@ -14,7 +14,6 @@ export interface ActorRef {
 
 export interface UserDTO {
   id: string
-  email: string
   name: string
   theme: Theme
   createdAt: string
@@ -30,6 +29,27 @@ export interface WorkspaceDTO {
 export interface MeDTO {
   user: UserDTO
   workspaces: WorkspaceDTO[]
+}
+
+/** Whether this copy has an owner yet, and whether a new setup code allows recovering access. */
+export interface AccessStateDTO {
+  claimed: boolean
+  recoverable: boolean
+}
+
+/** `GET /auth/session` for visitors without a session. */
+export interface AnonymousSessionDTO extends AccessStateDTO {
+  user: null
+  workspaces: []
+}
+
+/** Returned once when the copy is claimed, recovered or its access key is replaced. */
+export interface AccessKeyDTO {
+  accessKey: string
+}
+
+export interface ClaimResultDTO extends AccessKeyDTO {
+  user: UserDTO
 }
 
 export interface ProjectDTO {

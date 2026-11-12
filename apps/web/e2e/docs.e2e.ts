@@ -1,7 +1,7 @@
-import { addCard, createProject, expect, signUp, test } from './helpers'
+import { addCard, createProject, expect, openNewWorkspace, test } from './helpers'
 
 test('write a document that references a task', async ({ page }) => {
-  await signUp(page)
+  await openNewWorkspace(page, 'Documentos E2E')
   await createProject(page, 'Producto')
   await addCard(page, 'Por hacer', 'Investigar a la competencia')
 

@@ -1,7 +1,7 @@
-import { addCard, createProject, expect, signUp, test } from './helpers'
+import { addCard, createProject, expect, openNewWorkspace, test } from './helpers'
 
 test('organise work on a Kanban board', async ({ page }) => {
-  await signUp(page)
+  await openNewWorkspace(page, 'Tareas E2E')
   await createProject(page, 'Lanzamiento web')
   await addCard(page, 'Por hacer', 'Definir el mensaje principal')
   await addCard(page, 'Por hacer', 'Diseñar la página de inicio')

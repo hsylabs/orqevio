@@ -28,6 +28,7 @@ services:
       APP_URL: ${APP_URL:-http://localhost:3000}
       TRUST_PROXY: ${TRUST_PROXY:-false}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-20}
+      SETUP_CODE: ${SETUP_CODE:-}
     ports:
       - '${PORT:-3000}:3000'
     volumes:
