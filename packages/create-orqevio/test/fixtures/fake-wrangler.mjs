@@ -48,8 +48,11 @@ if (command === 'deployments' && sub === 'list') {
 if (command === 'deploy') {
   if (state.deployFails) process.exit(1)
   const name = JSON.parse(readFileSync(config, 'utf8')).name
-  appendFileSync(process.env.WRANGLER_OUTPUT_FILE_PATH, `${JSON.stringify({ type: 'wrangler-session', version: 1 })}\n`)
-  appendFileSync(process.env.WRANGLER_OUTPUT_FILE_PATH, `${JSON.stringify({ type: 'deploy', version: 1, worker_name: name, targets: [`https://${name}.ana.workers.dev`] })}\n`)
+  const output = process.env.WRANGLER_OUTPUT_FILE_PATH
+  if (output) {
+    appendFileSync(output, `${JSON.stringify({ type: 'wrangler-session', version: 1 })}\n`)
+    appendFileSync(output, `${JSON.stringify({ type: 'deploy', version: 1, worker_name: name, targets: [`https://${name}.ana.workers.dev`] })}\n`)
+  }
   state.exists = true
   save()
   process.exit(0)

@@ -155,6 +155,17 @@ pnpm build:cloudflare
 node packages/create-orqevio/dist/cli.js
 ```
 
+**Con el botón (alternativa).** Si prefieres tener tu copia en un repositorio propio de GitHub o GitLab:
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hsylabs/orqevio/tree/main/templates/cloudflare)
+
+Cloudflare crea en tu cuenta de GitHub o GitLab un repositorio pequeño (la plantilla `templates/cloudflare`), te pide el código de configuración (`SETUP_CODE`) y despliega la copia. Después:
+- **Despliegues:** cada cambio en ese repositorio se despliega solo.
+- **Actualizaciones:** Dependabot propone las versiones nuevas de Orqevio en un pull request; al fusionarlo, la copia se actualiza.
+- **Si pierdes la clave:** cambia el secreto `SETUP_CODE` en el panel de Cloudflare y usa **«¿Has perdido la clave?»**.
+
+El resultado es la misma copia que con el comando. El botón funcionará cuando este repositorio sea público y los paquetes estén publicados en npm.
+
 El plan gratuito de Cloudflare basta para uso personal (límites a noviembre de 2026):
 
 | Recurso | Plan gratuito |
@@ -343,4 +354,5 @@ apps/web/src
 packages/shared/src  esquemas, permisos, tipos y utilidades de enlaces
 packages/orqevio     paquete desplegable en Cloudflare (Worker, web y configuración base)
 packages/create-orqevio  instalador: npx create-orqevio (instalar, actualizar, recuperar)
+templates/cloudflare plantilla del botón «Deploy to Cloudflare» (wrangler.jsonc y package.json generados)
 ```

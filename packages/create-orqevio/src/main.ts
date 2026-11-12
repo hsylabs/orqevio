@@ -4,7 +4,9 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { createInterface } from 'node:readline/promises'
 import { parseArgs } from 'node:util'
-import { DEFAULT_NAME, copyConfig, loadOrqevio, nameProblem } from './config'
+import { readFileSync } from 'node:fs'
+import { DEFAULT_NAME, type BaseConfig, copyConfig, loadOrqevio, nameProblem } from './config'
+import { parseJsonc } from './jsonc'
 import { generateSetupCode } from './setup-code'
 import { deployedUrls, runWrangler } from './wrangler'
 
@@ -15,7 +17,7 @@ export interface Io {
   ask?: (question: string) => Promise<string>
 }
 
-type Command = 'install' | 'update' | 'recover' | 'config'
+type Command = 'install' | 'update' | 'recover' | 'config' | 'deploy-repo'
 
 const HELP = `Instala tu propia copia de Orqevio en tu cuenta de Cloudflare.
 
@@ -48,7 +50,7 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
     io.err(`${(error as Error).message}\n\n${HELP}`)
     return 2
   }
-  const { command, name: givenName, account: givenAccount, help, version } = parsed
+  const { command, name: givenName, account: givenAccount, help, version, dryRun } = parsed
   if (help) {
     io.out(HELP)
     return 0
@@ -63,6 +65,8 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
     io.err(`Necesitas Node ${MIN_NODE.join('.')} o superior (tienes ${process.versions.node}). Descárgalo en https://nodejs.org.`)
     return 1
   }
+
+  if (command === 'deploy-repo') return deployRepo(orqevio, dryRun, io)
 
   let name = givenName ?? DEFAULT_NAME
   if (givenName === undefined && io.ask && command !== 'config') {
@@ -108,7 +112,7 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
   return mode === 'recover' ? recover(name, env, io) : deploy(mode === 'update' ? 'update' : 'install', name, orqevio, env, io)
 }
 
-const TITLES: Record<Exclude<Command, 'config'>, string> = {
+const TITLES: Record<Exclude<Command, 'config' | 'deploy-repo'>, string> = {
   install: 'instalar la copia',
   update: 'actualizar la copia',
   recover: 'recuperar el acceso a la copia',
@@ -121,14 +125,22 @@ function parse(argv: string[]) {
     options: {
       name: { type: 'string' },
       account: { type: 'string' },
+      'dry-run': { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
       version: { type: 'boolean', short: 'v' },
     },
   })
   if (positionals.length > 1) throw new Error(`Sobra «${positionals[1]}».`)
   const command = (positionals[0] ?? 'install') as Command
-  if (!['install', 'update', 'recover', 'config'].includes(command)) throw new Error(`No conozco la orden «${command}».`)
-  return { command, name: values.name, account: values.account, help: values.help ?? false, version: values.version ?? false }
+  if (!['install', 'update', 'recover', 'config', 'deploy-repo'].includes(command)) throw new Error(`No conozco la orden «${command}».`)
+  return {
+    command,
+    name: values.name,
+    account: values.account,
+    help: values.help ?? false,
+    version: values.version ?? false,
+    dryRun: values['dry-run'] ?? false,
+  }
 }
 
 const nameFlag = (name: string) => (name === DEFAULT_NAME ? '' : ` --name ${name}`)
@@ -256,6 +268,41 @@ async function deploy(mode: 'install' | 'update', name: string, orqevio: ReturnT
       ].join('\n'),
     )
     return 0
+  })
+}
+
+/**
+ * `deploy-repo`: the deploy command of a repository created with the "Deploy to
+ * Cloudflare" button (templates/cloudflare), run by Workers Builds on every push.
+ * The repository's wrangler.jsonc only provides the names chosen when it was
+ * created; everything else (bindings, migrations, compatibility settings) comes
+ * from the installed package, so updating the dependency is enough to pick up a
+ * new migration. The setup code is a secret set when the repository was created.
+ */
+async function deployRepo(orqevio: ReturnType<typeof loadOrqevio>, dryRun: boolean, io: Io) {
+  let repo: Partial<BaseConfig>
+  try {
+    repo = parseJsonc(readFileSync('wrangler.jsonc', 'utf8')) as Partial<BaseConfig>
+  } catch (error) {
+    io.err(`No puedo leer wrangler.jsonc en esta carpeta: ${(error as Error).message}`)
+    return 1
+  }
+  const name = typeof repo.name === 'string' ? repo.name : ''
+  const problem = nameProblem(name)
+  if (problem) {
+    io.err(`El nombre del Worker en wrangler.jsonc («${name}») no vale. ${problem}`)
+    return 1
+  }
+  const config = copyConfig(orqevio.base, orqevio.dir, name)
+  const bucket = repo.r2_buckets?.find((b) => b.binding === 'UPLOADS')?.bucket_name
+  if (bucket) config.r2_buckets = config.r2_buckets.map((b) => (b.binding === 'UPLOADS' ? { ...b, bucket_name: bucket } : b))
+  return withWorkspace(async (dir) => {
+    const configFile = path.join(dir, 'wrangler.json')
+    await writeFile(configFile, JSON.stringify(config, null, 2))
+    const args = ['deploy', '--config', configFile, ...(dryRun ? ['--dry-run', '--outdir', path.join(dir, 'out')] : [])]
+    io.out(`Orqevio ${orqevio.version} → Worker «${name}»`)
+    const run = await runWrangler(args, { cwd: dir })
+    return run.code === 0 ? 0 : 1
   })
 }
 

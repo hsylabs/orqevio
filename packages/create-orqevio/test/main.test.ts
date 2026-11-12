@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -14,6 +14,7 @@ const orqevio = {
     main: 'worker/index.js',
     assets: { directory: 'web', binding: 'ASSETS' },
     r2_buckets: [{ binding: 'UPLOADS', bucket_name: 'orqevio-uploads' }],
+    migrations: [{ tag: 'v1' }, { tag: 'v2' }],
     no_bundle: true,
   },
 }
@@ -195,6 +196,39 @@ describe('create-orqevio', () => {
     const unknown = await run(['--name', 'ana', '--account', 'otra'])
     expect(unknown.code).toBe(1)
     expect(unknown.err).toContain('no tiene acceso a la cuenta «otra»')
+  })
+
+  it('deploys a repository made with the button: names from the repository, everything else from the package', async () => {
+    setState({})
+    const repo = path.join(dir, 'repo')
+    mkdirSync(repo)
+    writeFileSync(
+      path.join(repo, 'wrangler.jsonc'),
+      `// chosen when the repository was created
+      { "name": "mi-copia", "r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "mis-adjuntos" }], "migrations": [{ "tag": "v1" }], }`,
+    )
+    const cwd = process.cwd()
+    process.chdir(repo)
+    try {
+      expect((await run(['deploy-repo'])).code).toBe(0)
+      expect((await run(['deploy-repo', '--dry-run'])).code).toBe(0)
+    } finally {
+      process.chdir(cwd)
+    }
+    // Workers Builds provides the credentials: no sign-in or account questions.
+    expect(commands()).toEqual(['deploy --config', 'deploy --config'])
+    const [deploy, dry] = calls()
+    expect(deploy!.config).toMatchObject({ name: 'mi-copia', r2_buckets: [{ binding: 'UPLOADS', bucket_name: 'mis-adjuntos' }], migrations: [{ tag: 'v1' }, { tag: 'v2' }], keep_vars: true })
+    expect(deploy!.args).not.toContain('--secrets-file')
+    expect(dry!.args).toContain('--dry-run')
+
+    writeFileSync(path.join(repo, 'wrangler.jsonc'), '{ "name": "Mi Copia" }')
+    process.chdir(repo)
+    try {
+      expect((await run(['deploy-repo'])).err).toContain('«Mi Copia»')
+    } finally {
+      process.chdir(cwd)
+    }
   })
 
   it('respects telemetry the user turned on', async () => {
