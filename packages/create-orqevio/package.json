@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "description": "Install your own copy of Orqevio on your Cloudflare account with one command.",
   "license": "FSL-1.1-ALv2",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hsylabs/orqevio.git",
+    "directory": "packages/create-orqevio"
+  },
+  "homepage": "https://github.com/hsylabs/orqevio#readme",
+  "bugs": {
+    "url": "https://github.com/hsylabs/orqevio/issues"
+  },
   "type": "module",
   "bin": {
     "create-orqevio": "dist/cli.js"

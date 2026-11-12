@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { currentVersions, releaseChangelog, releaseNotes } from '../../../scripts/release/versions.mjs'
 import { VERSION } from '../src/version'
@@ -7,6 +8,13 @@ describe('releases', () => {
     const versions = currentVersions()
     expect(new Set(versions.map(([, version]) => version))).toEqual(new Set([VERSION]))
     expect(versions.length).toBeGreaterThanOrEqual(8)
+  })
+
+  it('publish packages whose repository matches this one, as npm provenance requires', () => {
+    for (const name of ['orqevio', 'create-orqevio']) {
+      const manifest = JSON.parse(readFileSync(new URL(`../../../packages/${name}/package.json`, import.meta.url), 'utf8'))
+      expect(manifest.repository).toEqual({ type: 'git', url: 'git+https://github.com/hsylabs/orqevio.git', directory: `packages/${name}` })
+    }
   })
 
   it('turn the unreleased notes into a dated section and read them back', () => {
