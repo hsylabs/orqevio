@@ -76,3 +76,9 @@ En este orden; cada paso depende del anterior (comprobado el 13-11-2026):
 Para versiones de prueba, usa por ejemplo `0.2.0-rc.1`:
 - Se publican en npm con la etiqueta `next` y no mueven `latest` en Docker. Para instalarlas, usa `npx create-orqevio@next`.
 - `set-version` no mueve las notas: la versión de prueba publica las de «Unreleased», que se quedan ahí para que la definitiva las recoja completas.
+
+## Si la publicación falla
+
+- **Antes de npm** (verificación o Docker): corrige en un PR y publica el siguiente número, por ejemplo `0.2.0-rc.2`. No muevas una etiqueta ya subida.
+- **En npm**: un número publicado en npm no se puede volver a publicar, ni siquiera después de retirarlo. Corrige y publica el siguiente.
+- La etiqueta que falló se puede borrar después con `git push origin :refs/tags/v0.2.0-rc.1`, y su imagen de Docker desde la página del paquete `orqevio` en GitHub (Packages).
