@@ -207,8 +207,9 @@ export class WorkspaceService {
     return p
   }
 
+  /** People, and agents allowed to write tasks or documents: a project holds both. Only people rename or delete one. */
   async createProject(actor: Actor, workspaceId: string, input: unknown) {
-    this.access.requireUser(actor)
+    this.access.requireAnyScope(actor, ['tasks:write', 'docs:write'])
     await this.access.workspace(actor, workspaceId)
     const data = parse(projectCreateInput, input)
     const project = this.deps.db.transaction((tx) => {

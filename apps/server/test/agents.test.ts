@@ -92,6 +92,8 @@ describe('MCP server', () => {
     expect(all).toEqual(expect.arrayContaining(['create_card', 'move_card', 'create_page', 'update_page', 'link_card_to_page']))
     expect(all.some((n) => /vault|password|secret|credential/i.test(n))).toBe(false)
     expect(all).not.toContain('delete_card')
+    expect(all).toContain('create_project')
+    expect(all).not.toContain('update_project')
     const instructions = full.getInstructions() ?? ''
     expect(instructions).toContain('never accessible')
   })
@@ -154,6 +156,37 @@ describe('MCP server', () => {
     const archived = data(await mcp.callTool({ name: 'archive_card', arguments: { card_id: created.card_id } }))
     expect(archived.archived).toBe(true)
     expect(await openCards()).toBe(0)
+  })
+
+  it('lets an agent with write access start a project in an empty workspace, but not rename it', async () => {
+    const { client } = await signUp(h)
+    const empty = await client.post('/api/workspaces', { name: 'Vacío' })
+    expect(empty.status).toBe(201)
+
+    // A read-only agent learns why it can't start, instead of an empty list without a word.
+    const reader = await connect((await createToken(client, empty.body.id, ['tasks:read', 'docs:read'])).token)
+    expect((await reader.listTools()).tools.map((t) => t.name)).not.toContain('create_project')
+    const nothing = data(await reader.callTool({ name: 'list_projects', arguments: {} }))
+    expect(nothing.projects).toEqual([])
+    expect(nothing.hint).toContain('Ask the person')
+
+    const token = await createToken(client, empty.body.id, ['docs:write'], 'Redactor')
+    const writer = await connect(token.token)
+    expect(data(await writer.callTool({ name: 'list_projects', arguments: {} })).hint).toContain('create_project')
+    const created = data(await writer.callTool({ name: 'create_project', arguments: { name: 'Manual', description: 'Guías de uso', color: 'jade' } }))
+    expect(created).toMatchObject({ created: true, name: 'Manual' })
+    const listed = data(await writer.callTool({ name: 'list_projects', arguments: {} }))
+    expect(listed.hint).toBeUndefined()
+    expect(listed.projects).toEqual([{ id: created.project_id, name: 'Manual', description: 'Guías de uso', pages: [] }])
+    const page = data(await writer.callTool({ name: 'create_page', arguments: { project_id: created.project_id, title: 'Primeros pasos' } }))
+    expect(page.created).toBe(true)
+
+    // The person sees who created it; renaming and deleting stay in the app.
+    const activity = await client.get(`/api/workspaces/${empty.body.id}/activity?agents=1`)
+    expect(activity.body.find((a: { action: string }) => a.action === 'project.created')).toMatchObject({ summary: 'Manual' })
+    const rest = new Client(h, token.token)
+    expect((await rest.patch(`/api/projects/${created.project_id}`, { name: 'Otro' })).status).toBe(403)
+    expect((await rest.del(`/api/projects/${created.project_id}`)).status).toBe(403)
   })
 
   it('reports permission errors as tool errors', async () => {

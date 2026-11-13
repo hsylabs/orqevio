@@ -49,7 +49,8 @@
       "labels": "ラベルとチェックリスト",
       "readPages": "ページツリーとMarkdownの内容",
       "writePages": "作成と更新（バージョン管理付き）",
-      "linkCard": "タスクとドキュメントのリンク"
+      "linkCard": "タスクとドキュメントのリンク",
+      "createProject": "プロジェクトの作成"
     }
   },
   "revoke": {

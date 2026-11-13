@@ -31,6 +31,7 @@ const TOOLS = [
   { id: 'readPages', name: 'list_pages · read_page', scope: 'docsRead' },
   { id: 'writePages', name: 'create_page · update_page', scope: 'docsWrite' },
   { id: 'linkCard', name: 'link_card_to_page', scope: 'write' },
+  { id: 'createProject', name: 'create_project', scope: 'write' },
 ] as const
 
 export function AgentsPage() {

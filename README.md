@@ -320,6 +320,7 @@ claude mcp add --transport http orqevio https://your-domain/mcp --header "Author
 | Docs · read | `list_pages`, `read_page` |
 | Docs · write | `create_page`, `update_page` (replace with `base_version`, or append to the end) |
 | Read and write on both areas | `link_card_to_page` |
+| Write on either area | `create_project` (people still rename and delete projects) |
 
 The endpoint is stateless MCP Streamable HTTP (`POST /mcp`). The REST API also accepts tokens created in the app, with the same permissions, except for the account, tokens and the vault, which require a browser session. OAuth tokens are only valid for `/mcp`.
 
