@@ -51,7 +51,8 @@
       "labels": "Etichette e checklist",
       "readPages": "Albero delle pagine e contenuto Markdown",
       "writePages": "Creare e aggiornare, con controllo delle versioni",
-      "linkCard": "Collegare attività e documenti"
+      "linkCard": "Collegare attività e documenti",
+      "createProject": "Creare progetti"
     }
   },
   "revoke": {

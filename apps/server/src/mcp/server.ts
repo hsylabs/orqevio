@@ -15,6 +15,7 @@ Structure: workspace → projects → boards (columns → cards) and documents (
 
 How to work with it:
 - Start with list_projects to discover project, board and page ids. Use get_board to see columns, cards and labels.
+- Boards and documents live in projects. If the workspace has none yet, create one with create_project (needs write access to tasks or documents).
 - All ids are UUIDs returned by the tools; never invent them.
 - Card descriptions and page contents are GitHub-flavoured Markdown.
 - To reference a card inside a document write a Markdown link: [Card title](/card/<card_id>). To reference a page: [Page title](/doc/<page_id>). Card references inside a page automatically link that card to the page.
@@ -84,8 +85,17 @@ export function createMcpServer(services: Services, actor: AgentActor) {
     () =>
       run(async () => {
         const overview = await services.workspaces.overview(actor, ws)
+        const empty = overview.projects.length === 0
         return {
           workspace: overview.workspace.name,
+          ...(empty
+            ? {
+                hint:
+                  canWriteTasks || canWriteDocs
+                    ? 'This workspace has no projects yet. Create one with create_project, then add boards and documents to it.'
+                    : 'This workspace has no projects yet, and this token cannot create one. Ask the person to create a project in the Orqevio app.',
+              }
+            : {}),
           projects: overview.projects.map((p) => ({
             id: p.id,
             name: p.name,
@@ -121,6 +131,28 @@ export function createMcpServer(services: Services, actor: AgentActor) {
         )
       }),
   )
+
+  // ── Projects ──────────────────────────────────────────────────
+  if (canWriteTasks || canWriteDocs) {
+    server.registerTool(
+      'create_project',
+      {
+        title: 'Create project',
+        description: 'Creates a project in the workspace, to hold boards and documents. Agents can create projects but not rename or delete them.',
+        inputSchema: {
+          name: z.string().min(1).max(80),
+          description: z.string().max(500).optional(),
+          color: z.enum(PALETTE).optional(),
+        },
+        annotations: WRITE,
+      },
+      ({ name, description, color }) =>
+        run(async () => {
+          const project = await services.workspaces.createProject(actor, ws, { name, description, color })
+          return { created: true, project_id: project.id, name: project.name }
+        }),
+    )
+  }
 
   // ── Tasks: read ───────────────────────────────────────────────
   if (canReadTasks) {

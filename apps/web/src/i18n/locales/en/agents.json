@@ -50,7 +50,8 @@
       "labels": "Labels and checklists",
       "readPages": "Page tree and Markdown content",
       "writePages": "Create and update, with version control",
-      "linkCard": "Link tasks and documents"
+      "linkCard": "Link tasks and documents",
+      "createProject": "Create projects"
     }
   },
   "revoke": {

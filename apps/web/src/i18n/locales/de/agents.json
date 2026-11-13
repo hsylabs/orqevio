@@ -50,7 +50,8 @@
       "labels": "Labels und Checklisten",
       "readPages": "Seitenbaum und Markdown-Inhalt",
       "writePages": "Erstellen und aktualisieren, mit Versionskontrolle",
-      "linkCard": "Aufgaben und Dokumente verknüpfen"
+      "linkCard": "Aufgaben und Dokumente verknüpfen",
+      "createProject": "Projekte anlegen"
     }
   },
   "revoke": {

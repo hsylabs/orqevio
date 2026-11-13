@@ -51,7 +51,8 @@
       "labels": "Étiquettes et checklists",
       "readPages": "Arborescence des pages et contenu Markdown",
       "writePages": "Créer et mettre à jour, avec gestion des versions",
-      "linkCard": "Lier tâches et documents"
+      "linkCard": "Lier tâches et documents",
+      "createProject": "Créer des projets"
     }
   },
   "revoke": {
