@@ -1,0 +1,61 @@
+{
+  "actions": {
+    "card": {
+      "created": "<actor>{{actor}}</actor> ha creato la scheda <target>«{{target}}»</target>",
+      "created_self": "<actor>{{actor}}</actor> ha creato questa scheda",
+      "updated": "<actor>{{actor}}</actor> ha modificato la scheda <target>«{{target}}»</target>",
+      "updated_self": "<actor>{{actor}}</actor> ha modificato questa scheda",
+      "moved": "<actor>{{actor}}</actor> ha spostato la scheda <target>«{{target}}»</target>",
+      "moved_self": "<actor>{{actor}}</actor> ha spostato questa scheda",
+      "reordered": "<actor>{{actor}}</actor> ha riordinato la scheda <target>«{{target}}»</target>",
+      "reordered_self": "<actor>{{actor}}</actor> ha riordinato questa scheda",
+      "archived": "<actor>{{actor}}</actor> ha archiviato la scheda <target>«{{target}}»</target>",
+      "archived_self": "<actor>{{actor}}</actor> ha archiviato questa scheda",
+      "restored": "<actor>{{actor}}</actor> ha ripristinato la scheda <target>«{{target}}»</target>",
+      "restored_self": "<actor>{{actor}}</actor> ha ripristinato questa scheda",
+      "deleted": "<actor>{{actor}}</actor> ha eliminato la scheda <target>«{{target}}»</target>",
+      "deleted_self": "<actor>{{actor}}</actor> ha eliminato questa scheda",
+      "checklist": "<actor>{{actor}}</actor> ha aggiornato la checklist di <target>«{{target}}»</target>",
+      "checklist_self": "<actor>{{actor}}</actor> ha aggiornato la checklist",
+      "linked": "<actor>{{actor}}</actor> ha collegato un documento a <target>«{{target}}»</target>",
+      "linked_self": "<actor>{{actor}}</actor> ha collegato un documento",
+      "unlinked": "<actor>{{actor}}</actor> ha scollegato un documento da <target>«{{target}}»</target>",
+      "unlinked_self": "<actor>{{actor}}</actor> ha scollegato un documento"
+    },
+    "column": {
+      "created": "<actor>{{actor}}</actor> ha creato la colonna <target>«{{target}}»</target>",
+      "updated": "<actor>{{actor}}</actor> ha rinominato la colonna <target>«{{target}}»</target>",
+      "moved": "<actor>{{actor}}</actor> ha spostato la colonna <target>«{{target}}»</target>",
+      "deleted": "<actor>{{actor}}</actor> ha eliminato la colonna <target>«{{target}}»</target>"
+    },
+    "board": {
+      "created": "<actor>{{actor}}</actor> ha creato la bacheca <target>«{{target}}»</target>",
+      "updated": "<actor>{{actor}}</actor> ha rinominato la bacheca <target>«{{target}}»</target>",
+      "deleted": "<actor>{{actor}}</actor> ha eliminato la bacheca <target>«{{target}}»</target>"
+    },
+    "page": {
+      "created": "<actor>{{actor}}</actor> ha creato la pagina <target>«{{target}}»</target>",
+      "updated": "<actor>{{actor}}</actor> ha modificato la pagina <target>«{{target}}»</target>",
+      "moved": "<actor>{{actor}}</actor> ha spostato la pagina <target>«{{target}}»</target>",
+      "deleted": "<actor>{{actor}}</actor> ha eliminato la pagina <target>«{{target}}»</target>"
+    },
+    "project": {
+      "created": "<actor>{{actor}}</actor> ha creato il progetto <target>«{{target}}»</target>",
+      "updated": "<actor>{{actor}}</actor> ha aggiornato il progetto <target>«{{target}}»</target>",
+      "deleted": "<actor>{{actor}}</actor> ha eliminato il progetto <target>«{{target}}»</target>"
+    },
+    "label": {
+      "created": "<actor>{{actor}}</actor> ha creato un’etichetta",
+      "updated": "<actor>{{actor}}</actor> ha modificato un’etichetta",
+      "deleted": "<actor>{{actor}}</actor> ha eliminato un’etichetta"
+    },
+    "other": "<actor>{{actor}}</actor> ha apportato una modifica"
+  },
+  "detail": {
+    "movedTo": "in {{to}}",
+    "movedFromTo": "{{from}} → {{to}}",
+    "createdIn": "in {{column}}",
+    "linkedPage": "«{{page}}»"
+  },
+  "viaMcp": "tramite MCP"
+}

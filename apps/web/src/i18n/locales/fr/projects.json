@@ -1,0 +1,30 @@
+{
+  "edit": "Modifier",
+  "delete": "Supprimer le projet",
+  "summary": "{{boards}} · {{pages}}",
+  "boardCount_one": "{{count}} tableau",
+  "boardCount_many": "{{count}} tableaux",
+  "boardCount_other": "{{count}} tableaux",
+  "pageCount_one": "{{count}} page",
+  "pageCount_many": "{{count}} pages",
+  "pageCount_other": "{{count}} pages",
+  "boards": {
+    "title": "Tableaux",
+    "new": "Nouveau tableau",
+    "openCards_one": "{{count}} carte ouverte",
+    "openCards_many": "{{count}} cartes ouvertes",
+    "openCards_other": "{{count}} cartes ouvertes",
+    "empty": "Créez un tableau Kanban pour organiser les tâches de ce projet."
+  },
+  "docs": {
+    "title": "Documents",
+    "new": "Nouvelle page",
+    "subpages_one": "{{count}} sous-page",
+    "subpages_many": "{{count}} sous-pages",
+    "subpages_other": "{{count}} sous-pages",
+    "emptyTitle": "Aucun document pour l’instant",
+    "emptyAction": "Écrire la première page",
+    "emptyBody": "Spécifications, décisions, processus ou comptes rendus de réunion. En Markdown et liés à vos tâches."
+  },
+  "recent": "Modifiés récemment"
+}

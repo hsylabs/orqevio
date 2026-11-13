@@ -1,0 +1,177 @@
+{
+  "actions": {
+    "delete": "Elimina",
+    "restore": "Ripristina",
+    "archive": "Archivia",
+    "rename": "Rinomina",
+    "back": "Indietro",
+    "undo": "Annulla"
+  },
+  "board": {
+    "region": "Bacheca {{name}}",
+    "archived": "Archiviate",
+    "actions": "Azioni della bacheca",
+    "rename": "Rinomina bacheca",
+    "nameLabel": "Nome",
+    "delete": "Elimina bacheca",
+    "empty": {
+      "title": "Questa bacheca non ha colonne",
+      "body": "Crea colonne per le fasi del tuo lavoro."
+    },
+    "filterActive": "Filtro attivo · trascinamento disattivato",
+    "removeFilter": "Rimuovi filtro"
+  },
+  "drag": {
+    "instructions": "Per prendere un elemento, premi la barra spaziatrice. Spostalo con i tasti freccia, poi premi di nuovo la barra spaziatrice per rilasciarlo. Premi Esc per annullare.",
+    "card": {
+      "picked": "Hai preso la scheda «{{title}}». Colonna «{{column}}», posizione {{position}} di {{total}}.",
+      "over": "La scheda «{{title}}» è nella colonna «{{column}}», posizione {{position}} di {{total}}.",
+      "outside": "La scheda «{{title}}» non è su un’area di rilascio valida.",
+      "dropped": "Hai rilasciato la scheda «{{title}}». Colonna «{{column}}», posizione {{position}} di {{total}}.",
+      "droppedOutside": "Hai rilasciato la scheda «{{title}}».",
+      "cancelled": "Spostamento della scheda «{{title}}» annullato."
+    },
+    "column": {
+      "picked": "Hai preso la colonna «{{title}}». Posizione {{position}} di {{total}}.",
+      "over": "La colonna «{{title}}» è in posizione {{position}} di {{total}}.",
+      "outside": "La colonna «{{title}}» non è su un’area di rilascio valida.",
+      "dropped": "Hai rilasciato la colonna «{{title}}». Posizione {{position}} di {{total}}.",
+      "droppedOutside": "Hai rilasciato la colonna «{{title}}».",
+      "cancelled": "Spostamento della colonna «{{title}}» annullato."
+    }
+  },
+  "filter": {
+    "button": "Filtra",
+    "search": "Cerca per titolo…",
+    "searchLabel": "Cerca per titolo",
+    "due": "Scadenza",
+    "dues": {
+      "all": "Tutte",
+      "overdue": "Scadute",
+      "week": "Questa settimana",
+      "none": "Senza data"
+    },
+    "labels": "Etichette",
+    "clear": "Cancella filtro"
+  },
+  "column": {
+    "region": "Colonna {{name}}",
+    "roleDescription": "colonna",
+    "handle": "{{name}}. Doppio clic per rinominare, barra spaziatrice per spostare",
+    "name": "Nome della colonna",
+    "add": "Aggiungi colonna",
+    "addCardTo": "Aggiungi scheda a {{name}}",
+    "actions": "Azioni per {{name}}",
+    "addCard": "Aggiungi scheda",
+    "delete": "Elimina colonna",
+    "cards": "Schede in {{name}}",
+    "noMatches": "Nessuna scheda corrisponde al filtro",
+    "dropHere": "Rilascia qui le schede",
+    "deleteConfirm": {
+      "title": "Eliminare la colonna «{{name}}»?",
+      "withCards_one": "Verrà eliminata anche la sua scheda. Per conservarla, spostala prima in un’altra colonna.",
+      "withCards_many": "Verranno eliminate anche le sue {{count}} schede. Per conservarle, spostale prima in un’altra colonna.",
+      "withCards_other": "Verranno eliminate anche le sue {{count}} schede. Per conservarle, spostale prima in un’altra colonna.",
+      "empty": "La colonna è vuota."
+    }
+  },
+  "composer": {
+    "placeholder": "Cosa c’è da fare?",
+    "hint": "<kbd>↵</kbd> aggiungi · <kbd>esc</kbd> chiudi",
+    "submit": "Aggiungi"
+  },
+  "card": {
+    "title": "Titolo della scheda",
+    "roleDescription": "scheda",
+    "checklist": "Checklist",
+    "hasDescription": "Ha una descrizione",
+    "linkedDocs": "Documenti collegati",
+    "attachments": "Allegati",
+    "createdByName": "Creata da {{name}}"
+  },
+  "sheet": {
+    "fallbackTitle": "Scheda",
+    "label": "Dettagli della scheda",
+    "gone": "Questa scheda non esiste più",
+    "archived": "Archiviata",
+    "agentEditing": "{{name}} sta modificando",
+    "saving": "Salvataggio…",
+    "saved": "Salvato",
+    "actions": "Azioni della scheda",
+    "archivedToast": "Scheda archiviata",
+    "deleteConfirm": {
+      "title": "Eliminare questa scheda?",
+      "description": "Verrà eliminata insieme alle sue checklist e ai suoi allegati. Se vuoi solo nasconderla, archiviala."
+    },
+    "labels": "Etichette",
+    "addLabels": "Aggiungi etichette",
+    "due": "Scadenza",
+    "noDate": "Nessuna data",
+    "createdBy": "Creata da",
+    "unknownCreator": "Sconosciuto",
+    "description": "Descrizione",
+    "descriptionPlaceholder": "Aggiungi contesto, criteri di accettazione o note. Premi «/» per inserire.",
+    "descriptionLabel": "Descrizione della scheda",
+    "checklists": "Checklist",
+    "addChecklist": "+ Aggiungi",
+    "newChecklistTitle": "Checklist",
+    "checklistsEmpty": "Dividi l’attività in passaggi da spuntare.",
+    "linkedDocs": "Documenti collegati",
+    "attachments": "Allegati",
+    "activity": "Attività"
+  },
+  "checklist": {
+    "titleLabel": "Titolo della checklist",
+    "actions": "Azioni della checklist",
+    "delete": "Elimina checklist",
+    "progress": "Avanzamento",
+    "item": "Elemento",
+    "deleteItem": "Elimina «{{text}}»",
+    "addItem": "Aggiungi elemento",
+    "newItemPlaceholder": "Nuovo elemento, poi Invio",
+    "newItem": "Nuovo elemento"
+  },
+  "due": {
+    "today": "Oggi",
+    "tomorrow": "Domani",
+    "monday": "Lunedì",
+    "inAWeek": "Tra una settimana",
+    "remove": "Rimuovi data"
+  },
+  "labels": {
+    "title": "Etichette",
+    "newTitle": "Nuova etichetta",
+    "editTitle": "Modifica etichetta",
+    "namePlaceholder": "Nome (facoltativo)",
+    "nameLabel": "Nome dell’etichetta",
+    "empty": "Questa bacheca non ha ancora etichette.",
+    "unnamed": "Senza nome",
+    "editNamed": "Modifica {{name}}",
+    "editUnnamed": "Modifica etichetta",
+    "create": "Crea etichetta"
+  },
+  "linked": {
+    "mentioned": "menzionata",
+    "unlinkNamed": "Scollega {{title}}",
+    "unlinkUntitled": "Scollega pagina",
+    "link": "Collega documento",
+    "search": "Cerca pagine…",
+    "searchLabel": "Cerca pagine",
+    "noResults": "Nessun risultato.",
+    "hint": "Digita per cercare in tutto lo spazio."
+  },
+  "archived": {
+    "sheetTitle": "Schede archiviate",
+    "heading": "Archiviate",
+    "emptyTitle": "Niente di archiviato",
+    "emptyBody": "Le schede archiviate da te o dai tuoi agenti compaiono qui, e puoi ripristinarle.",
+    "deleteConfirm": "Eliminare definitivamente «{{title}}»?"
+  },
+  "attachments": {
+    "deleteConfirm": "Eliminare «{{name}}»?",
+    "download": "Scarica {{name}}",
+    "deleteNamed": "Elimina {{name}}",
+    "uploading": "Caricamento…",
+    "attach": "Allega file"
+  }
+}

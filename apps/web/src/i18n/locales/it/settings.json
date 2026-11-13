@@ -1,0 +1,70 @@
+{
+  "title": "Impostazioni",
+  "profile": {
+    "title": "Profilo",
+    "description": "Il tuo nome compare nell’attività dello spazio.",
+    "name": "Nome",
+    "saved": "Profilo aggiornato"
+  },
+  "appearance": {
+    "title": "Aspetto",
+    "description": "Salvato nella tua copia e applicato su tutti i tuoi dispositivi.",
+    "theme": "Tema",
+    "themes": {
+      "system": "Sistema",
+      "light": "Chiaro",
+      "dark": "Scuro"
+    }
+  },
+  "language": {
+    "title": "Lingua",
+    "description": "L’app la usa su tutti i tuoi dispositivi, e le nuove bacheche ricevono le colonne predefinite in questa lingua."
+  },
+  "accessKey": {
+    "title": "Chiave di accesso",
+    "description": "È ciò che usi per accedere a questa copia. Generarne una nuova chiude le tue altre sessioni. Non influisce sulla password principale della cassaforte.",
+    "current": "Chiave attuale",
+    "generate": "Genera una nuova chiave",
+    "newTitle": "La tua nuova chiave di accesso",
+    "newDescription": "La vecchia chiave non funziona più e le tue altre sessioni sono state chiuse. Viene mostrata una sola volta.",
+    "done": "Fatto",
+    "updated": "Chiave di accesso aggiornata"
+  },
+  "workspace": {
+    "title": "Spazio",
+    "description": "I token degli agenti e i progetti appartengono a uno spazio specifico.",
+    "name": "Nome dello spazio",
+    "saved": "Spazio aggiornato",
+    "delete": "Elimina spazio",
+    "deleteTitle": "Eliminare lo spazio «{{name}}»?",
+    "deleteDescription": "Verranno eliminati i suoi progetti, bacheche, documenti, allegati e token. L’operazione è irreversibile.",
+    "deleted": "Spazio eliminato"
+  },
+  "copy": {
+    "title": "Questa copia",
+    "description": "La versione di Orqevio che stai usando. La tua copia controlla se ci sono nuove versioni al massimo ogni 12 ore."
+  },
+  "version": {
+    "upToDate": "Hai la versione più recente.",
+    "available": "È disponibile una nuova versione: {{version}}",
+    "how": {
+      "cli": "Esegui questo comando sul tuo computer:",
+      "button": "Esegui il merge della pull request di Dependabot nel repository della tua copia: il deploy partirà da solo. Se non la vedi, aggiorna la versione di create-orqevio nel suo package.json.",
+      "docker": "Nella cartella della tua copia:",
+      "source": "Nel repository, poi riavvia il server:"
+    },
+    "copy": "Copia il comando",
+    "copied": "Comando copiato",
+    "kept": "I tuoi dati, la chiave di accesso e la cassaforte vengono mantenuti.",
+    "releaseNotes": "Scopri le novità"
+  },
+  "erase": {
+    "title": "Cancella questa copia",
+    "description": "Cancella in modo definitivo i tuoi spazi, la tua cassaforte e i tuoi token. La copia chiederà di nuovo il codice di configurazione.",
+    "action": "Cancella tutti i miei dati",
+    "confirmDescription": "L’operazione è irreversibile. Inserisci la tua chiave di accesso per confermare.",
+    "accessKey": "Chiave di accesso",
+    "confirm": "Cancella definitivamente",
+    "done": "Dati cancellati"
+  }
+}

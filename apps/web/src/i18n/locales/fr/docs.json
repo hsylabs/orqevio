@@ -1,0 +1,150 @@
+{
+  "page": {
+    "status": {
+      "saving": "Enregistrement…",
+      "pending": "Modifications non enregistrées",
+      "saved": "Enregistré",
+      "error": "Non enregistré"
+    },
+    "actions": "Actions de la page",
+    "newSubpage": "Nouvelle sous-page",
+    "move": "Déplacer vers…",
+    "delete": "Supprimer la page",
+    "titleLabel": "Titre de la page",
+    "editedBy": "Modifiée par <name>{{name}}</name> · {{time}}",
+    "agentWorking": "{{name}} travaille ici",
+    "agentUpdated": "{{name}} a mis à jour cette page",
+    "linkedTasks": "Tâches liées",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> a modifié cette page pendant que vous l’éditiez. Vos dernières modifications n’ont pas été enregistrées.",
+      "byOtherSession": "<strong>Une autre session</strong> a modifié cette page pendant que vous l’éditiez. Vos dernières modifications n’ont pas été enregistrées.",
+      "loadTheirs": "Charger l’autre version",
+      "keepMine": "Garder la mienne"
+    },
+    "content": "Contenu de la page",
+    "subpages": "Sous-pages",
+    "attachments": "Pièces jointes"
+  },
+  "editor": {
+    "placeholder": "Écrivez, ou tapez « / » pour insérer…",
+    "headingPlaceholder": "Titre",
+    "label": "Contenu",
+    "uploading": "Envoi de {{name}}…",
+    "uploaded": "Fichier joint",
+    "noBlocks": "Aucun bloc ne correspond",
+    "mentionHint": "Tapez pour chercher des tâches et des pages",
+    "groups": {
+      "blocks": "Blocs",
+      "lists": "Listes",
+      "insert": "Insérer",
+      "tasks": "Tâches",
+      "pages": "Pages"
+    },
+    "slash": {
+      "p": {
+        "title": "Texte",
+        "subtitle": "Paragraphe simple",
+        "keywords": "texte paragraphe corps text paragraph"
+      },
+      "h1": {
+        "title": "Titre 1",
+        "subtitle": "Grand titre",
+        "keywords": "titre intertitre en-tête heading h1"
+      },
+      "h2": {
+        "title": "Titre 2",
+        "subtitle": "Titre de section",
+        "keywords": "titre intertitre section heading h2"
+      },
+      "h3": {
+        "title": "Titre 3",
+        "subtitle": "Sous-section",
+        "keywords": "titre sous-titre intertitre heading h3"
+      },
+      "ul": {
+        "title": "Liste",
+        "subtitle": "Liste à puces",
+        "keywords": "liste puces bullet ul"
+      },
+      "ol": {
+        "title": "Liste numérotée",
+        "subtitle": "1, 2, 3…",
+        "keywords": "liste numérotée ordonnée numéros ol"
+      },
+      "todo": {
+        "title": "Liste de tâches",
+        "subtitle": "Cases à cocher",
+        "keywords": "tâches checklist todo cases cocher"
+      },
+      "quote": {
+        "title": "Citation",
+        "subtitle": "Mettre un passage en valeur",
+        "keywords": "citation quote blockquote"
+      },
+      "code": {
+        "title": "Code",
+        "subtitle": "Bloc de code",
+        "keywords": "code extrait snippet"
+      },
+      "table": {
+        "title": "Tableau",
+        "subtitle": "3 × 3 avec une ligne d’en-tête",
+        "keywords": "tableau table grille"
+      },
+      "hr": {
+        "title": "Séparateur",
+        "subtitle": "Ligne horizontale",
+        "keywords": "séparateur ligne trait hr divider"
+      },
+      "mention": {
+        "title": "Lier une tâche ou une page",
+        "subtitle": "Tapez @ et cherchez",
+        "keywords": "mention lien lier tâche page link"
+      },
+      "image": {
+        "title": "Image",
+        "subtitle": "Importer un PNG, JPG, GIF ou WebP",
+        "keywords": "image photo illustration"
+      },
+      "file": {
+        "title": "Fichier",
+        "subtitle": "Joindre n’importe quel fichier",
+        "keywords": "fichier pièce jointe importer file"
+      }
+    },
+    "mention": {
+      "card": "Tâche · {{board}} · {{column}}",
+      "page": "Page · {{project}}"
+    },
+    "menu": {
+      "slash": "Insérer un bloc",
+      "mention": "Lier une tâche ou une page",
+      "searching": "Recherche…",
+      "noMatches": "Aucun résultat"
+    },
+    "format": {
+      "linkPlaceholder": "https://… ou /doc/…",
+      "linkLabel": "Adresse du lien",
+      "openLink": "Ouvrir le lien",
+      "editLink": "Modifier le lien",
+      "removeLink": "Retirer le lien",
+      "bold": "Gras",
+      "italic": "Italique",
+      "strike": "Barré",
+      "code": "Code",
+      "link": "Lien"
+    }
+  },
+  "icon": {
+    "change": "Changer l’icône",
+    "add": "Ajouter une icône",
+    "use": "Utiliser {{icon}}",
+    "remove": "Retirer l’icône"
+  },
+  "move": {
+    "title": "Déplacer la page",
+    "description": "Choisissez où la placer dans le projet.",
+    "root": "racine du projet",
+    "moved": "Page déplacée"
+  }
+}

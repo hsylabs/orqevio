@@ -1,0 +1,177 @@
+{
+  "actions": {
+    "delete": "Supprimer",
+    "restore": "Restaurer",
+    "archive": "Archiver",
+    "rename": "Renommer",
+    "back": "Retour",
+    "undo": "Annuler"
+  },
+  "board": {
+    "region": "Tableau {{name}}",
+    "archived": "Archivées",
+    "actions": "Actions du tableau",
+    "rename": "Renommer le tableau",
+    "nameLabel": "Nom",
+    "delete": "Supprimer le tableau",
+    "empty": {
+      "title": "Ce tableau n’a aucune colonne",
+      "body": "Créez des colonnes pour les étapes de votre travail."
+    },
+    "filterActive": "Filtre actif · glisser-déposer désactivé",
+    "removeFilter": "Retirer le filtre"
+  },
+  "drag": {
+    "instructions": "Pour saisir un élément, appuyez sur Espace. Déplacez-le avec les flèches, puis appuyez de nouveau sur Espace pour le déposer. Appuyez sur Échap pour annuler.",
+    "card": {
+      "picked": "Vous avez saisi la carte « {{title}} ». Colonne « {{column}} », position {{position}} sur {{total}}.",
+      "over": "La carte « {{title}} » est dans la colonne « {{column}} », position {{position}} sur {{total}}.",
+      "outside": "La carte « {{title}} » n’est pas au-dessus d’une zone de dépôt valide.",
+      "dropped": "Vous avez déposé la carte « {{title}} ». Colonne « {{column}} », position {{position}} sur {{total}}.",
+      "droppedOutside": "Vous avez déposé la carte « {{title}} ».",
+      "cancelled": "Déplacement de la carte « {{title}} » annulé."
+    },
+    "column": {
+      "picked": "Vous avez saisi la colonne « {{title}} ». Position {{position}} sur {{total}}.",
+      "over": "La colonne « {{title}} » est en position {{position}} sur {{total}}.",
+      "outside": "La colonne « {{title}} » n’est pas au-dessus d’une zone de dépôt valide.",
+      "dropped": "Vous avez déposé la colonne « {{title}} ». Position {{position}} sur {{total}}.",
+      "droppedOutside": "Vous avez déposé la colonne « {{title}} ».",
+      "cancelled": "Déplacement de la colonne « {{title}} » annulé."
+    }
+  },
+  "filter": {
+    "button": "Filtrer",
+    "search": "Rechercher par titre…",
+    "searchLabel": "Rechercher par titre",
+    "due": "Échéance",
+    "dues": {
+      "all": "Toutes",
+      "overdue": "En retard",
+      "week": "Cette semaine",
+      "none": "Sans date"
+    },
+    "labels": "Étiquettes",
+    "clear": "Effacer le filtre"
+  },
+  "column": {
+    "region": "Colonne {{name}}",
+    "roleDescription": "colonne",
+    "handle": "{{name}}. Double-cliquez pour renommer, appuyez sur Espace pour déplacer",
+    "name": "Nom de la colonne",
+    "add": "Ajouter une colonne",
+    "addCardTo": "Ajouter une carte à {{name}}",
+    "actions": "Actions pour {{name}}",
+    "addCard": "Ajouter une carte",
+    "delete": "Supprimer la colonne",
+    "cards": "Cartes de {{name}}",
+    "noMatches": "Aucune carte ne correspond au filtre",
+    "dropHere": "Déposez des cartes ici",
+    "deleteConfirm": {
+      "title": "Supprimer la colonne « {{name}} » ?",
+      "withCards_one": "Sa carte sera également supprimée. Pour la conserver, déplacez-la d’abord vers une autre colonne.",
+      "withCards_many": "Ses {{count}} cartes seront également supprimées. Pour les conserver, déplacez-les d’abord vers une autre colonne.",
+      "withCards_other": "Ses {{count}} cartes seront également supprimées. Pour les conserver, déplacez-les d’abord vers une autre colonne.",
+      "empty": "La colonne est vide."
+    }
+  },
+  "composer": {
+    "placeholder": "Que faut-il faire ?",
+    "hint": "<kbd>↵</kbd> ajouter · <kbd>esc</kbd> fermer",
+    "submit": "Ajouter"
+  },
+  "card": {
+    "title": "Titre de la carte",
+    "roleDescription": "carte",
+    "checklist": "Checklist",
+    "hasDescription": "Contient une description",
+    "linkedDocs": "Documents liés",
+    "attachments": "Pièces jointes",
+    "createdByName": "Créée par {{name}}"
+  },
+  "sheet": {
+    "fallbackTitle": "Carte",
+    "label": "Détails de la carte",
+    "gone": "Cette carte n’existe plus",
+    "archived": "Archivée",
+    "agentEditing": "{{name}} modifie la carte",
+    "saving": "Enregistrement…",
+    "saved": "Enregistré",
+    "actions": "Actions de la carte",
+    "archivedToast": "Carte archivée",
+    "deleteConfirm": {
+      "title": "Supprimer cette carte ?",
+      "description": "Elle sera supprimée avec ses checklists et ses pièces jointes. Pour simplement la masquer, archivez-la plutôt."
+    },
+    "labels": "Étiquettes",
+    "addLabels": "Ajouter des étiquettes",
+    "due": "Échéance",
+    "noDate": "Sans date",
+    "createdBy": "Créée par",
+    "unknownCreator": "Inconnu",
+    "description": "Description",
+    "descriptionPlaceholder": "Ajoutez du contexte, des critères d’acceptation ou des notes. Tapez « / » pour insérer.",
+    "descriptionLabel": "Description de la carte",
+    "checklists": "Checklists",
+    "addChecklist": "+ Ajouter",
+    "newChecklistTitle": "Checklist",
+    "checklistsEmpty": "Découpez la tâche en étapes à cocher.",
+    "linkedDocs": "Documents liés",
+    "attachments": "Pièces jointes",
+    "activity": "Activité"
+  },
+  "checklist": {
+    "titleLabel": "Titre de la checklist",
+    "actions": "Actions de la checklist",
+    "delete": "Supprimer la checklist",
+    "progress": "Progression",
+    "item": "Élément",
+    "deleteItem": "Supprimer « {{text}} »",
+    "addItem": "Ajouter un élément",
+    "newItemPlaceholder": "Nouvel élément, puis Entrée",
+    "newItem": "Nouvel élément"
+  },
+  "due": {
+    "today": "Aujourd’hui",
+    "tomorrow": "Demain",
+    "monday": "Lundi",
+    "inAWeek": "Dans une semaine",
+    "remove": "Retirer la date"
+  },
+  "labels": {
+    "title": "Étiquettes",
+    "newTitle": "Nouvelle étiquette",
+    "editTitle": "Modifier l’étiquette",
+    "namePlaceholder": "Nom (facultatif)",
+    "nameLabel": "Nom de l’étiquette",
+    "empty": "Ce tableau n’a pas encore d’étiquettes.",
+    "unnamed": "Sans nom",
+    "editNamed": "Modifier {{name}}",
+    "editUnnamed": "Modifier l’étiquette",
+    "create": "Créer l’étiquette"
+  },
+  "linked": {
+    "mentioned": "mentionnée",
+    "unlinkNamed": "Dissocier {{title}}",
+    "unlinkUntitled": "Dissocier la page",
+    "link": "Lier un document",
+    "search": "Rechercher des pages…",
+    "searchLabel": "Rechercher des pages",
+    "noResults": "Aucun résultat.",
+    "hint": "Tapez pour chercher dans tout l’espace."
+  },
+  "archived": {
+    "sheetTitle": "Cartes archivées",
+    "heading": "Archivées",
+    "emptyTitle": "Rien d’archivé",
+    "emptyBody": "Les cartes que vous ou vos agents archivez apparaissent ici, et vous pouvez les restaurer.",
+    "deleteConfirm": "Supprimer « {{title}} » définitivement ?"
+  },
+  "attachments": {
+    "deleteConfirm": "Supprimer « {{name}} » ?",
+    "download": "Télécharger {{name}}",
+    "deleteNamed": "Supprimer {{name}}",
+    "uploading": "Envoi en cours…",
+    "attach": "Joindre un fichier"
+  }
+}

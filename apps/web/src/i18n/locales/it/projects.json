@@ -1,0 +1,30 @@
+{
+  "edit": "Modifica",
+  "delete": "Elimina progetto",
+  "summary": "{{boards}} · {{pages}}",
+  "boardCount_one": "{{count}} bacheca",
+  "boardCount_many": "{{count}} bacheche",
+  "boardCount_other": "{{count}} bacheche",
+  "pageCount_one": "{{count}} pagina",
+  "pageCount_many": "{{count}} pagine",
+  "pageCount_other": "{{count}} pagine",
+  "boards": {
+    "title": "Bacheche",
+    "new": "Nuova bacheca",
+    "openCards_one": "{{count}} scheda aperta",
+    "openCards_many": "{{count}} schede aperte",
+    "openCards_other": "{{count}} schede aperte",
+    "empty": "Crea una bacheca Kanban per organizzare le attività di questo progetto."
+  },
+  "docs": {
+    "title": "Documenti",
+    "new": "Nuova pagina",
+    "subpages_one": "{{count}} sottopagina",
+    "subpages_many": "{{count}} sottopagine",
+    "subpages_other": "{{count}} sottopagine",
+    "emptyTitle": "Ancora nessun documento",
+    "emptyAction": "Scrivi la prima pagina",
+    "emptyBody": "Specifiche, decisioni, processi o note delle riunioni. In Markdown e collegati alle tue attività."
+  },
+  "recent": "Modificati di recente"
+}

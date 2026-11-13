@@ -1,0 +1,137 @@
+{
+  "nav": {
+    "label": "Navigazione principale",
+    "search": "Cerca o vai a…",
+    "home": "Home",
+    "vault": "Cassaforte",
+    "agents": "Agenti",
+    "agentLive": "Agente attivo",
+    "projects": "Progetti",
+    "newProject": "Nuovo progetto",
+    "firstProject": {
+      "title": "Crea il tuo primo progetto",
+      "body": "Raggruppa bacheche e documenti in un unico posto."
+    },
+    "vaultLocked": "Bloccata",
+    "vaultUnlocked": "Sbloccata"
+  },
+  "workspace": {
+    "fallback": "Spazio",
+    "heading": "Spazi",
+    "new": "Nuovo spazio",
+    "newDescription": "Gli spazi tengono separati i contesti, per esempio personale e lavoro. Ogni token di agente appartiene a un solo spazio.",
+    "name": "Nome",
+    "create": "Crea spazio",
+    "settings": "Impostazioni"
+  },
+  "project": {
+    "collapse": "Comprimi {{name}}",
+    "expand": "Espandi {{name}}",
+    "actions": "Azioni per {{name}}",
+    "newBoard": "Nuova bacheca",
+    "newPage": "Nuova pagina",
+    "newPageIn": "Nuova pagina in {{name}}",
+    "rename": "Nome e colore",
+    "delete": "Elimina progetto",
+    "empty": "Vuoto"
+  },
+  "tree": {
+    "collapse": "Comprimi",
+    "expand": "Espandi",
+    "newSubpage": "Nuova sottopagina"
+  },
+  "user": {
+    "updateAvailable": "È disponibile una nuova versione di Orqevio",
+    "settings": "Impostazioni",
+    "newVersion": "Nuova versione",
+    "appearance": "Aspetto",
+    "theme": {
+      "system": "Sistema",
+      "light": "Chiaro",
+      "dark": "Scuro"
+    },
+    "signOut": "Esci"
+  },
+  "header": {
+    "hideSidebar": "Nascondi la barra laterale",
+    "showSidebar": "Mostra la barra laterale",
+    "toggleSidebar": "Mostra o nascondi la barra laterale",
+    "breadcrumb": "Percorso di navigazione"
+  },
+  "newProject": {
+    "title": "Nuovo progetto",
+    "description": "Un progetto raggruppa bacheche e documenti correlati.",
+    "name": "Nome",
+    "namePlaceholder": "es. Lancio del sito web",
+    "color": "Colore",
+    "withBoard": "Crea una bacheca",
+    "startWithBoard": "Inizia con una bacheca",
+    "boardHint": "Colonne {{columns}}. Puoi cambiarle quando vuoi.",
+    "boardName": "Attività",
+    "create": "Crea progetto"
+  },
+  "projectSettings": {
+    "title": "Progetto",
+    "name": "Nome",
+    "description": "Descrizione",
+    "optional": "Facoltativa",
+    "color": "Colore"
+  },
+  "actions": {
+    "newBoard": {
+      "title": "Nuova bacheca",
+      "label": "Nome della bacheca",
+      "placeholder": "es. Sprint di lancio",
+      "confirm": "Crea bacheca"
+    },
+    "deleteBoard": {
+      "title": "Eliminare «{{name}}»?",
+      "body": "Le sue colonne e schede verranno eliminate. L’operazione è irreversibile.",
+      "confirm": "Elimina bacheca",
+      "done": "Bacheca eliminata"
+    },
+    "deletePage": {
+      "title": "Eliminare «{{name}}»?",
+      "body": "Verranno eliminati anche le sue sottopagine e i suoi allegati. L’operazione è irreversibile.",
+      "confirm": "Elimina pagina",
+      "done": "Pagina eliminata"
+    },
+    "deleteProject": {
+      "title": "Eliminare il progetto «{{name}}»?",
+      "body": "Verranno eliminati tutti i suoi contenuti: bacheche, schede, pagine e allegati. L’operazione è irreversibile.",
+      "confirm": "Elimina progetto",
+      "done": "Progetto eliminato"
+    }
+  },
+  "palette": {
+    "label": "Palette dei comandi",
+    "title": "Cerca",
+    "description": "Cerca progetti, bacheche, pagine e schede, o esegui un’azione.",
+    "placeholder": "Cerca attività, documenti o azioni…",
+    "searching": "Ricerca in corso…",
+    "noResults": "Nessun risultato. Prova con altre parole.",
+    "inContent": "Nel contenuto",
+    "navigate": "Vai a",
+    "structure": "Progetti, bacheche e pagine",
+    "project": "Progetto",
+    "actions": "Azioni",
+    "newProject": "Nuovo progetto",
+    "lightTheme": "Passa al tema chiaro",
+    "darkTheme": "Passa al tema scuro",
+    "lockVault": "Blocca la cassaforte",
+    "hintNavigate": "naviga",
+    "hintOpen": "apri",
+    "keywords": {
+      "home": "Home inizio",
+      "vault": "Cassaforte password vault",
+      "agents": "Agenti MCP token",
+      "settings": "Impostazioni account",
+      "project": "progetto",
+      "board": "bacheca",
+      "page": "pagina",
+      "newProject": "Nuovo progetto crea",
+      "theme": "Cambia tema chiaro scuro aspetto",
+      "lockVault": "Blocca cassaforte"
+    }
+  }
+}
