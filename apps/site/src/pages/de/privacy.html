@@ -1,0 +1,40 @@
+  <div class="page-head">
+    <div class="wrap">
+      <span class="eyebrow">Datenschutzerklärung</span>
+      <h1>Deine Daten laufen nicht über uns</h1>
+      <p class="lead">orqevio.com speichert keinerlei Daten. Jede Orqevio-Instanz gehört der Person, die sie betreibt, und läuft in ihrem Cloudflare-Konto oder auf ihrem Server.</p>
+    </div>
+  </div>
+
+  <div class="wrap prose">
+    <h2 id="site">Diese Website</h2>
+    <ul>
+      <li><strong>Keine Cookies, keine Analyse-Tools, keine Formulare.</strong> Es gibt keine Registrierung und nichts auszufüllen, und wir zählen keine Besuche.</li>
+      <li><strong>Keine Ressourcen von Drittanbietern.</strong> Schriften, Stylesheets und das Skript für den Kopieren-Button kommen direkt von orqevio.com.</li>
+      <li><strong>Hosting.</strong> Die Website wird über Cloudflare ausgeliefert. Wie jeder Webserver verarbeitet Cloudflare technische Daten jedes Besuchs, etwa die IP-Adresse, um die Seiten auszuliefern und vor Missbrauch zu schützen; dabei gilt die <a href="https://www.cloudflare.com/privacypolicy/">Datenschutzrichtlinie</a> von Cloudflare. Besucherprotokolle schalten wir nicht ein.</li>
+    </ul>
+
+    <h2 id="copy">Deine Orqevio-Instanz</h2>
+    <ul>
+      <li><strong>Sie gehört dir.</strong> Sie läuft in deinem Cloudflare-Konto oder auf deinem Server. HSY Labs hat weder auf sie noch auf deine gespeicherten Inhalte Zugriff.</li>
+      <li><strong>Keine Telemetrie.</strong> Orqevio sendet niemandem Nutzungsdaten.</li>
+      <li><strong>Dein Tresor wird in deinem Browser verschlüsselt.</strong> Nicht einmal der Server deiner Instanz kann ihn lesen.</li>
+    </ul>
+    <p>Deine Instanz verbindet sich nur in diesen Fällen mit anderen Websites:</p>
+    <ul>
+      <li><strong>Hinweise auf Updates.</strong> Höchstens alle 12 Stunden und nur, während du sie nutzt, fragt sie bei <code>registry.npmjs.org</code> die neueste veröffentlichte Version ab. Die Anfrage enthält keine deiner Daten. Abschalten lässt sich das mit <code>UPDATE_CHECK=off</code>.</li>
+      <li><strong>Apps, die du über OAuth verbindest.</strong> Wenn du eine verbindest, etwa Claude, liest deine Instanz die Beschreibung, die diese App auf ihrer eigenen Website veröffentlicht.</li>
+      <li><strong>Externe Bilder.</strong> Bilder von anderen Websites, die du in ein Dokument einfügst, lädt dein Browser direkt von dort, wo sie gehostet sind.</li>
+    </ul>
+    <p>Die Agenten, die du verbindest, etwa Claude, erhalten, was sie in deiner Instanz lesen – im Rahmen der Berechtigungen, die du ihnen gibst, und der Bedingungen ihres Anbieters.</p>
+
+    <h2 id="install">Bei Installation und Updates</h2>
+    <ul>
+      <li><strong>npm und GitHub.</strong> Der Installer und das Docker-Image werden von <code>registry.npmjs.org</code> und <code>ghcr.io</code> heruntergeladen; dabei gelten die Richtlinien dieser Dienste.</li>
+      <li><strong>Cloudflare.</strong> Der Installer verwendet Wrangler, das offizielle Tool von Cloudflare, mit deiner eigenen Sitzung. Er schaltet die anonyme Telemetrie von Wrangler ab, sofern du sie nicht selbst aktiviert hast.</li>
+    </ul>
+
+    <h2 id="contact">Kontakt</h2>
+    <p>Orqevio ist ein Projekt von HSY Labs. Wenn du Fragen zum Datenschutz hast, schreib uns über das <a href="https://github.com/hsylabs/orqevio">GitHub-Repository</a>.</p>
+    <p>Zuletzt aktualisiert: 13. November 2026.</p>
+  </div>
