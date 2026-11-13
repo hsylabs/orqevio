@@ -1,6 +1,7 @@
 import type { BoardDTO, LabelDTO, PaletteColor } from '@orqevio/shared'
 import { Check, Pencil, Plus, Trash } from 'lucide-react'
 import { type FormEvent, type ReactNode, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ColorPicker } from '../../components/ColorPicker'
 import { Button } from '../../components/ui/Button'
@@ -10,6 +11,7 @@ import { cn } from '../../lib/cn'
 import { keys, queryClient } from '../../lib/queries'
 
 export function LabelPicker({ board, selected, onChange, trigger }: { board: BoardDTO; selected: string[]; onChange: (ids: string[]) => void; trigger: ReactNode }) {
+  const { t } = useTranslation(['boards', 'common'])
   const [editing, setEditing] = useState<LabelDTO | 'new' | null>(null)
   const [name, setName] = useState('')
   const [color, setColor] = useState<PaletteColor>('cobalt')
@@ -53,31 +55,31 @@ export function LabelPicker({ board, selected, onChange, trigger }: { board: Boa
     <Popover trigger={trigger} className="w-[280px]" onOpenChange={(o) => !o && setEditing(null)}>
       {editing ? (
         <form onSubmit={save} className="flex flex-col gap-3 p-1">
-          <p className="text-[12.5px] font-semibold">{editing === 'new' ? 'Nueva etiqueta' : 'Editar etiqueta'}</p>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre (opcional)" aria-label="Nombre de la etiqueta" maxLength={40} className="field h-8.5" autoFocus />
+          <p className="text-[12.5px] font-semibold">{editing === 'new' ? t('labels.newTitle') : t('labels.editTitle')}</p>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('labels.namePlaceholder')} aria-label={t('labels.nameLabel')} maxLength={40} className="field h-8.5" autoFocus />
           <ColorPicker value={color} onChange={setColor} />
           <div className="flex items-center justify-between">
             {editing !== 'new' ? (
               <Button size="sm" variant="ghost" icon={<Trash />} onClick={() => void remove(editing)} className="text-danger">
-                Eliminar
+                {t('actions.delete')}
               </Button>
             ) : (
               <span />
             )}
             <div className="flex gap-1">
               <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>
-                Atrás
+                {t('actions.back')}
               </Button>
               <Button size="sm" variant="primary" type="submit">
-                Guardar
+                {t('common:actions.save')}
               </Button>
             </div>
           </div>
         </form>
       ) : (
         <div className="flex flex-col">
-          <p className="px-2 pt-1 pb-2 text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase">Etiquetas</p>
-          {board.labels.length === 0 && <p className="px-2 pb-2 text-[12.5px] text-ink-3">Este tablero aún no tiene etiquetas.</p>}
+          <p className="px-2 pt-1 pb-2 text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('labels.title')}</p>
+          {board.labels.length === 0 && <p className="px-2 pb-2 text-[12.5px] text-ink-3">{t('labels.empty')}</p>}
           {board.labels.map((l) => {
             const on = selected.includes(l.id)
             return (
@@ -92,10 +94,10 @@ export function LabelPicker({ board, selected, onChange, trigger }: { board: Boa
                     {on && <Check className="size-3 text-accent-ink" strokeWidth={3} />}
                   </span>
                   <span className={cn('label-chip', `c-${l.color}`)}>
-                    <span className="truncate">{l.name || 'Sin nombre'}</span>
+                    <span className="truncate">{l.name || t('labels.unnamed')}</span>
                   </span>
                 </button>
-                <button type="button" onClick={() => startEdit(l)} aria-label={`Editar ${l.name || 'etiqueta'}`} className="mr-1 grid size-6 place-items-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 hover:bg-press hover:text-ink focus-visible:opacity-100">
+                <button type="button" onClick={() => startEdit(l)} aria-label={l.name ? t('labels.editNamed', { name: l.name }) : t('labels.editUnnamed')} className="mr-1 grid size-6 place-items-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 hover:bg-press hover:text-ink focus-visible:opacity-100">
                   <Pencil className="size-3.5" />
                 </button>
               </div>
@@ -103,7 +105,7 @@ export function LabelPicker({ board, selected, onChange, trigger }: { board: Boa
           })}
           <button type="button" onClick={() => startEdit('new')} className="mt-1 flex items-center gap-2 rounded-[8px] px-2 py-1.5 text-[13px] text-ink-2 hover:bg-hover hover:text-ink">
             <Plus className="size-4" />
-            Crear etiqueta
+            {t('labels.create')}
           </button>
         </div>
       )}

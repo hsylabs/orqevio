@@ -3,6 +3,7 @@ import { useEditorState } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import { Code, ExternalLink, Link2, Strikethrough, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { cn } from '../../../lib/cn'
 
@@ -10,6 +11,7 @@ const SAFE = /^(https?:\/\/|mailto:|\/(?!\/))/i
 
 /** Selection toolbar: inline formatting and link editing. */
 export function FormatMenu({ editor }: { editor: Editor }) {
+  const { t } = useTranslation(['docs', 'common'])
   const navigate = useNavigate()
   const [editingLink, setEditingLink] = useState(false)
   const [href, setHref] = useState('')
@@ -57,25 +59,25 @@ export function FormatMenu({ editor }: { editor: Editor }) {
               value={href}
               onChange={(e) => setHref(e.target.value)}
               onKeyDown={(e) => e.key === 'Escape' && setEditingLink(false)}
-              placeholder="https://… o /doc/…"
-              aria-label="Dirección del enlace"
+              placeholder={t('editor.format.linkPlaceholder')}
+              aria-label={t('editor.format.linkLabel')}
               className="h-7 w-[240px] rounded-[7px] bg-sunken px-2 text-[13px] outline-none"
             />
             <button type="submit" className="h-7 rounded-[7px] bg-ink px-2.5 text-[12px] font-medium text-sheet">
-              Guardar
+              {t('common:actions.save')}
             </button>
           </form>
         ) : state.empty && state.link ? (
           <>
             <span className="max-w-[220px] truncate px-2 font-mono text-[12px] text-ink-2">{state.href}</span>
             <Tool
-              label="Abrir enlace"
+              label={t('editor.format.openLink')}
               onClick={() => (/^\/(card|doc)\//.test(state.href) ? navigate(state.href) : window.open(state.href, '_blank', 'noopener,noreferrer'))}
             >
               <ExternalLink />
             </Tool>
             <Tool
-              label="Editar enlace"
+              label={t('editor.format.editLink')}
               onClick={() => {
                 setHref(state.href)
                 setEditingLink(true)
@@ -83,27 +85,27 @@ export function FormatMenu({ editor }: { editor: Editor }) {
             >
               <Link2 />
             </Tool>
-            <Tool label="Quitar enlace" onClick={() => editor.chain().focus().extendMarkRange('link').unsetLink().run()}>
+            <Tool label={t('editor.format.removeLink')} onClick={() => editor.chain().focus().extendMarkRange('link').unsetLink().run()}>
               <X />
             </Tool>
           </>
         ) : (
           <>
-            <Tool label="Negrita" active={state.bold} onClick={() => editor.chain().focus().toggleBold().run()}>
+            <Tool label={t('editor.format.bold')} active={state.bold} onClick={() => editor.chain().focus().toggleBold().run()}>
               <span className="font-sans text-[14px] font-bold">B</span>
             </Tool>
-            <Tool label="Cursiva" active={state.italic} onClick={() => editor.chain().focus().toggleItalic().run()}>
+            <Tool label={t('editor.format.italic')} active={state.italic} onClick={() => editor.chain().focus().toggleItalic().run()}>
               <span className="font-display text-[15px] italic">i</span>
             </Tool>
-            <Tool label="Tachado" active={state.strike} onClick={() => editor.chain().focus().toggleStrike().run()}>
+            <Tool label={t('editor.format.strike')} active={state.strike} onClick={() => editor.chain().focus().toggleStrike().run()}>
               <Strikethrough />
             </Tool>
-            <Tool label="Código" active={state.code} onClick={() => editor.chain().focus().toggleCode().run()}>
+            <Tool label={t('editor.format.code')} active={state.code} onClick={() => editor.chain().focus().toggleCode().run()}>
               <Code />
             </Tool>
             <span className="mx-0.5 h-5 w-px bg-line" />
             <Tool
-              label="Enlace"
+              label={t('editor.format.link')}
               active={state.link}
               onClick={() => {
                 setHref(state.href)

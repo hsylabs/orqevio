@@ -1,10 +1,11 @@
 import { FilePlus, FileText, Pencil, Plus, SquareKanban, Trash } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { cn } from '../../lib/cn'
-import { plural, relativeTime } from '../../lib/format'
+import { relativeTime } from '../../lib/format'
 import { PageHeader } from '../shell/PageHeader'
 import { ProjectSettingsDialog } from '../shell/ProjectSettingsDialog'
 import { useStructureActions } from '../shell/actions'
@@ -12,6 +13,7 @@ import { NotFound } from '../shell/States'
 import { useWorkspace } from '../shell/workspace'
 
 export function ProjectPage() {
+  const { t } = useTranslation(['projects', 'docs'])
   const { projectId } = useParams()
   const { workspaceId, overview } = useWorkspace()
   const actions = useStructureActions(workspaceId)
@@ -32,9 +34,9 @@ export function ProjectPage() {
         actions={
           <>
             <Button variant="ghost" size="sm" icon={<Pencil />} onClick={() => setSettingsOpen(true)}>
-              <span className="max-sm:hidden">Editar</span>
+              <span className="max-sm:hidden">{t('edit')}</span>
             </Button>
-            <Button variant="ghost" size="sm" iconOnly icon={<Trash />} aria-label="Eliminar proyecto" onClick={() => void actions.deleteProject(project)} />
+            <Button variant="ghost" size="sm" iconOnly icon={<Trash />} aria-label={t('delete')} onClick={() => void actions.deleteProject(project)} />
           </>
         }
       />
@@ -45,16 +47,16 @@ export function ProjectPage() {
             <div className="min-w-0">
               <h1 className="font-display text-[34px] leading-tight font-medium tracking-[-0.02em]">{project.name}</h1>
               <p className="mt-1 text-[14px] text-ink-2">
-                {project.description || `${plural(project.boards.length, 'tablero', 'tableros')} · ${plural(project.pages.length, 'página', 'páginas')}`}
+                {project.description || t('summary', { boards: t('boardCount', { count: project.boards.length }), pages: t('pageCount', { count: project.pages.length }) })}
               </p>
             </div>
           </div>
 
           <section className="mt-10">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">Tableros</h2>
+              <h2 className="text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('boards.title')}</h2>
               <Button size="sm" variant="ghost" icon={<Plus />} onClick={() => void actions.createBoard(project.id)}>
-                Nuevo tablero
+                {t('boards.new')}
               </Button>
             </div>
             {project.boards.length ? (
@@ -75,13 +77,13 @@ export function ProjectPage() {
                       <SquareKanban className="size-4 text-ink-3" />
                       {b.name}
                     </p>
-                    <p className="mt-0.5 text-[12.5px] text-ink-3">{plural(b.cardCount, 'tarjeta abierta', 'tarjetas abiertas')}</p>
+                    <p className="mt-0.5 text-[12.5px] text-ink-3">{t('boards.openCards', { count: b.cardCount })}</p>
                   </Link>
                 ))}
               </div>
             ) : (
               <button type="button" onClick={() => void actions.createBoard(project.id)} className="w-full rounded-[14px] border border-dashed border-line-strong px-5 py-8 text-center text-[13.5px] text-ink-3 transition-colors hover:border-ink-3 hover:text-ink-2">
-                Crea un tablero Kanban para organizar las tareas de este proyecto.
+                {t('boards.empty')}
               </button>
             )}
           </section>
@@ -89,9 +91,9 @@ export function ProjectPage() {
           <section className="mt-10 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">Documentos</h2>
+                <h2 className="text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('docs.title')}</h2>
                 <Button size="sm" variant="ghost" icon={<FilePlus />} onClick={() => void actions.createPage(project.id)}>
-                  Nueva página
+                  {t('docs.new')}
                 </Button>
               </div>
               {roots.length ? (
@@ -100,27 +102,27 @@ export function ProjectPage() {
                     <li key={p.id} className="border-b border-line last:border-b-0">
                       <Link to={`/w/${workspaceId}/d/${p.id}`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-hover">
                         <span className="w-5 text-center text-[16px]">{p.icon ?? <FileText className="size-4 text-ink-3" />}</span>
-                        <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{p.title || 'Sin título'}</span>
-                        {childCount(p.id) > 0 && <span className="text-[12px] text-ink-3">{plural(childCount(p.id), 'subpágina', 'subpáginas')}</span>}
+                        <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{p.title || t('docs:untitled')}</span>
+                        {childCount(p.id) > 0 && <span className="text-[12px] text-ink-3">{t('docs.subpages', { count: childCount(p.id) })}</span>}
                       </Link>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <EmptyState icon={<FileText />} title="Sin documentos todavía" action={<Button variant="primary" icon={<FilePlus />} onClick={() => void actions.createPage(project.id)}>Escribir la primera página</Button>}>
-                  Especificaciones, decisiones, procesos o notas de reunión. En Markdown y enlazados con tus tareas.
+                <EmptyState icon={<FileText />} title={t('docs.emptyTitle')} action={<Button variant="primary" icon={<FilePlus />} onClick={() => void actions.createPage(project.id)}>{t('docs.emptyAction')}</Button>}>
+                  {t('docs.emptyBody')}
                 </EmptyState>
               )}
             </div>
             {recent.length > 0 && (
               <div>
-                <h2 className="mb-3 text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">Editado recientemente</h2>
+                <h2 className="mb-3 text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('recent')}</h2>
                 <ul className="flex flex-col gap-1">
                   {recent.map((p) => (
                     <li key={p.id}>
                       <Link to={`/w/${workspaceId}/d/${p.id}`} className="flex items-center gap-2.5 rounded-[9px] px-2 py-1.5 hover:bg-hover">
                         <span className="w-4 text-center text-[13px]">{p.icon ?? <FileText className="size-3.5 text-ink-3" />}</span>
-                        <span className="min-w-0 flex-1 truncate text-[13.5px]">{p.title || 'Sin título'}</span>
+                        <span className="min-w-0 flex-1 truncate text-[13.5px]">{p.title || t('docs:untitled')}</span>
                         <span className="text-[11.5px] text-ink-3">{relativeTime(p.updatedAt)}</span>
                       </Link>
                     </li>

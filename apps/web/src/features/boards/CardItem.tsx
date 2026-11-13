@@ -3,11 +3,15 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Bot, Calendar, FileText, Paperclip, TextAlignStart } from 'lucide-react'
 import { memo } from 'react'
+import { useTranslation } from 'react-i18next'
+import { currentLocale } from '../../i18n'
 import { cn } from '../../lib/cn'
 import { dueLabel, dueState } from '../../lib/format'
 import { useAgentHighlight } from '../../lib/realtime'
 
 export function DueChip({ dueAt, className }: { dueAt: string; className?: string }) {
+  // Renders again when the language changes, as the label and date follow it.
+  useTranslation()
   const state = dueState(dueAt)
   return (
     <span
@@ -19,7 +23,7 @@ export function DueChip({ dueAt, className }: { dueAt: string; className?: strin
         state === 'later' && 'text-ink-3',
         className,
       )}
-      title={new Date(dueAt).toLocaleDateString('es-ES', { dateStyle: 'full', timeZone: 'UTC' })}
+      title={new Date(dueAt).toLocaleDateString(currentLocale(), { dateStyle: 'full', timeZone: 'UTC' })}
     >
       <Calendar className="size-3" />
       {dueLabel(dueAt)}
@@ -58,6 +62,7 @@ interface CardViewProps {
 }
 
 export const CardView = memo(function CardView({ card, labels, overlay, ghost }: CardViewProps) {
+  const { t } = useTranslation('boards')
   const agent = useAgentHighlight(card.id)
   const cardLabels = card.labelIds.map((id) => labels.get(id)).filter((l): l is LabelDTO => Boolean(l))
   const hasMeta = card.dueAt || card.checklist.total || card.hasDescription || card.linkedPages || card.attachments || card.createdBy?.kind === 'agent'
@@ -95,26 +100,26 @@ export const CardView = memo(function CardView({ card, labels, overlay, ghost }:
         <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-ink-3">
           {card.dueAt && <DueChip dueAt={card.dueAt} />}
           {card.checklist.total > 0 && (
-            <span className={cn('inline-flex items-center gap-1 tabular', card.checklist.done === card.checklist.total && 'text-ok')} title="Checklist">
+            <span className={cn('inline-flex items-center gap-1 tabular', card.checklist.done === card.checklist.total && 'text-ok')} title={t('card.checklist')}>
               <ProgressRing done={card.checklist.done} total={card.checklist.total} />
               {card.checklist.done}/{card.checklist.total}
             </span>
           )}
-          {card.hasDescription && <TextAlignStart className="size-3.5" aria-label="Tiene descripción" />}
+          {card.hasDescription && <TextAlignStart className="size-3.5" aria-label={t('card.hasDescription')} />}
           {card.linkedPages > 0 && (
-            <span className="inline-flex items-center gap-0.5" title="Documentos vinculados">
+            <span className="inline-flex items-center gap-0.5" title={t('card.linkedDocs')}>
               <FileText className="size-3.5" />
               {card.linkedPages}
             </span>
           )}
           {card.attachments > 0 && (
-            <span className="inline-flex items-center gap-0.5" title="Adjuntos">
+            <span className="inline-flex items-center gap-0.5" title={t('card.attachments')}>
               <Paperclip className="size-3.5" />
               {card.attachments}
             </span>
           )}
           {card.createdBy?.kind === 'agent' && (
-            <span className="ml-auto inline-flex items-center gap-1 text-agent" title={`Creada por ${card.createdBy.name}`}>
+            <span className="ml-auto inline-flex items-center gap-1 text-agent" title={t('card.createdByName', { name: card.createdBy.name })}>
               <Bot className="size-3.5" />
             </span>
           )}
@@ -125,6 +130,7 @@ export const CardView = memo(function CardView({ card, labels, overlay, ghost }:
 })
 
 export function SortableCard({ card, labels, onOpen, disabled }: { card: CardSummaryDTO; labels: Map<string, LabelDTO>; onOpen: (id: string) => void; disabled: boolean }) {
+  const { t } = useTranslation('boards')
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: { type: 'card', title: card.title },
@@ -136,7 +142,7 @@ export function SortableCard({ card, labels, onOpen, disabled }: { card: CardSum
       style={{ transform: CSS.Translate.toString(transform), transition }}
       {...attributes}
       {...listeners}
-      aria-roledescription="tarjeta"
+      aria-roledescription={t('card.roleDescription')}
       aria-label={card.title}
       onClick={() => onOpen(card.id)}
       onKeyDown={(e) => {
