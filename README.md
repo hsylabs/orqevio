@@ -1,156 +1,160 @@
 # Orqevio
 
-**Un espacio de trabajo donde organizas tus proyectos, documentas tu conocimiento y proteges tus credenciales. Todo accesible para ti y tus agentes de IA, con permisos controlados.**
+**English** · [Español](README.es.md)
 
-Orqevio reúne cuatro piezas y solo esas cuatro:
+**A workspace where you organize your projects, document what you know and keep your credentials safe. Everything is within reach for you and your AI agents, with permissions you control.**
 
-| Módulo | Qué incluye |
+Orqevio brings together four pieces, and only those four:
+
+| Module | What's included |
 | --- | --- |
-| **Tareas** | Espacios, proyectos, tableros Kanban, columnas, tarjetas, etiquetas, fechas, checklists, archivo y adjuntos. |
-| **Documentación** | Páginas jerárquicas con editor por bloques que guarda Markdown, tablas sencillas, imágenes y archivos, y enlaces directos con tareas. |
-| **Bóveda** | Credenciales y notas privadas cifradas de extremo a extremo, códigos de verificación en dos pasos (TOTP), importación y exportación, generador de contraseñas, clave de recuperación y bloqueo automático. |
-| **Agentes (MCP)** | Servidor MCP con permisos diferenciados por espacio para consultar documentación, crear tareas y reorganizar tableros. Se conecta con OAuth (por ejemplo, como conector de Claude) o con un token. |
+| **Tasks** | Workspaces, projects, Kanban boards, columns, cards, labels, due dates, checklists, archive and attachments. |
+| **Docs** | Nested pages in a block editor that saves Markdown, with simple tables, images, files and direct links to tasks. |
+| **Vault** | End-to-end-encrypted credentials and private notes, two-step verification codes (TOTP), import and export, a password generator, a recovery key and auto-lock. |
+| **Agents (MCP)** | An MCP server with per-workspace permissions, so agents can look things up in your docs, create tasks and rearrange boards. It connects with OAuth (for example, as a Claude connector) or with a token. |
 
-La decisión central: **la bóveda está aislada de los agentes**. Ningún token puede acceder a ella, ni siquiera a su contenido cifrado, y el servidor nunca conoce los secretos.
+The key design decision: **the vault is walled off from agents.** No token can reach it, not even its encrypted contents, and the server never knows your secrets.
 
-**Cada copia de Orqevio es de una sola persona.** No hay registro ni correo: la primera vez se reclama con un código de configuración y, a partir de ahí, se entra con una clave de acceso.
+**Each copy of Orqevio belongs to one person.** There's no sign-up and no email: you claim your copy once with a setup code, and from then on you sign in with an access key.
 
 ---
 
-## Experiencia
+## Highlights
 
-- **Relación directa entre tareas y documentos.** Escribe `@` en un documento para enlazar una tarea: el vínculo aparece en ambos lados. También puedes vincular documentos desde la tarjeta.
-- **Tus agentes, en directo.** Cuando un agente crea o mueve una tarjeta, la ves aparecer con un halo azul y su nombre, y recibes un aviso. El punto del logotipo se vuelve azul mientras trabajan.
-- **Sin pisarse.** Los documentos usan control de versiones optimista: si un agente edita mientras escribes, Orqevio te avisa y eliges qué versión conservar.
-- **Teclado primero.** `⌘K`/`Ctrl K` abre la paleta para buscar y saltar a cualquier sitio; `⌘\` oculta la barra lateral; el Kanban se puede reorganizar entero con teclado (espacio para coger, flechas, espacio para soltar), con anuncios para lector de pantalla.
-- **Identidad propia.** Papel cálido, tinta y dos señales de color: caqui para ti, ultramar para los agentes. Tipografía editorial (Fraunces) sobre una interfaz sobria (Instrument Sans). Tema claro y oscuro, con los tonos de texto ajustados a contraste WCAG AA.
+- **Tasks and documents, linked both ways.** Type `@` in a document to link a task, and the link shows up on both sides. You can also link documents from the card.
+- **Watch your agents work.** When an agent creates or moves a card, you see it appear with a blue halo and the agent's name, and you get a notification. The dot in the logo turns blue while they work.
+- **No stepping on each other's toes.** Documents use optimistic versioning: if an agent edits a page while you're writing, Orqevio lets you know and you choose which version to keep.
+- **Keyboard first.** `⌘K`/`Ctrl K` opens the command palette to search and jump anywhere; `⌘\` hides the sidebar; and you can rearrange the whole Kanban board from the keyboard (space to pick up, arrow keys to move, space to drop), with screen reader announcements.
+- **A look of its own.** Warm paper, ink and two signal colors: khaki for you, ultramarine for your agents. Editorial type (Fraunces) over a restrained interface (Instrument Sans). Light and dark themes, with text colors tuned to WCAG AA contrast.
+- **In your language.** The app and the installer speak English, Spanish, French, Portuguese, Italian, German, Dutch and Japanese. Your copy takes your browser's language when you claim it, and you can change it anytime in **Settings**.
 
-## Arquitectura
+## Architecture
 
 ```
 apps/web        React 19 + Vite · TanStack Query · React Router · Tailwind CSS 4
-                TipTap 3 (Markdown nativo) · dnd-kit · Radix UI · cmdk
-apps/server     Hono · Drizzle ORM · SQLite (FTS5) · SDK oficial de MCP
-                Node 22 (Docker) o Cloudflare Workers + Durable Objects + R2
-packages/shared Esquemas zod, permisos y tipos compartidos por API, MCP y cliente
+                TipTap 3 (native Markdown) · dnd-kit · Radix UI · cmdk
+apps/server     Hono · Drizzle ORM · SQLite (FTS5) · official MCP SDK
+                Node 22 (Docker) or Cloudflare Workers + Durable Objects + R2
+packages/shared zod schemas, permissions and types shared by the API, MCP and client
 ```
 
 ```
-          Navegador (sesión)                Cliente MCP (OAuth o token Bearer)
+         Browser (session)                  MCP client (OAuth or bearer token)
                  │                                          │
            REST /api/*                                 POST /mcp
                  │                                          │
-                 └──────────────► Servicios de dominio ◄────┘
-                                 (permisos y validación)
+                 └───────────────► Domain services ◄────────┘
+                            (permissions and validation)
                                           │
-                        SQLite (un archivo) ── eventos en memoria ──► WebSocket en tiempo real
+                                  SQLite (one file) ── in-memory events ──► real-time WebSocket
 ```
 
-- **Una sola capa de dominio.** La API REST de la aplicación y las herramientas MCP llaman exactamente a los mismos servicios. Cada operación comprueba el acceso al espacio y el permiso concreto (`tasks:read`, `tasks:write`, `docs:read`, `docs:write`), así que las reglas se aplican una única vez.
-- **Markdown como formato canónico.** Documentos y descripciones se guardan en Markdown (GFM). Es portable, legible y lo que mejor entienden los LLM. Las referencias internas son enlaces normales: `[Título](/card/<id>)` y `[Título](/doc/<id>)`.
-- **Una copia, una base de datos.** Cada copia es de una persona y guarda todo en SQLite, con transacciones síncronas. El mismo código corre en dos sitios:
-  - **Servidor propio (Docker o Node):** un único archivo (`DATA_DIR/orqevio.db`) más la carpeta de adjuntos.
-  - **Cloudflare:** un Worker sirve la web y envía `/api` y `/mcp` a un único Durable Object, que guarda los datos en su propio SQLite; los adjuntos van a R2.
-- **Adjuntos en streaming.** El navegador envía el archivo tal cual (no como formulario) y el servidor lo pasa directamente al disco o a R2, comprobando su tamaño y su tipo real. La memoria y la CPU no dependen del tamaño del archivo.
-- **Búsqueda de texto completo.** Índices FTS5 sobre títulos y contenido de tarjetas y documentos, sin distinguir mayúsculas ni acentos («cancion» encuentra «Canción»), con el título por delante.
-- **Tiempo real sin infraestructura extra.** Cada cambio se reparte a los navegadores conectados por WebSocket (`/api/workspaces/:id/live`). La conexión solo se acepta con sesión y desde los orígenes de la app; el navegador envía un latido cada 25 s y se reconecta solo.
-  - **En Node,** cada latido vuelve a comprobar la sesión. Si pones Orqevio detrás de un proxy inverso, este debe permitir WebSocket (Caddy y Traefik lo hacen por defecto; en Nginx añade las cabeceras `Upgrade` y `Connection`).
-  - **En Cloudflare,** las conexiones hibernan: el latido lo contesta la plataforma sin despertar al Durable Object, así que una copia inactiva no consume. El acceso se comprueba al conectar, antes de entregar cada cambio y justo después de cerrar sesión, cambiar la clave o recuperar el acceso.
-- **Orden estable.** Columnas, tarjetas, páginas y checklists usan índices fraccionarios (`COLLATE "C"`), de modo que mover un elemento actualiza una sola fila.
+- **One domain layer.** The app's REST API and the MCP tools call exactly the same services. Every operation checks access to the workspace and the specific permission (`tasks:read`, `tasks:write`, `docs:read`, `docs:write`), so the rules are enforced in one place.
+- **Markdown as the canonical format.** Documents and descriptions are stored as Markdown (GFM). It's portable, readable and what LLMs understand best. Internal references are ordinary links: `[Title](/card/<id>)` and `[Title](/doc/<id>)`.
+- **One copy, one database.** Each copy belongs to one person and keeps everything in SQLite, with synchronous transactions. The same code runs in two places:
+  - **Your own server (Docker or Node):** a single file (`DATA_DIR/orqevio.db`) plus the attachments folder.
+  - **Cloudflare:** a Worker serves the web app and sends `/api` and `/mcp` to a single Durable Object, which keeps the data in its own SQLite database; attachments go to R2.
+- **Streamed attachments.** The browser sends the file as is (not as a form), and the server streams it straight to disk or R2, checking its size and its real type. Memory and CPU use don't grow with the size of the file.
+- **Full-text search.** FTS5 indexes over the titles and contents of cards and documents, ignoring case and accents ("cafe" finds "Café"), with title matches ranked first.
+- **Real time without extra infrastructure.** Every change goes out to connected browsers over WebSocket (`/api/workspaces/:id/live`). The connection is only accepted with a session and from the app's origins; the browser sends a heartbeat every 25 s and reconnects on its own.
+  - **On Node,** every heartbeat checks the session again. If you run Orqevio behind a reverse proxy, the proxy must allow WebSocket (Caddy and Traefik do by default; in Nginx, add the `Upgrade` and `Connection` headers).
+  - **On Cloudflare,** connections hibernate: the platform answers the heartbeat without waking the Durable Object, so an idle copy uses no resources. Access is checked when a browser connects, before each change is delivered, and right after you sign out, change your access key or recover access.
+- **Stable ordering.** Columns, cards, pages and checklists use fractional indexes (`COLLATE "C"`), so moving an item updates a single row.
 
-## Modelo de seguridad
+## Security model
 
-**Acceso y sesiones**
-- Sin registro ni contraseñas: la copia se reclama una vez con el código de configuración y se entra con una clave aleatoria de 160 bits. El servidor solo guarda la huella SHA-256 de ambos y los compara en tiempo constante.
-- Sesión en cookie `HttpOnly`, `SameSite=Lax` y `Secure` (prefijo `__Host-` con HTTPS). En la base de datos solo se guarda su hash SHA-256.
-- Las escrituras con cookie solo se aceptan desde los orígenes de `APP_URL` (protección CSRF). Cambiar la clave de acceso cierra las demás sesiones, y recuperar el acceso las cierra todas.
-- Cabeceras estrictas: CSP sin scripts en línea, `frame-ancestors 'none'`, `nosniff`, HSTS con HTTPS y Permissions-Policy.
-- Límite de intentos al entrar, al reclamar la copia y al recuperar el acceso, y límite de peticiones por token en MCP.
+**Access and sessions**
+- No sign-up and no passwords: you claim your copy once with the setup code and sign in with a random 160-bit key. The server stores only the SHA-256 hash of each and compares them in constant time.
+- The session lives in an `HttpOnly`, `SameSite=Lax`, `Secure` cookie (with the `__Host-` prefix over HTTPS). The database stores only its SHA-256 hash.
+- Cookie-authenticated writes are only accepted from the `APP_URL` origins (CSRF protection). Changing your access key signs out your other sessions, and recovering access signs out all of them.
+- Strict headers: a CSP with no inline scripts, `frame-ancestors 'none'`, `nosniff`, HSTS over HTTPS and Permissions-Policy.
+- Rate limits on signing in, claiming the copy and recovering access, plus a per-token request limit on MCP.
 
-**Bóveda (conocimiento cero)**
+**Vault (zero knowledge)**
 
 ```
-contraseña maestra ──Argon2id (64 MiB, 3 pasadas, sal aleatoria)──► KEK ─┐
-clave de recuperación (160 bits) ──HKDF-SHA256──────────────────► RKEK ─┴─ AES-256-GCM envuelve la clave de la bóveda (256 bits)
-clave de la bóveda ── AES-256-GCM, datos asociados = usuario + id del elemento ──► elementos cifrados
+master password ──Argon2id (64 MiB, 3 passes, random salt)──► KEK ─┐
+recovery key (160 bits) ──HKDF-SHA256──────────────────────► RKEK ─┴─ AES-256-GCM wraps the vault key (256 bits)
+vault key ── AES-256-GCM, associated data = user + item id ──► encrypted items
 ```
 
-- Todo el cifrado ocurre en el navegador (WebCrypto; Argon2id en un Web Worker). El servidor solo almacena parámetros de derivación y sobres `v1.<iv>.<cifrado>`. Incluso los títulos van cifrados.
-- La clave de la bóveda vive solo en memoria como `CryptoKey` no exportable: se descarta al bloquear, por inactividad (1–60 min) o al recargar.
-- Los datos asociados de AES-GCM impiden que alguien con acceso a la base de datos intercambie elementos entre usuarios o entradas.
-- Al copiar, el portapapeles se vacía a los 30 segundos. El generador usa aleatoriedad criptográfica sin sesgo.
-- Cambiar la contraseña maestra solo vuelve a envolver la clave: los elementos no se recifran. La clave de recuperación permite elegir una nueva contraseña maestra. Sin ninguna de las dos, los datos son irrecuperables por diseño.
-- Las rutas `/api/vault/*` rechazan cualquier petición con cabecera `Authorization` antes de leer datos, y el servidor MCP no expone ninguna herramienta de bóveda.
+- All encryption happens in the browser (WebCrypto, with Argon2id in a Web Worker). The server stores only the key derivation parameters and `v1.<iv>.<ciphertext>` envelopes. Even titles are encrypted.
+- The vault key lives only in memory, as a non-extractable `CryptoKey`: it's discarded when you lock the vault, after a period of inactivity (1–60 min) or when you reload the page.
+- AES-GCM associated data keeps anyone with access to the database from swapping items between users or entries.
+- When you copy a secret, the clipboard is cleared after 30 seconds. The password generator uses unbiased cryptographic randomness.
+- Changing your master password only rewraps the vault key: items aren't re-encrypted. The recovery key lets you choose a new master password. Without either of them, your data can't be recovered, by design.
+- The `/api/vault/*` routes reject any request with an `Authorization` header before reading any data, and the MCP server has no vault tools.
 
-**Agentes**
-- Cada token pertenece a un único espacio y tiene permisos por área: tareas y documentos (sin acceso, lectura, o lectura y escritura). Se muestra una sola vez y se guarda su hash.
-- Cada agente solo ve las herramientas que permite su token. Los agentes **no pueden borrar**: solo archivar tarjetas, que puedes restaurar.
-- Toda acción queda registrada con su autor (persona o agente) y es visible en la app. Los tokens se pueden revocar al instante y caducar a los 30, 90 o 365 días.
-- Las aplicaciones conectadas con OAuth reciben los permisos que eliges en la pantalla de consentimiento. Esa pantalla indica a qué dirección volverás y si la identidad de la aplicación está publicada o es autodeclarada. Nunca se envía nada a una dirección que la aplicación no haya registrado.
+**Agents**
+- Each token belongs to a single workspace and has permissions per area, for tasks and for docs: no access, read, or read and write. It's shown only once, and only its hash is stored.
+- Each agent sees only the tools its token allows. Agents **can't delete anything**: they can only archive cards, and you can restore them.
+- Every action is logged with its author (a person or an agent) and shows up in the app. You can revoke a token instantly, and make tokens expire after 30, 90 or 365 days.
+- Apps connected with OAuth get the permissions you choose on the consent screen. That screen shows where you'll be sent back to and whether the app's identity is published or self-declared. Nothing is ever sent to an address the app hasn't registered.
 
-## Puesta en marcha
+## Getting started
 
-### Con Docker (recomendado para producción)
+### With Docker (recommended for production)
 
 ```bash
 cp .env.example .env
 ```
 
-Edita `.env`: define `APP_URL` con la URL pública (por ejemplo `https://orqevio.tu-dominio.com`) y un `SETUP_CODE` propio (opcional; ver «Acceso a tu copia»).
+Edit `.env`: set `APP_URL` to your public URL (for example, `https://orqevio.your-domain.com`) and, if you like, a `SETUP_CODE` of your own (see [Accessing your copy](#accessing-your-copy)).
 
 ```bash
 docker compose up -d
 ```
 
-Usa la imagen publicada (`ghcr.io/hsylabs/orqevio`, para amd64 y arm64). Para fijar una versión, añade `ORQEVIO_VERSION=1.0.0` a `.env`. Hasta la primera versión publicada, o si prefieres construirla tú desde este repositorio:
+This runs the published image (`ghcr.io/hsylabs/orqevio`, for amd64 and arm64). To pin a version, add `ORQEVIO_VERSION=1.0.0` to `.env`. Until the first release is out, or if you'd rather build the image yourself from this repository:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
-La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx, Traefik) y, en ese caso, añade `TRUST_PROXY=true`. La base de datos SQLite y los adjuntos se guardan en el volumen `orqevio-data`.
+The app listens on port 3000 and applies its migrations on startup. Put it behind a reverse proxy with HTTPS (Caddy, Nginx, Traefik) and, if you do, add `TRUST_PROXY=true`. The SQLite database and the attachments are stored in the `orqevio-data` volume.
 
-**Copias de seguridad.** Basta con copiar el volumen con la app parada, o hacer una copia en caliente con `sqlite3 /data/orqevio.db ".backup '/data/copia.db'"` y guardar también la carpeta `uploads`.
+**Backups.** Copy the volume while the app is stopped, or make a live backup with `sqlite3 /data/orqevio.db ".backup '/data/backup.db'"` and save the `uploads` folder too.
 
-### En Cloudflare (con un comando)
+### On Cloudflare (with one command)
 
-Tu copia vive en tu propia cuenta de Cloudflare: un Worker con la web, la API y el MCP, un Durable Object con su base de datos SQLite y un bucket R2 para los adjuntos. Necesitas una cuenta de Cloudflare (el plan gratuito basta) y Node 22.12 o superior.
+Your copy lives in your own Cloudflare account: a Worker with the web app, the API and MCP, a Durable Object with its SQLite database and an R2 bucket for attachments. You need a Cloudflare account (the free plan is enough) and Node 22.12 or later.
 
-**Antes de la primera instalación, activa R2** en el panel de Cloudflare, en [R2 → Overview](https://dash.cloudflare.com/?to=/:account/r2/overview). El uso incluido es gratis (10 GB de almacenamiento al mes), aunque Cloudflare puede pedirte un método de pago. Si no lo has activado, el instalador se detiene antes de desplegar y te lo indica.
+**Before your first install, enable R2** in the Cloudflare dashboard, under [R2 → Overview](https://dash.cloudflare.com/?to=/:account/r2/overview). The included usage is free (10 GB of storage a month), although Cloudflare may ask for a payment method. If R2 isn't enabled, the installer stops before deploying and tells you.
 
 ```bash
 npx create-orqevio
 ```
 
-El instalador:
+The installer:
 
-1. Abre el navegador para que inicies sesión en Cloudflare (inicio de sesión oficial de Wrangler).
-2. Te pide un nombre para la copia (por defecto, `orqevio`), que forma parte de su dirección.
-3. Despliega la copia y crea su bucket R2.
-4. Te muestra su dirección (`https://orqevio.<tu-subdominio>.workers.dev`) y un **código de configuración** de un solo uso, generado al azar.
+1. Opens your browser so you can sign in to Cloudflare (Wrangler's official sign-in).
+2. Asks you for a name for the copy (`orqevio` by default), which becomes part of its address.
+3. Deploys the copy and creates its R2 bucket.
+4. Shows you its address (`https://orqevio.<your-subdomain>.workers.dev`) and a randomly generated, single-use **setup code**.
 
-Abre la dirección, escribe el código y tu nombre: Orqevio te dará tu clave de acceso. Desde ese momento el código ya no sirve.
+Open the address and enter the code and your name: Orqevio gives you your access key. From then on, the code no longer works.
 
 ```bash
 npx create-orqevio@latest update
 ```
 
-Actualiza tu copia a la última versión. Tus datos, tu clave y tu bóveda se conservan.
+Updates your copy to the latest version. Your data, your access key and your vault are kept.
 
 ```bash
 npx create-orqevio@latest recover
 ```
 
-Si pierdes la clave, genera un código nuevo. Úsalo en **«¿Has perdido la clave?»**, en la pantalla de acceso.
+If you lose your access key, this generates a new code. Use it in **Lost your key?** on the sign-in screen.
 
-- **Varias copias:** añade `--name <nombre>` a cualquiera de las órdenes.
-- **Varias cuentas de Cloudflare:** el instalador te pregunta cuál usar; también puedes indicarla con `--account <id>` o `CLOUDFLARE_ACCOUNT_ID`.
-- **Tus ajustes se conservan:** las variables que pongas en el panel de Cloudflare (`APP_URL`, `MAX_UPLOAD_MB`) sobreviven a las actualizaciones.
-- **Privacidad:** el instalador desactiva la telemetría anónima de Wrangler, salvo que tú la hayas activado.
-- **Lo que hace exactamente:**
-  - Wrangler trabaja en una carpeta temporal privada, nunca en la carpeta en la que estás.
-  - El código de configuración se sube como secreto del Worker y la carpeta se borra al terminar, también si interrumpes el proceso.
-- **Antes de la primera versión publicada en npm:** los paquetes `create-orqevio` y `orqevio` aún no están publicados. Mientras tanto, ejecuta el instalador desde el repositorio:
+- **Several copies:** add `--name <name>` to any of these commands.
+- **Several Cloudflare accounts:** the installer asks which one to use; you can also pass it with `--account <id>` or `CLOUDFLARE_ACCOUNT_ID`.
+- **Language:** the installer speaks your terminal's language; pick another with `--lang <code>` (`en`, `es`, `fr`, `pt`, `it`, `de`, `nl` or `ja`).
+- **Your settings are kept:** the variables you set in the Cloudflare dashboard (`APP_URL`, `MAX_UPLOAD_MB`) survive updates.
+- **Privacy:** the installer turns off Wrangler's anonymous telemetry, unless you turned it on yourself.
+- **What it does, exactly:**
+  - Wrangler works in a private temporary folder, never in the folder you're in.
+  - The setup code is uploaded as a Worker secret, and the folder is deleted when the installer finishes, even if you interrupt it.
+- **Before the first release on npm:** the `create-orqevio` and `orqevio` packages aren't published yet. Until they are, run the installer from the repository:
 
 ```bash
 pnpm install
@@ -164,36 +168,36 @@ pnpm build:cloudflare
 node packages/create-orqevio/dist/cli.js
 ```
 
-**Con el botón (alternativa).** Si prefieres tener tu copia en un repositorio propio de GitHub o GitLab:
+**With the button (alternative).** If you'd rather keep your copy in a GitHub or GitLab repository of your own:
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hsylabs/orqevio/tree/main/templates/cloudflare)
 
-Cloudflare crea en tu cuenta de GitHub o GitLab un repositorio pequeño (la plantilla `templates/cloudflare`), te pide el código de configuración (`SETUP_CODE`) y despliega la copia. Después:
-- **Despliegues:** cada cambio en ese repositorio se despliega solo.
-- **Actualizaciones:** Dependabot propone las versiones nuevas de Orqevio en un pull request; al fusionarlo, la copia se actualiza.
-- **Si pierdes la clave:** cambia el secreto `SETUP_CODE` en el panel de Cloudflare y usa **«¿Has perdido la clave?»**.
+Cloudflare creates a small repository in your GitHub or GitLab account (the `templates/cloudflare` template), asks you for the setup code (`SETUP_CODE`) and deploys the copy. After that:
+- **Deployments:** every change to that repository deploys automatically.
+- **Updates:** Dependabot proposes new versions of Orqevio in a pull request; when you merge it, your copy updates.
+- **If you lose your access key:** change the `SETUP_CODE` secret in the Cloudflare dashboard and use **Lost your key?**.
 
-El resultado es la misma copia que con el comando. El botón funcionará cuando este repositorio sea público y los paquetes estén publicados en npm.
+You end up with the same copy as with the command. The button will work once this repository is public and the packages are published on npm.
 
-El plan gratuito de Cloudflare basta para uso personal (límites a noviembre de 2026):
+Cloudflare's free plan is enough for personal use (limits as of November 2026):
 
-| Recurso | Plan gratuito |
+| Resource | Free plan |
 | --- | --- |
-| Peticiones (Worker y Durable Object) | 100 000 al día |
-| CPU | 10 ms por petición; el uso normal y el MCP se quedan en 1–5 ms |
-| Duración del Durable Object | 13 000 GB-s al día; mientras nadie usa la copia, hiberna y no cuenta |
-| Base de datos (SQLite del Durable Object) | 1 GB por copia (5 GB en total por cuenta) |
-| Adjuntos (R2) | 10 GB y 1 millón de escrituras al mes |
+| Requests (Worker and Durable Object) | 100,000 a day |
+| CPU | 10 ms per request; normal use and MCP stay at 1–5 ms |
+| Durable Object duration | 13,000 GB-s a day; while nobody is using the copy, it hibernates and doesn't count |
+| Database (Durable Object SQLite) | 1 GB per copy (5 GB in total per account) |
+| Attachments (R2) | 10 GB and 1 million writes a month |
 
-**Notas**
-- **`SETUP_CODE` es obligatorio en Cloudflare.** El Durable Object se reinicia a menudo, así que un código generado en memoria no serviría. El instalador lo crea por ti; sin él, el despliegue falla.
-- **Tu dominio.** Por defecto, la app acepta el origen con el que se la visita. Si usas un dominio propio y quieres fijarlo, define `APP_URL` como variable del Worker.
-- **Probarlo en local sin cuenta:** crea `apps/server/.dev.vars` con `SETUP_CODE=...` y ejecuta `pnpm --filter @orqevio/server dev:worker`. La copia queda en `http://localhost:8787`.
-- **A mano, sin el instalador:** desde `apps/server`, tras `pnpm build`, ejecuta `npx wrangler deploy --secrets-file <archivo>`, con un archivo fuera del repositorio que contenga `SETUP_CODE=...`. Wrangler crea el bucket R2 si no existe.
+**Notes**
+- **`SETUP_CODE` is required on Cloudflare.** The Durable Object restarts often, so a code generated in memory wouldn't work. The installer creates one for you; without it, the deployment fails.
+- **Your domain.** By default, the app accepts whatever origin it's visited from. If you use a custom domain and want to pin it, set `APP_URL` as a Worker variable.
+- **Try it locally without an account:** create `apps/server/.dev.vars` with `SETUP_CODE=...` and run `pnpm --filter @orqevio/server dev:worker`. Your copy runs at `http://localhost:8787`.
+- **By hand, without the installer:** from `apps/server`, after `pnpm build`, run `npx wrangler deploy --secrets-file <file>`, with a file outside the repository that contains `SETUP_CODE=...`. Wrangler creates the R2 bucket if it doesn't exist.
 
-### En local para desarrollo
+### Locally, for development
 
-Requisitos: Node 22.12 o superior y pnpm 10. No hace falta ninguna base de datos externa: SQLite viene con el servidor (`better-sqlite3` se compila al instalar si no hay binario para tu sistema).
+Requirements: Node 22.12 or later and pnpm 10. You don't need an external database: SQLite comes with the server (`better-sqlite3` compiles on install if there's no prebuilt binary for your system).
 
 ```bash
 pnpm install
@@ -203,15 +207,15 @@ pnpm install
 cp .env.example .env
 ```
 
-En `.env`, usa `APP_URL=http://localhost:5173,http://localhost:3000`. Los datos de desarrollo se guardan en `apps/server/data/`.
+In `.env`, use `APP_URL=http://localhost:5173,http://localhost:3000`. Development data is stored in `apps/server/data/`.
 
 ```bash
 pnpm dev
 ```
 
-Abre `http://localhost:5173`. Vite redirige `/api` y `/mcp` al servidor en el puerto 3000.
+Open `http://localhost:5173`. Vite forwards `/api` and `/mcp` to the server on port 3000.
 
-### Build de producción sin Docker
+### Production build without Docker
 
 ```bash
 pnpm build
@@ -221,105 +225,105 @@ pnpm build
 pnpm start
 ```
 
-### Acceso a tu copia
+### Accessing your copy
 
-1. **Primera vez.** Abre la URL de la copia e introduce el código de configuración y tu nombre:
-   - Si definiste `SETUP_CODE`, es ese valor. Usa al menos 12 letras o dígitos.
-   - Si no, el servidor genera uno al arrancar y lo muestra en su registro (`docker compose logs app`). Sirve hasta que la copia se reclama o el servidor se reinicia.
-   - En Cloudflare, te lo da el instalador.
-2. **Tu clave de acceso.** Orqevio genera una clave aleatoria de 160 bits y la muestra **una sola vez**. Guárdala en tu gestor de contraseñas: es lo único que necesitas para entrar desde cualquier dispositivo. Al escribirla dan igual las mayúsculas y los guiones.
-3. **Cambiarla.** En **Ajustes → Clave de acceso** puedes generar una nueva; se cierran tus demás sesiones.
+1. **The first time.** Open your copy's URL and enter the setup code and your name:
+   - If you set `SETUP_CODE`, it's that value. Use at least 12 letters or digits.
+   - If you didn't, the server generates one on startup and prints it in its log (`docker compose logs app`). It works until the copy is claimed or the server restarts.
+   - On Cloudflare, the installer gives it to you.
+2. **Your access key.** Orqevio generates a random 160-bit key and shows it **only once**. Save it in your password manager: it's all you need to sign in from any device. When you type it, case and hyphens don't matter.
+3. **Changing it.** In **Settings → Access key** you can generate a new one; your other sessions are signed out.
 
-Si pierdes la clave, quien administra la copia puede generar otra (en Cloudflare, con `npx create-orqevio@latest recover`):
+If you lose your access key, whoever manages the copy can generate a new one (on Cloudflare, with `npx create-orqevio@latest recover`):
 
 ```bash
 docker compose exec app node dist/cli.js reset-access
 ```
 
-Sin Docker:
+Without Docker:
 
 ```bash
 node apps/server/dist/cli.js reset-access
 ```
 
-También puedes definir un `SETUP_CODE` nuevo, reiniciar la copia y usar **«¿Has perdido la clave?»** en la pantalla de acceso. En ambos casos se cierran todas las sesiones.
+You can also set a new `SETUP_CODE`, restart the copy and use **Lost your key?** on the sign-in screen. Either way, all sessions are signed out.
 
-`node dist/cli.js status` muestra si la copia está reclamada y por quién. Nada de esto afecta a la bóveda: su contraseña maestra nunca la conoce el servidor.
+`node dist/cli.js status` shows whether the copy has been claimed, and by whom. None of this affects the vault: the server never knows its master password.
 
-## Actualizaciones
+## Updates
 
-Cada versión tiene número y notas (`CHANGELOG.md` y las releases de GitHub), y se publica a la vez en npm y como imagen Docker. Al arrancar, cada copia aplica sus migraciones. Las migraciones siempre son compatibles hacia atrás y nunca se modifican una vez publicadas; un test lo vigila.
+Every release has a version number and release notes (`CHANGELOG.md` and the GitHub releases), and it's published to npm and as a Docker image at the same time. On startup, each copy applies its migrations. Migrations are always backward compatible and are never changed once published; a test makes sure of it.
 
-| Instalación | Cómo actualizar | Qué se conserva |
+| Installation | How to update | What's kept |
 | --- | --- | --- |
-| Comando (Cloudflare) | `npx create-orqevio@latest update` | Datos, clave, bóveda y variables del panel |
-| Botón (Cloudflare) | Fusiona el pull request de Dependabot en tu repositorio | Lo mismo |
-| Docker | `docker compose pull` y `docker compose up -d` | El volumen `orqevio-data` |
-| Desde el código | `git pull`, `pnpm install`, `pnpm build` y reinicia | La carpeta `DATA_DIR` |
+| Command (Cloudflare) | `npx create-orqevio@latest update` | Data, access key, vault and dashboard variables |
+| Button (Cloudflare) | Merge the Dependabot pull request in your repository | The same |
+| Docker | `docker compose pull` and `docker compose up -d` | The `orqevio-data` volume |
+| From source | `git pull`, `pnpm install`, `pnpm build` and restart | The `DATA_DIR` folder |
 
-**Aviso en la app.** En **Ajustes → Esta copia** ves tu versión y, cuando sale una nueva, cómo actualizar según cómo instalaste la copia; el menú de usuario lo marca con un punto.
-- **Qué consulta:** el servidor de tu copia pregunta a `registry.npmjs.org` cuál es la última versión publicada de `create-orqevio`, como mucho cada 12 horas y solo mientras usas la app. Guarda la respuesta, así que reiniciar no provoca consultas de más.
-- **Qué envía:** es una petición GET sin ningún dato tuyo.
-- **Desactivarlo:** con `UPDATE_CHECK=off`. Solo lo ve el propietario, nunca los agentes.
+**In-app notice.** **Settings → This copy** shows your version and, when a new one comes out, how to update based on how you installed your copy; the user menu flags it with a dot.
+- **What it checks:** your copy's server asks `registry.npmjs.org` for the latest published version of `create-orqevio`, at most every 12 hours and only while you're using the app. It stores the answer, so restarting doesn't trigger extra requests.
+- **What it sends:** a GET request with none of your data.
+- **Turning it off:** set `UPDATE_CHECK=off`. Only the owner sees the notice, never agents.
 
-## Conectar agentes por MCP
+## Connecting agents over MCP
 
-Hay dos formas de conectar un cliente: con OAuth, sin copiar nada, o con un token que creas en la app.
+There are two ways to connect a client: with OAuth, with nothing to copy, or with a token you create in the app.
 
-### Con OAuth (Claude en la web, el escritorio y el móvil)
+### With OAuth (Claude on the web, desktop and mobile)
 
-Los clientes que admiten la autorización OAuth de MCP solo necesitan la dirección `https://tu-dominio/mcp`. En Claude, añade un **conector personalizado** con esa dirección. Al conectar, tu copia muestra una pantalla de consentimiento donde eliges el espacio y los permisos, igual que al crear un token. El acceso aparece en **Agentes** y puedes revocarlo cuando quieras.
+Clients that support MCP's OAuth authorization only need the address `https://your-domain/mcp`. In Claude, add a **custom connector** with that address. When you connect, your copy shows a consent screen where you choose the workspace and the permissions, just like when you create a token. The connection shows up in **Agents**, and you can revoke it whenever you like.
 
-- **Autorización.** Sigue la especificación de autorización de MCP (revisión 2026-07-28): OAuth 2.1 con PKCE `S256`, metadatos del recurso protegido (RFC 9728) y del servidor de autorización (RFC 8414), indicadores de recurso (RFC 8707) y parámetro `iss` en la respuesta (RFC 9207).
-- **Registro de clientes.** Los clientes se identifican con un Client ID Metadata Document, una URL `https` que tu copia lee sin seguir redirecciones. También pueden registrarse con Dynamic Client Registration (RFC 7591), que no guarda nada: el `client_id` lleva firmadas sus direcciones de vuelta.
-- **Tokens.** Solo se admiten clientes públicos. El token de acceso dura una hora y solo vale para `/mcp`, nunca para la API REST ni para la bóveda. El de refresco es de un solo uso: si alguien presenta uno ya usado, o un código de autorización por segunda vez, el acceso se revoca. Un acceso que no se usa en 30 días caduca.
-- **Requisito.** Los conectores de Claude se conectan desde los servidores de Anthropic, así que tu copia debe ser accesible desde Internet por HTTPS. Una copia en Cloudflare ya lo es.
+- **Authorization.** It follows the MCP authorization specification (revision 2026-07-28): OAuth 2.1 with `S256` PKCE, protected resource metadata (RFC 9728), authorization server metadata (RFC 8414), resource indicators (RFC 8707) and the `iss` response parameter (RFC 9207).
+- **Client registration.** Clients identify themselves with a Client ID Metadata Document, an `https` URL that your copy fetches without following redirects. They can also use Dynamic Client Registration (RFC 7591), which stores nothing: the `client_id` carries the client's redirect URIs, signed.
+- **Tokens.** Only public clients are supported. The access token lasts one hour and is only valid for `/mcp`, never for the REST API or the vault. The refresh token is single-use: if someone presents one that was already used, or reuses an authorization code, the connection is revoked. A connection that goes unused for 30 days expires.
+- **Requirement.** Claude connectors connect from Anthropic's servers, so your copy must be reachable from the internet over HTTPS. A copy on Cloudflare already is.
 
-### Con un token
+### With a token
 
-1. En Orqevio, ve a **Agentes → Conectar un agente**, elige permisos y caducidad, y copia el token.
-2. Pega la configuración que te ofrece la propia app. Ejemplos:
+1. In Orqevio, go to **Agents → Connect an agent**, choose the permissions and when the token expires, and copy it.
+2. Paste the configuration the app gives you. Examples:
 
 **Claude Code**
 
 ```bash
-claude mcp add --transport http orqevio https://tu-dominio/mcp --header "Authorization: Bearer orq_…"
+claude mcp add --transport http orqevio https://your-domain/mcp --header "Authorization: Bearer orq_…"
 ```
 
-**Cursor** (`~/.cursor/mcp.json`) y **VS Code** (`.vscode/mcp.json`, con `"servers"` y `"type": "http"`)
+**Cursor** (`~/.cursor/mcp.json`) and **VS Code** (`.vscode/mcp.json`, with `"servers"` and `"type": "http"`)
 
 ```json
-{ "mcpServers": { "orqevio": { "url": "https://tu-dominio/mcp", "headers": { "Authorization": "Bearer orq_…" } } } }
+{ "mcpServers": { "orqevio": { "url": "https://your-domain/mcp", "headers": { "Authorization": "Bearer orq_…" } } } }
 ```
 
-**Claude Desktop** (puente `mcp-remote`, requiere Node.js)
+**Claude Desktop** (through the `mcp-remote` bridge, which needs Node.js)
 
 ```json
 {
   "mcpServers": {
     "orqevio": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "https://tu-dominio/mcp", "--header", "Authorization:${ORQEVIO_AUTH}"],
+      "args": ["-y", "mcp-remote", "https://your-domain/mcp", "--header", "Authorization:${ORQEVIO_AUTH}"],
       "env": { "ORQEVIO_AUTH": "Bearer orq_…" }
     }
   }
 }
 ```
 
-**Herramientas disponibles** (cada token ve solo las que permite):
+**Available tools** (each token sees only the ones it allows):
 
-| Permiso | Herramientas |
+| Permission | Tools |
 | --- | --- |
-| Cualquier lectura | `list_projects`, `search` |
-| Tareas · lectura | `get_board`, `get_card` |
-| Tareas · escritura | `create_card`, `update_card`, `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
-| Documentos · lectura | `list_pages`, `read_page` |
-| Documentos · escritura | `create_page`, `update_page` (reemplazar con `base_version`, o añadir al final) |
-| Escritura + lectura de ambas áreas | `link_card_to_page` |
+| Any read permission | `list_projects`, `search` |
+| Tasks · read | `get_board`, `get_card` |
+| Tasks · write | `create_card`, `update_card`, `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
+| Docs · read | `list_pages`, `read_page` |
+| Docs · write | `create_page`, `update_page` (replace with `base_version`, or append to the end) |
+| Read and write on both areas | `link_card_to_page` |
 
-El endpoint es MCP Streamable HTTP sin estado (`POST /mcp`). La misma API REST también acepta los tokens creados en la app con los mismos permisos, salvo cuenta, tokens y bóveda, que exigen sesión en el navegador. Los tokens de OAuth solo valen para `/mcp`.
+The endpoint is stateless MCP Streamable HTTP (`POST /mcp`). The REST API also accepts tokens created in the app, with the same permissions, except for the account, tokens and the vault, which require a browser session. OAuth tokens are only valid for `/mcp`.
 
-## Pruebas
+## Testing
 
 ```bash
 pnpm typecheck
@@ -329,21 +333,21 @@ pnpm typecheck
 pnpm test
 ```
 
-`pnpm test` ejecuta las pruebas unitarias (criptografía de la bóveda, generador y enlaces) y las de integración del servidor contra SQLite real (acceso con código de configuración y clave, CSRF, aislamiento entre espacios, permisos por token, bóveda inaccesible con tokens, herramientas MCP con el cliente oficial y tiempo real). Cada archivo de pruebas crea su propia copia en una carpeta temporal y la borra al terminar.
+`pnpm test` runs the unit tests (vault cryptography, the password generator and links) and the server's integration tests against a real SQLite database (signing in with the setup code and the access key, CSRF, isolation between workspaces, per-token permissions, the vault being out of reach for tokens, the MCP tools with the official client, and real time). Each test file creates its own copy in a temporary folder and deletes it when it's done.
 
-Pruebas de extremo a extremo con Playwright, con el servidor de producción en marcha sobre una base de datos **vacía** y el mismo `SETUP_CODE` en el servidor y en las pruebas (por defecto `e2e-setup-code-1234`):
+End-to-end tests run with Playwright, against the production server running on an **empty** database, with the same `SETUP_CODE` on the server and in the tests (`e2e-setup-code-1234` by default):
 
 ```bash
 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-La misma batería se pasa contra el runtime de Cloudflare en local (`pnpm --filter @orqevio/server dev:worker`, con el mismo código en `apps/server/.dev.vars`). La CI la pasa contra el paquete que despliega el instalador:
+The same suite runs against the Cloudflare runtime locally (`pnpm --filter @orqevio/server dev:worker`, with the same code in `apps/server/.dev.vars`). CI runs it against the bundle the installer deploys:
 
 ```bash
 E2E_BASE_URL=http://127.0.0.1:8787 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-La CI ejecuta las dos y, además, repite la batería contra el servidor de Node en Firefox y en WebKit (el motor de Safari), cada uno con una copia limpia. En local, instala el navegador y elígelo con `E2E_BROWSER`, también contra una copia recién creada:
+CI runs both, and also repeats the suite against the Node server in Firefox and WebKit (Safari's engine), each with a fresh copy. Locally, install the browser and pick it with `E2E_BROWSER`, again against a freshly created copy:
 
 ```bash
 pnpm --filter @orqevio/web exec playwright install firefox
@@ -353,56 +357,56 @@ pnpm --filter @orqevio/web exec playwright install firefox
 E2E_BROWSER=firefox SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, pegar una imagen en un documento y adjuntar archivos a una tarjeta, el ciclo completo de la bóveda (con recuperación), un agente MCP trabajando en directo sobre el tablero y un cliente que se conecta con OAuth tras la pantalla de consentimiento. Fallan si aparece cualquier error en la consola del navegador.
+The tests first claim the copy through the interface and try the access key. Then they cover changing the key in Settings, the board (including dragging with the mouse and with the keyboard), documents that reference tasks, pasting an image into a document and attaching files to a card, the full vault lifecycle (including recovery), an MCP agent working live on the board, and a client that connects with OAuth through the consent screen. They fail if any error shows up in the browser console.
 
-## Configuración
+## Configuration
 
-| Variable | Por defecto | Descripción |
+| Variable | Default | Description |
 | --- | --- | --- |
-| `APP_URL` | `http://localhost:3000` | Orígenes públicos separados por comas. Con `https://` activa cookies `Secure` y HSTS. |
-| `PORT` / `HOST` | `3000` / `0.0.0.0` | Dirección de escucha. |
-| `DATA_DIR` | `./data` | Carpeta de datos: base SQLite (`orqevio.db`) y adjuntos (`uploads/`). |
-| `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Ruta del archivo SQLite, si quieres separarlo de los adjuntos. |
-| `MAX_UPLOAD_MB` | `20` | Tamaño máximo por archivo. |
-| `TRUST_PROXY` | `false` | Confiar en `X-Forwarded-For` (detrás de un proxy inverso). |
-| `SECURE_COOKIES` | según `APP_URL` | Fuerza cookies `Secure`. |
-| `SETUP_CODE` | generado al arrancar | Código para reclamar la copia la primera vez. Si lo cambias, permite recuperar el acceso. |
-| `UPDATE_CHECK` | `on` | Comprueba en `registry.npmjs.org` si hay versiones nuevas para avisarte. `off` lo desactiva. |
+| `APP_URL` | `http://localhost:3000` | Public origins, separated by commas. With `https://`, it turns on `Secure` cookies and HSTS. |
+| `PORT` / `HOST` | `3000` / `0.0.0.0` | Address to listen on. |
+| `DATA_DIR` | `./data` | Data folder: the SQLite database (`orqevio.db`) and attachments (`uploads/`). |
+| `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Path to the SQLite file, if you want to keep it apart from the attachments. |
+| `MAX_UPLOAD_MB` | `20` | Maximum size per file. |
+| `TRUST_PROXY` | `false` | Trust `X-Forwarded-For` (behind a reverse proxy). |
+| `SECURE_COOKIES` | based on `APP_URL` | Forces `Secure` cookies. |
+| `SETUP_CODE` | generated on startup | Code to claim the copy the first time. Changing it lets you recover access. |
+| `UPDATE_CHECK` | `on` | Asks `registry.npmjs.org` for new versions so the app can let you know. `off` turns it off. |
 
-En Cloudflare solo se usan `SETUP_CODE` (secreto obligatorio), `APP_URL` (opcional; por defecto, el origen de cada visita), `MAX_UPLOAD_MB` y `UPDATE_CHECK`. El resto no aplica: los datos viven en el Durable Object y en R2.
+On Cloudflare, only `SETUP_CODE` (a required secret), `APP_URL` (optional; defaults to the origin of each visit), `MAX_UPLOAD_MB` and `UPDATE_CHECK` are used. The rest doesn't apply: the data lives in the Durable Object and in R2.
 
-## Limitaciones conocidas
+## Known limitations
 
-- **Uso individual por espacio.** El modelo de datos ya contempla miembros y roles, pero no hay invitaciones ni asignación de tarjetas a personas: el producto está pensado para ti y tus agentes.
-- **Sin coedición simultánea.** No hay edición colaborativa en tiempo real tipo CRDT; los conflictos se detectan por versión y se resuelven explícitamente.
-- **OAuth solo para clientes públicos.** No se admiten clientes confidenciales (`client_secret_*`, `private_key_jwt`) ni el flujo `client_credentials`; los clientes MCP habituales, incluidos los conectores de Claude, son públicos.
-- **Un solo proceso por copia.** SQLite, los adjuntos en disco y el tiempo real en memoria asumen una única instancia del servidor por copia, que es el modelo de Orqevio (una copia por persona).
-- **Copias de seguridad en Cloudflare.** Aún no hay exportación desde la app: los datos quedan en el Durable Object y en el bucket R2 de tu cuenta.
-- **Sin migración desde PostgreSQL.** Las versiones de desarrollo anteriores usaban PostgreSQL; no hay herramienta para pasar esos datos a SQLite.
-- **Una persona por copia.** No hay registro ni correo; si se pierde la clave de acceso, se recupera desde el servidor (CLI o un `SETUP_CODE` nuevo).
-- **Bóveda personal.** No se comparte entre personas. Importa los CSV de los navegadores y los formatos de Bitwarden; no lee los de otros gestores (1Password, KeePass…), salvo que los conviertas antes a uno de esos.
-- **Imágenes externas.** Las imágenes de documentos que apuntan a otros dominios se cargan desde su origen.
-- **Navegadores modernos y conexión segura para la bóveda.** La app se prueba en Chromium, Firefox y WebKit (el motor de Safari). La bóveda necesita WebCrypto, Web Workers y WebAssembly, y los navegadores solo ofrecen WebCrypto por HTTPS o en `localhost`: si abres tu copia por `http://` desde otra dirección (por ejemplo, la IP de tu red local), la bóveda lo explica y el resto de la app sigue funcionando.
+- **One user per workspace.** The data model already supports members and roles, but there are no invitations and you can't assign cards to people: the product is designed for you and your agents.
+- **No simultaneous co-editing.** There's no CRDT-style real-time collaborative editing; conflicts are detected by version and resolved explicitly.
+- **OAuth for public clients only.** Confidential clients (`client_secret_*`, `private_key_jwt`) and the `client_credentials` flow aren't supported; the usual MCP clients, Claude connectors included, are public.
+- **One process per copy.** SQLite, attachments on disk and in-memory real time assume a single server instance per copy, which is Orqevio's model (one copy per person).
+- **Backups on Cloudflare.** There's no export from the app yet: the data stays in the Durable Object and in the R2 bucket in your account.
+- **No migration from PostgreSQL.** Earlier development versions used PostgreSQL; there's no tool to move that data to SQLite.
+- **One person per copy.** There's no sign-up or email; if you lose your access key, you recover access from the server (with the CLI or a new `SETUP_CODE`).
+- **Personal vault.** It isn't shared between people. It imports browser CSV exports and Bitwarden's formats; it can't read those of other password managers (1Password, KeePass…) unless you convert them to one of these first.
+- **External images.** Images in documents that point to other domains load from where they're hosted.
+- **Modern browsers, and a secure connection for the vault.** The app is tested in Chromium, Firefox and WebKit (Safari's engine). The vault needs WebCrypto, Web Workers and WebAssembly, and browsers only offer WebCrypto over HTTPS or on `localhost`: if you open your copy over `http://` from another address (for example, its IP on your local network), the vault explains why it can't open, and the rest of the app keeps working.
 
-## Estructura del repositorio
+## Repository layout
 
 ```
 apps/server/src
-  services/   lógica de dominio y permisos (compartida por REST y MCP)
-  http/       rutas REST, middleware de sesión, CSRF y aislamiento de la bóveda
-  mcp/        servidor MCP y transporte HTTP
-  db/         esquema Drizzle y migraciones (apps/server/drizzle)
-  node/       arranque en Node: archivos estáticos y WebSocket
-  worker/     arranque en Cloudflare: Worker, Durable Object, R2 y migraciones incrustadas
+  services/   domain logic and permissions (shared by REST and MCP)
+  http/       REST routes, session middleware, CSRF and vault isolation
+  mcp/        MCP server and HTTP transport
+  db/         Drizzle schema and migrations (apps/server/drizzle)
+  node/       Node entry point: static files and WebSocket
+  worker/     Cloudflare entry point: Worker, Durable Object, R2 and embedded migrations
 apps/web/src
   features/   shell, home, projects, boards, docs, vault, agents, settings
-  components/ sistema de diseño (botones, diálogos, menús, editor…)
-  lib/        cliente de API, consultas, tiempo real y formato
-packages/shared/src  esquemas, permisos, tipos y utilidades de enlaces
-packages/orqevio     paquete desplegable en Cloudflare (Worker, web y configuración base)
-packages/create-orqevio  instalador: npx create-orqevio (instalar, actualizar, recuperar)
-templates/cloudflare plantilla del botón «Deploy to Cloudflare» (wrangler.jsonc y package.json generados)
-apps/site            la web pública orqevio.com: páginas estáticas sin cookies ni analítica
+  components/ design system (buttons, dialogs, menus, editor…)
+  lib/        API client, queries, real time and formatting
+packages/shared/src  schemas, permissions, types and link helpers
+packages/orqevio     the package deployed to Cloudflare (Worker, web app and base configuration)
+packages/create-orqevio  the installer: npx create-orqevio (install, update, recover)
+templates/cloudflare the "Deploy to Cloudflare" button template (generated wrangler.jsonc and package.json)
+apps/site            the public website, orqevio.com: static pages with no cookies or analytics
 ```
 
-**La web pública.** `pnpm --filter @orqevio/site build` genera `apps/site/dist` con las páginas y las mismas fuentes que la app, servidas desde el propio sitio. `pnpm --filter @orqevio/site preview` la sirve en local con Wrangler. Se publica en `orqevio.com` con Workers Builds desde `main`; la configuración está en «Web pública» de [RELEASING.md](RELEASING.md). Sus pruebas comprueban los enlaces, las fuentes, las cabeceras de seguridad y que la guía de instalación diga lo mismo que este README.
+**The public website.** `pnpm --filter @orqevio/site build` builds `apps/site/dist` with the pages and the same fonts as the app, served from the site itself. `pnpm --filter @orqevio/site preview` serves it locally with Wrangler. It's published to `orqevio.com` with Workers Builds from `main`; the setup is in the "Web pública" section of [RELEASING.md](RELEASING.md) (in Spanish). Its tests check the links, the fonts, the security headers, and that the install guide in every language says the same as this README.

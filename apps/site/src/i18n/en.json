@@ -1,0 +1,38 @@
+{
+  "name": "English",
+  "skip": "Skip to content",
+  "home": "Orqevio, home",
+  "nav": {
+    "main": "Main",
+    "footer": "Footer",
+    "languages": "Language",
+    "install": "Install",
+    "privacy": "Privacy",
+    "license": "License"
+  },
+  "copy": {
+    "button": "Copy",
+    "label": "Copy the command",
+    "done": "Copied",
+    "failed": "Couldn’t copy"
+  },
+  "pages": {
+    "home": {
+      "title": "Orqevio · Tasks, docs and a vault, in a copy that’s only yours",
+      "description": "Orqevio brings together tasks, documentation and an end-to-end encrypted vault in a copy that lives in your Cloudflare account or on your server. Your AI agents work in it through MCP, with the permissions you choose.",
+      "share": "Tasks, documents and an encrypted vault in a copy that’s only yours, open to your AI agents through MCP."
+    },
+    "install": {
+      "title": "Install Orqevio · Your copy on Cloudflare or with Docker",
+      "description": "Install your copy of Orqevio with one command in your Cloudflare account, with the “Deploy to Cloudflare” button or with Docker on your server. Step-by-step guide, first sign-in and updates."
+    },
+    "privacy": {
+      "title": "Privacy · Orqevio",
+      "description": "orqevio.com keeps nobody’s data: no cookies, no analytics and no forms. Each copy of Orqevio belongs to its owner and lives in their Cloudflare account or on their server."
+    },
+    "404": {
+      "title": "Page not found · Orqevio",
+      "description": "The page you’re looking for doesn’t exist on orqevio.com. Go back home or to the Orqevio install guide."
+    }
+  }
+}

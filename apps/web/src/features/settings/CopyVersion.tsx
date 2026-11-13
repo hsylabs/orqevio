@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { useUpdates } from '../../lib/queries'
 
-/** How each kind of copy updates (see "Actualizaciones" in the README); `how` names its explanation in the catalog. */
+/** How each kind of copy updates (see "Updates" in the README); `how` names its explanation in the catalog. */
 function howToUpdate(status: UpdateStatusDTO): { how: 'cli' | 'button' | 'docker' | 'source'; command?: string } {
   switch (status.install) {
     case 'cli':

@@ -1,0 +1,38 @@
+{
+  "name": "Português",
+  "skip": "Pular para o conteúdo",
+  "home": "Orqevio, início",
+  "nav": {
+    "main": "Principal",
+    "footer": "Rodapé",
+    "languages": "Idioma",
+    "install": "Instalar",
+    "privacy": "Privacidade",
+    "license": "Licença"
+  },
+  "copy": {
+    "button": "Copiar",
+    "label": "Copiar o comando",
+    "done": "Copiado",
+    "failed": "Não foi possível copiar"
+  },
+  "pages": {
+    "home": {
+      "title": "Orqevio · Tarefas, documentos e cofre em uma cópia só sua",
+      "description": "Tarefas, documentação e um cofre criptografado de ponta a ponta em uma cópia só sua, na Cloudflare ou no seu servidor, aberta aos seus agentes de IA via MCP.",
+      "share": "Tarefas, documentos e um cofre criptografado em uma cópia que é só sua, aberta aos seus agentes de IA via MCP."
+    },
+    "install": {
+      "title": "Instalar o Orqevio · Sua cópia na Cloudflare ou com Docker",
+      "description": "Instale o Orqevio na Cloudflare com um comando ou com o botão “Deploy to Cloudflare”, ou com Docker no seu servidor. Guia passo a passo e atualizações."
+    },
+    "privacy": {
+      "title": "Privacidade · Orqevio",
+      "description": "O orqevio.com não guarda dados de ninguém: sem cookies, sem ferramentas de análise e sem formulários. Cada cópia do Orqevio pertence a quem a instalou."
+    },
+    "404": {
+      "title": "Página não encontrada · Orqevio",
+      "description": "A página que você está procurando não existe no orqevio.com. Volte para o início ou para o guia de instalação do Orqevio."
+    }
+  }
+}

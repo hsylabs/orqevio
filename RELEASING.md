@@ -50,7 +50,7 @@ En este orden; cada paso depende del anterior (comprobado el 13-11-2026):
 
 ## Cada versión
 
-1. Escribe las novedades en la sección `## [Sin publicar]` de `CHANGELOG.md`.
+1. Escribe las novedades en la sección `## [Unreleased]` de `CHANGELOG.md`.
 2. Fija la versión en todos los paquetes, la plantilla y el registro de cambios. Elige el número según el tipo de cambio:
    - `0.x.y` mientras no haya versión estable;
    - el tercer número sube para correcciones, el segundo para novedades y el primero para cambios incompatibles.
@@ -75,4 +75,4 @@ En este orden; cada paso depende del anterior (comprobado el 13-11-2026):
 
 Para versiones de prueba, usa por ejemplo `0.2.0-rc.1`:
 - Se publican en npm con la etiqueta `next` y no mueven `latest` en Docker. Para instalarlas, usa `npx create-orqevio@next`.
-- `set-version` no mueve las notas: la versión de prueba publica las de «Sin publicar», que se quedan ahí para que la definitiva las recoja completas.
+- `set-version` no mueve las notas: la versión de prueba publica las de «Unreleased», que se quedan ahí para que la definitiva las recoja completas.

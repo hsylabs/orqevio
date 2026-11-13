@@ -1,0 +1,104 @@
+  <div class="page-head">
+    <div class="wrap">
+      <span class="eyebrow">Installatiegids</span>
+      <h1>Installeer je eigen Orqevio</h1>
+      <p class="lead">Kies waar het draait: in je Cloudflare-account, met een opdracht of een knop, of op je eigen server met Docker. In alle drie de gevallen is de installatie van jou en werkt alles hetzelfde.</p>
+      <nav class="toc" aria-label="Op deze pagina">
+        <a href="#command">Met een opdracht</a>
+        <a href="#button">Met de knop</a>
+        <a href="#docker">Met Docker</a>
+        <a href="#access">Eerste keer inloggen</a>
+        <a href="#agents">Agents koppelen</a>
+        <a href="#update">Bijwerken</a>
+        <a href="#costs">Kosten</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="wrap prose">
+    <h2 id="command">Met een opdracht <span class="badge">Aanbevolen</span></h2>
+    <p>Je installatie komt in je eigen Cloudflare-account: een Worker met de webapp, de API en MCP, een SQLite-database en een R2-bucket voor bijlagen.</p>
+    <p><strong>Wat je nodig hebt:</strong> een Cloudflare-account (het gratis abonnement is genoeg) en Node.js 22.12 of nieuwer.</p>
+    <p class="note"><strong>Schakel eerst R2 in</strong> in het Cloudflare-dashboard, onder <a href="https://dash.cloudflare.com/?to=/:account/r2/overview">R2 → Overview</a>. Het inbegrepen gebruik is gratis (10 GB opslag per maand), al kan Cloudflare om een betaalmethode vragen. Beide manieren om op Cloudflare te installeren hebben het nodig: de opdracht en de knop.</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
+    <ol>
+      <li>Je browser opent, zodat je kunt inloggen bij Cloudflare.</li>
+      <li>Je kiest een naam voor de installatie (standaard <code>orqevio</code>), die onderdeel wordt van het adres.</li>
+      <li>De installer rolt de installatie uit en maakt de bucket aan.</li>
+      <li>Je krijgt het adres te zien (<code>https://orqevio.&lt;jouw-subdomein&gt;.workers.dev</code>) en een eenmalige <strong>installatiecode</strong>.</li>
+    </ol>
+    <p>Open het adres en volg de stappen bij <a href="#access">eerste keer inloggen</a>.</p>
+    <ul>
+      <li><strong>Meerdere installaties:</strong> voeg <code>--name &lt;naam&gt;</code> toe aan een opdracht.</li>
+      <li><strong>Meerdere Cloudflare-accounts:</strong> de installer vraagt welk account je wilt gebruiken, of je geeft het op met <code>--account &lt;id&gt;</code>.</li>
+      <li><strong>Taal:</strong> de installer spreekt de taal van je terminal; kies een andere met <code>--lang &lt;code&gt;</code>.</li>
+      <li><strong>Privacy:</strong> de installer zet de telemetrie van Wrangler uit, tenzij je die zelf hebt aangezet, en werkt in een tijdelijke map die hij na afloop verwijdert.</li>
+    </ul>
+
+    <h2 id="button">Met de knop</h2>
+    <p>Bewaar je je installatie liever in een eigen repository op GitHub of GitLab? Gebruik dan de knop:</p>
+    <a class="deploy" href="https://deploy.workers.cloudflare.com/?url=https://github.com/hsylabs/orqevio/tree/main/templates/cloudflare">Deploy to Cloudflare</a>
+    <p>Cloudflare maakt een kleine repository aan in je GitHub- of GitLab-account, vraagt je om de installatiecode (<code>SETUP_CODE</code>), die je zelf kiest, en rolt de installatie uit. Daarna:</p>
+    <ul>
+      <li>Elke wijziging in die repository wordt automatisch uitgerold.</li>
+      <li>Dependabot stelt nieuwe versies van Orqevio voor in een pull request; zodra je die merget, wordt je installatie bijgewerkt.</li>
+      <li>Ben je je sleutel kwijt, wijzig dan het secret <code>SETUP_CODE</code> in het Cloudflare-dashboard en gebruik ‘Sleutel kwijt?’ op het inlogscherm.</li>
+    </ul>
+
+    <h2 id="docker">Met Docker op je server</h2>
+    <p>Eén container (voor amd64 en arm64), met de SQLite-database en de bijlagen in een volume. Download de configuratie:</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>curl -fsSLO https://raw.githubusercontent.com/hsylabs/orqevio/main/docker-compose.yml</code></pre></div>
+    <div class="command"><pre><code><span class="prompt">$ </span>curl -fsSL -o .env https://raw.githubusercontent.com/hsylabs/orqevio/main/.env.example</code></pre></div>
+    <p>Bewerk <code>.env</code>: zet in <code>APP_URL</code> het openbare adres van je installatie (bijvoorbeeld <code>https://orqevio.jouw-domein.nl</code>) en, als je wilt, een eigen <code>SETUP_CODE</code> van minstens 12 letters of cijfers. Daarna:</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
+    <p>De installatie luistert op poort 3000. Zet hem achter een reverse proxy met HTTPS (Caddy, Nginx of Traefik) en voeg <code>TRUST_PROXY=true</code> toe aan <code>.env</code>.</p>
+    <p><strong>Back-ups:</strong> kopieer het volume <code>orqevio-data</code> terwijl de installatie is gestopt, of maak een live back-up van de database met <code>sqlite3</code> en bewaar ook de map <code>uploads</code>.</p>
+
+    <h2 id="access">Eerste keer inloggen</h2>
+    <ol>
+      <li><strong>Stel je installatie in.</strong> Open het adres en voer de installatiecode en je naam in. Op Cloudflare krijg je de code van de installer; met Docker is het de <code>SETUP_CODE</code> uit <code>.env</code> of, als je er geen hebt ingesteld, de code in het containerlog (<code>docker compose logs app</code>).</li>
+      <li><strong>Bewaar je toegangssleutel.</strong> Orqevio genereert een willekeurige sleutel van 160 bits en toont die maar één keer. Bewaar hem in je wachtwoordmanager: meer heb je niet nodig om vanaf elk apparaat in te loggen.</li>
+      <li><strong>Ben je hem kwijt,</strong> genereer dan een nieuwe code met <code>npx create-orqevio@latest recover</code> (Cloudflare) of <code>docker compose exec app node dist/cli.js reset-access</code> (Docker), en gebruik die bij ‘Sleutel kwijt?’. Je kluis blijft onaangetast: de server kent het hoofdwachtwoord nooit.</li>
+    </ol>
+    <p>Je installatie spreekt de taal die je browser gebruikt op het moment dat je hem instelt: Engels, Spaans, Frans, Portugees, Italiaans, Duits, Nederlands of Japans. Je kunt de taal altijd wijzigen in <strong>Instellingen</strong>.</p>
+
+    <h2 id="agents">Agents koppelen</h2>
+    <p>Het MCP-adres van je installatie is <code>https://&lt;jouw-installatie&gt;/mcp</code>.</p>
+    <ul>
+      <li><strong>Claude op web, desktop en mobiel:</strong> voeg een aangepaste connector toe met dat adres. Je installatie vraagt je om toestemming op een scherm waar je de werkruimte kiest en bepaalt wat de app mag doen. Je installatie moet via HTTPS bereikbaar zijn vanaf internet; op Cloudflare is dat al zo.</li>
+      <li><strong>Claude Code, Cursor, VS Code en andere:</strong> onder <strong>Agents → Agent koppelen</strong> maak je een token aan en krijg je de configuratie die je moet plakken.</li>
+    </ul>
+    <p class="note agent">Geen enkele agent kan de kluis lezen, zelfs niet versleuteld, en geen enkele kan iets verwijderen: agents kunnen alleen archiveren, en jij kunt herstellen.</p>
+
+    <h2 id="update">Bijwerken</h2>
+    <p>Je installatie laat je in <strong>Instellingen → Deze installatie</strong> weten wanneer er een nieuwe versie is, met precies de stap die bij jouw manier van installeren hoort. Je gegevens, je sleutel en je kluis blijven altijd behouden.</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Installatie</th><th scope="col">Zo werk je bij</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Met een opdracht</td><td><code>npx create-orqevio@latest update</code></td></tr>
+          <tr><td>Met de knop</td><td>Merge de pull request van Dependabot in je repository</td></tr>
+          <tr><td>Met Docker</td><td><code>docker compose pull</code> en <code>docker compose up -d</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="costs">Kosten</h2>
+    <p>Orqevio kost niets. Met Docker betaal je voor je server. Op Cloudflare is het gratis abonnement genoeg voor persoonlijk gebruik:</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Onderdeel</th><th scope="col">Gratis abonnement</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Verzoeken</td><td>100.000 per dag</td></tr>
+          <tr><td>CPU</td><td>10 ms per verzoek; bij normaal gebruik blijft het op 1–5 ms</td></tr>
+          <tr><td>Database</td><td>1 GB per installatie</td></tr>
+          <tr><td>Bijlagen (R2)</td><td>10 GB en 1 miljoen schrijfbewerkingen per maand</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Limieten per november 2026. Bekijk de actuele limieten in de documentatie van Cloudflare.</p>
+  </div>

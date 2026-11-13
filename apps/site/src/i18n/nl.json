@@ -1,0 +1,38 @@
+{
+  "name": "Nederlands",
+  "skip": "Direct naar inhoud",
+  "home": "Orqevio, startpagina",
+  "nav": {
+    "main": "Hoofdmenu",
+    "footer": "Voettekst",
+    "languages": "Taal",
+    "install": "Installeren",
+    "privacy": "Privacy",
+    "license": "Licentie"
+  },
+  "copy": {
+    "button": "Kopiëren",
+    "label": "Opdracht kopiëren",
+    "done": "Gekopieerd",
+    "failed": "Kopiëren mislukt"
+  },
+  "pages": {
+    "home": {
+      "title": "Orqevio · Taken, documenten en een kluis in je eigen installatie",
+      "description": "Orqevio bundelt taken, documentatie en een end-to-end versleutelde kluis in je eigen installatie, op Cloudflare of je server. Je AI-agents werken mee via MCP.",
+      "share": "Taken, documenten en een versleutelde kluis in een installatie die alleen van jou is, open voor je AI-agents via MCP."
+    },
+    "install": {
+      "title": "Orqevio installeren · Op Cloudflare of met Docker",
+      "description": "Installeer Orqevio met één opdracht in je Cloudflare-account, met de knop ‘Deploy to Cloudflare’ of met Docker op je server. Stap voor stap, inclusief updates."
+    },
+    "privacy": {
+      "title": "Privacy · Orqevio",
+      "description": "orqevio.com bewaart niemands gegevens: geen cookies, geen analytics, geen formulieren. Elke installatie van Orqevio draait bij de eigenaar zelf."
+    },
+    "404": {
+      "title": "Pagina niet gevonden · Orqevio",
+      "description": "De pagina die je zoekt, bestaat niet op orqevio.com. Ga terug naar de startpagina of naar de installatiegids van Orqevio."
+    }
+  }
+}

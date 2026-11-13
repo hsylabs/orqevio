@@ -1,0 +1,38 @@
+{
+  "name": "Deutsch",
+  "skip": "Zum Inhalt springen",
+  "home": "Orqevio, Startseite",
+  "nav": {
+    "main": "Hauptnavigation",
+    "footer": "Fußzeile",
+    "languages": "Sprache",
+    "install": "Installieren",
+    "privacy": "Datenschutz",
+    "license": "Lizenz"
+  },
+  "copy": {
+    "button": "Kopieren",
+    "label": "Befehl kopieren",
+    "done": "Kopiert",
+    "failed": "Kopieren fehlgeschlagen"
+  },
+  "pages": {
+    "home": {
+      "title": "Orqevio · Aufgaben, Dokumente und Tresor in deiner eigenen Instanz",
+      "description": "Aufgaben, Dokumente und ein Ende-zu-Ende-verschlüsselter Tresor in deiner eigenen Instanz bei Cloudflare oder auf deinem Server – offen für KI-Agenten über MCP.",
+      "share": "Aufgaben, Dokumente und ein verschlüsselter Tresor in einer Instanz, die nur dir gehört – offen für deine KI-Agenten über MCP."
+    },
+    "install": {
+      "title": "Orqevio installieren · Deine Instanz bei Cloudflare oder mit Docker",
+      "description": "Installiere Orqevio bei Cloudflare per Befehl oder mit dem Button „Deploy to Cloudflare“ oder mit Docker auf deinem Server. Schritt für Schritt erklärt."
+    },
+    "privacy": {
+      "title": "Datenschutz · Orqevio",
+      "description": "orqevio.com speichert keinerlei Daten: keine Cookies, keine Analyse-Tools, keine Formulare. Jede Orqevio-Instanz gehört der Person, die sie betreibt."
+    },
+    "404": {
+      "title": "Seite nicht gefunden · Orqevio",
+      "description": "Die Seite, die du suchst, gibt es auf orqevio.com nicht. Zurück zur Startseite oder zur Installationsanleitung von Orqevio."
+    }
+  }
+}

@@ -1,0 +1,104 @@
+  <div class="page-head">
+    <div class="wrap">
+      <span class="eyebrow">インストールガイド</span>
+      <h1>Orqevioをインストール</h1>
+      <p class="lead">動かす場所を選べます。Cloudflareアカウントにコマンドかボタンでインストールするか、Dockerで自分のサーバーに置くかです。どの方法でも、Orqevioはあなた専用で、同じように動きます。</p>
+      <nav class="toc" aria-label="このページの内容">
+        <a href="#command">コマンドで</a>
+        <a href="#button">ボタンで</a>
+        <a href="#docker">Dockerで</a>
+        <a href="#access">初回ログイン</a>
+        <a href="#agents">エージェントの接続</a>
+        <a href="#update">更新</a>
+        <a href="#costs">費用</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="wrap prose">
+    <h2 id="command">コマンドで <span class="badge">おすすめ</span></h2>
+    <p>Orqevioは、あなた自身のCloudflareアカウントにインストールされます。構成は、Webアプリ・API・MCPを提供するWorker、SQLiteデータベース、添付ファイル用のR2バケットです。</p>
+    <p><strong>必要なもの：</strong>Cloudflareアカウント（無料プランで十分です）と、Node.js 22.12以降。</p>
+    <p class="note"><strong>始める前に、R2を有効にしてください。</strong>Cloudflareのダッシュボードの<a href="https://dash.cloudflare.com/?to=/:account/r2/overview">R2 → Overview</a>で有効にできます。無料枠（ストレージは月10 GBまで）なら料金はかかりませんが、Cloudflareから支払い方法の登録を求められることがあります。Cloudflareへのインストールには、コマンドとボタンのどちらの方法でもR2が必要です。</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
+    <ol>
+      <li>ブラウザが開くので、Cloudflareにログインします。</li>
+      <li>Orqevioの名前を決めます（既定は<code>orqevio</code>）。名前はアドレスの一部になります。</li>
+      <li>インストーラーがOrqevioをデプロイし、バケットを作成します。</li>
+      <li>アドレス（<code>https://orqevio.&lt;サブドメイン&gt;.workers.dev</code>）と、1回限りの<strong>セットアップコード</strong>が表示されます。</li>
+    </ol>
+    <p>アドレスを開き、<a href="#access">初回ログイン</a>に進んでください。</p>
+    <ul>
+      <li><strong>複数のOrqevio：</strong>どのコマンドにも<code>--name &lt;名前&gt;</code>を付けられます。</li>
+      <li><strong>複数のCloudflareアカウント：</strong>どのアカウントを使うか、インストーラーが尋ねます。<code>--account &lt;id&gt;</code>で指定することもできます。</li>
+      <li><strong>言語：</strong>インストーラーはターミナルの言語で表示されます。別の言語にするには<code>--lang &lt;コード&gt;</code>を指定します。</li>
+      <li><strong>プライバシー：</strong>インストーラーはWranglerのテレメトリーを無効にします（自分で有効にしている場合を除きます）。作業は一時フォルダーで行い、終了時にそのフォルダーを削除します。</li>
+    </ul>
+
+    <h2 id="button">ボタンで</h2>
+    <p>GitHubやGitLabの自分のリポジトリでOrqevioを管理したい場合は、こちらのボタンを使います：</p>
+    <a class="deploy" href="https://deploy.workers.cloudflare.com/?url=https://github.com/hsylabs/orqevio/tree/main/templates/cloudflare">Deploy to Cloudflare</a>
+    <p>CloudflareがGitHubまたはGitLabのアカウントに小さなリポジトリを作成し、セットアップコード（<code>SETUP_CODE</code>）を尋ねたうえで、Orqevioをデプロイします。コードは自分で決めます。その後は：</p>
+    <ul>
+      <li>そのリポジトリへの変更は、すべて自動でデプロイされます。</li>
+      <li>Orqevioの新しいバージョンはDependabotがプルリクエストで提案し、マージするとOrqevioが更新されます。</li>
+      <li>キーを紛失したら、Cloudflareのダッシュボードでシークレット<code>SETUP_CODE</code>を変更し、ログイン画面の「キーを紛失した場合」を使います。</li>
+    </ul>
+
+    <h2 id="docker">Dockerで自分のサーバーに</h2>
+    <p>コンテナは1つだけ（amd64とarm64に対応）。SQLiteデータベースと添付ファイルはボリュームに保存されます。まず設定ファイルをダウンロードします：</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>curl -fsSLO https://raw.githubusercontent.com/hsylabs/orqevio/main/docker-compose.yml</code></pre></div>
+    <div class="command"><pre><code><span class="prompt">$ </span>curl -fsSL -o .env https://raw.githubusercontent.com/hsylabs/orqevio/main/.env.example</code></pre></div>
+    <p><code>.env</code>を編集し、<code>APP_URL</code>にOrqevioの公開アドレス（例：<code>https://orqevio.example.jp</code>）を設定します。必要なら、英字または数字12文字以上で独自の<code>SETUP_CODE</code>も設定できます。その後：</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
+    <p>Orqevioはポート3000で待ち受けます。HTTPS対応のリバースプロキシ（Caddy、Nginx、Traefik）の背後に置き、<code>.env</code>に<code>TRUST_PROXY=true</code>を追加してください。</p>
+    <p><strong>バックアップ：</strong>Orqevioを停止した状態で<code>orqevio-data</code>ボリュームをコピーするか、<code>sqlite3</code>で稼働中のデータベースをバックアップし、<code>uploads</code>フォルダーも保存してください。</p>
+
+    <h2 id="access">初回ログイン</h2>
+    <ol>
+      <li><strong>Orqevioをセットアップします。</strong>アドレスを開き、セットアップコードと名前を入力します。Cloudflareでは、コードはインストーラーが表示します。Dockerでは<code>.env</code>の<code>SETUP_CODE</code>で、設定していない場合はコンテナのログ（<code>docker compose logs app</code>）に表示されるコードです。</li>
+      <li><strong>アクセスキーを保存します。</strong>Orqevioがランダムな160ビットのキーを生成し、一度だけ表示します。パスワードマネージャーに保存してください。どのデバイスからでも、このキーだけでログインできます。</li>
+      <li><strong>キーを紛失したら、</strong><code>npx create-orqevio@latest recover</code>（Cloudflare）または<code>docker compose exec app node dist/cli.js reset-access</code>（Docker）で新しいコードを生成し、「キーを紛失した場合」で入力します。保管庫には影響しません。サーバーがマスターパスワードを知ることはないからです。</li>
+    </ol>
+    <p>Orqevioは、セットアップしたときのブラウザの言語で表示されます。対応言語は英語、スペイン語、フランス語、ポルトガル語、イタリア語、ドイツ語、オランダ語、日本語で、<strong>設定</strong>からいつでも変更できます。</p>
+
+    <h2 id="agents">エージェントの接続</h2>
+    <p>OrqevioのMCPアドレスは<code>https://&lt;あなたのOrqevio&gt;/mcp</code>です。</p>
+    <ul>
+      <li><strong>Claude（Web、デスクトップ、モバイル）：</strong>このアドレスでカスタムコネクタを追加します。Orqevioに許可を求める画面が表示されるので、ワークスペースと許可する操作を選びます。OrqevioにはインターネットからHTTPSでアクセスできる必要がありますが、Cloudflareなら最初からその状態です。</li>
+      <li><strong>Claude Code、Cursor、VS Codeなど：</strong><strong>エージェント → エージェントを接続</strong>でトークンを作成すると、貼り付ける設定がアプリに表示されます。</li>
+    </ul>
+    <p class="note agent">どのエージェントも保管庫は読めません。暗号化された状態でも同じです。削除もできず、できるのはアーカイブだけで、あなたが復元できます。</p>
+
+    <h2 id="update">更新</h2>
+    <p>新しいバージョンが出ると、<strong>設定 → このOrqevio</strong>に、インストール方法に合った手順とともに表示されます。データ、キー、保管庫は常にそのまま保持されます。</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">インストール方法</th><th scope="col">更新方法</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>コマンドで</td><td><code>npx create-orqevio@latest update</code></td></tr>
+          <tr><td>ボタンで</td><td>リポジトリでDependabotのプルリクエストをマージ</td></tr>
+          <tr><td>Dockerで</td><td><code>docker compose pull</code>のあとに<code>docker compose up -d</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="costs">費用</h2>
+    <p>Orqevio自体は無料です。Dockerの場合はサーバーの費用がかかります。Cloudflareなら、個人で使うには無料プランで十分です：</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">リソース</th><th scope="col">無料プラン</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>リクエスト</td><td>1日あたり100,000件</td></tr>
+          <tr><td>CPU</td><td>リクエストあたり10 ms（通常の使い方なら1〜5 msに収まります）</td></tr>
+          <tr><td>データベース</td><td>Orqevio 1つにつき1 GB</td></tr>
+          <tr><td>添付ファイル（R2）</td><td>月10 GB、書き込み100万回</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>2026年11月時点の制限です。最新の制限はCloudflareのドキュメントで確認してください。</p>
+  </div>

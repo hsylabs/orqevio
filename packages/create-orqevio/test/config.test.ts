@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { bucketName, nameProblem } from '../src/config'
+import { bucketName, isValidName } from '../src/config'
 import { generateSetupCode } from '../src/setup-code'
 
 describe('copy names', () => {
   it('accepts names that fit a workers.dev label and an R2 bucket', () => {
-    for (const ok of ['orqevio', 'a', 'mi-copia-2', 'x'.repeat(50)]) expect(nameProblem(ok)).toBeNull()
-    for (const bad of ['', 'Orqevio', 'mi copia', '-copia', 'copia-', 'mi_copia', 'x'.repeat(51), 'ñandú']) expect(nameProblem(bad)).not.toBeNull()
+    for (const ok of ['orqevio', 'a', 'mi-copia-2', 'x'.repeat(50)]) expect(isValidName(ok)).toBe(true)
+    for (const bad of ['', 'Orqevio', 'mi copia', '-copia', 'copia-', 'mi_copia', 'x'.repeat(51), 'ñandú']) expect(isValidName(bad)).toBe(false)
     expect(bucketName('x'.repeat(50)).length).toBeLessThanOrEqual(63)
   })
 })
