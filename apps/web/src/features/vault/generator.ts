@@ -1,3 +1,5 @@
+import { t } from 'i18next'
+
 export interface GeneratorOptions {
   length: number
   lower: boolean
@@ -52,9 +54,10 @@ export function entropyBits(opts: GeneratorOptions): number {
   return Math.round(Math.max(opts.length, 1) * Math.log2(sets(opts).join('').length))
 }
 
+/** How strong a generated password is, in the app's language. */
 export function strengthLabel(bits: number): { label: string; tone: 'danger' | 'warn' | 'ok' } {
-  if (bits < 50) return { label: 'Débil', tone: 'danger' }
-  if (bits < 80) return { label: 'Aceptable', tone: 'warn' }
-  if (bits < 110) return { label: 'Fuerte', tone: 'ok' }
-  return { label: 'Excelente', tone: 'ok' }
+  if (bits < 50) return { label: t('vault:generator.rating.weak'), tone: 'danger' }
+  if (bits < 80) return { label: t('vault:generator.rating.fair'), tone: 'warn' }
+  if (bits < 110) return { label: t('vault:generator.rating.strong'), tone: 'ok' }
+  return { label: t('vault:generator.rating.excellent'), tone: 'ok' }
 }

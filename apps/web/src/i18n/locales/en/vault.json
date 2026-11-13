@@ -1,1 +1,297 @@
-{}
+{
+  "title": "Vault",
+  "back": "← Back",
+  "reveal": {
+    "show": "Show",
+    "hide": "Hide"
+  },
+  "types": {
+    "login": "Login",
+    "note": "Secure note"
+  },
+  "untitled": {
+    "login": "Untitled",
+    "note": "Untitled note"
+  },
+  "master": {
+    "label": "Master password",
+    "new": "New master password",
+    "repeatNew": "Repeat the new password",
+    "newTooShort": "The new password needs at least 12 characters.",
+    "mismatch": "The passwords don’t match.",
+    "wrong": "Wrong master password."
+  },
+  "unsupported": {
+    "insecureTitle": "The vault needs a secure connection",
+    "browserTitle": "The vault doesn’t work in this browser",
+    "blockers": {
+      "secure_context": "You opened Orqevio over an unencrypted connection (http://). Browsers only allow the vault’s encryption on secure connections: open your copy over https:// (for example, behind Caddy, Nginx, or Traefik) or, on the same computer, at http://localhost.",
+      "webcrypto": "This browser doesn’t offer WebCrypto, which the vault uses to encrypt your data.",
+      "workers": "This browser doesn’t support Web Workers, which the vault uses to derive your key without freezing the page.",
+      "webassembly": "This browser doesn’t support WebAssembly, which the vault uses to derive your key with Argon2id."
+    },
+    "updateBrowser": "Use a current version of Chrome, Edge, Firefox, or Safari.",
+    "restWorks": "Your tasks and documents keep working as usual."
+  },
+  "toolbar": {
+    "autoLockTimer": "Locks automatically after inactivity",
+    "generator": "Generator",
+    "options": "Vault options",
+    "changeMaster": "Change master password",
+    "import": "Import…",
+    "export": "Export…",
+    "autoLock": "Auto-lock",
+    "autoLockMinutes_one": "After {{count}} minute of inactivity",
+    "autoLockMinutes_other": "After {{count}} minutes of inactivity",
+    "autoLockHours_one": "After {{count}} hour of inactivity",
+    "autoLockHours_other": "After {{count}} hours of inactivity",
+    "lock": "Lock",
+    "generatorTitle": "Password generator",
+    "generatorDescription": "Unbiased cryptographic randomness from your browser."
+  },
+  "list": {
+    "search": "Search the vault",
+    "new": "New",
+    "filter": "Filter",
+    "filters": {
+      "all": "All",
+      "logins": "Logins",
+      "notes": "Notes"
+    },
+    "label": "Vault items",
+    "noMatches": "No matches.",
+    "empty": "Your vault is empty.",
+    "footer_one": "{{count}} item · decrypted only in this browser",
+    "footer_other": "{{count}} items · decrypted only in this browser"
+  },
+  "empty": {
+    "select": "Select an item",
+    "first": "Save your first login",
+    "newLogin": "New login",
+    "body": "Everything is encrypted in your browser before it’s sent to the server. Neither the server nor your agents can read it."
+  },
+  "delete": {
+    "title": "Delete “{{title}}”?",
+    "description": "It will be permanently deleted from your vault.",
+    "confirm": "Delete"
+  },
+  "detail": {
+    "updatedLogin": "Login · updated {{time}}",
+    "updatedNote": "Secure note · updated {{time}}",
+    "favorite": "Mark as favorite",
+    "unfavorite": "Remove from favorites",
+    "edit": "Edit",
+    "delete": "Delete",
+    "username": "Username",
+    "copyUsername": "Copy username",
+    "usernameCopied": "Username copied",
+    "password": "Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "copyPassword": "Copy password",
+    "passwordCopied": "Password copied · the clipboard clears in 30 s",
+    "website": "Website",
+    "openWebsite": "Open website",
+    "copyUrl": "Copy URL",
+    "urlCopied": "URL copied",
+    "content": "Content",
+    "notes": "Notes",
+    "copyNotes": "Copy notes",
+    "notesCopied": "Copied",
+    "clipboardClears": "When you copy something, the clipboard clears itself after 30 seconds."
+  },
+  "totp": {
+    "label": "Verification code",
+    "copy": "Copy code",
+    "copied": "Code copied · the clipboard clears in 30 s",
+    "current": "Current verification code",
+    "changesIn_one": "Changes in {{count}} second",
+    "changesIn_other": "Changes in {{count}} seconds",
+    "problems": {
+      "empty": "Enter the secret key or the otpauth:// link.",
+      "not_totp": "Only time-based codes (TOTP) are supported.",
+      "bad_secret": "The secret key can only contain the letters A to Z and the digits 2 to 7.",
+      "too_short": "The secret key is too short.",
+      "bad_parameters": "The otpauth:// link has invalid parameters."
+    }
+  },
+  "editor": {
+    "editTitle": "Edit item",
+    "newLogin": "New login",
+    "newNote": "New secure note",
+    "name": "Name",
+    "namePlaceholderLogin": "e.g. Bank, GitHub, office Wi-Fi",
+    "namePlaceholderNote": "e.g. Backup codes",
+    "username": "Username or email",
+    "password": "Password",
+    "generate": "Generate password",
+    "website": "Website",
+    "websitePlaceholder": "example.com",
+    "totp": "Two-step verification (TOTP)",
+    "totpPlaceholder": "Secret key or otpauth:// link",
+    "totpHint": "The key the service shows you next to the QR code when you turn on two-step verification.",
+    "content": "Content",
+    "notes": "Notes",
+    "save": "Encrypt and save"
+  },
+  "changeMaster": {
+    "title": "Change master password",
+    "description": "Your items aren’t encrypted again: only the vault key is protected with the new password. Your recovery key stays valid.",
+    "current": "Current master password",
+    "submit": "Change",
+    "wrongCurrent": "The current master password isn’t correct.",
+    "done": "Master password updated"
+  },
+  "strength": {
+    "emptyHint": "Use at least 12 characters. A phrase of several words is easy to remember and hard to guess.",
+    "tooShort": "Too short",
+    "tooShortHint": "You need at least 12 characters.",
+    "fair": "Could be stronger",
+    "fairHint": "Add more words or a wider mix of characters.",
+    "good": "Good",
+    "veryGood": "Very good",
+    "rememberHint": "Remember: if you forget it, only the recovery key can open the vault."
+  },
+  "generator": {
+    "regenerate": "Generate another",
+    "copied": "Copied · the clipboard clears in 30 s",
+    "entropy": "≈ {{bits}} bits of entropy",
+    "length": "Length",
+    "sets": {
+      "upper": "Uppercase",
+      "lower": "Lowercase",
+      "digits": "Numbers",
+      "symbols": "Symbols"
+    },
+    "avoidAmbiguous": "Avoid ambiguous characters (I, l, 1, O, 0)",
+    "use": "Use this password",
+    "rating": {
+      "weak": "Weak",
+      "fair": "Fair",
+      "strong": "Strong",
+      "excellent": "Excellent"
+    }
+  },
+  "gate": {
+    "guarantees": {
+      "encryption": "AES-256-GCM encryption in your browser",
+      "kdf": "Key derived with Argon2id",
+      "agents": "Agents and MCP have no access"
+    },
+    "decryptFailed_one": "{{count}} item couldn’t be decrypted and was skipped.",
+    "decryptFailed_other": "{{count}} items couldn’t be decrypted and were skipped.",
+    "setup": {
+      "title": "Set up your vault",
+      "subtitle": "Choose a master password. It’s used in your browser to encrypt your secrets and is never sent to the server.",
+      "tooShort": "Use at least 12 characters.",
+      "failed": "Couldn’t create the vault in this browser.",
+      "repeat": "Repeat the master password",
+      "busy": "Generating keys…",
+      "submit": "Create vault",
+      "ready": "Your vault is ready. Only you can open it."
+    },
+    "recoveryKey": {
+      "title": "Save your recovery key",
+      "subtitle": "It’s the only way to recover the vault if you forget your master password. It’s shown only once.",
+      "copied": "Recovery key copied",
+      "download": "Download .txt",
+      "fileName": "orqevio-recovery-key.txt",
+      "fileText": "Orqevio — Vault recovery key\n\n{{recoveryKey}}\n\nKeep it outside Orqevio (for example, printed or in another password manager).\nIt lets you reset the master password. No one else can recover it for you.\n",
+      "saved": "I’ve saved it somewhere safe, outside Orqevio.",
+      "open": "Open my vault"
+    },
+    "unlock": {
+      "title": "Vault locked",
+      "subtitle": "Enter your master password to decrypt your logins in this browser.",
+      "busy": "Decrypting…",
+      "submit": "Unlock",
+      "forgot": "Forgot your master password?"
+    },
+    "recover": {
+      "title": "Recover the vault",
+      "subtitle": "Use the recovery key you saved when you created the vault to choose a new master password.",
+      "recoveryKey": "Recovery key",
+      "recoveryKeyPlaceholder": "XXXX-XXXX-XXXX-…",
+      "submit": "Reset and open",
+      "noKey": "I don’t have the key",
+      "invalidKey": "The recovery key isn’t valid.",
+      "done": "Master password reset"
+    },
+    "reset": {
+      "title": "Reset the vault",
+      "description": "Without the master password or the recovery key, no one can decrypt your data, not even us. Resetting permanently deletes every item.",
+      "accessKey": "Access key",
+      "accessKeyHint": "Confirm it’s you with this copy’s access key (not the master password).",
+      "submit": "Delete and reset",
+      "done": "Vault reset. You can set it up again."
+    }
+  },
+  "import": {
+    "title": "Import into the vault",
+    "description": "The file is read and encrypted in this browser: the server only receives items that are already encrypted.",
+    "formats": "Supports the CSV that Chrome, Edge, Firefox, and Safari export, Bitwarden’s CSV and unencrypted JSON, and encrypted Orqevio exports.",
+    "choose": "Choose file",
+    "fileLabel": "File to import",
+    "tooLarge": "The file is too large (over {{size}} MB).",
+    "problems": {
+      "empty": "The file is empty.",
+      "unknown_format": "Orqevio doesn’t recognize this file. Use the CSV that Chrome, Edge, Firefox, or Safari export, Bitwarden’s CSV or JSON, or an Orqevio export.",
+      "bitwarden_encrypted": "This is an encrypted Bitwarden export. Export it again as unencrypted “.json” or “.csv” and import it here.",
+      "no_items": "The file has no logins or notes."
+    },
+    "encrypted_one": "This is an encrypted Orqevio export with {{count}} item. Enter the master password you had when you exported it.",
+    "encrypted_other": "This is an encrypted Orqevio export with {{count}} items. Enter the master password you had when you exported it.",
+    "exportPassword": "Export password",
+    "decrypt": "Decrypt",
+    "wrongPassword": "That’s not the password this export was made with.",
+    "sources": {
+      "chromeOrEdge": "From Chrome or Edge:",
+      "firefox": "From Firefox:",
+      "safari": "From Safari:",
+      "bitwardenCsv": "From Bitwarden (CSV):",
+      "bitwardenJson": "From Bitwarden (JSON):",
+      "csv": "From a CSV file:",
+      "orqevio": "From Orqevio (encrypted):"
+    },
+    "newLogins_one": "{{count}} new login",
+    "newLogins_other": "{{count}} new logins",
+    "newNotes_one": "{{count}} new note",
+    "newNotes_other": "{{count}} new notes",
+    "nothingNew": "Nothing new to import",
+    "duplicates_one": "{{count}} item is already in your vault and will be skipped",
+    "duplicates_other": "{{count}} items are already in your vault and will be skipped",
+    "unsupported_one": "{{count}} item isn’t supported (cards or identities) and won’t be imported",
+    "unsupported_other": "{{count}} items aren’t supported (cards or identities) and won’t be imported",
+    "unencryptedWarning": "The file you chose isn’t encrypted: delete it from your computer when you’re done.",
+    "chooseAnother": "Choose another",
+    "progress": "Encrypting {{done}} of {{total}}…",
+    "submit_one": "Import {{count}} item",
+    "submit_other": "Import {{count}} items",
+    "failed_one": "{{count}} item couldn’t be imported. Import the file again: items already imported will be skipped.",
+    "failed_other": "{{count}} items couldn’t be imported. Import the file again: items already imported will be skipped.",
+    "done_one": "{{count}} item imported",
+    "done_other": "{{count}} items imported",
+    "locked": "The vault locked before the import finished. Unlock it and import the file again: anything already imported will be skipped.",
+    "untitledNote": "Note",
+    "untitledLogin": "Untitled"
+  },
+  "export": {
+    "title": "Export the vault",
+    "description": "Download all your items as a file, prepared in this browser.",
+    "kind": "Export type",
+    "kinds": {
+      "encrypted": "Encrypted",
+      "plain": "Unencrypted"
+    },
+    "encryptedInfo": "Only your current master password opens it. Use it as a backup or to move your items to another copy of Orqevio.",
+    "plainInfo": "In Bitwarden’s JSON format, which most password managers can import. Anyone who has the file can read it.",
+    "understood": "I understand the file isn’t encrypted and that anyone who has it can read all my passwords.",
+    "submitPlain": "Export unencrypted",
+    "submitEncrypted": "Export encrypted",
+    "fileNameEncrypted": "orqevio-vault-encrypted-{{date}}.json",
+    "fileNamePlain": "orqevio-vault-unencrypted-{{date}}.json",
+    "done_one": "{{count}} item exported",
+    "done_other": "{{count}} items exported",
+    "tooLarge": "The export is larger than {{size}} MB: Orqevio won’t be able to import it."
+  }
+}

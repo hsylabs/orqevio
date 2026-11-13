@@ -1,3 +1,4 @@
+import { t } from 'i18next'
 import type { EncryptedExport } from './crypto'
 import { type VaultItem, emptyItem } from './types'
 
@@ -17,10 +18,13 @@ export const MAX_IMPORT_BYTES = 256 * 1024 * 1024
 
 export type ImportProblem = 'empty' | 'unknown_format' | 'bitwarden_encrypted' | 'no_items'
 
+/** Where a file seems to come from. An identifier: the import summary names it in the app's language. */
+export type ImportSource = 'Chrome o Edge' | 'Firefox' | 'Safari' | 'Bitwarden (CSV)' | 'Bitwarden (JSON)' | 'CSV' | 'Orqevio (cifrada)'
+
 export interface ImportedItems {
   kind: 'items'
   /** Where the file seems to come from, for the summary. */
-  source: string
+  source: ImportSource
   items: VaultItem[]
   /** Entries that cannot be represented (cards, identities…). */
   unsupported: number
@@ -86,7 +90,7 @@ const COLUMNS = {
   changed: ['timepasswordchanged'],
 } as const
 
-function csvSource(header: string[]) {
+function csvSource(header: string[]): ImportSource {
   if (header.includes('login_password')) return 'Bitwarden (CSV)'
   if (header.includes('otpauth')) return 'Safari'
   if (header.includes('httprealm') || header.includes('formactionorigin')) return 'Firefox'
@@ -117,7 +121,7 @@ function item(type: VaultItem['type'], fields: Partial<Record<'title' | 'url' | 
   next.password = text(fields.password)
   next.notes = text(fields.notes)
   next.totp = type === 'login' ? text(fields.totp).trim() : ''
-  next.title = text(fields.title).trim() || host(next.url) || next.username.trim() || (type === 'note' ? 'Nota' : 'Sin nombre')
+  next.title = text(fields.title).trim() || host(next.url) || next.username.trim() || (type === 'note' ? t('vault:import.untitledNote') : t('vault:import.untitledLogin'))
   if (!next.url && !next.username && !next.password && !next.notes && !next.totp && !text(fields.title).trim()) return null
   next.favorite = extra.favorite ?? false
   if (extra.createdAt) next.createdAt = extra.createdAt

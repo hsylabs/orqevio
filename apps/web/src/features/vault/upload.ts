@@ -3,10 +3,10 @@ import { encryptItem } from './crypto'
 import { getSession, updateSessionItems } from './session'
 import type { VaultItem } from './types'
 
-/** The vault was locked before the import could finish. */
+/** The vault was locked before the import could finish. The message is for developers: the import dialog explains it to people. */
 export class VaultLockedError extends Error {
   constructor() {
-    super('La bóveda está bloqueada.')
+    super('The vault is locked')
   }
 }
 
