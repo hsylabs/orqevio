@@ -68,6 +68,15 @@ jobs:
       - name: Show server log
         if: failure()
         run: cat "$RUNNER_TEMP/server.log"
+      # Playwright's page snapshot and diagnostics of every failed test.
+      - name: Keep the results of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-results-chromium
+          path: apps/web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
 
   e2e-browsers:
     # The same suite in Firefox and Safari's engine (WebKit), each against a fresh copy.
@@ -111,6 +120,15 @@ jobs:
       - name: Show server log
         if: failure()
         run: cat "$RUNNER_TEMP/server.log"
+      # Playwright's page snapshot and diagnostics of every failed test.
+      - name: Keep the results of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-results-${{ matrix.browser }}
+          path: apps/web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
 
   e2e-cloudflare:
     name: End-to-end tests (Cloudflare package)
@@ -163,3 +181,12 @@ jobs:
       - name: Show Worker log
         if: failure()
         run: cat "$RUNNER_TEMP/worker.log"
+      # Playwright's page snapshot and diagnostics of every failed test.
+      - name: Keep the results of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-results-cloudflare
+          path: apps/web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
