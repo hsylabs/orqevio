@@ -7,6 +7,8 @@ test('the app speaks the language of the account, chosen in Settings', async ({ 
     await expect(page.locator('html')).toHaveAttribute('lang', 'es')
     await page.getByRole('button', { name: /Lucía Martín/ }).click()
     await page.getByRole('menuitem', { name: 'Ajustes' }).click()
+    // All eight languages are offered, each in its own name.
+    await expect(page.getByLabel('Idioma', { exact: true }).locator('option')).toHaveText(['English', 'Español', 'Français', 'Português', 'Italiano', 'Deutsch', 'Nederlands', '日本語'])
     await page.getByLabel('Idioma', { exact: true }).selectOption('en')
     await expect(page.getByRole('heading', { name: 'Settings', level: 1 })).toBeVisible()
     await expect(page.locator('html')).toHaveAttribute('lang', 'en')
