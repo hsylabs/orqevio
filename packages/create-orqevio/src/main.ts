@@ -33,7 +33,9 @@ export interface Deps {
 const R2_DASHBOARD = 'https://dash.cloudflare.com/?to=/:account/r2/overview'
 
 export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {}): Promise<number> {
-  let m = CATALOGS[deps.language ?? detectLanguage()]
+  // An explicit --lang applies even to the errors found while reading the arguments.
+  const asked = requestedLanguage(argv)
+  let m = CATALOGS[asked && isLanguage(asked) ? asked : (deps.language ?? detectLanguage())]
   let parsed: ReturnType<typeof parse>
   try {
     parsed = parse(argv, m)
@@ -111,6 +113,16 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
     return 1
   }
   return mode === 'recover' ? recover(name, env, io, m) : deploy(mode === 'update' ? 'update' : 'install', name, orqevio, env, io, m)
+}
+
+/** The value of --lang, read before the arguments are parsed (they may be wrong). */
+function requestedLanguage(argv: string[]) {
+  for (const [i, arg] of argv.entries()) {
+    if (arg === '--') break
+    if (arg === '--lang') return argv[i + 1]?.trim().toLowerCase()
+    if (arg.startsWith('--lang=')) return arg.slice('--lang='.length).trim().toLowerCase()
+  }
+  return undefined
 }
 
 const parseOptions = (argv: string[]) =>

@@ -66,6 +66,11 @@ describe('create-orqevio', () => {
     // Node's own parse errors are said in the user's language too.
     expect((await run(['--nope'])).err).toContain('No conozco la opción «--nope»')
     expect((await run(['--name'], null, 'en')).err).toContain('“--name” needs a value')
+    // An explicit --lang applies to the argument errors too, help included.
+    const wrong = await run(['--lang', 'es', 'oops'], null, 'en')
+    expect(wrong.err).toContain('No conozco la orden «oops»')
+    expect(wrong.err).toContain('Instala tu propia copia de Orqevio')
+    expect((await run(['--lang=es', '--name'], null, 'en')).err).toContain('«--name» necesita un valor')
     expect(calls()).toHaveLength(0)
   })
 
