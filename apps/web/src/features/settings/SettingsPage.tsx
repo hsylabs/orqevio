@@ -106,6 +106,7 @@ export function SettingsPage() {
 
           <Section title={t('language.title')} description={t('language.description')}>
             <LanguageSelect
+              hideLabel
               onChange={async (locale: Locale) => {
                 await applyLocale(locale)
                 try {
