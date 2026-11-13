@@ -109,6 +109,17 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
     io.err(`No encuentro una copia llamada «${name}» en esta cuenta. Para instalarla: npx create-orqevio${nameFlag(name)}`)
     return 1
   }
+  if (mode === 'install' && !(await r2Enabled(env))) {
+    io.err(
+      [
+        'Tu cuenta de Cloudflare todavía no tiene R2 activado, y tu copia lo necesita para guardar los adjuntos.',
+        'Actívalo en el panel, en R2 → Overview: https://dash.cloudflare.com/?to=/:account/r2/overview',
+        'El uso incluido es gratis (10 GB de almacenamiento al mes), aunque Cloudflare puede pedirte un método de pago.',
+        `Después, repite: npx create-orqevio${nameFlag(name)}`,
+      ].join('\n'),
+    )
+    return 1
+  }
   return mode === 'recover' ? recover(name, env, io) : deploy(mode === 'update' ? 'update' : 'install', name, orqevio, env, io)
 }
 
@@ -209,6 +220,16 @@ async function workerExists(name: string, env: Record<string, string>, io?: Io):
   if (/\b10007\b/.test(run.stdout + run.stderr)) return false
   io?.err((run.stderr || run.stdout).trim())
   return null
+}
+
+/**
+ * A new copy needs R2 for its attachments, and an account must subscribe to R2 in the
+ * dashboard before it can create a bucket. Cloudflare answers 10042 (NotEntitled) until
+ * then. Any other answer lets the deploy go ahead and report its own errors.
+ */
+async function r2Enabled(env: Record<string, string>) {
+  const run = await runWrangler(['r2', 'bucket', 'list'], { capture: true, env })
+  return !(run.code !== 0 && /\b10042\b/.test(run.stdout + run.stderr))
 }
 
 /** A private temporary folder for the generated configuration and the secrets file, removed even on Ctrl+C. */
