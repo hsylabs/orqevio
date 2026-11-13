@@ -1,1 +1,137 @@
-{}
+{
+  "nav": {
+    "label": "Main navigation",
+    "search": "Search or jump to…",
+    "home": "Home",
+    "vault": "Vault",
+    "agents": "Agents",
+    "agentLive": "Agent active",
+    "projects": "Projects",
+    "newProject": "New project",
+    "firstProject": {
+      "title": "Create your first project",
+      "body": "Group boards and documents in one place."
+    },
+    "vaultLocked": "Locked",
+    "vaultUnlocked": "Unlocked"
+  },
+  "workspace": {
+    "fallback": "Workspace",
+    "heading": "Workspaces",
+    "new": "New workspace",
+    "newDescription": "Workspaces keep contexts apart, such as personal and work. Each agent token belongs to a single workspace.",
+    "name": "Name",
+    "create": "Create workspace",
+    "settings": "Settings"
+  },
+  "project": {
+    "collapse": "Collapse {{name}}",
+    "expand": "Expand {{name}}",
+    "actions": "Actions for {{name}}",
+    "newBoard": "New board",
+    "newPage": "New page",
+    "newPageIn": "New page in {{name}}",
+    "rename": "Name and color",
+    "delete": "Delete project",
+    "empty": "Empty"
+  },
+  "tree": {
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "newSubpage": "New subpage"
+  },
+  "user": {
+    "updateAvailable": "A new version of Orqevio is available",
+    "settings": "Settings",
+    "newVersion": "New version",
+    "appearance": "Appearance",
+    "theme": {
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "signOut": "Sign out"
+  },
+  "header": {
+    "hideSidebar": "Hide sidebar",
+    "showSidebar": "Show sidebar",
+    "toggleSidebar": "Toggle sidebar",
+    "breadcrumb": "Breadcrumb"
+  },
+  "newProject": {
+    "title": "New project",
+    "description": "A project groups related boards and documents.",
+    "name": "Name",
+    "namePlaceholder": "e.g. Website launch",
+    "color": "Color",
+    "withBoard": "Create a board",
+    "startWithBoard": "Start with a board",
+    "boardHint": "Columns {{columns}}. You can change them at any time.",
+    "boardName": "Tasks",
+    "create": "Create project"
+  },
+  "projectSettings": {
+    "title": "Project",
+    "name": "Name",
+    "description": "Description",
+    "optional": "Optional",
+    "color": "Color"
+  },
+  "actions": {
+    "newBoard": {
+      "title": "New board",
+      "label": "Board name",
+      "placeholder": "e.g. Launch sprint",
+      "confirm": "Create board"
+    },
+    "deleteBoard": {
+      "title": "Delete “{{name}}”?",
+      "body": "Its columns and cards will be deleted. This can’t be undone.",
+      "confirm": "Delete board",
+      "done": "Board deleted"
+    },
+    "deletePage": {
+      "title": "Delete “{{name}}”?",
+      "body": "Its subpages and attachments will be deleted too. This can’t be undone.",
+      "confirm": "Delete page",
+      "done": "Page deleted"
+    },
+    "deleteProject": {
+      "title": "Delete the project “{{name}}”?",
+      "body": "All its boards, cards, pages and attachments will be deleted. This can’t be undone.",
+      "confirm": "Delete project",
+      "done": "Project deleted"
+    }
+  },
+  "palette": {
+    "label": "Command palette",
+    "title": "Search",
+    "description": "Search projects, boards, pages and cards, or run an action.",
+    "placeholder": "Search tasks, documents or actions…",
+    "searching": "Searching…",
+    "noResults": "No results. Try other words.",
+    "inContent": "In the content",
+    "navigate": "Go to",
+    "structure": "Projects, boards and pages",
+    "project": "Project",
+    "actions": "Actions",
+    "newProject": "New project",
+    "lightTheme": "Switch to light theme",
+    "darkTheme": "Switch to dark theme",
+    "lockVault": "Lock the vault",
+    "hintNavigate": "navigate",
+    "hintOpen": "open",
+    "keywords": {
+      "home": "Home",
+      "vault": "Vault passwords",
+      "agents": "Agents MCP tokens",
+      "settings": "Settings account",
+      "project": "project",
+      "board": "board",
+      "page": "page",
+      "newProject": "New project create",
+      "theme": "Change theme light dark appearance",
+      "lockVault": "Lock vault"
+    }
+  }
+}

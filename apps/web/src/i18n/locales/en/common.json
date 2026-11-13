@@ -45,5 +45,7 @@
     "iris": "Iris",
     "rose": "Pink",
     "slate": "Slate"
-  }
+  },
+  "untitled": "Untitled",
+  "quoted": "“{{text}}”"
 }

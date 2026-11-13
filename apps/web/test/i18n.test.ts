@@ -63,7 +63,7 @@ describe('catalogs', () => {
 })
 
 /** Words that read the same in every language. */
-const UNTRANSLATED = new Set(['Orqevio', 'MCP', 'OAuth', 'Claude', 'GitHub', 'Bitwarden', 'Markdown', 'Ctrl', 'Esc', 'TOTP', 'URL', 'API', 'JSON', 'CSV', 'HSY Labs'])
+const UNTRANSLATED = new Set(['esc', 'Orqevio', 'MCP', 'OAuth', 'Claude', 'GitHub', 'Bitwarden', 'Markdown', 'Ctrl', 'Esc', 'TOTP', 'URL', 'API', 'JSON', 'CSV', 'HSY Labs'])
 /** Attributes and props whose text people read. */
 const TEXT_PROPS = new Set(['placeholder', 'title', 'alt', 'aria-label', 'aria-description', 'aria-valuetext', 'label', 'description', 'hint', 'error', 'confirmLabel', 'cancelLabel', 'empty', 'emptyText', 'message', 'tooltip', 'heading', 'subtitle'])
 

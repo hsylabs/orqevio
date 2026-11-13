@@ -21,6 +21,7 @@ import {
   Pencil,
 } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { NavLink, useLocation, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { LogoMark } from '../../components/Logo'
@@ -40,13 +41,14 @@ import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import { useWorkspace } from './workspace'
 
 export function Sidebar() {
+  const { t } = useTranslation(['shell', 'common'])
   const { workspaceId, overview, openPalette, openNewProject } = useWorkspace()
   const agentLive = useAgentLive()
   const vaultLocked = useVaultLocked()
   const base = `/w/${workspaceId}`
 
   return (
-    <nav aria-label="Navegación principal" className="flex h-full flex-col px-2.5 pt-2.5 pb-2">
+    <nav aria-label={t('nav.label')} className="flex h-full flex-col px-2.5 pt-2.5 pb-2">
       <WorkspaceSwitcher live={agentLive} />
 
       <button
@@ -55,26 +57,26 @@ export function Sidebar() {
         className="mt-2 flex h-8.5 items-center gap-2 rounded-[9px] border border-line bg-surface/70 px-2.5 text-[13px] text-ink-3 shadow-sm transition-colors hover:border-line-strong hover:text-ink-2"
       >
         <Search className="size-[15px]" />
-        <span className="flex-1 text-left">Buscar o saltar a…</span>
+        <span className="flex-1 text-left">{t('nav.search')}</span>
         <Kbd keys={['mod', 'K']} />
       </button>
 
       <div className="mt-3 flex flex-col gap-px">
         <NavItem to={base} end icon={<House />}>
-          Inicio
+          {t('nav.home')}
         </NavItem>
         <NavItem to={`${base}/vault`} icon={<LockKeyhole />} trailing={<VaultState locked={vaultLocked} />}>
-          Bóveda
+          {t('nav.vault')}
         </NavItem>
-        <NavItem to={`${base}/agents`} icon={<Bot />} trailing={agentLive ? <span className="live-dot mr-1" aria-label="Agente activo" /> : null}>
-          Agentes
+        <NavItem to={`${base}/agents`} icon={<Bot />} trailing={agentLive ? <span className="live-dot mr-1" aria-label={t('nav.agentLive')} /> : null}>
+          {t('nav.agents')}
         </NavItem>
       </div>
 
       <div className="mt-5 flex items-center justify-between pr-1 pl-2.5">
-        <span className="text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase">Proyectos</span>
-        <Tooltip label="Nuevo proyecto">
-          <button type="button" onClick={openNewProject} aria-label="Nuevo proyecto" className="grid size-6 place-items-center rounded-[7px] text-ink-3 hover:bg-hover hover:text-ink">
+        <span className="text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('nav.projects')}</span>
+        <Tooltip label={t('nav.newProject')}>
+          <button type="button" onClick={openNewProject} aria-label={t('nav.newProject')} className="grid size-6 place-items-center rounded-[7px] text-ink-3 hover:bg-hover hover:text-ink">
             <Plus className="size-[15px]" />
           </button>
         </Tooltip>
@@ -90,8 +92,8 @@ export function Sidebar() {
               onClick={openNewProject}
               className="mt-1 w-full rounded-[10px] border border-dashed border-line-strong px-3 py-4 text-left text-[12.5px] text-ink-3 transition-colors hover:border-ink-3 hover:text-ink-2"
             >
-              <span className="block font-medium text-ink-2">Crea tu primer proyecto</span>
-              Agrupa tableros y documentos en un mismo lugar.
+              <span className="block font-medium text-ink-2">{t('nav.firstProject.title')}</span>
+              {t('nav.firstProject.body')}
             </button>
           )
         ) : (
@@ -109,11 +111,12 @@ export function Sidebar() {
 }
 
 function VaultState({ locked }: { locked: boolean }) {
+  const { t } = useTranslation(['shell', 'common'])
   return (
     <span
       className={cn('mr-1 size-1.5 rounded-full transition-colors', locked ? 'bg-ink-4' : 'bg-ok')}
-      aria-label={locked ? 'Bloqueada' : 'Desbloqueada'}
-      title={locked ? 'Bloqueada' : 'Desbloqueada'}
+      aria-label={locked ? t('nav.vaultLocked') : t('nav.vaultUnlocked')}
+      title={locked ? t('nav.vaultLocked') : t('nav.vaultUnlocked')}
     />
   )
 }
@@ -138,6 +141,7 @@ function NavItem({ to, end, icon, children, trailing }: { to: string; end?: bool
 }
 
 function WorkspaceSwitcher({ live }: { live: boolean }) {
+  const { t } = useTranslation(['shell', 'common'])
   const { me, workspaceId } = useWorkspace()
   const navigate = useNavigate()
   const prompt = usePrompt()
@@ -145,7 +149,7 @@ function WorkspaceSwitcher({ live }: { live: boolean }) {
   const current = me.workspaces.find((w) => w.id === workspaceId)
 
   async function createWorkspace() {
-    const name = await prompt({ title: 'Nuevo espacio', description: 'Los espacios separan contextos, por ejemplo personal y trabajo. Cada token de agente pertenece a un único espacio.', label: 'Nombre', confirmLabel: 'Crear espacio', maxLength: 60 })
+    const name = await prompt({ title: t('workspace.new'), description: t('workspace.newDescription'), label: t('workspace.name'), confirmLabel: t('workspace.create'), maxLength: 60 })
     if (!name) return
     try {
       const w = await post<{ id: string }>('/workspaces', { name })
@@ -162,14 +166,14 @@ function WorkspaceSwitcher({ live }: { live: boolean }) {
         <button type="button" className="flex h-10 items-center gap-2.5 rounded-[10px] px-1.5 text-left transition-colors hover:bg-hover data-[state=open]:bg-hover">
           <LogoMark size={28} live={live} />
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13.5px] leading-tight font-semibold">{current?.name ?? 'Espacio'}</span>
+            <span className="block truncate text-[13.5px] leading-tight font-semibold">{current?.name ?? t('workspace.fallback')}</span>
             <span className="block text-[11.5px] leading-tight text-ink-3">Orqevio</span>
           </span>
           <ChevronsUpDown className="size-[14px] text-ink-3" />
         </button>
       </MenuTrigger>
       <MenuContent align="start" className="w-[240px]">
-        <MenuLabel>Espacios</MenuLabel>
+        <MenuLabel>{t('workspace.heading')}</MenuLabel>
         {me.workspaces.map((w) => (
           <MenuItem key={w.id} onSelect={() => navigate(`/w/${w.id}`)} icon={<span className="glyph c-slate size-5 text-[11px]">{w.name[0]?.toUpperCase()}</span>}>
             <span className="flex items-center justify-between gap-2">
@@ -180,10 +184,10 @@ function WorkspaceSwitcher({ live }: { live: boolean }) {
         ))}
         <MenuSeparator />
         <MenuItem icon={<Plus />} onSelect={createWorkspace}>
-          Nuevo espacio
+          {t('workspace.new')}
         </MenuItem>
         <MenuItem icon={<Settings />} onSelect={() => navigate(`/w/${workspaceId}/settings`)}>
-          Ajustes
+          {t('workspace.settings')}
         </MenuItem>
       </MenuContent>
     </MenuRoot>
@@ -203,6 +207,7 @@ function useExpanded(id: string, initial: boolean) {
 }
 
 function ProjectItem({ project }: { project: ProjectTreeDTO }) {
+  const { t } = useTranslation(['shell', 'common'])
   const { workspaceId } = useWorkspace()
   const location = useLocation()
   const actions = useStructureActions(workspaceId)
@@ -218,7 +223,7 @@ function ProjectItem({ project }: { project: ProjectTreeDTO }) {
         <button
           type="button"
           onClick={() => toggle()}
-          aria-label={open ? `Contraer ${project.name}` : `Expandir ${project.name}`}
+          aria-label={open ? t('project.collapse', { name: project.name }) : t('project.expand', { name: project.name })}
           aria-expanded={open}
           className="grid size-6 shrink-0 place-items-center rounded-[6px] text-ink-4 hover:text-ink"
         >
@@ -230,28 +235,28 @@ function ProjectItem({ project }: { project: ProjectTreeDTO }) {
         </NavLink>
         <MenuRoot>
           <MenuTrigger asChild>
-            <button type="button" aria-label={`Acciones de ${project.name}`} className="grid size-6 place-items-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 hover:bg-press hover:text-ink focus-visible:opacity-100 data-[state=open]:opacity-100">
+            <button type="button" aria-label={t('project.actions', { name: project.name })} className="grid size-6 place-items-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 hover:bg-press hover:text-ink focus-visible:opacity-100 data-[state=open]:opacity-100">
               <Ellipsis className="size-[15px]" />
             </button>
           </MenuTrigger>
           <MenuContent align="start">
             <MenuItem icon={<SquareKanban />} onSelect={() => void actions.createBoard(project.id)}>
-              Nuevo tablero
+              {t('project.newBoard')}
             </MenuItem>
             <MenuItem icon={<FileText />} onSelect={() => void actions.createPage(project.id)}>
-              Nueva página
+              {t('project.newPage')}
             </MenuItem>
             <MenuSeparator />
             <MenuItem icon={<Pencil />} onSelect={() => setSettingsOpen(true)}>
-              Nombre y color
+              {t('project.rename')}
             </MenuItem>
             <MenuItem icon={<Trash />} danger onSelect={() => void actions.deleteProject(project)}>
-              Eliminar proyecto
+              {t('project.delete')}
             </MenuItem>
           </MenuContent>
         </MenuRoot>
-        <Tooltip label="Nueva página">
-          <button type="button" onClick={() => void actions.createPage(project.id)} aria-label={`Nueva página en ${project.name}`} className="grid size-6 place-items-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 hover:bg-press hover:text-ink focus-visible:opacity-100">
+        <Tooltip label={t('project.newPage')}>
+          <button type="button" onClick={() => void actions.createPage(project.id)} aria-label={t('project.newPageIn', { name: project.name })} className="grid size-6 place-items-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 hover:bg-press hover:text-ink focus-visible:opacity-100">
             <Plus className="size-[15px]" />
           </button>
         </Tooltip>
@@ -264,7 +269,7 @@ function ProjectItem({ project }: { project: ProjectTreeDTO }) {
           {roots.map((p) => (
             <PageItem key={p.id} page={p} all={project.pages} projectId={project.id} depth={0} />
           ))}
-          {project.boards.length === 0 && roots.length === 0 && <p className="px-2 py-1.5 text-[12px] text-ink-3">Vacío</p>}
+          {project.boards.length === 0 && roots.length === 0 && <p className="px-2 py-1.5 text-[12px] text-ink-3">{t('project.empty')}</p>}
         </div>
       )}
       <ProjectSettingsDialog project={project} open={settingsOpen} onOpenChange={setSettingsOpen} />
@@ -273,6 +278,7 @@ function ProjectItem({ project }: { project: ProjectTreeDTO }) {
 }
 
 function TreeLink({ to, icon, label, trailing, onToggle, expanded, hasChildren, extra }: { to: string; icon: ReactNode; label: string; trailing?: ReactNode; onToggle?: () => void; expanded?: boolean; hasChildren?: boolean; extra?: ReactNode }) {
+  const { t } = useTranslation('shell')
   return (
     <NavLink
       to={to}
@@ -287,7 +293,7 @@ function TreeLink({ to, icon, label, trailing, onToggle, expanded, hasChildren, 
         <span
           role="button"
           tabIndex={-1}
-          aria-label={expanded ? 'Contraer' : 'Expandir'}
+          aria-label={expanded ? t('tree.collapse') : t('tree.expand')}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -307,6 +313,7 @@ function TreeLink({ to, icon, label, trailing, onToggle, expanded, hasChildren, 
 }
 
 function PageItem({ page, all, projectId, depth }: { page: PageNodeDTO; all: PageNodeDTO[]; projectId: string; depth: number }) {
+  const { t } = useTranslation(['shell', 'common'])
   const { workspaceId } = useWorkspace()
   const actions = useStructureActions(workspaceId)
   const children = all.filter((p) => p.parentId === page.id)
@@ -316,7 +323,7 @@ function PageItem({ page, all, projectId, depth }: { page: PageNodeDTO; all: Pag
       <TreeLink
         to={`/w/${workspaceId}/d/${page.id}`}
         icon={page.icon ? <span className="w-[14px] text-center text-[13px] leading-none">{page.icon}</span> : <FileText />}
-        label={page.title || 'Sin título'}
+        label={page.title || t('common:untitled')}
         hasChildren={children.length > 0}
         expanded={open}
         onToggle={() => toggle()}
@@ -324,8 +331,8 @@ function PageItem({ page, all, projectId, depth }: { page: PageNodeDTO; all: Pag
           <span
             role="button"
             tabIndex={-1}
-            aria-label="Nueva subpágina"
-            title="Nueva subpágina"
+            aria-label={t('tree.newSubpage')}
+            title={t('tree.newSubpage')}
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -350,6 +357,7 @@ function PageItem({ page, all, projectId, depth }: { page: PageNodeDTO; all: Pag
 }
 
 function UserMenu() {
+  const { t } = useTranslation(['shell', 'common'])
   const { me, workspaceId } = useWorkspace()
   const updateAvailable = useUpdates().data?.updateAvailable ?? false
   const navigate = useNavigate()
@@ -381,7 +389,7 @@ function UserMenu() {
         <button type="button" className="flex h-10 items-center gap-2.5 rounded-[10px] px-1.5 text-left transition-colors hover:bg-hover data-[state=open]:bg-hover">
           <span className="relative">
             <Avatar name={me.user.name} size={26} />
-            {updateAvailable && <span aria-label="Hay una versión nueva de Orqevio" className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-accent ring-2 ring-desk" />}
+            {updateAvailable && <span aria-label={t('user.updateAvailable')} className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-accent ring-2 ring-desk" />}
           </span>
           <span className="min-w-0 flex-1 truncate text-[13px] leading-tight font-medium">{me.user.name}</span>
         </button>
@@ -389,26 +397,26 @@ function UserMenu() {
       <MenuContent align="start" side="top" className="w-[240px]">
         <MenuItem icon={<Settings />} onSelect={() => navigate(`/w/${workspaceId}/settings`)}>
           <span className="flex items-center justify-between gap-2">
-            Ajustes
-            {updateAvailable && <span className="rounded-full bg-accent-soft px-1.5 py-px text-[11px] font-medium text-accent">Nueva versión</span>}
+            {t('user.settings')}
+            {updateAvailable && <span className="rounded-full bg-accent-soft px-1.5 py-px text-[11px] font-medium text-accent">{t('user.newVersion')}</span>}
           </span>
         </MenuItem>
         <MenuSeparator />
-        <MenuLabel>Apariencia</MenuLabel>
+        <MenuLabel>{t('user.appearance')}</MenuLabel>
         <MenuRadioGroup value={theme} onValueChange={changeTheme}>
           <MenuRadioItem value="system" icon={<Monitor />}>
-            Sistema
+            {t('user.theme.system')}
           </MenuRadioItem>
           <MenuRadioItem value="light" icon={<Sun />}>
-            Claro
+            {t('user.theme.light')}
           </MenuRadioItem>
           <MenuRadioItem value="dark" icon={<Moon />}>
-            Oscuro
+            {t('user.theme.dark')}
           </MenuRadioItem>
         </MenuRadioGroup>
         <MenuSeparator />
         <MenuItem icon={<LogOut />} onSelect={logout}>
-          Cerrar sesión
+          {t('user.signOut')}
         </MenuItem>
       </MenuContent>
     </MenuRoot>

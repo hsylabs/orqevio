@@ -45,5 +45,7 @@
     "iris": "Iris",
     "rose": "Rosa",
     "slate": "Pizarra"
-  }
+  },
+  "untitled": "Sin título",
+  "quoted": "«{{text}}»"
 }
