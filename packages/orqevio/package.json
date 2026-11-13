@@ -1,6 +1,6 @@
 {
   "name": "orqevio",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "Orqevio ready to deploy on Cloudflare: the Worker bundle, the web app and the base Wrangler configuration. Install it with `npx create-orqevio`.",
   "license": "FSL-1.1-ALv2",
   "repository": {

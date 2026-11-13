@@ -52,6 +52,14 @@ jobs:
         run: |
           mkdir -p packs
           for package in orqevio create-orqevio; do (cd "packages/$package" && pnpm pack --pack-destination "$GITHUB_WORKSPACE/packs"); done
+      # Runs the npm job's publish commands without publishing, so a mistake shows up
+      # here, before anyone is asked to approve the release.
+      - name: Try the npm publish (dry run)
+        env:
+          TAG: ${{ steps.version.outputs.prerelease == 'true' && 'next' || 'latest' }}
+        run: |
+          npx --yes npm@11 publish ./packs/orqevio-*.tgz --access public --tag "$TAG" --dry-run
+          npx --yes npm@11 publish ./packs/create-orqevio-*.tgz --access public --tag "$TAG" --dry-run
       - uses: actions/upload-artifact@v7
         with:
           name: release
@@ -89,9 +97,10 @@ jobs:
           TAG: ${{ needs.verify.outputs.prerelease == 'true' && 'next' || 'latest' }}
           # Only needed until trusted publishing is configured for both packages.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # The ./ makes npm read a file: "packs/name.tgz" alone is a GitHub "user/repo" to npm.
         run: |
-          npm publish packs/orqevio-*.tgz --access public --tag "$TAG" --provenance
-          npm publish packs/create-orqevio-*.tgz --access public --tag "$TAG" --provenance
+          npm publish ./packs/orqevio-*.tgz --access public --tag "$TAG" --provenance
+          npm publish ./packs/create-orqevio-*.tgz --access public --tag "$TAG" --provenance
 
   docker:
     name: Publish the Docker image
