@@ -273,7 +273,8 @@
     "done_other": "{{count}} items imported",
     "locked": "The vault locked before the import finished. Unlock it and import the file again: anything already imported will be skipped.",
     "untitledNote": "Note",
-    "untitledLogin": "Untitled"
+    "untitledLogin": "Untitled",
+    "damaged": "This export is damaged and can’t be read."
   },
   "export": {
     "title": "Export the vault",

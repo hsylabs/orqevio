@@ -286,7 +286,8 @@
     "done_other": "{{count}} elementos importados",
     "locked": "La bóveda se ha bloqueado antes de terminar la importación. Desbloquéala y vuelve a importar el archivo: lo ya importado se omitirá.",
     "untitledNote": "Nota",
-    "untitledLogin": "Sin nombre"
+    "untitledLogin": "Sin nombre",
+    "damaged": "La copia está dañada."
   },
   "export": {
     "title": "Exportar la bóveda",

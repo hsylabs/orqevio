@@ -83,7 +83,10 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     setError(null)
     try {
       const imported = readDecryptedExport(await openExport(encrypted, password))
-      if (!imported) throw new Error('The export is damaged')
+      if (!imported) {
+        setError(t('import.damaged'))
+        return
+      }
       setEncrypted(null)
       prepare(imported)
     } catch (err) {
