@@ -1,50 +1,48 @@
 import type { ActivityDTO, RealtimeEvent } from '@orqevio/shared'
+import { t } from 'i18next'
 
-const VERBS: Record<string, string> = {
-  'card.created': 'creó la tarjeta',
-  'card.updated': 'editó la tarjeta',
-  'card.moved': 'movió la tarjeta',
-  'card.reordered': 'reordenó la tarjeta',
-  'card.archived': 'archivó la tarjeta',
-  'card.restored': 'restauró la tarjeta',
-  'card.deleted': 'eliminó la tarjeta',
-  'card.checklist': 'actualizó la checklist de',
-  'card.linked': 'vinculó un documento a',
-  'card.unlinked': 'desvinculó un documento de',
-  'column.created': 'creó la columna',
-  'column.updated': 'renombró la columna',
-  'column.moved': 'reordenó la columna',
-  'column.deleted': 'eliminó la columna',
-  'board.created': 'creó el tablero',
-  'board.updated': 'renombró el tablero',
-  'board.deleted': 'eliminó el tablero',
-  'page.created': 'creó la página',
-  'page.updated': 'editó la página',
-  'page.moved': 'movió la página',
-  'page.deleted': 'eliminó la página',
-  'project.created': 'creó el proyecto',
-  'project.updated': 'actualizó el proyecto',
-  'project.deleted': 'eliminó el proyecto',
-  'label.created': 'creó una etiqueta',
-  'label.updated': 'editó una etiqueta',
-  'label.deleted': 'eliminó una etiqueta',
+const ACTIONS = {
+  card: ['created', 'updated', 'moved', 'reordered', 'archived', 'restored', 'deleted', 'checklist', 'linked', 'unlinked'],
+  column: ['created', 'updated', 'moved', 'deleted'],
+  board: ['created', 'updated', 'deleted'],
+  page: ['created', 'updated', 'moved', 'deleted'],
+  project: ['created', 'updated', 'deleted'],
+  label: ['created', 'updated', 'deleted'],
+} as const
+
+type Known = { [E in keyof typeof ACTIONS]: `actions.${E}.${(typeof ACTIONS)[E][number]}` }[keyof typeof ACTIONS]
+type AboutThisCard = `actions.card.${(typeof ACTIONS)['card'][number]}_self`
+
+/**
+ * The catalog key of a whole sentence for an activity entry, with <actor> and
+ * <target> tags, so each language can put the words in its own order. On the
+ * card itself (`self`), card entries read "created this card".
+ */
+export function activityKey(action: string, self = false): Known | AboutThisCard | 'actions.other' {
+  const [entity, verb] = action.split('.') as [string, string]
+  const verbs = (ACTIONS as Record<string, readonly string[]>)[entity]
+  if (!verbs?.includes(verb)) return 'actions.other'
+  return self && entity === 'card' ? (`actions.${action}_self` as AboutThisCard) : (`actions.${action}` as Known)
 }
 
-export function activityVerb(action: string) {
-  return VERBS[action] ?? 'actualizó'
+/** What an entry is about: its title, or a placeholder for an untitled page. */
+export function activityTarget(a: { entityType: string; summary: string }) {
+  return a.summary || (a.entityType === 'page' ? t('common:untitled') : '')
 }
 
 export function activityDetail(a: Pick<ActivityDTO, 'action' | 'meta'>): string | null {
   const m = a.meta ?? {}
-  if (a.action === 'card.moved' && m.to) return m.from ? `${m.from} → ${m.to}` : `a ${m.to}`
-  if (a.action === 'card.created' && m.column) return `en ${m.column}`
-  if (a.action === 'card.linked' && m.page) return `«${m.page}»`
+  if (a.action === 'card.moved' && m.to) return m.from ? t('activity:detail.movedFromTo', { from: m.from, to: m.to }) : t('activity:detail.movedTo', { to: m.to })
+  if (a.action === 'card.created' && m.column) return t('activity:detail.createdIn', { column: m.column })
+  if (a.action === 'card.linked' && 'page' in m) return t('activity:detail.linkedPage', { page: m.page || t('common:untitled') })
   return null
 }
 
+/** The sentence for a live event, as plain text (for notifications). */
 export function eventSentence(e: RealtimeEvent) {
-  const verb = activityVerb(e.action)
-  return e.summary ? `${verb} «${e.summary}»` : verb
+  const entityType = e.action.split('.')[0] ?? ''
+  const sentence = t(activityKey(e.action), { ns: 'activity', actor: e.actor.name, target: activityTarget({ entityType, summary: e.summary ?? '' }) })
+  return sentence.replace(/<\/?(?:actor|target)>/g, '')
 }
 
 /** Where an activity entry leads in the app. */

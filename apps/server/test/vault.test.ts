@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { Client, type Harness, createHarness, signUp } from './harness'
+import { Client, type Harness, createHarness, signInOwner, signUp } from './harness'
 
 let h: Harness
 beforeAll(async () => {
@@ -48,11 +48,15 @@ describe('vault', () => {
     expect((await a.client.get('/api/vault/items')).body[0].data).toBe('v1.YQ.YQ')
   })
 
-  it('requires the account password to reset', async () => {
-    const { client } = await signUp(h)
+  it('requires the access key to reset', async () => {
+    const { client, accessKey } = await signInOwner(h)
     await client.post('/api/vault/setup', keys)
-    expect((await client.post('/api/vault/reset', { password: 'wrong-password' })).status).toBe(403)
-    expect((await client.post('/api/vault/reset', { password: 'correct-horse-battery' })).status).toBe(204)
+    expect((await client.post('/api/vault/reset', { accessKey: 'XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX' })).status).toBe(403)
+    // Members without an access key (future invitations) cannot confirm a reset.
+    const member = await signUp(h, 'Invitada')
+    await member.client.post('/api/vault/setup', keys)
+    expect((await member.client.post('/api/vault/reset', { accessKey })).status).toBe(403)
+    expect((await client.post('/api/vault/reset', { accessKey: accessKey.toLowerCase() })).status).toBe(204)
     expect((await client.get('/api/vault')).body.initialized).toBe(false)
   })
 

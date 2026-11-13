@@ -1,0 +1,177 @@
+{
+  "actions": {
+    "delete": "Eliminar",
+    "restore": "Restaurar",
+    "archive": "Archivar",
+    "rename": "Renombrar",
+    "back": "Atrás",
+    "undo": "Deshacer"
+  },
+  "board": {
+    "region": "Tablero {{name}}",
+    "archived": "Archivadas",
+    "actions": "Acciones del tablero",
+    "rename": "Renombrar tablero",
+    "nameLabel": "Nombre",
+    "delete": "Eliminar tablero",
+    "empty": {
+      "title": "Este tablero no tiene columnas",
+      "body": "Crea columnas para representar las fases de tu trabajo."
+    },
+    "filterActive": "Filtro activo · arrastrar está desactivado",
+    "removeFilter": "Quitar filtro"
+  },
+  "drag": {
+    "instructions": "Para mover, pulsa espacio. Usa las flechas para desplazarte y espacio de nuevo para soltar. Escape cancela.",
+    "card": {
+      "picked": "Has cogido la tarjeta «{{title}}». Columna «{{column}}», posición {{position}} de {{total}}.",
+      "over": "La tarjeta «{{title}}»: columna «{{column}}», posición {{position}} de {{total}}.",
+      "outside": "La tarjeta «{{title}}» no está sobre una zona válida.",
+      "dropped": "La tarjeta «{{title}}» se ha soltado. Columna «{{column}}», posición {{position}} de {{total}}.",
+      "droppedOutside": "La tarjeta «{{title}}» se ha soltado.",
+      "cancelled": "Movimiento de la tarjeta «{{title}}» cancelado."
+    },
+    "column": {
+      "picked": "Has cogido la columna «{{title}}». Posición {{position}} de {{total}}.",
+      "over": "La columna «{{title}}»: posición {{position}} de {{total}}.",
+      "outside": "La columna «{{title}}» no está sobre una zona válida.",
+      "dropped": "La columna «{{title}}» se ha soltado. Posición {{position}} de {{total}}.",
+      "droppedOutside": "La columna «{{title}}» se ha soltado.",
+      "cancelled": "Movimiento de la columna «{{title}}» cancelado."
+    }
+  },
+  "filter": {
+    "button": "Filtrar",
+    "search": "Buscar por título…",
+    "searchLabel": "Buscar por título",
+    "due": "Fecha",
+    "dues": {
+      "all": "Todas",
+      "overdue": "Vencidas",
+      "week": "Esta semana",
+      "none": "Sin fecha"
+    },
+    "labels": "Etiquetas",
+    "clear": "Limpiar filtro"
+  },
+  "column": {
+    "region": "Columna {{name}}",
+    "roleDescription": "columna",
+    "handle": "{{name}}. Doble clic para renombrar, espacio para mover",
+    "name": "Nombre de la columna",
+    "add": "Añadir columna",
+    "addCardTo": "Añadir tarjeta a {{name}}",
+    "actions": "Acciones de {{name}}",
+    "addCard": "Añadir tarjeta",
+    "delete": "Eliminar columna",
+    "cards": "Tarjetas de {{name}}",
+    "noMatches": "Nada coincide con el filtro",
+    "dropHere": "Suelta tarjetas aquí",
+    "deleteConfirm": {
+      "title": "¿Eliminar la columna «{{name}}»?",
+      "withCards_one": "Se eliminará también su tarjeta. Si prefieres conservarla, muévela antes a otra columna.",
+      "withCards_many": "Se eliminarán también sus {{count}} tarjetas. Si prefieres conservarlas, muévelas antes a otra columna.",
+      "withCards_other": "Se eliminarán también sus {{count}} tarjetas. Si prefieres conservarlas, muévelas antes a otra columna.",
+      "empty": "La columna está vacía."
+    }
+  },
+  "composer": {
+    "placeholder": "¿Qué hay que hacer?",
+    "hint": "<kbd>↵</kbd> añadir · <kbd>esc</kbd> cerrar",
+    "submit": "Añadir"
+  },
+  "card": {
+    "title": "Título de la tarjeta",
+    "roleDescription": "tarjeta",
+    "checklist": "Checklist",
+    "hasDescription": "Tiene descripción",
+    "linkedDocs": "Documentos vinculados",
+    "attachments": "Adjuntos",
+    "createdByName": "Creada por {{name}}"
+  },
+  "sheet": {
+    "fallbackTitle": "Tarjeta",
+    "label": "Detalle de la tarjeta",
+    "gone": "Esta tarjeta ya no existe",
+    "archived": "Archivada",
+    "agentEditing": "{{name}} está editando",
+    "saving": "Guardando…",
+    "saved": "Guardado",
+    "actions": "Acciones de la tarjeta",
+    "archivedToast": "Tarjeta archivada",
+    "deleteConfirm": {
+      "title": "¿Eliminar esta tarjeta?",
+      "description": "Se eliminará con su checklist y adjuntos. Si solo quieres ocultarla, archívala."
+    },
+    "labels": "Etiquetas",
+    "addLabels": "Añadir etiquetas",
+    "due": "Vence",
+    "noDate": "Sin fecha",
+    "createdBy": "Creada por",
+    "unknownCreator": "Desconocido",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Añade contexto, criterios de aceptación o notas. Pulsa «/» para insertar.",
+    "descriptionLabel": "Descripción de la tarjeta",
+    "checklists": "Checklists",
+    "addChecklist": "+ Añadir",
+    "newChecklistTitle": "Checklist",
+    "checklistsEmpty": "Divide la tarea en pasos que puedas marcar.",
+    "linkedDocs": "Documentos vinculados",
+    "attachments": "Adjuntos",
+    "activity": "Actividad"
+  },
+  "checklist": {
+    "titleLabel": "Título de la checklist",
+    "actions": "Acciones de la checklist",
+    "delete": "Eliminar checklist",
+    "progress": "Progreso",
+    "item": "Elemento",
+    "deleteItem": "Eliminar «{{text}}»",
+    "addItem": "Añadir elemento",
+    "newItemPlaceholder": "Nuevo elemento y Enter",
+    "newItem": "Nuevo elemento"
+  },
+  "due": {
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "monday": "Lunes",
+    "inAWeek": "En 1 semana",
+    "remove": "Quitar fecha"
+  },
+  "labels": {
+    "title": "Etiquetas",
+    "newTitle": "Nueva etiqueta",
+    "editTitle": "Editar etiqueta",
+    "namePlaceholder": "Nombre (opcional)",
+    "nameLabel": "Nombre de la etiqueta",
+    "empty": "Este tablero aún no tiene etiquetas.",
+    "unnamed": "Sin nombre",
+    "editNamed": "Editar {{name}}",
+    "editUnnamed": "Editar etiqueta",
+    "create": "Crear etiqueta"
+  },
+  "linked": {
+    "mentioned": "mencionada",
+    "unlinkNamed": "Desvincular {{title}}",
+    "unlinkUntitled": "Desvincular página",
+    "link": "Vincular documento",
+    "search": "Buscar páginas…",
+    "searchLabel": "Buscar páginas",
+    "noResults": "Sin resultados.",
+    "hint": "Escribe para buscar en todo el espacio."
+  },
+  "archived": {
+    "sheetTitle": "Tarjetas archivadas",
+    "heading": "Archivadas",
+    "emptyTitle": "Nada archivado",
+    "emptyBody": "Las tarjetas que archives (tú o tus agentes) aparecerán aquí y podrás restaurarlas.",
+    "deleteConfirm": "¿Eliminar «{{title}}» definitivamente?"
+  },
+  "attachments": {
+    "deleteConfirm": "¿Eliminar «{{name}}»?",
+    "download": "Descargar {{name}}",
+    "deleteNamed": "Eliminar {{name}}",
+    "uploading": "Subiendo…",
+    "attach": "Adjuntar archivo"
+  }
+}

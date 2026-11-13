@@ -1,0 +1,137 @@
+{
+  "nav": {
+    "label": "Navegación principal",
+    "search": "Buscar o saltar a…",
+    "home": "Inicio",
+    "vault": "Bóveda",
+    "agents": "Agentes",
+    "agentLive": "Agente activo",
+    "projects": "Proyectos",
+    "newProject": "Nuevo proyecto",
+    "firstProject": {
+      "title": "Crea tu primer proyecto",
+      "body": "Agrupa tableros y documentos en un mismo lugar."
+    },
+    "vaultLocked": "Bloqueada",
+    "vaultUnlocked": "Desbloqueada"
+  },
+  "workspace": {
+    "fallback": "Espacio",
+    "heading": "Espacios",
+    "new": "Nuevo espacio",
+    "newDescription": "Los espacios separan contextos, por ejemplo personal y trabajo. Cada token de agente pertenece a un único espacio.",
+    "name": "Nombre",
+    "create": "Crear espacio",
+    "settings": "Ajustes"
+  },
+  "project": {
+    "collapse": "Contraer {{name}}",
+    "expand": "Expandir {{name}}",
+    "actions": "Acciones de {{name}}",
+    "newBoard": "Nuevo tablero",
+    "newPage": "Nueva página",
+    "newPageIn": "Nueva página en {{name}}",
+    "rename": "Nombre y color",
+    "delete": "Eliminar proyecto",
+    "empty": "Vacío"
+  },
+  "tree": {
+    "collapse": "Contraer",
+    "expand": "Expandir",
+    "newSubpage": "Nueva subpágina"
+  },
+  "user": {
+    "updateAvailable": "Hay una versión nueva de Orqevio",
+    "settings": "Ajustes",
+    "newVersion": "Nueva versión",
+    "appearance": "Apariencia",
+    "theme": {
+      "system": "Sistema",
+      "light": "Claro",
+      "dark": "Oscuro"
+    },
+    "signOut": "Cerrar sesión"
+  },
+  "header": {
+    "hideSidebar": "Ocultar barra lateral",
+    "showSidebar": "Mostrar barra lateral",
+    "toggleSidebar": "Alternar barra lateral",
+    "breadcrumb": "Ruta"
+  },
+  "newProject": {
+    "title": "Nuevo proyecto",
+    "description": "Un proyecto agrupa tableros y documentos relacionados.",
+    "name": "Nombre",
+    "namePlaceholder": "p. ej. Lanzamiento de la web",
+    "color": "Color",
+    "withBoard": "Crear un tablero",
+    "startWithBoard": "Empezar con un tablero",
+    "boardHint": "Columnas {{columns}}. Puedes cambiarlas cuando quieras.",
+    "boardName": "Tareas",
+    "create": "Crear proyecto"
+  },
+  "projectSettings": {
+    "title": "Proyecto",
+    "name": "Nombre",
+    "description": "Descripción",
+    "optional": "Opcional",
+    "color": "Color"
+  },
+  "actions": {
+    "newBoard": {
+      "title": "Nuevo tablero",
+      "label": "Nombre del tablero",
+      "placeholder": "p. ej. Sprint de lanzamiento",
+      "confirm": "Crear tablero"
+    },
+    "deleteBoard": {
+      "title": "¿Eliminar «{{name}}»?",
+      "body": "Se eliminarán sus columnas y tarjetas. Esta acción no se puede deshacer.",
+      "confirm": "Eliminar tablero",
+      "done": "Tablero eliminado"
+    },
+    "deletePage": {
+      "title": "¿Eliminar «{{name}}»?",
+      "body": "También se eliminarán sus subpáginas y adjuntos. Esta acción no se puede deshacer.",
+      "confirm": "Eliminar página",
+      "done": "Página eliminada"
+    },
+    "deleteProject": {
+      "title": "¿Eliminar el proyecto «{{name}}»?",
+      "body": "Se eliminarán todos sus tableros, tarjetas, páginas y adjuntos. Esta acción no se puede deshacer.",
+      "confirm": "Eliminar proyecto",
+      "done": "Proyecto eliminado"
+    }
+  },
+  "palette": {
+    "label": "Paleta de comandos",
+    "title": "Buscar",
+    "description": "Busca proyectos, tableros, páginas y tarjetas, o ejecuta una acción.",
+    "placeholder": "Busca tareas, documentos o acciones…",
+    "searching": "Buscando…",
+    "noResults": "Sin resultados. Prueba con otras palabras.",
+    "inContent": "En el contenido",
+    "navigate": "Navegar",
+    "structure": "Proyectos, tableros y páginas",
+    "project": "Proyecto",
+    "actions": "Acciones",
+    "newProject": "Nuevo proyecto",
+    "lightTheme": "Cambiar a tema claro",
+    "darkTheme": "Cambiar a tema oscuro",
+    "lockVault": "Bloquear la bóveda",
+    "hintNavigate": "navegar",
+    "hintOpen": "abrir",
+    "keywords": {
+      "home": "Inicio",
+      "vault": "Bóveda contraseñas",
+      "agents": "Agentes MCP tokens",
+      "settings": "Ajustes cuenta",
+      "project": "proyecto",
+      "board": "tablero",
+      "page": "página",
+      "newProject": "Nuevo proyecto crear",
+      "theme": "Cambiar tema claro oscuro apariencia",
+      "lockVault": "Bloquear bóveda"
+    }
+  }
+}

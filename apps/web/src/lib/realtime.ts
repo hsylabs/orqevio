@@ -1,4 +1,4 @@
-import type { RealtimeEvent } from '@orqevio/shared'
+import { LIVE_CLOSE, type LiveMessage, type RealtimeEvent } from '@orqevio/shared'
 import { useEffect, useSyncExternalStore } from 'react'
 import { keys, queryClient } from './queries'
 
@@ -82,30 +82,66 @@ function handle(workspaceId: string, event: RealtimeEvent, selfId: string | unde
   return fromSelf
 }
 
-/** Keeps one EventSource per open workspace; reconnects automatically. */
+const PING_EVERY_MS = 25_000
+const PONG_TIMEOUT_MS = 10_000
+
+/**
+ * Keeps one WebSocket per open workspace. It pings the server periodically (which
+ * also re-checks the session), reconnects with backoff, and refetches everything
+ * after a reconnection in case events were missed meanwhile.
+ */
 export function useRealtime(workspaceId: string | undefined, selfId: string | undefined) {
   useEffect(() => {
-    if (!workspaceId) return
-    let source: EventSource | null = null
+    // Wait for the user too: opening before it is known would mean reconnecting right away.
+    if (!workspaceId || !selfId) return
+    let socket: WebSocket | null = null
     let retry: ReturnType<typeof setTimeout> | undefined
+    let ping: ReturnType<typeof setInterval> | undefined
+    let pongDeadline: ReturnType<typeof setTimeout> | undefined
     let attempts = 0
     let closed = false
+
+    const stopTimers = () => {
+      clearInterval(ping)
+      clearTimeout(pongDeadline)
+    }
     const open = () => {
-      source = new EventSource(`/api/workspaces/${workspaceId}/events`)
-      source.addEventListener('ready', () => {
-        if (attempts > 0) void queryClient.invalidateQueries()
-        attempts = 0
-      })
-      source.addEventListener('change', (msg) => {
-        try {
-          handle(workspaceId, JSON.parse((msg as MessageEvent).data) as RealtimeEvent, selfId)
-        } catch (error) {
-          console.error('Invalid realtime event', error)
+      const url = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/workspaces/${workspaceId}/live`
+      const ws = new WebSocket(url)
+      socket = ws
+      ws.onmessage = (msg) => {
+        if (msg.data === 'pong') {
+          clearTimeout(pongDeadline)
+          return
         }
-      })
-      source.onerror = () => {
-        source?.close()
+        try {
+          const data = JSON.parse(String(msg.data)) as LiveMessage
+          if (data.type === 'ready') {
+            if (attempts > 0) void queryClient.invalidateQueries()
+            attempts = 0
+          } else if (data.type === 'change') {
+            handle(workspaceId, data.event, selfId)
+          }
+        } catch (error) {
+          console.error('Invalid realtime message', error)
+        }
+      }
+      ws.onopen = () => {
+        ping = setInterval(() => {
+          if (ws.readyState !== WebSocket.OPEN) return
+          ws.send('ping')
+          clearTimeout(pongDeadline)
+          // No answer: the connection is dead even if the browser has not noticed yet.
+          pongDeadline = setTimeout(() => ws.close(), PONG_TIMEOUT_MS)
+        }, PING_EVERY_MS)
+      }
+      ws.onclose = (event) => {
+        stopTimers()
         if (closed) return
+        if (event.code === LIVE_CLOSE.sessionEnded || event.code === LIVE_CLOSE.noAccess) {
+          // Let the app react (sign-in screen or "not found") instead of retrying blindly.
+          void queryClient.invalidateQueries({ queryKey: keys.me })
+        }
         attempts++
         retry = setTimeout(open, Math.min(1000 * 2 ** attempts, 20_000))
       }
@@ -114,7 +150,15 @@ export function useRealtime(workspaceId: string | undefined, selfId: string | un
     return () => {
       closed = true
       clearTimeout(retry)
-      source?.close()
+      stopTimers()
+      const ws = socket
+      if (ws?.readyState === WebSocket.CONNECTING) {
+        // Closing during the handshake makes Safari log an error: close once it has opened.
+        ws.onmessage = null
+        ws.onopen = () => ws.close()
+      } else {
+        ws?.close()
+      }
     }
   }, [workspaceId, selfId])
 }

@@ -1,0 +1,312 @@
+{
+  "title": "Coffre-fort",
+  "back": "← Retour",
+  "reveal": {
+    "show": "Afficher",
+    "hide": "Masquer"
+  },
+  "types": {
+    "login": "Identifiant",
+    "note": "Note sécurisée"
+  },
+  "untitled": {
+    "login": "Sans titre",
+    "note": "Note sans titre"
+  },
+  "master": {
+    "label": "Mot de passe principal",
+    "new": "Nouveau mot de passe principal",
+    "repeatNew": "Répétez le nouveau mot de passe",
+    "newTooShort": "Le nouveau mot de passe doit contenir au moins 12 caractères.",
+    "mismatch": "Les mots de passe ne correspondent pas.",
+    "wrong": "Mot de passe principal incorrect."
+  },
+  "unsupported": {
+    "insecureTitle": "Le coffre-fort nécessite une connexion sécurisée",
+    "browserTitle": "Le coffre-fort ne fonctionne pas dans ce navigateur",
+    "blockers": {
+      "secure_context": "Vous avez ouvert Orqevio via une connexion non chiffrée (http://). Les navigateurs n’autorisent le chiffrement du coffre-fort que sur une connexion sécurisée : ouvrez votre copie en https:// (par exemple derrière Caddy, Nginx ou Traefik) ou, sur le même ordinateur, à l’adresse http://localhost.",
+      "webcrypto": "Ce navigateur ne propose pas WebCrypto, que le coffre-fort utilise pour chiffrer vos données.",
+      "workers": "Ce navigateur ne prend pas en charge les Web Workers, que le coffre-fort utilise pour dériver votre clé sans bloquer la page.",
+      "webassembly": "Ce navigateur ne prend pas en charge WebAssembly, que le coffre-fort utilise pour dériver votre clé avec Argon2id."
+    },
+    "updateBrowser": "Utilisez une version récente de Chrome, Edge, Firefox ou Safari.",
+    "restWorks": "Vos tâches et vos documents continuent de fonctionner normalement."
+  },
+  "toolbar": {
+    "autoLockTimer": "Verrouillage automatique après inactivité",
+    "generator": "Générateur",
+    "options": "Options du coffre-fort",
+    "changeMaster": "Changer le mot de passe principal",
+    "import": "Importer…",
+    "export": "Exporter…",
+    "autoLock": "Verrouillage automatique",
+    "autoLockMinutes_one": "Après {{count}} minute d’inactivité",
+    "autoLockMinutes_many": "Après {{count}} minutes d’inactivité",
+    "autoLockMinutes_other": "Après {{count}} minutes d’inactivité",
+    "autoLockHours_one": "Après {{count}} heure d’inactivité",
+    "autoLockHours_many": "Après {{count}} heures d’inactivité",
+    "autoLockHours_other": "Après {{count}} heures d’inactivité",
+    "lock": "Verrouiller",
+    "generatorTitle": "Générateur de mots de passe",
+    "generatorDescription": "Aléa cryptographique sans biais, généré par votre navigateur."
+  },
+  "list": {
+    "search": "Rechercher dans le coffre-fort",
+    "new": "Nouveau",
+    "filter": "Filtrer",
+    "filters": {
+      "all": "Tout",
+      "logins": "Identifiants",
+      "notes": "Notes"
+    },
+    "label": "Éléments du coffre-fort",
+    "noMatches": "Aucun résultat.",
+    "empty": "Votre coffre-fort est vide.",
+    "footer_one": "{{count}} élément · déchiffré uniquement dans ce navigateur",
+    "footer_many": "{{count}} éléments · déchiffrés uniquement dans ce navigateur",
+    "footer_other": "{{count}} éléments · déchiffrés uniquement dans ce navigateur"
+  },
+  "empty": {
+    "select": "Sélectionnez un élément",
+    "first": "Enregistrez votre premier identifiant",
+    "newLogin": "Nouvel identifiant",
+    "body": "Tout est chiffré dans votre navigateur avant d’être envoyé au serveur. Ni le serveur ni vos agents ne peuvent le lire."
+  },
+  "delete": {
+    "title": "Supprimer « {{title}} » ?",
+    "description": "Cet élément sera définitivement supprimé de votre coffre-fort.",
+    "confirm": "Supprimer"
+  },
+  "detail": {
+    "updatedLogin": "Identifiant · mis à jour {{time}}",
+    "updatedNote": "Note sécurisée · mise à jour {{time}}",
+    "favorite": "Ajouter aux favoris",
+    "unfavorite": "Retirer des favoris",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "username": "Nom d’utilisateur",
+    "copyUsername": "Copier le nom d’utilisateur",
+    "usernameCopied": "Nom d’utilisateur copié",
+    "password": "Mot de passe",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "copyPassword": "Copier le mot de passe",
+    "passwordCopied": "Mot de passe copié · le presse-papiers sera vidé dans 30 s",
+    "website": "Site web",
+    "openWebsite": "Ouvrir le site",
+    "copyUrl": "Copier l’URL",
+    "urlCopied": "URL copiée",
+    "content": "Contenu",
+    "notes": "Notes",
+    "copyNotes": "Copier les notes",
+    "notesCopied": "Copié",
+    "clipboardClears": "Quand vous copiez quelque chose, le presse-papiers se vide automatiquement au bout de 30 secondes."
+  },
+  "totp": {
+    "label": "Code de vérification",
+    "copy": "Copier le code",
+    "copied": "Code copié · le presse-papiers sera vidé dans 30 s",
+    "current": "Code de vérification actuel",
+    "changesIn_one": "Change dans {{count}} seconde",
+    "changesIn_many": "Change dans {{count}} secondes",
+    "changesIn_other": "Change dans {{count}} secondes",
+    "problems": {
+      "empty": "Saisissez la clé secrète ou le lien otpauth://.",
+      "not_totp": "Seuls les codes basés sur l’heure (TOTP) sont pris en charge.",
+      "bad_secret": "La clé secrète ne peut contenir que les lettres A à Z et les chiffres 2 à 7.",
+      "too_short": "La clé secrète est trop courte.",
+      "bad_parameters": "Le lien otpauth:// contient des paramètres non valides."
+    }
+  },
+  "editor": {
+    "editTitle": "Modifier l’élément",
+    "newLogin": "Nouvel identifiant",
+    "newNote": "Nouvelle note sécurisée",
+    "name": "Nom",
+    "namePlaceholderLogin": "p. ex. Banque, GitHub, Wi-Fi du bureau",
+    "namePlaceholderNote": "p. ex. Codes de secours",
+    "username": "Nom d’utilisateur ou e-mail",
+    "password": "Mot de passe",
+    "generate": "Générer un mot de passe",
+    "website": "Site web",
+    "websitePlaceholder": "exemple.com",
+    "totp": "Validation en deux étapes (TOTP)",
+    "totpPlaceholder": "Clé secrète ou lien otpauth://",
+    "totpHint": "La clé que le service vous montre à côté du code QR quand vous activez la validation en deux étapes.",
+    "content": "Contenu",
+    "notes": "Notes",
+    "save": "Chiffrer et enregistrer"
+  },
+  "changeMaster": {
+    "title": "Changer le mot de passe principal",
+    "description": "Vos éléments ne sont pas chiffrés à nouveau : seule la clé du coffre-fort est protégée par le nouveau mot de passe. Votre clé de récupération reste valide.",
+    "current": "Mot de passe principal actuel",
+    "submit": "Changer",
+    "wrongCurrent": "Le mot de passe principal actuel est incorrect.",
+    "done": "Mot de passe principal mis à jour"
+  },
+  "strength": {
+    "emptyHint": "Utilisez au moins 12 caractères. Une phrase de plusieurs mots est facile à retenir et difficile à deviner.",
+    "tooShort": "Trop court",
+    "tooShortHint": "Il faut au moins 12 caractères.",
+    "fair": "Pourrait être plus robuste",
+    "fairHint": "Ajoutez des mots ou variez davantage les caractères.",
+    "good": "Bon",
+    "veryGood": "Très bon",
+    "rememberHint": "Rappel : si vous l’oubliez, seule la clé de récupération pourra ouvrir le coffre-fort."
+  },
+  "generator": {
+    "regenerate": "En générer un autre",
+    "copied": "Copié · le presse-papiers sera vidé dans 30 s",
+    "entropy": "≈ {{bits}} bits d’entropie",
+    "length": "Longueur",
+    "sets": {
+      "upper": "Majuscules",
+      "lower": "Minuscules",
+      "digits": "Chiffres",
+      "symbols": "Symboles"
+    },
+    "avoidAmbiguous": "Éviter les caractères ambigus (I, l, 1, O, 0)",
+    "use": "Utiliser ce mot de passe",
+    "rating": {
+      "weak": "Faible",
+      "fair": "Moyen",
+      "strong": "Robuste",
+      "excellent": "Excellent"
+    }
+  },
+  "gate": {
+    "guarantees": {
+      "encryption": "Chiffrement AES-256-GCM dans votre navigateur",
+      "kdf": "Clé dérivée avec Argon2id",
+      "agents": "Les agents et MCP n’y ont pas accès"
+    },
+    "decryptFailed_one": "{{count}} élément n’a pas pu être déchiffré et a été ignoré.",
+    "decryptFailed_many": "{{count}} éléments n’ont pas pu être déchiffrés et ont été ignorés.",
+    "decryptFailed_other": "{{count}} éléments n’ont pas pu être déchiffrés et ont été ignorés.",
+    "setup": {
+      "title": "Configurez votre coffre-fort",
+      "subtitle": "Choisissez un mot de passe principal. Il sert, dans votre navigateur, à chiffrer vos secrets et n’est jamais envoyé au serveur.",
+      "tooShort": "Utilisez au moins 12 caractères.",
+      "failed": "Impossible de créer le coffre-fort dans ce navigateur.",
+      "repeat": "Répétez le mot de passe principal",
+      "busy": "Génération des clés…",
+      "submit": "Créer le coffre-fort",
+      "ready": "Votre coffre-fort est prêt. Personne d’autre que vous ne peut l’ouvrir."
+    },
+    "recoveryKey": {
+      "title": "Enregistrez votre clé de récupération",
+      "subtitle": "C’est le seul moyen de récupérer le coffre-fort si vous oubliez votre mot de passe principal. Elle ne s’affiche qu’une seule fois.",
+      "copied": "Clé de récupération copiée",
+      "download": "Télécharger le .txt",
+      "fileName": "orqevio-cle-de-recuperation.txt",
+      "fileText": "Orqevio — Clé de récupération du coffre-fort\n\n{{recoveryKey}}\n\nConservez-la en dehors d’Orqevio (par exemple imprimée ou dans un autre gestionnaire de mots de passe).\nElle permet de réinitialiser le mot de passe principal. Personne d’autre ne peut la récupérer pour vous.\n",
+      "saved": "Je l’ai enregistrée en lieu sûr, en dehors d’Orqevio.",
+      "open": "Ouvrir mon coffre-fort"
+    },
+    "unlock": {
+      "title": "Coffre-fort verrouillé",
+      "subtitle": "Saisissez votre mot de passe principal pour déchiffrer vos identifiants dans ce navigateur.",
+      "busy": "Déchiffrement…",
+      "submit": "Déverrouiller",
+      "forgot": "Mot de passe principal oublié ?"
+    },
+    "recover": {
+      "title": "Récupérer le coffre-fort",
+      "subtitle": "Utilisez la clé de récupération enregistrée lors de la création du coffre-fort pour choisir un nouveau mot de passe principal.",
+      "recoveryKey": "Clé de récupération",
+      "recoveryKeyPlaceholder": "XXXX-XXXX-XXXX-…",
+      "submit": "Réinitialiser et ouvrir",
+      "noKey": "Je n’ai pas la clé",
+      "invalidKey": "La clé de récupération n’est pas valide.",
+      "done": "Mot de passe principal réinitialisé"
+    },
+    "reset": {
+      "title": "Réinitialiser le coffre-fort",
+      "description": "Sans le mot de passe principal ni la clé de récupération, personne ne peut déchiffrer vos données, pas même nous. La réinitialisation supprime définitivement tous les éléments.",
+      "accessKey": "Clé d’accès",
+      "accessKeyHint": "Confirmez votre identité avec la clé d’accès de cette copie (et non avec le mot de passe principal).",
+      "submit": "Supprimer et réinitialiser",
+      "done": "Coffre-fort réinitialisé. Vous pouvez le configurer à nouveau."
+    }
+  },
+  "import": {
+    "title": "Importer dans le coffre-fort",
+    "description": "Le fichier est lu et chiffré dans ce navigateur : le serveur ne reçoit que des éléments déjà chiffrés.",
+    "formats": "Formats acceptés : le CSV exporté par Chrome, Edge, Firefox et Safari, le CSV et le JSON non chiffré de Bitwarden, et les exports chiffrés d’Orqevio.",
+    "choose": "Choisir un fichier",
+    "fileLabel": "Fichier à importer",
+    "tooLarge": "Le fichier est trop volumineux (plus de {{size}} Mo).",
+    "problems": {
+      "empty": "Le fichier est vide.",
+      "unknown_format": "Orqevio ne reconnaît pas ce fichier. Utilisez le CSV exporté par Chrome, Edge, Firefox ou Safari, le CSV ou le JSON de Bitwarden, ou un export d’Orqevio.",
+      "bitwarden_encrypted": "Il s’agit d’un export Bitwarden chiffré. Exportez-le de nouveau au format « .json » ou « .csv » non chiffré, puis importez-le ici.",
+      "no_items": "Le fichier ne contient ni identifiants ni notes."
+    },
+    "encrypted_one": "Il s’agit d’un export Orqevio chiffré contenant {{count}} élément. Saisissez le mot de passe principal que vous utilisiez au moment de l’export.",
+    "encrypted_many": "Il s’agit d’un export Orqevio chiffré contenant {{count}} éléments. Saisissez le mot de passe principal que vous utilisiez au moment de l’export.",
+    "encrypted_other": "Il s’agit d’un export Orqevio chiffré contenant {{count}} éléments. Saisissez le mot de passe principal que vous utilisiez au moment de l’export.",
+    "exportPassword": "Mot de passe de l’export",
+    "decrypt": "Déchiffrer",
+    "wrongPassword": "Ce n’est pas le mot de passe avec lequel cet export a été créé.",
+    "sources": {
+      "chromeOrEdge": "Depuis Chrome ou Edge :",
+      "firefox": "Depuis Firefox :",
+      "safari": "Depuis Safari :",
+      "bitwardenCsv": "Depuis Bitwarden (CSV) :",
+      "bitwardenJson": "Depuis Bitwarden (JSON) :",
+      "csv": "Depuis un fichier CSV :",
+      "orqevio": "Depuis Orqevio (chiffré) :"
+    },
+    "newLogins_one": "{{count}} nouvel identifiant",
+    "newLogins_many": "{{count}} nouveaux identifiants",
+    "newLogins_other": "{{count}} nouveaux identifiants",
+    "newNotes_one": "{{count}} nouvelle note",
+    "newNotes_many": "{{count}} nouvelles notes",
+    "newNotes_other": "{{count}} nouvelles notes",
+    "nothingNew": "Rien de nouveau à importer",
+    "duplicates_one": "{{count}} élément figure déjà dans votre coffre-fort et sera ignoré",
+    "duplicates_many": "{{count}} éléments figurent déjà dans votre coffre-fort et seront ignorés",
+    "duplicates_other": "{{count}} éléments figurent déjà dans votre coffre-fort et seront ignorés",
+    "unsupported_one": "{{count}} élément n’est pas pris en charge (cartes bancaires ou identités) et ne sera pas importé",
+    "unsupported_many": "{{count}} éléments ne sont pas pris en charge (cartes bancaires ou identités) et ne seront pas importés",
+    "unsupported_other": "{{count}} éléments ne sont pas pris en charge (cartes bancaires ou identités) et ne seront pas importés",
+    "unencryptedWarning": "Le fichier choisi n’est pas chiffré : supprimez-le de votre ordinateur une fois l’import terminé.",
+    "chooseAnother": "En choisir un autre",
+    "progress": "Chiffrement {{done}} sur {{total}}…",
+    "submit_one": "Importer {{count}} élément",
+    "submit_many": "Importer {{count}} éléments",
+    "submit_other": "Importer {{count}} éléments",
+    "failed_one": "{{count}} élément n’a pas pu être importé. Importez à nouveau le fichier : les éléments déjà importés seront ignorés.",
+    "failed_many": "{{count}} éléments n’ont pas pu être importés. Importez à nouveau le fichier : les éléments déjà importés seront ignorés.",
+    "failed_other": "{{count}} éléments n’ont pas pu être importés. Importez à nouveau le fichier : les éléments déjà importés seront ignorés.",
+    "done_one": "{{count}} élément importé",
+    "done_many": "{{count}} éléments importés",
+    "done_other": "{{count}} éléments importés",
+    "locked": "Le coffre-fort s’est verrouillé avant la fin de l’import. Déverrouillez-le et importez à nouveau le fichier : ce qui a déjà été importé sera ignoré.",
+    "untitledNote": "Note",
+    "untitledLogin": "Sans titre",
+    "damaged": "Cet export est endommagé et ne peut pas être lu."
+  },
+  "export": {
+    "title": "Exporter le coffre-fort",
+    "description": "Téléchargez tous vos éléments dans un fichier, préparé dans ce navigateur.",
+    "kind": "Type d’export",
+    "kinds": {
+      "encrypted": "Chiffré",
+      "plain": "Non chiffré"
+    },
+    "encryptedInfo": "Seul votre mot de passe principal actuel permet de l’ouvrir. Utilisez-le comme sauvegarde ou pour transférer vos éléments vers une autre copie d’Orqevio.",
+    "plainInfo": "Au format JSON de Bitwarden, que la plupart des gestionnaires de mots de passe savent importer. Toute personne qui possède le fichier peut le lire.",
+    "understood": "Je comprends que le fichier n’est pas chiffré et que toute personne qui le possède peut lire tous mes mots de passe.",
+    "submitPlain": "Exporter en clair",
+    "submitEncrypted": "Exporter chiffré",
+    "fileNameEncrypted": "orqevio-coffre-fort-chiffre-{{date}}.json",
+    "fileNamePlain": "orqevio-coffre-fort-non-chiffre-{{date}}.json",
+    "done_one": "{{count}} élément exporté",
+    "done_many": "{{count}} éléments exportés",
+    "done_other": "{{count}} éléments exportés",
+    "tooLarge": "L’export dépasse {{size}} Mo : Orqevio ne pourra pas l’importer."
+  }
+}

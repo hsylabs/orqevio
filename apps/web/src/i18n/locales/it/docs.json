@@ -1,0 +1,150 @@
+{
+  "page": {
+    "status": {
+      "saving": "Salvataggio…",
+      "pending": "Modifiche non salvate",
+      "saved": "Salvato",
+      "error": "Non salvato"
+    },
+    "actions": "Azioni della pagina",
+    "newSubpage": "Nuova sottopagina",
+    "move": "Sposta in…",
+    "delete": "Elimina pagina",
+    "titleLabel": "Titolo della pagina",
+    "editedBy": "Modificata da <name>{{name}}</name> · {{time}}",
+    "agentWorking": "{{name}} sta lavorando qui",
+    "agentUpdated": "{{name}} ha aggiornato questa pagina",
+    "linkedTasks": "Attività collegate",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> ha cambiato questa pagina mentre la stavi modificando. Le tue ultime modifiche non sono state salvate.",
+      "byOtherSession": "<strong>Un’altra sessione</strong> ha cambiato questa pagina mentre la stavi modificando. Le tue ultime modifiche non sono state salvate.",
+      "loadTheirs": "Carica l’altra versione",
+      "keepMine": "Mantieni la mia"
+    },
+    "content": "Contenuto della pagina",
+    "subpages": "Sottopagine",
+    "attachments": "Allegati"
+  },
+  "editor": {
+    "placeholder": "Scrivi, o premi «/» per inserire…",
+    "headingPlaceholder": "Titolo",
+    "label": "Contenuto",
+    "uploading": "Caricamento di {{name}}…",
+    "uploaded": "File allegato",
+    "noBlocks": "Nessun blocco corrispondente",
+    "mentionHint": "Digita per cercare attività e pagine",
+    "groups": {
+      "blocks": "Blocchi",
+      "lists": "Elenchi",
+      "insert": "Inserisci",
+      "tasks": "Attività",
+      "pages": "Pagine"
+    },
+    "slash": {
+      "p": {
+        "title": "Testo",
+        "subtitle": "Paragrafo semplice",
+        "keywords": "testo paragrafo corpo text paragraph"
+      },
+      "h1": {
+        "title": "Titolo 1",
+        "subtitle": "Titolo grande",
+        "keywords": "titolo intestazione heading h1"
+      },
+      "h2": {
+        "title": "Titolo 2",
+        "subtitle": "Titolo di sezione",
+        "keywords": "titolo intestazione sezione heading h2"
+      },
+      "h3": {
+        "title": "Titolo 3",
+        "subtitle": "Sottosezione",
+        "keywords": "titolo sottotitolo intestazione heading h3"
+      },
+      "ul": {
+        "title": "Elenco",
+        "subtitle": "Elenco puntato",
+        "keywords": "elenco lista puntato punti bullet ul"
+      },
+      "ol": {
+        "title": "Elenco numerato",
+        "subtitle": "1, 2, 3…",
+        "keywords": "elenco lista numerato ordinato numeri ol"
+      },
+      "todo": {
+        "title": "Lista di cose da fare",
+        "subtitle": "Caselle da spuntare",
+        "keywords": "attività checklist todo caselle spunta"
+      },
+      "quote": {
+        "title": "Citazione",
+        "subtitle": "Metti in risalto un passaggio",
+        "keywords": "citazione quote blockquote"
+      },
+      "code": {
+        "title": "Codice",
+        "subtitle": "Blocco di codice",
+        "keywords": "codice code snippet"
+      },
+      "table": {
+        "title": "Tabella",
+        "subtitle": "3 × 3 con riga di intestazione",
+        "keywords": "tabella table griglia"
+      },
+      "hr": {
+        "title": "Separatore",
+        "subtitle": "Linea orizzontale",
+        "keywords": "separatore divisore linea riga hr divider"
+      },
+      "mention": {
+        "title": "Collega attività o pagina",
+        "subtitle": "Digita @ e cerca",
+        "keywords": "menzione collegamento link attività pagina mention"
+      },
+      "image": {
+        "title": "Immagine",
+        "subtitle": "Carica un PNG, JPG, GIF o WebP",
+        "keywords": "immagine foto image"
+      },
+      "file": {
+        "title": "File",
+        "subtitle": "Allega qualsiasi file",
+        "keywords": "file allegato carica upload"
+      }
+    },
+    "mention": {
+      "card": "Attività · {{board}} · {{column}}",
+      "page": "Pagina · {{project}}"
+    },
+    "menu": {
+      "slash": "Inserisci blocco",
+      "mention": "Collega attività o pagina",
+      "searching": "Ricerca in corso…",
+      "noMatches": "Nessun risultato"
+    },
+    "format": {
+      "linkPlaceholder": "https://… o /doc/…",
+      "linkLabel": "Indirizzo del link",
+      "openLink": "Apri link",
+      "editLink": "Modifica link",
+      "removeLink": "Rimuovi link",
+      "bold": "Grassetto",
+      "italic": "Corsivo",
+      "strike": "Barrato",
+      "code": "Codice",
+      "link": "Link"
+    }
+  },
+  "icon": {
+    "change": "Cambia icona",
+    "add": "Aggiungi icona",
+    "use": "Usa {{icon}}",
+    "remove": "Rimuovi icona"
+  },
+  "move": {
+    "title": "Sposta pagina",
+    "description": "Scegli dove collocarla nel progetto.",
+    "root": "radice del progetto",
+    "moved": "Pagina spostata"
+  }
+}

@@ -1,0 +1,94 @@
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">Your workspace, in your own copy</span>
+        <h1>Organize.<br />Document.<br /><em>Protect.</em></h1>
+        <p class="lead">Tasks, documentation and an end-to-end encrypted vault, in a copy that lives in your Cloudflare account or on your server. Your AI agents work in it through MCP, with the permissions you choose.</p>
+        <div class="actions">
+          <a class="button primary" href="{{base}}/install/">Install your copy</a>
+          <a class="button secondary" href="https://github.com/hsylabs/orqevio">View the code</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
+        <p class="caption">One command and a few minutes: you sign in to Cloudflare, pick a name and get your copy’s address. Cloudflare’s free plan is enough for personal use.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="features">
+    <div class="wrap">
+      <h2 id="features">Four pieces that work together</h2>
+      <p class="lead">What you need to run your projects, in one place, with changes live.</p>
+      <div class="grid two">
+        <article class="card">
+          <span class="tag">01 · Tasks</span>
+          <h3>Boards that keep moving</h3>
+          <p>Projects with Kanban boards, labels, due dates, checklists and attachments. Drag with the mouse or the keyboard, and archive what you no longer need.</p>
+        </article>
+        <article class="card">
+          <span class="tag">02 · Documentation</span>
+          <h3>Linked knowledge</h3>
+          <p>Nested Markdown pages with a block editor, tables and images. Link tasks from your documents and search everything without worrying about accents or capitals.</p>
+        </article>
+        <article class="card">
+          <span class="tag">03 · Vault</span>
+          <h3>Passwords only you can read</h3>
+          <p>Logins and notes encrypted in your browser before they ever leave it, with a password generator, two-step verification codes and auto-lock. Import from your browser or Bitwarden.</p>
+        </article>
+        <article class="card agent">
+          <span class="tag">04 · Agents</span>
+          <h3>Your agents, with clear permissions</h3>
+          <p>An MCP server so Claude and other assistants can read documentation, create tasks and rearrange boards. You see what they do live, and the vault always stays out of their reach.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="copy">
+    <div class="wrap">
+      <h2 id="copy">One copy per person. Your data, at home.</h2>
+      <p class="lead">Orqevio isn’t someone else’s cloud service: everyone installs their own copy, and orqevio.com keeps nobody’s data.</p>
+      <div class="grid two">
+        <div class="card">
+          <h3>Where your copy lives</h3>
+          <div class="copies">
+            <div class="copy-row"><span class="dot"></span><div><strong>In your Cloudflare account</strong><span>A Worker, a SQLite database and a bucket for attachments.</span></div></div>
+            <div class="copy-row"><span class="dot"></span><div><strong>Or on your server, with Docker</strong><span>One container and a single SQLite file.</span></div></div>
+            <div class="copy-row agent"><span class="dot"></span><div><strong>Your agents connect to it</strong><span>Through MCP, with OAuth or a token per workspace.</span></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>No accounts, no passwords</h3>
+          <p>No sign-up, no email. You claim your copy once with a setup code and sign in with a random 160-bit key that only you have. If you lose it, you generate a new one from your Cloudflare account or your server.</p>
+          <ul>
+            <li>Updating is one command, or merging a pull request.</li>
+            <li>Your copy tells you when there’s a new version.</li>
+            <li>Your data, your key and your vault are always kept.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="security">
+    <div class="wrap">
+      <h2 id="security">Security without the fine print</h2>
+      <ul class="checks">
+        <li><strong>Zero-knowledge vault.</strong> Argon2id and AES-256-GCM in your browser: the server only stores encrypted data, titles included.</li>
+        <li><strong>Agents with limits.</strong> Each connection belongs to one workspace and has permissions per area. Agents can’t delete, only archive.</li>
+        <li><strong>Everything is logged.</strong> Every change shows who made it, person or agent, and you can revoke access instantly.</li>
+        <li><strong>Secure by default.</strong> Secure cookies, CSRF protection, a strict content security policy and rate limits.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="license">
+    <div class="wrap">
+      <h2 id="license">Source available, free to use</h2>
+      <p class="lead">Orqevio is released under the <a href="https://github.com/hsylabs/orqevio/blob/main/LICENSE.md">FSL-1.1-ALv2</a> license. You can use it, change it and host your copy, at work too. The only thing it doesn’t allow is offering it as a commercial product or service that competes with Orqevio. Each version becomes Apache 2.0 two years after its release.</p>
+      <div class="actions">
+        <a class="button primary" href="{{base}}/install/">Install your copy</a>
+      </div>
+    </div>
+  </section>

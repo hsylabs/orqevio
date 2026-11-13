@@ -1,0 +1,94 @@
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">自分専用の環境で動く、あなたのワークスペース</span>
+        <h1>整理する。<br />記録する。<br /><em>守る。</em></h1>
+        <p class="lead">タスク、ドキュメント、エンドツーエンドで暗号化された保管庫を、お使いのCloudflareアカウントやサーバーで動く、あなた専用のOrqevioに。AIエージェントもMCPを通じて、あなたが決めた権限の範囲で作業できます。</p>
+        <div class="actions">
+          <a class="button primary" href="{{base}}/install/">Orqevioをインストール</a>
+          <a class="button secondary" href="https://github.com/hsylabs/orqevio">コードを見る</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
+        <p class="caption">コマンド1つで、数分で完了。Cloudflareにログインして名前を決めれば、あなたのOrqevioのアドレスが表示されます。個人で使うなら、Cloudflareの無料プランで十分です。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="features">
+    <div class="wrap">
+      <h2 id="features">連携して働く4つの機能</h2>
+      <p class="lead">プロジェクトを進めるのに必要なものを、1か所に。変更はリアルタイムで反映されます。</p>
+      <div class="grid two">
+        <article class="card">
+          <span class="tag">01 · タスク</span>
+          <h3>止まらずに進むボード</h3>
+          <p>カンバンボード、ラベル、期限、チェックリスト、添付ファイルでプロジェクトを管理。マウスでもキーボードでもカードを動かせて、不要になったものはアーカイブできます。</p>
+        </article>
+        <article class="card">
+          <span class="tag">02 · ドキュメント</span>
+          <h3>つながるナレッジ</h3>
+          <p>ブロックエディター、表、画像を使える、階層化されたMarkdownページ。ドキュメントからタスクにリンクでき、アクセント記号や大文字・小文字の違いを気にせず、すべてを検索できます。</p>
+        </article>
+        <article class="card">
+          <span class="tag">03 · 保管庫</span>
+          <h3>あなたにしか読めないパスワード</h3>
+          <p>ログイン情報とメモは、ブラウザの外に出る前に、ブラウザの中で暗号化されます。パスワード生成ツール、2段階認証のコード、自動ロックも備えています。ブラウザやBitwardenからインポートできます。</p>
+        </article>
+        <article class="card agent">
+          <span class="tag">04 · エージェント</span>
+          <h3>明確な権限で動くエージェント</h3>
+          <p>MCPサーバーを通じて、Claudeなどのアシスタントがドキュメントを参照し、タスクを作成し、ボードを整理できます。その動きはリアルタイムで確認でき、保管庫には決して手が届きません。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="copy">
+    <div class="wrap">
+      <h2 id="copy">1人に1つのOrqevio。データは自分の手元に。</h2>
+      <p class="lead">Orqevioは、誰かが運営するクラウドサービスではありません。一人ひとりが自分専用のOrqevioをインストールし、orqevio.comは誰のデータも保存しません。</p>
+      <div class="grid two">
+        <div class="card">
+          <h3>Orqevioが動く場所</h3>
+          <div class="copies">
+            <div class="copy-row"><span class="dot"></span><div><strong>あなたのCloudflareアカウント</strong><span>Worker、SQLiteデータベース、添付ファイル用のバケット。</span></div></div>
+            <div class="copy-row"><span class="dot"></span><div><strong>またはDockerで自分のサーバーに</strong><span>コンテナ1つと、SQLiteファイル1つだけ。</span></div></div>
+            <div class="copy-row agent"><span class="dot"></span><div><strong>エージェントはここに接続</strong><span>MCPで、OAuthまたはワークスペースごとのトークンを使います。</span></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>アカウントもパスワードも不要</h3>
+          <p>登録もメールアドレスもいりません。セットアップコードで一度だけセットアップし、あなただけが持つランダムな160ビットのキーでログインします。キーを紛失したときは、Cloudflareアカウントやサーバーから新しいキーを発行できます。</p>
+          <ul>
+            <li>更新は、コマンド1つかプルリクエストのマージだけ。</li>
+            <li>新しいバージョンが出ると、Orqevioが知らせてくれます。</li>
+            <li>データ、キー、保管庫は常にそのまま保持されます。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="security">
+    <div class="wrap">
+      <h2 id="security">但し書きのいらないセキュリティ</h2>
+      <ul class="checks">
+        <li><strong>ゼロ知識の保管庫。</strong>ブラウザ内でArgon2idとAES-256-GCMを使って暗号化。サーバーに保存されるのは、タイトルも含めて暗号化されたデータだけです。</li>
+        <li><strong>エージェントには制限を。</strong>接続はそれぞれ1つのワークスペースに属し、領域ごとに権限を設定できます。エージェントは削除できず、アーカイブしかできません。</li>
+        <li><strong>すべてを記録。</strong>どの変更も、人とエージェントのどちらが行ったかが表示されます。アクセスはいつでもすぐに取り消せます。</li>
+        <li><strong>初期設定で安全。</strong>Secure属性付きのCookie、CSRF対策、厳格なコンテンツセキュリティポリシー、レート制限を備えています。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="license">
+    <div class="wrap">
+      <h2 id="license">ソースコードを公開、自由に使えます</h2>
+      <p class="lead">Orqevioは<a href="https://github.com/hsylabs/orqevio/blob/main/LICENSE.md">FSL-1.1-ALv2</a>ライセンスで公開されています。使うのも、改変するのも、自分のOrqevioをホストするのも自由で、仕事での利用もできます。唯一認められていないのは、Orqevioと競合する商用の製品やサービスとして提供することです。各バージョンは、リリースから2年後にApache 2.0ライセンスになります。</p>
+      <div class="actions">
+        <a class="button primary" href="{{base}}/install/">Orqevioをインストール</a>
+      </div>
+    </div>
+  </section>

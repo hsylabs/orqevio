@@ -1,0 +1,150 @@
+{
+  "page": {
+    "status": {
+      "saving": "Salvando…",
+      "pending": "Alterações não salvas",
+      "saved": "Salvo",
+      "error": "Não salvo"
+    },
+    "actions": "Ações da página",
+    "newSubpage": "Nova subpágina",
+    "move": "Mover para…",
+    "delete": "Excluir página",
+    "titleLabel": "Título da página",
+    "editedBy": "Editado por <name>{{name}}</name> · {{time}}",
+    "agentWorking": "{{name}} está trabalhando aqui",
+    "agentUpdated": "{{name}} atualizou esta página",
+    "linkedTasks": "Tarefas vinculadas",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> alterou esta página enquanto você editava. Suas últimas alterações não foram salvas.",
+      "byOtherSession": "<strong>Outra sessão</strong> alterou esta página enquanto você editava. Suas últimas alterações não foram salvas.",
+      "loadTheirs": "Carregar a outra versão",
+      "keepMine": "Manter a minha"
+    },
+    "content": "Conteúdo da página",
+    "subpages": "Subpáginas",
+    "attachments": "Anexos"
+  },
+  "editor": {
+    "placeholder": "Escreva ou pressione “/” para inserir…",
+    "headingPlaceholder": "Título",
+    "label": "Conteúdo",
+    "uploading": "Enviando {{name}}…",
+    "uploaded": "Arquivo anexado",
+    "noBlocks": "Nenhum bloco corresponde",
+    "mentionHint": "Digite para buscar tarefas e páginas",
+    "groups": {
+      "blocks": "Blocos",
+      "lists": "Listas",
+      "insert": "Inserir",
+      "tasks": "Tarefas",
+      "pages": "Páginas"
+    },
+    "slash": {
+      "p": {
+        "title": "Texto",
+        "subtitle": "Parágrafo simples",
+        "keywords": "texto parágrafo corpo text paragraph"
+      },
+      "h1": {
+        "title": "Título 1",
+        "subtitle": "Título grande",
+        "keywords": "título cabeçalho heading h1"
+      },
+      "h2": {
+        "title": "Título 2",
+        "subtitle": "Título de seção",
+        "keywords": "título cabeçalho seção heading h2"
+      },
+      "h3": {
+        "title": "Título 3",
+        "subtitle": "Subseção",
+        "keywords": "título cabeçalho subseção heading h3"
+      },
+      "ul": {
+        "title": "Lista",
+        "subtitle": "Lista com marcadores",
+        "keywords": "lista marcadores tópicos bullet ul"
+      },
+      "ol": {
+        "title": "Lista numerada",
+        "subtitle": "1, 2, 3…",
+        "keywords": "lista numerada ordenada números ol"
+      },
+      "todo": {
+        "title": "Lista de tarefas",
+        "subtitle": "Caixas de seleção para marcar",
+        "keywords": "tarefas pendências checklist caixa todo check"
+      },
+      "quote": {
+        "title": "Citação",
+        "subtitle": "Destaque um trecho",
+        "keywords": "citação destaque quote blockquote"
+      },
+      "code": {
+        "title": "Código",
+        "subtitle": "Bloco de código",
+        "keywords": "código trecho code snippet"
+      },
+      "table": {
+        "title": "Tabela",
+        "subtitle": "3 × 3 com linha de cabeçalho",
+        "keywords": "tabela grade table"
+      },
+      "hr": {
+        "title": "Divisor",
+        "subtitle": "Linha horizontal",
+        "keywords": "divisor separador linha divider hr"
+      },
+      "mention": {
+        "title": "Vincular tarefa ou página",
+        "subtitle": "Digite @ e busque",
+        "keywords": "menção mencionar vincular link tarefa página mention"
+      },
+      "image": {
+        "title": "Imagem",
+        "subtitle": "Envie um PNG, JPG, GIF ou WebP",
+        "keywords": "imagem foto figura image"
+      },
+      "file": {
+        "title": "Arquivo",
+        "subtitle": "Anexe qualquer arquivo",
+        "keywords": "arquivo anexo enviar upload file"
+      }
+    },
+    "mention": {
+      "card": "Tarefa · {{board}} · {{column}}",
+      "page": "Página · {{project}}"
+    },
+    "menu": {
+      "slash": "Inserir bloco",
+      "mention": "Vincular tarefa ou página",
+      "searching": "Buscando…",
+      "noMatches": "Nenhuma correspondência"
+    },
+    "format": {
+      "linkPlaceholder": "https://… ou /doc/…",
+      "linkLabel": "Endereço do link",
+      "openLink": "Abrir link",
+      "editLink": "Editar link",
+      "removeLink": "Remover link",
+      "bold": "Negrito",
+      "italic": "Itálico",
+      "strike": "Tachado",
+      "code": "Código",
+      "link": "Link"
+    }
+  },
+  "icon": {
+    "change": "Mudar ícone",
+    "add": "Adicionar ícone",
+    "use": "Usar {{icon}}",
+    "remove": "Remover ícone"
+  },
+  "move": {
+    "title": "Mover página",
+    "description": "Escolha onde colocá-la no projeto.",
+    "root": "raiz do projeto",
+    "moved": "Página movida"
+  }
+}

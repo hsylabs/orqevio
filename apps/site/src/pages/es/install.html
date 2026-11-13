@@ -1,0 +1,105 @@
+  <div class="page-head">
+    <div class="wrap">
+      <span class="eyebrow">Guía de instalación</span>
+      <h1>Instala tu copia</h1>
+      <p class="lead">Elige dónde vive: en tu cuenta de Cloudflare, con un comando o con un botón, o en tu servidor con Docker. En los tres casos la copia es tuya y el resultado es el mismo.</p>
+      <nav class="toc" aria-label="En esta página">
+        <a href="#command">Con un comando</a>
+        <a href="#button">Con el botón</a>
+        <a href="#docker">Con Docker</a>
+        <a href="#access">Primer acceso</a>
+        <a href="#agents">Conectar agentes</a>
+        <a href="#update">Actualizar</a>
+        <a href="#costs">Costes</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="wrap prose">
+    <h2 id="command">Con un comando <span class="badge">Recomendada</span></h2>
+    <p>Tu copia se instala en tu propia cuenta de Cloudflare: un Worker con la web, la API y el MCP, una base de datos SQLite y un bucket R2 para los adjuntos.</p>
+    <p><strong>Necesitas</strong> una cuenta de Cloudflare (el plan gratuito basta) y Node.js 22.12 o superior.</p>
+    <p class="note"><strong>Antes de empezar, activa R2</strong> en el panel de Cloudflare, en <a href="https://dash.cloudflare.com/?to=/:account/r2/overview">R2 → Overview</a>. El uso incluido es gratis (10 GB de almacenamiento al mes), aunque Cloudflare puede pedirte un método de pago. Lo necesitan las dos formas de instalar en Cloudflare: el comando y el botón.</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
+    <ol>
+      <li>Se abre el navegador para que inicies sesión en Cloudflare.</li>
+      <li>Eliges un nombre para la copia (por defecto, <code>orqevio</code>), que forma parte de su dirección.</li>
+      <li>El instalador despliega la copia y crea su bucket.</li>
+      <li>Te muestra la dirección (<code>https://orqevio.&lt;tu-subdominio&gt;.workers.dev</code>) y un <strong>código de configuración</strong> de un solo uso.</li>
+    </ol>
+    <p>Abre la dirección y sigue el <a href="#access">primer acceso</a>.</p>
+    <ul>
+      <li><strong>Varias copias:</strong> añade <code>--name &lt;nombre&gt;</code> a cualquier orden.</li>
+      <li><strong>Varias cuentas de Cloudflare:</strong> el instalador te pregunta cuál usar, o indícala con <code>--account &lt;id&gt;</code>.</li>
+      <li><strong>Idioma:</strong> el instalador habla el idioma de tu terminal; elige otro con <code>--lang &lt;código&gt;</code>.</li>
+      <li><strong>Privacidad:</strong> el instalador desactiva la telemetría de Wrangler, salvo que tú la hayas activado, y trabaja en una carpeta temporal que borra al terminar.</li>
+    </ul>
+
+    <h2 id="button">Con el botón</h2>
+    <p>Si prefieres tener tu copia en un repositorio propio de GitHub o GitLab:</p>
+    <a class="deploy" href="https://deploy.workers.cloudflare.com/?url=https://github.com/hsylabs/orqevio/tree/main/templates/cloudflare">Deploy to Cloudflare</a>
+    <p>Cloudflare crea en tu cuenta de GitHub o GitLab un repositorio pequeño, te pide el código de configuración (<code>SETUP_CODE</code>), que eliges tú, y despliega la copia. Después:</p>
+    <ul>
+      <li>Cada cambio en ese repositorio se despliega solo.</li>
+      <li>Dependabot te propone las versiones nuevas de Orqevio en un pull request; al fusionarlo, tu copia se actualiza.</li>
+      <li>Si pierdes la clave, cambia el secreto <code>SETUP_CODE</code> en el panel de Cloudflare y usa «¿Has perdido la clave?» en la pantalla de acceso.</li>
+    </ul>
+
+    <h2 id="docker">Con Docker en tu servidor</h2>
+    <p>Un único contenedor (para amd64 y arm64) con su base de datos SQLite y los adjuntos en un volumen. Descarga la configuración:</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>curl -fsSLO https://raw.githubusercontent.com/hsylabs/orqevio/main/docker-compose.yml</code></pre></div>
+    <div class="command"><pre><code><span class="prompt">$ </span>curl -fsSL -o .env https://raw.githubusercontent.com/hsylabs/orqevio/main/.env.example</code></pre></div>
+    <p>Edita <code>.env</code>: pon en <code>APP_URL</code> la dirección pública de tu copia (por ejemplo, <code>https://orqevio.tu-dominio.com</code>) y, si quieres, un <code>SETUP_CODE</code> propio de al menos 12 letras o dígitos. Después:</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
+    <p>La copia escucha en el puerto 3000. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx o Traefik) y añade <code>TRUST_PROXY=true</code> a <code>.env</code>.</p>
+    <p><strong>Copias de seguridad:</strong> copia el volumen <code>orqevio-data</code> con la copia parada, o haz una copia en caliente de la base de datos con <code>sqlite3</code> y guarda también la carpeta <code>uploads</code>.</p>
+
+    <h2 id="access">Primer acceso</h2>
+    <ol>
+      <li><strong>Reclama tu copia.</strong> Abre su dirección y escribe el código de configuración y tu nombre. En Cloudflare te lo da el instalador; con Docker, es el <code>SETUP_CODE</code> de <code>.env</code> o, si no pusiste ninguno, el que aparece en el registro del contenedor (<code>docker compose logs app</code>).</li>
+      <li><strong>Guarda tu clave de acceso.</strong> Orqevio genera una clave aleatoria de 160 bits y la muestra una sola vez. Guárdala en tu gestor de contraseñas: es lo único que necesitas para entrar desde cualquier dispositivo.</li>
+      <li><strong>Si la pierdes,</strong> genera un código nuevo con <code>npx create-orqevio@latest recover</code> (Cloudflare) o <code>docker compose exec app node dist/cli.js reset-access</code> (Docker), y úsalo en «¿Has perdido la clave?». Tu bóveda no se ve afectada: su contraseña maestra nunca la conoce el servidor.</li>
+    </ol>
+    <p>Tu copia usa el idioma de tu navegador al reclamarla: inglés, español, francés, portugués, italiano, alemán, neerlandés o japonés. Puedes cambiarlo cuando quieras en <strong>Ajustes</strong>.</p>
+
+    <h2 id="agents">Conectar agentes</h2>
+    <p>La dirección MCP de tu copia es <code>https://&lt;tu-copia&gt;/mcp</code>.</p>
+    <ul>
+      <li><strong>Claude en la web, el escritorio y el móvil:</strong> añade un conector personalizado con esa dirección. Tu copia te pedirá permiso en una pantalla donde eliges el espacio y qué puede hacer. Tu copia tiene que ser accesible por HTTPS desde Internet; en Cloudflare ya lo es.</li>
+      <li><strong>Claude Code, Cursor, VS Code y otros:</strong> en <strong>Agentes → Conectar un agente</strong> creas un token y la app te da la configuración para pegar.</li>
+    </ul>
+    <p class="note agent">Ningún agente puede leer la bóveda, ni siquiera cifrada, y ninguno puede borrar: solo archivar, y tú puedes restaurar.</p>
+
+    <h2 id="update">Actualizar</h2>
+    <p>Tu copia te avisa en <strong>Ajustes → Esta copia</strong> cuando hay una versión nueva, con el paso exacto para tu instalación. Tus datos, tu clave y tu bóveda se conservan siempre.</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Instalación</th><th scope="col">Cómo actualizar</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Con un comando</td><td><code>npx create-orqevio@latest update</code></td></tr>
+          <tr><td>Con el botón</td><td>Fusiona el pull request de Dependabot en tu repositorio</td></tr>
+          <tr><td>Con Docker</td><td><code>docker compose pull</code> y <code>docker compose up -d</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="costs">Costes</h2>
+    <p>Orqevio no cuesta nada. Con Docker pagas tu servidor. En Cloudflare, el plan gratuito basta para uso personal:</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Recurso</th><th scope="col">Plan gratuito</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Peticiones</td><td>100 000 al día</td></tr>
+          <tr><td>CPU</td><td>10 ms por petición; el uso normal se queda en 1–5 ms</td></tr>
+          <tr><td>Base de datos</td><td>1 GB por copia</td></tr>
+          <tr><td>Adjuntos (R2)</td><td>10 GB y 1 millón de escrituras al mes</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Límites de noviembre de 2026. Consulta los vigentes en la documentación de Cloudflare.</p>
+  </div>
+

@@ -3,12 +3,16 @@
 FROM node:22-alpine AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
 RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
+# Toolchain for better-sqlite3, in case no prebuilt binary matches this platform.
+RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
 COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
+COPY packages/orqevio/package.json packages/orqevio/
+COPY packages/create-orqevio/package.json packages/create-orqevio/
 RUN pnpm install --frozen-lockfile
 
 COPY . .
@@ -20,6 +24,7 @@ RUN pnpm build \
 # ── Runtime ───────────────────────────────────────────────────────
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production \
+    ORQEVIO_INSTALL=docker \
     PORT=3000 \
     HOST=0.0.0.0 \
     DATA_DIR=/data \

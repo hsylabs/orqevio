@@ -1,0 +1,70 @@
+{
+  "title": "Paramètres",
+  "profile": {
+    "title": "Profil",
+    "description": "Votre nom apparaît dans l’activité de l’espace.",
+    "name": "Nom",
+    "saved": "Profil mis à jour"
+  },
+  "appearance": {
+    "title": "Apparence",
+    "description": "Enregistrée dans votre copie et appliquée sur tous vos appareils.",
+    "theme": "Thème",
+    "themes": {
+      "system": "Système",
+      "light": "Clair",
+      "dark": "Sombre"
+    }
+  },
+  "language": {
+    "title": "Langue",
+    "description": "L’application l’utilise sur tous vos appareils, et les nouveaux tableaux reçoivent leurs colonnes par défaut dans cette langue."
+  },
+  "accessKey": {
+    "title": "Clé d’accès",
+    "description": "C’est elle qui vous permet de vous connecter à cette copie. En générer une nouvelle déconnecte vos autres sessions. Le mot de passe principal du coffre-fort n’est pas concerné.",
+    "current": "Clé actuelle",
+    "generate": "Générer une nouvelle clé",
+    "newTitle": "Votre nouvelle clé d’accès",
+    "newDescription": "L’ancienne clé ne fonctionne plus et vos autres sessions ont été déconnectées. Elle ne s’affiche qu’une seule fois.",
+    "done": "Terminé",
+    "updated": "Clé d’accès mise à jour"
+  },
+  "workspace": {
+    "title": "Espace",
+    "description": "Les jetons d’agent et les projets appartiennent à un espace précis.",
+    "name": "Nom de l’espace",
+    "saved": "Espace mis à jour",
+    "delete": "Supprimer l’espace",
+    "deleteTitle": "Supprimer l’espace « {{name}} » ?",
+    "deleteDescription": "Ses projets, tableaux, documents, pièces jointes et jetons seront supprimés. Cette action est irréversible.",
+    "deleted": "Espace supprimé"
+  },
+  "copy": {
+    "title": "Cette copie",
+    "description": "La version d’Orqevio que vous utilisez. Votre copie recherche les nouvelles versions au plus toutes les 12 heures."
+  },
+  "version": {
+    "upToDate": "Vous êtes à jour.",
+    "available": "Une nouvelle version est disponible : {{version}}",
+    "how": {
+      "cli": "Exécutez ceci sur votre ordinateur :",
+      "button": "Fusionnez la pull request de Dependabot dans le dépôt de votre copie, et celle-ci se déploie toute seule. Si vous n’en voyez aucune, augmentez la version de create-orqevio dans son package.json.",
+      "docker": "Dans le dossier de votre copie :",
+      "source": "Dans le dépôt, puis redémarrez le serveur :"
+    },
+    "copy": "Copier la commande",
+    "copied": "Commande copiée",
+    "kept": "Vos données, votre clé d’accès et votre coffre-fort sont conservés.",
+    "releaseNotes": "Voir les nouveautés"
+  },
+  "erase": {
+    "title": "Effacer cette copie",
+    "description": "Efface définitivement vos espaces, votre coffre-fort et vos jetons. La copie vous redemandera le code de configuration.",
+    "action": "Effacer toutes mes données",
+    "confirmDescription": "Cette action est irréversible. Saisissez votre clé d’accès pour confirmer.",
+    "accessKey": "Clé d’accès",
+    "confirm": "Effacer définitivement",
+    "done": "Données effacées"
+  }
+}

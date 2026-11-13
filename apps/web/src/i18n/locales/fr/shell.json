@@ -1,0 +1,137 @@
+{
+  "nav": {
+    "label": "Navigation principale",
+    "search": "Rechercher ou aller à…",
+    "home": "Accueil",
+    "vault": "Coffre-fort",
+    "agents": "Agents",
+    "agentLive": "Agent actif",
+    "projects": "Projets",
+    "newProject": "Nouveau projet",
+    "firstProject": {
+      "title": "Créez votre premier projet",
+      "body": "Regroupez tableaux et documents au même endroit."
+    },
+    "vaultLocked": "Verrouillé",
+    "vaultUnlocked": "Déverrouillé"
+  },
+  "workspace": {
+    "fallback": "Espace",
+    "heading": "Espaces",
+    "new": "Nouvel espace",
+    "newDescription": "Les espaces séparent vos contextes, par exemple personnel et professionnel. Chaque jeton d’agent appartient à un seul espace.",
+    "name": "Nom",
+    "create": "Créer l’espace",
+    "settings": "Paramètres"
+  },
+  "project": {
+    "collapse": "Réduire {{name}}",
+    "expand": "Développer {{name}}",
+    "actions": "Actions pour {{name}}",
+    "newBoard": "Nouveau tableau",
+    "newPage": "Nouvelle page",
+    "newPageIn": "Nouvelle page dans {{name}}",
+    "rename": "Nom et couleur",
+    "delete": "Supprimer le projet",
+    "empty": "Vide"
+  },
+  "tree": {
+    "collapse": "Réduire",
+    "expand": "Développer",
+    "newSubpage": "Nouvelle sous-page"
+  },
+  "user": {
+    "updateAvailable": "Une nouvelle version d’Orqevio est disponible",
+    "settings": "Paramètres",
+    "newVersion": "Nouvelle version",
+    "appearance": "Apparence",
+    "theme": {
+      "system": "Système",
+      "light": "Clair",
+      "dark": "Sombre"
+    },
+    "signOut": "Se déconnecter"
+  },
+  "header": {
+    "hideSidebar": "Masquer la barre latérale",
+    "showSidebar": "Afficher la barre latérale",
+    "toggleSidebar": "Afficher ou masquer la barre latérale",
+    "breadcrumb": "Fil d’Ariane"
+  },
+  "newProject": {
+    "title": "Nouveau projet",
+    "description": "Un projet regroupe des tableaux et des documents liés.",
+    "name": "Nom",
+    "namePlaceholder": "p. ex. Lancement du site web",
+    "color": "Couleur",
+    "withBoard": "Créer un tableau",
+    "startWithBoard": "Commencer avec un tableau",
+    "boardHint": "Colonnes {{columns}}. Vous pourrez les modifier à tout moment.",
+    "boardName": "Tâches",
+    "create": "Créer le projet"
+  },
+  "projectSettings": {
+    "title": "Projet",
+    "name": "Nom",
+    "description": "Description",
+    "optional": "Facultative",
+    "color": "Couleur"
+  },
+  "actions": {
+    "newBoard": {
+      "title": "Nouveau tableau",
+      "label": "Nom du tableau",
+      "placeholder": "p. ex. Sprint de lancement",
+      "confirm": "Créer le tableau"
+    },
+    "deleteBoard": {
+      "title": "Supprimer « {{name}} » ?",
+      "body": "Ses colonnes et ses cartes seront supprimées. Cette action est irréversible.",
+      "confirm": "Supprimer le tableau",
+      "done": "Tableau supprimé"
+    },
+    "deletePage": {
+      "title": "Supprimer « {{name}} » ?",
+      "body": "Ses sous-pages et ses pièces jointes seront également supprimées. Cette action est irréversible.",
+      "confirm": "Supprimer la page",
+      "done": "Page supprimée"
+    },
+    "deleteProject": {
+      "title": "Supprimer le projet « {{name}} » ?",
+      "body": "Tous ses tableaux, cartes, pages et pièces jointes seront supprimés. Cette action est irréversible.",
+      "confirm": "Supprimer le projet",
+      "done": "Projet supprimé"
+    }
+  },
+  "palette": {
+    "label": "Palette de commandes",
+    "title": "Rechercher",
+    "description": "Recherchez des projets, tableaux, pages et cartes, ou lancez une action.",
+    "placeholder": "Rechercher des tâches, documents ou actions…",
+    "searching": "Recherche…",
+    "noResults": "Aucun résultat. Essayez d’autres mots.",
+    "inContent": "Dans le contenu",
+    "navigate": "Aller à",
+    "structure": "Projets, tableaux et pages",
+    "project": "Projet",
+    "actions": "Actions",
+    "newProject": "Nouveau projet",
+    "lightTheme": "Passer au thème clair",
+    "darkTheme": "Passer au thème sombre",
+    "lockVault": "Verrouiller le coffre-fort",
+    "hintNavigate": "naviguer",
+    "hintOpen": "ouvrir",
+    "keywords": {
+      "home": "Accueil",
+      "vault": "Coffre-fort coffre mots de passe identifiants",
+      "agents": "Agents MCP jetons tokens",
+      "settings": "Paramètres parametres réglages reglages compte",
+      "project": "projet",
+      "board": "tableau",
+      "page": "page",
+      "newProject": "Nouveau projet créer creer",
+      "theme": "Changer thème theme clair sombre apparence",
+      "lockVault": "Verrouiller coffre-fort"
+    }
+  }
+}

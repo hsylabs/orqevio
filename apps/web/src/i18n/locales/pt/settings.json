@@ -1,0 +1,70 @@
+{
+  "title": "Configurações",
+  "profile": {
+    "title": "Perfil",
+    "description": "Seu nome aparece na atividade do espaço.",
+    "name": "Nome",
+    "saved": "Perfil atualizado"
+  },
+  "appearance": {
+    "title": "Aparência",
+    "description": "Fica salva na sua cópia e vale em todos os seus dispositivos.",
+    "theme": "Tema",
+    "themes": {
+      "system": "Sistema",
+      "light": "Claro",
+      "dark": "Escuro"
+    }
+  },
+  "language": {
+    "title": "Idioma",
+    "description": "O app usa este idioma em todos os seus dispositivos, e os novos quadros recebem nele as colunas padrão."
+  },
+  "accessKey": {
+    "title": "Chave de acesso",
+    "description": "É o que você usa para entrar nesta cópia. Gerar uma nova encerra suas outras sessões. Isso não afeta a senha mestra do cofre.",
+    "current": "Chave atual",
+    "generate": "Gerar uma nova chave",
+    "newTitle": "Sua nova chave de acesso",
+    "newDescription": "A chave antiga não funciona mais, e suas outras sessões foram encerradas. Ela só é exibida uma vez.",
+    "done": "Pronto",
+    "updated": "Chave de acesso atualizada"
+  },
+  "workspace": {
+    "title": "Espaço",
+    "description": "Os tokens de agente e os projetos pertencem a um espaço específico.",
+    "name": "Nome do espaço",
+    "saved": "Espaço atualizado",
+    "delete": "Excluir espaço",
+    "deleteTitle": "Excluir o espaço “{{name}}”?",
+    "deleteDescription": "Todos os projetos, quadros, documentos, anexos e tokens deste espaço serão excluídos. Esta ação não pode ser desfeita.",
+    "deleted": "Espaço excluído"
+  },
+  "copy": {
+    "title": "Esta cópia",
+    "description": "A versão do Orqevio que você está usando. Sua cópia verifica se há novas versões no máximo a cada 12 horas."
+  },
+  "version": {
+    "upToDate": "Você está com a versão mais recente.",
+    "available": "Há uma nova versão disponível: {{version}}",
+    "how": {
+      "cli": "Execute no seu computador:",
+      "button": "Faça o merge do pull request do Dependabot no repositório da sua cópia, e o deploy acontece sozinho. Se não houver nenhum, atualize a versão do create-orqevio no package.json do repositório.",
+      "docker": "Na pasta da sua cópia:",
+      "source": "No repositório, e depois reinicie o servidor:"
+    },
+    "copy": "Copiar comando",
+    "copied": "Comando copiado",
+    "kept": "Seus dados, sua chave de acesso e seu cofre são preservados.",
+    "releaseNotes": "Veja as novidades"
+  },
+  "erase": {
+    "title": "Apagar esta cópia",
+    "description": "Apaga permanentemente seus espaços, seu cofre e seus tokens. A cópia vai pedir o código de configuração de novo.",
+    "action": "Apagar todos os meus dados",
+    "confirmDescription": "Esta ação não pode ser desfeita. Digite sua chave de acesso para confirmar.",
+    "accessKey": "Chave de acesso",
+    "confirm": "Apagar permanentemente",
+    "done": "Dados apagados"
+  }
+}

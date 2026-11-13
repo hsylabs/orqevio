@@ -1,10 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import { cn } from '../../../lib/cn'
 import { type SuggestionStore, useSuggestionState } from './suggestion-store'
 
 /** Floating menu for "/" commands and "@" references, positioned at the caret. */
 export function SuggestionMenu({ store, emptyLabel }: { store: SuggestionStore; emptyLabel: string }) {
+  const { t } = useTranslation('docs')
   const state = useSuggestionState(store)
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
@@ -31,13 +33,13 @@ export function SuggestionMenu({ store, emptyLabel }: { store: SuggestionStore; 
     <div
       ref={ref}
       role="listbox"
-      aria-label={state.kind === 'slash' ? 'Insertar bloque' : 'Enlazar tarea o página'}
+      aria-label={state.kind === 'slash' ? t('editor.menu.slash') : t('editor.menu.mention')}
       style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999 }}
       className="animate-pop fixed z-50 max-h-[320px] w-[300px] overflow-y-auto rounded-[14px] border border-line bg-surface p-1.5 shadow-lg"
       onMouseDown={(e) => e.preventDefault()}
     >
       {showEmpty ? (
-        <p className="px-3 py-3 text-[12.5px] text-ink-3">{state.loading ? 'Buscando…' : state.query ? 'Sin coincidencias' : emptyLabel}</p>
+        <p className="px-3 py-3 text-[12.5px] text-ink-3">{state.loading ? t('editor.menu.searching') : state.query ? t('editor.menu.noMatches') : emptyLabel}</p>
       ) : (
         state.items.map((item, i) => {
           const header = item.group && item.group !== lastGroup ? item.group : null

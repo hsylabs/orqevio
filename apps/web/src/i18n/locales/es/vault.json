@@ -1,0 +1,312 @@
+{
+  "title": "Bóveda",
+  "back": "← Volver",
+  "reveal": {
+    "show": "Mostrar",
+    "hide": "Ocultar"
+  },
+  "types": {
+    "login": "Credencial",
+    "note": "Nota segura"
+  },
+  "untitled": {
+    "login": "Sin título",
+    "note": "Nota sin título"
+  },
+  "master": {
+    "label": "Contraseña maestra",
+    "new": "Nueva contraseña maestra",
+    "repeatNew": "Repite la nueva contraseña",
+    "newTooShort": "La nueva contraseña necesita al menos 12 caracteres.",
+    "mismatch": "Las contraseñas no coinciden.",
+    "wrong": "Contraseña maestra incorrecta."
+  },
+  "unsupported": {
+    "insecureTitle": "La bóveda necesita una conexión segura",
+    "browserTitle": "La bóveda no funciona en este navegador",
+    "blockers": {
+      "secure_context": "Has abierto Orqevio por una conexión sin cifrar (http://). Los navegadores solo permiten el cifrado de la bóveda en conexiones seguras: abre tu copia por https:// (por ejemplo, detrás de Caddy, Nginx o Traefik) o, en el mismo equipo, por http://localhost.",
+      "webcrypto": "Este navegador no ofrece WebCrypto, con el que la bóveda cifra tus datos.",
+      "workers": "Este navegador no admite Web Workers, que la bóveda usa para derivar tu clave sin bloquear la página.",
+      "webassembly": "Este navegador no admite WebAssembly, que la bóveda usa para derivar tu clave con Argon2id."
+    },
+    "updateBrowser": "Usa una versión actual de Chrome, Edge, Firefox o Safari.",
+    "restWorks": "Tus tareas y documentos siguen funcionando con normalidad."
+  },
+  "toolbar": {
+    "autoLockTimer": "Bloqueo automático por inactividad",
+    "generator": "Generador",
+    "options": "Opciones de la bóveda",
+    "changeMaster": "Cambiar contraseña maestra",
+    "import": "Importar…",
+    "export": "Exportar…",
+    "autoLock": "Bloqueo automático",
+    "autoLockMinutes_one": "{{count}} min de inactividad",
+    "autoLockMinutes_many": "{{count}} min de inactividad",
+    "autoLockMinutes_other": "{{count}} min de inactividad",
+    "autoLockHours_one": "{{count}} hora de inactividad",
+    "autoLockHours_many": "{{count}} horas de inactividad",
+    "autoLockHours_other": "{{count}} horas de inactividad",
+    "lock": "Bloquear",
+    "generatorTitle": "Generador de contraseñas",
+    "generatorDescription": "Aleatoriedad criptográfica del navegador, sin sesgo."
+  },
+  "list": {
+    "search": "Buscar en la bóveda",
+    "new": "Nuevo",
+    "filter": "Filtrar",
+    "filters": {
+      "all": "Todo",
+      "logins": "Credenciales",
+      "notes": "Notas"
+    },
+    "label": "Elementos de la bóveda",
+    "noMatches": "Sin coincidencias.",
+    "empty": "Tu bóveda está vacía.",
+    "footer_one": "{{count}} elemento · descifrados solo en este navegador",
+    "footer_many": "{{count}} elementos · descifrados solo en este navegador",
+    "footer_other": "{{count}} elementos · descifrados solo en este navegador"
+  },
+  "empty": {
+    "select": "Selecciona un elemento",
+    "first": "Guarda tu primera credencial",
+    "newLogin": "Nueva credencial",
+    "body": "Todo se cifra en tu navegador antes de salir hacia el servidor. Ni el servidor ni tus agentes pueden leerlo."
+  },
+  "delete": {
+    "title": "¿Eliminar «{{title}}»?",
+    "description": "Se borrará de forma definitiva de tu bóveda.",
+    "confirm": "Eliminar"
+  },
+  "detail": {
+    "updatedLogin": "Credencial · actualizada {{time}}",
+    "updatedNote": "Nota segura · actualizada {{time}}",
+    "favorite": "Marcar como favorito",
+    "unfavorite": "Quitar de favoritos",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "username": "Usuario",
+    "copyUsername": "Copiar usuario",
+    "usernameCopied": "Usuario copiado",
+    "password": "Contraseña",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "copyPassword": "Copiar contraseña",
+    "passwordCopied": "Contraseña copiada · se borrará del portapapeles en 30 s",
+    "website": "Sitio web",
+    "openWebsite": "Abrir sitio",
+    "copyUrl": "Copiar dirección",
+    "urlCopied": "Dirección copiada",
+    "content": "Contenido",
+    "notes": "Notas",
+    "copyNotes": "Copiar notas",
+    "notesCopied": "Copiado",
+    "clipboardClears": "Al copiar, el portapapeles se vacía automáticamente a los 30 segundos."
+  },
+  "totp": {
+    "label": "Código de verificación",
+    "copy": "Copiar código",
+    "copied": "Código copiado · se borrará del portapapeles en 30 s",
+    "current": "Código de verificación actual",
+    "changesIn_one": "Cambia en {{count}} segundo",
+    "changesIn_many": "Cambia en {{count}} segundos",
+    "changesIn_other": "Cambia en {{count}} segundos",
+    "problems": {
+      "empty": "Escribe la clave secreta o el enlace otpauth://.",
+      "not_totp": "Solo se admiten códigos que cambian con el tiempo (TOTP).",
+      "bad_secret": "La clave secreta solo puede tener letras de la A a la Z y números del 2 al 7.",
+      "too_short": "La clave secreta es demasiado corta.",
+      "bad_parameters": "El enlace otpauth:// tiene parámetros que no son válidos."
+    }
+  },
+  "editor": {
+    "editTitle": "Editar",
+    "newLogin": "Nueva credencial",
+    "newNote": "Nueva nota segura",
+    "name": "Nombre",
+    "namePlaceholderLogin": "p. ej. Banco, GitHub, Wi-Fi oficina",
+    "namePlaceholderNote": "p. ej. Códigos de respaldo",
+    "username": "Usuario o correo",
+    "password": "Contraseña",
+    "generate": "Generar contraseña",
+    "website": "Sitio web",
+    "websitePlaceholder": "ejemplo.com",
+    "totp": "Verificación en dos pasos (TOTP)",
+    "totpPlaceholder": "Clave secreta o enlace otpauth://",
+    "totpHint": "La clave que te muestra el servicio al activar la verificación en dos pasos, junto al código QR.",
+    "content": "Contenido",
+    "notes": "Notas",
+    "save": "Cifrar y guardar"
+  },
+  "changeMaster": {
+    "title": "Cambiar contraseña maestra",
+    "description": "Tus elementos no se vuelven a cifrar: solo se protege la clave de la bóveda con la nueva contraseña. Tu clave de recuperación sigue siendo válida.",
+    "current": "Contraseña maestra actual",
+    "submit": "Cambiar",
+    "wrongCurrent": "La contraseña maestra actual no es correcta.",
+    "done": "Contraseña maestra actualizada"
+  },
+  "strength": {
+    "emptyHint": "Usa al menos 12 caracteres. Una frase de varias palabras es fácil de recordar y difícil de adivinar.",
+    "tooShort": "Demasiado corta",
+    "tooShortHint": "Necesitas al menos 12 caracteres.",
+    "fair": "Mejorable",
+    "fairHint": "Añade más palabras o caracteres variados.",
+    "good": "Buena",
+    "veryGood": "Muy buena",
+    "rememberHint": "Recuerda: si la olvidas, solo la clave de recuperación podrá abrir la bóveda."
+  },
+  "generator": {
+    "regenerate": "Generar otra",
+    "copied": "Copiada · se borrará del portapapeles en 30 s",
+    "entropy": "≈ {{bits}} bits de entropía",
+    "length": "Longitud",
+    "sets": {
+      "upper": "Mayúsculas",
+      "lower": "Minúsculas",
+      "digits": "Números",
+      "symbols": "Símbolos"
+    },
+    "avoidAmbiguous": "Evitar caracteres confusos (I, l, 1, O, 0)",
+    "use": "Usar esta contraseña",
+    "rating": {
+      "weak": "Débil",
+      "fair": "Aceptable",
+      "strong": "Fuerte",
+      "excellent": "Excelente"
+    }
+  },
+  "gate": {
+    "guarantees": {
+      "encryption": "Cifrado AES-256-GCM en tu navegador",
+      "kdf": "Clave derivada con Argon2id",
+      "agents": "Los agentes y el MCP no tienen acceso"
+    },
+    "decryptFailed_one": "{{count}} elemento no se ha podido descifrar y se ha omitido.",
+    "decryptFailed_many": "{{count}} elementos no se han podido descifrar y se han omitido.",
+    "decryptFailed_other": "{{count}} elementos no se han podido descifrar y se han omitido.",
+    "setup": {
+      "title": "Configura tu bóveda",
+      "subtitle": "Elige una contraseña maestra. Se usa en tu navegador para cifrar tus secretos; nunca se envía al servidor.",
+      "tooShort": "Usa al menos 12 caracteres.",
+      "failed": "No se ha podido generar la bóveda en este navegador.",
+      "repeat": "Repite la contraseña maestra",
+      "busy": "Generando claves…",
+      "submit": "Crear bóveda",
+      "ready": "Bóveda lista. Solo tú puedes abrirla."
+    },
+    "recoveryKey": {
+      "title": "Guarda tu clave de recuperación",
+      "subtitle": "Es la única forma de recuperar la bóveda si olvidas la contraseña maestra. Se muestra una sola vez.",
+      "copied": "Clave copiada",
+      "download": "Descargar .txt",
+      "fileName": "orqevio-clave-de-recuperacion.txt",
+      "fileText": "Orqevio — Clave de recuperación de la bóveda\n\n{{recoveryKey}}\n\nGuárdala fuera de Orqevio (por ejemplo, impresa o en otro gestor).\nPermite restablecer la contraseña maestra. Nadie más puede recuperarla por ti.\n",
+      "saved": "La he guardado en un lugar seguro, fuera de Orqevio.",
+      "open": "Abrir mi bóveda"
+    },
+    "unlock": {
+      "title": "Bóveda bloqueada",
+      "subtitle": "Introduce tu contraseña maestra para descifrar tus credenciales en este navegador.",
+      "busy": "Descifrando…",
+      "submit": "Desbloquear",
+      "forgot": "¿Has olvidado la contraseña maestra?"
+    },
+    "recover": {
+      "title": "Recuperar la bóveda",
+      "subtitle": "Usa la clave de recuperación que guardaste al crear la bóveda para elegir una nueva contraseña maestra.",
+      "recoveryKey": "Clave de recuperación",
+      "recoveryKeyPlaceholder": "XXXX-XXXX-XXXX-…",
+      "submit": "Restablecer y abrir",
+      "noKey": "No tengo la clave",
+      "invalidKey": "La clave de recuperación no es válida.",
+      "done": "Contraseña maestra restablecida"
+    },
+    "reset": {
+      "title": "Restablecer la bóveda",
+      "description": "Sin la contraseña maestra ni la clave de recuperación, nadie puede descifrar tus datos, tampoco nosotros. Restablecer borra todos los elementos de forma irreversible.",
+      "accessKey": "Clave de acceso",
+      "accessKeyHint": "Confirma que eres tú con la clave de acceso de esta copia (no con la contraseña maestra).",
+      "submit": "Borrar y restablecer",
+      "done": "Bóveda restablecida. Puedes configurarla de nuevo."
+    }
+  },
+  "import": {
+    "title": "Importar a la bóveda",
+    "description": "El archivo se lee y se cifra en este navegador: el servidor solo recibe elementos ya cifrados.",
+    "formats": "Admite el CSV que exportan Chrome, Edge, Firefox y Safari, el CSV y el JSON sin cifrar de Bitwarden, y las copias cifradas de Orqevio.",
+    "choose": "Elegir archivo",
+    "fileLabel": "Archivo para importar",
+    "tooLarge": "El archivo es demasiado grande (más de {{size}} MB).",
+    "problems": {
+      "empty": "El archivo está vacío.",
+      "unknown_format": "No reconozco este archivo. Usa el CSV que exportan Chrome, Edge, Firefox o Safari, el CSV o el JSON de Bitwarden, o una copia de Orqevio.",
+      "bitwarden_encrypted": "Es una exportación cifrada de Bitwarden. Expórtala de nuevo en formato «.json» o «.csv» sin cifrar e impórtala aquí.",
+      "no_items": "El archivo no contiene credenciales ni notas."
+    },
+    "encrypted_one": "Es una copia cifrada de Orqevio con {{count}} elemento. Escribe la contraseña maestra que tenías al exportarla.",
+    "encrypted_many": "Es una copia cifrada de Orqevio con {{count}} elementos. Escribe la contraseña maestra que tenías al exportarla.",
+    "encrypted_other": "Es una copia cifrada de Orqevio con {{count}} elementos. Escribe la contraseña maestra que tenías al exportarla.",
+    "exportPassword": "Contraseña de la copia",
+    "decrypt": "Descifrar",
+    "wrongPassword": "No es la contraseña con la que se exportó esta copia.",
+    "sources": {
+      "chromeOrEdge": "Desde Chrome o Edge:",
+      "firefox": "Desde Firefox:",
+      "safari": "Desde Safari:",
+      "bitwardenCsv": "Desde Bitwarden (CSV):",
+      "bitwardenJson": "Desde Bitwarden (JSON):",
+      "csv": "Desde CSV:",
+      "orqevio": "Desde Orqevio (cifrada):"
+    },
+    "newLogins_one": "{{count}} credencial nueva",
+    "newLogins_many": "{{count}} credenciales nuevas",
+    "newLogins_other": "{{count}} credenciales nuevas",
+    "newNotes_one": "{{count}} nota nueva",
+    "newNotes_many": "{{count}} notas nuevas",
+    "newNotes_other": "{{count}} notas nuevas",
+    "nothingNew": "Nada nuevo que importar",
+    "duplicates_one": "{{count}} elemento ya estaba en tu bóveda y se omite",
+    "duplicates_many": "{{count}} elementos ya estaban en tu bóveda y se omiten",
+    "duplicates_other": "{{count}} elementos ya estaban en tu bóveda y se omiten",
+    "unsupported_one": "{{count}} elemento no es compatible (tarjetas o identidades) y no se importa",
+    "unsupported_many": "{{count}} elementos no son compatibles (tarjetas o identidades) y no se importan",
+    "unsupported_other": "{{count}} elementos no son compatibles (tarjetas o identidades) y no se importan",
+    "unencryptedWarning": "El archivo que has elegido no está cifrado: bórralo de tu ordenador cuando termines.",
+    "chooseAnother": "Elegir otro",
+    "progress": "Cifrando {{done}} de {{total}}…",
+    "submit_one": "Importar {{count}} elemento",
+    "submit_many": "Importar {{count}} elementos",
+    "submit_other": "Importar {{count}} elementos",
+    "failed_one": "{{count}} elemento no se ha podido importar. Vuelve a importar el archivo: los ya importados se omitirán.",
+    "failed_many": "{{count}} elementos no se han podido importar. Vuelve a importar el archivo: los ya importados se omitirán.",
+    "failed_other": "{{count}} elementos no se han podido importar. Vuelve a importar el archivo: los ya importados se omitirán.",
+    "done_one": "{{count}} elemento importado",
+    "done_many": "{{count}} elementos importados",
+    "done_other": "{{count}} elementos importados",
+    "locked": "La bóveda se ha bloqueado antes de terminar la importación. Desbloquéala y vuelve a importar el archivo: lo ya importado se omitirá.",
+    "untitledNote": "Nota",
+    "untitledLogin": "Sin nombre",
+    "damaged": "La copia está dañada."
+  },
+  "export": {
+    "title": "Exportar la bóveda",
+    "description": "Descarga todos tus elementos en un archivo, preparado en este navegador.",
+    "kind": "Tipo de copia",
+    "kinds": {
+      "encrypted": "Cifrada",
+      "plain": "Sin cifrar"
+    },
+    "encryptedInfo": "Solo se abre con tu contraseña maestra actual. Sirve para guardar una copia de seguridad o pasarla a otra copia de Orqevio.",
+    "plainInfo": "En formato JSON de Bitwarden, que importan la mayoría de gestores de contraseñas. Cualquiera que tenga el archivo podrá leerlo.",
+    "understood": "Entiendo que el archivo no está cifrado y que cualquiera que lo tenga podrá leer todas mis contraseñas.",
+    "submitPlain": "Exportar sin cifrar",
+    "submitEncrypted": "Exportar cifrada",
+    "fileNameEncrypted": "orqevio-boveda-cifrada-{{date}}.json",
+    "fileNamePlain": "orqevio-boveda-sin-cifrar-{{date}}.json",
+    "done_one": "{{count}} elemento exportado",
+    "done_many": "{{count}} elementos exportados",
+    "done_other": "{{count}} elementos exportados",
+    "tooLarge": "La copia ocupa más de {{size}} MB: Orqevio no podrá importarla."
+  }
+}

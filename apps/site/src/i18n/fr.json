@@ -1,0 +1,38 @@
+{
+  "name": "Français",
+  "skip": "Aller au contenu",
+  "home": "Orqevio, accueil",
+  "nav": {
+    "main": "Principale",
+    "footer": "Pied de page",
+    "languages": "Langue",
+    "install": "Installer",
+    "privacy": "Confidentialité",
+    "license": "Licence"
+  },
+  "copy": {
+    "button": "Copier",
+    "label": "Copier la commande",
+    "done": "Copié",
+    "failed": "Impossible de copier"
+  },
+  "pages": {
+    "home": {
+      "title": "Orqevio · Tâches, documents et coffre-fort dans votre propre copie",
+      "description": "Tâches, documentation et coffre-fort chiffré de bout en bout, dans votre propre copie sur Cloudflare ou votre serveur. Vos agents IA y travaillent via MCP.",
+      "share": "Tâches, documents et coffre-fort chiffré dans une copie rien qu’à vous, ouverte à vos agents IA via MCP."
+    },
+    "install": {
+      "title": "Installer Orqevio · Votre copie sur Cloudflare ou avec Docker",
+      "description": "Installez Orqevio en une commande sur Cloudflare, avec le bouton « Deploy to Cloudflare » ou avec Docker. Guide pas à pas, première connexion et mises à jour."
+    },
+    "privacy": {
+      "title": "Confidentialité · Orqevio",
+      "description": "orqevio.com ne garde aucune donnée : ni cookies, ni statistiques, ni formulaires. Chaque copie d’Orqevio appartient à qui l’installe, sur Cloudflare ou son serveur."
+    },
+    "404": {
+      "title": "Page introuvable · Orqevio",
+      "description": "La page que vous cherchez n’existe pas sur orqevio.com. Revenez à l’accueil ou consultez le guide d’installation d’Orqevio."
+    }
+  }
+}

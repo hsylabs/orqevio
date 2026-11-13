@@ -1,3 +1,4 @@
+import type { Locale } from './locales'
 import type { PaletteColor } from './colors'
 import type { KdfParams } from './schemas'
 import type { Scope } from './scopes'
@@ -14,9 +15,10 @@ export interface ActorRef {
 
 export interface UserDTO {
   id: string
-  email: string
   name: string
   theme: Theme
+  /** The language the app shows to this user, and in which it names what it creates for them. */
+  locale: Locale
   createdAt: string
 }
 
@@ -27,9 +29,52 @@ export interface WorkspaceDTO {
   createdAt: string
 }
 
+/** How this copy was installed, which decides how it is updated. */
+export const INSTALL_KINDS = ['cli', 'button', 'docker', 'source', 'cloudflare'] as const
+export type InstallKind = (typeof INSTALL_KINDS)[number]
+
+/** ORQEVIO_INSTALL as set by each installation path, or `fallback` when missing or unknown. */
+export const installKind = (value: string | undefined, fallback: InstallKind): InstallKind =>
+  (INSTALL_KINDS as readonly string[]).includes(value ?? '') ? (value as InstallKind) : fallback
+
+export interface UpdateStatusDTO {
+  current: string
+  /** Latest published version, or null when unknown (check disabled, offline, not published yet). */
+  latest: string | null
+  updateAvailable: boolean
+  install: InstallKind
+  /** Worker name of a Cloudflare copy installed with the command, for the update command. */
+  copyName: string | null
+  /** Notes of the latest version. */
+  releaseUrl: string | null
+}
+
 export interface MeDTO {
   user: UserDTO
   workspaces: WorkspaceDTO[]
+  /** Limits of this copy, so the app can refuse what the server would reject. */
+  limits: { maxUploadBytes: number }
+}
+
+/** Whether this copy has an owner yet, and whether a new setup code allows recovering access. */
+export interface AccessStateDTO {
+  claimed: boolean
+  recoverable: boolean
+}
+
+/** `GET /auth/session` for visitors without a session. */
+export interface AnonymousSessionDTO extends AccessStateDTO {
+  user: null
+  workspaces: []
+}
+
+/** Returned once when the copy is claimed, recovered or its access key is replaced. */
+export interface AccessKeyDTO {
+  accessKey: string
+}
+
+export interface ClaimResultDTO extends AccessKeyDTO {
+  user: UserDTO
 }
 
 export interface ProjectDTO {
@@ -240,6 +285,8 @@ export interface TokenDTO {
   lastUsedAt: string | null
   expiresAt: string | null
   revokedAt: string | null
+  /** Set when an application connected through OAuth instead of with a pasted token. */
+  oauth: { clientId: string; redirectUri: string } | null
 }
 
 export interface CreatedTokenDTO extends TokenDTO {
@@ -278,4 +325,27 @@ export interface RealtimeEvent {
 
 export interface ApiErrorBody {
   error: { code: string; message: string; details?: unknown }
+}
+
+// ── OAuth (connecting MCP clients without pasting a token) ──────
+/** An application asking for access, as the consent screen shows it. */
+export interface OAuthClientDTO {
+  id: string
+  /** What the application calls itself; not verified. */
+  name: string
+  /** Host that published the application's metadata (Client ID Metadata Document); null when it registered itself. */
+  publishedBy: string | null
+  /** Where the browser returns once you decide. */
+  redirectUri: string
+}
+
+export type OAuthRequestDTO =
+  | { kind: 'consent'; client: OAuthClientDTO; scopes: Scope[] }
+  /** Shown to the owner and never sent back: the application is unknown, or the return address is not its own. */
+  | { kind: 'problem'; problem: 'unknown_client' | 'bad_redirect'; detail: string }
+  /** The request cannot go ahead; the application is told why at this address. */
+  | { kind: 'redirect'; redirect: string }
+
+export interface OAuthDecisionDTO {
+  redirect: string
 }

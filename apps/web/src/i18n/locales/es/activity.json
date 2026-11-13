@@ -1,0 +1,61 @@
+{
+  "actions": {
+    "card": {
+      "created": "<actor>{{actor}}</actor> creó la tarjeta <target>«{{target}}»</target>",
+      "created_self": "<actor>{{actor}}</actor> creó esta tarjeta",
+      "updated": "<actor>{{actor}}</actor> editó la tarjeta <target>«{{target}}»</target>",
+      "updated_self": "<actor>{{actor}}</actor> editó esta tarjeta",
+      "moved": "<actor>{{actor}}</actor> movió la tarjeta <target>«{{target}}»</target>",
+      "moved_self": "<actor>{{actor}}</actor> movió esta tarjeta",
+      "reordered": "<actor>{{actor}}</actor> reordenó la tarjeta <target>«{{target}}»</target>",
+      "reordered_self": "<actor>{{actor}}</actor> reordenó esta tarjeta",
+      "archived": "<actor>{{actor}}</actor> archivó la tarjeta <target>«{{target}}»</target>",
+      "archived_self": "<actor>{{actor}}</actor> archivó esta tarjeta",
+      "restored": "<actor>{{actor}}</actor> restauró la tarjeta <target>«{{target}}»</target>",
+      "restored_self": "<actor>{{actor}}</actor> restauró esta tarjeta",
+      "deleted": "<actor>{{actor}}</actor> eliminó la tarjeta <target>«{{target}}»</target>",
+      "deleted_self": "<actor>{{actor}}</actor> eliminó esta tarjeta",
+      "checklist": "<actor>{{actor}}</actor> actualizó la checklist de <target>«{{target}}»</target>",
+      "checklist_self": "<actor>{{actor}}</actor> actualizó la checklist",
+      "linked": "<actor>{{actor}}</actor> vinculó un documento a <target>«{{target}}»</target>",
+      "linked_self": "<actor>{{actor}}</actor> vinculó un documento",
+      "unlinked": "<actor>{{actor}}</actor> desvinculó un documento de <target>«{{target}}»</target>",
+      "unlinked_self": "<actor>{{actor}}</actor> desvinculó un documento"
+    },
+    "column": {
+      "created": "<actor>{{actor}}</actor> creó la columna <target>«{{target}}»</target>",
+      "updated": "<actor>{{actor}}</actor> renombró la columna <target>«{{target}}»</target>",
+      "moved": "<actor>{{actor}}</actor> reordenó la columna <target>«{{target}}»</target>",
+      "deleted": "<actor>{{actor}}</actor> eliminó la columna <target>«{{target}}»</target>"
+    },
+    "board": {
+      "created": "<actor>{{actor}}</actor> creó el tablero <target>«{{target}}»</target>",
+      "updated": "<actor>{{actor}}</actor> renombró el tablero <target>«{{target}}»</target>",
+      "deleted": "<actor>{{actor}}</actor> eliminó el tablero <target>«{{target}}»</target>"
+    },
+    "page": {
+      "created": "<actor>{{actor}}</actor> creó la página <target>«{{target}}»</target>",
+      "updated": "<actor>{{actor}}</actor> editó la página <target>«{{target}}»</target>",
+      "moved": "<actor>{{actor}}</actor> movió la página <target>«{{target}}»</target>",
+      "deleted": "<actor>{{actor}}</actor> eliminó la página <target>«{{target}}»</target>"
+    },
+    "project": {
+      "created": "<actor>{{actor}}</actor> creó el proyecto <target>«{{target}}»</target>",
+      "updated": "<actor>{{actor}}</actor> actualizó el proyecto <target>«{{target}}»</target>",
+      "deleted": "<actor>{{actor}}</actor> eliminó el proyecto <target>«{{target}}»</target>"
+    },
+    "label": {
+      "created": "<actor>{{actor}}</actor> creó una etiqueta",
+      "updated": "<actor>{{actor}}</actor> editó una etiqueta",
+      "deleted": "<actor>{{actor}}</actor> eliminó una etiqueta"
+    },
+    "other": "<actor>{{actor}}</actor> hizo un cambio"
+  },
+  "detail": {
+    "movedTo": "a {{to}}",
+    "movedFromTo": "{{from}} → {{to}}",
+    "createdIn": "en {{column}}",
+    "linkedPage": "«{{page}}»"
+  },
+  "viaMcp": "vía MCP"
+}

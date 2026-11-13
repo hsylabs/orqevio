@@ -1,5 +1,7 @@
 import { Check, Copy } from 'lucide-react'
+import { t } from 'i18next'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { cn } from '../../lib/cn'
 
@@ -7,7 +9,7 @@ export async function copyText(value: string, opts: { clearAfterMs?: number; mes
   try {
     await navigator.clipboard.writeText(value)
   } catch {
-    toast.error('No se ha podido copiar al portapapeles')
+    toast.error(t('copyFailed'))
     return false
   }
   if (opts.clearAfterMs) {
@@ -19,7 +21,9 @@ export async function copyText(value: string, opts: { clearAfterMs?: number; mes
   return true
 }
 
-export function CopyButton({ value, label = 'Copiar', className, clearAfterMs, message }: { value: string; label?: string; className?: string; clearAfterMs?: number; message?: string }) {
+export function CopyButton({ value, label: customLabel, className, clearAfterMs, message }: { value: string; label?: string; className?: string; clearAfterMs?: number; message?: string }) {
+  const { t } = useTranslation()
+  const label = customLabel ?? t('actions.copy')
   const [done, setDone] = useState(false)
   return (
     <button

@@ -9,3 +9,13 @@ test-results/
 playwright-report/
 *.log
 .DS_Store
+apps/web/e2e/.auth/
+.e2e-data/
+
+# Cloudflare local development
+.wrangler/
+.dev.vars
+dist-worker/
+
+# Copied from the root by the package builds
+packages/*/LICENSE.md

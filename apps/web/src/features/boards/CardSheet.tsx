@@ -1,6 +1,7 @@
 import type { BoardDTO, CardDetailDTO, CardSummaryDTO } from '@orqevio/shared'
 import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, ListChecks, Tag, Trash, X } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ActivityList } from '../../components/ActivityList'
 import { Avatar } from '../../components/ui/Avatar'
@@ -23,18 +24,19 @@ import { LabelPicker } from './LabelPicker'
 import { LinkedPages } from './LinkedPages'
 
 export function CardSheet({ cardId, board, onClose }: { cardId: string | null; board: BoardDTO; onClose: () => void }) {
+  const { t } = useTranslation(['boards', 'common'])
   const card = useCard(cardId)
   const open = Boolean(cardId)
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={card.data?.title ?? 'Tarjeta'} label="Detalle de la tarjeta">
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={card.data?.title ?? t('sheet.fallbackTitle')} label={t('sheet.label')}>
       {card.data ? (
         <CardBody key={card.data.id} card={card.data} board={board} onClose={onClose} />
       ) : card.isError ? (
         <div className="grid flex-1 place-items-center p-8 text-center text-ink-2">
           <div>
-            <p className="font-display text-[20px]">Esta tarjeta ya no existe</p>
+            <p className="font-display text-[20px]">{t('sheet.gone')}</p>
             <Button className="mt-4" onClick={onClose}>
-              Cerrar
+              {t('common:actions.close')}
             </Button>
           </div>
         </div>
@@ -75,6 +77,7 @@ function Section({ title, icon, children, action }: { title: string; icon?: Reac
 }
 
 function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardDTO; onClose: () => void }) {
+  const { t } = useTranslation(['boards', 'common'])
   const { workspaceId } = useWorkspace()
   const confirm = useConfirm()
   const agent = useAgentHighlight(card.id)
@@ -156,18 +159,18 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
             ))}
           </MenuContent>
         </MenuRoot>
-        {card.archivedAt && <span className="rounded-full bg-sunken px-2 py-0.5 text-[11.5px] font-medium text-ink-3">Archivada</span>}
+        {card.archivedAt && <span className="rounded-full bg-sunken px-2 py-0.5 text-[11.5px] font-medium text-ink-3">{t('sheet.archived')}</span>}
         {agent && (
           <span className="animate-pop inline-flex items-center gap-1 rounded-full bg-agent-soft px-2 py-0.5 text-[11.5px] font-medium text-agent">
-            <Bot className="size-3" /> {agent} está editando
+            <Bot className="size-3" /> {t('sheet.agentEditing', { name: agent })}
           </span>
         )}
         <span className="ml-auto text-[11.5px] text-ink-3" aria-live="polite">
-          {saving === 'saving' ? 'Guardando…' : saving === 'saved' ? 'Guardado' : ''}
+          {saving === 'saving' ? t('sheet.saving') : saving === 'saved' ? t('sheet.saved') : ''}
         </span>
         <MenuRoot>
           <MenuTrigger asChild>
-            <Button variant="ghost" size="sm" iconOnly icon={<Ellipsis />} aria-label="Acciones de la tarjeta" />
+            <Button variant="ghost" size="sm" iconOnly icon={<Ellipsis />} aria-label={t('sheet.actions')} />
           </MenuTrigger>
           <MenuContent>
             {card.archivedAt ? (
@@ -179,7 +182,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
                   await queryClient.invalidateQueries({ queryKey: keys.archived(card.boardId) })
                 }}
               >
-                Restaurar
+                {t('actions.restore')}
               </MenuItem>
             ) : (
               <MenuItem
@@ -187,9 +190,9 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
                 onSelect={async () => {
                   await post(`/cards/${card.id}/archive`).catch((e) => toast.error(errorMessage(e)))
                   await refresh()
-                  toast.success('Tarjeta archivada', {
+                  toast.success(t('sheet.archivedToast'), {
                     action: {
-                      label: 'Deshacer',
+                      label: t('actions.undo'),
                       onClick: async () => {
                         await post(`/cards/${card.id}/restore`)
                         await refresh()
@@ -199,7 +202,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
                   onClose()
                 }}
               >
-                Archivar
+                {t('actions.archive')}
               </MenuItem>
             )}
             <MenuSeparator />
@@ -207,7 +210,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
               icon={<Trash />}
               danger
               onSelect={async () => {
-                if (!(await confirm({ title: '¿Eliminar esta tarjeta?', description: 'Se eliminará con su checklist y adjuntos. Si solo quieres ocultarla, archívala.', confirmLabel: 'Eliminar', danger: true }))) return
+                if (!(await confirm({ title: t('sheet.deleteConfirm.title'), description: t('sheet.deleteConfirm.description'), confirmLabel: t('actions.delete'), danger: true }))) return
                 try {
                   await del(`/cards/${card.id}`)
                   onClose()
@@ -217,12 +220,12 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
                 }
               }}
             >
-              Eliminar
+              {t('actions.delete')}
             </MenuItem>
           </MenuContent>
         </MenuRoot>
         <SheetClose asChild>
-          <Button variant="ghost" size="sm" iconOnly icon={<X />} aria-label="Cerrar" />
+          <Button variant="ghost" size="sm" iconOnly icon={<X />} aria-label={t('common:actions.close')} />
         </SheetClose>
       </div>
 
@@ -233,7 +236,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
             value={title}
             rows={1}
             maxLength={300}
-            aria-label="Título de la tarjeta"
+            aria-label={t('card.title')}
             onChange={(e) => setTitle(e.target.value.replace(/\n/g, ''))}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -249,7 +252,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
             className="block w-full resize-none overflow-hidden bg-transparent font-display text-[26px] leading-[1.18] font-medium tracking-[-0.02em] outline-none"
           />
           <div className="mt-5 flex flex-col gap-1">
-            <Row icon={<Tag />} label="Etiquetas">
+            <Row icon={<Tag />} label={t('sheet.labels')}>
               <LabelPicker
                 board={board}
                 selected={card.labelIds}
@@ -259,45 +262,45 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
                     {labels.length ? (
                       labels.map((l) => (
                         <span key={l.id} className={cn('label-chip', `c-${l.color}`)}>
-                          {l.name || 'Sin nombre'}
+                          {l.name || t('labels.unnamed')}
                         </span>
                       ))
                     ) : (
-                      <span className="text-[13px] text-ink-3">Añadir etiquetas</span>
+                      <span className="text-[13px] text-ink-3">{t('sheet.addLabels')}</span>
                     )}
                   </button>
                 }
               />
             </Row>
-            <Row icon={<Calendar />} label="Vence">
+            <Row icon={<Calendar />} label={t('sheet.due')}>
               <DuePicker
                 value={card.dueAt}
                 onChange={(dueAt) => void update({ dueAt })}
                 trigger={
                   <button type="button" className="flex h-8 items-center rounded-[8px] px-1.5 text-left hover:bg-hover">
-                    {card.dueAt ? <DueChip dueAt={card.dueAt} /> : <span className="text-[13px] text-ink-3">Sin fecha</span>}
+                    {card.dueAt ? <DueChip dueAt={card.dueAt} /> : <span className="text-[13px] text-ink-3">{t('sheet.noDate')}</span>}
                   </button>
                 }
               />
             </Row>
-            <Row icon={<Avatar name={card.createdBy?.name ?? '?'} kind={card.createdBy?.kind ?? 'user'} size={15} />} label="Creada por">
+            <Row icon={<Avatar name={card.createdBy?.name ?? '?'} kind={card.createdBy?.kind ?? 'user'} size={15} />} label={t('sheet.createdBy')}>
               <span className="px-1.5 text-[13px] text-ink-2">
-                <span className={card.createdBy?.kind === 'agent' ? 'font-medium text-agent' : undefined}>{card.createdBy?.name ?? 'Desconocido'}</span>
+                <span className={card.createdBy?.kind === 'agent' ? 'font-medium text-agent' : undefined}>{card.createdBy?.name ?? t('sheet.unknownCreator')}</span>
                 <span className="text-ink-3"> · {relativeTime(card.createdAt)}</span>
               </span>
             </Row>
           </div>
         </div>
 
-        <Section title="Descripción">
+        <Section title={t('sheet.description')}>
           <Editor
             content={card.description}
             workspaceId={workspaceId}
             compact
             upload={{ type: 'card', id: card.id }}
             onUploaded={() => void refresh()}
-            placeholder="Añade contexto, criterios de aceptación o notas. Pulsa «/» para insertar."
-            ariaLabel="Descripción de la tarjeta"
+            placeholder={t('sheet.descriptionPlaceholder')}
+            ariaLabel={t('sheet.descriptionLabel')}
             onChange={(md) => {
               pendingDesc.current = md
               setSaving('idle')
@@ -309,14 +312,14 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
         </Section>
 
         <Section
-          title="Checklists"
+          title={t('sheet.checklists')}
           icon={<ListChecks />}
           action={
             <button
               type="button"
               onClick={async () => {
                 try {
-                  await post(`/cards/${card.id}/checklists`, { title: 'Checklist' })
+                  await post(`/cards/${card.id}/checklists`, { title: t('sheet.newChecklistTitle') })
                   await refresh()
                 } catch (error) {
                   toast.error(errorMessage(error))
@@ -324,23 +327,23 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
               }}
               className="text-[12px] font-medium text-ink-3 hover:text-ink"
             >
-              + Añadir
+              {t('sheet.addChecklist')}
             </button>
           }
         >
-          {card.checklists.length ? <Checklists card={card} /> : <p className="text-[13px] text-ink-3">Divide la tarea en pasos que puedas marcar.</p>}
+          {card.checklists.length ? <Checklists card={card} /> : <p className="text-[13px] text-ink-3">{t('sheet.checklistsEmpty')}</p>}
         </Section>
 
-        <Section title="Documentos vinculados">
+        <Section title={t('sheet.linkedDocs')}>
           <LinkedPages card={card} />
         </Section>
 
-        <Section title="Adjuntos">
+        <Section title={t('sheet.attachments')}>
           <Attachments items={card.attachmentList} target={{ type: 'card', id: card.id }} onChanged={() => void refresh()} />
         </Section>
 
         {card.activity.length > 0 && (
-          <Section title="Actividad">
+          <Section title={t('sheet.activity')}>
             <ActivityList items={card.activity} workspaceId={workspaceId} compact showSummary={false} />
           </Section>
         )}

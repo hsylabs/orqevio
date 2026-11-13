@@ -1,0 +1,38 @@
+{
+  "title": "ホーム",
+  "greeting": "{{greeting}}、<name>{{name}}</name>さん。",
+  "onboarding": {
+    "title": "はじめに",
+    "dismiss": "「はじめに」を非表示",
+    "progress": "{{total}}件中{{done}}件完了",
+    "project": {
+      "title": "プロジェクトを作成",
+      "body": "ボードとドキュメントをまとめます。"
+    },
+    "page": {
+      "title": "ページを書く",
+      "body": "「/」と「@」を使ってMarkdownで書けます。"
+    },
+    "vault": {
+      "title": "保管庫を設定",
+      "body": "エンドツーエンドで暗号化されます。"
+    },
+    "agent": {
+      "title": "エージェントを接続",
+      "body": "Claude、Cursor、VS CodeをMCPで接続します。"
+    }
+  },
+  "due": {
+    "title": "期限間近",
+    "empty": "今後7日以内に期限を迎えるものはありません。"
+  },
+  "recent": {
+    "title": "最近のドキュメント",
+    "empty": "ドキュメントはまだありません。"
+  },
+  "activity": {
+    "title": "アクティビティ",
+    "agents": "エージェントのアクティビティ",
+    "empty": "あなたとエージェントの操作がここに表示されます。"
+  }
+}

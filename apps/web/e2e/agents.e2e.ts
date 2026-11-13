@@ -1,7 +1,7 @@
-import { addCard, createProject, expect, signUp, test } from './helpers'
+import { addCard, createProject, expect, openNewWorkspace, test } from './helpers'
 
 test('an MCP agent works on the board in real time, without vault access', async ({ page, request, baseURL }) => {
-  await signUp(page)
+  await openNewWorkspace(page, 'Agentes E2E')
   const boardId = await createProject(page, 'Operaciones')
   await addCard(page, 'Por hacer', 'Revisar contratos')
 

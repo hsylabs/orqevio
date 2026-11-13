@@ -1,15 +1,23 @@
+import { UPLOAD_NAME_HEADER } from '@orqevio/shared'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
-import { streamSSE } from 'hono/streaming'
 import { AppError, badRequest } from '../lib/errors'
 import { RateLimiter } from '../lib/rate-limit'
+import { endpointFor } from './oauth'
 import { clearSessionCookie, clientIp, originGuard, requireActor, resolveActor, sessionOnly, setSessionCookie } from './middleware'
 import type { Env } from '../env'
 import type { Access } from '../services/access'
 import type { AppEnv } from './types'
 
-const loginLimiter = new RateLimiter(10, 15 * 60 * 1000)
-const registerLimiter = new RateLimiter(10, 60 * 60 * 1000)
+/** File names travel percent-encoded, since HTTP headers only carry ASCII reliably. */
+function decodeFileName(header: string | undefined) {
+  if (!header) return 'file'
+  try {
+    return decodeURIComponent(header)
+  } catch {
+    return 'file'
+  }
+}
 
 function limit(limiter: RateLimiter, key: string) {
   const wait = limiter.hit(key)
@@ -26,11 +34,15 @@ async function json(c: { req: { json: () => Promise<unknown> } }) {
 
 export function createApi(env: Env) {
   const api = new Hono<AppEnv>()
+  // Brute force is hopeless against a 160-bit key, but failed attempts are still slowed down;
+  // a success resets the counter.
+  const loginLimiter = new RateLimiter(10, 15 * 60 * 1000)
+  const setupLimiter = new RateLimiter(10, 60 * 60 * 1000)
 
   api.use('*', originGuard)
   api.use('*', resolveActor)
   api.use('*', async (c, next) => {
-    // Uploads have their own, larger limit.
+    // Uploads are streamed to storage and checked against MAX_UPLOAD_MB by the attachment service.
     if (c.req.path.endsWith('/attachments') && c.req.method === 'POST') return next()
     return bodyLimit({ maxSize: 2 * 1024 * 1024, onError: () => { throw new AppError(413, 'too_large', 'Request body too large') } })(c, next)
   })
@@ -39,21 +51,30 @@ export function createApi(env: Env) {
     if (!c.res.headers.has('Cache-Control')) c.header('Cache-Control', 'no-store')
   })
 
-  // ── Auth ────────────────────────────────────────────────────────
-  api.post('/auth/register', async (c) => {
-    limit(registerLimiter, clientIp(c))
-    const { user, session } = await c.get('services').accounts.register(await json(c), c.req.header('user-agent') ?? null)
+  // ── Access ──────────────────────────────────────────────────────
+  api.post('/auth/claim', async (c) => {
+    const key = clientIp(c)
+    limit(setupLimiter, key)
+    const { user, accessKey, session } = await c.get('services').accounts.claim(await json(c), c.req.header('user-agent') ?? null)
+    setupLimiter.reset(key)
     setSessionCookie(c, session.token, session.expiresAt)
-    return c.json({ user }, 201)
+    return c.json({ user, accessKey }, 201)
   })
   api.post('/auth/login', async (c) => {
-    const body = (await json(c)) as { email?: unknown }
-    const key = `${clientIp(c)}:${String(body?.email ?? '').toLowerCase()}`
+    const key = clientIp(c)
     limit(loginLimiter, key)
-    const { user, session } = await c.get('services').accounts.login(body, c.req.header('user-agent') ?? null)
+    const { user, session } = await c.get('services').accounts.login(await json(c), c.req.header('user-agent') ?? null)
     loginLimiter.reset(key)
     setSessionCookie(c, session.token, session.expiresAt)
     return c.json({ user })
+  })
+  api.post('/auth/recover', async (c) => {
+    const key = clientIp(c)
+    limit(setupLimiter, key)
+    const { user, accessKey, session } = await c.get('services').accounts.recover(await json(c), c.req.header('user-agent') ?? null)
+    setupLimiter.reset(key)
+    setSessionCookie(c, session.token, session.expiresAt)
+    return c.json({ user, accessKey })
   })
   api.post('/auth/logout', async (c) => {
     const actor = c.get('actor')
@@ -62,19 +83,17 @@ export function createApi(env: Env) {
     return c.body(null, 204)
   })
   api.get('/auth/me', async (c) => c.json(await c.get('services').accounts.me(requireActor(c))))
-  // Same as /auth/me but answers 200 for anonymous visitors (avoids noisy 401s on public screens).
+  api.get('/updates', async (c) => c.json(await c.get('services').updates.status(requireActor(c))))
+  // Like /auth/me, but answers 200 for visitors: the sign-in screens need to know whether the copy is claimed.
   api.get('/auth/session', async (c) => {
     const actor = c.get('actor')
-    if (!actor || actor.kind !== 'user') return c.json({ user: null, workspaces: [] })
+    if (!actor || actor.kind !== 'user') return c.json({ user: null, workspaces: [], ...(await c.get('services').accounts.state()) })
     return c.json(await c.get('services').accounts.me(actor))
   })
 
   // ── Account ─────────────────────────────────────────────────────
   api.patch('/account', async (c) => c.json(await c.get('services').accounts.update(requireActor(c), await json(c))))
-  api.post('/account/password', async (c) => {
-    await c.get('services').accounts.changePassword(requireActor(c), await json(c))
-    return c.body(null, 204)
-  })
+  api.post('/account/access-key', async (c) => c.json(await c.get('services').accounts.rotateAccessKey(requireActor(c), await json(c))))
   api.post('/account/delete', async (c) => {
     await c.get('services').accounts.remove(requireActor(c), await json(c))
     clearSessionCookie(c)
@@ -114,40 +133,6 @@ export function createApi(env: Env) {
       }),
     )
   })
-  api.get('/workspaces/:id/events', async (c) => {
-    const actor = requireActor(c)
-    const services = c.get('services')
-    const access: Access = services.access
-    access.requireUser(actor)
-    const workspaceId = c.req.param('id')
-    await access.workspace(actor, workspaceId)
-    c.header('Cache-Control', 'no-store')
-    c.header('X-Accel-Buffering', 'no')
-    return streamSSE(c, async (stream) => {
-      const queue: string[] = []
-      let wake: (() => void) | null = null
-      const unsubscribe = services.realtime.subscribe(workspaceId, (event) => {
-        queue.push(JSON.stringify(event))
-        wake?.()
-      })
-      stream.onAbort(() => {
-        unsubscribe()
-        wake?.()
-      })
-      await stream.writeSSE({ event: 'ready', data: '{}' })
-      while (!stream.aborted && !stream.closed) {
-        while (queue.length) await stream.writeSSE({ event: 'change', data: queue.shift()! })
-        await new Promise<void>((resolve) => {
-          wake = resolve
-          setTimeout(resolve, 25_000)
-        })
-        wake = null
-        if (queue.length === 0 && !stream.aborted) await stream.writeSSE({ event: 'ping', data: '' })
-      }
-      unsubscribe()
-    })
-  })
-
   // ── Projects ────────────────────────────────────────────────────
   api.post('/workspaces/:id/projects', async (c) =>
     c.json(await c.get('services').workspaces.createProject(requireActor(c), c.req.param('id'), await json(c)), 201),
@@ -261,21 +246,18 @@ export function createApi(env: Env) {
   })
 
   // ── Attachments ─────────────────────────────────────────────────
-  const uploadLimit = bodyLimit({
-    maxSize: env.maxUploadBytes + 64 * 1024,
-    onError: () => {
-      throw new AppError(413, 'file_too_large', `Files are limited to ${Math.round(env.maxUploadBytes / 1048576)} MB`)
-    },
-  })
   for (const [path, target] of [
     ['/pages/:id/attachments', 'pageId'],
     ['/cards/:id/attachments', 'cardId'],
   ] as const) {
-    api.post(path, uploadLimit, async (c) => {
-      const body = await c.req.parseBody()
-      const file = body.file
-      if (!(file instanceof File)) throw badRequest('Send the file in a "file" field')
-      const dto = await c.get('services').attachments.upload(requireActor(c), { [target]: c.req.param('id') }, file)
+    api.post(path, async (c) => {
+      const length = c.req.header('content-length')
+      const dto = await c.get('services').attachments.upload(requireActor(c), { [target]: c.req.param('id') }, {
+        body: c.req.raw.body,
+        size: length === undefined || !/^\d+$/.test(length) ? Number.NaN : Number(length),
+        name: decodeFileName(c.req.header(UPLOAD_NAME_HEADER)),
+        type: c.req.header('content-type') ?? '',
+      })
       return c.json(dto, 201)
     })
   }
@@ -297,6 +279,10 @@ export function createApi(env: Env) {
     await c.get('services').attachments.remove(requireActor(c), c.req.param('id'))
     return c.body(null, 204)
   })
+
+  // ── OAuth consent (session only) ────────────────────────────────
+  api.post('/oauth/request', async (c) => c.json(await c.get('services').oauth.request(requireActor(c), await json(c), endpointFor(c.get('config'), c.req.url))))
+  api.post('/oauth/decision', async (c) => c.json(await c.get('services').oauth.decide(requireActor(c), await json(c), endpointFor(c.get('config'), c.req.url))))
 
   // ── Agent tokens (session only) ─────────────────────────────────
   api.get('/tokens', async (c) => c.json(await c.get('services').tokens.list(requireActor(c))))
@@ -325,10 +311,10 @@ export function createApi(env: Env) {
   vault.post('/reset', async (c) => {
     const actor = requireActor(c)
     const services = c.get('services')
-    const body = (await json(c)) as { password?: unknown }
+    const body = (await json(c)) as { accessKey?: unknown }
     const access: Access = services.access
     access.requireUser(actor)
-    await services.accounts.verify(actor.userId, String(body?.password ?? ''))
+    await services.accounts.verifyAccessKey(actor.userId, String(body?.accessKey ?? ''))
     await services.vault.reset(actor)
     return c.body(null, 204)
   })

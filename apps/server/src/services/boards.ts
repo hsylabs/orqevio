@@ -1,5 +1,8 @@
 import type { BoardDTO, CardSummaryDTO, ColumnDTO, PaletteColor } from '@orqevio/shared'
 import {
+  DEFAULT_COLUMNS,
+  DEFAULT_LOCALE,
+  isLocale,
   boardCreateInput,
   boardUpdateInput,
   columnCreateInput,
@@ -10,7 +13,7 @@ import {
 import { and, asc, count, desc, eq, isNotNull, isNull } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { actorRef } from '../auth/actor'
-import { boards, cards, columns, labels, projects } from '../db/schema'
+import { boards, cards, columns, labels, projects, users } from '../db/schema'
 import { notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
@@ -21,7 +24,6 @@ import type { Deps } from './deps'
 import { evenlySpacedKeys } from '../lib/positions'
 import { positionAt } from './ordering'
 
-export const DEFAULT_COLUMNS = ['Por hacer', 'En curso', 'Hecho']
 
 const toColumnDTO = (c: typeof columns.$inferSelect): ColumnDTO => ({
   id: c.id,
@@ -46,21 +48,27 @@ export class BoardService {
     return board
   }
 
+  private async localeOf(userId: string) {
+    const [user] = await this.deps.db.select({ locale: users.locale }).from(users).where(eq(users.id, userId))
+    return isLocale(user?.locale) ? user.locale : DEFAULT_LOCALE
+  }
+
   async create(actor: Actor, projectId: string, input: unknown) {
     this.access.requireScope(actor, 'tasks:write')
     const data = parse(boardCreateInput, input)
     const [project] = await this.deps.db.select().from(projects).where(eq(projects.id, projectId))
     if (!project) throw notFound('Project')
     await this.access.workspace(actor, project.workspaceId)
-    const columnNames = data.columns?.length ? data.columns : DEFAULT_COLUMNS
-    const board = await this.deps.db.transaction(async (tx) => {
-      const position = await positionAt(tx, boards, eq(boards.projectId, projectId), undefined)
-      const [b] = await tx.insert(boards).values({ workspaceId: project.workspaceId, projectId, name: data.name, position }).returning()
+    // Default columns are named in the language of whoever the board is for (an agent works for its owner).
+    const columnNames = data.columns?.length ? data.columns : DEFAULT_COLUMNS[await this.localeOf(actor.userId)]
+    const board = this.deps.db.transaction((tx) => {
+      const position = positionAt(tx, boards, eq(boards.projectId, projectId), undefined)
+      const b = tx.insert(boards).values({ workspaceId: project.workspaceId, projectId, name: data.name, position }).returning().get()
       const keys = evenlySpacedKeys(columnNames.length)
-      await tx
-        .insert(columns)
-        .values(columnNames.map((name, i) => ({ workspaceId: project.workspaceId, boardId: b!.id, name, position: keys[i]! })))
-      return b!
+      tx.insert(columns)
+        .values(columnNames.map((name, i) => ({ workspaceId: project.workspaceId, boardId: b.id, name, position: keys[i]! })))
+        .run()
+      return b
     })
     await this.activity.record(
       actor,
@@ -135,7 +143,7 @@ export class BoardService {
   async createColumn(actor: Actor, boardId: string, input: unknown): Promise<ColumnDTO> {
     const data = parse(columnCreateInput, input)
     const board = await this.load(actor, boardId, 'tasks:write')
-    const position = await positionAt(this.deps.db, columns, eq(columns.boardId, boardId), data.index)
+    const position = positionAt(this.deps.db, columns, eq(columns.boardId, boardId), data.index)
     const [column] = await this.deps.db
       .insert(columns)
       .values({ workspaceId: board.workspaceId, boardId, name: data.name, position })
@@ -163,7 +171,7 @@ export class BoardService {
     const patch: Partial<typeof columns.$inferSelect> = {}
     if (data.name !== undefined) patch.name = data.name
     if (data.index !== undefined) {
-      patch.position = await positionAt(this.deps.db, columns, eq(columns.boardId, column.boardId), data.index, columnId)
+      patch.position = positionAt(this.deps.db, columns, eq(columns.boardId, column.boardId), data.index, columnId)
     }
     if (Object.keys(patch).length === 0) return toColumnDTO(column)
     const [row] = await this.deps.db.update(columns).set(patch).where(eq(columns.id, columnId)).returning()

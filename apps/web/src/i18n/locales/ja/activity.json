@@ -1,0 +1,61 @@
+{
+  "actions": {
+    "card": {
+      "created": "<actor>{{actor}}</actor>がカード<target>「{{target}}」</target>を作成しました",
+      "created_self": "<actor>{{actor}}</actor>がこのカードを作成しました",
+      "updated": "<actor>{{actor}}</actor>がカード<target>「{{target}}」</target>を編集しました",
+      "updated_self": "<actor>{{actor}}</actor>がこのカードを編集しました",
+      "moved": "<actor>{{actor}}</actor>がカード<target>「{{target}}」</target>を移動しました",
+      "moved_self": "<actor>{{actor}}</actor>がこのカードを移動しました",
+      "reordered": "<actor>{{actor}}</actor>がカード<target>「{{target}}」</target>の順番を変更しました",
+      "reordered_self": "<actor>{{actor}}</actor>がこのカードの順番を変更しました",
+      "archived": "<actor>{{actor}}</actor>がカード<target>「{{target}}」</target>をアーカイブしました",
+      "archived_self": "<actor>{{actor}}</actor>がこのカードをアーカイブしました",
+      "restored": "<actor>{{actor}}</actor>がカード<target>「{{target}}」</target>を復元しました",
+      "restored_self": "<actor>{{actor}}</actor>がこのカードを復元しました",
+      "deleted": "<actor>{{actor}}</actor>がカード<target>「{{target}}」</target>を削除しました",
+      "deleted_self": "<actor>{{actor}}</actor>がこのカードを削除しました",
+      "checklist": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>のチェックリストを更新しました",
+      "checklist_self": "<actor>{{actor}}</actor>がチェックリストを更新しました",
+      "linked": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>にドキュメントをリンクしました",
+      "linked_self": "<actor>{{actor}}</actor>がドキュメントをリンクしました",
+      "unlinked": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>からドキュメントのリンクを解除しました",
+      "unlinked_self": "<actor>{{actor}}</actor>がドキュメントのリンクを解除しました"
+    },
+    "column": {
+      "created": "<actor>{{actor}}</actor>が列<target>「{{target}}」</target>を作成しました",
+      "updated": "<actor>{{actor}}</actor>が列<target>「{{target}}」</target>の名前を変更しました",
+      "moved": "<actor>{{actor}}</actor>が列<target>「{{target}}」</target>を移動しました",
+      "deleted": "<actor>{{actor}}</actor>が列<target>「{{target}}」</target>を削除しました"
+    },
+    "board": {
+      "created": "<actor>{{actor}}</actor>がボード<target>「{{target}}」</target>を作成しました",
+      "updated": "<actor>{{actor}}</actor>がボード<target>「{{target}}」</target>の名前を変更しました",
+      "deleted": "<actor>{{actor}}</actor>がボード<target>「{{target}}」</target>を削除しました"
+    },
+    "page": {
+      "created": "<actor>{{actor}}</actor>がページ<target>「{{target}}」</target>を作成しました",
+      "updated": "<actor>{{actor}}</actor>がページ<target>「{{target}}」</target>を編集しました",
+      "moved": "<actor>{{actor}}</actor>がページ<target>「{{target}}」</target>を移動しました",
+      "deleted": "<actor>{{actor}}</actor>がページ<target>「{{target}}」</target>を削除しました"
+    },
+    "project": {
+      "created": "<actor>{{actor}}</actor>がプロジェクト<target>「{{target}}」</target>を作成しました",
+      "updated": "<actor>{{actor}}</actor>がプロジェクト<target>「{{target}}」</target>を更新しました",
+      "deleted": "<actor>{{actor}}</actor>がプロジェクト<target>「{{target}}」</target>を削除しました"
+    },
+    "label": {
+      "created": "<actor>{{actor}}</actor>がラベルを作成しました",
+      "updated": "<actor>{{actor}}</actor>がラベルを編集しました",
+      "deleted": "<actor>{{actor}}</actor>がラベルを削除しました"
+    },
+    "other": "<actor>{{actor}}</actor>が変更を加えました"
+  },
+  "detail": {
+    "movedTo": "移動先：{{to}}",
+    "movedFromTo": "{{from}} → {{to}}",
+    "createdIn": "列：{{column}}",
+    "linkedPage": "「{{page}}」"
+  },
+  "viaMcp": "MCP経由"
+}

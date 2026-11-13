@@ -1,0 +1,26 @@
+// Cloudflare runtime for one copy of Orqevio: a Worker serves the web app and
+// sends /api and /mcp to a single Durable Object, which keeps the data in its
+// own SQLite storage; attachments go to R2.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "orqevio",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "../web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/*", "!/assets/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "COPY", "class_name": "OrqevioCopy" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["OrqevioCopy"] }],
+  "r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "orqevio-uploads" }],
+  // Claims the copy the first time (and recovers access when changed): deploys fail without it.
+  "secrets": { "required": ["SETUP_CODE"] },
+  // Variables set in the Cloudflare dashboard (APP_URL, MAX_UPLOAD_MB) survive deploys.
+  "keep_vars": true,
+  "observability": { "enabled": true }
+}

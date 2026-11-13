@@ -1,0 +1,38 @@
+{
+  "title": "Startseite",
+  "greeting": "{{greeting}}, <name>{{name}}</name>.",
+  "onboarding": {
+    "title": "Erste Schritte",
+    "dismiss": "Erste Schritte ausblenden",
+    "progress": "{{done}} von {{total}} erledigt",
+    "project": {
+      "title": "Erstelle ein Projekt",
+      "body": "Fasse Boards und Dokumente zusammen."
+    },
+    "page": {
+      "title": "Schreib eine Seite",
+      "body": "Dokumentiere in Markdown, mit „/“ und „@“."
+    },
+    "vault": {
+      "title": "Richte den Tresor ein",
+      "body": "Ende-zu-Ende-verschlüsselt."
+    },
+    "agent": {
+      "title": "Verbinde einen Agenten",
+      "body": "Claude, Cursor oder VS Code, über MCP."
+    }
+  },
+  "due": {
+    "title": "Bald fällig",
+    "empty": "In den nächsten 7 Tagen ist nichts fällig."
+  },
+  "recent": {
+    "title": "Zuletzt bearbeitet",
+    "empty": "Noch keine Dokumente."
+  },
+  "activity": {
+    "title": "Aktivität",
+    "agents": "Aktivität der Agenten",
+    "empty": "Hier erscheint, was du und deine Agenten tun."
+  }
+}

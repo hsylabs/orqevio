@@ -1,0 +1,312 @@
+{
+  "title": "Cassaforte",
+  "back": "← Indietro",
+  "reveal": {
+    "show": "Mostra",
+    "hide": "Nascondi"
+  },
+  "types": {
+    "login": "Login",
+    "note": "Nota sicura"
+  },
+  "untitled": {
+    "login": "Senza titolo",
+    "note": "Nota senza titolo"
+  },
+  "master": {
+    "label": "Password principale",
+    "new": "Nuova password principale",
+    "repeatNew": "Ripeti la nuova password",
+    "newTooShort": "La nuova password deve avere almeno 12 caratteri.",
+    "mismatch": "Le password non coincidono.",
+    "wrong": "Password principale errata."
+  },
+  "unsupported": {
+    "insecureTitle": "La cassaforte richiede una connessione sicura",
+    "browserTitle": "La cassaforte non funziona in questo browser",
+    "blockers": {
+      "secure_context": "Hai aperto Orqevio con una connessione non cifrata (http://). I browser consentono la crittografia della cassaforte solo su connessioni sicure: apri la tua copia tramite https:// (ad esempio dietro Caddy, Nginx o Traefik) oppure, sullo stesso computer, su http://localhost.",
+      "webcrypto": "Questo browser non offre WebCrypto, che la cassaforte usa per cifrare i tuoi dati.",
+      "workers": "Questo browser non supporta i Web Worker, che la cassaforte usa per derivare la tua chiave senza bloccare la pagina.",
+      "webassembly": "Questo browser non supporta WebAssembly, che la cassaforte usa per derivare la tua chiave con Argon2id."
+    },
+    "updateBrowser": "Usa una versione aggiornata di Chrome, Edge, Firefox o Safari.",
+    "restWorks": "Le tue attività e i tuoi documenti continuano a funzionare come sempre."
+  },
+  "toolbar": {
+    "autoLockTimer": "Si blocca automaticamente dopo un periodo di inattività",
+    "generator": "Generatore",
+    "options": "Opzioni della cassaforte",
+    "changeMaster": "Cambia password principale",
+    "import": "Importa…",
+    "export": "Esporta…",
+    "autoLock": "Blocco automatico",
+    "autoLockMinutes_one": "Dopo {{count}} minuto di inattività",
+    "autoLockMinutes_many": "Dopo {{count}} minuti di inattività",
+    "autoLockMinutes_other": "Dopo {{count}} minuti di inattività",
+    "autoLockHours_one": "Dopo {{count}} ora di inattività",
+    "autoLockHours_many": "Dopo {{count}} ore di inattività",
+    "autoLockHours_other": "Dopo {{count}} ore di inattività",
+    "lock": "Blocca",
+    "generatorTitle": "Generatore di password",
+    "generatorDescription": "Casualità crittografica senza distorsioni, generata dal tuo browser."
+  },
+  "list": {
+    "search": "Cerca nella cassaforte",
+    "new": "Nuovo",
+    "filter": "Filtra",
+    "filters": {
+      "all": "Tutti",
+      "logins": "Login",
+      "notes": "Note"
+    },
+    "label": "Elementi della cassaforte",
+    "noMatches": "Nessun risultato.",
+    "empty": "La tua cassaforte è vuota.",
+    "footer_one": "{{count}} elemento · decifrato solo in questo browser",
+    "footer_many": "{{count}} elementi · decifrati solo in questo browser",
+    "footer_other": "{{count}} elementi · decifrati solo in questo browser"
+  },
+  "empty": {
+    "select": "Seleziona un elemento",
+    "first": "Salva il tuo primo login",
+    "newLogin": "Nuovo login",
+    "body": "Tutto viene cifrato nel tuo browser prima di essere inviato al server. Né il server né i tuoi agenti possono leggerlo."
+  },
+  "delete": {
+    "title": "Eliminare «{{title}}»?",
+    "description": "L’elemento verrà eliminato definitivamente dalla tua cassaforte.",
+    "confirm": "Elimina"
+  },
+  "detail": {
+    "updatedLogin": "Login · aggiornato {{time}}",
+    "updatedNote": "Nota sicura · aggiornata {{time}}",
+    "favorite": "Aggiungi ai preferiti",
+    "unfavorite": "Rimuovi dai preferiti",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "username": "Nome utente",
+    "copyUsername": "Copia nome utente",
+    "usernameCopied": "Nome utente copiato",
+    "password": "Password",
+    "showPassword": "Mostra password",
+    "hidePassword": "Nascondi password",
+    "copyPassword": "Copia password",
+    "passwordCopied": "Password copiata · gli appunti si svuotano tra 30 s",
+    "website": "Sito web",
+    "openWebsite": "Apri sito",
+    "copyUrl": "Copia URL",
+    "urlCopied": "URL copiato",
+    "content": "Contenuto",
+    "notes": "Note",
+    "copyNotes": "Copia note",
+    "notesCopied": "Copiato",
+    "clipboardClears": "Quando copi qualcosa, gli appunti si svuotano da soli dopo 30 secondi."
+  },
+  "totp": {
+    "label": "Codice di verifica",
+    "copy": "Copia codice",
+    "copied": "Codice copiato · gli appunti si svuotano tra 30 s",
+    "current": "Codice di verifica attuale",
+    "changesIn_one": "Cambia tra {{count}} secondo",
+    "changesIn_many": "Cambia tra {{count}} secondi",
+    "changesIn_other": "Cambia tra {{count}} secondi",
+    "problems": {
+      "empty": "Inserisci la chiave segreta o il link otpauth://.",
+      "not_totp": "Sono supportati solo i codici basati sul tempo (TOTP).",
+      "bad_secret": "La chiave segreta può contenere solo le lettere dalla A alla Z e le cifre dal 2 al 7.",
+      "too_short": "La chiave segreta è troppo corta.",
+      "bad_parameters": "Il link otpauth:// contiene parametri non validi."
+    }
+  },
+  "editor": {
+    "editTitle": "Modifica elemento",
+    "newLogin": "Nuovo login",
+    "newNote": "Nuova nota sicura",
+    "name": "Nome",
+    "namePlaceholderLogin": "es. Banca, GitHub, Wi-Fi dell’ufficio",
+    "namePlaceholderNote": "es. Codici di backup",
+    "username": "Nome utente o email",
+    "password": "Password",
+    "generate": "Genera password",
+    "website": "Sito web",
+    "websitePlaceholder": "esempio.com",
+    "totp": "Verifica in due passaggi (TOTP)",
+    "totpPlaceholder": "Chiave segreta o link otpauth://",
+    "totpHint": "La chiave che il servizio ti mostra accanto al codice QR quando attivi la verifica in due passaggi.",
+    "content": "Contenuto",
+    "notes": "Note",
+    "save": "Cifra e salva"
+  },
+  "changeMaster": {
+    "title": "Cambia password principale",
+    "description": "I tuoi elementi non vengono cifrati di nuovo: solo la chiave della cassaforte viene protetta con la nuova password. La tua chiave di recupero resta valida.",
+    "current": "Password principale attuale",
+    "submit": "Cambia",
+    "wrongCurrent": "La password principale attuale non è corretta.",
+    "done": "Password principale aggiornata"
+  },
+  "strength": {
+    "emptyHint": "Usa almeno 12 caratteri. Una frase di più parole è facile da ricordare e difficile da indovinare.",
+    "tooShort": "Troppo corta",
+    "tooShortHint": "Servono almeno 12 caratteri.",
+    "fair": "Potrebbe essere più sicura",
+    "fairHint": "Aggiungi altre parole o caratteri più vari.",
+    "good": "Buona",
+    "veryGood": "Ottima",
+    "rememberHint": "Ricorda: se la dimentichi, solo la chiave di recupero potrà aprire la cassaforte."
+  },
+  "generator": {
+    "regenerate": "Generane un’altra",
+    "copied": "Copiata · gli appunti si svuotano tra 30 s",
+    "entropy": "≈ {{bits}} bit di entropia",
+    "length": "Lunghezza",
+    "sets": {
+      "upper": "Maiuscole",
+      "lower": "Minuscole",
+      "digits": "Numeri",
+      "symbols": "Simboli"
+    },
+    "avoidAmbiguous": "Evita caratteri ambigui (I, l, 1, O, 0)",
+    "use": "Usa questa password",
+    "rating": {
+      "weak": "Debole",
+      "fair": "Discreta",
+      "strong": "Forte",
+      "excellent": "Eccellente"
+    }
+  },
+  "gate": {
+    "guarantees": {
+      "encryption": "Crittografia AES-256-GCM nel tuo browser",
+      "kdf": "Chiave derivata con Argon2id",
+      "agents": "Agenti e MCP non hanno accesso"
+    },
+    "decryptFailed_one": "Impossibile decifrare {{count}} elemento: è stato saltato.",
+    "decryptFailed_many": "Impossibile decifrare {{count}} elementi: sono stati saltati.",
+    "decryptFailed_other": "Impossibile decifrare {{count}} elementi: sono stati saltati.",
+    "setup": {
+      "title": "Configura la tua cassaforte",
+      "subtitle": "Scegli una password principale. Viene usata nel tuo browser per cifrare i tuoi segreti e non viene mai inviata al server.",
+      "tooShort": "Usa almeno 12 caratteri.",
+      "failed": "Impossibile creare la cassaforte in questo browser.",
+      "repeat": "Ripeti la password principale",
+      "busy": "Generazione delle chiavi…",
+      "submit": "Crea cassaforte",
+      "ready": "La tua cassaforte è pronta. Solo tu puoi aprirla."
+    },
+    "recoveryKey": {
+      "title": "Salva la tua chiave di recupero",
+      "subtitle": "È l’unico modo per recuperare la cassaforte se dimentichi la password principale. Viene mostrata una sola volta.",
+      "copied": "Chiave di recupero copiata",
+      "download": "Scarica .txt",
+      "fileName": "orqevio-chiave-di-recupero.txt",
+      "fileText": "Orqevio — Chiave di recupero della cassaforte\n\n{{recoveryKey}}\n\nConservala fuori da Orqevio (ad esempio stampata o in un altro gestore di password).\nTi permette di reimpostare la password principale. Nessun altro può recuperarla al posto tuo.\n",
+      "saved": "L’ho salvata in un posto sicuro, fuori da Orqevio.",
+      "open": "Apri la mia cassaforte"
+    },
+    "unlock": {
+      "title": "Cassaforte bloccata",
+      "subtitle": "Inserisci la password principale per decifrare i tuoi login in questo browser.",
+      "busy": "Decifratura…",
+      "submit": "Sblocca",
+      "forgot": "Hai dimenticato la password principale?"
+    },
+    "recover": {
+      "title": "Recupera la cassaforte",
+      "subtitle": "Usa la chiave di recupero che hai salvato quando hai creato la cassaforte per scegliere una nuova password principale.",
+      "recoveryKey": "Chiave di recupero",
+      "recoveryKeyPlaceholder": "XXXX-XXXX-XXXX-…",
+      "submit": "Reimposta e apri",
+      "noKey": "Non ho la chiave",
+      "invalidKey": "La chiave di recupero non è valida.",
+      "done": "Password principale reimpostata"
+    },
+    "reset": {
+      "title": "Reimposta la cassaforte",
+      "description": "Senza la password principale o la chiave di recupero, nessuno può decifrare i tuoi dati, nemmeno noi. La reimpostazione elimina definitivamente tutti gli elementi.",
+      "accessKey": "Chiave di accesso",
+      "accessKeyHint": "Conferma che sei tu con la chiave di accesso di questa copia (non con la password principale).",
+      "submit": "Elimina e reimposta",
+      "done": "Cassaforte reimpostata. Puoi configurarla di nuovo."
+    }
+  },
+  "import": {
+    "title": "Importa nella cassaforte",
+    "description": "Il file viene letto e cifrato in questo browser: il server riceve solo elementi già cifrati.",
+    "formats": "Supporta il CSV esportato da Chrome, Edge, Firefox e Safari, il CSV e il JSON non cifrato di Bitwarden e le esportazioni cifrate di Orqevio.",
+    "choose": "Scegli file",
+    "fileLabel": "File da importare",
+    "tooLarge": "Il file è troppo grande (oltre {{size}} MB).",
+    "problems": {
+      "empty": "Il file è vuoto.",
+      "unknown_format": "Orqevio non riconosce questo file. Usa il CSV esportato da Chrome, Edge, Firefox o Safari, il CSV o il JSON di Bitwarden, oppure un’esportazione di Orqevio.",
+      "bitwarden_encrypted": "Questa è un’esportazione cifrata di Bitwarden. Esportala di nuovo in formato «.json» o «.csv» non cifrato e importala qui.",
+      "no_items": "Il file non contiene né login né note."
+    },
+    "encrypted_one": "Questa è un’esportazione cifrata di Orqevio con {{count}} elemento. Inserisci la password principale che avevi quando l’hai esportata.",
+    "encrypted_many": "Questa è un’esportazione cifrata di Orqevio con {{count}} elementi. Inserisci la password principale che avevi quando l’hai esportata.",
+    "encrypted_other": "Questa è un’esportazione cifrata di Orqevio con {{count}} elementi. Inserisci la password principale che avevi quando l’hai esportata.",
+    "exportPassword": "Password dell’esportazione",
+    "decrypt": "Decifra",
+    "wrongPassword": "Non è la password con cui è stata creata questa esportazione.",
+    "sources": {
+      "chromeOrEdge": "Da Chrome o Edge:",
+      "firefox": "Da Firefox:",
+      "safari": "Da Safari:",
+      "bitwardenCsv": "Da Bitwarden (CSV):",
+      "bitwardenJson": "Da Bitwarden (JSON):",
+      "csv": "Da un file CSV:",
+      "orqevio": "Da Orqevio (cifrata):"
+    },
+    "newLogins_one": "{{count}} nuovo login",
+    "newLogins_many": "{{count}} nuovi login",
+    "newLogins_other": "{{count}} nuovi login",
+    "newNotes_one": "{{count}} nuova nota",
+    "newNotes_many": "{{count}} nuove note",
+    "newNotes_other": "{{count}} nuove note",
+    "nothingNew": "Niente di nuovo da importare",
+    "duplicates_one": "{{count}} elemento è già nella tua cassaforte e verrà saltato",
+    "duplicates_many": "{{count}} elementi sono già nella tua cassaforte e verranno saltati",
+    "duplicates_other": "{{count}} elementi sono già nella tua cassaforte e verranno saltati",
+    "unsupported_one": "{{count}} elemento non è supportato (carte di pagamento o identità) e non verrà importato",
+    "unsupported_many": "{{count}} elementi non sono supportati (carte di pagamento o identità) e non verranno importati",
+    "unsupported_other": "{{count}} elementi non sono supportati (carte di pagamento o identità) e non verranno importati",
+    "unencryptedWarning": "Il file che hai scelto non è cifrato: eliminalo dal tuo computer quando hai finito.",
+    "chooseAnother": "Scegline un altro",
+    "progress": "Cifratura {{done}} di {{total}}…",
+    "submit_one": "Importa {{count}} elemento",
+    "submit_many": "Importa {{count}} elementi",
+    "submit_other": "Importa {{count}} elementi",
+    "failed_one": "Impossibile importare {{count}} elemento. Importa di nuovo il file: gli elementi già importati verranno saltati.",
+    "failed_many": "Impossibile importare {{count}} elementi. Importa di nuovo il file: gli elementi già importati verranno saltati.",
+    "failed_other": "Impossibile importare {{count}} elementi. Importa di nuovo il file: gli elementi già importati verranno saltati.",
+    "done_one": "{{count}} elemento importato",
+    "done_many": "{{count}} elementi importati",
+    "done_other": "{{count}} elementi importati",
+    "locked": "La cassaforte si è bloccata prima della fine dell’importazione. Sbloccala e importa di nuovo il file: ciò che è già stato importato verrà saltato.",
+    "untitledNote": "Nota",
+    "untitledLogin": "Senza titolo",
+    "damaged": "Questa esportazione è danneggiata e non può essere letta."
+  },
+  "export": {
+    "title": "Esporta la cassaforte",
+    "description": "Scarica tutti i tuoi elementi in un file, preparato in questo browser.",
+    "kind": "Tipo di esportazione",
+    "kinds": {
+      "encrypted": "Cifrata",
+      "plain": "Non cifrata"
+    },
+    "encryptedInfo": "Si apre solo con la tua password principale attuale. Usala come backup o per spostare i tuoi elementi in un’altra copia di Orqevio.",
+    "plainInfo": "Nel formato JSON di Bitwarden, che la maggior parte dei gestori di password sa importare. Chiunque abbia il file può leggerlo.",
+    "understood": "Ho capito che il file non è cifrato e che chiunque lo abbia può leggere tutte le mie password.",
+    "submitPlain": "Esporta non cifrata",
+    "submitEncrypted": "Esporta cifrata",
+    "fileNameEncrypted": "orqevio-cassaforte-cifrata-{{date}}.json",
+    "fileNamePlain": "orqevio-cassaforte-non-cifrata-{{date}}.json",
+    "done_one": "{{count}} elemento esportato",
+    "done_many": "{{count}} elementi esportati",
+    "done_other": "{{count}} elementi esportati",
+    "tooLarge": "L’esportazione supera {{size}} MB: Orqevio non potrà importarla."
+  }
+}

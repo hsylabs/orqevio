@@ -1,0 +1,51 @@
+{
+  "language": "Language",
+  "skipToContent": "Skip to content",
+  "loading": "Loading",
+  "actions": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "close": "Close",
+    "copy": "Copy",
+    "view": "View",
+    "backHome": "Back to home"
+  },
+  "dialog": {
+    "fallbackTitle": "Dialog",
+    "details": "Details"
+  },
+  "copyFailed": "Couldn’t copy to the clipboard",
+  "notFound": {
+    "title": "Nothing here",
+    "body": "The page doesn’t exist or you don’t have access to it."
+  },
+  "time": {
+    "justNow": "just now"
+  },
+  "due": {
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday"
+  },
+  "greeting": {
+    "night": "Good evening",
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening"
+  },
+  "color": "Color",
+  "colors": {
+    "tomato": "Persimmon",
+    "amber": "Amber",
+    "lime": "Lime",
+    "jade": "Jade",
+    "teal": "Turquoise",
+    "cobalt": "Cobalt",
+    "iris": "Iris",
+    "rose": "Pink",
+    "slate": "Slate"
+  },
+  "untitled": "Untitled",
+  "quoted": "“{{text}}”"
+}

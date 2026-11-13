@@ -1,0 +1,284 @@
+{
+  "title": "保管庫",
+  "back": "← 戻る",
+  "reveal": {
+    "show": "表示",
+    "hide": "隠す"
+  },
+  "types": {
+    "login": "ログイン",
+    "note": "セキュアメモ"
+  },
+  "untitled": {
+    "login": "無題",
+    "note": "無題のメモ"
+  },
+  "master": {
+    "label": "マスターパスワード",
+    "new": "新しいマスターパスワード",
+    "repeatNew": "新しいパスワード（確認）",
+    "newTooShort": "新しいパスワードは12文字以上にしてください。",
+    "mismatch": "パスワードが一致しません。",
+    "wrong": "マスターパスワードが違います。"
+  },
+  "unsupported": {
+    "insecureTitle": "保管庫には安全な接続が必要です",
+    "browserTitle": "このブラウザでは保管庫を使えません",
+    "blockers": {
+      "secure_context": "暗号化されていない接続（http://）でOrqevioを開いています。ブラウザは安全な接続でしか保管庫の暗号化を許可しません。https://で開くか（例：Caddy、Nginx、Traefikの背後に配置）、同じコンピューター上ならhttp://localhostで開いてください。",
+      "webcrypto": "このブラウザは、保管庫がデータの暗号化に使うWebCryptoに対応していません。",
+      "workers": "このブラウザは、保管庫がページを止めずに鍵を導出するために使うWeb Workersに対応していません。",
+      "webassembly": "このブラウザは、保管庫がArgon2idで鍵を導出するために使うWebAssemblyに対応していません。"
+    },
+    "updateBrowser": "Chrome、Edge、Firefox、Safariの最新バージョンをお使いください。",
+    "restWorks": "タスクとドキュメントはこれまでどおり使えます。"
+  },
+  "toolbar": {
+    "autoLockTimer": "操作がないと自動的にロックされます",
+    "generator": "生成ツール",
+    "options": "保管庫のオプション",
+    "changeMaster": "マスターパスワードを変更",
+    "import": "インポート…",
+    "export": "エクスポート…",
+    "autoLock": "自動ロック",
+    "autoLockMinutes_other": "{{count}}分間操作がないとき",
+    "autoLockHours_other": "{{count}}時間操作がないとき",
+    "lock": "ロック",
+    "generatorTitle": "パスワード生成ツール",
+    "generatorDescription": "ブラウザの暗号論的乱数を、偏りなく使用します。"
+  },
+  "list": {
+    "search": "保管庫を検索",
+    "new": "新規",
+    "filter": "フィルター",
+    "filters": {
+      "all": "すべて",
+      "logins": "ログイン",
+      "notes": "メモ"
+    },
+    "label": "保管庫の項目",
+    "noMatches": "一致する項目はありません。",
+    "empty": "保管庫は空です。",
+    "footer_other": "{{count}}件 · このブラウザでのみ復号"
+  },
+  "empty": {
+    "select": "項目を選択してください",
+    "first": "最初のログインを保存しましょう",
+    "newLogin": "新規ログイン",
+    "body": "すべてのデータはブラウザで暗号化されてからサーバーに送信されます。サーバーもエージェントも中身を読むことはできません。"
+  },
+  "delete": {
+    "title": "「{{title}}」を削除しますか？",
+    "description": "保管庫から完全に削除されます。",
+    "confirm": "削除"
+  },
+  "detail": {
+    "updatedLogin": "ログイン · 更新：{{time}}",
+    "updatedNote": "セキュアメモ · 更新：{{time}}",
+    "favorite": "お気に入りに追加",
+    "unfavorite": "お気に入りから削除",
+    "edit": "編集",
+    "delete": "削除",
+    "username": "ユーザー名",
+    "copyUsername": "ユーザー名をコピー",
+    "usernameCopied": "ユーザー名をコピーしました",
+    "password": "パスワード",
+    "showPassword": "パスワードを表示",
+    "hidePassword": "パスワードを隠す",
+    "copyPassword": "パスワードをコピー",
+    "passwordCopied": "パスワードをコピーしました · クリップボードは30秒後に消去されます",
+    "website": "Webサイト",
+    "openWebsite": "Webサイトを開く",
+    "copyUrl": "URLをコピー",
+    "urlCopied": "URLをコピーしました",
+    "content": "内容",
+    "notes": "メモ",
+    "copyNotes": "メモをコピー",
+    "notesCopied": "コピーしました",
+    "clipboardClears": "コピーした内容は、30秒後にクリップボードから自動的に消去されます。"
+  },
+  "totp": {
+    "label": "確認コード",
+    "copy": "コードをコピー",
+    "copied": "コードをコピーしました · クリップボードは30秒後に消去されます",
+    "current": "現在の確認コード",
+    "changesIn_other": "{{count}}秒後に変わります",
+    "problems": {
+      "empty": "シークレットキーまたはotpauth://リンクを入力してください。",
+      "not_totp": "時間ベースのコード（TOTP）のみ対応しています。",
+      "bad_secret": "シークレットキーに使えるのは、AからZまでの英字と2から7までの数字だけです。",
+      "too_short": "シークレットキーが短すぎます。",
+      "bad_parameters": "otpauth://リンクのパラメーターが無効です。"
+    }
+  },
+  "editor": {
+    "editTitle": "項目を編集",
+    "newLogin": "新規ログイン",
+    "newNote": "新規セキュアメモ",
+    "name": "名前",
+    "namePlaceholderLogin": "例：銀行、GitHub、オフィスのWi-Fi",
+    "namePlaceholderNote": "例：バックアップコード",
+    "username": "ユーザー名またはメールアドレス",
+    "password": "パスワード",
+    "generate": "パスワードを生成",
+    "website": "Webサイト",
+    "websitePlaceholder": "example.jp",
+    "totp": "2段階認証（TOTP）",
+    "totpPlaceholder": "シークレットキーまたはotpauth://リンク",
+    "totpHint": "2段階認証を有効にするときに、サービスがQRコードの横に表示するキーです。",
+    "content": "内容",
+    "notes": "メモ",
+    "save": "暗号化して保存"
+  },
+  "changeMaster": {
+    "title": "マスターパスワードを変更",
+    "description": "項目は再暗号化されません。新しいパスワードで保護されるのは保管庫の鍵だけです。回復キーは引き続き有効です。",
+    "current": "現在のマスターパスワード",
+    "submit": "変更",
+    "wrongCurrent": "現在のマスターパスワードが正しくありません。",
+    "done": "マスターパスワードを更新しました"
+  },
+  "strength": {
+    "emptyHint": "12文字以上にしてください。複数の単語を組み合わせたフレーズは、覚えやすく推測されにくくなります。",
+    "tooShort": "短すぎます",
+    "tooShortHint": "12文字以上必要です。",
+    "fair": "改善の余地あり",
+    "fairHint": "単語を増やすか、さまざまな種類の文字を組み合わせてください。",
+    "good": "良好",
+    "veryGood": "非常に良好",
+    "rememberHint": "忘れた場合、保管庫を開けるのは回復キーだけです。"
+  },
+  "generator": {
+    "regenerate": "再生成",
+    "copied": "コピーしました · クリップボードは30秒後に消去されます",
+    "entropy": "≈ {{bits}}ビットのエントロピー",
+    "length": "長さ",
+    "sets": {
+      "upper": "大文字",
+      "lower": "小文字",
+      "digits": "数字",
+      "symbols": "記号"
+    },
+    "avoidAmbiguous": "紛らわしい文字を避ける（I、l、1、O、0）",
+    "use": "このパスワードを使う",
+    "rating": {
+      "weak": "弱い",
+      "fair": "普通",
+      "strong": "強い",
+      "excellent": "非常に強い"
+    }
+  },
+  "gate": {
+    "guarantees": {
+      "encryption": "ブラウザ内でAES-256-GCM暗号化",
+      "kdf": "Argon2idで鍵を導出",
+      "agents": "エージェントとMCPはアクセス不可"
+    },
+    "decryptFailed_other": "{{count}}件の項目を復号できなかったため、スキップしました。",
+    "setup": {
+      "title": "保管庫を設定",
+      "subtitle": "マスターパスワードを決めてください。ブラウザ内で秘密情報の暗号化に使われ、サーバーに送信されることはありません。",
+      "tooShort": "12文字以上にしてください。",
+      "failed": "このブラウザでは保管庫を作成できませんでした。",
+      "repeat": "マスターパスワード（確認）",
+      "busy": "鍵を生成中…",
+      "submit": "保管庫を作成",
+      "ready": "保管庫の準備ができました。開けるのはあなただけです。"
+    },
+    "recoveryKey": {
+      "title": "回復キーを保存してください",
+      "subtitle": "マスターパスワードを忘れたときに保管庫を回復できる唯一の手段です。表示されるのは一度だけです。",
+      "copied": "回復キーをコピーしました",
+      "download": ".txtをダウンロード",
+      "fileName": "orqevio-recovery-key.txt",
+      "fileText": "Orqevio — 保管庫の回復キー\n\n{{recoveryKey}}\n\nOrqevioの外に保管してください（印刷する、別のパスワードマネージャーに保存するなど）。\nマスターパスワードのリセットに使います。ほかの誰も、あなたの代わりに回復することはできません。\n",
+      "saved": "Orqevioの外の安全な場所に保存しました。",
+      "open": "保管庫を開く"
+    },
+    "unlock": {
+      "title": "保管庫はロックされています",
+      "subtitle": "マスターパスワードを入力すると、このブラウザでログイン情報を復号します。",
+      "busy": "復号中…",
+      "submit": "ロック解除",
+      "forgot": "マスターパスワードを忘れた場合"
+    },
+    "recover": {
+      "title": "保管庫を回復",
+      "subtitle": "保管庫の作成時に保存した回復キーを使って、新しいマスターパスワードを設定します。",
+      "recoveryKey": "回復キー",
+      "recoveryKeyPlaceholder": "XXXX-XXXX-XXXX-…",
+      "submit": "リセットして開く",
+      "noKey": "キーを持っていません",
+      "invalidKey": "回復キーが無効です。",
+      "done": "マスターパスワードをリセットしました"
+    },
+    "reset": {
+      "title": "保管庫をリセット",
+      "description": "マスターパスワードも回復キーもなければ、誰もデータを復号できません。私たちにもできません。リセットすると、すべての項目が完全に削除されます。",
+      "accessKey": "アクセスキー",
+      "accessKeyHint": "このOrqevioのアクセスキー（マスターパスワードではありません）で本人確認をしてください。",
+      "submit": "削除してリセット",
+      "done": "保管庫をリセットしました。もう一度設定できます。"
+    }
+  },
+  "import": {
+    "title": "保管庫にインポート",
+    "description": "ファイルはこのブラウザで読み込まれ、暗号化されます。サーバーが受け取るのは暗号化済みの項目だけです。",
+    "formats": "Chrome、Edge、Firefox、SafariがエクスポートするCSV、BitwardenのCSVと暗号化されていないJSON、暗号化されたOrqevioのエクスポートに対応しています。",
+    "choose": "ファイルを選択",
+    "fileLabel": "インポートするファイル",
+    "tooLarge": "ファイルが大きすぎます（{{size}} MB超）。",
+    "problems": {
+      "empty": "ファイルが空です。",
+      "unknown_format": "Orqevioはこのファイルを認識できません。Chrome、Edge、Firefox、SafariがエクスポートするCSV、BitwardenのCSVまたはJSON、またはOrqevioのエクスポートを使ってください。",
+      "bitwarden_encrypted": "これは暗号化されたBitwardenのエクスポートです。暗号化なしの「.json」または「.csv」で再度エクスポートしてから、ここでインポートしてください。",
+      "no_items": "ファイルにログインもメモも含まれていません。"
+    },
+    "encrypted_other": "{{count}}件の項目を含む、暗号化されたOrqevioのエクスポートです。エクスポートした時点のマスターパスワードを入力してください。",
+    "exportPassword": "エクスポートのパスワード",
+    "decrypt": "復号",
+    "wrongPassword": "このエクスポートの作成時に使われたパスワードではありません。",
+    "sources": {
+      "chromeOrEdge": "ChromeまたはEdgeから：",
+      "firefox": "Firefoxから：",
+      "safari": "Safariから：",
+      "bitwardenCsv": "Bitwarden（CSV）から：",
+      "bitwardenJson": "Bitwarden（JSON）から：",
+      "csv": "CSVファイルから：",
+      "orqevio": "Orqevio（暗号化）から："
+    },
+    "newLogins_other": "新しいログイン{{count}}件",
+    "newNotes_other": "新しいメモ{{count}}件",
+    "nothingNew": "インポートする新しい項目はありません",
+    "duplicates_other": "{{count}}件はすでに保管庫にあるため、スキップされます",
+    "unsupported_other": "{{count}}件は対応していない種類（カード情報やID情報）のため、インポートされません",
+    "unencryptedWarning": "選択したファイルは暗号化されていません。作業が終わったら、コンピューターから削除してください。",
+    "chooseAnother": "別のファイルを選択",
+    "progress": "{{total}}件中{{done}}件を暗号化中…",
+    "submit_other": "{{count}}件をインポート",
+    "failed_other": "{{count}}件をインポートできませんでした。もう一度ファイルをインポートしてください。インポート済みの項目はスキップされます。",
+    "done_other": "{{count}}件をインポートしました",
+    "locked": "インポートの完了前に保管庫がロックされました。ロックを解除して、もう一度ファイルをインポートしてください。インポート済みの項目はスキップされます。",
+    "untitledNote": "メモ",
+    "untitledLogin": "無題",
+    "damaged": "このエクスポートは破損しているため、読み込めません。"
+  },
+  "export": {
+    "title": "保管庫をエクスポート",
+    "description": "すべての項目を1つのファイルとしてダウンロードします。ファイルはこのブラウザで作成されます。",
+    "kind": "エクスポートの種類",
+    "kinds": {
+      "encrypted": "暗号化",
+      "plain": "暗号化なし"
+    },
+    "encryptedInfo": "開けるのは現在のマスターパスワードだけです。バックアップや、別のOrqevioへの項目の移行に使えます。",
+    "plainInfo": "Bitwarden形式のJSONで、ほとんどのパスワードマネージャーでインポートできます。ファイルを持っている人なら誰でも中身を読めます。",
+    "understood": "このファイルは暗号化されておらず、持っている人なら誰でもすべてのパスワードを読めることを理解しました。",
+    "submitPlain": "暗号化せずにエクスポート",
+    "submitEncrypted": "暗号化してエクスポート",
+    "fileNameEncrypted": "orqevio-vault-encrypted-{{date}}.json",
+    "fileNamePlain": "orqevio-vault-unencrypted-{{date}}.json",
+    "done_other": "{{count}}件をエクスポートしました",
+    "tooLarge": "エクスポートが{{size}} MBを超えています。Orqevioではインポートできません。"
+  }
+}

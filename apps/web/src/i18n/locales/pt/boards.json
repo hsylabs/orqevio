@@ -1,0 +1,177 @@
+{
+  "actions": {
+    "delete": "Excluir",
+    "restore": "Restaurar",
+    "archive": "Arquivar",
+    "rename": "Renomear",
+    "back": "Voltar",
+    "undo": "Desfazer"
+  },
+  "board": {
+    "region": "Quadro {{name}}",
+    "archived": "Arquivados",
+    "actions": "Ações do quadro",
+    "rename": "Renomear quadro",
+    "nameLabel": "Nome",
+    "delete": "Excluir quadro",
+    "empty": {
+      "title": "Este quadro não tem colunas",
+      "body": "Crie colunas para as etapas do seu trabalho."
+    },
+    "filterActive": "Filtro ativo · arrastar está desativado",
+    "removeFilter": "Remover filtro"
+  },
+  "drag": {
+    "instructions": "Para pegar um item, pressione Espaço. Use as setas para movê-lo e pressione Espaço de novo para soltá-lo. Pressione Escape para cancelar.",
+    "card": {
+      "picked": "Você pegou o cartão “{{title}}”. Coluna “{{column}}”, posição {{position}} de {{total}}.",
+      "over": "O cartão “{{title}}” está na coluna “{{column}}”, posição {{position}} de {{total}}.",
+      "outside": "O cartão “{{title}}” não está sobre uma área válida para soltar.",
+      "dropped": "Você soltou o cartão “{{title}}”. Coluna “{{column}}”, posição {{position}} de {{total}}.",
+      "droppedOutside": "Você soltou o cartão “{{title}}”.",
+      "cancelled": "A movimentação do cartão “{{title}}” foi cancelada."
+    },
+    "column": {
+      "picked": "Você pegou a coluna “{{title}}”. Posição {{position}} de {{total}}.",
+      "over": "A coluna “{{title}}” está na posição {{position}} de {{total}}.",
+      "outside": "A coluna “{{title}}” não está sobre uma área válida para soltar.",
+      "dropped": "Você soltou a coluna “{{title}}”. Posição {{position}} de {{total}}.",
+      "droppedOutside": "Você soltou a coluna “{{title}}”.",
+      "cancelled": "A movimentação da coluna “{{title}}” foi cancelada."
+    }
+  },
+  "filter": {
+    "button": "Filtrar",
+    "search": "Buscar por título…",
+    "searchLabel": "Buscar por título",
+    "due": "Prazo",
+    "dues": {
+      "all": "Todos",
+      "overdue": "Atrasados",
+      "week": "Esta semana",
+      "none": "Sem data"
+    },
+    "labels": "Etiquetas",
+    "clear": "Limpar filtro"
+  },
+  "column": {
+    "region": "Coluna {{name}}",
+    "roleDescription": "coluna",
+    "handle": "{{name}}. Clique duas vezes para renomear ou pressione Espaço para mover",
+    "name": "Nome da coluna",
+    "add": "Adicionar coluna",
+    "addCardTo": "Adicionar cartão em {{name}}",
+    "actions": "Ações de {{name}}",
+    "addCard": "Adicionar cartão",
+    "delete": "Excluir coluna",
+    "cards": "Cartões em {{name}}",
+    "noMatches": "Nada corresponde ao filtro",
+    "dropHere": "Solte cartões aqui",
+    "deleteConfirm": {
+      "title": "Excluir a coluna “{{name}}”?",
+      "withCards_one": "O cartão desta coluna também será excluído. Para mantê-lo, mova-o antes para outra coluna.",
+      "withCards_many": "Os {{count}} cartões desta coluna também serão excluídos. Para mantê-los, mova-os antes para outra coluna.",
+      "withCards_other": "Os {{count}} cartões desta coluna também serão excluídos. Para mantê-los, mova-os antes para outra coluna.",
+      "empty": "A coluna está vazia."
+    }
+  },
+  "composer": {
+    "placeholder": "O que precisa ser feito?",
+    "hint": "<kbd>↵</kbd> adicionar · <kbd>esc</kbd> fechar",
+    "submit": "Adicionar"
+  },
+  "card": {
+    "title": "Título do cartão",
+    "roleDescription": "cartão",
+    "checklist": "Checklist",
+    "hasDescription": "Tem descrição",
+    "linkedDocs": "Documentos vinculados",
+    "attachments": "Anexos",
+    "createdByName": "Criado por {{name}}"
+  },
+  "sheet": {
+    "fallbackTitle": "Cartão",
+    "label": "Detalhes do cartão",
+    "gone": "Este cartão não existe mais",
+    "archived": "Arquivado",
+    "agentEditing": "{{name}} está editando",
+    "saving": "Salvando…",
+    "saved": "Salvo",
+    "actions": "Ações do cartão",
+    "archivedToast": "Cartão arquivado",
+    "deleteConfirm": {
+      "title": "Excluir este cartão?",
+      "description": "Ele será excluído com as checklists e os anexos. Se quiser apenas ocultá-lo, arquive-o."
+    },
+    "labels": "Etiquetas",
+    "addLabels": "Adicionar etiquetas",
+    "due": "Prazo",
+    "noDate": "Sem data",
+    "createdBy": "Criado por",
+    "unknownCreator": "Desconhecido",
+    "description": "Descrição",
+    "descriptionPlaceholder": "Adicione contexto, critérios de aceitação ou notas. Pressione “/” para inserir.",
+    "descriptionLabel": "Descrição do cartão",
+    "checklists": "Checklists",
+    "addChecklist": "+ Adicionar",
+    "newChecklistTitle": "Checklist",
+    "checklistsEmpty": "Divida a tarefa em etapas que você pode marcar.",
+    "linkedDocs": "Documentos vinculados",
+    "attachments": "Anexos",
+    "activity": "Atividade"
+  },
+  "checklist": {
+    "titleLabel": "Título da checklist",
+    "actions": "Ações da checklist",
+    "delete": "Excluir checklist",
+    "progress": "Progresso",
+    "item": "Item",
+    "deleteItem": "Excluir “{{text}}”",
+    "addItem": "Adicionar item",
+    "newItemPlaceholder": "Novo item e Enter",
+    "newItem": "Novo item"
+  },
+  "due": {
+    "today": "Hoje",
+    "tomorrow": "Amanhã",
+    "monday": "Segunda-feira",
+    "inAWeek": "Em uma semana",
+    "remove": "Remover data"
+  },
+  "labels": {
+    "title": "Etiquetas",
+    "newTitle": "Nova etiqueta",
+    "editTitle": "Editar etiqueta",
+    "namePlaceholder": "Nome (opcional)",
+    "nameLabel": "Nome da etiqueta",
+    "empty": "Este quadro ainda não tem etiquetas.",
+    "unnamed": "Sem nome",
+    "editNamed": "Editar {{name}}",
+    "editUnnamed": "Editar etiqueta",
+    "create": "Criar etiqueta"
+  },
+  "linked": {
+    "mentioned": "mencionada",
+    "unlinkNamed": "Desvincular {{title}}",
+    "unlinkUntitled": "Desvincular página",
+    "link": "Vincular documento",
+    "search": "Buscar páginas…",
+    "searchLabel": "Buscar páginas",
+    "noResults": "Nenhum resultado.",
+    "hint": "Digite para buscar em todo o espaço."
+  },
+  "archived": {
+    "sheetTitle": "Cartões arquivados",
+    "heading": "Arquivados",
+    "emptyTitle": "Nada arquivado",
+    "emptyBody": "Os cartões que você ou seus agentes arquivarem aparecem aqui, e você pode restaurá-los.",
+    "deleteConfirm": "Excluir “{{title}}” permanentemente?"
+  },
+  "attachments": {
+    "deleteConfirm": "Excluir “{{name}}”?",
+    "download": "Baixar {{name}}",
+    "deleteNamed": "Excluir {{name}}",
+    "uploading": "Enviando…",
+    "attach": "Anexar arquivo"
+  }
+}

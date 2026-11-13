@@ -1,20 +1,22 @@
 import { type SQL, asc, eq } from 'drizzle-orm'
-import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
+import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import type { DbOrTx } from '../db/client'
 import { evenlySpacedKeys, keyAtEnd, keyForIndex } from '../lib/positions'
 
-type Ordered = PgTable & { id: PgColumn; position: PgColumn }
+type Ordered = SQLiteTable & { id: SQLiteColumn; position: SQLiteColumn }
 
 /**
  * Computes the fractional key for placing an item at `index` among its
  * siblings (matching `scope`), rebalancing siblings if keys collide.
+ * Synchronous, so it can run inside a transaction.
  */
-export async function positionAt(db: DbOrTx, target: Ordered, scope: SQL | undefined, index: number | undefined, excludeId?: string) {
-  const rows = (await db
+export function positionAt(db: DbOrTx, target: Ordered, scope: SQL | undefined, index: number | undefined, excludeId?: string): string {
+  const rows = db
     .select({ id: target.id, position: target.position })
-    .from(target as PgTable)
+    .from(target as SQLiteTable)
     .where(scope)
-    .orderBy(asc(target.position), asc(target.id))) as Array<{ id: string; position: string }>
+    .orderBy(asc(target.position), asc(target.id))
+    .all() as Array<{ id: string; position: string }>
   const siblings = rows.filter((r) => r.id !== excludeId)
   const keys = siblings.map((r) => r.position)
   if (index === undefined || index >= siblings.length) {
@@ -29,10 +31,10 @@ export async function positionAt(db: DbOrTx, target: Ordered, scope: SQL | undef
   let k = 0
   for (const sibling of siblings) {
     if (k === slot) k++
-    await db
-      .update(target as PgTable)
+    db.update(target as SQLiteTable)
       .set({ position: fresh[k]! } as never)
       .where(eq(target.id, sibling.id))
+      .run()
     k++
   }
   return fresh[slot]!

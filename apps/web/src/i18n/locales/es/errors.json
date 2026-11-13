@@ -1,0 +1,16 @@
+{
+  "codes": {
+    "invalid_access_key": "La clave de acceso no es correcta.",
+    "invalid_setup_code": "El código de configuración no es correcto.",
+    "already_claimed": "Esta copia ya está configurada. Entra con tu clave de acceso.",
+    "not_claimed": "Esta copia aún no está configurada.",
+    "rate_limited": "Demasiados intentos. Espera unos minutos.",
+    "network": "No hay conexión con el servidor.",
+    "file_too_large": "El archivo supera el tamaño máximo permitido.",
+    "upload_incomplete": "La subida se interrumpió. Vuelve a intentarlo.",
+    "last_workspace": "Necesitas conservar al menos un espacio."
+  },
+  "notFound": "No se ha encontrado el elemento.",
+  "server": "Algo ha fallado en el servidor. Inténtalo de nuevo.",
+  "unknown": "Algo ha fallado. Inténtalo de nuevo."
+}

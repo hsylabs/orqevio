@@ -1,0 +1,61 @@
+{
+  "actions": {
+    "card": {
+      "created": "<actor>{{actor}}</actor> created the card <target>“{{target}}”</target>",
+      "created_self": "<actor>{{actor}}</actor> created this card",
+      "updated": "<actor>{{actor}}</actor> edited the card <target>“{{target}}”</target>",
+      "updated_self": "<actor>{{actor}}</actor> edited this card",
+      "moved": "<actor>{{actor}}</actor> moved the card <target>“{{target}}”</target>",
+      "moved_self": "<actor>{{actor}}</actor> moved this card",
+      "reordered": "<actor>{{actor}}</actor> reordered the card <target>“{{target}}”</target>",
+      "reordered_self": "<actor>{{actor}}</actor> reordered this card",
+      "archived": "<actor>{{actor}}</actor> archived the card <target>“{{target}}”</target>",
+      "archived_self": "<actor>{{actor}}</actor> archived this card",
+      "restored": "<actor>{{actor}}</actor> restored the card <target>“{{target}}”</target>",
+      "restored_self": "<actor>{{actor}}</actor> restored this card",
+      "deleted": "<actor>{{actor}}</actor> deleted the card <target>“{{target}}”</target>",
+      "deleted_self": "<actor>{{actor}}</actor> deleted this card",
+      "checklist": "<actor>{{actor}}</actor> updated the checklist of <target>“{{target}}”</target>",
+      "checklist_self": "<actor>{{actor}}</actor> updated the checklist",
+      "linked": "<actor>{{actor}}</actor> linked a document to <target>“{{target}}”</target>",
+      "linked_self": "<actor>{{actor}}</actor> linked a document",
+      "unlinked": "<actor>{{actor}}</actor> unlinked a document from <target>“{{target}}”</target>",
+      "unlinked_self": "<actor>{{actor}}</actor> unlinked a document"
+    },
+    "column": {
+      "created": "<actor>{{actor}}</actor> created the column <target>“{{target}}”</target>",
+      "updated": "<actor>{{actor}}</actor> renamed the column <target>“{{target}}”</target>",
+      "moved": "<actor>{{actor}}</actor> reordered the column <target>“{{target}}”</target>",
+      "deleted": "<actor>{{actor}}</actor> deleted the column <target>“{{target}}”</target>"
+    },
+    "board": {
+      "created": "<actor>{{actor}}</actor> created the board <target>“{{target}}”</target>",
+      "updated": "<actor>{{actor}}</actor> renamed the board <target>“{{target}}”</target>",
+      "deleted": "<actor>{{actor}}</actor> deleted the board <target>“{{target}}”</target>"
+    },
+    "page": {
+      "created": "<actor>{{actor}}</actor> created the page <target>“{{target}}”</target>",
+      "updated": "<actor>{{actor}}</actor> edited the page <target>“{{target}}”</target>",
+      "moved": "<actor>{{actor}}</actor> moved the page <target>“{{target}}”</target>",
+      "deleted": "<actor>{{actor}}</actor> deleted the page <target>“{{target}}”</target>"
+    },
+    "project": {
+      "created": "<actor>{{actor}}</actor> created the project <target>“{{target}}”</target>",
+      "updated": "<actor>{{actor}}</actor> updated the project <target>“{{target}}”</target>",
+      "deleted": "<actor>{{actor}}</actor> deleted the project <target>“{{target}}”</target>"
+    },
+    "label": {
+      "created": "<actor>{{actor}}</actor> created a label",
+      "updated": "<actor>{{actor}}</actor> edited a label",
+      "deleted": "<actor>{{actor}}</actor> deleted a label"
+    },
+    "other": "<actor>{{actor}}</actor> made a change"
+  },
+  "detail": {
+    "movedTo": "to {{to}}",
+    "movedFromTo": "{{from}} → {{to}}",
+    "createdIn": "in {{column}}",
+    "linkedPage": "“{{page}}”"
+  },
+  "viaMcp": "via MCP"
+}

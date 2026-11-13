@@ -69,20 +69,20 @@ export class CardService {
       db
         .select({
           cardId: checklists.cardId,
-          total: sql<number>`count(${checklistItems.id})::int`,
-          done: sql<number>`count(${checklistItems.id}) filter (where ${checklistItems.done})::int`,
+          total: sql<number>`count(${checklistItems.id})`,
+          done: sql<number>`count(${checklistItems.id}) filter (where ${checklistItems.done} = 1)`,
         })
         .from(checklists)
         .leftJoin(checklistItems, eq(checklistItems.checklistId, checklists.id))
         .where(inArray(checklists.cardId, ids))
         .groupBy(checklists.cardId),
       db
-        .select({ cardId: cardPageLinks.cardId, total: sql<number>`count(distinct ${cardPageLinks.pageId})::int` })
+        .select({ cardId: cardPageLinks.cardId, total: sql<number>`count(distinct ${cardPageLinks.pageId})` })
         .from(cardPageLinks)
         .where(inArray(cardPageLinks.cardId, ids))
         .groupBy(cardPageLinks.cardId),
       db
-        .select({ cardId: attachments.cardId, total: sql<number>`count(*)::int` })
+        .select({ cardId: attachments.cardId, total: sql<number>`count(*)` })
         .from(attachments)
         .where(inArray(attachments.cardId, ids))
         .groupBy(attachments.cardId),
@@ -197,12 +197,14 @@ export class CardService {
     }))
   }
 
-  private async validLabelIds(db: DbOrTx, boardId: string, labelIds: string[]) {
+  /** Synchronous: runs inside the create and update transactions. */
+  private validLabelIds(db: DbOrTx, boardId: string, labelIds: string[]) {
     if (labelIds.length === 0) return []
-    const rows = await db
+    const rows = db
       .select({ id: labels.id })
       .from(labels)
       .where(and(eq(labels.boardId, boardId), inArray(labels.id, labelIds)))
+      .all()
     if (rows.length !== new Set(labelIds).size) throw badRequest('One or more labels do not belong to this board')
     return rows.map((r) => r.id)
   }
@@ -213,9 +215,9 @@ export class CardService {
     const [column] = await this.deps.db.select().from(columns).where(eq(columns.id, columnId))
     if (!column) throw notFound('Column')
     await this.access.workspace(actor, column.workspaceId)
-    const card = await this.deps.db.transaction(async (tx) => {
-      const position = await positionAt(tx, cards, and(eq(cards.columnId, columnId), isNull(cards.archivedAt)), data.index)
-      const [row] = await tx
+    const card = this.deps.db.transaction((tx) => {
+      const position = positionAt(tx, cards, and(eq(cards.columnId, columnId), isNull(cards.archivedAt)), data.index)
+      const row = tx
         .insert(cards)
         .values({
           workspaceId: column.workspaceId,
@@ -229,9 +231,10 @@ export class CardService {
           createdByTokenId: actor.kind === 'agent' ? actor.tokenId : null,
         })
         .returning()
-      const labelIds = await this.validLabelIds(tx, column.boardId, data.labelIds ?? [])
-      if (labelIds.length) await tx.insert(cardLabels).values(labelIds.map((labelId) => ({ cardId: row!.id, labelId })))
-      return row!
+        .get()
+      const labelIds = this.validLabelIds(tx, column.boardId, data.labelIds ?? [])
+      if (labelIds.length) tx.insert(cardLabels).values(labelIds.map((labelId) => ({ cardId: row.id, labelId }))).run()
+      return row
     })
     await this.activity.record(
       actor,
@@ -246,18 +249,18 @@ export class CardService {
   async update(actor: Actor, cardId: string, input: unknown): Promise<CardSummaryDTO> {
     const data = parse(cardUpdateInput, input)
     const card = await this.load(actor, cardId, 'tasks:write')
-    const updated = await this.deps.db.transaction(async (tx) => {
+    const updated = this.deps.db.transaction((tx) => {
       const patch: Partial<CardRow> = { updatedAt: new Date() }
       if (data.title !== undefined) patch.title = data.title
       if (data.description !== undefined) patch.description = data.description
       if (data.dueAt !== undefined) patch.dueAt = data.dueAt ? new Date(data.dueAt) : null
-      const [row] = await tx.update(cards).set(patch).where(eq(cards.id, cardId)).returning()
+      const row = tx.update(cards).set(patch).where(eq(cards.id, cardId)).returning().get()!
       if (data.labelIds) {
-        const labelIds = await this.validLabelIds(tx, card.boardId, data.labelIds)
-        await tx.delete(cardLabels).where(eq(cardLabels.cardId, cardId))
-        if (labelIds.length) await tx.insert(cardLabels).values(labelIds.map((labelId) => ({ cardId, labelId })))
+        const labelIds = this.validLabelIds(tx, card.boardId, data.labelIds)
+        tx.delete(cardLabels).where(eq(cardLabels.cardId, cardId)).run()
+        if (labelIds.length) tx.insert(cardLabels).values(labelIds.map((labelId) => ({ cardId, labelId }))).run()
       }
-      return row!
+      return row
     })
     const changed = Object.keys(data).filter((k) => data[k as keyof typeof data] !== undefined)
     await this.activity.record(
@@ -282,14 +285,9 @@ export class CardService {
     const card = await this.load(actor, cardId, 'tasks:write')
     const [target] = await this.deps.db.select().from(columns).where(eq(columns.id, columnId))
     if (!target || target.boardId !== card.boardId) throw badRequest('The column must belong to the same board')
-    const moved = await this.deps.db.transaction(async (tx) => {
-      const position = await positionAt(tx, cards, and(eq(cards.columnId, columnId), isNull(cards.archivedAt)), index, cardId)
-      const [row] = await tx
-        .update(cards)
-        .set({ columnId, position, updatedAt: new Date() })
-        .where(eq(cards.id, cardId))
-        .returning()
-      return row!
+    const moved = this.deps.db.transaction((tx) => {
+      const position = positionAt(tx, cards, and(eq(cards.columnId, columnId), isNull(cards.archivedAt)), index, cardId)
+      return tx.update(cards).set({ columnId, position, updatedAt: new Date() }).where(eq(cards.id, cardId)).returning().get()!
     })
     if (card.columnId !== columnId) {
       const [from] = await this.deps.db.select({ name: columns.name }).from(columns).where(eq(columns.id, card.columnId))
@@ -316,7 +314,7 @@ export class CardService {
     const patch: Partial<CardRow> = { archivedAt: archived ? new Date() : null, updatedAt: new Date() }
     if (!archived) {
       // Restored cards return to the end of their column.
-      patch.position = await positionAt(this.deps.db, cards, and(eq(cards.columnId, card.columnId), isNull(cards.archivedAt)), undefined, cardId)
+      patch.position = positionAt(this.deps.db, cards, and(eq(cards.columnId, card.columnId), isNull(cards.archivedAt)), undefined, cardId)
     }
     await this.deps.db.update(cards).set(patch).where(eq(cards.id, cardId))
     await this.activity.record(
@@ -353,7 +351,7 @@ export class CardService {
   async createChecklist(actor: Actor, cardId: string, input: unknown) {
     const { title } = parse(checklistCreateInput, input)
     const card = await this.load(actor, cardId, 'tasks:write')
-    const position = await positionAt(this.deps.db, checklists, eq(checklists.cardId, cardId), undefined)
+    const position = positionAt(this.deps.db, checklists, eq(checklists.cardId, cardId), undefined)
     const [row] = await this.deps.db.insert(checklists).values({ workspaceId: card.workspaceId, cardId, title, position }).returning()
     await this.touch(actor, card, title)
     return { id: row!.id, cardId, title, position, items: [] } satisfies ChecklistDTO
@@ -382,7 +380,7 @@ export class CardService {
   async addItem(actor: Actor, checklistId: string, input: unknown) {
     const { text } = parse(checklistItemCreateInput, input)
     const { list, card } = await this.loadChecklist(actor, checklistId)
-    const position = await positionAt(this.deps.db, checklistItems, eq(checklistItems.checklistId, checklistId), undefined)
+    const position = positionAt(this.deps.db, checklistItems, eq(checklistItems.checklistId, checklistId), undefined)
     const [row] = await this.deps.db
       .insert(checklistItems)
       .values({ workspaceId: list.workspaceId, checklistId, text, position })
@@ -405,7 +403,7 @@ export class CardService {
     if (data.text !== undefined) patch.text = data.text
     if (data.done !== undefined) patch.done = data.done
     if (data.index !== undefined) {
-      patch.position = await positionAt(this.deps.db, checklistItems, eq(checklistItems.checklistId, item.checklistId), data.index, itemId)
+      patch.position = positionAt(this.deps.db, checklistItems, eq(checklistItems.checklistId, item.checklistId), data.index, itemId)
     }
     const [row] = await this.deps.db.update(checklistItems).set(patch).where(eq(checklistItems.id, itemId)).returning()
     await this.touch(actor, card, row!.text)
@@ -433,7 +431,7 @@ export class CardService {
     await this.activity.record(
       actor,
       card.workspaceId,
-      { action: 'card.linked', entityType: 'card', entityId: cardId, summary: card.title, meta: { page: page.title || 'Untitled' } },
+      { action: 'card.linked', entityType: 'card', entityId: cardId, summary: card.title, meta: { page: page.title } },
       { boardId: card.boardId, cardId, pageId },
     )
   }

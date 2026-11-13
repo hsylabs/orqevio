@@ -21,6 +21,7 @@ import {
 import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { Archive, Ellipsis, ListFilter, Pencil, Plus, SquareKanban, Trash, X } from 'lucide-react'
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
@@ -41,6 +42,7 @@ import { ArchivedPanel } from './ArchivedPanel'
 import { BoardColumn } from './BoardColumn'
 import { CardView } from './CardItem'
 import { CardSheet } from './CardSheet'
+import { withNewCard } from './board-cache'
 
 type DueFilter = 'all' | 'overdue' | 'week' | 'none'
 interface Filter {
@@ -49,14 +51,17 @@ interface Filter {
   due: DueFilter
 }
 
-const announcementsFor = (title: (id: string | number) => string, where: (id: string | number) => string): Announcements => ({
-  onDragStart: ({ active }) => `Has cogido ${title(active.id)}. ${where(active.id)}.`,
-  onDragOver: ({ active, over }) => (over ? `${title(active.id)}: ${where(active.id)}.` : `${title(active.id)} no está sobre una zona válida.`),
-  onDragEnd: ({ active, over }) => (over ? `${title(active.id)} se ha soltado. ${where(active.id)}.` : `${title(active.id)} se ha soltado.`),
-  onDragCancel: ({ active }) => `Movimiento de ${title(active.id)} cancelado.`,
+type DragMessage = 'picked' | 'over' | 'outside' | 'dropped' | 'droppedOutside' | 'cancelled'
+
+const announcementsFor = (say: (id: string | number, message: DragMessage) => string | undefined): Announcements => ({
+  onDragStart: ({ active }) => say(active.id, 'picked'),
+  onDragOver: ({ active, over }) => say(active.id, over ? 'over' : 'outside'),
+  onDragEnd: ({ active, over }) => say(active.id, over ? 'dropped' : 'droppedOutside'),
+  onDragCancel: ({ active }) => say(active.id, 'cancelled'),
 })
 
 export function BoardPage() {
+  const { t } = useTranslation('boards')
   const { boardId = '' } = useParams()
   const { workspaceId } = useWorkspace()
   const board = useBoard(boardId)
@@ -178,21 +183,17 @@ export function BoardPage() {
     return () => cancelAnimationFrame(frame)
   }, [items])
 
-  const title = (id: string | number) => {
+  /** What a screen reader hears while dragging: the item, and where it is now. */
+  const say = (id: string | number, message: DragMessage) => {
     const key = String(id)
-    return cardsById.get(key)?.title ? `la tarjeta «${cardsById.get(key)!.title}»` : columnsById.get(key) ? `la columna «${columnsById.get(key)!.name}»` : 'el elemento'
-  }
-
-  const where = (id: string | number) => {
-    const key = String(id)
-    if (columnsById.has(key)) {
-      const order = orderRef.current
-      return `posición ${order.indexOf(key) + 1} de ${order.length}`
-    }
-    const col = orderRef.current.find((c) => itemsRef.current[c]?.includes(key))
-    if (!col) return ''
-    const list = itemsRef.current[col]!
-    return `columna «${columnsById.get(col)?.name ?? ''}», posición ${list.indexOf(key) + 1} de ${list.length}`
+    const order = orderRef.current
+    const column = columnsById.get(key)
+    if (column) return t(`drag.column.${message}`, { title: column.name, position: order.indexOf(key) + 1, total: order.length })
+    const card = cardsById.get(key)
+    if (!card) return undefined
+    const col = order.find((c) => itemsRef.current[c]?.includes(key))
+    const list = col ? itemsRef.current[col]! : []
+    return t(`drag.card.${message}`, { title: card.title, column: columnsById.get(col ?? '')?.name ?? '', position: list.indexOf(key) + 1, total: list.length })
   }
 
   function onDragStart({ active: a }: DragStartEvent) {
@@ -303,7 +304,7 @@ export function BoardPage() {
   async function addCard(columnId: string, title: string) {
     try {
       const card = await post<CardSummaryDTO>(`/columns/${columnId}/cards`, { title })
-      queryClient.setQueryData<BoardDTO>(keys.board(boardId), (prev) => (prev ? { ...prev, cards: [...prev.cards, card] } : prev))
+      queryClient.setQueryData<BoardDTO>(keys.board(boardId), (prev) => (prev ? withNewCard(prev, card) : prev))
       void queryClient.invalidateQueries({ queryKey: keys.overview(workspaceId) })
     } catch (error) {
       toast.error(errorMessage(error))
@@ -322,9 +323,9 @@ export function BoardPage() {
 
   async function deleteColumn(column: ColumnDTO, count: number) {
     const ok = await confirm({
-      title: `¿Eliminar la columna «${column.name}»?`,
-      description: count ? `Se eliminarán también sus ${count} tarjetas. Si prefieres conservarlas, muévelas antes a otra columna.` : 'La columna está vacía.',
-      confirmLabel: 'Eliminar columna',
+      title: t('column.deleteConfirm.title', { name: column.name }),
+      description: count ? t('column.deleteConfirm.withCards', { count }) : t('column.deleteConfirm.empty'),
+      confirmLabel: t('column.delete'),
       danger: true,
     })
     if (!ok) return
@@ -338,7 +339,7 @@ export function BoardPage() {
 
   async function renameBoard() {
     if (!data) return
-    const name = await prompt({ title: 'Renombrar tablero', label: 'Nombre', initialValue: data.name, maxLength: 80 })
+    const name = await prompt({ title: t('board.rename'), label: t('board.nameLabel'), initialValue: data.name, maxLength: 80 })
     if (!name || name === data.name) return
     try {
       await patch(`/boards/${boardId}`, { name })
@@ -372,15 +373,15 @@ export function BoardPage() {
             <>
               <FilterPopover filter={filter} onChange={setFilter} labels={data.labels} />
               <Button variant="ghost" size="sm" icon={<Archive />} onClick={() => setArchivedOpen(true)}>
-                <span className="max-sm:hidden">Archivadas</span>
+                <span className="max-sm:hidden">{t('board.archived')}</span>
               </Button>
               <MenuRoot>
                 <MenuTrigger asChild>
-                  <Button variant="ghost" size="sm" iconOnly icon={<Ellipsis />} aria-label="Acciones del tablero" />
+                  <Button variant="ghost" size="sm" iconOnly icon={<Ellipsis />} aria-label={t('board.actions')} />
                 </MenuTrigger>
                 <MenuContent>
                   <MenuItem icon={<Pencil />} onSelect={renameBoard}>
-                    Renombrar tablero
+                    {t('board.rename')}
                   </MenuItem>
                   <MenuSeparator />
                   <MenuItem
@@ -390,7 +391,7 @@ export function BoardPage() {
                       if (await actions.deleteBoard(data)) navigate(`/w/${workspaceId}/p/${data.projectId}`)
                     }}
                   >
-                    Eliminar tablero
+                    {t('board.delete')}
                   </MenuItem>
                 </MenuContent>
               </MenuRoot>
@@ -406,15 +407,15 @@ export function BoardPage() {
           ))}
         </div>
       ) : data.columns.length === 0 ? (
-        <EmptyState icon={<SquareKanban />} title="Este tablero no tiene columnas" action={<AddColumn boardId={boardId} />}>
-          Crea columnas para representar las fases de tu trabajo.
+        <EmptyState icon={<SquareKanban />} title={t('board.empty.title')} action={<AddColumn boardId={boardId} />}>
+          {t('board.empty.body')}
         </EmptyState>
       ) : (
         <div className="relative min-h-0 flex-1">
           {filtering && (
             <div className="animate-pop absolute top-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-line bg-surface py-1 pr-1 pl-3 text-[12px] text-ink-2 shadow-md">
-              Filtro activo · arrastrar está desactivado
-              <button type="button" onClick={() => setFilter({ text: '', labels: [], due: 'all' })} className="grid size-5 place-items-center rounded-full hover:bg-hover" aria-label="Quitar filtro">
+              {t('board.filterActive')}
+              <button type="button" onClick={() => setFilter({ text: '', labels: [], due: 'all' })} className="grid size-5 place-items-center rounded-full hover:bg-hover" aria-label={t('board.removeFilter')}>
                 <X className="size-3" />
               </button>
             </div>
@@ -428,11 +429,11 @@ export function BoardPage() {
             onDragCancel={onDragCancel}
             measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
             accessibility={{
-              announcements: announcementsFor(title, where),
-              screenReaderInstructions: { draggable: 'Para mover, pulsa espacio. Usa las flechas para desplazarte y espacio de nuevo para soltar. Escape cancela.' },
+              announcements: announcementsFor(say),
+              screenReaderInstructions: { draggable: t('drag.instructions') },
             }}
           >
-            <div className="flex h-full items-start gap-3 overflow-x-auto overflow-y-hidden px-4 pt-4 pb-6 sm:px-5" role="region" aria-label={`Tablero ${data.name}`}>
+            <div className="flex h-full items-start gap-3 overflow-x-auto overflow-y-hidden px-4 pt-4 pb-6 sm:px-5" role="region" aria-label={t('board.region', { name: data.name })}>
               <SortableContext items={columnOrder} strategy={horizontalListSortingStrategy}>
                 {columnOrder.map((id) => {
                   const column = columnsById.get(id)
@@ -491,6 +492,7 @@ export function BoardPage() {
 }
 
 function AddColumn({ boardId }: { boardId: string }) {
+  const { t } = useTranslation(['boards', 'common'])
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   async function submit(e: FormEvent) {
@@ -512,17 +514,17 @@ function AddColumn({ boardId }: { boardId: string }) {
         onChange={(e) => setName(e.target.value)}
         onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
         onBlur={() => !name.trim() && setOpen(false)}
-        placeholder="Nombre de la columna"
-        aria-label="Nombre de la columna"
+        placeholder={t('column.name')}
+        aria-label={t('column.name')}
         maxLength={60}
         className="field h-9"
       />
       <div className="mt-2 flex justify-end gap-1.5">
         <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
-          Cancelar
+          {t('common:actions.cancel')}
         </Button>
         <Button size="sm" variant="primary" type="submit" disabled={!name.trim()}>
-          Añadir columna
+          {t('column.add')}
         </Button>
       </div>
     </form>
@@ -533,26 +535,22 @@ function AddColumn({ boardId }: { boardId: string }) {
       className="flex h-11 w-[288px] shrink-0 items-center gap-2 rounded-[14px] border border-dashed border-line-strong px-3.5 text-[13px] text-ink-3 transition-colors hover:border-ink-3 hover:bg-hover hover:text-ink"
     >
       <Plus className="size-[15px]" />
-      Añadir columna
+      {t('column.add')}
     </button>
   )
 }
 
 function FilterPopover({ filter, onChange, labels }: { filter: Filter; onChange: (f: Filter) => void; labels: LabelDTO[] }) {
+  const { t } = useTranslation('boards')
   const count = (filter.text.trim() ? 1 : 0) + filter.labels.length + (filter.due !== 'all' ? 1 : 0)
-  const dues: Array<{ value: DueFilter; label: string }> = [
-    { value: 'all', label: 'Todas' },
-    { value: 'overdue', label: 'Vencidas' },
-    { value: 'week', label: 'Esta semana' },
-    { value: 'none', label: 'Sin fecha' },
-  ]
+  const dues: DueFilter[] = ['all', 'overdue', 'week', 'none']
   return (
     <Popover
       align="end"
       className="w-[300px] p-3"
       trigger={
         <Button variant={count ? 'secondary' : 'ghost'} size="sm" icon={<ListFilter />}>
-          <span className="max-sm:hidden">Filtrar</span>
+          <span className="max-sm:hidden">{t('filter.button')}</span>
           {count > 0 && <span className="grid size-4.5 place-items-center rounded-full bg-ink font-mono text-[10px] text-sheet">{count}</span>}
         </Button>
       }
@@ -560,28 +558,28 @@ function FilterPopover({ filter, onChange, labels }: { filter: Filter; onChange:
       <input
         value={filter.text}
         onChange={(e) => onChange({ ...filter, text: e.target.value })}
-        placeholder="Buscar por título…"
-        aria-label="Buscar por título"
+        placeholder={t('filter.search')}
+        aria-label={t('filter.searchLabel')}
         className="field h-8.5"
         autoFocus
       />
-      <p className="mt-3 mb-1.5 text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase">Fecha</p>
+      <p className="mt-3 mb-1.5 text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('filter.due')}</p>
       <div className="flex flex-wrap gap-1">
-        {dues.map((d) => (
+        {dues.map((due) => (
           <button
-            key={d.value}
+            key={due}
             type="button"
-            onClick={() => onChange({ ...filter, due: d.value })}
-            aria-pressed={filter.due === d.value}
-            className={cn('h-7 rounded-full px-2.5 text-[12px] font-medium transition-colors', filter.due === d.value ? 'bg-ink text-sheet' : 'bg-sunken text-ink-2 hover:text-ink')}
+            onClick={() => onChange({ ...filter, due })}
+            aria-pressed={filter.due === due}
+            className={cn('h-7 rounded-full px-2.5 text-[12px] font-medium transition-colors', filter.due === due ? 'bg-ink text-sheet' : 'bg-sunken text-ink-2 hover:text-ink')}
           >
-            {d.label}
+            {t(`filter.dues.${due}`)}
           </button>
         ))}
       </div>
       {labels.length > 0 && (
         <>
-          <p className="mt-3 mb-1.5 text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase">Etiquetas</p>
+          <p className="mt-3 mb-1.5 text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('filter.labels')}</p>
           <div className="flex flex-wrap gap-1">
             {labels.map((l) => {
               const on = filter.labels.includes(l.id)
@@ -593,7 +591,7 @@ function FilterPopover({ filter, onChange, labels }: { filter: Filter; onChange:
                   onClick={() => onChange({ ...filter, labels: on ? filter.labels.filter((x) => x !== l.id) : [...filter.labels, l.id] })}
                   className={cn('label-chip transition-[box-shadow]', `c-${l.color}`, on && 'ring-2 ring-[var(--c)]')}
                 >
-                  {l.name || 'Sin nombre'}
+                  {l.name || t('labels.unnamed')}
                 </button>
               )
             })}
@@ -602,7 +600,7 @@ function FilterPopover({ filter, onChange, labels }: { filter: Filter; onChange:
       )}
       {count > 0 && (
         <button type="button" onClick={() => onChange({ text: '', labels: [], due: 'all' })} className="mt-3 text-[12px] font-medium text-ink-3 hover:text-ink">
-          Limpiar filtro
+          {t('filter.clear')}
         </button>
       )}
     </Popover>

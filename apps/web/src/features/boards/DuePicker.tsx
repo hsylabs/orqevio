@@ -1,12 +1,19 @@
-import { addDays, nextMonday } from 'date-fns'
-import { es } from 'date-fns/locale'
+import type { Locale } from '@orqevio/shared'
+import { type Locale as DateLocale, addDays, nextMonday } from 'date-fns'
+import { de, enUS, es, fr, it, ja, nl, ptBR } from 'date-fns/locale'
 import { type ReactNode, useState } from 'react'
 import { DayPicker } from 'react-day-picker'
+import { useTranslation } from 'react-i18next'
 import { Popover } from '../../components/ui/Popover'
+import { currentLocale } from '../../i18n'
 import { dueToLocalDate, localDateToDue } from '../../lib/format'
 import '../../styles/daypicker.css'
 
+/** The calendar's month and weekday names, in the language the app is showing. */
+const DATE_LOCALES: Record<Locale, DateLocale> = { en: enUS, es, fr, pt: ptBR, it, de, nl, ja }
+
 export function DuePicker({ value, onChange, trigger }: { value: string | null; onChange: (iso: string | null) => void; trigger: ReactNode }) {
+  const { t } = useTranslation('boards')
   const [open, setOpen] = useState(false)
   const selected = value ? dueToLocalDate(value) : undefined
   const pick = (d: Date | null) => {
@@ -15,10 +22,10 @@ export function DuePicker({ value, onChange, trigger }: { value: string | null; 
   }
   const today = new Date()
   const quick = [
-    { label: 'Hoy', date: today },
-    { label: 'Mañana', date: addDays(today, 1) },
-    { label: 'Lunes', date: nextMonday(today) },
-    { label: 'En 1 semana', date: addDays(today, 7) },
+    { label: t('due.today'), date: today },
+    { label: t('due.tomorrow'), date: addDays(today, 1) },
+    { label: t('due.monday'), date: nextMonday(today) },
+    { label: t('due.inAWeek'), date: addDays(today, 7) },
   ]
   return (
     <Popover trigger={trigger} open={open} onOpenChange={setOpen} className="w-[300px]">
@@ -29,10 +36,10 @@ export function DuePicker({ value, onChange, trigger }: { value: string | null; 
           </button>
         ))}
       </div>
-      <DayPicker mode="single" locale={es} weekStartsOn={1} selected={selected} defaultMonth={selected} onSelect={(d) => d && pick(d)} className="orq-daypicker" showOutsideDays />
+      <DayPicker mode="single" locale={DATE_LOCALES[currentLocale()]} weekStartsOn={1} selected={selected} defaultMonth={selected} onSelect={(d) => d && pick(d)} className="orq-daypicker" showOutsideDays />
       {value && (
         <button type="button" onClick={() => pick(null)} className="mt-1 w-full rounded-[8px] py-1.5 text-[12.5px] font-medium text-danger hover:bg-danger-soft">
-          Quitar fecha
+          {t('due.remove')}
         </button>
       )}
     </Popover>

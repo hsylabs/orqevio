@@ -1,0 +1,51 @@
+{
+  "language": "Taal",
+  "skipToContent": "Direct naar inhoud",
+  "loading": "Laden",
+  "actions": {
+    "cancel": "Annuleren",
+    "confirm": "Bevestigen",
+    "save": "Opslaan",
+    "close": "Sluiten",
+    "copy": "Kopiëren",
+    "view": "Bekijken",
+    "backHome": "Terug naar start"
+  },
+  "dialog": {
+    "fallbackTitle": "Dialoogvenster",
+    "details": "Details"
+  },
+  "copyFailed": "Kopiëren naar het klembord is mislukt",
+  "notFound": {
+    "title": "Hier is niets te vinden",
+    "body": "De pagina bestaat niet of je hebt er geen toegang toe."
+  },
+  "time": {
+    "justNow": "zojuist"
+  },
+  "due": {
+    "today": "Vandaag",
+    "tomorrow": "Morgen",
+    "yesterday": "Gisteren"
+  },
+  "greeting": {
+    "night": "Goedenavond",
+    "morning": "Goedemorgen",
+    "afternoon": "Goedemiddag",
+    "evening": "Goedenavond"
+  },
+  "color": "Kleur",
+  "colors": {
+    "tomato": "Vermiljoen",
+    "amber": "Amber",
+    "lime": "Limoen",
+    "jade": "Jade",
+    "teal": "Turkoois",
+    "cobalt": "Kobalt",
+    "iris": "Iris",
+    "rose": "Roze",
+    "slate": "Leisteen"
+  },
+  "untitled": "Naamloos",
+  "quoted": "‘{{text}}’"
+}

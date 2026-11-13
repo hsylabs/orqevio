@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="{{htmlLang}}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{title}}</title>
+    <meta name="description" content="{{description}}" />
+    <meta name="theme-color" content="#F2EFE8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121110" media="(prefers-color-scheme: dark)" />
+{{head}}
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/fonts.css" />
+    <link rel="stylesheet" href="/site.css" />
+    <script src="/site.js" defer></script>
+  </head>
+  <body data-copy="{{copy.button}}" data-copy-label="{{copy.label}}" data-copied="{{copy.done}}" data-copy-failed="{{copy.failed}}">
+    <a class="skip" href="#content">{{skip}}</a>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="{{base}}/" aria-label="{{home}}">
+          <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect class="logo-bg" width="32" height="32" rx="9" fill="#1C1A16" /><path class="logo-orbit" d="M22.4 9.6A9 9 0 1 0 25 16" fill="none" stroke="#F5F3EE" stroke-width="3.2" stroke-linecap="round" /><circle cx="23.6" cy="8.4" r="2.6" fill="#E5532A" /></svg>
+          Orqevio
+        </a>
+        <nav class="nav" aria-label="{{nav.main}}">
+          <a href="{{base}}/install/"{{current.install}}>{{nav.install}}</a>
+          <a class="hide-small" href="{{base}}/privacy/"{{current.privacy}}>{{nav.privacy}}</a>
+          <a href="https://github.com/hsylabs/orqevio">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="content">
+{{content}}
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>© 2026 HSY Labs</span>
+        <nav aria-label="{{nav.footer}}">
+          <a href="{{base}}/install/">{{nav.install}}</a>
+          <a href="{{base}}/privacy/">{{nav.privacy}}</a>
+          <a href="https://github.com/hsylabs/orqevio">GitHub</a>
+          <a href="https://github.com/hsylabs/orqevio/blob/main/LICENSE.md">{{nav.license}}</a>
+        </nav>
+        <nav class="languages" aria-label="{{nav.languages}}">
+{{languages}}
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

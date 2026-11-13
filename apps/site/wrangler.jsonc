@@ -1,0 +1,18 @@
+// orqevio.com: static files only, served by Cloudflare (no Worker code runs).
+// Deployed by Workers Builds from the main branch; see "Web pública" in RELEASING.md.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "orqevio-site",
+  "compatibility_date": "2026-11-01",
+  "routes": [{ "pattern": "orqevio.com", "custom_domain": true }],
+  // Production lives only on orqevio.com; branches get workers.dev preview URLs.
+  "workers_dev": false,
+  "preview_urls": true,
+  "previews": {},
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "observability": { "enabled": false }
+}

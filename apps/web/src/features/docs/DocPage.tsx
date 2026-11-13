@@ -3,6 +3,7 @@ import { extractReferences } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Bot, CornerDownRight, Ellipsis, FileText, FilePlus, FolderInput, Paperclip, SquareKanban, Trash, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
@@ -33,6 +34,7 @@ export function DocPage() {
 }
 
 function DocBody({ page }: { page: PageDTO }) {
+  const { t } = useTranslation('docs')
   const { workspaceId, me, overview } = useWorkspace()
   const navigate = useNavigate()
   const location = useLocation()
@@ -42,7 +44,8 @@ function DocBody({ page }: { page: PageDTO }) {
   const [title, setTitle] = useState(page.title)
   const [icon, setIcon] = useState(page.icon)
   const [status, setStatus] = useState<SaveStatus>('idle')
-  const [conflict, setConflict] = useState<{ by: string } | null>(null)
+  /** Who changed the page under the editor; `by: null` is another session of this user. */
+  const [conflict, setConflict] = useState<{ by: string | null } | null>(null)
   const [moveOpen, setMoveOpen] = useState(false)
 
   const editorRef = useRef<TiptapEditor | null>(null)
@@ -95,7 +98,7 @@ function DocBody({ page }: { page: PageDTO }) {
       }
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
-        setConflict({ by: 'otra sesión' })
+        setConflict({ by: null })
         setStatus('error')
       } else {
         setStatus('error')
@@ -133,9 +136,9 @@ function DocBody({ page }: { page: PageDTO }) {
       if (!titleFocused.current) setTitle(fresh.title)
       setConflict(null)
       setStatus('idle')
-      if (by) toast(`${by} ha actualizado esta página`, { icon: <Bot className="size-4 text-agent" />, duration: 2500 })
+      if (by) toast(t('page.agentUpdated', { name: by }), { icon: <Bot className="size-4 text-agent" />, duration: 2500 })
     },
-    [page.id],
+    [page.id, t],
   )
 
   // Live updates from agents or other sessions.
@@ -143,7 +146,14 @@ function DocBody({ page }: { page: PageDTO }) {
     () =>
       onPageEvent((event) => {
         if (event.pageId !== page.id || event.action === 'page.deleted') return
-        if (event.version !== undefined && event.version <= version.current) return
+        // Only changes to the text carry a version. Attachments and links leave it
+        // alone: refresh the side lists, never the editor, or a just-pasted image
+        // could be wiped before it is saved.
+        if (event.version === undefined) {
+          void queryClient.invalidateQueries({ queryKey: keys.page(page.id) })
+          return
+        }
+        if (event.version <= version.current) return
         const self = event.actor.kind === 'user' && event.actor.id === me.user.id
         if (self && saving.current) return
         if (dirty.current) setConflict({ by: event.actor.name })
@@ -171,15 +181,15 @@ function DocBody({ page }: { page: PageDTO }) {
   }
 
   const projectPages = overview?.projects.find((p) => p.id === page.projectId)?.pages ?? []
-  const statusLabel = status === 'saving' ? 'Guardando…' : status === 'pending' ? 'Cambios sin guardar' : status === 'saved' ? 'Guardado' : status === 'error' ? 'Sin guardar' : ''
+  const statusLabel = status === 'idle' ? '' : t(`page.status.${status}`)
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PageHeader
         crumbs={[
           { label: page.project.name, to: `/w/${workspaceId}/p/${page.project.id}` },
-          ...page.breadcrumbs.map((b) => ({ label: `${b.icon ? `${b.icon} ` : ''}${b.title || 'Sin título'}`, to: `/w/${workspaceId}/d/${b.id}` })),
-          { label: `${icon ? `${icon} ` : ''}${title || 'Sin título'}` },
+          ...page.breadcrumbs.map((b) => ({ label: `${b.icon ? `${b.icon} ` : ''}${b.title || t('untitled', { ns: 'common' })}`, to: `/w/${workspaceId}/d/${b.id}` })),
+          { label: `${icon ? `${icon} ` : ''}${title || t('untitled', { ns: 'common' })}` },
         ]}
         actions={
           <>
@@ -188,14 +198,14 @@ function DocBody({ page }: { page: PageDTO }) {
             </span>
             <MenuRoot>
               <MenuTrigger asChild>
-                <Button variant="ghost" size="sm" iconOnly icon={<Ellipsis />} aria-label="Acciones de la página" />
+                <Button variant="ghost" size="sm" iconOnly icon={<Ellipsis />} aria-label={t('page.actions')} />
               </MenuTrigger>
               <MenuContent>
                 <MenuItem icon={<FilePlus />} onSelect={() => void actions.createPage(page.projectId, page.id)}>
-                  Nueva subpágina
+                  {t('page.newSubpage')}
                 </MenuItem>
                 <MenuItem icon={<FolderInput />} onSelect={() => setMoveOpen(true)}>
-                  Mover a…
+                  {t('page.move')}
                 </MenuItem>
                 <MenuSeparator />
                 <MenuItem
@@ -206,7 +216,7 @@ function DocBody({ page }: { page: PageDTO }) {
                     if (await actions.deletePage({ id: page.id, title })) navigate(page.parentId ? `/w/${workspaceId}/d/${page.parentId}` : `/w/${workspaceId}/p/${page.projectId}`)
                   }}
                 >
-                  Eliminar página
+                  {t('page.delete')}
                 </MenuItem>
               </MenuContent>
             </MenuRoot>
@@ -229,8 +239,8 @@ function DocBody({ page }: { page: PageDTO }) {
               value={title}
               rows={1}
               maxLength={200}
-              placeholder="Sin título"
-              aria-label="Título de la página"
+              placeholder={t('untitled', { ns: 'common' })}
+              aria-label={t('page.titleLabel')}
               onFocus={() => (titleFocused.current = true)}
               onBlur={() => (titleFocused.current = false)}
               onChange={(e) => {
@@ -258,19 +268,23 @@ function DocBody({ page }: { page: PageDTO }) {
             {page.updatedBy && (
               <span className="inline-flex items-center gap-1.5">
                 {page.updatedBy.kind === 'agent' && <Bot className="size-3.5 text-agent" />}
-                Editado por <span className={page.updatedBy.kind === 'agent' ? 'font-medium text-agent' : 'font-medium text-ink-2'}>{page.updatedBy.name}</span>
-                · {relativeTime(page.updatedAt)}
+                <Trans
+                  t={t}
+                  i18nKey="page.editedBy"
+                  values={{ name: page.updatedBy.name, time: relativeTime(page.updatedAt) }}
+                  components={{ name: <span className={page.updatedBy.kind === 'agent' ? 'font-medium text-agent' : 'font-medium text-ink-2'} /> }}
+                />
               </span>
             )}
             {agent && (
               <span className="animate-pop inline-flex items-center gap-1 rounded-full bg-agent-soft px-2 py-0.5 font-medium text-agent">
-                <span className="live-dot size-1.5" /> {agent} está trabajando aquí
+                <span className="live-dot size-1.5" /> {t('page.agentWorking', { name: agent })}
               </span>
             )}
           </div>
 
           {page.cards.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-1.5" aria-label="Tareas vinculadas">
+            <div className="mt-4 flex flex-wrap gap-1.5" aria-label={t('page.linkedTasks')}>
               {page.cards.map((c) => (
                 <Link
                   key={c.id}
@@ -291,13 +305,17 @@ function DocBody({ page }: { page: PageDTO }) {
             <div role="alert" className="animate-pop mt-6 flex flex-wrap items-center gap-3 rounded-[12px] border border-warn/40 bg-[color-mix(in_oklab,var(--warn)_10%,var(--sheet))] px-4 py-3 text-[13px]">
               <TriangleAlert className="size-4 shrink-0 text-warn" />
               <span className="min-w-0 flex-1">
-                <strong className="font-semibold">{conflict.by}</strong> ha modificado esta página mientras editabas. Tus últimos cambios no se han guardado.
+                {conflict.by ? (
+                  <Trans t={t} i18nKey="page.conflict.byName" values={{ name: conflict.by }} components={{ strong: <strong className="font-semibold" /> }} />
+                ) : (
+                  <Trans t={t} i18nKey="page.conflict.byOtherSession" components={{ strong: <strong className="font-semibold" /> }} />
+                )}
               </span>
               <Button size="sm" variant="secondary" onClick={() => void reloadFromServer()}>
-                Cargar su versión
+                {t('page.conflict.loadTheirs')}
               </Button>
               <Button size="sm" variant="primary" onClick={() => void keepMine()}>
-                Mantener la mía
+                {t('page.conflict.keepMine')}
               </Button>
             </div>
           )}
@@ -308,7 +326,7 @@ function DocBody({ page }: { page: PageDTO }) {
               workspaceId={workspaceId}
               upload={{ type: 'page', id: page.id }}
               onUploaded={() => void queryClient.invalidateQueries({ queryKey: keys.page(page.id) })}
-              ariaLabel="Contenido de la página"
+              ariaLabel={t('page.content')}
               onReady={(editor) => (editorRef.current = editor)}
               onChange={(md) => {
                 latest.current = md
@@ -324,13 +342,13 @@ function DocBody({ page }: { page: PageDTO }) {
             <footer className="-mt-[22vh] mb-24 flex flex-col gap-8 border-t border-line pt-8">
               {page.children.length > 0 && (
                 <section>
-                  <h2 className="mb-3 text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">Subpáginas</h2>
+                  <h2 className="mb-3 text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('page.subpages')}</h2>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {page.children.map((c) => (
                       <Link key={c.id} to={`/w/${workspaceId}/d/${c.id}`} className="group flex items-center gap-3 rounded-[12px] border border-line bg-surface px-3 py-2.5 shadow-sm transition-all hover:-translate-y-px hover:border-line-strong hover:shadow-md">
                         <CornerDownRight className="size-3.5 text-ink-4" />
                         <span className="text-[15px]">{c.icon ?? <FileText className="size-4 text-ink-3" />}</span>
-                        <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">{c.title || 'Sin título'}</span>
+                        <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">{c.title || t('untitled', { ns: 'common' })}</span>
                         <span className="text-[11.5px] text-ink-3">{relativeTime(c.updatedAt)}</span>
                       </Link>
                     ))}
@@ -340,7 +358,7 @@ function DocBody({ page }: { page: PageDTO }) {
               {page.attachments.length > 0 && (
                 <section>
                   <h2 className="mb-3 flex items-center gap-2 text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">
-                    <Paperclip className="size-3.5" /> Adjuntos
+                    <Paperclip className="size-3.5" /> {t('page.attachments')}
                   </h2>
                   <Attachments items={page.attachments} target={{ type: 'page', id: page.id }} onChanged={() => void queryClient.invalidateQueries({ queryKey: keys.page(page.id) })} />
                 </section>

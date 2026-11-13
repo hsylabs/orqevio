@@ -1,0 +1,51 @@
+{
+  "language": "言語",
+  "skipToContent": "本文へスキップ",
+  "loading": "読み込み中",
+  "actions": {
+    "cancel": "キャンセル",
+    "confirm": "OK",
+    "save": "保存",
+    "close": "閉じる",
+    "copy": "コピー",
+    "view": "表示",
+    "backHome": "ホームに戻る"
+  },
+  "dialog": {
+    "fallbackTitle": "ダイアログ",
+    "details": "詳細"
+  },
+  "copyFailed": "クリップボードにコピーできませんでした",
+  "notFound": {
+    "title": "ここには何もありません",
+    "body": "このページは存在しないか、アクセス権がありません。"
+  },
+  "time": {
+    "justNow": "たった今"
+  },
+  "due": {
+    "today": "今日",
+    "tomorrow": "明日",
+    "yesterday": "昨日"
+  },
+  "greeting": {
+    "night": "こんばんは",
+    "morning": "おはようございます",
+    "afternoon": "こんにちは",
+    "evening": "こんばんは"
+  },
+  "color": "色",
+  "colors": {
+    "tomato": "柿色",
+    "amber": "琥珀色",
+    "lime": "ライム",
+    "jade": "翡翠色",
+    "teal": "ターコイズ",
+    "cobalt": "コバルト",
+    "iris": "アイリス",
+    "rose": "ピンク",
+    "slate": "スレート"
+  },
+  "untitled": "無題",
+  "quoted": "「{{text}}」"
+}

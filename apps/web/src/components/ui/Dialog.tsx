@@ -1,6 +1,7 @@
 import { Dialog as D } from 'radix-ui'
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '../../lib/cn'
 
 interface DialogProps {
@@ -15,6 +16,7 @@ interface DialogProps {
 }
 
 export function Dialog({ open, onOpenChange, title, description, children, footer, width = 'max-w-[460px]', hideClose }: DialogProps) {
+  const { t } = useTranslation()
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
@@ -31,11 +33,11 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
               {description ? (
                 <D.Description className="mt-1.5 text-[13.5px] text-ink-2">{description}</D.Description>
               ) : (
-                <D.Description className="sr-only">{typeof title === 'string' ? title : 'Diálogo'}</D.Description>
+                <D.Description className="sr-only">{typeof title === 'string' ? title : t('dialog.fallbackTitle')}</D.Description>
               )}
             </div>
             {!hideClose && (
-              <D.Close className="-mr-2 grid size-8 shrink-0 place-items-center rounded-[9px] text-ink-3 hover:bg-hover hover:text-ink" aria-label="Cerrar">
+              <D.Close className="-mr-2 grid size-8 shrink-0 place-items-center rounded-[9px] text-ink-3 hover:bg-hover hover:text-ink" aria-label={t('actions.close')}>
                 <X className="size-4" />
               </D.Close>
             )}

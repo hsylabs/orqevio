@@ -5,9 +5,11 @@ import { AttachmentService } from './attachments'
 import { BoardService } from './boards'
 import { CardService } from './cards'
 import type { Deps } from './deps'
+import { OAuthService } from './oauth'
 import { PageService } from './pages'
 import { SearchService } from './search'
 import { TokenService } from './tokens'
+import { UpdateService } from './updates'
 import { VaultService } from './vault'
 import { WorkspaceService } from './workspaces'
 
@@ -20,19 +22,21 @@ export function createServices(deps: Deps) {
   const activity = new ActivityService(deps)
   const cards = new CardService(deps, access, activity)
   const workspaces = new WorkspaceService(deps, access, activity, cards)
+  const tokens = new TokenService(deps, access)
   return {
     access,
     activity,
-    realtime: deps.bus,
     cards,
     workspaces,
     boards: new BoardService(deps, access, activity, cards),
     pages: new PageService(deps, access, activity),
     search: new SearchService(deps, access),
     attachments: new AttachmentService(deps, access, activity),
-    tokens: new TokenService(deps, access),
+    tokens,
+    oauth: new OAuthService(deps, access, tokens),
     vault: new VaultService(deps, access),
     accounts: new AccountService(deps, access, workspaces),
+    updates: new UpdateService(deps, access),
   }
 }
 

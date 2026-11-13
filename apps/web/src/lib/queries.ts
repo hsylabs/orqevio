@@ -1,5 +1,6 @@
 import type {
   ActivityDTO,
+  AnonymousSessionDTO,
   BoardDTO,
   CardDetailDTO,
   CardSummaryDTO,
@@ -9,6 +10,7 @@ import type {
   PageDTO,
   SearchResultDTO,
   TokenDTO,
+  UpdateStatusDTO,
 } from '@orqevio/shared'
 import { QueryClient, keepPreviousData, useQuery } from '@tanstack/react-query'
 import { ApiError, get } from './api'
@@ -26,6 +28,7 @@ export const queryClient = new QueryClient({
 
 export const keys = {
   me: ['me'] as const,
+  access: ['access'] as const,
   overview: (wid: string) => ['overview', wid] as const,
   home: (wid: string) => ['home', wid] as const,
   board: (id: string) => ['board', id] as const,
@@ -34,6 +37,7 @@ export const keys = {
   page: (id: string) => ['page', id] as const,
   search: (wid: string, q: string) => ['search', wid, q] as const,
   tokens: ['tokens'] as const,
+  updates: ['updates'] as const,
   activity: (wid: string, filter: string) => ['activity', wid, filter] as const,
   vault: ['vault'] as const,
   vaultItems: ['vault-items'] as const,
@@ -43,11 +47,23 @@ export const useMe = () =>
   useQuery({
     queryKey: keys.me,
     queryFn: async ({ signal }) => {
-      const session = await get<MeDTO | { user: null }>('/auth/session', signal)
-      if (!session.user) throw new ApiError(401, 'unauthorized', 'Authentication required')
+      const session = await get<MeDTO | AnonymousSessionDTO>('/auth/session', signal)
+      if (!session.user) {
+        // Keep the sign-in screens' view in sync, so they never act on a stale signed-in state.
+        queryClient.setQueryData(keys.access, session)
+        throw new ApiError(401, 'unauthorized', 'Authentication required')
+      }
       return session as MeDTO
     },
     staleTime: 60_000,
+  })
+
+/** Raw session, including whether this copy is claimed yet (sign-in screens). */
+export const useAccessState = () =>
+  useQuery({
+    queryKey: keys.access,
+    queryFn: ({ signal }) => get<MeDTO | AnonymousSessionDTO>('/auth/session', signal),
+    staleTime: 0,
   })
 
 export const useOverview = (wid: string | undefined) =>
@@ -83,6 +99,22 @@ export const useSearch = (wid: string, q: string, type?: 'card' | 'page') =>
   })
 
 export const useTokens = () => useQuery({ queryKey: keys.tokens, queryFn: ({ signal }) => get<TokenDTO[]>('/tokens', signal) })
+
+/**
+ * Asked once an hour while the app is open, so a version published meanwhile
+ * shows up without reloading; the copy itself checks the registry at most every
+ * 12 hours, so this costs nothing outside.
+ */
+const UPDATES_EVERY_MS = 60 * 60 * 1000
+export const useUpdates = () =>
+  useQuery({
+    queryKey: keys.updates,
+    queryFn: ({ signal }) => get<UpdateStatusDTO>('/updates', signal),
+    staleTime: UPDATES_EVERY_MS,
+    refetchInterval: UPDATES_EVERY_MS,
+    refetchOnWindowFocus: false,
+    retry: false,
+  })
 
 export const useActivity = (wid: string, opts: { agentsOnly?: boolean; tokenId?: string } = {}) => {
   const params = new URLSearchParams({ limit: '40' })

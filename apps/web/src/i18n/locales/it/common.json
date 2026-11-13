@@ -1,0 +1,51 @@
+{
+  "language": "Lingua",
+  "skipToContent": "Vai al contenuto",
+  "loading": "Caricamento",
+  "actions": {
+    "cancel": "Annulla",
+    "confirm": "Conferma",
+    "save": "Salva",
+    "close": "Chiudi",
+    "copy": "Copia",
+    "view": "Apri",
+    "backHome": "Torna alla home"
+  },
+  "dialog": {
+    "fallbackTitle": "Finestra di dialogo",
+    "details": "Dettagli"
+  },
+  "copyFailed": "Impossibile copiare negli appunti",
+  "notFound": {
+    "title": "Qui non c’è niente",
+    "body": "La pagina non esiste o non hai accesso."
+  },
+  "time": {
+    "justNow": "proprio ora"
+  },
+  "due": {
+    "today": "Oggi",
+    "tomorrow": "Domani",
+    "yesterday": "Ieri"
+  },
+  "greeting": {
+    "night": "Buonasera",
+    "morning": "Buongiorno",
+    "afternoon": "Buon pomeriggio",
+    "evening": "Buonasera"
+  },
+  "color": "Colore",
+  "colors": {
+    "tomato": "Corallo",
+    "amber": "Ambra",
+    "lime": "Lime",
+    "jade": "Giada",
+    "teal": "Turchese",
+    "cobalt": "Cobalto",
+    "iris": "Iris",
+    "rose": "Rosa",
+    "slate": "Ardesia"
+  },
+  "untitled": "Senza titolo",
+  "quoted": "«{{text}}»"
+}

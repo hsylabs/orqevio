@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { Avatar } from '../../components/ui/Avatar'
@@ -17,6 +18,7 @@ import { WorkspaceContext } from './workspace'
 const isDesktop = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches
 
 export function AppShell() {
+  const { t } = useTranslation()
   const { wid } = useParams()
   const me = useMe()
   const overview = useOverview(wid)
@@ -66,21 +68,20 @@ export function AppShell() {
 
   useEffect(() => {
     setAgentToast((event) => {
-      toast(event.actor.name, {
+      toast(eventSentence(event), {
         id: `agent-${event.actor.id}`,
-        description: eventSentence(event),
         icon: <Avatar name={event.actor.name} kind="agent" size={22} />,
         duration: 3500,
         action:
           event.cardId && event.action !== 'card.archived'
-            ? { label: 'Ver', onClick: () => navigate(`/card/${event.cardId}`) }
+            ? { label: t('actions.view'), onClick: () => navigate(`/card/${event.cardId}`) }
             : event.pageId
-              ? { label: 'Ver', onClick: () => navigate(`/w/${wid}/d/${event.pageId}`) }
+              ? { label: t('actions.view'), onClick: () => navigate(`/w/${wid}/d/${event.pageId}`) }
               : undefined,
       })
     })
     return () => setAgentToast(null)
-  }, [navigate, wid])
+  }, [navigate, wid, t])
 
   const value = useMemo(
     () =>
@@ -115,7 +116,7 @@ export function AppShell() {
   return (
     <WorkspaceContext.Provider value={value}>
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-[8px] focus:bg-ink focus:px-3 focus:py-2 focus:text-sheet">
-        Saltar al contenido
+        {t('skipToContent')}
       </a>
       <div className="flex h-dvh overflow-hidden bg-desk">
         {/* Mobile overlay */}

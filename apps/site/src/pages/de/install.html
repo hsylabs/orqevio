@@ -1,0 +1,104 @@
+  <div class="page-head">
+    <div class="wrap">
+      <span class="eyebrow">Installationsanleitung</span>
+      <h1>Installiere deine Instanz</h1>
+      <p class="lead">Du entscheidest, wo sie läuft: in deinem Cloudflare-Konto, per Befehl oder per Button, oder mit Docker auf deinem Server. In allen drei Fällen gehört die Instanz dir und funktioniert genau gleich.</p>
+      <nav class="toc" aria-label="Auf dieser Seite">
+        <a href="#command">Per Befehl</a>
+        <a href="#button">Per Button</a>
+        <a href="#docker">Mit Docker</a>
+        <a href="#access">Erste Anmeldung</a>
+        <a href="#agents">Agenten verbinden</a>
+        <a href="#update">Aktualisieren</a>
+        <a href="#costs">Kosten</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="wrap prose">
+    <h2 id="command">Per Befehl <span class="badge">Empfohlen</span></h2>
+    <p>Deine Instanz wird in deinem eigenen Cloudflare-Konto installiert: ein Worker mit der Web-App, der API und dem MCP-Server, eine SQLite-Datenbank und ein R2-Bucket für Anhänge.</p>
+    <p><strong>Du brauchst</strong> ein Cloudflare-Konto (der kostenlose Plan reicht aus) und Node.js 22.12 oder neuer.</p>
+    <p class="note"><strong>Aktiviere vorher R2</strong> im Cloudflare-Dashboard unter <a href="https://dash.cloudflare.com/?to=/:account/r2/overview">R2 → Overview</a>. Die enthaltene Nutzung ist kostenlos (10 GB Speicherplatz pro Monat), Cloudflare fragt aber eventuell nach einer Zahlungsmethode. Beide Wege, Orqevio bei Cloudflare zu installieren, setzen R2 voraus: der Befehl und der Button.</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
+    <ol>
+      <li>Dein Browser öffnet sich, damit du dich bei Cloudflare anmelden kannst.</li>
+      <li>Du wählst einen Namen für die Instanz (standardmäßig <code>orqevio</code>), der Teil ihrer Adresse wird.</li>
+      <li>Der Installer stellt die Instanz bereit und legt ihren Bucket an.</li>
+      <li>Zum Schluss zeigt er dir die Adresse (<code>https://orqevio.&lt;deine-subdomain&gt;.workers.dev</code>) und einen einmaligen <strong>Einrichtungscode</strong>.</li>
+    </ol>
+    <p>Öffne die Adresse und folge den Schritten unter <a href="#access">Erste Anmeldung</a>.</p>
+    <ul>
+      <li><strong>Mehrere Instanzen:</strong> Hänge <code>--name &lt;name&gt;</code> an einen beliebigen Befehl an.</li>
+      <li><strong>Mehrere Cloudflare-Konten:</strong> Der Installer fragt, welches er verwenden soll, oder du gibst es mit <code>--account &lt;id&gt;</code> an.</li>
+      <li><strong>Sprache:</strong> Der Installer spricht die Sprache deines Terminals; eine andere wählst du mit <code>--lang &lt;code&gt;</code>.</li>
+      <li><strong>Datenschutz:</strong> Der Installer schaltet die Telemetrie von Wrangler ab, sofern du sie nicht selbst aktiviert hast, und arbeitet in einem temporären Ordner, den er am Ende löscht.</li>
+    </ul>
+
+    <h2 id="button">Per Button</h2>
+    <p>Wenn du deine Instanz lieber in einem eigenen Repository auf GitHub oder GitLab verwalten möchtest:</p>
+    <a class="deploy" href="https://deploy.workers.cloudflare.com/?url=https://github.com/hsylabs/orqevio/tree/main/templates/cloudflare">Deploy to Cloudflare</a>
+    <p>Cloudflare legt ein kleines Repository in deinem GitHub- oder GitLab-Konto an, fragt dich nach dem Einrichtungscode (<code>SETUP_CODE</code>), den du selbst wählst, und stellt die Instanz bereit. Danach gilt:</p>
+    <ul>
+      <li>Jede Änderung in diesem Repository wird automatisch bereitgestellt.</li>
+      <li>Dependabot schlägt neue Orqevio-Versionen als Pull-Request vor; sobald du ihn mergst, wird deine Instanz aktualisiert.</li>
+      <li>Wenn du deinen Schlüssel verlierst, ändere das Secret <code>SETUP_CODE</code> im Cloudflare-Dashboard und nutze „Schlüssel verloren?“ auf dem Anmeldebildschirm.</li>
+    </ul>
+
+    <h2 id="docker">Mit Docker auf deinem Server</h2>
+    <p>Ein einzelner Container (für amd64 und arm64), dessen SQLite-Datenbank und Anhänge in einem Volume liegen. Lade die Konfiguration herunter:</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>curl -fsSLO https://raw.githubusercontent.com/hsylabs/orqevio/main/docker-compose.yml</code></pre></div>
+    <div class="command"><pre><code><span class="prompt">$ </span>curl -fsSL -o .env https://raw.githubusercontent.com/hsylabs/orqevio/main/.env.example</code></pre></div>
+    <p>Bearbeite die <code>.env</code>: Trage unter <code>APP_URL</code> die öffentliche Adresse deiner Instanz ein (zum Beispiel <code>https://orqevio.deine-domain.de</code>) und, wenn du möchtest, einen eigenen <code>SETUP_CODE</code> mit mindestens 12 Buchstaben oder Ziffern. Dann:</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
+    <p>Die Instanz lauscht auf Port 3000. Betreibe sie hinter einem Reverse Proxy mit HTTPS (Caddy, Nginx oder Traefik) und ergänze <code>TRUST_PROXY=true</code> in der <code>.env</code>.</p>
+    <p><strong>Backups:</strong> Kopiere das Volume <code>orqevio-data</code>, während die Instanz gestoppt ist, oder erstelle mit <code>sqlite3</code> ein Live-Backup der Datenbank und sichere zusätzlich den Ordner <code>uploads</code>.</p>
+
+    <h2 id="access">Erste Anmeldung</h2>
+    <ol>
+      <li><strong>Richte deine Instanz ein.</strong> Öffne ihre Adresse und gib den Einrichtungscode und deinen Namen ein. Bei Cloudflare bekommst du den Code vom Installer; mit Docker ist es der <code>SETUP_CODE</code> aus der <code>.env</code> oder, falls du keinen festgelegt hast, der Code aus dem Container-Log (<code>docker compose logs app</code>).</li>
+      <li><strong>Speichere deinen Zugangsschlüssel.</strong> Orqevio erzeugt einen zufälligen 160-Bit-Schlüssel und zeigt ihn nur einmal an. Speichere ihn in deinem Passwort-Manager: Mehr brauchst du nicht, um dich auf jedem Gerät anzumelden.</li>
+      <li><strong>Wenn du ihn verlierst,</strong> erzeuge einen neuen Code mit <code>npx create-orqevio@latest recover</code> (Cloudflare) oder <code>docker compose exec app node dist/cli.js reset-access</code> (Docker) und gib ihn unter „Schlüssel verloren?“ ein. Dein Tresor ist davon nicht betroffen: Der Server kennt sein Master-Passwort nie.</li>
+    </ol>
+    <p>Deine Instanz übernimmt beim Einrichten die Sprache deines Browsers: Englisch, Spanisch, Französisch, Portugiesisch, Italienisch, Deutsch, Niederländisch oder Japanisch. Du kannst sie jederzeit unter <strong>Einstellungen</strong> ändern.</p>
+
+    <h2 id="agents">Agenten verbinden</h2>
+    <p>Die MCP-Adresse deiner Instanz lautet <code>https://&lt;deine-instanz&gt;/mcp</code>.</p>
+    <ul>
+      <li><strong>Claude im Web, auf dem Desktop und mobil:</strong> Füge einen benutzerdefinierten Konnektor mit dieser Adresse hinzu. Deine Instanz fragt dich dann auf einer eigenen Seite um Erlaubnis; dort wählst du den Arbeitsbereich und legst fest, was der Agent darf. Dafür muss deine Instanz über HTTPS aus dem Internet erreichbar sein; bei Cloudflare ist sie das bereits.</li>
+      <li><strong>Claude Code, Cursor, VS Code und andere:</strong> Unter <strong>Agenten → Agenten verbinden</strong> erstellst du ein Token, und die App gibt dir die passende Konfiguration zum Einfügen.</li>
+    </ul>
+    <p class="note agent">Kein Agent kann den Tresor lesen, nicht einmal verschlüsselt, und keiner kann etwas löschen: Agenten können nur archivieren, und du kannst alles wiederherstellen.</p>
+
+    <h2 id="update">Aktualisieren</h2>
+    <p>Wenn es eine neue Version gibt, zeigt dir deine Instanz das unter <strong>Einstellungen → Diese Instanz</strong> an, samt dem genauen Schritt für deine Installation. Deine Daten, dein Schlüssel und dein Tresor bleiben immer erhalten.</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Installation</th><th scope="col">So aktualisierst du</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Per Befehl</td><td><code>npx create-orqevio@latest update</code></td></tr>
+          <tr><td>Per Button</td><td>Merge den Dependabot-Pull-Request in deinem Repository</td></tr>
+          <tr><td>Mit Docker</td><td><code>docker compose pull</code> und <code>docker compose up -d</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="costs">Kosten</h2>
+    <p>Orqevio selbst kostet nichts. Mit Docker zahlst du für deinen Server. Bei Cloudflare reicht der kostenlose Plan für die private Nutzung:</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Ressource</th><th scope="col">Kostenloser Plan</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Anfragen</td><td>100.000 pro Tag</td></tr>
+          <tr><td>CPU</td><td>10 ms pro Anfrage; normale Nutzung liegt bei 1–5 ms</td></tr>
+          <tr><td>Datenbank</td><td>1 GB pro Instanz</td></tr>
+          <tr><td>Anhänge (R2)</td><td>10 GB und 1 Million Schreibvorgänge pro Monat</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Stand der Limits: November 2026. Die aktuellen Werte findest du in der Dokumentation von Cloudflare.</p>
+  </div>

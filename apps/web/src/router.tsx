@@ -48,9 +48,12 @@ function ReferenceRedirect({ type }: { type: 'card' | 'doc' }) {
 export const router = createBrowserRouter([
   { path: '/', element: <RootRedirect /> },
   { path: '/login', element: <AuthPage mode="login" /> },
-  { path: '/register', element: <AuthPage mode="register" /> },
+  { path: '/setup', element: <AuthPage mode="setup" /> },
+  { path: '/register', element: <Navigate to="/setup" replace /> },
   { path: '/card/:id', element: <ReferenceRedirect type="card" /> },
   { path: '/doc/:id', element: <ReferenceRedirect type="doc" /> },
+  // OAuth authorization endpoint: the consent screen for MCP clients such as Claude.
+  { path: '/oauth/authorize', lazy: async () => ({ Component: (await import('./features/oauth/ConsentPage')).ConsentPage }), hydrateFallbackElement: <FullScreenLoader /> },
   {
     path: '/w/:wid',
     element: <AppShell />,

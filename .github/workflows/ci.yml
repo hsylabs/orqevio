@@ -1,0 +1,192 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+# A newer push to the same branch or PR cancels the run in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typecheck, tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      # Installs the pnpm version pinned in package.json ("packageManager").
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  e2e:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APP_URL: http://localhost:3000
+      # A fresh SQLite copy in a temporary folder; the setup test claims it with this code.
+      DATA_DIR: ${{ github.workspace }}/.e2e-data
+      SETUP_CODE: e2e-setup-code-1234
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Install Chromium for Playwright
+        run: pnpm --filter @orqevio/web exec playwright install --with-deps chromium
+      - name: Start the production server
+        run: |
+          nohup pnpm start > "$RUNNER_TEMP/server.log" 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -fsS http://localhost:3000/healthz > /dev/null; then
+              echo "Server is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become ready in 60 seconds"
+          cat "$RUNNER_TEMP/server.log"
+          exit 1
+      - run: pnpm test:e2e
+      - name: Show server log
+        if: failure()
+        run: cat "$RUNNER_TEMP/server.log"
+      # Playwright's page snapshot and diagnostics of every failed test.
+      - name: Keep the results of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-results-chromium
+          path: apps/web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  e2e-browsers:
+    # The same suite in Firefox and Safari's engine (WebKit), each against a fresh copy.
+    name: End-to-end tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    env:
+      APP_URL: http://localhost:3000
+      DATA_DIR: ${{ github.workspace }}/.e2e-data
+      SETUP_CODE: e2e-setup-code-1234
+      E2E_BROWSER: ${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Install ${{ matrix.browser }} for Playwright
+        run: pnpm --filter @orqevio/web exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Start the production server
+        run: |
+          nohup pnpm start > "$RUNNER_TEMP/server.log" 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -fsS http://localhost:3000/healthz > /dev/null; then
+              echo "Server is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become ready in 60 seconds"
+          cat "$RUNNER_TEMP/server.log"
+          exit 1
+      - run: pnpm test:e2e
+      - name: Show server log
+        if: failure()
+        run: cat "$RUNNER_TEMP/server.log"
+      # Playwright's page snapshot and diagnostics of every failed test.
+      - name: Keep the results of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-results-${{ matrix.browser }}
+          path: apps/web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  e2e-cloudflare:
+    name: End-to-end tests (Cloudflare package)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # The same suite against what `npx create-orqevio` deploys: the packaged
+      # Worker, web app and configuration of a copy, run locally by Wrangler
+      # (workerd). No Cloudflare account is involved.
+      E2E_BASE_URL: http://127.0.0.1:8787
+      SETUP_CODE: e2e-setup-code-1234
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:cloudflare
+      - name: Generate the configuration of a copy and check its deploy bundle
+        run: |
+          node packages/create-orqevio/dist/cli.js config --name ci-copy > "$RUNNER_TEMP/wrangler.json"
+          pnpm --filter create-orqevio exec wrangler deploy --dry-run --config "$RUNNER_TEMP/wrangler.json" --outdir "$RUNNER_TEMP/bundle"
+      - name: Check the Deploy to Cloudflare template with the packed packages
+        run: |
+          mkdir -p "$RUNNER_TEMP/packs"
+          for package in orqevio create-orqevio; do (cd "packages/$package" && pnpm pack --pack-destination "$RUNNER_TEMP/packs"); done
+          cp -r templates/cloudflare "$RUNNER_TEMP/template"
+          cd "$RUNNER_TEMP/template"
+          npm install --no-audit --no-fund "$RUNNER_TEMP"/packs/orqevio-*.tgz "$RUNNER_TEMP"/packs/create-orqevio-*.tgz
+          npm run deploy -- --dry-run
+      - name: Install Chromium for Playwright
+        run: pnpm --filter @orqevio/web exec playwright install --with-deps chromium
+      - name: Start the copy locally
+        run: |
+          nohup pnpm --filter create-orqevio exec wrangler dev --config "$RUNNER_TEMP/wrangler.json" --local --port 8787 --ip 127.0.0.1 --var "SETUP_CODE:$SETUP_CODE" > "$RUNNER_TEMP/worker.log" 2>&1 &
+          for _ in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8787/healthz > /dev/null; then
+              echo "Worker is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Worker did not become ready in 90 seconds"
+          cat "$RUNNER_TEMP/worker.log"
+          exit 1
+      - run: pnpm test:e2e
+      - name: Show Worker log
+        if: failure()
+        run: cat "$RUNNER_TEMP/worker.log"
+      # Playwright's page snapshot and diagnostics of every failed test.
+      - name: Keep the results of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-results-cloudflare
+          path: apps/web/test-results
+          if-no-files-found: ignore
+          retention-days: 7

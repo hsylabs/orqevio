@@ -1,0 +1,312 @@
+{
+  "title": "Cofre",
+  "back": "← Voltar",
+  "reveal": {
+    "show": "Mostrar",
+    "hide": "Ocultar"
+  },
+  "types": {
+    "login": "Login",
+    "note": "Nota segura"
+  },
+  "untitled": {
+    "login": "Sem título",
+    "note": "Nota sem título"
+  },
+  "master": {
+    "label": "Senha mestra",
+    "new": "Nova senha mestra",
+    "repeatNew": "Repita a nova senha",
+    "newTooShort": "A nova senha precisa ter pelo menos 12 caracteres.",
+    "mismatch": "As senhas não coincidem.",
+    "wrong": "Senha mestra incorreta."
+  },
+  "unsupported": {
+    "insecureTitle": "O cofre precisa de uma conexão segura",
+    "browserTitle": "O cofre não funciona neste navegador",
+    "blockers": {
+      "secure_context": "Você abriu o Orqevio por uma conexão sem criptografia (http://). Os navegadores só permitem a criptografia do cofre em conexões seguras: abra sua cópia por https:// (por exemplo, atrás do Caddy, Nginx ou Traefik) ou, no mesmo computador, em http://localhost.",
+      "webcrypto": "Este navegador não oferece WebCrypto, que o cofre usa para criptografar seus dados.",
+      "workers": "Este navegador não é compatível com Web Workers, que o cofre usa para derivar sua chave sem travar a página.",
+      "webassembly": "Este navegador não é compatível com WebAssembly, que o cofre usa para derivar sua chave com Argon2id."
+    },
+    "updateBrowser": "Use uma versão atual do Chrome, Edge, Firefox ou Safari.",
+    "restWorks": "Suas tarefas e documentos continuam funcionando normalmente."
+  },
+  "toolbar": {
+    "autoLockTimer": "Bloqueia automaticamente após um período de inatividade",
+    "generator": "Gerador",
+    "options": "Opções do cofre",
+    "changeMaster": "Alterar senha mestra",
+    "import": "Importar…",
+    "export": "Exportar…",
+    "autoLock": "Bloqueio automático",
+    "autoLockMinutes_one": "Após {{count}} minuto de inatividade",
+    "autoLockMinutes_many": "Após {{count}} minutos de inatividade",
+    "autoLockMinutes_other": "Após {{count}} minutos de inatividade",
+    "autoLockHours_one": "Após {{count}} hora de inatividade",
+    "autoLockHours_many": "Após {{count}} horas de inatividade",
+    "autoLockHours_other": "Após {{count}} horas de inatividade",
+    "lock": "Bloquear",
+    "generatorTitle": "Gerador de senhas",
+    "generatorDescription": "Aleatoriedade criptográfica e sem viés, gerada no seu navegador."
+  },
+  "list": {
+    "search": "Buscar no cofre",
+    "new": "Novo",
+    "filter": "Filtrar",
+    "filters": {
+      "all": "Todos",
+      "logins": "Logins",
+      "notes": "Notas"
+    },
+    "label": "Itens do cofre",
+    "noMatches": "Nenhuma correspondência.",
+    "empty": "Seu cofre está vazio.",
+    "footer_one": "{{count}} item · descriptografado só neste navegador",
+    "footer_many": "{{count}} itens · descriptografados só neste navegador",
+    "footer_other": "{{count}} itens · descriptografados só neste navegador"
+  },
+  "empty": {
+    "select": "Selecione um item",
+    "first": "Salve seu primeiro login",
+    "newLogin": "Novo login",
+    "body": "Tudo é criptografado no seu navegador antes de ser enviado ao servidor. Nem o servidor nem seus agentes conseguem ler."
+  },
+  "delete": {
+    "title": "Excluir “{{title}}”?",
+    "description": "Ele será excluído permanentemente do seu cofre.",
+    "confirm": "Excluir"
+  },
+  "detail": {
+    "updatedLogin": "Login · atualizado {{time}}",
+    "updatedNote": "Nota segura · atualizada {{time}}",
+    "favorite": "Marcar como favorito",
+    "unfavorite": "Remover dos favoritos",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "username": "Usuário",
+    "copyUsername": "Copiar usuário",
+    "usernameCopied": "Usuário copiado",
+    "password": "Senha",
+    "showPassword": "Mostrar senha",
+    "hidePassword": "Ocultar senha",
+    "copyPassword": "Copiar senha",
+    "passwordCopied": "Senha copiada · a área de transferência será limpa em 30 s",
+    "website": "Site",
+    "openWebsite": "Abrir site",
+    "copyUrl": "Copiar URL",
+    "urlCopied": "URL copiada",
+    "content": "Conteúdo",
+    "notes": "Notas",
+    "copyNotes": "Copiar notas",
+    "notesCopied": "Copiado",
+    "clipboardClears": "Quando você copia algo, a área de transferência é limpa automaticamente após 30 segundos."
+  },
+  "totp": {
+    "label": "Código de verificação",
+    "copy": "Copiar código",
+    "copied": "Código copiado · a área de transferência será limpa em 30 s",
+    "current": "Código de verificação atual",
+    "changesIn_one": "Muda em {{count}} segundo",
+    "changesIn_many": "Muda em {{count}} segundos",
+    "changesIn_other": "Muda em {{count}} segundos",
+    "problems": {
+      "empty": "Digite a chave secreta ou o link otpauth://.",
+      "not_totp": "Só são aceitos códigos baseados em tempo (TOTP).",
+      "bad_secret": "A chave secreta só pode ter as letras de A a Z e os dígitos de 2 a 7.",
+      "too_short": "A chave secreta é curta demais.",
+      "bad_parameters": "O link otpauth:// tem parâmetros inválidos."
+    }
+  },
+  "editor": {
+    "editTitle": "Editar item",
+    "newLogin": "Novo login",
+    "newNote": "Nova nota segura",
+    "name": "Nome",
+    "namePlaceholderLogin": "ex.: Banco, GitHub, Wi-Fi do escritório",
+    "namePlaceholderNote": "ex.: Códigos de backup",
+    "username": "Usuário ou e-mail",
+    "password": "Senha",
+    "generate": "Gerar senha",
+    "website": "Site",
+    "websitePlaceholder": "exemplo.com",
+    "totp": "Verificação em duas etapas (TOTP)",
+    "totpPlaceholder": "Chave secreta ou link otpauth://",
+    "totpHint": "A chave que o serviço mostra ao lado do QR code quando você ativa a verificação em duas etapas.",
+    "content": "Conteúdo",
+    "notes": "Notas",
+    "save": "Criptografar e salvar"
+  },
+  "changeMaster": {
+    "title": "Alterar senha mestra",
+    "description": "Seus itens não são criptografados de novo: só a chave do cofre passa a ser protegida pela nova senha. Sua chave de recuperação continua válida.",
+    "current": "Senha mestra atual",
+    "submit": "Alterar",
+    "wrongCurrent": "A senha mestra atual não está correta.",
+    "done": "Senha mestra atualizada"
+  },
+  "strength": {
+    "emptyHint": "Use pelo menos 12 caracteres. Uma frase com várias palavras é fácil de lembrar e difícil de adivinhar.",
+    "tooShort": "Curta demais",
+    "tooShortHint": "São necessários pelo menos 12 caracteres.",
+    "fair": "Poderia ser mais forte",
+    "fairHint": "Adicione mais palavras ou uma variedade maior de caracteres.",
+    "good": "Boa",
+    "veryGood": "Muito boa",
+    "rememberHint": "Lembre-se: se você a esquecer, só a chave de recuperação poderá abrir o cofre."
+  },
+  "generator": {
+    "regenerate": "Gerar outra",
+    "copied": "Copiada · a área de transferência será limpa em 30 s",
+    "entropy": "≈ {{bits}} bits de entropia",
+    "length": "Comprimento",
+    "sets": {
+      "upper": "Maiúsculas",
+      "lower": "Minúsculas",
+      "digits": "Números",
+      "symbols": "Símbolos"
+    },
+    "avoidAmbiguous": "Evitar caracteres ambíguos (I, l, 1, O, 0)",
+    "use": "Usar esta senha",
+    "rating": {
+      "weak": "Fraca",
+      "fair": "Razoável",
+      "strong": "Forte",
+      "excellent": "Excelente"
+    }
+  },
+  "gate": {
+    "guarantees": {
+      "encryption": "Criptografia AES-256-GCM no seu navegador",
+      "kdf": "Chave derivada com Argon2id",
+      "agents": "Agentes e MCP não têm acesso"
+    },
+    "decryptFailed_one": "{{count}} item não pôde ser descriptografado e foi ignorado.",
+    "decryptFailed_many": "{{count}} itens não puderam ser descriptografados e foram ignorados.",
+    "decryptFailed_other": "{{count}} itens não puderam ser descriptografados e foram ignorados.",
+    "setup": {
+      "title": "Configure seu cofre",
+      "subtitle": "Escolha uma senha mestra. Ela é usada no seu navegador para criptografar seus segredos e nunca é enviada ao servidor.",
+      "tooShort": "Use pelo menos 12 caracteres.",
+      "failed": "Não foi possível criar o cofre neste navegador.",
+      "repeat": "Repita a senha mestra",
+      "busy": "Gerando chaves…",
+      "submit": "Criar cofre",
+      "ready": "Seu cofre está pronto. Só você pode abri-lo."
+    },
+    "recoveryKey": {
+      "title": "Guarde sua chave de recuperação",
+      "subtitle": "É a única forma de recuperar o cofre se você esquecer sua senha mestra. Ela só é exibida uma vez.",
+      "copied": "Chave de recuperação copiada",
+      "download": "Baixar .txt",
+      "fileName": "orqevio-chave-de-recuperacao.txt",
+      "fileText": "Orqevio — Chave de recuperação do cofre\n\n{{recoveryKey}}\n\nGuarde-a fora do Orqevio (por exemplo, impressa ou em outro gerenciador de senhas).\nEla permite redefinir a senha mestra. Ninguém mais pode recuperá-la por você.\n",
+      "saved": "Guardei em um lugar seguro, fora do Orqevio.",
+      "open": "Abrir meu cofre"
+    },
+    "unlock": {
+      "title": "Cofre bloqueado",
+      "subtitle": "Digite sua senha mestra para descriptografar seus logins neste navegador.",
+      "busy": "Descriptografando…",
+      "submit": "Desbloquear",
+      "forgot": "Esqueceu sua senha mestra?"
+    },
+    "recover": {
+      "title": "Recuperar o cofre",
+      "subtitle": "Use a chave de recuperação que você guardou ao criar o cofre para escolher uma nova senha mestra.",
+      "recoveryKey": "Chave de recuperação",
+      "recoveryKeyPlaceholder": "XXXX-XXXX-XXXX-…",
+      "submit": "Redefinir e abrir",
+      "noKey": "Não tenho a chave",
+      "invalidKey": "A chave de recuperação não é válida.",
+      "done": "Senha mestra redefinida"
+    },
+    "reset": {
+      "title": "Redefinir o cofre",
+      "description": "Sem a senha mestra ou a chave de recuperação, ninguém consegue descriptografar seus dados, nem mesmo nós. Redefinir exclui permanentemente todos os itens.",
+      "accessKey": "Chave de acesso",
+      "accessKeyHint": "Confirme que é você com a chave de acesso desta cópia (não a senha mestra).",
+      "submit": "Excluir e redefinir",
+      "done": "Cofre redefinido. Você pode configurá-lo de novo."
+    }
+  },
+  "import": {
+    "title": "Importar para o cofre",
+    "description": "O arquivo é lido e criptografado neste navegador: o servidor só recebe itens já criptografados.",
+    "formats": "Aceita o CSV exportado pelo Chrome, Edge, Firefox e Safari, o CSV e o JSON sem criptografia do Bitwarden e as exportações criptografadas do Orqevio.",
+    "choose": "Escolher arquivo",
+    "fileLabel": "Arquivo para importar",
+    "tooLarge": "O arquivo é grande demais (mais de {{size}} MB).",
+    "problems": {
+      "empty": "O arquivo está vazio.",
+      "unknown_format": "O Orqevio não reconhece este arquivo. Use o CSV exportado pelo Chrome, Edge, Firefox ou Safari, o CSV ou JSON do Bitwarden, ou uma exportação do Orqevio.",
+      "bitwarden_encrypted": "Esta é uma exportação criptografada do Bitwarden. Exporte de novo como “.json” ou “.csv” sem criptografia e importe aqui.",
+      "no_items": "O arquivo não tem logins nem notas."
+    },
+    "encrypted_one": "Esta é uma exportação criptografada do Orqevio com {{count}} item. Digite a senha mestra que você usava quando a exportou.",
+    "encrypted_many": "Esta é uma exportação criptografada do Orqevio com {{count}} itens. Digite a senha mestra que você usava quando a exportou.",
+    "encrypted_other": "Esta é uma exportação criptografada do Orqevio com {{count}} itens. Digite a senha mestra que você usava quando a exportou.",
+    "exportPassword": "Senha da exportação",
+    "decrypt": "Descriptografar",
+    "wrongPassword": "Essa não é a senha com que esta exportação foi feita.",
+    "sources": {
+      "chromeOrEdge": "Do Chrome ou Edge:",
+      "firefox": "Do Firefox:",
+      "safari": "Do Safari:",
+      "bitwardenCsv": "Do Bitwarden (CSV):",
+      "bitwardenJson": "Do Bitwarden (JSON):",
+      "csv": "De um arquivo CSV:",
+      "orqevio": "Do Orqevio (criptografado):"
+    },
+    "newLogins_one": "{{count}} login novo",
+    "newLogins_many": "{{count}} logins novos",
+    "newLogins_other": "{{count}} logins novos",
+    "newNotes_one": "{{count}} nota nova",
+    "newNotes_many": "{{count}} notas novas",
+    "newNotes_other": "{{count}} notas novas",
+    "nothingNew": "Nada de novo para importar",
+    "duplicates_one": "{{count}} item já está no seu cofre e será ignorado",
+    "duplicates_many": "{{count}} itens já estão no seu cofre e serão ignorados",
+    "duplicates_other": "{{count}} itens já estão no seu cofre e serão ignorados",
+    "unsupported_one": "{{count}} item não é compatível (cartões de pagamento ou identidades) e não será importado",
+    "unsupported_many": "{{count}} itens não são compatíveis (cartões de pagamento ou identidades) e não serão importados",
+    "unsupported_other": "{{count}} itens não são compatíveis (cartões de pagamento ou identidades) e não serão importados",
+    "unencryptedWarning": "O arquivo que você escolheu não está criptografado: exclua-o do seu computador quando terminar.",
+    "chooseAnother": "Escolher outro",
+    "progress": "Criptografando {{done}} de {{total}}…",
+    "submit_one": "Importar {{count}} item",
+    "submit_many": "Importar {{count}} itens",
+    "submit_other": "Importar {{count}} itens",
+    "failed_one": "{{count}} item não pôde ser importado. Importe o arquivo de novo: os itens já importados serão ignorados.",
+    "failed_many": "{{count}} itens não puderam ser importados. Importe o arquivo de novo: os itens já importados serão ignorados.",
+    "failed_other": "{{count}} itens não puderam ser importados. Importe o arquivo de novo: os itens já importados serão ignorados.",
+    "done_one": "{{count}} item importado",
+    "done_many": "{{count}} itens importados",
+    "done_other": "{{count}} itens importados",
+    "locked": "O cofre foi bloqueado antes de a importação terminar. Desbloqueie-o e importe o arquivo de novo: o que já foi importado será ignorado.",
+    "untitledNote": "Nota",
+    "untitledLogin": "Sem título",
+    "damaged": "Esta exportação está danificada e não pode ser lida."
+  },
+  "export": {
+    "title": "Exportar o cofre",
+    "description": "Baixe todos os seus itens em um arquivo, preparado neste navegador.",
+    "kind": "Tipo de exportação",
+    "kinds": {
+      "encrypted": "Criptografada",
+      "plain": "Sem criptografia"
+    },
+    "encryptedInfo": "Só a sua senha mestra atual consegue abri-la. Use como backup ou para levar seus itens para outra cópia do Orqevio.",
+    "plainInfo": "No formato JSON do Bitwarden, que a maioria dos gerenciadores de senhas consegue importar. Qualquer pessoa com o arquivo pode lê-lo.",
+    "understood": "Entendo que o arquivo não está criptografado e que qualquer pessoa que o tiver poderá ler todas as minhas senhas.",
+    "submitPlain": "Exportar sem criptografia",
+    "submitEncrypted": "Exportar com criptografia",
+    "fileNameEncrypted": "orqevio-cofre-criptografado-{{date}}.json",
+    "fileNamePlain": "orqevio-cofre-sem-criptografia-{{date}}.json",
+    "done_one": "{{count}} item exportado",
+    "done_many": "{{count}} itens exportados",
+    "done_other": "{{count}} itens exportados",
+    "tooLarge": "A exportação passa de {{size}} MB: o Orqevio não vai conseguir importá-la."
+  }
+}

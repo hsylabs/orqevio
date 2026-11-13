@@ -1,0 +1,61 @@
+{
+  "actions": {
+    "card": {
+      "created": "<actor>{{actor}}</actor> heeft de kaart <target>‘{{target}}’</target> aangemaakt",
+      "created_self": "<actor>{{actor}}</actor> heeft deze kaart aangemaakt",
+      "updated": "<actor>{{actor}}</actor> heeft de kaart <target>‘{{target}}’</target> bewerkt",
+      "updated_self": "<actor>{{actor}}</actor> heeft deze kaart bewerkt",
+      "moved": "<actor>{{actor}}</actor> heeft de kaart <target>‘{{target}}’</target> verplaatst",
+      "moved_self": "<actor>{{actor}}</actor> heeft deze kaart verplaatst",
+      "reordered": "<actor>{{actor}}</actor> heeft de kaart <target>‘{{target}}’</target> herschikt",
+      "reordered_self": "<actor>{{actor}}</actor> heeft deze kaart herschikt",
+      "archived": "<actor>{{actor}}</actor> heeft de kaart <target>‘{{target}}’</target> gearchiveerd",
+      "archived_self": "<actor>{{actor}}</actor> heeft deze kaart gearchiveerd",
+      "restored": "<actor>{{actor}}</actor> heeft de kaart <target>‘{{target}}’</target> hersteld",
+      "restored_self": "<actor>{{actor}}</actor> heeft deze kaart hersteld",
+      "deleted": "<actor>{{actor}}</actor> heeft de kaart <target>‘{{target}}’</target> verwijderd",
+      "deleted_self": "<actor>{{actor}}</actor> heeft deze kaart verwijderd",
+      "checklist": "<actor>{{actor}}</actor> heeft de checklist van <target>‘{{target}}’</target> bijgewerkt",
+      "checklist_self": "<actor>{{actor}}</actor> heeft de checklist bijgewerkt",
+      "linked": "<actor>{{actor}}</actor> heeft een document aan <target>‘{{target}}’</target> gekoppeld",
+      "linked_self": "<actor>{{actor}}</actor> heeft een document gekoppeld",
+      "unlinked": "<actor>{{actor}}</actor> heeft een document losgekoppeld van <target>‘{{target}}’</target>",
+      "unlinked_self": "<actor>{{actor}}</actor> heeft een document losgekoppeld"
+    },
+    "column": {
+      "created": "<actor>{{actor}}</actor> heeft de kolom <target>‘{{target}}’</target> aangemaakt",
+      "updated": "<actor>{{actor}}</actor> heeft de kolom <target>‘{{target}}’</target> hernoemd",
+      "moved": "<actor>{{actor}}</actor> heeft de kolom <target>‘{{target}}’</target> verplaatst",
+      "deleted": "<actor>{{actor}}</actor> heeft de kolom <target>‘{{target}}’</target> verwijderd"
+    },
+    "board": {
+      "created": "<actor>{{actor}}</actor> heeft het bord <target>‘{{target}}’</target> aangemaakt",
+      "updated": "<actor>{{actor}}</actor> heeft het bord <target>‘{{target}}’</target> hernoemd",
+      "deleted": "<actor>{{actor}}</actor> heeft het bord <target>‘{{target}}’</target> verwijderd"
+    },
+    "page": {
+      "created": "<actor>{{actor}}</actor> heeft de pagina <target>‘{{target}}’</target> aangemaakt",
+      "updated": "<actor>{{actor}}</actor> heeft de pagina <target>‘{{target}}’</target> bewerkt",
+      "moved": "<actor>{{actor}}</actor> heeft de pagina <target>‘{{target}}’</target> verplaatst",
+      "deleted": "<actor>{{actor}}</actor> heeft de pagina <target>‘{{target}}’</target> verwijderd"
+    },
+    "project": {
+      "created": "<actor>{{actor}}</actor> heeft het project <target>‘{{target}}’</target> aangemaakt",
+      "updated": "<actor>{{actor}}</actor> heeft het project <target>‘{{target}}’</target> bijgewerkt",
+      "deleted": "<actor>{{actor}}</actor> heeft het project <target>‘{{target}}’</target> verwijderd"
+    },
+    "label": {
+      "created": "<actor>{{actor}}</actor> heeft een label aangemaakt",
+      "updated": "<actor>{{actor}}</actor> heeft een label bewerkt",
+      "deleted": "<actor>{{actor}}</actor> heeft een label verwijderd"
+    },
+    "other": "<actor>{{actor}}</actor> heeft iets gewijzigd"
+  },
+  "detail": {
+    "movedTo": "naar {{to}}",
+    "movedFromTo": "{{from}} → {{to}}",
+    "createdIn": "in {{column}}",
+    "linkedPage": "‘{{page}}’"
+  },
+  "viaMcp": "via MCP"
+}
