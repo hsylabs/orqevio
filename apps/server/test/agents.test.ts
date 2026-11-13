@@ -112,6 +112,11 @@ describe('MCP server', () => {
       }),
     )
     expect(created.created).toBe(true)
+    const openCards = async () => {
+      const listed = data(await mcp.callTool({ name: 'list_projects', arguments: {} }))
+      return listed.projects.flatMap((p: { boards: Array<{ id: string; open_cards: number }> }) => p.boards).find((b: { id: string }) => b.id === boardId).open_cards
+    }
+    expect(await openCards()).toBe(1)
     await mcp.callTool({ name: 'move_card', arguments: { card_id: created.card_id, column_id: columns[1]!.id, index: 0 } })
     const items = data(await mcp.callTool({ name: 'add_checklist_items', arguments: { card_id: created.card_id, items: ['Leer', 'Firmar'] } }))
     await mcp.callTool({ name: 'update_checklist_item', arguments: { item_id: items.items[0].id, done: true } })
@@ -148,6 +153,7 @@ describe('MCP server', () => {
     expect((await rest.del(`/api/cards/${created.card_id}`)).status).toBe(403)
     const archived = data(await mcp.callTool({ name: 'archive_card', arguments: { card_id: created.card_id } }))
     expect(archived.archived).toBe(true)
+    expect(await openCards()).toBe(0)
   })
 
   it('reports permission errors as tool errors', async () => {

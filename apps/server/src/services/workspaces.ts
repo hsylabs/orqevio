@@ -1,6 +1,6 @@
 import type { HomeDTO, OverviewDTO, PaletteColor, WorkspaceDTO } from '@orqevio/shared'
 import { projectCreateInput, projectUpdateInput, workspaceInput } from '@orqevio/shared'
-import { and, asc, count, desc, eq, isNotNull, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, isNotNull, isNull, lte } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { actorRef, hasScope } from '../auth/actor'
 import { boards, cards, columns, pages, projects, workspaceMembers, workspaces } from '../db/schema'
@@ -104,18 +104,28 @@ export class WorkspaceService {
     const canTasks = hasScope(actor, 'tasks:read')
     const canDocs = hasScope(actor, 'docs:read')
 
+    // Open (not archived) cards per board, counted apart: a correlated subquery in
+    // sql`` loses the table names, so its "id" would mean cards.id, not boards.id.
+    const openCards = canTasks
+      ? new Map(
+          (
+            await db
+              .select({ boardId: cards.boardId, total: count() })
+              .from(cards)
+              .innerJoin(boards, eq(boards.id, cards.boardId))
+              .where(and(eq(boards.workspaceId, workspaceId), isNull(cards.archivedAt)))
+              .groupBy(cards.boardId)
+          ).map((row) => [row.boardId, row.total]),
+        )
+      : new Map<string, number>()
     const boardRows = canTasks
-      ? await db
-          .select({
-            id: boards.id,
-            projectId: boards.projectId,
-            name: boards.name,
-            position: boards.position,
-            cardCount: sql<number>`(select count(*) from ${cards} where ${cards.boardId} = ${boards.id} and ${cards.archivedAt} is null)`,
-          })
-          .from(boards)
-          .where(eq(boards.workspaceId, workspaceId))
-          .orderBy(asc(boards.position), asc(boards.id))
+      ? (
+          await db
+            .select({ id: boards.id, projectId: boards.projectId, name: boards.name, position: boards.position })
+            .from(boards)
+            .where(eq(boards.workspaceId, workspaceId))
+            .orderBy(asc(boards.position), asc(boards.id))
+        ).map((b) => ({ ...b, cardCount: openCards.get(b.id) ?? 0 }))
       : []
     const pageRows = canDocs
       ? await db
