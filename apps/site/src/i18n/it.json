@@ -1,0 +1,38 @@
+{
+  "name": "Italiano",
+  "skip": "Vai al contenuto",
+  "home": "Orqevio, home",
+  "nav": {
+    "main": "Principale",
+    "footer": "Piè di pagina",
+    "languages": "Lingua",
+    "install": "Installa",
+    "privacy": "Privacy",
+    "license": "Licenza"
+  },
+  "copy": {
+    "button": "Copia",
+    "label": "Copia il comando",
+    "done": "Copiato",
+    "failed": "Impossibile copiare"
+  },
+  "pages": {
+    "home": {
+      "title": "Orqevio · Attività, documenti e cassaforte, in una copia solo tua",
+      "description": "Attività, documentazione e una cassaforte con crittografia end-to-end, nella tua copia su Cloudflare o sul tuo server. I tuoi agenti IA ci lavorano via MCP.",
+      "share": "Attività, documenti e una cassaforte cifrata in una copia solo tua, aperta ai tuoi agenti IA tramite MCP."
+    },
+    "install": {
+      "title": "Installa Orqevio · La tua copia su Cloudflare o con Docker",
+      "description": "Installa Orqevio con un comando su Cloudflare, con il pulsante «Deploy to Cloudflare» o con Docker. Guida passo passo, primo accesso e aggiornamenti."
+    },
+    "privacy": {
+      "title": "Privacy · Orqevio",
+      "description": "orqevio.com non conserva i dati di nessuno: niente cookie, analytics o moduli. Ogni copia di Orqevio è di chi la installa, su Cloudflare o sul suo server."
+    },
+    "404": {
+      "title": "Pagina non trovata · Orqevio",
+      "description": "La pagina che cerchi non esiste su orqevio.com. Torna alla home oppure apri la guida per installare la tua copia di Orqevio."
+    }
+  }
+}
