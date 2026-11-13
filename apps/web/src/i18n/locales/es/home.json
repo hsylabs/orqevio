@@ -1,1 +1,39 @@
-{}
+{
+  "title": "Inicio",
+  "greeting": "{{greeting}}, <name>{{name}}</name>.",
+  "onboarding": {
+    "title": "Primeros pasos",
+    "dismiss": "Ocultar primeros pasos",
+    "progress": "{{done}} de {{total}} completados",
+    "project": {
+      "title": "Crea un proyecto",
+      "body": "Agrupa tableros y documentos."
+    },
+    "page": {
+      "title": "Escribe una página",
+      "body": "Documenta en Markdown, con «/» y «@»."
+    },
+    "vault": {
+      "title": "Configura la bóveda",
+      "body": "Cifrado de extremo a extremo."
+    },
+    "agent": {
+      "title": "Conecta un agente",
+      "body": "Claude, Cursor o VS Code por MCP."
+    }
+  },
+  "due": {
+    "title": "Vencen pronto",
+    "empty": "Nada vence en los próximos 7 días."
+  },
+  "recent": {
+    "title": "Documentos recientes",
+    "empty": "Todavía no hay documentos.",
+    "untitled": "Sin título"
+  },
+  "activity": {
+    "title": "Actividad",
+    "agents": "Actividad de agentes",
+    "empty": "Aquí verás lo que tú y tus agentes vais haciendo."
+  }
+}

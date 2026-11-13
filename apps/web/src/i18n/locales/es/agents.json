@@ -1,1 +1,143 @@
-{}
+{
+  "title": "Agentes",
+  "connect": "Conectar un agente",
+  "intro": {
+    "title": "Tus agentes, con permisos claros",
+    "body": "Conecta cualquier cliente compatible con MCP para consultar documentación, crear tareas y reorganizar tableros. Cada token pertenece a un único espacio y solo hace lo que tú permites.",
+    "endpoint": "Endpoint",
+    "copyEndpoint": "Copiar endpoint",
+    "endpointCopied": "Endpoint copiado",
+    "oauth": "En Claude (web, escritorio y móvil) añade un conector personalizado con este endpoint: no necesitas token, te pedirá permiso aquí. Funciona igual con cualquier cliente que admita OAuth."
+  },
+  "vault": {
+    "title": "La bóveda queda fuera de su alcance",
+    "unreadable": "Ningún token puede leer la bóveda, ni siquiera cifrada: el servidor rechaza la petición antes de tocar los datos.",
+    "noDeletes": "Los agentes no pueden borrar: solo archivar, y tú puedes restaurar.",
+    "logged": "Cada acción queda registrada y la ves en directo en la app."
+  },
+  "tokens": {
+    "active": "Accesos activos",
+    "emptyTitle": "Aún no has conectado ningún agente",
+    "emptyBody": "Crea un token y pega la configuración en Claude Code, Cursor, VS Code o Claude Desktop.",
+    "inactive_one": "{{count}} revocado o caducado",
+    "inactive_many": "{{count}} revocados o caducados",
+    "inactive_other": "{{count}} revocados o caducados"
+  },
+  "activity": {
+    "title": "Actividad de los agentes",
+    "titleFor": "Actividad de «{{name}}»",
+    "showAll": "Ver todos",
+    "loading": "Cargando…",
+    "empty": "Cuando un agente trabaje en este espacio, lo verás aquí."
+  },
+  "tools": {
+    "title": "Herramientas MCP",
+    "footnote": "Cada agente solo ve las herramientas que sus permisos permiten.",
+    "scopes": {
+      "read": "Lectura",
+      "write": "Escritura",
+      "tasksRead": "Tareas · lectura",
+      "tasksWrite": "Tareas · escritura",
+      "docsRead": "Documentos · lectura",
+      "docsWrite": "Documentos · escritura"
+    },
+    "descriptions": {
+      "listProjects": "Proyectos, tableros y esquema de páginas",
+      "search": "Búsqueda en tarjetas y páginas",
+      "readBoards": "Columnas, tarjetas, checklists y vínculos",
+      "editCards": "Crear, editar y mover tarjetas",
+      "archiveCard": "Archivar (recuperable desde la app)",
+      "organizeBoards": "Reorganizar tableros",
+      "labels": "Etiquetas y checklists",
+      "readPages": "Árbol de páginas y contenido Markdown",
+      "writePages": "Crear y actualizar con control de versión",
+      "linkCard": "Relacionar tareas y documentos"
+    }
+  },
+  "revoke": {
+    "action": "Revocar",
+    "title": "¿Revocar «{{name}}»?",
+    "description": "El agente perderá el acceso inmediatamente. Su actividad pasada se conserva.",
+    "confirm": "Revocar acceso",
+    "done": "Acceso revocado"
+  },
+  "token": {
+    "oauth": {
+      "plain": "Conectado con OAuth · vuelve a {{name}}",
+      "computer": "Conectado con OAuth · vuelve a {{name}}, en este ordenador",
+      "app": "Conectado con OAuth · vuelve a la aplicación «{{name}}» de este ordenador"
+    },
+    "access": {
+      "tasks": {
+        "none": "Tareas: Sin acceso",
+        "read": "Tareas: Lectura",
+        "write": "Tareas: Lectura y escritura"
+      },
+      "docs": {
+        "none": "Documentos: Sin acceso",
+        "read": "Documentos: Lectura",
+        "write": "Documentos: Lectura y escritura"
+      }
+    },
+    "vaultNever": "Bóveda: nunca",
+    "lastUsed": "Último uso",
+    "created": "Creado",
+    "revoked": "Revocado",
+    "expires": "Caduca",
+    "expiresUnused": "Caduca si no se usa",
+    "never": "Nunca",
+    "showActivity": "Ver su actividad"
+  },
+  "access": {
+    "levels": {
+      "none": "Sin acceso",
+      "read": "Leer",
+      "write": "Leer y escribir"
+    },
+    "tasks": {
+      "label": "Tareas",
+      "hint": "Tableros, columnas, tarjetas y checklists",
+      "group": "Acceso a Tareas"
+    },
+    "docs": {
+      "label": "Documentos",
+      "hint": "Páginas y su contenido en Markdown",
+      "group": "Acceso a Documentos"
+    },
+    "vault": {
+      "label": "Bóveda",
+      "hint": "Nunca accesible para agentes",
+      "blocked": "Bloqueada"
+    },
+    "atLeastOne": "Concede acceso de lectura al menos a un área."
+  },
+  "kit": {
+    "clients": "Cliente MCP",
+    "terminal": "Terminal",
+    "copy": "Copiar configuración",
+    "copied": "Configuración copiada",
+    "desktopNote": "Claude Desktop usa el puente mcp-remote (Node.js) para enviar la cabecera de autenticación.",
+    "httpNote": "Transporte Streamable HTTP con autenticación Bearer. Reinicia el cliente si no detecta el servidor."
+  },
+  "create": {
+    "description": "Crea un token para «{{workspace}}». Solo podrá acceder a este espacio y a lo que permitas aquí.",
+    "descriptionFallback": "Crea un token para «este espacio». Solo podrá acceder a este espacio y a lo que permitas aquí.",
+    "name": "Nombre del agente",
+    "namePlaceholder": "p. ej. Claude Code, Cursor, Asistente de soporte",
+    "expiry": "Caducidad",
+    "expiries": {
+      "30": "30 días",
+      "90": "90 días",
+      "365": "1 año",
+      "never": "Nunca"
+    },
+    "submit": "Crear token"
+  },
+  "created": {
+    "title": "«{{name}}» está listo",
+    "description": "Copia el token ahora: por seguridad, solo guardamos su huella y no podrás volver a verlo.",
+    "copy": "Copiar token",
+    "copied": "Token copiado",
+    "done": "Hecho"
+  }
+}

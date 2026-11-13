@@ -1,1 +1,142 @@
-{}
+{
+  "title": "Agents",
+  "connect": "Connect an agent",
+  "intro": {
+    "title": "Your agents, with clear permissions",
+    "body": "Connect any MCP-compatible client to look up documentation, create tasks and reorganize boards. Each token belongs to a single workspace and can only do what you allow.",
+    "endpoint": "Endpoint",
+    "copyEndpoint": "Copy endpoint",
+    "endpointCopied": "Endpoint copied",
+    "oauth": "In Claude (web, desktop and mobile), add a custom connector with this endpoint. No token needed: you’ll be asked for permission here. Any client that supports OAuth works the same way."
+  },
+  "vault": {
+    "title": "The vault is out of their reach",
+    "unreadable": "No token can read the vault, not even encrypted: the server rejects the request before it touches any data.",
+    "noDeletes": "Agents can’t delete anything. They can only archive, and you can restore.",
+    "logged": "Every action is logged, and you can watch it live in the app."
+  },
+  "tokens": {
+    "active": "Active connections",
+    "emptyTitle": "You haven’t connected any agents yet",
+    "emptyBody": "Create a token and paste the configuration into Claude Code, Cursor, VS Code or Claude Desktop.",
+    "inactive_one": "{{count}} revoked or expired",
+    "inactive_other": "{{count}} revoked or expired"
+  },
+  "activity": {
+    "title": "Agent activity",
+    "titleFor": "Activity by “{{name}}”",
+    "showAll": "Show all",
+    "loading": "Loading…",
+    "empty": "When an agent works in this workspace, you’ll see it here."
+  },
+  "tools": {
+    "title": "MCP tools",
+    "footnote": "Each agent only sees the tools its permissions allow.",
+    "scopes": {
+      "read": "Read",
+      "write": "Write",
+      "tasksRead": "Tasks · read",
+      "tasksWrite": "Tasks · write",
+      "docsRead": "Documents · read",
+      "docsWrite": "Documents · write"
+    },
+    "descriptions": {
+      "listProjects": "Projects, boards and page outline",
+      "search": "Search across cards and pages",
+      "readBoards": "Columns, cards, checklists and links",
+      "editCards": "Create, edit and move cards",
+      "archiveCard": "Archive (restorable from the app)",
+      "organizeBoards": "Reorganize boards",
+      "labels": "Labels and checklists",
+      "readPages": "Page tree and Markdown content",
+      "writePages": "Create and update, with version control",
+      "linkCard": "Link tasks and documents"
+    }
+  },
+  "revoke": {
+    "action": "Revoke",
+    "title": "Revoke “{{name}}”?",
+    "description": "The agent loses access right away. Its past activity is kept.",
+    "confirm": "Revoke access",
+    "done": "Access revoked"
+  },
+  "token": {
+    "oauth": {
+      "plain": "Connected with OAuth · returns to {{name}}",
+      "computer": "Connected with OAuth · returns to {{name}} on this computer",
+      "app": "Connected with OAuth · returns to the “{{name}}” app on this computer"
+    },
+    "access": {
+      "tasks": {
+        "none": "Tasks: No access",
+        "read": "Tasks: Read",
+        "write": "Tasks: Read and write"
+      },
+      "docs": {
+        "none": "Documents: No access",
+        "read": "Documents: Read",
+        "write": "Documents: Read and write"
+      }
+    },
+    "vaultNever": "Vault: never",
+    "lastUsed": "Last used",
+    "created": "Created",
+    "revoked": "Revoked",
+    "expires": "Expires",
+    "expiresUnused": "Expires if unused",
+    "never": "Never",
+    "showActivity": "View its activity"
+  },
+  "access": {
+    "levels": {
+      "none": "No access",
+      "read": "Read",
+      "write": "Read and write"
+    },
+    "tasks": {
+      "label": "Tasks",
+      "hint": "Boards, columns, cards and checklists",
+      "group": "Access to tasks"
+    },
+    "docs": {
+      "label": "Documents",
+      "hint": "Pages and their Markdown content",
+      "group": "Access to documents"
+    },
+    "vault": {
+      "label": "Vault",
+      "hint": "Never accessible to agents",
+      "blocked": "Blocked"
+    },
+    "atLeastOne": "Give read access to at least one area."
+  },
+  "kit": {
+    "clients": "MCP client",
+    "terminal": "Terminal",
+    "copy": "Copy configuration",
+    "copied": "Configuration copied",
+    "desktopNote": "Claude Desktop uses the mcp-remote bridge (Node.js) to send the authentication header.",
+    "httpNote": "Streamable HTTP transport with Bearer authentication. Restart the client if it doesn’t find the server."
+  },
+  "create": {
+    "description": "Create a token for “{{workspace}}”. It can only reach this workspace, and only what you allow here.",
+    "descriptionFallback": "Create a token for this workspace. It can only reach this workspace, and only what you allow here.",
+    "name": "Agent name",
+    "namePlaceholder": "e.g. Claude Code, Cursor, Support assistant",
+    "expiry": "Expiration",
+    "expiries": {
+      "30": "30 days",
+      "90": "90 days",
+      "365": "1 year",
+      "never": "Never"
+    },
+    "submit": "Create token"
+  },
+  "created": {
+    "title": "“{{name}}” is ready",
+    "description": "Copy the token now. For security, we only keep its fingerprint, so you won’t be able to see it again.",
+    "copy": "Copy token",
+    "copied": "Token copied",
+    "done": "Done"
+  }
+}

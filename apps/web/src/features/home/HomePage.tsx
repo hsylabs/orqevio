@@ -2,6 +2,7 @@ import type { VaultStateDTO } from '@orqevio/shared'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowUpRight, Bot, Check, FileText, FolderPlus, LockKeyhole, SquareKanban, X } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ActivityList } from '../../components/ActivityList'
 import { get } from '../../lib/api'
@@ -14,6 +15,7 @@ import { PageHeader } from '../shell/PageHeader'
 import { useWorkspace } from '../shell/workspace'
 
 export function HomePage() {
+  const { t } = useTranslation('home')
   const { workspaceId, me, overview, openNewProject } = useWorkspace()
   const home = useHome(workspaceId)
   const tokens = useTokens()
@@ -24,41 +26,39 @@ export function HomePage() {
 
   const projects = overview?.projects ?? []
   const steps = [
-    { done: projects.length > 0, title: 'Crea un proyecto', body: 'Agrupa tableros y documentos.', icon: <FolderPlus />, action: openNewProject },
-    { done: projects.some((p) => p.pages.length > 0), title: 'Escribe una página', body: 'Documenta en Markdown, con «/» y «@».', icon: <FileText />, to: projects[0] ? `${base}/p/${projects[0].id}` : undefined },
-    { done: Boolean(vault.data?.initialized), title: 'Configura la bóveda', body: 'Cifrado de extremo a extremo.', icon: <LockKeyhole />, to: `${base}/vault` },
-    { done: (tokens.data?.length ?? 0) > 0, title: 'Conecta un agente', body: 'Claude, Cursor o VS Code por MCP.', icon: <Bot />, to: `${base}/agents` },
+    { done: projects.length > 0, title: t('onboarding.project.title'), body: t('onboarding.project.body'), icon: <FolderPlus />, action: openNewProject },
+    { done: projects.some((p) => p.pages.length > 0), title: t('onboarding.page.title'), body: t('onboarding.page.body'), icon: <FileText />, to: projects[0] ? `${base}/p/${projects[0].id}` : undefined },
+    { done: Boolean(vault.data?.initialized), title: t('onboarding.vault.title'), body: t('onboarding.vault.body'), icon: <LockKeyhole />, to: `${base}/vault` },
+    { done: (tokens.data?.length ?? 0) > 0, title: t('onboarding.agent.title'), body: t('onboarding.agent.body'), icon: <Bot />, to: `${base}/agents` },
   ]
   const ready = overview && tokens.data && vault.data
   const showSteps = ready && !dismissed && steps.some((s) => !s.done)
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <PageHeader crumbs={[{ label: 'Inicio' }]} />
+      <PageHeader crumbs={[{ label: t('title') }]} />
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[1080px] px-6 py-10 sm:px-10 sm:py-14">
           <p className="animate-rise font-mono text-[11.5px] tracking-[0.14em] text-ink-3 uppercase first-letter:uppercase">{longDate()}</p>
           <h1 className="animate-rise mt-2 font-display text-[40px] leading-[1.05] font-medium tracking-[-0.03em] sm:text-[48px]" style={{ animationDelay: '40ms' }}>
-            {greeting()}, <span className="italic">{firstName}</span>.
+            <Trans t={t} i18nKey="greeting" values={{ greeting: greeting(), name: firstName }} components={{ name: <span className="italic" /> }} />
           </h1>
 
           {showSteps && (
-            <section className="animate-rise relative mt-10 rounded-[18px] border border-line bg-surface p-5 shadow-sm" style={{ animationDelay: '80ms' }} aria-label="Primeros pasos">
+            <section className="animate-rise relative mt-10 rounded-[18px] border border-line bg-surface p-5 shadow-sm" style={{ animationDelay: '80ms' }} aria-label={t('onboarding.title')}>
               <button
                 type="button"
                 onClick={() => {
                   setDismissed(true)
                   setLocalPref('onboarding-dismissed', true)
                 }}
-                aria-label="Ocultar primeros pasos"
+                aria-label={t('onboarding.dismiss')}
                 className="absolute top-3 right-3 grid size-7 place-items-center rounded-[8px] text-ink-3 hover:bg-hover hover:text-ink"
               >
                 <X className="size-4" />
               </button>
-              <h2 className="font-display text-[19px] font-medium">Primeros pasos</h2>
-              <p className="mt-0.5 text-[13px] text-ink-3">
-                {steps.filter((s) => s.done).length} de {steps.length} completados
-              </p>
+              <h2 className="font-display text-[19px] font-medium">{t('onboarding.title')}</h2>
+              <p className="mt-0.5 text-[13px] text-ink-3">{t('onboarding.progress', { done: steps.filter((s) => s.done).length, total: steps.length })}</p>
               <ol className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 {steps.map((s, i) => {
                   const inner = (
@@ -93,7 +93,7 @@ export function HomePage() {
           )}
 
           <div className="mt-10 grid gap-6 lg:grid-cols-[1.25fr_1fr]">
-            <Panel title="Vencen pronto" delay={120} empty={home.data && home.data.dueCards.length === 0 ? 'Nada vence en los próximos 7 días.' : null}>
+            <Panel title={t('due.title')} delay={120} empty={home.data && home.data.dueCards.length === 0 ? t('due.empty') : null}>
               <ul className="flex flex-col">
                 {home.data?.dueCards.map((c) => (
                   <li key={c.id}>
@@ -111,14 +111,14 @@ export function HomePage() {
                 ))}
               </ul>
             </Panel>
-            <Panel title="Documentos recientes" delay={160} empty={home.data && home.data.recentPages.length === 0 ? 'Todavía no hay documentos.' : null}>
+            <Panel title={t('recent.title')} delay={160} empty={home.data && home.data.recentPages.length === 0 ? t('recent.empty') : null}>
               <ul className="flex flex-col">
                 {home.data?.recentPages.map((p) => (
                   <li key={p.id}>
                     <Link to={`${base}/d/${p.id}`} className="flex items-center gap-3 rounded-[10px] px-2.5 py-2 transition-colors hover:bg-hover">
                       <span className="w-4 text-center text-[14px]">{p.icon ?? <FileText className="size-4 text-ink-3" />}</span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13.5px] font-medium">{p.title || 'Sin título'}</span>
+                        <span className="block truncate text-[13.5px] font-medium">{p.title || t('recent.untitled')}</span>
                         <span className="block truncate text-[12px] text-ink-3">{p.projectName}</span>
                       </span>
                       <span className="shrink-0 text-[11.5px] text-ink-3">{relativeTime(p.updatedAt)}</span>
@@ -131,14 +131,14 @@ export function HomePage() {
 
           <div className="mt-6">
             <Panel
-              title="Actividad"
+              title={t('activity.title')}
               delay={200}
               action={
                 <Link to={`${base}/agents`} className="inline-flex items-center gap-1 text-[12px] font-medium text-ink-3 hover:text-ink">
-                  Actividad de agentes <ArrowUpRight className="size-3.5" />
+                  {t('activity.agents')} <ArrowUpRight className="size-3.5" />
                 </Link>
               }
-              empty={home.data && home.data.activity.length === 0 ? 'Aquí verás lo que tú y tus agentes vais haciendo.' : null}
+              empty={home.data && home.data.activity.length === 0 ? t('activity.empty') : null}
             >
               {home.data && home.data.activity.length > 0 && (
                 <div className="px-2.5 py-1">

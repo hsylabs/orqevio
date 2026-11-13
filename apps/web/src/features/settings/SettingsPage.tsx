@@ -33,7 +33,7 @@ function Section({ title, description, children }: { title: string; description?
 }
 
 export function SettingsPage() {
-  const { t } = useTranslation('settings')
+  const { t } = useTranslation(['settings', 'common'])
   const { me, workspaceId } = useWorkspace()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -64,12 +64,12 @@ export function SettingsPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <PageHeader crumbs={[{ label: 'Ajustes' }]} />
+      <PageHeader crumbs={[{ label: t('title') }]} />
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[900px] px-6 py-10 sm:px-10">
-          <h1 className="font-display text-[34px] font-medium tracking-[-0.02em]">Ajustes</h1>
+          <h1 className="font-display text-[34px] font-medium tracking-[-0.02em]">{t('title')}</h1>
 
-          <Section title="Perfil" description="Tu nombre aparece en la actividad del espacio.">
+          <Section title={t('profile.title')} description={t('profile.description')}>
             <form
               className="flex flex-col gap-4"
               onSubmit={(e: FormEvent) => {
@@ -77,19 +77,19 @@ export function SettingsPage() {
                 void run('profile', async () => {
                   await patch('/account', { name: name.trim() })
                   await queryClient.invalidateQueries({ queryKey: keys.me })
-                }, 'Perfil actualizado')
+                }, t('profile.saved'))
               }}
             >
-              <Field label="Nombre" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+              <Field label={t('profile.name')} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
               <Button type="submit" variant="primary" className="self-start" loading={busy === 'profile'} disabled={!name.trim() || name.trim() === me.user.name}>
-                Guardar
+                {t('common:actions.save')}
               </Button>
             </form>
           </Section>
 
-          <Section title="Apariencia" description="Se guarda en tu copia y se aplica en todos tus dispositivos.">
+          <Section title={t('appearance.title')} description={t('appearance.description')}>
             <Segmented
-              label="Tema"
+              label={t('appearance.theme')}
               value={theme}
               onChange={(value) => {
                 setTheme(value)
@@ -97,9 +97,9 @@ export function SettingsPage() {
                 void patch('/account', { theme: value }).then(() => queryClient.invalidateQueries({ queryKey: keys.me }))
               }}
               options={[
-                { value: 'system', label: 'Sistema' },
-                { value: 'light', label: 'Claro' },
-                { value: 'dark', label: 'Oscuro' },
+                { value: 'system', label: t('appearance.themes.system') },
+                { value: 'light', label: t('appearance.themes.light') },
+                { value: 'dark', label: t('appearance.themes.dark') },
               ]}
             />
           </Section>
@@ -118,7 +118,7 @@ export function SettingsPage() {
             />
           </Section>
 
-          <Section title="Clave de acceso" description="Es lo que usas para entrar en esta copia. Al generar una nueva se cierran tus demás sesiones. No afecta a la contraseña maestra de la bóveda.">
+          <Section title={t('accessKey.title')} description={t('accessKey.description')}>
             <form
               className="flex flex-col gap-4"
               onSubmit={async (e: FormEvent) => {
@@ -135,15 +135,15 @@ export function SettingsPage() {
                 }
               }}
             >
-              <Field label="Clave actual" type="password" autoComplete="current-password" spellCheck={false} className="[&_input]:font-mono" value={currentKey} onChange={(e) => setCurrentKey(e.target.value)} />
+              <Field label={t('accessKey.current')} type="password" autoComplete="current-password" spellCheck={false} className="[&_input]:font-mono" value={currentKey} onChange={(e) => setCurrentKey(e.target.value)} />
               <Button type="submit" variant="primary" className="self-start" loading={busy === 'access-key'} disabled={!currentKey.trim()}>
-                Generar una clave nueva
+                {t('accessKey.generate')}
               </Button>
             </form>
           </Section>
 
           {workspace && (
-            <Section title="Espacio" description="Los tokens de agente y los proyectos pertenecen a un espacio concreto.">
+            <Section title={t('workspace.title')} description={t('workspace.description')}>
               <form
                 className="flex flex-col gap-4"
                 onSubmit={(e: FormEvent) => {
@@ -151,28 +151,28 @@ export function SettingsPage() {
                   void run('workspace', async () => {
                     await patch(`/workspaces/${workspaceId}`, { name: workspaceName.trim() })
                     await queryClient.invalidateQueries({ queryKey: keys.me })
-                  }, 'Espacio actualizado')
+                  }, t('workspace.saved'))
                 }}
               >
-                <Field label="Nombre del espacio" value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} maxLength={60} />
+                <Field label={t('workspace.name')} value={workspaceName} onChange={(e) => setWorkspaceName(e.target.value)} maxLength={60} />
                 <div className="flex flex-wrap gap-2">
                   <Button type="submit" variant="primary" loading={busy === 'workspace'} disabled={!workspaceName.trim() || workspaceName.trim() === workspace.name}>
-                    Guardar
+                    {t('common:actions.save')}
                   </Button>
                   {workspace.role === 'owner' && me.workspaces.length > 1 && (
                     <Button
                       variant="ghost"
                       className="text-danger hover:bg-danger-soft hover:text-danger"
                       onClick={async () => {
-                        const ok = await confirm({ title: `¿Eliminar el espacio «${workspace.name}»?`, description: 'Se eliminarán sus proyectos, tableros, documentos, adjuntos y tokens. Esta acción no se puede deshacer.', confirmLabel: 'Eliminar espacio', danger: true })
+                        const ok = await confirm({ title: t('workspace.deleteTitle', { name: workspace.name }), description: t('workspace.deleteDescription'), confirmLabel: t('workspace.delete'), danger: true })
                         if (!ok) return
-                        if (await run('delete-ws', () => del(`/workspaces/${workspaceId}`), 'Espacio eliminado')) {
+                        if (await run('delete-ws', () => del(`/workspaces/${workspaceId}`), t('workspace.deleted'))) {
                           await queryClient.invalidateQueries({ queryKey: keys.me })
                           navigate('/', { replace: true })
                         }
                       }}
                     >
-                      Eliminar espacio
+                      {t('workspace.delete')}
                     </Button>
                   )}
                 </div>
@@ -180,49 +180,49 @@ export function SettingsPage() {
             </Section>
           )}
 
-          <Section title="Esta copia" description="La versión de Orqevio que usas. La copia comprueba si hay versiones nuevas como mucho cada 12 horas.">
+          <Section title={t('copy.title')} description={t('copy.description')}>
             <CopyVersion />
           </Section>
 
-          <Section title="Borrar esta copia" description="Borra tus espacios, tu bóveda y tus tokens de forma permanente. La copia volverá a pedir el código de configuración.">
+          <Section title={t('erase.title')} description={t('erase.description')}>
             <Button variant="ghost" className="text-danger hover:bg-danger-soft hover:text-danger" onClick={() => setDeleteOpen(true)}>
-              Borrar todos mis datos
+              {t('erase.action')}
             </Button>
           </Section>
         </div>
       </div>
       {/* The old key no longer works: the dialog only closes once the new one is confirmed as saved. */}
-      <Dialog open={newKey !== null} onOpenChange={() => {}} hideClose title="Tu nueva clave de acceso" description="La anterior ya no sirve y se han cerrado tus demás sesiones. Se muestra una sola vez.">
+      <Dialog open={newKey !== null} onOpenChange={() => {}} hideClose title={t('accessKey.newTitle')} description={t('accessKey.newDescription')}>
         {newKey && (
           <AccessKeyReveal
             accessKey={newKey}
-            confirmLabel="Hecho"
+            confirmLabel={t('accessKey.done')}
             onDone={() => {
               setNewKey(null)
-              toast.success('Clave de acceso actualizada')
+              toast.success(t('accessKey.updated'))
             }}
           />
         )}
       </Dialog>
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen} title="Borrar esta copia" description="Esta acción es irreversible. Escribe tu clave de acceso para confirmar.">
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen} title={t('erase.title')} description={t('erase.confirmDescription')}>
         <form
           className="flex flex-col gap-4"
           onSubmit={async (e: FormEvent) => {
             e.preventDefault()
-            if (await run('delete', () => post('/account/delete', { accessKey: deleteKey }), 'Datos borrados')) {
+            if (await run('delete', () => post('/account/delete', { accessKey: deleteKey }), t('erase.done'))) {
               lockVault()
               queryClient.clear()
               navigate('/setup', { replace: true })
             }
           }}
         >
-          <Field label="Clave de acceso" type="password" autoComplete="current-password" spellCheck={false} className="[&_input]:font-mono" value={deleteKey} onChange={(e) => setDeleteKey(e.target.value)} autoFocus />
+          <Field label={t('erase.accessKey')} type="password" autoComplete="current-password" spellCheck={false} className="[&_input]:font-mono" value={deleteKey} onChange={(e) => setDeleteKey(e.target.value)} autoFocus />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
-              Cancelar
+              {t('common:actions.cancel')}
             </Button>
             <Button type="submit" variant="danger" loading={busy === 'delete'} disabled={!deleteKey}>
-              Borrar definitivamente
+              {t('erase.confirm')}
             </Button>
           </div>
         </form>

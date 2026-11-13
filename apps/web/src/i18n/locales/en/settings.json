@@ -1,6 +1,70 @@
 {
+  "title": "Settings",
+  "profile": {
+    "title": "Profile",
+    "description": "Your name appears in the workspace’s activity.",
+    "name": "Name",
+    "saved": "Profile updated"
+  },
+  "appearance": {
+    "title": "Appearance",
+    "description": "Saved in your copy and applied on all your devices.",
+    "theme": "Theme",
+    "themes": {
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    }
+  },
   "language": {
     "title": "Language",
     "description": "The app speaks it on all your devices, and new boards get their default columns in it."
+  },
+  "accessKey": {
+    "title": "Access key",
+    "description": "It’s what you use to sign in to this copy. Generating a new one signs out your other sessions. It doesn’t affect the vault’s master password.",
+    "current": "Current key",
+    "generate": "Generate a new key",
+    "newTitle": "Your new access key",
+    "newDescription": "The old key no longer works, and your other sessions have been signed out. It’s shown only once.",
+    "done": "Done",
+    "updated": "Access key updated"
+  },
+  "workspace": {
+    "title": "Workspace",
+    "description": "Agent tokens and projects belong to a specific workspace.",
+    "name": "Workspace name",
+    "saved": "Workspace updated",
+    "delete": "Delete workspace",
+    "deleteTitle": "Delete the workspace “{{name}}”?",
+    "deleteDescription": "Its projects, boards, documents, attachments and tokens will be deleted. This can’t be undone.",
+    "deleted": "Workspace deleted"
+  },
+  "copy": {
+    "title": "This copy",
+    "description": "The version of Orqevio you’re running. Your copy checks for new versions at most every 12 hours."
+  },
+  "version": {
+    "upToDate": "You’re up to date.",
+    "available": "A new version is available: {{version}}",
+    "how": {
+      "cli": "Run this on your computer:",
+      "button": "Merge the Dependabot pull request in your copy’s repository, and it deploys itself. If you don’t see one, bump the create-orqevio version in its package.json.",
+      "docker": "In your copy’s folder:",
+      "source": "In the repository, then restart the server:"
+    },
+    "copy": "Copy command",
+    "copied": "Command copied",
+    "kept": "Your data, access key and vault are preserved.",
+    "releaseNotes": "See what’s new"
+  },
+  "erase": {
+    "title": "Erase this copy",
+    "description": "Permanently erases your workspaces, your vault and your tokens. The copy will ask for the setup code again.",
+    "action": "Erase all my data",
+    "confirmDescription": "This can’t be undone. Enter your access key to confirm.",
+    "accessKey": "Access key",
+    "confirm": "Erase permanently",
+    "done": "Data erased"
   }
 }

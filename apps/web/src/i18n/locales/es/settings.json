@@ -1,6 +1,70 @@
 {
+  "title": "Ajustes",
+  "profile": {
+    "title": "Perfil",
+    "description": "Tu nombre aparece en la actividad del espacio.",
+    "name": "Nombre",
+    "saved": "Perfil actualizado"
+  },
+  "appearance": {
+    "title": "Apariencia",
+    "description": "Se guarda en tu copia y se aplica en todos tus dispositivos.",
+    "theme": "Tema",
+    "themes": {
+      "system": "Sistema",
+      "light": "Claro",
+      "dark": "Oscuro"
+    }
+  },
   "language": {
     "title": "Idioma",
     "description": "La app lo usa en todos tus dispositivos, y los tableros nuevos reciben en él sus columnas por defecto."
+  },
+  "accessKey": {
+    "title": "Clave de acceso",
+    "description": "Es lo que usas para entrar en esta copia. Al generar una nueva se cierran tus demás sesiones. No afecta a la contraseña maestra de la bóveda.",
+    "current": "Clave actual",
+    "generate": "Generar una clave nueva",
+    "newTitle": "Tu nueva clave de acceso",
+    "newDescription": "La anterior ya no sirve y se han cerrado tus demás sesiones. Se muestra una sola vez.",
+    "done": "Hecho",
+    "updated": "Clave de acceso actualizada"
+  },
+  "workspace": {
+    "title": "Espacio",
+    "description": "Los tokens de agente y los proyectos pertenecen a un espacio concreto.",
+    "name": "Nombre del espacio",
+    "saved": "Espacio actualizado",
+    "delete": "Eliminar espacio",
+    "deleteTitle": "¿Eliminar el espacio «{{name}}»?",
+    "deleteDescription": "Se eliminarán sus proyectos, tableros, documentos, adjuntos y tokens. Esta acción no se puede deshacer.",
+    "deleted": "Espacio eliminado"
+  },
+  "copy": {
+    "title": "Esta copia",
+    "description": "La versión de Orqevio que usas. La copia comprueba si hay versiones nuevas como mucho cada 12 horas."
+  },
+  "version": {
+    "upToDate": "Tienes la última versión.",
+    "available": "Hay una versión nueva: {{version}}",
+    "how": {
+      "cli": "Ejecuta en tu ordenador:",
+      "button": "Fusiona el pull request de Dependabot en el repositorio de tu copia; al hacerlo se despliega sola. Si no lo ves, sube la versión de create-orqevio en su package.json.",
+      "docker": "En la carpeta de tu copia:",
+      "source": "En el repositorio, y después reinicia el servidor:"
+    },
+    "copy": "Copiar la orden",
+    "copied": "Orden copiada",
+    "kept": "Tus datos, tu clave y tu bóveda se conservan.",
+    "releaseNotes": "Ver las novedades"
+  },
+  "erase": {
+    "title": "Borrar esta copia",
+    "description": "Borra tus espacios, tu bóveda y tus tokens de forma permanente. La copia volverá a pedir el código de configuración.",
+    "action": "Borrar todos mis datos",
+    "confirmDescription": "Esta acción es irreversible. Escribe tu clave de acceso para confirmar.",
+    "accessKey": "Clave de acceso",
+    "confirm": "Borrar definitivamente",
+    "done": "Datos borrados"
   }
 }
