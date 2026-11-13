@@ -75,7 +75,7 @@ describe('create-orqevio', () => {
     setState({ loggedIn: false })
     const result = await run(['--name', 'ana'])
     expect(result.code).toBe(0)
-    expect(commands()).toEqual(['whoami --json', 'login', 'whoami --json', 'deployments list', 'deploy --config'])
+    expect(commands()).toEqual(['whoami --json', 'login', 'whoami --json', 'deployments list', 'r2 bucket', 'deploy --config'])
 
     const deploy = calls().at(-1)!
     expect(deploy.config).toMatchObject({
@@ -129,6 +129,22 @@ describe('create-orqevio', () => {
     setState({ exists: true })
     expect((await run(['--name', 'ana'])).code).toBe(1)
     expect(commands()).not.toContain('deploy --config')
+  })
+
+  it('stops before deploying a new copy when the account has no R2, and says how to turn it on', async () => {
+    setState({ r2Disabled: true })
+    const result = await run(['--name', 'ana'])
+    expect(result.code).toBe(1)
+    expect(result.err).toContain('todavía no tiene R2 activado')
+    expect(result.err).toContain('https://dash.cloudflare.com/?to=/:account/r2/overview')
+    expect(result.err).toContain('npx create-orqevio --name ana')
+    expect(commands()).toEqual(['whoami --json', 'deployments list', 'r2 bucket'])
+    expect(calls().at(-1)!.account).toBe('acc-1')
+
+    // Updating an existing copy does not ask: its bucket already exists.
+    setState({ r2Disabled: true, exists: true })
+    expect((await run(['update', '--name', 'ana'])).code).toBe(0)
+    expect(commands().slice(-2)).toEqual(['deployments list', 'deploy --config'])
   })
 
   it('updates only existing copies', async () => {

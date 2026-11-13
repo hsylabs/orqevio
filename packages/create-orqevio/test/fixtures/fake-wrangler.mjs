@@ -57,5 +57,13 @@ if (command === 'deploy') {
   save()
   process.exit(0)
 }
+if (command === 'r2' && sub === 'bucket' && args[2] === 'list') {
+  if (state.r2Disabled) {
+    process.stderr.write('✘ [ERROR] A request to the Cloudflare API (/accounts/acc-1/r2/buckets) failed. Please enable R2 through the Cloudflare Dashboard. [code: 10042]\n')
+    process.exit(1)
+  }
+  process.stdout.write('[]\n')
+  process.exit(0)
+}
 if (command === 'secret' && sub === 'put') process.exit(0)
 process.exit(3)

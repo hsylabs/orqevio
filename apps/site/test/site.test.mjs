@@ -61,6 +61,8 @@ describe('the public website', () => {
       expect(readme).toContain(command)
       expect(install).toContain(command)
     }
+    // Both guides ask to turn R2 on before the first install in Cloudflare.
+    for (const text of [readme, install]) expect(text).toContain('https://dash.cloudflare.com/?to=/:account/r2/overview')
     // The files the Docker guide downloads are in the repository.
     for (const file of ['docker-compose.yml', '.env.example']) {
       expect(install).toContain(`https://raw.githubusercontent.com/hsylabs/orqevio/main/${file}`)

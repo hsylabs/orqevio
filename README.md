@@ -116,6 +116,8 @@ La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detr�
 
 Tu copia vive en tu propia cuenta de Cloudflare: un Worker con la web, la API y el MCP, un Durable Object con su base de datos SQLite y un bucket R2 para los adjuntos. Necesitas una cuenta de Cloudflare (el plan gratuito basta) y Node 22.12 o superior.
 
+**Antes de la primera instalación, activa R2** en el panel de Cloudflare, en [R2 → Overview](https://dash.cloudflare.com/?to=/:account/r2/overview). El uso incluido es gratis (10 GB de almacenamiento al mes), aunque Cloudflare puede pedirte un método de pago. Si no lo has activado, el instalador se detiene antes de desplegar y te lo indica.
+
 ```bash
 npx create-orqevio
 ```
@@ -403,4 +405,4 @@ templates/cloudflare plantilla del botón «Deploy to Cloudflare» (wrangler.jso
 apps/site            la web pública orqevio.com: páginas estáticas sin cookies ni analítica
 ```
 
-**La web pública.** `pnpm --filter @orqevio/site build` genera `apps/site/dist` con las páginas y las mismas fuentes que la app, servidas desde el propio sitio. `pnpm --filter @orqevio/site preview` la sirve en local con Wrangler. Para publicarla, desde `apps/site` ejecuta `npx wrangler deploy` y asocia el dominio en el panel de Cloudflare. Sus pruebas comprueban los enlaces, las fuentes, las cabeceras de seguridad y que la guía de instalación diga lo mismo que este README.
+**La web pública.** `pnpm --filter @orqevio/site build` genera `apps/site/dist` con las páginas y las mismas fuentes que la app, servidas desde el propio sitio. `pnpm --filter @orqevio/site preview` la sirve en local con Wrangler. Se publica en `orqevio.com` con Workers Builds desde `main`; la configuración está en «Web pública» de [RELEASING.md](RELEASING.md). Sus pruebas comprueban los enlaces, las fuentes, las cabeceras de seguridad y que la guía de instalación diga lo mismo que este README.
