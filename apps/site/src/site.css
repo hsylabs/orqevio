@@ -663,6 +663,11 @@ td {
   color: #fff;
 }
 
+/* Japanese has no spaces: let browsers that can break lines between phrases do so. */
+:lang(ja) {
+  word-break: auto-phrase;
+}
+
 /* ── Footer ──────────────────────────────────────────────────── */
 .foot {
   border-top: 1px solid var(--line);
