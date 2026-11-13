@@ -177,7 +177,7 @@ Cloudflare crea en tu cuenta de GitHub o GitLab un repositorio pequeño (la plan
 - **Actualizaciones:** Dependabot propone las versiones nuevas de Orqevio en un pull request; al fusionarlo, la copia se actualiza.
 - **Si pierdes la clave:** cambia el secreto `SETUP_CODE` en el panel de Cloudflare y usa **«¿Has perdido la clave?»**.
 
-El resultado es la misma copia que con el comando. El botón funcionará cuando este repositorio sea público y los paquetes estén publicados en npm.
+El resultado es la misma copia que con el comando.
 
 El plan gratuito de Cloudflare basta para uso personal (límites a noviembre de 2026):
 
@@ -410,3 +410,7 @@ apps/site            la web pública orqevio.com: páginas estáticas sin cookie
 ```
 
 **La web pública.** `pnpm --filter @orqevio/site build` genera `apps/site/dist` con las páginas y las mismas fuentes que la app, servidas desde el propio sitio. `pnpm --filter @orqevio/site preview` la sirve en local con Wrangler. Se publica en `orqevio.com` con Workers Builds desde `main`; la configuración está en «Web pública» de [RELEASING.md](RELEASING.md). Sus pruebas comprueban los enlaces, las fuentes, las cabeceras de seguridad y que la guía de instalación de cada idioma diga lo mismo que el README en inglés.
+
+## Licencia
+
+Orqevio se publica con la [Functional Source License 1.1, con licencia futura Apache 2.0](LICENSE.md) (`FSL-1.1-ALv2`). Puedes usarlo, modificarlo y alojar tu copia, también en tu empresa. Lo único que no permite es ofrecerlo como un producto o servicio comercial que compita con Orqevio. Cada versión pasa a la licencia Apache 2.0 a los dos años de publicarse.

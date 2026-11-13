@@ -177,7 +177,7 @@ Cloudflare creates a small repository in your GitHub or GitLab account (the `tem
 - **Updates:** Dependabot proposes new versions of Orqevio in a pull request; when you merge it, your copy updates.
 - **If you lose your access key:** change the `SETUP_CODE` secret in the Cloudflare dashboard and use **Lost your key?**.
 
-You end up with the same copy as with the command. The button will work once this repository is public and the packages are published on npm.
+You end up with the same copy as with the command.
 
 Cloudflare's free plan is enough for personal use (limits as of November 2026):
 
@@ -410,3 +410,7 @@ apps/site            the public website, orqevio.com: static pages with no cooki
 ```
 
 **The public website.** `pnpm --filter @orqevio/site build` builds `apps/site/dist` with the pages and the same fonts as the app, served from the site itself. `pnpm --filter @orqevio/site preview` serves it locally with Wrangler. It's published to `orqevio.com` with Workers Builds from `main`; the setup is in the "Web pública" section of [RELEASING.md](RELEASING.md) (in Spanish). Its tests check the links, the fonts, the security headers, and that the install guide in every language says the same as this README.
+
+## License
+
+Orqevio is released under the [Functional Source License 1.1, ALv2 Future License](LICENSE.md) (`FSL-1.1-ALv2`). You can use it, change it and host your copy, at work too. The only thing it doesn't allow is offering it as a commercial product or service that competes with Orqevio. Each version becomes Apache 2.0 two years after its release.
