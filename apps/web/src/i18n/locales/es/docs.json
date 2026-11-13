@@ -18,7 +18,7 @@
     "linkedTasks": "Tareas vinculadas",
     "conflict": {
       "byName": "<strong>{{name}}</strong> ha modificado esta página mientras editabas. Tus últimos cambios no se han guardado.",
-      "byOtherSession": "<strong>otra sesión</strong> ha modificado esta página mientras editabas. Tus últimos cambios no se han guardado.",
+      "byOtherSession": "<strong>Otra sesión</strong> ha modificado esta página mientras editabas. Tus últimos cambios no se han guardado.",
       "loadTheirs": "Cargar su versión",
       "keepMine": "Mantener la mía"
     },

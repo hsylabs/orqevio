@@ -24,19 +24,19 @@
   "drag": {
     "instructions": "Para mover, pulsa espacio. Usa las flechas para desplazarte y espacio de nuevo para soltar. Escape cancela.",
     "card": {
-      "picked": "Has cogido la tarjeta «{{title}}». columna «{{column}}», posición {{position}} de {{total}}.",
-      "over": "la tarjeta «{{title}}»: columna «{{column}}», posición {{position}} de {{total}}.",
-      "outside": "la tarjeta «{{title}}» no está sobre una zona válida.",
-      "dropped": "la tarjeta «{{title}}» se ha soltado. columna «{{column}}», posición {{position}} de {{total}}.",
-      "droppedOutside": "la tarjeta «{{title}}» se ha soltado.",
+      "picked": "Has cogido la tarjeta «{{title}}». Columna «{{column}}», posición {{position}} de {{total}}.",
+      "over": "La tarjeta «{{title}}»: columna «{{column}}», posición {{position}} de {{total}}.",
+      "outside": "La tarjeta «{{title}}» no está sobre una zona válida.",
+      "dropped": "La tarjeta «{{title}}» se ha soltado. Columna «{{column}}», posición {{position}} de {{total}}.",
+      "droppedOutside": "La tarjeta «{{title}}» se ha soltado.",
       "cancelled": "Movimiento de la tarjeta «{{title}}» cancelado."
     },
     "column": {
-      "picked": "Has cogido la columna «{{title}}». posición {{position}} de {{total}}.",
-      "over": "la columna «{{title}}»: posición {{position}} de {{total}}.",
-      "outside": "la columna «{{title}}» no está sobre una zona válida.",
-      "dropped": "la columna «{{title}}» se ha soltado. posición {{position}} de {{total}}.",
-      "droppedOutside": "la columna «{{title}}» se ha soltado.",
+      "picked": "Has cogido la columna «{{title}}». Posición {{position}} de {{total}}.",
+      "over": "La columna «{{title}}»: posición {{position}} de {{total}}.",
+      "outside": "La columna «{{title}}» no está sobre una zona válida.",
+      "dropped": "La columna «{{title}}» se ha soltado. Posición {{position}} de {{total}}.",
+      "droppedOutside": "La columna «{{title}}» se ha soltado.",
       "cancelled": "Movimiento de la columna «{{title}}» cancelado."
     }
   },
