@@ -73,4 +73,6 @@ En este orden; cada paso depende del anterior (comprobado el 13-11-2026):
    git push origin v0.2.0
    ```
 
-Para versiones de prueba, usa por ejemplo `0.2.0-rc.1`. Se publican en npm con la etiqueta `next` y no mueven `latest` en Docker.
+Para versiones de prueba, usa por ejemplo `0.2.0-rc.1`:
+- Se publican en npm con la etiqueta `next` y no mueven `latest` en Docker. Para instalarlas, usa `npx create-orqevio@next`.
+- `set-version` no mueve las notas: la versión de prueba publica las de «Sin publicar», que se quedan ahí para que la definitiva las recoja completas.

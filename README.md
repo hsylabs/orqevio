@@ -102,7 +102,7 @@ Edita `.env`: define `APP_URL` con la URL pública (por ejemplo `https://orqevio
 docker compose up -d
 ```
 
-Usa la imagen publicada (`ghcr.io/hsylabs/orqevio`, para amd64 y arm64). Para fijar una versión, añade `ORQEVIO_VERSION=0.1.0` a `.env`. Hasta la primera versión publicada, o si prefieres construirla tú desde este repositorio:
+Usa la imagen publicada (`ghcr.io/hsylabs/orqevio`, para amd64 y arm64). Para fijar una versión, añade `ORQEVIO_VERSION=1.0.0` a `.env`. Hasta la primera versión publicada, o si prefieres construirla tú desde este repositorio:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build

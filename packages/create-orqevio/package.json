@@ -1,6 +1,6 @@
 {
   "name": "create-orqevio",
-  "version": "0.1.0",
+  "version": "1.0.0-rc.1",
   "description": "Install your own copy of Orqevio on your Cloudflare account with one command.",
   "license": "FSL-1.1-ALv2",
   "repository": {
