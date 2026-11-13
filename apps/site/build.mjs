@@ -59,6 +59,18 @@ function head(lang, page, texts) {
   return lines.map((line) => `    ${line}`).join('\n')
 }
 
+/**
+ * Links to other sites open in a new tab and say so to screen readers. Links within the
+ * site, the language list included, stay in the same tab.
+ */
+function openOutsideInNewTab(html, label) {
+  return html.replace(/<a\s([^>]*?)href="(https:\/\/[^"]+)"([^>]*)>([\s\S]*?)<\/a>/g, (anchor, before, href, after, inner) =>
+    new URL(href).origin === ORIGIN
+      ? anchor
+      : `<a ${before}href="${href}"${after} target="_blank" rel="noopener">${inner}<span class="visually-hidden"> ${label}</span></a>`,
+  )
+}
+
 /** Links to this page in every language, each named in its own language. */
 function languages(lang, page, all) {
   // The 404 page has no versions of its own: offer each language's home.
@@ -102,7 +114,7 @@ export function build() {
         where,
       )
       mkdirSync(path.dirname(fileOf(lang, page)), { recursive: true })
-      writeFileSync(fileOf(lang, page), html)
+      writeFileSync(fileOf(lang, page), openOutsideInNewTab(html, escape(texts.newTab)))
     }
   }
 
