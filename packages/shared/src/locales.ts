@@ -37,7 +37,7 @@ export const DEFAULT_COLUMNS: Record<Locale, readonly string[]> = {
   fr: ['À faire', 'En cours', 'Terminé'],
   pt: ['A fazer', 'Em andamento', 'Concluído'],
   it: ['Da fare', 'In corso', 'Fatto'],
-  de: ['Zu erledigen', 'In Arbeit', 'Erledigt'],
+  de: ['Offen', 'In Arbeit', 'Erledigt'],
   nl: ['Te doen', 'Bezig', 'Klaar'],
   ja: ['未着手', '進行中', '完了'],
 }
