@@ -113,8 +113,8 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
   return mode === 'recover' ? recover(name, env, io, m) : deploy(mode === 'update' ? 'update' : 'install', name, orqevio, env, io, m)
 }
 
-function parse(argv: string[], m: Messages) {
-  const { values, positionals } = parseArgs({
+const parseOptions = (argv: string[]) =>
+  parseArgs({
     args: argv,
     allowPositionals: true,
     options: {
@@ -126,6 +126,24 @@ function parse(argv: string[], m: Messages) {
       version: { type: 'boolean', short: 'v' },
     },
   })
+
+/** Node's own messages for bad options are in English: say them in the user's language. */
+function parseError(error: unknown, m: Messages) {
+  const code = (error as { code?: string }).code
+  const option = /'(--?[\w-]+)/.exec((error as Error).message)?.[1] ?? ''
+  if (code === 'ERR_PARSE_ARGS_UNKNOWN_OPTION') return new Error(m.unknownOption(option))
+  if (code === 'ERR_PARSE_ARGS_INVALID_OPTION_VALUE') return new Error(m.missingValue(option))
+  return error
+}
+
+function parse(argv: string[], m: Messages) {
+  let args: ReturnType<typeof parseOptions>
+  try {
+    args = parseOptions(argv)
+  } catch (error) {
+    throw parseError(error, m)
+  }
+  const { values, positionals } = args
   if (positionals.length > 1) throw new Error(m.extraArgument(positionals[1]!))
   const command = (positionals[0] ?? 'install') as Command
   if (!['install', 'update', 'recover', 'config', 'deploy-repo'].includes(command)) throw new Error(m.unknownCommand(command))

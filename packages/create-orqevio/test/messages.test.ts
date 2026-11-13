@@ -22,6 +22,8 @@ describe('installer languages', () => {
     expect(m.heading('install', '9.9.9', 'NAME')).toMatch(/Orqevio 9\.9\.9.*NAME/)
     expect(m.copyNotFound('NAME', 'INSTALL-CMD')).toMatch(/NAME[\s\S]*INSTALL-CMD/)
     expect(m.whichAccount(3)).toContain('3')
+    expect(m.unknownOption('--x')).toContain('--x')
+    expect(m.missingValue('--x')).toContain('--x')
     expect(m.no.test('')).toBe(false)
   })
 

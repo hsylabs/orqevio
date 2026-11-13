@@ -63,6 +63,9 @@ describe('create-orqevio', () => {
     const unknown = await run(['--lang', 'xx'], null, 'en')
     expect(unknown.code).toBe(2)
     expect(unknown.err).toContain('Unknown language “xx”')
+    // Node's own parse errors are said in the user's language too.
+    expect((await run(['--nope'])).err).toContain('No conozco la opción «--nope»')
+    expect((await run(['--name'], null, 'en')).err).toContain('“--name” needs a value')
     expect(calls()).toHaveLength(0)
   })
 

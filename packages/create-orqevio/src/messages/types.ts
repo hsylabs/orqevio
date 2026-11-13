@@ -8,6 +8,8 @@ export interface Messages {
   /** The hint after a yes/no question whose default is yes, such as "[Y/n]". */
   yesNo: string
   extraArgument(arg: string): string
+  unknownOption(option: string): string
+  missingValue(option: string): string
   unknownCommand(command: string): string
   dryRunOnlyForDeployRepo: string
   unknownLanguage(language: string, available: string): string

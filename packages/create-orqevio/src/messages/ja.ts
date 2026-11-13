@@ -22,6 +22,8 @@ Cloudflareアカウントが必要です（無料プランで十分です）。�
   no: /^(n|ｎ|いいえ)/i,
   yesNo: '[Y/n]',
   extraArgument: (arg) => `予期しない引数「${arg}」があります。`,
+  unknownOption: (option) => `不明なオプション「${option}」です。`,
+  missingValue: (option) => `オプション「${option}」には値が必要です。`,
   unknownCommand: (command) => `「${command}」は不明なコマンドです。`,
   dryRunOnlyForDeployRepo: '--dry-runはdeploy-repoでのみ使えます。',
   unknownLanguage: (language, available) => `「${language}」は不明な言語です。次のいずれかを指定してください：${available}。`,
