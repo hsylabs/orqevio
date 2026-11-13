@@ -1,0 +1,150 @@
+{
+  "page": {
+    "status": {
+      "saving": "Opslaan…",
+      "pending": "Niet-opgeslagen wijzigingen",
+      "saved": "Opgeslagen",
+      "error": "Niet opgeslagen"
+    },
+    "actions": "Pagina-acties",
+    "newSubpage": "Nieuwe subpagina",
+    "move": "Verplaatsen naar…",
+    "delete": "Pagina verwijderen",
+    "titleLabel": "Paginatitel",
+    "editedBy": "Bewerkt door <name>{{name}}</name> · {{time}}",
+    "agentWorking": "{{name}} werkt hier",
+    "agentUpdated": "{{name}} heeft deze pagina bijgewerkt",
+    "linkedTasks": "Gekoppelde taken",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> heeft deze pagina gewijzigd terwijl jij aan het bewerken was. Je laatste wijzigingen zijn niet opgeslagen.",
+      "byOtherSession": "<strong>Een andere sessie</strong> heeft deze pagina gewijzigd terwijl jij aan het bewerken was. Je laatste wijzigingen zijn niet opgeslagen.",
+      "loadTheirs": "Hun versie laden",
+      "keepMine": "Mijn versie houden"
+    },
+    "content": "Pagina-inhoud",
+    "subpages": "Subpagina’s",
+    "attachments": "Bijlagen"
+  },
+  "editor": {
+    "placeholder": "Schrijf, of druk op ‘/’ om iets in te voegen…",
+    "headingPlaceholder": "Kop",
+    "label": "Inhoud",
+    "uploading": "{{name}} uploaden…",
+    "uploaded": "Bestand bijgevoegd",
+    "noBlocks": "Geen blokken gevonden",
+    "mentionHint": "Typ om taken en pagina’s te zoeken",
+    "groups": {
+      "blocks": "Blokken",
+      "lists": "Lijsten",
+      "insert": "Invoegen",
+      "tasks": "Taken",
+      "pages": "Pagina’s"
+    },
+    "slash": {
+      "p": {
+        "title": "Tekst",
+        "subtitle": "Gewone alinea",
+        "keywords": "tekst alinea paragraaf text paragraph"
+      },
+      "h1": {
+        "title": "Kop 1",
+        "subtitle": "Grote kop",
+        "keywords": "kop titel koptekst heading h1"
+      },
+      "h2": {
+        "title": "Kop 2",
+        "subtitle": "Sectiekop",
+        "keywords": "kop titel koptekst heading h2"
+      },
+      "h3": {
+        "title": "Kop 3",
+        "subtitle": "Subsectie",
+        "keywords": "kop titel koptekst heading h3"
+      },
+      "ul": {
+        "title": "Lijst",
+        "subtitle": "Lijst met opsommingstekens",
+        "keywords": "lijst opsomming opsommingstekens bullet list ul"
+      },
+      "ol": {
+        "title": "Genummerde lijst",
+        "subtitle": "1, 2, 3…",
+        "keywords": "lijst genummerd nummering numbered ordered ol"
+      },
+      "todo": {
+        "title": "Takenlijst",
+        "subtitle": "Selectievakjes om af te vinken",
+        "keywords": "todo taak taken checklist afvinken vinkje check"
+      },
+      "quote": {
+        "title": "Citaat",
+        "subtitle": "Laat een passage opvallen",
+        "keywords": "citaat quote blockquote"
+      },
+      "code": {
+        "title": "Code",
+        "subtitle": "Codeblok",
+        "keywords": "code codeblok snippet"
+      },
+      "table": {
+        "title": "Tabel",
+        "subtitle": "3 × 3 met een kopregel",
+        "keywords": "tabel raster table grid"
+      },
+      "hr": {
+        "title": "Scheidingslijn",
+        "subtitle": "Horizontale lijn",
+        "keywords": "scheidingslijn scheiding lijn divider separator hr"
+      },
+      "mention": {
+        "title": "Taak of pagina koppelen",
+        "subtitle": "Typ @ en zoek",
+        "keywords": "vermelding vermelden koppeling link taak pagina mention"
+      },
+      "image": {
+        "title": "Afbeelding",
+        "subtitle": "Upload een PNG, JPG, GIF of WebP",
+        "keywords": "afbeelding foto plaatje image picture"
+      },
+      "file": {
+        "title": "Bestand",
+        "subtitle": "Voeg een bestand toe",
+        "keywords": "bestand bijlage uploaden file attachment"
+      }
+    },
+    "mention": {
+      "card": "Taak · {{board}} · {{column}}",
+      "page": "Pagina · {{project}}"
+    },
+    "menu": {
+      "slash": "Blok invoegen",
+      "mention": "Taak of pagina koppelen",
+      "searching": "Zoeken…",
+      "noMatches": "Geen resultaten"
+    },
+    "format": {
+      "linkPlaceholder": "https://… of /doc/…",
+      "linkLabel": "Linkadres",
+      "openLink": "Link openen",
+      "editLink": "Link bewerken",
+      "removeLink": "Link verwijderen",
+      "bold": "Vet",
+      "italic": "Cursief",
+      "strike": "Doorhalen",
+      "code": "Code",
+      "link": "Link"
+    }
+  },
+  "icon": {
+    "change": "Pictogram wijzigen",
+    "add": "Pictogram toevoegen",
+    "use": "{{icon}} gebruiken",
+    "remove": "Pictogram verwijderen"
+  },
+  "move": {
+    "title": "Pagina verplaatsen",
+    "description": "Kies waar de pagina in het project komt.",
+    "root": "hoofdniveau van het project",
+    "moved": "Pagina verplaatst"
+  }
+}

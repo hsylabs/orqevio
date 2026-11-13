@@ -1,0 +1,176 @@
+{
+  "actions": {
+    "delete": "Verwijderen",
+    "restore": "Herstellen",
+    "archive": "Archiveren",
+    "rename": "Naam wijzigen",
+    "back": "Terug",
+    "undo": "Ongedaan maken"
+  },
+  "board": {
+    "region": "Bord {{name}}",
+    "archived": "Gearchiveerd",
+    "actions": "Bordacties",
+    "rename": "Naam van bord wijzigen",
+    "nameLabel": "Naam",
+    "delete": "Bord verwijderen",
+    "empty": {
+      "title": "Dit bord heeft geen kolommen",
+      "body": "Maak kolommen voor de fasen van je werk."
+    },
+    "filterActive": "Filter actief · slepen is uitgeschakeld",
+    "removeFilter": "Filter verwijderen"
+  },
+  "drag": {
+    "instructions": "Druk op de spatiebalk om een item op te pakken. Verplaats het met de pijltjestoetsen en druk nogmaals op de spatiebalk om het neer te zetten. Druk op Escape om te annuleren.",
+    "card": {
+      "picked": "Je hebt de kaart ‘{{title}}’ opgepakt. Kolom ‘{{column}}’, positie {{position}} van {{total}}.",
+      "over": "De kaart ‘{{title}}’ staat in kolom ‘{{column}}’, positie {{position}} van {{total}}.",
+      "outside": "De kaart ‘{{title}}’ is niet boven een geldige plek.",
+      "dropped": "Je hebt de kaart ‘{{title}}’ neergezet. Kolom ‘{{column}}’, positie {{position}} van {{total}}.",
+      "droppedOutside": "Je hebt de kaart ‘{{title}}’ losgelaten.",
+      "cancelled": "Het verplaatsen van de kaart ‘{{title}}’ is geannuleerd."
+    },
+    "column": {
+      "picked": "Je hebt de kolom ‘{{title}}’ opgepakt. Positie {{position}} van {{total}}.",
+      "over": "De kolom ‘{{title}}’ staat op positie {{position}} van {{total}}.",
+      "outside": "De kolom ‘{{title}}’ is niet boven een geldige plek.",
+      "dropped": "Je hebt de kolom ‘{{title}}’ neergezet. Positie {{position}} van {{total}}.",
+      "droppedOutside": "Je hebt de kolom ‘{{title}}’ losgelaten.",
+      "cancelled": "Het verplaatsen van de kolom ‘{{title}}’ is geannuleerd."
+    }
+  },
+  "filter": {
+    "button": "Filteren",
+    "search": "Zoeken op titel…",
+    "searchLabel": "Zoeken op titel",
+    "due": "Deadline",
+    "dues": {
+      "all": "Alle",
+      "overdue": "Te laat",
+      "week": "Deze week",
+      "none": "Geen datum"
+    },
+    "labels": "Labels",
+    "clear": "Filter wissen"
+  },
+  "column": {
+    "region": "Kolom {{name}}",
+    "roleDescription": "kolom",
+    "handle": "{{name}}. Dubbelklik om de naam te wijzigen, druk op de spatiebalk om te verplaatsen",
+    "name": "Kolomnaam",
+    "add": "Kolom toevoegen",
+    "addCardTo": "Kaart toevoegen aan {{name}}",
+    "actions": "Acties voor {{name}}",
+    "addCard": "Kaart toevoegen",
+    "delete": "Kolom verwijderen",
+    "cards": "Kaarten in {{name}}",
+    "noMatches": "Niets komt overeen met het filter",
+    "dropHere": "Zet kaarten hier neer",
+    "deleteConfirm": {
+      "title": "Kolom ‘{{name}}’ verwijderen?",
+      "withCards_one": "De kaart erin wordt ook verwijderd. Wil je hem houden, verplaats hem dan eerst naar een andere kolom.",
+      "withCards_other": "De {{count}} kaarten erin worden ook verwijderd. Wil je ze houden, verplaats ze dan eerst naar een andere kolom.",
+      "empty": "De kolom is leeg."
+    }
+  },
+  "composer": {
+    "placeholder": "Wat moet er gebeuren?",
+    "hint": "<kbd>↵</kbd> toevoegen · <kbd>esc</kbd> sluiten",
+    "submit": "Toevoegen"
+  },
+  "card": {
+    "title": "Kaarttitel",
+    "roleDescription": "kaart",
+    "checklist": "Checklist",
+    "hasDescription": "Heeft een beschrijving",
+    "linkedDocs": "Gekoppelde documenten",
+    "attachments": "Bijlagen",
+    "createdByName": "Aangemaakt door {{name}}"
+  },
+  "sheet": {
+    "fallbackTitle": "Kaart",
+    "label": "Kaartdetails",
+    "gone": "Deze kaart bestaat niet meer",
+    "archived": "Gearchiveerd",
+    "agentEditing": "{{name}} is aan het bewerken",
+    "saving": "Opslaan…",
+    "saved": "Opgeslagen",
+    "actions": "Kaartacties",
+    "archivedToast": "Kaart gearchiveerd",
+    "deleteConfirm": {
+      "title": "Deze kaart verwijderen?",
+      "description": "De kaart wordt verwijderd, samen met de checklists en bijlagen. Wil je hem alleen verbergen, archiveer hem dan."
+    },
+    "labels": "Labels",
+    "addLabels": "Labels toevoegen",
+    "due": "Deadline",
+    "noDate": "Geen datum",
+    "createdBy": "Aangemaakt door",
+    "unknownCreator": "Onbekend",
+    "description": "Beschrijving",
+    "descriptionPlaceholder": "Voeg context, acceptatiecriteria of notities toe. Druk op ‘/’ om iets in te voegen.",
+    "descriptionLabel": "Kaartbeschrijving",
+    "checklists": "Checklists",
+    "addChecklist": "+ Toevoegen",
+    "newChecklistTitle": "Checklist",
+    "checklistsEmpty": "Verdeel de taak in stappen die je kunt afvinken.",
+    "linkedDocs": "Gekoppelde documenten",
+    "attachments": "Bijlagen",
+    "activity": "Activiteit"
+  },
+  "checklist": {
+    "titleLabel": "Titel van de checklist",
+    "actions": "Checklistacties",
+    "delete": "Checklist verwijderen",
+    "progress": "Voortgang",
+    "item": "Item",
+    "deleteItem": "‘{{text}}’ verwijderen",
+    "addItem": "Item toevoegen",
+    "newItemPlaceholder": "Nieuw item, dan Enter",
+    "newItem": "Nieuw item"
+  },
+  "due": {
+    "today": "Vandaag",
+    "tomorrow": "Morgen",
+    "monday": "Maandag",
+    "inAWeek": "Over een week",
+    "remove": "Datum verwijderen"
+  },
+  "labels": {
+    "title": "Labels",
+    "newTitle": "Nieuw label",
+    "editTitle": "Label bewerken",
+    "namePlaceholder": "Naam (optioneel)",
+    "nameLabel": "Labelnaam",
+    "empty": "Dit bord heeft nog geen labels.",
+    "unnamed": "Zonder naam",
+    "editNamed": "{{name}} bewerken",
+    "editUnnamed": "Label bewerken",
+    "create": "Label maken"
+  },
+  "linked": {
+    "mentioned": "vermeld",
+    "unlinkNamed": "{{title}} ontkoppelen",
+    "unlinkUntitled": "Pagina ontkoppelen",
+    "link": "Document koppelen",
+    "search": "Pagina’s zoeken…",
+    "searchLabel": "Pagina’s zoeken",
+    "noResults": "Geen resultaten.",
+    "hint": "Typ om in de hele werkruimte te zoeken."
+  },
+  "archived": {
+    "sheetTitle": "Gearchiveerde kaarten",
+    "heading": "Gearchiveerd",
+    "emptyTitle": "Niets gearchiveerd",
+    "emptyBody": "Kaarten die jij of je agents archiveren, verschijnen hier. Je kunt ze herstellen.",
+    "deleteConfirm": "‘{{title}}’ definitief verwijderen?"
+  },
+  "attachments": {
+    "deleteConfirm": "‘{{name}}’ verwijderen?",
+    "download": "{{name}} downloaden",
+    "deleteNamed": "{{name}} verwijderen",
+    "uploading": "Uploaden…",
+    "attach": "Bestand bijvoegen"
+  }
+}

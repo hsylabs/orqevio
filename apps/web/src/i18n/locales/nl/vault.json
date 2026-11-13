@@ -1,0 +1,298 @@
+{
+  "title": "Kluis",
+  "back": "← Terug",
+  "reveal": {
+    "show": "Tonen",
+    "hide": "Verbergen"
+  },
+  "types": {
+    "login": "Login",
+    "note": "Beveiligde notitie"
+  },
+  "untitled": {
+    "login": "Naamloos",
+    "note": "Naamloze notitie"
+  },
+  "master": {
+    "label": "Hoofdwachtwoord",
+    "new": "Nieuw hoofdwachtwoord",
+    "repeatNew": "Herhaal het nieuwe wachtwoord",
+    "newTooShort": "Het nieuwe wachtwoord moet minstens 12 tekens hebben.",
+    "mismatch": "De wachtwoorden komen niet overeen.",
+    "wrong": "Onjuist hoofdwachtwoord."
+  },
+  "unsupported": {
+    "insecureTitle": "De kluis heeft een beveiligde verbinding nodig",
+    "browserTitle": "De kluis werkt niet in deze browser",
+    "blockers": {
+      "secure_context": "Je hebt Orqevio geopend via een onversleutelde verbinding (http://). Browsers staan de versleuteling van de kluis alleen toe op beveiligde verbindingen: open je installatie via https:// (bijvoorbeeld achter Caddy, Nginx of Traefik) of, op dezelfde computer, via http://localhost.",
+      "webcrypto": "Deze browser biedt geen WebCrypto, waarmee de kluis je gegevens versleutelt.",
+      "workers": "Deze browser ondersteunt geen Web Workers, waarmee de kluis je sleutel afleidt zonder dat de pagina vastloopt.",
+      "webassembly": "Deze browser ondersteunt geen WebAssembly, waarmee de kluis je sleutel afleidt met Argon2id."
+    },
+    "updateBrowser": "Gebruik een recente versie van Chrome, Edge, Firefox of Safari.",
+    "restWorks": "Je taken en documenten blijven gewoon werken."
+  },
+  "toolbar": {
+    "autoLockTimer": "Vergrendelt automatisch na inactiviteit",
+    "generator": "Generator",
+    "options": "Kluisopties",
+    "changeMaster": "Hoofdwachtwoord wijzigen",
+    "import": "Importeren…",
+    "export": "Exporteren…",
+    "autoLock": "Automatisch vergrendelen",
+    "autoLockMinutes_one": "Na {{count}} minuut inactiviteit",
+    "autoLockMinutes_other": "Na {{count}} minuten inactiviteit",
+    "autoLockHours_one": "Na {{count}} uur inactiviteit",
+    "autoLockHours_other": "Na {{count}} uur inactiviteit",
+    "lock": "Vergrendelen",
+    "generatorTitle": "Wachtwoordgenerator",
+    "generatorDescription": "Cryptografisch veilige, gelijkmatig verdeelde willekeur uit je browser."
+  },
+  "list": {
+    "search": "Zoeken in de kluis",
+    "new": "Nieuw",
+    "filter": "Filteren",
+    "filters": {
+      "all": "Alle",
+      "logins": "Logins",
+      "notes": "Notities"
+    },
+    "label": "Kluisitems",
+    "noMatches": "Geen resultaten.",
+    "empty": "Je kluis is leeg.",
+    "footer_one": "{{count}} item · alleen in deze browser ontsleuteld",
+    "footer_other": "{{count}} items · alleen in deze browser ontsleuteld"
+  },
+  "empty": {
+    "select": "Selecteer een item",
+    "first": "Bewaar je eerste login",
+    "newLogin": "Nieuwe login",
+    "body": "Alles wordt in je browser versleuteld voordat het naar de server gaat. Noch de server, noch je agents kunnen het lezen."
+  },
+  "delete": {
+    "title": "‘{{title}}’ verwijderen?",
+    "description": "Het item wordt definitief uit je kluis verwijderd.",
+    "confirm": "Verwijderen"
+  },
+  "detail": {
+    "updatedLogin": "Login · {{time}} bijgewerkt",
+    "updatedNote": "Beveiligde notitie · {{time}} bijgewerkt",
+    "favorite": "Als favoriet markeren",
+    "unfavorite": "Uit favorieten verwijderen",
+    "edit": "Bewerken",
+    "delete": "Verwijderen",
+    "username": "Gebruikersnaam",
+    "copyUsername": "Gebruikersnaam kopiëren",
+    "usernameCopied": "Gebruikersnaam gekopieerd",
+    "password": "Wachtwoord",
+    "showPassword": "Wachtwoord tonen",
+    "hidePassword": "Wachtwoord verbergen",
+    "copyPassword": "Wachtwoord kopiëren",
+    "passwordCopied": "Wachtwoord gekopieerd · klembord wordt over 30 s gewist",
+    "website": "Website",
+    "openWebsite": "Website openen",
+    "copyUrl": "URL kopiëren",
+    "urlCopied": "URL gekopieerd",
+    "content": "Inhoud",
+    "notes": "Notities",
+    "copyNotes": "Notities kopiëren",
+    "notesCopied": "Gekopieerd",
+    "clipboardClears": "Als je iets kopieert, wordt het klembord na 30 seconden automatisch gewist."
+  },
+  "totp": {
+    "label": "Verificatiecode",
+    "copy": "Code kopiëren",
+    "copied": "Code gekopieerd · klembord wordt over 30 s gewist",
+    "current": "Huidige verificatiecode",
+    "changesIn_one": "Verandert over {{count}} seconde",
+    "changesIn_other": "Verandert over {{count}} seconden",
+    "problems": {
+      "empty": "Voer de geheime sleutel of de otpauth://-link in.",
+      "not_totp": "Alleen tijdgebaseerde codes (TOTP) worden ondersteund.",
+      "bad_secret": "De geheime sleutel mag alleen de letters A t/m Z en de cijfers 2 t/m 7 bevatten.",
+      "too_short": "De geheime sleutel is te kort.",
+      "bad_parameters": "De otpauth://-link heeft ongeldige parameters."
+    }
+  },
+  "editor": {
+    "editTitle": "Item bewerken",
+    "newLogin": "Nieuwe login",
+    "newNote": "Nieuwe beveiligde notitie",
+    "name": "Naam",
+    "namePlaceholderLogin": "bijv. Bank, GitHub, wifi op kantoor",
+    "namePlaceholderNote": "bijv. Back-upcodes",
+    "username": "Gebruikersnaam of e-mailadres",
+    "password": "Wachtwoord",
+    "generate": "Wachtwoord genereren",
+    "website": "Website",
+    "websitePlaceholder": "voorbeeld.nl",
+    "totp": "Tweestapsverificatie (TOTP)",
+    "totpPlaceholder": "Geheime sleutel of otpauth://-link",
+    "totpHint": "De sleutel die de dienst naast de QR-code toont als je tweestapsverificatie inschakelt.",
+    "content": "Inhoud",
+    "notes": "Notities",
+    "save": "Versleutelen en opslaan"
+  },
+  "changeMaster": {
+    "title": "Hoofdwachtwoord wijzigen",
+    "description": "Je items worden niet opnieuw versleuteld: alleen de kluissleutel wordt met het nieuwe wachtwoord beschermd. Je herstelsleutel blijft geldig.",
+    "current": "Huidig hoofdwachtwoord",
+    "submit": "Wijzigen",
+    "wrongCurrent": "Het huidige hoofdwachtwoord klopt niet.",
+    "done": "Hoofdwachtwoord bijgewerkt"
+  },
+  "strength": {
+    "emptyHint": "Gebruik minstens 12 tekens. Een zin van een paar woorden is makkelijk te onthouden en moeilijk te raden.",
+    "tooShort": "Te kort",
+    "tooShortHint": "Je hebt minstens 12 tekens nodig.",
+    "fair": "Kan sterker",
+    "fairHint": "Voeg meer woorden of meer soorten tekens toe.",
+    "good": "Goed",
+    "veryGood": "Zeer goed",
+    "rememberHint": "Let op: als je het vergeet, kan alleen de herstelsleutel de kluis nog openen."
+  },
+  "generator": {
+    "regenerate": "Nog een genereren",
+    "copied": "Gekopieerd · klembord wordt over 30 s gewist",
+    "entropy": "≈ {{bits}} bits entropie",
+    "length": "Lengte",
+    "sets": {
+      "upper": "Hoofdletters",
+      "lower": "Kleine letters",
+      "digits": "Cijfers",
+      "symbols": "Symbolen"
+    },
+    "avoidAmbiguous": "Verwarrende tekens vermijden (I, l, 1, O, 0)",
+    "use": "Dit wachtwoord gebruiken",
+    "rating": {
+      "weak": "Zwak",
+      "fair": "Redelijk",
+      "strong": "Sterk",
+      "excellent": "Uitstekend"
+    }
+  },
+  "gate": {
+    "guarantees": {
+      "encryption": "AES-256-GCM-versleuteling in je browser",
+      "kdf": "Sleutel afgeleid met Argon2id",
+      "agents": "Agents en MCP hebben geen toegang"
+    },
+    "decryptFailed_one": "{{count}} item kon niet worden ontsleuteld en is overgeslagen.",
+    "decryptFailed_other": "{{count}} items konden niet worden ontsleuteld en zijn overgeslagen.",
+    "setup": {
+      "title": "Stel je kluis in",
+      "subtitle": "Kies een hoofdwachtwoord. Het wordt in je browser gebruikt om je geheimen te versleutelen en wordt nooit naar de server gestuurd.",
+      "tooShort": "Gebruik minstens 12 tekens.",
+      "failed": "De kluis kon niet worden aangemaakt in deze browser.",
+      "repeat": "Herhaal het hoofdwachtwoord",
+      "busy": "Sleutels genereren…",
+      "submit": "Kluis maken",
+      "ready": "Je kluis is klaar. Alleen jij kunt hem openen."
+    },
+    "recoveryKey": {
+      "title": "Bewaar je herstelsleutel",
+      "subtitle": "Dit is de enige manier om de kluis te herstellen als je je hoofdwachtwoord vergeet. Hij wordt maar één keer getoond.",
+      "copied": "Herstelsleutel gekopieerd",
+      "download": ".txt downloaden",
+      "fileName": "orqevio-herstelsleutel.txt",
+      "fileText": "Orqevio — Herstelsleutel van de kluis\n\n{{recoveryKey}}\n\nBewaar hem buiten Orqevio (bijvoorbeeld op papier of in een andere wachtwoordmanager).\nHiermee kun je het hoofdwachtwoord opnieuw instellen. Niemand anders kan hem voor je terughalen.\n",
+      "saved": "Ik heb hem veilig bewaard, buiten Orqevio.",
+      "open": "Mijn kluis openen"
+    },
+    "unlock": {
+      "title": "Kluis vergrendeld",
+      "subtitle": "Voer je hoofdwachtwoord in om je logins in deze browser te ontsleutelen.",
+      "busy": "Ontsleutelen…",
+      "submit": "Ontgrendelen",
+      "forgot": "Hoofdwachtwoord vergeten?"
+    },
+    "recover": {
+      "title": "Kluis herstellen",
+      "subtitle": "Gebruik de herstelsleutel die je bij het aanmaken van de kluis hebt bewaard om een nieuw hoofdwachtwoord te kiezen.",
+      "recoveryKey": "Herstelsleutel",
+      "recoveryKeyPlaceholder": "XXXX-XXXX-XXXX-…",
+      "submit": "Opnieuw instellen en openen",
+      "noKey": "Ik heb de sleutel niet",
+      "invalidKey": "De herstelsleutel is ongeldig.",
+      "done": "Hoofdwachtwoord opnieuw ingesteld"
+    },
+    "reset": {
+      "title": "Kluis resetten",
+      "description": "Zonder het hoofdwachtwoord of de herstelsleutel kan niemand je gegevens ontsleutelen, ook wij niet. Resetten verwijdert alle items definitief.",
+      "accessKey": "Toegangssleutel",
+      "accessKeyHint": "Bevestig dat jij het bent met de toegangssleutel van deze installatie (niet het hoofdwachtwoord).",
+      "submit": "Wissen en resetten",
+      "done": "Kluis gereset. Je kunt hem opnieuw instellen."
+    }
+  },
+  "import": {
+    "title": "Importeren in de kluis",
+    "description": "Het bestand wordt in deze browser gelezen en versleuteld: de server ontvangt alleen items die al versleuteld zijn.",
+    "formats": "Ondersteunt de CSV die Chrome, Edge, Firefox en Safari exporteren, de CSV en onversleutelde JSON van Bitwarden, en versleutelde exports van Orqevio.",
+    "choose": "Bestand kiezen",
+    "fileLabel": "Te importeren bestand",
+    "tooLarge": "Het bestand is te groot (meer dan {{size}} MB).",
+    "problems": {
+      "empty": "Het bestand is leeg.",
+      "unknown_format": "Orqevio herkent dit bestand niet. Gebruik de CSV die Chrome, Edge, Firefox of Safari exporteren, de CSV of JSON van Bitwarden, of een export van Orqevio.",
+      "bitwarden_encrypted": "Dit is een versleutelde export van Bitwarden. Exporteer opnieuw als onversleutelde ‘.json’ of ‘.csv’ en importeer die hier.",
+      "no_items": "Het bestand bevat geen logins of notities."
+    },
+    "encrypted_one": "Dit is een versleutelde export van Orqevio met {{count}} item. Voer het hoofdwachtwoord in dat je had toen je exporteerde.",
+    "encrypted_other": "Dit is een versleutelde export van Orqevio met {{count}} items. Voer het hoofdwachtwoord in dat je had toen je exporteerde.",
+    "exportPassword": "Wachtwoord van de export",
+    "decrypt": "Ontsleutelen",
+    "wrongPassword": "Met dit wachtwoord is deze export niet gemaakt.",
+    "sources": {
+      "chromeOrEdge": "Uit Chrome of Edge:",
+      "firefox": "Uit Firefox:",
+      "safari": "Uit Safari:",
+      "bitwardenCsv": "Uit Bitwarden (CSV):",
+      "bitwardenJson": "Uit Bitwarden (JSON):",
+      "csv": "Uit een CSV-bestand:",
+      "orqevio": "Uit Orqevio (versleuteld):"
+    },
+    "newLogins_one": "{{count}} nieuwe login",
+    "newLogins_other": "{{count}} nieuwe logins",
+    "newNotes_one": "{{count}} nieuwe notitie",
+    "newNotes_other": "{{count}} nieuwe notities",
+    "nothingNew": "Niets nieuws om te importeren",
+    "duplicates_one": "{{count}} item staat al in je kluis en wordt overgeslagen",
+    "duplicates_other": "{{count}} items staan al in je kluis en worden overgeslagen",
+    "unsupported_one": "{{count}} item wordt niet ondersteund (betaalkaarten of identiteiten) en wordt niet geïmporteerd",
+    "unsupported_other": "{{count}} items worden niet ondersteund (betaalkaarten of identiteiten) en worden niet geïmporteerd",
+    "unencryptedWarning": "Het bestand dat je hebt gekozen, is niet versleuteld: verwijder het van je computer als je klaar bent.",
+    "chooseAnother": "Ander bestand kiezen",
+    "progress": "{{done}} van {{total}} versleutelen…",
+    "submit_one": "{{count}} item importeren",
+    "submit_other": "{{count}} items importeren",
+    "failed_one": "{{count}} item kon niet worden geïmporteerd. Importeer het bestand opnieuw: items die al zijn geïmporteerd, worden overgeslagen.",
+    "failed_other": "{{count}} items konden niet worden geïmporteerd. Importeer het bestand opnieuw: items die al zijn geïmporteerd, worden overgeslagen.",
+    "done_one": "{{count}} item geïmporteerd",
+    "done_other": "{{count}} items geïmporteerd",
+    "locked": "De kluis is vergrendeld voordat het importeren klaar was. Ontgrendel hem en importeer het bestand opnieuw: wat al is geïmporteerd, wordt overgeslagen.",
+    "untitledNote": "Notitie",
+    "untitledLogin": "Naamloos",
+    "damaged": "Deze export is beschadigd en kan niet worden gelezen."
+  },
+  "export": {
+    "title": "Kluis exporteren",
+    "description": "Download al je items als bestand, voorbereid in deze browser.",
+    "kind": "Soort export",
+    "kinds": {
+      "encrypted": "Versleuteld",
+      "plain": "Onversleuteld"
+    },
+    "encryptedInfo": "Alleen je huidige hoofdwachtwoord opent het bestand. Gebruik het als back-up of om je items over te zetten naar een andere installatie van Orqevio.",
+    "plainInfo": "In het JSON-formaat van Bitwarden, dat de meeste wachtwoordmanagers kunnen importeren. Iedereen die het bestand heeft, kan het lezen.",
+    "understood": "Ik begrijp dat het bestand niet versleuteld is en dat iedereen die het heeft al mijn wachtwoorden kan lezen.",
+    "submitPlain": "Onversleuteld exporteren",
+    "submitEncrypted": "Versleuteld exporteren",
+    "fileNameEncrypted": "orqevio-kluis-versleuteld-{{date}}.json",
+    "fileNamePlain": "orqevio-kluis-onversleuteld-{{date}}.json",
+    "done_one": "{{count}} item geëxporteerd",
+    "done_other": "{{count}} items geëxporteerd",
+    "tooLarge": "De export is groter dan {{size}} MB: Orqevio kan hem niet importeren."
+  }
+}

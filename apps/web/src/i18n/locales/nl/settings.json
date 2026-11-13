@@ -1,0 +1,70 @@
+{
+  "title": "Instellingen",
+  "profile": {
+    "title": "Profiel",
+    "description": "Je naam verschijnt in de activiteit van de werkruimte.",
+    "name": "Naam",
+    "saved": "Profiel bijgewerkt"
+  },
+  "appearance": {
+    "title": "Weergave",
+    "description": "Opgeslagen in je installatie en toegepast op al je apparaten.",
+    "theme": "Thema",
+    "themes": {
+      "system": "Systeem",
+      "light": "Licht",
+      "dark": "Donker"
+    }
+  },
+  "language": {
+    "title": "Taal",
+    "description": "De app gebruikt deze taal op al je apparaten, en nieuwe borden krijgen hun standaardkolommen in deze taal."
+  },
+  "accessKey": {
+    "title": "Toegangssleutel",
+    "description": "Hiermee log je in op deze installatie. Als je een nieuwe genereert, worden je andere sessies uitgelogd. Dit heeft geen invloed op het hoofdwachtwoord van de kluis.",
+    "current": "Huidige sleutel",
+    "generate": "Nieuwe sleutel genereren",
+    "newTitle": "Je nieuwe toegangssleutel",
+    "newDescription": "De oude sleutel werkt niet meer en je andere sessies zijn uitgelogd. Hij wordt maar één keer getoond.",
+    "done": "Klaar",
+    "updated": "Toegangssleutel bijgewerkt"
+  },
+  "workspace": {
+    "title": "Werkruimte",
+    "description": "Agenttokens en projecten horen bij een specifieke werkruimte.",
+    "name": "Naam van de werkruimte",
+    "saved": "Werkruimte bijgewerkt",
+    "delete": "Werkruimte verwijderen",
+    "deleteTitle": "Werkruimte ‘{{name}}’ verwijderen?",
+    "deleteDescription": "De projecten, borden, documenten, bijlagen en tokens ervan worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "deleted": "Werkruimte verwijderd"
+  },
+  "copy": {
+    "title": "Deze installatie",
+    "description": "De versie van Orqevio die je draait. Je installatie controleert hoogstens eens per 12 uur op nieuwe versies."
+  },
+  "version": {
+    "upToDate": "Je hebt de nieuwste versie.",
+    "available": "Er is een nieuwe versie beschikbaar: {{version}}",
+    "how": {
+      "cli": "Voer dit uit op je computer:",
+      "button": "Merge de pull request van Dependabot in de repository van je installatie; daarna wordt de update automatisch uitgerold. Zie je er geen, verhoog dan de versie van create-orqevio in de package.json ervan.",
+      "docker": "In de map van je installatie:",
+      "source": "In de repository, en start daarna de server opnieuw:"
+    },
+    "copy": "Opdracht kopiëren",
+    "copied": "Opdracht gekopieerd",
+    "kept": "Je gegevens, toegangssleutel en kluis blijven behouden.",
+    "releaseNotes": "Bekijk wat er nieuw is"
+  },
+  "erase": {
+    "title": "Deze installatie wissen",
+    "description": "Wist je werkruimtes, je kluis en je tokens definitief. De installatie vraagt daarna opnieuw om de installatiecode.",
+    "action": "Al mijn gegevens wissen",
+    "confirmDescription": "Dit kan niet ongedaan worden gemaakt. Voer je toegangssleutel in om te bevestigen.",
+    "accessKey": "Toegangssleutel",
+    "confirm": "Definitief wissen",
+    "done": "Gegevens gewist"
+  }
+}

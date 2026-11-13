@@ -1,0 +1,137 @@
+{
+  "nav": {
+    "label": "Hoofdnavigatie",
+    "search": "Zoek of ga naar…",
+    "home": "Start",
+    "vault": "Kluis",
+    "agents": "Agents",
+    "agentLive": "Agent actief",
+    "projects": "Projecten",
+    "newProject": "Nieuw project",
+    "firstProject": {
+      "title": "Maak je eerste project",
+      "body": "Bundel borden en documenten op één plek."
+    },
+    "vaultLocked": "Vergrendeld",
+    "vaultUnlocked": "Ontgrendeld"
+  },
+  "workspace": {
+    "fallback": "Werkruimte",
+    "heading": "Werkruimtes",
+    "new": "Nieuwe werkruimte",
+    "newDescription": "Werkruimtes houden contexten gescheiden, zoals privé en werk. Elk agenttoken hoort bij één werkruimte.",
+    "name": "Naam",
+    "create": "Werkruimte maken",
+    "settings": "Instellingen"
+  },
+  "project": {
+    "collapse": "{{name}} inklappen",
+    "expand": "{{name}} uitklappen",
+    "actions": "Acties voor {{name}}",
+    "newBoard": "Nieuw bord",
+    "newPage": "Nieuwe pagina",
+    "newPageIn": "Nieuwe pagina in {{name}}",
+    "rename": "Naam en kleur",
+    "delete": "Project verwijderen",
+    "empty": "Leeg"
+  },
+  "tree": {
+    "collapse": "Inklappen",
+    "expand": "Uitklappen",
+    "newSubpage": "Nieuwe subpagina"
+  },
+  "user": {
+    "updateAvailable": "Er is een nieuwe versie van Orqevio beschikbaar",
+    "settings": "Instellingen",
+    "newVersion": "Nieuwe versie",
+    "appearance": "Weergave",
+    "theme": {
+      "system": "Systeem",
+      "light": "Licht",
+      "dark": "Donker"
+    },
+    "signOut": "Uitloggen"
+  },
+  "header": {
+    "hideSidebar": "Zijbalk verbergen",
+    "showSidebar": "Zijbalk tonen",
+    "toggleSidebar": "Zijbalk tonen of verbergen",
+    "breadcrumb": "Kruimelpad"
+  },
+  "newProject": {
+    "title": "Nieuw project",
+    "description": "Een project bundelt borden en documenten die bij elkaar horen.",
+    "name": "Naam",
+    "namePlaceholder": "bijv. Lancering website",
+    "color": "Kleur",
+    "withBoard": "Een bord maken",
+    "startWithBoard": "Beginnen met een bord",
+    "boardHint": "Kolommen {{columns}}. Je kunt ze altijd aanpassen.",
+    "boardName": "Taken",
+    "create": "Project maken"
+  },
+  "projectSettings": {
+    "title": "Project",
+    "name": "Naam",
+    "description": "Beschrijving",
+    "optional": "Optioneel",
+    "color": "Kleur"
+  },
+  "actions": {
+    "newBoard": {
+      "title": "Nieuw bord",
+      "label": "Naam van het bord",
+      "placeholder": "bijv. Lanceringssprint",
+      "confirm": "Bord maken"
+    },
+    "deleteBoard": {
+      "title": "‘{{name}}’ verwijderen?",
+      "body": "De kolommen en kaarten worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "confirm": "Bord verwijderen",
+      "done": "Bord verwijderd"
+    },
+    "deletePage": {
+      "title": "‘{{name}}’ verwijderen?",
+      "body": "De subpagina’s en bijlagen worden ook verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "confirm": "Pagina verwijderen",
+      "done": "Pagina verwijderd"
+    },
+    "deleteProject": {
+      "title": "Project ‘{{name}}’ verwijderen?",
+      "body": "Alle borden, kaarten, pagina’s en bijlagen ervan worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "confirm": "Project verwijderen",
+      "done": "Project verwijderd"
+    }
+  },
+  "palette": {
+    "label": "Opdrachtenpalet",
+    "title": "Zoeken",
+    "description": "Zoek in projecten, borden, pagina’s en kaarten, of voer een actie uit.",
+    "placeholder": "Zoek taken, documenten of acties…",
+    "searching": "Zoeken…",
+    "noResults": "Geen resultaten. Probeer andere woorden.",
+    "inContent": "In de inhoud",
+    "navigate": "Ga naar",
+    "structure": "Projecten, borden en pagina’s",
+    "project": "Project",
+    "actions": "Acties",
+    "newProject": "Nieuw project",
+    "lightTheme": "Licht thema gebruiken",
+    "darkTheme": "Donker thema gebruiken",
+    "lockVault": "Kluis vergrendelen",
+    "hintNavigate": "navigeren",
+    "hintOpen": "openen",
+    "keywords": {
+      "home": "Start home begin overzicht",
+      "vault": "Kluis wachtwoorden vault passwords",
+      "agents": "Agents agenten MCP tokens",
+      "settings": "Instellingen account profiel settings",
+      "project": "project",
+      "board": "bord board",
+      "page": "pagina page",
+      "newProject": "Nieuw project maken aanmaken new",
+      "theme": "Thema wijzigen licht donker weergave modus theme",
+      "lockVault": "Kluis vergrendelen lock vault"
+    }
+  }
+}
