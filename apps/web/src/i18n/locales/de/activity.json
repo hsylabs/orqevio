@@ -1,0 +1,61 @@
+{
+  "actions": {
+    "card": {
+      "created": "<actor>{{actor}}</actor> hat die Karte <target>„{{target}}“</target> erstellt",
+      "created_self": "<actor>{{actor}}</actor> hat diese Karte erstellt",
+      "updated": "<actor>{{actor}}</actor> hat die Karte <target>„{{target}}“</target> bearbeitet",
+      "updated_self": "<actor>{{actor}}</actor> hat diese Karte bearbeitet",
+      "moved": "<actor>{{actor}}</actor> hat die Karte <target>„{{target}}“</target> verschoben",
+      "moved_self": "<actor>{{actor}}</actor> hat diese Karte verschoben",
+      "reordered": "<actor>{{actor}}</actor> hat die Karte <target>„{{target}}“</target> neu angeordnet",
+      "reordered_self": "<actor>{{actor}}</actor> hat diese Karte neu angeordnet",
+      "archived": "<actor>{{actor}}</actor> hat die Karte <target>„{{target}}“</target> archiviert",
+      "archived_self": "<actor>{{actor}}</actor> hat diese Karte archiviert",
+      "restored": "<actor>{{actor}}</actor> hat die Karte <target>„{{target}}“</target> wiederhergestellt",
+      "restored_self": "<actor>{{actor}}</actor> hat diese Karte wiederhergestellt",
+      "deleted": "<actor>{{actor}}</actor> hat die Karte <target>„{{target}}“</target> gelöscht",
+      "deleted_self": "<actor>{{actor}}</actor> hat diese Karte gelöscht",
+      "checklist": "<actor>{{actor}}</actor> hat die Checkliste von <target>„{{target}}“</target> aktualisiert",
+      "checklist_self": "<actor>{{actor}}</actor> hat die Checkliste aktualisiert",
+      "linked": "<actor>{{actor}}</actor> hat ein Dokument mit <target>„{{target}}“</target> verknüpft",
+      "linked_self": "<actor>{{actor}}</actor> hat ein Dokument verknüpft",
+      "unlinked": "<actor>{{actor}}</actor> hat die Verknüpfung eines Dokuments mit <target>„{{target}}“</target> aufgehoben",
+      "unlinked_self": "<actor>{{actor}}</actor> hat die Verknüpfung eines Dokuments aufgehoben"
+    },
+    "column": {
+      "created": "<actor>{{actor}}</actor> hat die Spalte <target>„{{target}}“</target> erstellt",
+      "updated": "<actor>{{actor}}</actor> hat die Spalte <target>„{{target}}“</target> umbenannt",
+      "moved": "<actor>{{actor}}</actor> hat die Spalte <target>„{{target}}“</target> neu angeordnet",
+      "deleted": "<actor>{{actor}}</actor> hat die Spalte <target>„{{target}}“</target> gelöscht"
+    },
+    "board": {
+      "created": "<actor>{{actor}}</actor> hat das Board <target>„{{target}}“</target> erstellt",
+      "updated": "<actor>{{actor}}</actor> hat das Board <target>„{{target}}“</target> umbenannt",
+      "deleted": "<actor>{{actor}}</actor> hat das Board <target>„{{target}}“</target> gelöscht"
+    },
+    "page": {
+      "created": "<actor>{{actor}}</actor> hat die Seite <target>„{{target}}“</target> erstellt",
+      "updated": "<actor>{{actor}}</actor> hat die Seite <target>„{{target}}“</target> bearbeitet",
+      "moved": "<actor>{{actor}}</actor> hat die Seite <target>„{{target}}“</target> verschoben",
+      "deleted": "<actor>{{actor}}</actor> hat die Seite <target>„{{target}}“</target> gelöscht"
+    },
+    "project": {
+      "created": "<actor>{{actor}}</actor> hat das Projekt <target>„{{target}}“</target> erstellt",
+      "updated": "<actor>{{actor}}</actor> hat das Projekt <target>„{{target}}“</target> aktualisiert",
+      "deleted": "<actor>{{actor}}</actor> hat das Projekt <target>„{{target}}“</target> gelöscht"
+    },
+    "label": {
+      "created": "<actor>{{actor}}</actor> hat ein Label erstellt",
+      "updated": "<actor>{{actor}}</actor> hat ein Label bearbeitet",
+      "deleted": "<actor>{{actor}}</actor> hat ein Label gelöscht"
+    },
+    "other": "<actor>{{actor}}</actor> hat etwas geändert"
+  },
+  "detail": {
+    "movedTo": "nach {{to}}",
+    "movedFromTo": "{{from}} → {{to}}",
+    "createdIn": "in {{column}}",
+    "linkedPage": "„{{page}}“"
+  },
+  "viaMcp": "über MCP"
+}

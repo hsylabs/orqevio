@@ -1,0 +1,16 @@
+{
+  "codes": {
+    "invalid_access_key": "Der Zugangsschlüssel ist nicht korrekt.",
+    "invalid_setup_code": "Der Einrichtungscode ist nicht korrekt.",
+    "already_claimed": "Diese Instanz ist bereits eingerichtet. Melde dich mit deinem Zugangsschlüssel an.",
+    "not_claimed": "Diese Instanz ist noch nicht eingerichtet.",
+    "rate_limited": "Zu viele Versuche. Warte ein paar Minuten.",
+    "network": "Keine Verbindung zum Server.",
+    "file_too_large": "Die Datei ist größer als erlaubt.",
+    "upload_incomplete": "Der Upload wurde unterbrochen. Versuch es noch einmal.",
+    "last_workspace": "Du musst mindestens einen Arbeitsbereich behalten."
+  },
+  "notFound": "Das Element wurde nicht gefunden.",
+  "server": "Auf dem Server ist etwas schiefgelaufen. Versuch es noch einmal.",
+  "unknown": "Etwas ist schiefgelaufen. Versuch es noch einmal."
+}

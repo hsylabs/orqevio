@@ -1,0 +1,34 @@
+{
+  "problems": {
+    "unknown_client": "Orqevio herkent deze app niet, of de beschrijving die de app publiceert, is ongeldig.",
+    "bad_redirect": "Het adres waarnaar de app wil terugkeren, hoort niet bij deze app. Voor je veiligheid wordt er niets naartoe gestuurd."
+  },
+  "problem": {
+    "title": "Deze app kan niet worden gekoppeld",
+    "home": "Naar Orqevio"
+  },
+  "leaving": {
+    "title": "Terug naar de app…",
+    "subtitle": {
+      "plain": "Je gaat terug naar {{name}}.",
+      "computer": "Je gaat terug naar {{name}} op deze computer.",
+      "app": "Je gaat terug naar de app ‘{{name}}’ op deze computer."
+    }
+  },
+  "consent": {
+    "title": "{{name}} koppelen",
+    "subtitle": "Een app wil via MCP werken in je installatie van Orqevio. Kies waartoe de app toegang krijgt.",
+    "app": "App",
+    "returnsTo": {
+      "plain": "Als je klaar bent, ga je terug naar {{name}}",
+      "computer": "Als je klaar bent, ga je terug naar {{name}} op deze computer",
+      "app": "Als je klaar bent, ga je terug naar de app ‘{{name}}’ op deze computer"
+    },
+    "publishedBy": "De beschrijving wordt gepubliceerd door {{publisher}}.",
+    "unverified": "De app heeft zichzelf geregistreerd, dus de naam is niet geverifieerd. Ga alleen verder als je hem zelf net hebt gekoppeld.",
+    "local": "Een programma op deze computer krijgt de toegang.",
+    "workspace": "Werkruimte",
+    "allow": "Toegang toestaan",
+    "revokeLater": "Je kunt deze toegang altijd intrekken onder Agents."
+  }
+}

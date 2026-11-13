@@ -1,0 +1,70 @@
+{
+  "title": "Einstellungen",
+  "profile": {
+    "title": "Profil",
+    "description": "Dein Name erscheint in der Aktivität des Arbeitsbereichs.",
+    "name": "Name",
+    "saved": "Profil aktualisiert"
+  },
+  "appearance": {
+    "title": "Darstellung",
+    "description": "Wird in deiner Instanz gespeichert und gilt auf all deinen Geräten.",
+    "theme": "Design",
+    "themes": {
+      "system": "System",
+      "light": "Hell",
+      "dark": "Dunkel"
+    }
+  },
+  "language": {
+    "title": "Sprache",
+    "description": "Die App verwendet sie auf all deinen Geräten, und neue Boards erhalten ihre Standardspalten in dieser Sprache."
+  },
+  "accessKey": {
+    "title": "Zugangsschlüssel",
+    "description": "Damit meldest du dich bei dieser Instanz an. Wenn du einen neuen erzeugst, werden deine anderen Sitzungen abgemeldet. Das Master-Passwort des Tresors ist davon nicht betroffen.",
+    "current": "Aktueller Schlüssel",
+    "generate": "Neuen Schlüssel erzeugen",
+    "newTitle": "Dein neuer Zugangsschlüssel",
+    "newDescription": "Der alte Schlüssel funktioniert nicht mehr, und deine anderen Sitzungen wurden abgemeldet. Er wird nur einmal angezeigt.",
+    "done": "Fertig",
+    "updated": "Zugangsschlüssel aktualisiert"
+  },
+  "workspace": {
+    "title": "Arbeitsbereich",
+    "description": "Agenten-Tokens und Projekte gehören zu einem bestimmten Arbeitsbereich.",
+    "name": "Name des Arbeitsbereichs",
+    "saved": "Arbeitsbereich aktualisiert",
+    "delete": "Arbeitsbereich löschen",
+    "deleteTitle": "Arbeitsbereich „{{name}}“ löschen?",
+    "deleteDescription": "Alle Projekte, Boards, Dokumente, Anhänge und Tokens des Arbeitsbereichs werden gelöscht. Das lässt sich nicht rückgängig machen.",
+    "deleted": "Arbeitsbereich gelöscht"
+  },
+  "copy": {
+    "title": "Diese Instanz",
+    "description": "Die Orqevio-Version, die du verwendest. Deine Instanz sucht höchstens alle 12 Stunden nach neuen Versionen."
+  },
+  "version": {
+    "upToDate": "Du bist auf dem neuesten Stand.",
+    "available": "Eine neue Version ist verfügbar: {{version}}",
+    "how": {
+      "cli": "Führe auf deinem Computer Folgendes aus:",
+      "button": "Merge den Dependabot-Pull-Request im Repository deiner Instanz, danach wird sie automatisch bereitgestellt. Falls du keinen siehst, erhöhe die Version von create-orqevio in der package.json des Repositorys.",
+      "docker": "Im Ordner deiner Instanz:",
+      "source": "Im Repository, danach den Server neu starten:"
+    },
+    "copy": "Befehl kopieren",
+    "copied": "Befehl kopiert",
+    "kept": "Deine Daten, dein Zugangsschlüssel und dein Tresor bleiben erhalten.",
+    "releaseNotes": "Neuerungen ansehen"
+  },
+  "erase": {
+    "title": "Diese Instanz löschen",
+    "description": "Löscht deine Arbeitsbereiche, deinen Tresor und deine Tokens endgültig. Die Instanz fragt danach wieder nach dem Einrichtungscode.",
+    "action": "Alle meine Daten löschen",
+    "confirmDescription": "Das lässt sich nicht rückgängig machen. Gib zur Bestätigung deinen Zugangsschlüssel ein.",
+    "accessKey": "Zugangsschlüssel",
+    "confirm": "Endgültig löschen",
+    "done": "Daten gelöscht"
+  }
+}

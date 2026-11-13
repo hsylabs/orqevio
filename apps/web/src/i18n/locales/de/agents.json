@@ -1,0 +1,142 @@
+{
+  "title": "Agenten",
+  "connect": "Agenten verbinden",
+  "intro": {
+    "title": "Deine Agenten, mit klaren Berechtigungen",
+    "body": "Verbinde einen beliebigen MCP-kompatiblen Client, um Dokumentation nachzuschlagen, Aufgaben zu erstellen und Boards neu zu ordnen. Jedes Token gehört zu genau einem Arbeitsbereich und kann nur das, was du erlaubst.",
+    "endpoint": "Endpunkt",
+    "copyEndpoint": "Endpunkt kopieren",
+    "endpointCopied": "Endpunkt kopiert",
+    "oauth": "Füge in Claude (Web, Desktop und Mobil) einen benutzerdefinierten Konnektor mit diesem Endpunkt hinzu. Du brauchst kein Token: Die Berechtigung wird hier abgefragt. Jeder Client, der OAuth unterstützt, funktioniert genauso."
+  },
+  "vault": {
+    "title": "Der Tresor bleibt außer ihrer Reichweite",
+    "unreadable": "Kein Token kann den Tresor lesen, nicht einmal verschlüsselt: Der Server lehnt die Anfrage ab, bevor er überhaupt auf Daten zugreift.",
+    "noDeletes": "Agenten können nichts löschen, nur archivieren, und du kannst alles wiederherstellen.",
+    "logged": "Jede Aktion wird protokolliert, und du kannst sie live in der App verfolgen."
+  },
+  "tokens": {
+    "active": "Aktive Verbindungen",
+    "emptyTitle": "Du hast noch keine Agenten verbunden",
+    "emptyBody": "Erstelle ein Token und füge die Konfiguration in Claude Code, Cursor, VS Code oder Claude Desktop ein.",
+    "inactive_one": "{{count}} widerrufen oder abgelaufen",
+    "inactive_other": "{{count}} widerrufen oder abgelaufen"
+  },
+  "activity": {
+    "title": "Aktivität der Agenten",
+    "titleFor": "Aktivität von „{{name}}“",
+    "showAll": "Alle anzeigen",
+    "loading": "Wird geladen…",
+    "empty": "Wenn ein Agent in diesem Arbeitsbereich arbeitet, siehst du es hier."
+  },
+  "tools": {
+    "title": "MCP-Tools",
+    "footnote": "Jeder Agent sieht nur die Tools, die seine Berechtigungen zulassen.",
+    "scopes": {
+      "read": "Lesen",
+      "write": "Schreiben",
+      "tasksRead": "Aufgaben · Lesen",
+      "tasksWrite": "Aufgaben · Schreiben",
+      "docsRead": "Dokumente · Lesen",
+      "docsWrite": "Dokumente · Schreiben"
+    },
+    "descriptions": {
+      "listProjects": "Projekte, Boards und Seitenstruktur",
+      "search": "Suche in Karten und Seiten",
+      "readBoards": "Spalten, Karten, Checklisten und Verknüpfungen",
+      "editCards": "Karten erstellen, bearbeiten und verschieben",
+      "archiveCard": "Archivieren (in der App wiederherstellbar)",
+      "organizeBoards": "Boards neu ordnen",
+      "labels": "Labels und Checklisten",
+      "readPages": "Seitenbaum und Markdown-Inhalt",
+      "writePages": "Erstellen und aktualisieren, mit Versionskontrolle",
+      "linkCard": "Aufgaben und Dokumente verknüpfen"
+    }
+  },
+  "revoke": {
+    "action": "Widerrufen",
+    "title": "„{{name}}“ widerrufen?",
+    "description": "Der Agent verliert sofort den Zugriff. Seine bisherige Aktivität bleibt erhalten.",
+    "confirm": "Zugriff widerrufen",
+    "done": "Zugriff wurde widerrufen"
+  },
+  "token": {
+    "oauth": {
+      "plain": "Über OAuth verbunden · kehrt zu {{name}} zurück",
+      "computer": "Über OAuth verbunden · kehrt zu {{name}} auf diesem Computer zurück",
+      "app": "Über OAuth verbunden · kehrt zur App „{{name}}“ auf diesem Computer zurück"
+    },
+    "access": {
+      "tasks": {
+        "none": "Aufgaben: Kein Zugriff",
+        "read": "Aufgaben: Lesen",
+        "write": "Aufgaben: Lesen und Schreiben"
+      },
+      "docs": {
+        "none": "Dokumente: Kein Zugriff",
+        "read": "Dokumente: Lesen",
+        "write": "Dokumente: Lesen und Schreiben"
+      }
+    },
+    "vaultNever": "Tresor: nie",
+    "lastUsed": "Zuletzt genutzt",
+    "created": "Erstellt",
+    "revoked": "Widerrufen",
+    "expires": "Läuft ab",
+    "expiresUnused": "Läuft ungenutzt ab",
+    "never": "Nie",
+    "showActivity": "Aktivität ansehen"
+  },
+  "access": {
+    "levels": {
+      "none": "Kein Zugriff",
+      "read": "Lesen",
+      "write": "Lesen und Schreiben"
+    },
+    "tasks": {
+      "label": "Aufgaben",
+      "hint": "Boards, Spalten, Karten und Checklisten",
+      "group": "Zugriff auf Aufgaben"
+    },
+    "docs": {
+      "label": "Dokumente",
+      "hint": "Seiten und ihr Markdown-Inhalt",
+      "group": "Zugriff auf Dokumente"
+    },
+    "vault": {
+      "label": "Tresor",
+      "hint": "Für Agenten nie zugänglich",
+      "blocked": "Gesperrt"
+    },
+    "atLeastOne": "Gib mindestens einem Bereich Lesezugriff."
+  },
+  "kit": {
+    "clients": "MCP-Client",
+    "terminal": "Terminal",
+    "copy": "Konfiguration kopieren",
+    "copied": "Konfiguration kopiert",
+    "desktopNote": "Claude Desktop nutzt die Brücke mcp-remote (Node.js), um den Authentifizierungs-Header zu senden.",
+    "httpNote": "Streamable-HTTP-Transport mit Bearer-Authentifizierung. Starte den Client neu, wenn er den Server nicht findet."
+  },
+  "create": {
+    "description": "Erstelle ein Token für „{{workspace}}“. Es kann nur auf diesen Arbeitsbereich zugreifen, und nur auf das, was du hier erlaubst.",
+    "descriptionFallback": "Erstelle ein Token für diesen Arbeitsbereich. Es kann nur auf diesen Arbeitsbereich zugreifen, und nur auf das, was du hier erlaubst.",
+    "name": "Name des Agenten",
+    "namePlaceholder": "z. B. Claude Code, Cursor, Support-Assistent",
+    "expiry": "Ablauf",
+    "expiries": {
+      "30": "30 Tage",
+      "90": "90 Tage",
+      "365": "1 Jahr",
+      "never": "Nie"
+    },
+    "submit": "Token erstellen"
+  },
+  "created": {
+    "title": "„{{name}}“ ist bereit",
+    "description": "Kopiere das Token jetzt. Aus Sicherheitsgründen speichern wir nur seinen Fingerabdruck, du kannst es also nicht noch einmal ansehen.",
+    "copy": "Token kopieren",
+    "copied": "Token kopiert",
+    "done": "Fertig"
+  }
+}

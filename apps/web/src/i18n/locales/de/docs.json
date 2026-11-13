@@ -1,0 +1,150 @@
+{
+  "page": {
+    "status": {
+      "saving": "Wird gespeichert…",
+      "pending": "Ungespeicherte Änderungen",
+      "saved": "Gespeichert",
+      "error": "Nicht gespeichert"
+    },
+    "actions": "Seitenaktionen",
+    "newSubpage": "Neue Unterseite",
+    "move": "Verschieben nach…",
+    "delete": "Seite löschen",
+    "titleLabel": "Seitentitel",
+    "editedBy": "Bearbeitet von <name>{{name}}</name> · {{time}}",
+    "agentWorking": "{{name}} arbeitet gerade hier",
+    "agentUpdated": "{{name}} hat diese Seite aktualisiert",
+    "linkedTasks": "Verknüpfte Aufgaben",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> hat diese Seite geändert, während du sie bearbeitet hast. Deine letzten Änderungen wurden nicht gespeichert.",
+      "byOtherSession": "<strong>Eine andere Sitzung</strong> hat diese Seite geändert, während du sie bearbeitet hast. Deine letzten Änderungen wurden nicht gespeichert.",
+      "loadTheirs": "Andere Version laden",
+      "keepMine": "Meine behalten"
+    },
+    "content": "Seiteninhalt",
+    "subpages": "Unterseiten",
+    "attachments": "Anhänge"
+  },
+  "editor": {
+    "placeholder": "Schreib los oder drücke „/“ zum Einfügen…",
+    "headingPlaceholder": "Überschrift",
+    "label": "Inhalt",
+    "uploading": "{{name}} wird hochgeladen…",
+    "uploaded": "Datei angehängt",
+    "noBlocks": "Keine passenden Blöcke",
+    "mentionHint": "Tippe, um Aufgaben und Seiten zu suchen",
+    "groups": {
+      "blocks": "Blöcke",
+      "lists": "Listen",
+      "insert": "Einfügen",
+      "tasks": "Aufgaben",
+      "pages": "Seiten"
+    },
+    "slash": {
+      "p": {
+        "title": "Text",
+        "subtitle": "Normaler Absatz",
+        "keywords": "text absatz fließtext paragraph"
+      },
+      "h1": {
+        "title": "Überschrift 1",
+        "subtitle": "Große Überschrift",
+        "keywords": "überschrift titel heading h1"
+      },
+      "h2": {
+        "title": "Überschrift 2",
+        "subtitle": "Abschnittsüberschrift",
+        "keywords": "überschrift titel abschnitt heading h2"
+      },
+      "h3": {
+        "title": "Überschrift 3",
+        "subtitle": "Unterabschnitt",
+        "keywords": "überschrift titel unterabschnitt heading h3"
+      },
+      "ul": {
+        "title": "Liste",
+        "subtitle": "Aufzählung",
+        "keywords": "liste aufzählung punkte stichpunkte bullet ul"
+      },
+      "ol": {
+        "title": "Nummerierte Liste",
+        "subtitle": "1, 2, 3…",
+        "keywords": "liste nummeriert nummerierung ol"
+      },
+      "todo": {
+        "title": "To-do-Liste",
+        "subtitle": "Kästchen zum Abhaken",
+        "keywords": "todo aufgabe checkliste kontrollkästchen check"
+      },
+      "quote": {
+        "title": "Zitat",
+        "subtitle": "Eine Passage hervorheben",
+        "keywords": "zitat quote blockquote"
+      },
+      "code": {
+        "title": "Code",
+        "subtitle": "Codeblock",
+        "keywords": "code codeblock snippet quelltext"
+      },
+      "table": {
+        "title": "Tabelle",
+        "subtitle": "3 × 3 mit Kopfzeile",
+        "keywords": "tabelle raster table"
+      },
+      "hr": {
+        "title": "Trennlinie",
+        "subtitle": "Horizontale Linie",
+        "keywords": "trennlinie trenner linie divider hr"
+      },
+      "mention": {
+        "title": "Aufgabe oder Seite verknüpfen",
+        "subtitle": "Tippe @ und suche",
+        "keywords": "erwähnung erwähnen verknüpfen link aufgabe seite mention"
+      },
+      "image": {
+        "title": "Bild",
+        "subtitle": "PNG, JPG, GIF oder WebP hochladen",
+        "keywords": "bild foto grafik image"
+      },
+      "file": {
+        "title": "Datei",
+        "subtitle": "Beliebige Datei anhängen",
+        "keywords": "datei anhang hochladen upload file"
+      }
+    },
+    "mention": {
+      "card": "Aufgabe · {{board}} · {{column}}",
+      "page": "Seite · {{project}}"
+    },
+    "menu": {
+      "slash": "Block einfügen",
+      "mention": "Aufgabe oder Seite verknüpfen",
+      "searching": "Suche läuft…",
+      "noMatches": "Keine Treffer"
+    },
+    "format": {
+      "linkPlaceholder": "https://… oder /doc/…",
+      "linkLabel": "Linkadresse",
+      "openLink": "Link öffnen",
+      "editLink": "Link bearbeiten",
+      "removeLink": "Link entfernen",
+      "bold": "Fett",
+      "italic": "Kursiv",
+      "strike": "Durchgestrichen",
+      "code": "Code",
+      "link": "Link"
+    }
+  },
+  "icon": {
+    "change": "Symbol ändern",
+    "add": "Symbol hinzufügen",
+    "use": "{{icon}} verwenden",
+    "remove": "Symbol entfernen"
+  },
+  "move": {
+    "title": "Seite verschieben",
+    "description": "Wähle aus, wo sie im Projekt liegen soll.",
+    "root": "oberste Ebene",
+    "moved": "Seite verschoben"
+  }
+}

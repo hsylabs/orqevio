@@ -1,0 +1,16 @@
+{
+  "codes": {
+    "invalid_access_key": "La clé d’accès est incorrecte.",
+    "invalid_setup_code": "Le code de configuration est incorrect.",
+    "already_claimed": "Cette copie est déjà configurée. Connectez-vous avec votre clé d’accès.",
+    "not_claimed": "Cette copie n’est pas encore configurée.",
+    "rate_limited": "Trop de tentatives. Patientez quelques minutes.",
+    "network": "Aucune connexion au serveur.",
+    "file_too_large": "Le fichier dépasse la taille maximale autorisée.",
+    "upload_incomplete": "L’envoi a été interrompu. Réessayez.",
+    "last_workspace": "Vous devez conserver au moins un espace."
+  },
+  "notFound": "Élément introuvable.",
+  "server": "Une erreur est survenue sur le serveur. Réessayez.",
+  "unknown": "Une erreur est survenue. Réessayez."
+}

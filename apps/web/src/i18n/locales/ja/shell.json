@@ -1,0 +1,137 @@
+{
+  "nav": {
+    "label": "メインナビゲーション",
+    "search": "検索または移動…",
+    "home": "ホーム",
+    "vault": "保管庫",
+    "agents": "エージェント",
+    "agentLive": "エージェント稼働中",
+    "projects": "プロジェクト",
+    "newProject": "新規プロジェクト",
+    "firstProject": {
+      "title": "最初のプロジェクトを作成",
+      "body": "ボードとドキュメントを1か所にまとめましょう。"
+    },
+    "vaultLocked": "ロック中",
+    "vaultUnlocked": "ロック解除中"
+  },
+  "workspace": {
+    "fallback": "ワークスペース",
+    "heading": "ワークスペース",
+    "new": "新規ワークスペース",
+    "newDescription": "ワークスペースを分けると、個人用と仕事用などのコンテキストを切り分けられます。エージェントのトークンは、それぞれ1つのワークスペースに属します。",
+    "name": "名前",
+    "create": "ワークスペースを作成",
+    "settings": "設定"
+  },
+  "project": {
+    "collapse": "{{name}}を折りたたむ",
+    "expand": "{{name}}を展開",
+    "actions": "{{name}}の操作",
+    "newBoard": "新規ボード",
+    "newPage": "新規ページ",
+    "newPageIn": "{{name}}に新規ページ",
+    "rename": "名前と色",
+    "delete": "プロジェクトを削除",
+    "empty": "空です"
+  },
+  "tree": {
+    "collapse": "折りたたむ",
+    "expand": "展開",
+    "newSubpage": "新規サブページ"
+  },
+  "user": {
+    "updateAvailable": "Orqevioの新しいバージョンがあります",
+    "settings": "設定",
+    "newVersion": "新しいバージョン",
+    "appearance": "外観",
+    "theme": {
+      "system": "システム",
+      "light": "ライト",
+      "dark": "ダーク"
+    },
+    "signOut": "ログアウト"
+  },
+  "header": {
+    "hideSidebar": "サイドバーを隠す",
+    "showSidebar": "サイドバーを表示",
+    "toggleSidebar": "サイドバーの表示を切り替え",
+    "breadcrumb": "パンくずリスト"
+  },
+  "newProject": {
+    "title": "新規プロジェクト",
+    "description": "プロジェクトでは、関連するボードとドキュメントをまとめて管理できます。",
+    "name": "名前",
+    "namePlaceholder": "例：Webサイトの公開",
+    "color": "色",
+    "withBoard": "ボードを作成",
+    "startWithBoard": "ボード付きで始める",
+    "boardHint": "列：{{columns}}。いつでも変更できます。",
+    "boardName": "タスク",
+    "create": "プロジェクトを作成"
+  },
+  "projectSettings": {
+    "title": "プロジェクト",
+    "name": "名前",
+    "description": "説明",
+    "optional": "任意",
+    "color": "色"
+  },
+  "actions": {
+    "newBoard": {
+      "title": "新規ボード",
+      "label": "ボード名",
+      "placeholder": "例：リリーススプリント",
+      "confirm": "ボードを作成"
+    },
+    "deleteBoard": {
+      "title": "「{{name}}」を削除しますか？",
+      "body": "ボード内の列とカードも削除されます。この操作は元に戻せません。",
+      "confirm": "ボードを削除",
+      "done": "ボードを削除しました"
+    },
+    "deletePage": {
+      "title": "「{{name}}」を削除しますか？",
+      "body": "サブページと添付ファイルも削除されます。この操作は元に戻せません。",
+      "confirm": "ページを削除",
+      "done": "ページを削除しました"
+    },
+    "deleteProject": {
+      "title": "プロジェクト「{{name}}」を削除しますか？",
+      "body": "プロジェクト内のボード、カード、ページ、添付ファイルがすべて削除されます。この操作は元に戻せません。",
+      "confirm": "プロジェクトを削除",
+      "done": "プロジェクトを削除しました"
+    }
+  },
+  "palette": {
+    "label": "コマンドパレット",
+    "title": "検索",
+    "description": "プロジェクト、ボード、ページ、カードを検索したり、操作を実行したりできます。",
+    "placeholder": "タスク、ドキュメント、操作を検索…",
+    "searching": "検索中…",
+    "noResults": "結果がありません。別のキーワードをお試しください。",
+    "inContent": "本文内",
+    "navigate": "移動",
+    "structure": "プロジェクト、ボード、ページ",
+    "project": "プロジェクト",
+    "actions": "操作",
+    "newProject": "新規プロジェクト",
+    "lightTheme": "ライトテーマに切り替え",
+    "darkTheme": "ダークテーマに切り替え",
+    "lockVault": "保管庫をロック",
+    "hintNavigate": "移動",
+    "hintOpen": "開く",
+    "keywords": {
+      "home": "ホーム ほーむ home",
+      "vault": "保管庫 ほかんこ パスワード ぱすわーど vault password",
+      "agents": "エージェント えーじぇんと MCP トークン とーくん agents token",
+      "settings": "設定 せってい アカウント あかうんと settings account",
+      "project": "プロジェクト project",
+      "board": "ボード board",
+      "page": "ページ page",
+      "newProject": "新規プロジェクト 作成 しんき さくせい new project create",
+      "theme": "テーマ 変更 ライト ダーク 外観 てーま theme light dark",
+      "lockVault": "保管庫 ロック ほかんこ ろっく lock vault"
+    }
+  }
+}

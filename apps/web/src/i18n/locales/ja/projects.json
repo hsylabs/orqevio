@@ -1,0 +1,22 @@
+{
+  "edit": "編集",
+  "delete": "プロジェクトを削除",
+  "summary": "{{boards}} · {{pages}}",
+  "boardCount_other": "ボード{{count}}件",
+  "pageCount_other": "ページ{{count}}件",
+  "boards": {
+    "title": "ボード",
+    "new": "新規ボード",
+    "openCards_other": "カード{{count}}枚",
+    "empty": "カンバンボードを作成して、このプロジェクトのタスクを整理しましょう。"
+  },
+  "docs": {
+    "title": "ドキュメント",
+    "new": "新規ページ",
+    "subpages_other": "サブページ{{count}}件",
+    "emptyTitle": "ドキュメントはまだありません",
+    "emptyAction": "最初のページを書く",
+    "emptyBody": "仕様、意思決定、プロセス、議事録など。Markdownで書けて、タスクとリンクできます。"
+  },
+  "recent": "最近の編集"
+}

@@ -1,0 +1,175 @@
+{
+  "actions": {
+    "delete": "削除",
+    "restore": "復元",
+    "archive": "アーカイブ",
+    "rename": "名前を変更",
+    "back": "戻る",
+    "undo": "元に戻す"
+  },
+  "board": {
+    "region": "ボード：{{name}}",
+    "archived": "アーカイブ済み",
+    "actions": "ボードの操作",
+    "rename": "ボード名を変更",
+    "nameLabel": "名前",
+    "delete": "ボードを削除",
+    "empty": {
+      "title": "このボードには列がありません",
+      "body": "作業の段階ごとに列を作成しましょう。"
+    },
+    "filterActive": "フィルター適用中 · ドラッグは無効です",
+    "removeFilter": "フィルターを解除"
+  },
+  "drag": {
+    "instructions": "項目を持ち上げるにはスペースキーを押します。矢印キーで移動し、もう一度スペースキーを押すとドロップします。キャンセルするにはEscapeキーを押します。",
+    "card": {
+      "picked": "カード「{{title}}」を持ち上げました。列「{{column}}」、{{total}}件中{{position}}番目です。",
+      "over": "カード「{{title}}」は列「{{column}}」の{{total}}件中{{position}}番目にあります。",
+      "outside": "カード「{{title}}」は有効なドロップ先の上にありません。",
+      "dropped": "カード「{{title}}」をドロップしました。列「{{column}}」、{{total}}件中{{position}}番目です。",
+      "droppedOutside": "カード「{{title}}」をドロップしました。",
+      "cancelled": "カード「{{title}}」の移動をキャンセルしました。"
+    },
+    "column": {
+      "picked": "列「{{title}}」を持ち上げました。{{total}}件中{{position}}番目です。",
+      "over": "列「{{title}}」は{{total}}件中{{position}}番目にあります。",
+      "outside": "列「{{title}}」は有効なドロップ先の上にありません。",
+      "dropped": "列「{{title}}」をドロップしました。{{total}}件中{{position}}番目です。",
+      "droppedOutside": "列「{{title}}」をドロップしました。",
+      "cancelled": "列「{{title}}」の移動をキャンセルしました。"
+    }
+  },
+  "filter": {
+    "button": "フィルター",
+    "search": "タイトルで検索…",
+    "searchLabel": "タイトルで検索",
+    "due": "期限",
+    "dues": {
+      "all": "すべて",
+      "overdue": "期限切れ",
+      "week": "今週",
+      "none": "期限なし"
+    },
+    "labels": "ラベル",
+    "clear": "フィルターをクリア"
+  },
+  "column": {
+    "region": "列：{{name}}",
+    "roleDescription": "列",
+    "handle": "{{name}}。ダブルクリックで名前を変更、スペースキーで移動",
+    "name": "列名",
+    "add": "列を追加",
+    "addCardTo": "{{name}}にカードを追加",
+    "actions": "{{name}}の操作",
+    "addCard": "カードを追加",
+    "delete": "列を削除",
+    "cards": "{{name}}のカード",
+    "noMatches": "フィルターに一致するものはありません",
+    "dropHere": "ここにカードをドロップ",
+    "deleteConfirm": {
+      "title": "列「{{name}}」を削除しますか？",
+      "withCards_other": "列内の{{count}}枚のカードも削除されます。残したい場合は、先に別の列へ移動してください。",
+      "empty": "この列は空です。"
+    }
+  },
+  "composer": {
+    "placeholder": "何をしますか？",
+    "hint": "<kbd>↵</kbd>で追加 · <kbd>esc</kbd>で閉じる",
+    "submit": "追加"
+  },
+  "card": {
+    "title": "カードのタイトル",
+    "roleDescription": "カード",
+    "checklist": "チェックリスト",
+    "hasDescription": "説明あり",
+    "linkedDocs": "リンクされたドキュメント",
+    "attachments": "添付ファイル",
+    "createdByName": "作成者：{{name}}"
+  },
+  "sheet": {
+    "fallbackTitle": "カード",
+    "label": "カードの詳細",
+    "gone": "このカードは存在しません",
+    "archived": "アーカイブ済み",
+    "agentEditing": "{{name}}が編集中",
+    "saving": "保存中…",
+    "saved": "保存しました",
+    "actions": "カードの操作",
+    "archivedToast": "カードをアーカイブしました",
+    "deleteConfirm": {
+      "title": "このカードを削除しますか？",
+      "description": "チェックリストと添付ファイルも一緒に削除されます。非表示にするだけなら、アーカイブしてください。"
+    },
+    "labels": "ラベル",
+    "addLabels": "ラベルを追加",
+    "due": "期限",
+    "noDate": "期限なし",
+    "createdBy": "作成者",
+    "unknownCreator": "不明",
+    "description": "説明",
+    "descriptionPlaceholder": "背景、受け入れ条件、メモなどを追加します。「/」で挿入できます。",
+    "descriptionLabel": "カードの説明",
+    "checklists": "チェックリスト",
+    "addChecklist": "+ 追加",
+    "newChecklistTitle": "チェックリスト",
+    "checklistsEmpty": "タスクを、チェックできるステップに分けましょう。",
+    "linkedDocs": "リンクされたドキュメント",
+    "attachments": "添付ファイル",
+    "activity": "アクティビティ"
+  },
+  "checklist": {
+    "titleLabel": "チェックリストのタイトル",
+    "actions": "チェックリストの操作",
+    "delete": "チェックリストを削除",
+    "progress": "進捗",
+    "item": "項目",
+    "deleteItem": "「{{text}}」を削除",
+    "addItem": "項目を追加",
+    "newItemPlaceholder": "新しい項目を入力してEnter",
+    "newItem": "新しい項目"
+  },
+  "due": {
+    "today": "今日",
+    "tomorrow": "明日",
+    "monday": "月曜日",
+    "inAWeek": "1週間後",
+    "remove": "期限を削除"
+  },
+  "labels": {
+    "title": "ラベル",
+    "newTitle": "新規ラベル",
+    "editTitle": "ラベルを編集",
+    "namePlaceholder": "名前（任意）",
+    "nameLabel": "ラベル名",
+    "empty": "このボードにはまだラベルがありません。",
+    "unnamed": "名前なし",
+    "editNamed": "{{name}}を編集",
+    "editUnnamed": "ラベルを編集",
+    "create": "ラベルを作成"
+  },
+  "linked": {
+    "mentioned": "メンション",
+    "unlinkNamed": "{{title}}のリンクを解除",
+    "unlinkUntitled": "ページのリンクを解除",
+    "link": "ドキュメントをリンク",
+    "search": "ページを検索…",
+    "searchLabel": "ページを検索",
+    "noResults": "結果がありません。",
+    "hint": "入力すると、ワークスペース全体を検索します。"
+  },
+  "archived": {
+    "sheetTitle": "アーカイブ済みのカード",
+    "heading": "アーカイブ済み",
+    "emptyTitle": "アーカイブされたものはありません",
+    "emptyBody": "あなたやエージェントがアーカイブしたカードはここに表示され、復元できます。",
+    "deleteConfirm": "「{{title}}」を完全に削除しますか？"
+  },
+  "attachments": {
+    "deleteConfirm": "「{{name}}」を削除しますか？",
+    "download": "{{name}}をダウンロード",
+    "deleteNamed": "{{name}}を削除",
+    "uploading": "アップロード中…",
+    "attach": "ファイルを添付"
+  }
+}

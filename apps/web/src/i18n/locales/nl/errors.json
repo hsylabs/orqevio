@@ -1,0 +1,16 @@
+{
+  "codes": {
+    "invalid_access_key": "De toegangssleutel klopt niet.",
+    "invalid_setup_code": "De installatiecode klopt niet.",
+    "already_claimed": "Deze installatie is al ingesteld. Log in met je toegangssleutel.",
+    "not_claimed": "Deze installatie is nog niet ingesteld.",
+    "rate_limited": "Te veel pogingen. Wacht een paar minuten.",
+    "network": "Er is geen verbinding met de server.",
+    "file_too_large": "Het bestand is groter dan de maximaal toegestane grootte.",
+    "upload_incomplete": "Het uploaden is onderbroken. Probeer het opnieuw.",
+    "last_workspace": "Je moet minstens één werkruimte houden."
+  },
+  "notFound": "Het item is niet gevonden.",
+  "server": "Er ging iets mis op de server. Probeer het opnieuw.",
+  "unknown": "Er ging iets mis. Probeer het opnieuw."
+}

@@ -1,0 +1,38 @@
+{
+  "title": "Home",
+  "greeting": "{{greeting}}, <name>{{name}}</name>.",
+  "onboarding": {
+    "title": "Primi passi",
+    "dismiss": "Nascondi i primi passi",
+    "progress": "{{done}} su {{total}} completati",
+    "project": {
+      "title": "Crea un progetto",
+      "body": "Raggruppa bacheche e documenti."
+    },
+    "page": {
+      "title": "Scrivi una pagina",
+      "body": "Documenta in Markdown, con «/» e «@»."
+    },
+    "vault": {
+      "title": "Configura la cassaforte",
+      "body": "Crittografia end-to-end."
+    },
+    "agent": {
+      "title": "Collega un agente",
+      "body": "Claude, Cursor o VS Code, tramite MCP."
+    }
+  },
+  "due": {
+    "title": "In scadenza",
+    "empty": "Niente in scadenza nei prossimi 7 giorni."
+  },
+  "recent": {
+    "title": "Documenti recenti",
+    "empty": "Ancora nessun documento."
+  },
+  "activity": {
+    "title": "Attività",
+    "agents": "Attività degli agenti",
+    "empty": "Qui vedrai cosa fate tu e i tuoi agenti."
+  }
+}

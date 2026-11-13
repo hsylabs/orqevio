@@ -1,0 +1,150 @@
+{
+  "page": {
+    "status": {
+      "saving": "保存中…",
+      "pending": "未保存の変更",
+      "saved": "保存済み",
+      "error": "保存されていません"
+    },
+    "actions": "ページの操作",
+    "newSubpage": "新規サブページ",
+    "move": "移動…",
+    "delete": "ページを削除",
+    "titleLabel": "ページのタイトル",
+    "editedBy": "<name>{{name}}</name>が編集 · {{time}}",
+    "agentWorking": "{{name}}がここで作業中です",
+    "agentUpdated": "{{name}}がこのページを更新しました",
+    "linkedTasks": "リンクされたタスク",
+    "conflict": {
+      "byName": "編集中に<strong>{{name}}</strong>がこのページを変更しました。最新の変更は保存されていません。",
+      "byOtherSession": "編集中に<strong>別のセッション</strong>がこのページを変更しました。最新の変更は保存されていません。",
+      "loadTheirs": "相手のバージョンを読み込む",
+      "keepMine": "自分のバージョンを残す"
+    },
+    "content": "ページの内容",
+    "subpages": "サブページ",
+    "attachments": "添付ファイル"
+  },
+  "editor": {
+    "placeholder": "入力するか、「/」で挿入…",
+    "headingPlaceholder": "見出し",
+    "label": "内容",
+    "uploading": "{{name}}をアップロード中…",
+    "uploaded": "ファイルを添付しました",
+    "noBlocks": "一致するブロックはありません",
+    "mentionHint": "入力してタスクとページを検索",
+    "groups": {
+      "blocks": "ブロック",
+      "lists": "リスト",
+      "insert": "挿入",
+      "tasks": "タスク",
+      "pages": "ページ"
+    },
+    "slash": {
+      "p": {
+        "title": "テキスト",
+        "subtitle": "通常の段落",
+        "keywords": "テキスト 段落 本文 てきすと だんらく text paragraph"
+      },
+      "h1": {
+        "title": "見出し1",
+        "subtitle": "大見出し",
+        "keywords": "見出し 大見出し タイトル みだし heading title h1"
+      },
+      "h2": {
+        "title": "見出し2",
+        "subtitle": "中見出し",
+        "keywords": "見出し 中見出し タイトル みだし heading title h2"
+      },
+      "h3": {
+        "title": "見出し3",
+        "subtitle": "小見出し",
+        "keywords": "見出し 小見出し タイトル みだし heading title h3"
+      },
+      "ul": {
+        "title": "リスト",
+        "subtitle": "箇条書きリスト",
+        "keywords": "リスト 箇条書き りすと かじょうがき list bullet ul"
+      },
+      "ol": {
+        "title": "番号付きリスト",
+        "subtitle": "1、2、3…",
+        "keywords": "リスト 番号 番号付き りすと ばんごう list numbered ordered ol"
+      },
+      "todo": {
+        "title": "ToDoリスト",
+        "subtitle": "チェックボックスで完了を管理",
+        "keywords": "todo やること タスク チェックリスト チェック たすく task checklist check"
+      },
+      "quote": {
+        "title": "引用",
+        "subtitle": "文章の一部を目立たせる",
+        "keywords": "引用 いんよう quote blockquote"
+      },
+      "code": {
+        "title": "コード",
+        "subtitle": "コードブロック",
+        "keywords": "コード こーど code snippet"
+      },
+      "table": {
+        "title": "表",
+        "subtitle": "見出し行付きの3 × 3",
+        "keywords": "表 テーブル ひょう てーぶる table grid"
+      },
+      "hr": {
+        "title": "区切り線",
+        "subtitle": "水平線",
+        "keywords": "区切り線 区切り 線 水平線 くぎり divider separator hr line"
+      },
+      "mention": {
+        "title": "タスクやページをリンク",
+        "subtitle": "@を入力して検索",
+        "keywords": "メンション リンク タスク ページ めんしょん りんく mention link task page"
+      },
+      "image": {
+        "title": "画像",
+        "subtitle": "PNG、JPG、GIF、WebPをアップロード",
+        "keywords": "画像 写真 イメージ がぞう しゃしん image photo picture"
+      },
+      "file": {
+        "title": "ファイル",
+        "subtitle": "任意のファイルを添付",
+        "keywords": "ファイル 添付 アップロード ふぁいる てんぷ file attachment upload"
+      }
+    },
+    "mention": {
+      "card": "タスク · {{board}} · {{column}}",
+      "page": "ページ · {{project}}"
+    },
+    "menu": {
+      "slash": "ブロックを挿入",
+      "mention": "タスクやページをリンク",
+      "searching": "検索中…",
+      "noMatches": "一致するものはありません"
+    },
+    "format": {
+      "linkPlaceholder": "https://… または /doc/…",
+      "linkLabel": "リンク先",
+      "openLink": "リンクを開く",
+      "editLink": "リンクを編集",
+      "removeLink": "リンクを削除",
+      "bold": "太字",
+      "italic": "斜体",
+      "strike": "取り消し線",
+      "code": "コード",
+      "link": "リンク"
+    }
+  },
+  "icon": {
+    "change": "アイコンを変更",
+    "add": "アイコンを追加",
+    "use": "{{icon}}を使用",
+    "remove": "アイコンを削除"
+  },
+  "move": {
+    "title": "ページを移動",
+    "description": "プロジェクト内の移動先を選んでください。",
+    "root": "プロジェクトの最上位",
+    "moved": "ページを移動しました"
+  }
+}

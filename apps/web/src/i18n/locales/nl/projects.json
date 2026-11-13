@@ -1,0 +1,26 @@
+{
+  "edit": "Bewerken",
+  "delete": "Project verwijderen",
+  "summary": "{{boards}} · {{pages}}",
+  "boardCount_one": "{{count}} bord",
+  "boardCount_other": "{{count}} borden",
+  "pageCount_one": "{{count}} pagina",
+  "pageCount_other": "{{count}} pagina’s",
+  "boards": {
+    "title": "Borden",
+    "new": "Nieuw bord",
+    "openCards_one": "{{count}} open kaart",
+    "openCards_other": "{{count}} open kaarten",
+    "empty": "Maak een kanbanbord om de taken van dit project te organiseren."
+  },
+  "docs": {
+    "title": "Documenten",
+    "new": "Nieuwe pagina",
+    "subpages_one": "{{count}} subpagina",
+    "subpages_other": "{{count}} subpagina’s",
+    "emptyTitle": "Nog geen documenten",
+    "emptyAction": "Schrijf de eerste pagina",
+    "emptyBody": "Specificaties, besluiten, processen of vergadernotities. In Markdown en gekoppeld aan je taken."
+  },
+  "recent": "Recent bewerkt"
+}

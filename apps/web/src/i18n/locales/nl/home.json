@@ -1,0 +1,38 @@
+{
+  "title": "Start",
+  "greeting": "{{greeting}}, <name>{{name}}</name>.",
+  "onboarding": {
+    "title": "Aan de slag",
+    "dismiss": "‘Aan de slag’ verbergen",
+    "progress": "{{done}} van {{total}} klaar",
+    "project": {
+      "title": "Maak een project",
+      "body": "Bundel borden en documenten."
+    },
+    "page": {
+      "title": "Schrijf een pagina",
+      "body": "Documenteer in Markdown, met ‘/’ en ‘@’."
+    },
+    "vault": {
+      "title": "Stel de kluis in",
+      "body": "End-to-end versleuteld."
+    },
+    "agent": {
+      "title": "Koppel een agent",
+      "body": "Claude, Cursor of VS Code, via MCP."
+    }
+  },
+  "due": {
+    "title": "Komende deadlines",
+    "empty": "Geen deadlines in de komende 7 dagen."
+  },
+  "recent": {
+    "title": "Recente documenten",
+    "empty": "Nog geen documenten."
+  },
+  "activity": {
+    "title": "Activiteit",
+    "agents": "Activiteit van agents",
+    "empty": "Wat jij en je agents doen, verschijnt hier."
+  }
+}

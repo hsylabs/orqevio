@@ -1,0 +1,176 @@
+{
+  "actions": {
+    "delete": "Löschen",
+    "restore": "Wiederherstellen",
+    "archive": "Archivieren",
+    "rename": "Umbenennen",
+    "back": "Zurück",
+    "undo": "Rückgängig"
+  },
+  "board": {
+    "region": "Board {{name}}",
+    "archived": "Archiv",
+    "actions": "Board-Aktionen",
+    "rename": "Board umbenennen",
+    "nameLabel": "Name",
+    "delete": "Board löschen",
+    "empty": {
+      "title": "Dieses Board hat keine Spalten",
+      "body": "Lege Spalten für die Phasen deiner Arbeit an."
+    },
+    "filterActive": "Filter aktiv · Ziehen ist deaktiviert",
+    "removeFilter": "Filter entfernen"
+  },
+  "drag": {
+    "instructions": "Drücke die Leertaste, um ein Element aufzunehmen. Bewege es mit den Pfeiltasten und drücke erneut die Leertaste, um es abzulegen. Mit Escape brichst du ab.",
+    "card": {
+      "picked": "Du hast die Karte „{{title}}“ aufgenommen. Spalte „{{column}}“, Position {{position}} von {{total}}.",
+      "over": "Die Karte „{{title}}“ ist in Spalte „{{column}}“, Position {{position}} von {{total}}.",
+      "outside": "Die Karte „{{title}}“ befindet sich über keinem gültigen Ablagebereich.",
+      "dropped": "Du hast die Karte „{{title}}“ abgelegt. Spalte „{{column}}“, Position {{position}} von {{total}}.",
+      "droppedOutside": "Du hast die Karte „{{title}}“ abgelegt.",
+      "cancelled": "Das Verschieben der Karte „{{title}}“ wurde abgebrochen."
+    },
+    "column": {
+      "picked": "Du hast die Spalte „{{title}}“ aufgenommen. Position {{position}} von {{total}}.",
+      "over": "Die Spalte „{{title}}“ ist an Position {{position}} von {{total}}.",
+      "outside": "Die Spalte „{{title}}“ befindet sich über keinem gültigen Ablagebereich.",
+      "dropped": "Du hast die Spalte „{{title}}“ abgelegt. Position {{position}} von {{total}}.",
+      "droppedOutside": "Du hast die Spalte „{{title}}“ abgelegt.",
+      "cancelled": "Das Verschieben der Spalte „{{title}}“ wurde abgebrochen."
+    }
+  },
+  "filter": {
+    "button": "Filtern",
+    "search": "Nach Titel suchen…",
+    "searchLabel": "Nach Titel suchen",
+    "due": "Fälligkeit",
+    "dues": {
+      "all": "Alle",
+      "overdue": "Überfällig",
+      "week": "Diese Woche",
+      "none": "Kein Datum"
+    },
+    "labels": "Labels",
+    "clear": "Filter zurücksetzen"
+  },
+  "column": {
+    "region": "Spalte {{name}}",
+    "roleDescription": "Spalte",
+    "handle": "{{name}}. Doppelklick zum Umbenennen, Leertaste zum Verschieben",
+    "name": "Spaltenname",
+    "add": "Spalte hinzufügen",
+    "addCardTo": "Karte zu {{name}} hinzufügen",
+    "actions": "Aktionen für {{name}}",
+    "addCard": "Karte hinzufügen",
+    "delete": "Spalte löschen",
+    "cards": "Karten in {{name}}",
+    "noMatches": "Nichts passt zum Filter",
+    "dropHere": "Karten hier ablegen",
+    "deleteConfirm": {
+      "title": "Spalte „{{name}}“ löschen?",
+      "withCards_one": "Die Karte in dieser Spalte wird ebenfalls gelöscht. Wenn du sie behalten willst, verschiebe sie vorher in eine andere Spalte.",
+      "withCards_other": "Die {{count}} Karten in dieser Spalte werden ebenfalls gelöscht. Wenn du sie behalten willst, verschiebe sie vorher in eine andere Spalte.",
+      "empty": "Die Spalte ist leer."
+    }
+  },
+  "composer": {
+    "placeholder": "Was ist zu tun?",
+    "hint": "<kbd>↵</kbd> hinzufügen · <kbd>esc</kbd> schließen",
+    "submit": "Hinzufügen"
+  },
+  "card": {
+    "title": "Kartentitel",
+    "roleDescription": "Karte",
+    "checklist": "Checkliste",
+    "hasDescription": "Hat eine Beschreibung",
+    "linkedDocs": "Verknüpfte Dokumente",
+    "attachments": "Anhänge",
+    "createdByName": "Erstellt von {{name}}"
+  },
+  "sheet": {
+    "fallbackTitle": "Karte",
+    "label": "Kartendetails",
+    "gone": "Diese Karte existiert nicht mehr",
+    "archived": "Archiviert",
+    "agentEditing": "{{name}} bearbeitet gerade",
+    "saving": "Wird gespeichert…",
+    "saved": "Gespeichert",
+    "actions": "Kartenaktionen",
+    "archivedToast": "Karte archiviert",
+    "deleteConfirm": {
+      "title": "Diese Karte löschen?",
+      "description": "Die Karte wird mitsamt ihren Checklisten und Anhängen gelöscht. Wenn du sie nur ausblenden willst, archiviere sie stattdessen."
+    },
+    "labels": "Labels",
+    "addLabels": "Labels hinzufügen",
+    "due": "Fällig",
+    "noDate": "Kein Datum",
+    "createdBy": "Erstellt von",
+    "unknownCreator": "Unbekannt",
+    "description": "Beschreibung",
+    "descriptionPlaceholder": "Füge Kontext, Akzeptanzkriterien oder Notizen hinzu. Drücke „/“ zum Einfügen.",
+    "descriptionLabel": "Kartenbeschreibung",
+    "checklists": "Checklisten",
+    "addChecklist": "+ Hinzufügen",
+    "newChecklistTitle": "Checkliste",
+    "checklistsEmpty": "Teile die Aufgabe in Schritte auf, die du abhaken kannst.",
+    "linkedDocs": "Verknüpfte Dokumente",
+    "attachments": "Anhänge",
+    "activity": "Aktivität"
+  },
+  "checklist": {
+    "titleLabel": "Titel der Checkliste",
+    "actions": "Checklisten-Aktionen",
+    "delete": "Checkliste löschen",
+    "progress": "Fortschritt",
+    "item": "Punkt",
+    "deleteItem": "„{{text}}“ löschen",
+    "addItem": "Punkt hinzufügen",
+    "newItemPlaceholder": "Neuer Punkt, dann Enter",
+    "newItem": "Neuer Punkt"
+  },
+  "due": {
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "monday": "Montag",
+    "inAWeek": "In einer Woche",
+    "remove": "Datum entfernen"
+  },
+  "labels": {
+    "title": "Labels",
+    "newTitle": "Neues Label",
+    "editTitle": "Label bearbeiten",
+    "namePlaceholder": "Name (optional)",
+    "nameLabel": "Name des Labels",
+    "empty": "Dieses Board hat noch keine Labels.",
+    "unnamed": "Ohne Namen",
+    "editNamed": "{{name}} bearbeiten",
+    "editUnnamed": "Label bearbeiten",
+    "create": "Label erstellen"
+  },
+  "linked": {
+    "mentioned": "erwähnt",
+    "unlinkNamed": "Verknüpfung mit {{title}} aufheben",
+    "unlinkUntitled": "Verknüpfung mit der Seite aufheben",
+    "link": "Dokument verknüpfen",
+    "search": "Seiten suchen…",
+    "searchLabel": "Seiten suchen",
+    "noResults": "Keine Ergebnisse.",
+    "hint": "Tippe, um den ganzen Arbeitsbereich zu durchsuchen."
+  },
+  "archived": {
+    "sheetTitle": "Archivierte Karten",
+    "heading": "Archiviert",
+    "emptyTitle": "Nichts archiviert",
+    "emptyBody": "Karten, die du oder deine Agenten archivieren, erscheinen hier, und du kannst sie wiederherstellen.",
+    "deleteConfirm": "„{{title}}“ endgültig löschen?"
+  },
+  "attachments": {
+    "deleteConfirm": "„{{name}}“ löschen?",
+    "download": "{{name}} herunterladen",
+    "deleteNamed": "{{name}} löschen",
+    "uploading": "Wird hochgeladen…",
+    "attach": "Datei anhängen"
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "title": "Agents",
+  "connect": "Agent koppelen",
+  "intro": {
+    "title": "Je agents, met duidelijke rechten",
+    "body": "Koppel elke MCP-compatibele client om documentatie op te zoeken, taken aan te maken en borden te reorganiseren. Elk token hoort bij één werkruimte en kan alleen doen wat jij toestaat.",
+    "endpoint": "Endpoint",
+    "copyEndpoint": "Endpoint kopiëren",
+    "endpointCopied": "Endpoint gekopieerd",
+    "oauth": "Voeg in Claude (web, desktop en mobiel) een aangepaste connector toe met dit endpoint. Een token is niet nodig: je wordt hier om toestemming gevraagd. Elke client die OAuth ondersteunt, werkt op dezelfde manier."
+  },
+  "vault": {
+    "title": "De kluis blijft buiten hun bereik",
+    "unreadable": "Geen enkel token kan de kluis lezen, zelfs niet versleuteld: de server weigert het verzoek voordat er gegevens worden aangeraakt.",
+    "noDeletes": "Agents kunnen niets verwijderen. Ze kunnen alleen archiveren, en jij kunt herstellen.",
+    "logged": "Elke actie wordt vastgelegd en je kunt alles live volgen in de app."
+  },
+  "tokens": {
+    "active": "Actieve koppelingen",
+    "emptyTitle": "Je hebt nog geen agents gekoppeld",
+    "emptyBody": "Maak een token en plak de configuratie in Claude Code, Cursor, VS Code of Claude Desktop.",
+    "inactive_one": "{{count}} ingetrokken of verlopen",
+    "inactive_other": "{{count}} ingetrokken of verlopen"
+  },
+  "activity": {
+    "title": "Activiteit van agents",
+    "titleFor": "Activiteit van ‘{{name}}’",
+    "showAll": "Alles tonen",
+    "loading": "Laden…",
+    "empty": "Als een agent in deze werkruimte werkt, zie je dat hier."
+  },
+  "tools": {
+    "title": "MCP-tools",
+    "footnote": "Elke agent ziet alleen de tools die zijn rechten toestaan.",
+    "scopes": {
+      "read": "Lezen",
+      "write": "Schrijven",
+      "tasksRead": "Taken · lezen",
+      "tasksWrite": "Taken · schrijven",
+      "docsRead": "Documenten · lezen",
+      "docsWrite": "Documenten · schrijven"
+    },
+    "descriptions": {
+      "listProjects": "Projecten, borden en paginaoverzicht",
+      "search": "Zoeken in kaarten en pagina’s",
+      "readBoards": "Kolommen, kaarten, checklists en koppelingen",
+      "editCards": "Kaarten maken, bewerken en verplaatsen",
+      "archiveCard": "Archiveren (te herstellen vanuit de app)",
+      "organizeBoards": "Borden reorganiseren",
+      "labels": "Labels en checklists",
+      "readPages": "Paginastructuur en Markdown-inhoud",
+      "writePages": "Maken en bijwerken, met versiebeheer",
+      "linkCard": "Taken en documenten koppelen"
+    }
+  },
+  "revoke": {
+    "action": "Intrekken",
+    "title": "‘{{name}}’ intrekken?",
+    "description": "De agent verliest meteen de toegang. Eerdere activiteit blijft bewaard.",
+    "confirm": "Toegang intrekken",
+    "done": "Toegang ingetrokken"
+  },
+  "token": {
+    "oauth": {
+      "plain": "Gekoppeld via OAuth · keert terug naar {{name}}",
+      "computer": "Gekoppeld via OAuth · keert terug naar {{name}} op deze computer",
+      "app": "Gekoppeld via OAuth · keert terug naar de app ‘{{name}}’ op deze computer"
+    },
+    "access": {
+      "tasks": {
+        "none": "Taken: geen toegang",
+        "read": "Taken: lezen",
+        "write": "Taken: lezen en schrijven"
+      },
+      "docs": {
+        "none": "Documenten: geen toegang",
+        "read": "Documenten: lezen",
+        "write": "Documenten: lezen en schrijven"
+      }
+    },
+    "vaultNever": "Kluis: nooit",
+    "lastUsed": "Laatst gebruikt",
+    "created": "Aangemaakt",
+    "revoked": "Ingetrokken",
+    "expires": "Verloopt",
+    "expiresUnused": "Verloopt indien ongebruikt",
+    "never": "Nooit",
+    "showActivity": "Activiteit bekijken"
+  },
+  "access": {
+    "levels": {
+      "none": "Geen toegang",
+      "read": "Lezen",
+      "write": "Lezen en schrijven"
+    },
+    "tasks": {
+      "label": "Taken",
+      "hint": "Borden, kolommen, kaarten en checklists",
+      "group": "Toegang tot taken"
+    },
+    "docs": {
+      "label": "Documenten",
+      "hint": "Pagina’s en hun Markdown-inhoud",
+      "group": "Toegang tot documenten"
+    },
+    "vault": {
+      "label": "Kluis",
+      "hint": "Nooit toegankelijk voor agents",
+      "blocked": "Geblokkeerd"
+    },
+    "atLeastOne": "Geef leestoegang tot minstens één onderdeel."
+  },
+  "kit": {
+    "clients": "MCP-client",
+    "terminal": "Terminal",
+    "copy": "Configuratie kopiëren",
+    "copied": "Configuratie gekopieerd",
+    "desktopNote": "Claude Desktop gebruikt de mcp-remote-bridge (Node.js) om de authenticatieheader te versturen.",
+    "httpNote": "Streamable HTTP-transport met Bearer-authenticatie. Start de client opnieuw als hij de server niet vindt."
+  },
+  "create": {
+    "description": "Maak een token voor ‘{{workspace}}’. Het heeft alleen toegang tot deze werkruimte, en alleen tot wat je hier toestaat.",
+    "descriptionFallback": "Maak een token voor deze werkruimte. Het heeft alleen toegang tot deze werkruimte, en alleen tot wat je hier toestaat.",
+    "name": "Naam van de agent",
+    "namePlaceholder": "bijv. Claude Code, Cursor, Supportassistent",
+    "expiry": "Geldigheid",
+    "expiries": {
+      "30": "30 dagen",
+      "90": "90 dagen",
+      "365": "1 jaar",
+      "never": "Onbeperkt"
+    },
+    "submit": "Token maken"
+  },
+  "created": {
+    "title": "‘{{name}}’ is klaar",
+    "description": "Kopieer het token nu. Om veiligheidsredenen bewaren we alleen de vingerafdruk ervan, dus je kunt het later niet meer bekijken.",
+    "copy": "Token kopiëren",
+    "copied": "Token gekopieerd",
+    "done": "Klaar"
+  }
+}

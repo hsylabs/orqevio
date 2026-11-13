@@ -1,0 +1,34 @@
+{
+  "problems": {
+    "unknown_client": "Orqevio non riconosce questa app, oppure la descrizione che pubblica non è valida.",
+    "bad_redirect": "L’indirizzo a cui vuole tornare non appartiene a questa app. Per la tua sicurezza, lì non viene inviato nulla."
+  },
+  "problem": {
+    "title": "Impossibile collegare questa app",
+    "home": "Vai a Orqevio"
+  },
+  "leaving": {
+    "title": "Ritorno all’app…",
+    "subtitle": {
+      "plain": "Ti stiamo riportando a {{name}}.",
+      "computer": "Ti stiamo riportando a {{name}} su questo computer.",
+      "app": "Ti stiamo riportando all’app «{{name}}» su questo computer."
+    }
+  },
+  "consent": {
+    "title": "Collega {{name}}",
+    "subtitle": "Un’app vuole lavorare nella tua copia di Orqevio tramite MCP. Scegli a cosa può accedere.",
+    "app": "App",
+    "returnsTo": {
+      "plain": "Al termine tornerai a {{name}}",
+      "computer": "Al termine tornerai a {{name}} su questo computer",
+      "app": "Al termine tornerai all’app «{{name}}» su questo computer"
+    },
+    "publishedBy": "La sua descrizione è pubblicata da {{publisher}}.",
+    "unverified": "Si è registrata da sola, quindi il suo nome non è verificato. Continua solo se l’hai appena collegata tu.",
+    "local": "L’accesso verrà concesso a un programma su questo computer.",
+    "workspace": "Spazio",
+    "allow": "Consenti l’accesso",
+    "revokeLater": "Puoi revocare questo accesso in qualsiasi momento in Agenti."
+  }
+}

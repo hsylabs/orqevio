@@ -1,0 +1,38 @@
+{
+  "title": "Accueil",
+  "greeting": "{{greeting}}, <name>{{name}}</name>.",
+  "onboarding": {
+    "title": "Premiers pas",
+    "dismiss": "Masquer les premiers pas",
+    "progress": "Progression : {{done}} sur {{total}}",
+    "project": {
+      "title": "Créer un projet",
+      "body": "Regroupez tableaux et documents."
+    },
+    "page": {
+      "title": "Écrire une page",
+      "body": "Documentez en Markdown, avec « / » et « @ »."
+    },
+    "vault": {
+      "title": "Configurer le coffre-fort",
+      "body": "Chiffré de bout en bout."
+    },
+    "agent": {
+      "title": "Connecter un agent",
+      "body": "Claude, Cursor ou VS Code, via MCP."
+    }
+  },
+  "due": {
+    "title": "Échéances à venir",
+    "empty": "Aucune échéance dans les 7 prochains jours."
+  },
+  "recent": {
+    "title": "Documents récents",
+    "empty": "Aucun document pour l’instant."
+  },
+  "activity": {
+    "title": "Activité",
+    "agents": "Activité des agents",
+    "empty": "Ce que vous et vos agents faites apparaîtra ici."
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "edit": "Editar",
+  "delete": "Excluir projeto",
+  "summary": "{{boards}} · {{pages}}",
+  "boardCount_one": "{{count}} quadro",
+  "boardCount_many": "{{count}} quadros",
+  "boardCount_other": "{{count}} quadros",
+  "pageCount_one": "{{count}} página",
+  "pageCount_many": "{{count}} páginas",
+  "pageCount_other": "{{count}} páginas",
+  "boards": {
+    "title": "Quadros",
+    "new": "Novo quadro",
+    "openCards_one": "{{count}} cartão aberto",
+    "openCards_many": "{{count}} cartões abertos",
+    "openCards_other": "{{count}} cartões abertos",
+    "empty": "Crie um quadro Kanban para organizar as tarefas deste projeto."
+  },
+  "docs": {
+    "title": "Documentos",
+    "new": "Nova página",
+    "subpages_one": "{{count}} subpágina",
+    "subpages_many": "{{count}} subpáginas",
+    "subpages_other": "{{count}} subpáginas",
+    "emptyTitle": "Ainda não há documentos",
+    "emptyAction": "Escrever a primeira página",
+    "emptyBody": "Especificações, decisões, processos ou atas de reunião. Em Markdown e vinculados às suas tarefas."
+  },
+  "recent": "Editados recentemente"
+}

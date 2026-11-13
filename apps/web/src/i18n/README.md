@@ -55,15 +55,37 @@ A missing form shows the key instead of the text.
 - **English**: American spelling, sentence case, short and friendly, second person.
   Contractions are fine. Typographic apostrophes and quotes: ’ “ ”.
 - **Spanish**: Spain, informal *tú*. Quotes « ».
+- **French**: *vous*. Quotes « » with a narrow no-break space inside (« texte »), and a narrow
+  no-break space before ; : ! ? as French typography requires.
+- **Portuguese** (`pt`): Brazilian Portuguese, *você*. Quotes “ ”.
+- **Italian**: informal *tu*. Quotes « ».
+- **German**: informal *du*, as most modern apps. Quotes „ “.
+- **Dutch**: informal *je*/*jij*. Quotes ‘ ’ for short names, “ ” for longer text.
+- **Japanese**: polite です/ます form, no spaces between words, full-width punctuation (、。),
+  quotes 「 」. Keep product and protocol names (Orqevio, MCP, OAuth, Markdown) in Latin script.
 - Keep product words consistent:
 
-| English | Español |
-| --- | --- |
-| workspace | espacio |
-| project · board · column · card · label · checklist | proyecto · tablero · columna · tarjeta · etiqueta · checklist |
-| page, document | página, documento |
-| vault · master password · recovery key | bóveda · contraseña maestra · clave de recuperación |
-| access key · setup code · copy (of Orqevio) | clave de acceso · código de configuración · copia |
-| agent · token | agente · token |
-| archive · restore | archivar · restaurar |
-| Settings | Ajustes |
+| English | es | fr | it | pt | de | nl | ja |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| workspace | espacio | espace | spazio | espaço | Arbeitsbereich | werkruimte | ワークスペース |
+| project | proyecto | projet | progetto | projeto | Projekt | project | プロジェクト |
+| board | tablero | tableau | bacheca | quadro | Board | bord | ボード |
+| column | columna | colonne | colonna | coluna | Spalte | kolom | 列 |
+| card | tarjeta | carte | scheda | cartão | Karte | kaart | カード |
+| label | etiqueta | étiquette | etichetta | etiqueta | Label | label | ラベル |
+| checklist | checklist | checklist | checklist | checklist | Checkliste | checklist | チェックリスト |
+| page · document | página · documento | page · document | pagina · documento | página · documento | Seite · Dokument | pagina · document | ページ · ドキュメント |
+| vault | bóveda | coffre-fort | cassaforte | cofre | Tresor | kluis | 保管庫 |
+| master password | contraseña maestra | mot de passe principal | password principale | senha mestra | Master-Passwort | hoofdwachtwoord | マスターパスワード |
+| recovery key | clave de recuperación | clé de récupération | chiave di recupero | chave de recuperação | Wiederherstellungsschlüssel | herstelsleutel | 回復キー |
+| access key | clave de acceso | clé d’accès | chiave di accesso | chave de acesso | Zugangsschlüssel | toegangssleutel | アクセスキー |
+| setup code | código de configuración | code de configuration | codice di configurazione | código de configuração | Einrichtungscode | installatiecode | セットアップコード |
+| copy (an installation) | copia | copie | copia | cópia | Instanz | installatie | このOrqevio |
+| login (vault item) | credencial | identifiant | login | login | Login | login | ログイン |
+| export (vault file) | copia cifrada | export | esportazione | exportação | Export | export | エクスポート |
+| agent · token | agente · token | agent · jeton | agente · token | agente · token | Agent · Token | agent · token | エージェント · トークン |
+| archive · restore | archivar · restaurar | archiver · restaurer | archiviare · ripristinare | arquivar · restaurar | archivieren · wiederherstellen | archiveren · herstellen | アーカイブ · 復元 |
+| Settings | Ajustes | Paramètres | Impostazioni | Configurações | Einstellungen | Instellingen | 設定 |
+
+Every language except English and Spanish was translated with care but without a native
+speaker yet; reviews by native speakers are welcome.

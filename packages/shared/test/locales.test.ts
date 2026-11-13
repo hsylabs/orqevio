@@ -22,5 +22,6 @@ describe('locales', () => {
       expect(defaultWorkspaceName(locale, 'Ana')).toContain('Ana')
     }
     expect(defaultWorkspaceName('es', 'Ana')).toBe('Espacio de Ana')
+    expect([defaultWorkspaceName('fr', 'Anne'), defaultWorkspaceName('fr', 'Élise'), defaultWorkspaceName('fr', 'Marc')]).toEqual(['Espace d’Anne', 'Espace d’Élise', 'Espace de Marc'])
   })
 })

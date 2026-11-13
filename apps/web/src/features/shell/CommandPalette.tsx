@@ -1,4 +1,4 @@
-import { Command } from 'cmdk'
+import { Command, defaultFilter } from 'cmdk'
 import { Dialog as D } from 'radix-ui'
 import { Bot, FileText, FolderOpen, House, LockKeyhole, Moon, Plus, Search, Settings, SquareKanban, Sun } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
@@ -9,6 +9,10 @@ import { useSearch } from '../../lib/queries'
 import { applyTheme } from '../../lib/theme'
 import { lockVault, useVaultLocked } from '../vault/session'
 import { useWorkspace } from './workspace'
+
+/** Accents and case never matter when searching: "pagina" finds "Página". */
+const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+const filter = (value: string, search: string, keywords?: string[]) => defaultFilter(fold(value), fold(search), keywords?.map(fold))
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { t } = useTranslation(['shell', 'common'])
@@ -52,7 +56,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         >
           <D.Title className="sr-only">{t('palette.title')}</D.Title>
           <D.Description className="sr-only">{t('palette.description')}</D.Description>
-          <Command label={t('palette.label')} loop className="flex max-h-[min(70vh,560px)] flex-col">
+          <Command label={t('palette.label')} loop filter={filter} className="flex max-h-[min(70vh,560px)] flex-col">
             <div className="flex items-center gap-3 border-b border-line px-4">
               <Search className="size-[18px] shrink-0 text-ink-3" />
               <Command.Input

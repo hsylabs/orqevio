@@ -37,7 +37,7 @@ export const DEFAULT_COLUMNS: Record<Locale, readonly string[]> = {
   fr: ['À faire', 'En cours', 'Terminé'],
   pt: ['A fazer', 'Em andamento', 'Concluído'],
   it: ['Da fare', 'In corso', 'Fatto'],
-  de: ['Zu erledigen', 'In Arbeit', 'Erledigt'],
+  de: ['Offen', 'In Arbeit', 'Erledigt'],
   nl: ['Te doen', 'Bezig', 'Klaar'],
   ja: ['未着手', '進行中', '完了'],
 }
@@ -54,4 +54,8 @@ const WORKSPACE_NAMES: Record<Locale, string> = {
 }
 
 /** The first workspace of a copy, named after its owner's first name. */
-export const defaultWorkspaceName = (locale: Locale, firstName: string) => WORKSPACE_NAMES[locale].replace('{name}', firstName)
+export function defaultWorkspaceName(locale: Locale, firstName: string) {
+  // French elides "de" before a vowel: "Espace d’Anne". Names starting with h vary, so they keep "de".
+  const template = locale === 'fr' && /^[aeiouyàâäæéèêëîïôöœùûü]/i.test(firstName) ? 'Espace d’{name}' : WORKSPACE_NAMES[locale]
+  return template.replace('{name}', firstName)
+}
