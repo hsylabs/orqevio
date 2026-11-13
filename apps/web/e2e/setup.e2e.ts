@@ -1,10 +1,10 @@
 import { writeFile } from 'node:fs/promises'
-import { ACCESS_KEY_FILE, OWNER_STATE, SETUP_CODE, expect, test } from './helpers'
+import { ACCESS_KEY_FILE, OWNER_STATE, SETUP_CODE, expect, open, test } from './helpers'
 
 // Runs once before the other tests: claims the copy through the UI, checks
 // signing in with the access key and saves the owner's session for the rest.
 test('claim the copy and sign in with the access key', async ({ page }) => {
-  await page.goto('/')
+  await open(page, '/')
   await page.waitForURL(/\/setup$/)
   await page.getByLabel('Código de configuración', { exact: true }).fill(SETUP_CODE)
   await page.getByLabel('Tu nombre').fill('Lucía Martín')

@@ -54,12 +54,25 @@ export const OWNER_STATE = path.join(process.cwd(), 'e2e/.auth/owner.json')
 /** The owner's current access key, written by setup.e2e.ts. */
 export const ACCESS_KEY_FILE = path.join(process.cwd(), 'e2e/.auth/access-key.txt')
 
+/**
+ * Opens `url` and waits until the browser has finished loading the page, as the
+ * document itself reports it. Firefox sometimes delivers the load event of a new
+ * tab's initial about:blank late; Playwright then keeps waiting for the load of the
+ * real page although the browser fired it (seen: readyState "complete" and
+ * loadEventEnd ~230 ms while page.goto waited 60 s). Asking the document keeps the
+ * check as strict without depending on that event.
+ */
+export async function open(page: Page, url: string) {
+  await page.goto(url, { waitUntil: 'commit' })
+  await expect.poll(() => page.evaluate(() => document.readyState), { message: `${url} finished loading` }).toBe('complete')
+}
+
 /** Each test works in a workspace of its own inside the shared copy. */
 export async function openNewWorkspace(page: Page, name: string) {
   const res = await page.request.post('/api/workspaces', { data: { name } })
   expect(res.status(), await res.text()).toBe(201)
   const { id } = (await res.json()) as { id: string }
-  await page.goto(`/w/${id}`)
+  await open(page, `/w/${id}`)
   await expect(page.getByRole('button', { name: 'Nuevo proyecto' }).first()).toBeVisible()
   return id
 }
