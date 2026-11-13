@@ -1,4 +1,4 @@
-import { addCard, createProject, expect, open, openNewWorkspace, test } from './helpers'
+import { addCard, createProject, expect, openNewWorkspace, test } from './helpers'
 
 // A 1×1 PNG.
 const PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
@@ -35,7 +35,7 @@ test('pasting or attaching a file stores it as an attachment', async ({ page }) 
   await expect(page.locator('.orq-prose img[src^="/api/attachments/"]')).toBeVisible()
 
   // A file attached to a card is listed and can be downloaded with its name.
-  await open(page, boardUrl)
+  await page.goto(boardUrl)
   await addCard(page, 'Por hacer', 'Revisar el informe')
   await page.getByRole('button', { name: 'Revisar el informe' }).click()
   const chooser = page.waitForEvent('filechooser')

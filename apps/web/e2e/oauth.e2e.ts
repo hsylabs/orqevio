@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { expect, open, openNewWorkspace, test } from './helpers'
+import { expect, openNewWorkspace, test } from './helpers'
 
 const REDIRECT = 'https://claude.ai/api/mcp/auth_callback'
 
@@ -34,7 +34,7 @@ test('a client that only speaks OAuth connects once the owner approves it, and s
 
   // After the decision the browser goes back to Claude; answer for it here.
   await page.route('https://claude.ai/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Claude</title>' }))
-  await open(page, authorize.toString())
+  await page.goto(authorize.toString())
   await expect(page.getByRole('heading', { name: 'Conectar Claude' })).toBeVisible()
   await expect(page.getByText('Al terminar volverás a claude.ai')).toBeVisible()
   await expect(page.getByText(/Se ha registrado sola/)).toBeVisible()
@@ -66,7 +66,7 @@ test('a client that only speaks OAuth connects once the owner approves it, and s
   expect(names).not.toContain('read_page')
 
   // The access is listed in «Agentes», and revoking it there cuts the application off.
-  await open(page, `/w/${workspaceId}/agents`)
+  await page.goto(`/w/${workspaceId}/agents`)
   const card = page.getByRole('article').filter({ hasText: 'Conectado con OAuth' })
   await expect(card).toHaveCount(1)
   await expect(card.getByText('Tareas: Lectura')).toBeVisible()
@@ -80,7 +80,7 @@ test('an application asking to return somewhere it did not register is turned aw
   const registration = await request.post(`${baseURL}/oauth/register`, { data: { client_name: 'Claude', redirect_uris: [REDIRECT] } })
   const { client_id: clientId } = await registration.json()
   const authorize = new URLSearchParams({ response_type: 'code', client_id: clientId, redirect_uri: 'https://evil.example/callback', code_challenge: 'x'.repeat(43), code_challenge_method: 'S256' })
-  await open(page, `/oauth/authorize?${authorize}`)
+  await page.goto(`/oauth/authorize?${authorize}`)
   await expect(page.getByRole('heading', { name: 'No se puede conectar esta aplicación' })).toBeVisible()
   await expect(page.getByRole('alert')).toContainText('no pertenece a esta aplicación')
 })

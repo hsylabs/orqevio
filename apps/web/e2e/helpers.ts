@@ -2,11 +2,30 @@ import path from 'node:path'
 import { type Page, test as base, expect } from '@playwright/test'
 
 /**
+ * Firefox sometimes loses the commit of a new tab's first navigation, the one that
+ * moves it from about:blank to another process: Juggler reports the navigation as
+ * started (twice) and the page loads and renders, but Page.navigationCommitted never
+ * arrives, so page.goto waits until the test times out. Every new page therefore
+ * first opens a tiny page of the copy, and checks that one through the document;
+ * the navigations of the tests are then ordinary, fully tracked ones.
+ */
+export async function settle(page: Page, baseURL: string) {
+  await Promise.race([
+    page.goto(`${baseURL}/healthz`, { waitUntil: 'commit' }),
+    expect.poll(() => page.evaluate(() => location.pathname).catch(() => ''), { timeout: 15_000 }).toBe('/healthz'),
+  ])
+}
+
+/**
  * Test fixture that fails the test on any uncaught page error or console error.
  * When a test fails, it also reports the page's load state and the requests still
  * in flight, to explain pages that never finish loading.
  */
 export const test = base.extend<{ consoleErrors: string[] }>({
+  page: async ({ page, baseURL }, use) => {
+    await settle(page, baseURL!)
+    await use(page)
+  },
   consoleErrors: [
     async ({ page }, use, testInfo) => {
       const inFlight = new Map<object, string>()
@@ -54,25 +73,12 @@ export const OWNER_STATE = path.join(process.cwd(), 'e2e/.auth/owner.json')
 /** The owner's current access key, written by setup.e2e.ts. */
 export const ACCESS_KEY_FILE = path.join(process.cwd(), 'e2e/.auth/access-key.txt')
 
-/**
- * Opens `url` and waits until the browser has finished loading the page, as the
- * document itself reports it. Firefox sometimes delivers the load event of a new
- * tab's initial about:blank late; Playwright then keeps waiting for the load of the
- * real page although the browser fired it (seen: readyState "complete" and
- * loadEventEnd ~230 ms while page.goto waited 60 s). Asking the document keeps the
- * check as strict without depending on that event.
- */
-export async function open(page: Page, url: string) {
-  await page.goto(url, { waitUntil: 'commit' })
-  await expect.poll(() => page.evaluate(() => document.readyState), { message: `${url} finished loading` }).toBe('complete')
-}
-
 /** Each test works in a workspace of its own inside the shared copy. */
 export async function openNewWorkspace(page: Page, name: string) {
   const res = await page.request.post('/api/workspaces', { data: { name } })
   expect(res.status(), await res.text()).toBe(201)
   const { id } = (await res.json()) as { id: string }
-  await open(page, `/w/${id}`)
+  await page.goto(`/w/${id}`)
   await expect(page.getByRole('button', { name: 'Nuevo proyecto' }).first()).toBeVisible()
   return id
 }

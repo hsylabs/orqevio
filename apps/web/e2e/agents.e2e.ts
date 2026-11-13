@@ -1,4 +1,4 @@
-import { addCard, createProject, expect, open, openNewWorkspace, test } from './helpers'
+import { addCard, createProject, expect, openNewWorkspace, test } from './helpers'
 
 test('an MCP agent works on the board in real time, without vault access', async ({ page, request, baseURL }) => {
   await openNewWorkspace(page, 'Agentes E2E')
@@ -14,7 +14,7 @@ test('an MCP agent works on the board in real time, without vault access', async
   await page.getByRole('button', { name: 'Hecho' }).click()
 
   const board = await page.evaluate(async (id) => (await fetch(`/api/boards/${id}`)).json(), boardId)
-  await open(page, `/w/${board.workspaceId}/b/${boardId}`)
+  await page.goto(`/w/${board.workspaceId}/b/${boardId}`)
   await expect(page.getByRole('region', { name: 'Columna Por hacer' })).toBeVisible()
 
   const rpc = (method: string, params: unknown, id = 1) =>
