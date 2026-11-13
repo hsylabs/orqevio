@@ -1,24 +1,27 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { LogoMark } from '../../components/Logo'
 import { Button } from '../../components/ui/Button'
 
 export function FullScreenLoader() {
+  const { t } = useTranslation()
   return (
-    <div className="grid min-h-dvh place-items-center bg-desk" aria-busy="true" aria-label="Cargando">
+    <div className="grid min-h-dvh place-items-center bg-desk" aria-busy="true" aria-label={t('loading')}>
       <LogoMark size={36} className="animate-pulse" />
     </div>
   )
 }
 
 export function NotFound({ standalone }: { standalone?: boolean }) {
+  const { t } = useTranslation()
   return (
     <div className={standalone ? 'grid min-h-dvh place-items-center bg-desk px-6' : 'grid h-full place-items-center px-6'}>
       <div className="animate-rise text-center">
         <p className="font-mono text-[12px] tracking-[0.2em] text-ink-3">404</p>
-        <h1 className="mt-3 font-display text-[34px] font-medium">Aquí no hay nada</h1>
-        <p className="mt-2 text-ink-2">La página no existe o no tienes acceso a ella.</p>
+        <h1 className="mt-3 font-display text-[34px] font-medium">{t('notFound.title')}</h1>
+        <p className="mt-2 text-ink-2">{t('notFound.body')}</p>
         <Link to="/" className="mt-6 inline-block">
-          <Button variant="primary">Volver al inicio</Button>
+          <Button variant="primary">{t('actions.backHome')}</Button>
         </Link>
       </div>
     </div>

@@ -1,0 +1,176 @@
+{
+  "actions": {
+    "delete": "Delete",
+    "restore": "Restore",
+    "archive": "Archive",
+    "rename": "Rename",
+    "back": "Back",
+    "undo": "Undo"
+  },
+  "board": {
+    "region": "Board {{name}}",
+    "archived": "Archived",
+    "actions": "Board actions",
+    "rename": "Rename board",
+    "nameLabel": "Name",
+    "delete": "Delete board",
+    "empty": {
+      "title": "This board has no columns",
+      "body": "Create columns for the stages of your work."
+    },
+    "filterActive": "Filter on · dragging is turned off",
+    "removeFilter": "Remove filter"
+  },
+  "drag": {
+    "instructions": "To pick up an item, press Space. Use the arrow keys to move it, then press Space again to drop it. Press Escape to cancel.",
+    "card": {
+      "picked": "You picked up the card “{{title}}”. Column “{{column}}”, position {{position}} of {{total}}.",
+      "over": "The card “{{title}}” is in column “{{column}}”, position {{position}} of {{total}}.",
+      "outside": "The card “{{title}}” isn’t over a valid drop area.",
+      "dropped": "You dropped the card “{{title}}”. Column “{{column}}”, position {{position}} of {{total}}.",
+      "droppedOutside": "You dropped the card “{{title}}”.",
+      "cancelled": "Moving the card “{{title}}” was canceled."
+    },
+    "column": {
+      "picked": "You picked up the column “{{title}}”. Position {{position}} of {{total}}.",
+      "over": "The column “{{title}}” is at position {{position}} of {{total}}.",
+      "outside": "The column “{{title}}” isn’t over a valid drop area.",
+      "dropped": "You dropped the column “{{title}}”. Position {{position}} of {{total}}.",
+      "droppedOutside": "You dropped the column “{{title}}”.",
+      "cancelled": "Moving the column “{{title}}” was canceled."
+    }
+  },
+  "filter": {
+    "button": "Filter",
+    "search": "Search by title…",
+    "searchLabel": "Search by title",
+    "due": "Due date",
+    "dues": {
+      "all": "All",
+      "overdue": "Overdue",
+      "week": "This week",
+      "none": "No date"
+    },
+    "labels": "Labels",
+    "clear": "Clear filter"
+  },
+  "column": {
+    "region": "Column {{name}}",
+    "roleDescription": "column",
+    "handle": "{{name}}. Double-click to rename, press Space to move",
+    "name": "Column name",
+    "add": "Add column",
+    "addCardTo": "Add card to {{name}}",
+    "actions": "Actions for {{name}}",
+    "addCard": "Add card",
+    "delete": "Delete column",
+    "cards": "Cards in {{name}}",
+    "noMatches": "Nothing matches the filter",
+    "dropHere": "Drop cards here",
+    "deleteConfirm": {
+      "title": "Delete the column “{{name}}”?",
+      "withCards_one": "Its card will be deleted too. To keep it, move it to another column first.",
+      "withCards_other": "Its {{count}} cards will be deleted too. To keep them, move them to another column first.",
+      "empty": "The column is empty."
+    }
+  },
+  "composer": {
+    "placeholder": "What needs to be done?",
+    "hint": "<kbd>↵</kbd> add · <kbd>esc</kbd> close",
+    "submit": "Add"
+  },
+  "card": {
+    "title": "Card title",
+    "roleDescription": "card",
+    "checklist": "Checklist",
+    "hasDescription": "Has a description",
+    "linkedDocs": "Linked documents",
+    "attachments": "Attachments",
+    "createdByName": "Created by {{name}}"
+  },
+  "sheet": {
+    "fallbackTitle": "Card",
+    "label": "Card details",
+    "gone": "This card no longer exists",
+    "archived": "Archived",
+    "agentEditing": "{{name}} is editing",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "actions": "Card actions",
+    "archivedToast": "Card archived",
+    "deleteConfirm": {
+      "title": "Delete this card?",
+      "description": "It’ll be deleted along with its checklists and attachments. To just hide it, archive it instead."
+    },
+    "labels": "Labels",
+    "addLabels": "Add labels",
+    "due": "Due",
+    "noDate": "No date",
+    "createdBy": "Created by",
+    "unknownCreator": "Unknown",
+    "description": "Description",
+    "descriptionPlaceholder": "Add context, acceptance criteria or notes. Press “/” to insert.",
+    "descriptionLabel": "Card description",
+    "checklists": "Checklists",
+    "addChecklist": "+ Add",
+    "newChecklistTitle": "Checklist",
+    "checklistsEmpty": "Break the task into steps you can check off.",
+    "linkedDocs": "Linked documents",
+    "attachments": "Attachments",
+    "activity": "Activity"
+  },
+  "checklist": {
+    "titleLabel": "Checklist title",
+    "actions": "Checklist actions",
+    "delete": "Delete checklist",
+    "progress": "Progress",
+    "item": "Item",
+    "deleteItem": "Delete “{{text}}”",
+    "addItem": "Add item",
+    "newItemPlaceholder": "New item, then Enter",
+    "newItem": "New item"
+  },
+  "due": {
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "monday": "Monday",
+    "inAWeek": "In a week",
+    "remove": "Remove date"
+  },
+  "labels": {
+    "title": "Labels",
+    "newTitle": "New label",
+    "editTitle": "Edit label",
+    "namePlaceholder": "Name (optional)",
+    "nameLabel": "Label name",
+    "empty": "This board doesn’t have any labels yet.",
+    "unnamed": "Unnamed",
+    "editNamed": "Edit {{name}}",
+    "editUnnamed": "Edit label",
+    "create": "Create label"
+  },
+  "linked": {
+    "mentioned": "mentioned",
+    "unlinkNamed": "Unlink {{title}}",
+    "unlinkUntitled": "Unlink page",
+    "link": "Link document",
+    "search": "Search pages…",
+    "searchLabel": "Search pages",
+    "noResults": "No results.",
+    "hint": "Type to search the whole workspace."
+  },
+  "archived": {
+    "sheetTitle": "Archived cards",
+    "heading": "Archived",
+    "emptyTitle": "Nothing archived",
+    "emptyBody": "Cards that you or your agents archive show up here, and you can restore them.",
+    "deleteConfirm": "Delete “{{title}}” permanently?"
+  },
+  "attachments": {
+    "deleteConfirm": "Delete “{{name}}”?",
+    "download": "Download {{name}}",
+    "deleteNamed": "Delete {{name}}",
+    "uploading": "Uploading…",
+    "attach": "Attach file"
+  }
+}

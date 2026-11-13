@@ -1,0 +1,51 @@
+{
+  "language": "Idioma",
+  "skipToContent": "Saltar al contenido",
+  "loading": "Cargando",
+  "actions": {
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "save": "Guardar",
+    "close": "Cerrar",
+    "copy": "Copiar",
+    "view": "Ver",
+    "backHome": "Volver al inicio"
+  },
+  "dialog": {
+    "fallbackTitle": "Diálogo",
+    "details": "Detalle"
+  },
+  "copyFailed": "No se ha podido copiar al portapapeles",
+  "notFound": {
+    "title": "Aquí no hay nada",
+    "body": "La página no existe o no tienes acceso a ella."
+  },
+  "time": {
+    "justNow": "ahora mismo"
+  },
+  "due": {
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "yesterday": "Ayer"
+  },
+  "greeting": {
+    "night": "Buenas noches",
+    "morning": "Buenos días",
+    "afternoon": "Buenas tardes",
+    "evening": "Buenas noches"
+  },
+  "color": "Color",
+  "colors": {
+    "tomato": "Caqui",
+    "amber": "Ámbar",
+    "lime": "Lima",
+    "jade": "Jade",
+    "teal": "Turquesa",
+    "cobalt": "Cobalto",
+    "iris": "Iris",
+    "rose": "Rosa",
+    "slate": "Pizarra"
+  },
+  "untitled": "Sin título",
+  "quoted": "«{{text}}»"
+}

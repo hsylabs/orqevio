@@ -3,24 +3,26 @@ import { claimInput, recoverInput, unlockInput } from '@orqevio/shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
 import { type FormEvent, type ReactNode, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { LogoMark, Wordmark } from '../../components/Logo'
 import { Button } from '../../components/ui/Button'
 import { Field } from '../../components/ui/Field'
+import { applyLocale, currentLocale } from '../../i18n'
+import { LanguageSelect } from '../../i18n/LanguageSelect'
 import { errorMessage, post } from '../../lib/api'
 import { keys, useAccessState } from '../../lib/queries'
 import { FullScreenLoader } from '../shell/States'
 import { AccessKeyReveal } from './AccessKeyReveal'
 import { OrbitIllustration } from './OrbitIllustration'
 
-const PILLARS = [
-  { title: 'Tareas', body: 'Tableros Kanban, etiquetas, fechas y checklists.' },
-  { title: 'Documentación', body: 'Páginas jerárquicas en Markdown, enlazadas con tus tareas.' },
-  { title: 'Bóveda', body: 'Cifrado de extremo a extremo. Ni el servidor ni tus agentes la leen.' },
-  { title: 'Agentes', body: 'Servidor MCP con permisos por token, para trabajar con tus LLM.' },
-]
+const PILLARS = ['tasks', 'docs', 'vault', 'agents'] as const
+
+/** What whoever manages the copy runs to issue a new access key; a command, never translated. */
+const RESET_ACCESS_COMMAND = 'docker compose exec app node dist/cli.js reset-access'
 
 function AuthLayout({ title, subtitle, children }: { title: string; subtitle: ReactNode; children: ReactNode }) {
+  const { t } = useTranslation('auth')
   return (
     <div className="grid min-h-dvh bg-desk lg:grid-cols-[minmax(0,1.1fr)_minmax(440px,0.9fr)]">
       <aside className="grain relative hidden overflow-hidden border-r border-line lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
@@ -31,15 +33,9 @@ function AuthLayout({ title, subtitle, children }: { title: string; subtitle: Re
         <div className="grid items-center gap-10 xl:grid-cols-[1fr_minmax(0,380px)]">
           <div className="animate-rise">
             <h1 className="font-display text-[52px] leading-[1.02] font-medium tracking-[-0.03em] xl:text-[62px]">
-              Organiza.
-              <br />
-              Documenta.
-              <br />
-              <span className="italic text-accent">Protege.</span>
+              <Trans t={t} i18nKey="hero.title" components={{ br: <br />, accent: <span className="italic text-accent" /> }} />
             </h1>
-            <p className="mt-6 max-w-[440px] text-[16px] leading-relaxed text-ink-2">
-              Un espacio de trabajo para tus proyectos, tu conocimiento y tus credenciales. Accesible para ti y tus agentes de IA, con permisos controlados.
-            </p>
+            <p className="mt-6 max-w-[440px] text-[16px] leading-relaxed text-ink-2">{t('hero.body')}</p>
           </div>
           <div className="hidden xl:block">
             <OrbitIllustration />
@@ -47,12 +43,12 @@ function AuthLayout({ title, subtitle, children }: { title: string; subtitle: Re
         </div>
         <ul className="grid max-w-[720px] grid-cols-2 gap-x-10 gap-y-5">
           {PILLARS.map((p, i) => (
-            <li key={p.title} className="animate-rise" style={{ animationDelay: `${120 + i * 60}ms` }}>
+            <li key={p} className="animate-rise" style={{ animationDelay: `${120 + i * 60}ms` }}>
               <p className="flex items-center gap-2 text-[13px] font-semibold">
                 <span className="font-mono text-[11px] text-ink-3">0{i + 1}</span>
-                {p.title}
+                {t(`pillars.${p}.title`)}
               </p>
-              <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{p.body}</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{t(`pillars.${p}.body`)}</p>
             </li>
           ))}
         </ul>
@@ -69,6 +65,8 @@ function AuthLayout({ title, subtitle, children }: { title: string; subtitle: Re
           <p className="mt-2 text-[14px] leading-relaxed text-ink-2">{subtitle}</p>
           <div className="mt-8">{children}</div>
         </div>
+        {/* The language the copy is claimed in becomes its owner's. */}
+        <LanguageSelect compact className="mt-12" onChange={(locale) => void applyLocale(locale)} />
       </main>
     </div>
   )
@@ -82,8 +80,8 @@ function ErrorNote({ children }: { children: ReactNode }) {
   )
 }
 
-function SecretField({ label, value, onChange, error, autoComplete, autoFocus, hint }: {
-  label: string
+function SecretField({ field, value, onChange, error, autoComplete, autoFocus, hint }: {
+  field: 'setupCode' | 'newSetupCode' | 'accessKey'
   value: string
   onChange: (value: string) => void
   error?: string
@@ -91,10 +89,11 @@ function SecretField({ label, value, onChange, error, autoComplete, autoFocus, h
   autoFocus?: boolean
   hint?: ReactNode
 }) {
+  const { t } = useTranslation('auth')
   const [show, setShow] = useState(false)
   return (
     <Field
-      label={label}
+      label={t(`fields.${field}.label`)}
       type={show ? 'text' : 'password'}
       autoComplete={autoComplete}
       spellCheck={false}
@@ -109,7 +108,7 @@ function SecretField({ label, value, onChange, error, autoComplete, autoFocus, h
           type="button"
           onClick={() => setShow((s) => !s)}
           className="grid size-8 place-items-center rounded-[8px] text-ink-3 hover:bg-hover hover:text-ink"
-          aria-label={show ? `Ocultar ${label.toLowerCase()}` : `Mostrar ${label.toLowerCase()}`}
+          aria-label={show ? t(`fields.${field}.hide`) : t(`fields.${field}.show`)}
         >
           {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
         </button>
@@ -126,6 +125,7 @@ type Session = MeDTO | AnonymousSessionDTO
  * afterwards the access key is all that is needed on each device.
  */
 export function AuthPage({ mode }: { mode: 'login' | 'setup' }) {
+  const { t } = useTranslation('auth')
   const access = useAccessState()
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -141,15 +141,8 @@ export function AuthPage({ mode }: { mode: 'login' | 'setup' }) {
 
   if (revealed) {
     return (
-      <AuthLayout
-        title={revealed.kind === 'setup' ? 'Guarda tu clave de acceso' : 'Tu nueva clave de acceso'}
-        subtitle={
-          revealed.kind === 'setup'
-            ? 'Es lo que usarás para entrar en esta copia desde cualquier dispositivo. Se muestra una sola vez: guárdala en tu gestor de contraseñas.'
-            : 'La anterior ya no sirve y se han cerrado todas las sesiones. Guárdala en tu gestor de contraseñas: se muestra una sola vez.'
-        }
-      >
-        <AccessKeyReveal accessKey={revealed.accessKey} confirmLabel="Entrar en Orqevio" onDone={() => void enter()} />
+      <AuthLayout title={t(`revealed.${revealed.kind}.title`)} subtitle={t(`revealed.${revealed.kind}.subtitle`)}>
+        <AccessKeyReveal accessKey={revealed.accessKey} confirmLabel={t('revealed.continue')} onDone={() => void enter()} />
       </AuthLayout>
     )
   }
@@ -175,6 +168,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'setup' }) {
 }
 
 function SetupForm({ onClaimed }: { onClaimed: (accessKey: string) => void }) {
+  const { t } = useTranslation('auth')
   const [setupCode, setSetupCode] = useState('')
   const [name, setName] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -184,12 +178,12 @@ function SetupForm({ onClaimed }: { onClaimed: (accessKey: string) => void }) {
   async function submit(e: FormEvent) {
     e.preventDefault()
     setError(null)
-    const parsed = claimInput.safeParse({ setupCode, name })
+    const parsed = claimInput.safeParse({ setupCode, name, locale: currentLocale() })
     if (!parsed.success) {
       const errs: Record<string, string> = {}
       for (const issue of parsed.error.issues) {
         const key = String(issue.path[0])
-        errs[key] ??= key === 'setupCode' ? 'Introduce el código de configuración.' : 'Escribe tu nombre.'
+        errs[key] ??= key === 'setupCode' ? t('setup.missingSetupCode') : t('setup.missingName')
       }
       setFieldErrors(errs)
       return
@@ -207,16 +201,13 @@ function SetupForm({ onClaimed }: { onClaimed: (accessKey: string) => void }) {
   }
 
   return (
-    <AuthLayout
-      title="Configura tu copia"
-      subtitle="Esta copia de Orqevio es solo tuya. Introduce el código de configuración que definiste al instalarla; si no definiste ninguno, aparece en el registro del servidor."
-    >
+    <AuthLayout title={t('setup.title')} subtitle={t('setup.subtitle')}>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-        <SecretField label="Código de configuración" value={setupCode} onChange={setSetupCode} error={fieldErrors.setupCode} autoComplete="off" autoFocus />
-        <Field label="Tu nombre" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} error={fieldErrors.name} hint="Aparece en la actividad de tus espacios." maxLength={80} />
+        <SecretField field="setupCode" value={setupCode} onChange={setSetupCode} error={fieldErrors.setupCode} autoComplete="off" autoFocus />
+        <Field label={t('fields.name.label')} autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} error={fieldErrors.name} hint={t('fields.name.hint')} maxLength={80} />
         {error && <ErrorNote>{error}</ErrorNote>}
         <Button type="submit" variant="primary" size="lg" loading={busy} className="mt-2 w-full">
-          Configurar
+          {t('setup.submit')}
         </Button>
       </form>
     </AuthLayout>
@@ -224,6 +215,7 @@ function SetupForm({ onClaimed }: { onClaimed: (accessKey: string) => void }) {
 }
 
 function LoginForm({ recoverable, onSignedIn, onRecovered }: { recoverable: boolean; onSignedIn: () => void; onRecovered: (accessKey: string) => void }) {
+  const { t } = useTranslation('auth')
   const [accessKey, setAccessKey] = useState('')
   const [fieldError, setFieldError] = useState<string | undefined>()
   const [error, setError] = useState<string | null>(null)
@@ -235,7 +227,7 @@ function LoginForm({ recoverable, onSignedIn, onRecovered }: { recoverable: bool
     setError(null)
     const parsed = unlockInput.safeParse({ accessKey })
     if (!parsed.success) {
-      setFieldError('Introduce tu clave de acceso.')
+      setFieldError(t('login.missingAccessKey'))
       return
     }
     setFieldError(undefined)
@@ -251,12 +243,12 @@ function LoginForm({ recoverable, onSignedIn, onRecovered }: { recoverable: bool
   }
 
   return (
-    <AuthLayout title="Hola de nuevo" subtitle="Introduce la clave de acceso de esta copia de Orqevio.">
+    <AuthLayout title={t('login.title')} subtitle={t('login.subtitle')}>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-        <SecretField label="Clave de acceso" value={accessKey} onChange={setAccessKey} error={fieldError} autoComplete="current-password" autoFocus />
+        <SecretField field="accessKey" value={accessKey} onChange={setAccessKey} error={fieldError} autoComplete="current-password" autoFocus />
         {error && <ErrorNote>{error}</ErrorNote>}
         <Button type="submit" variant="primary" size="lg" loading={busy} className="mt-2 w-full">
-          Entrar
+          {t('login.submit')}
         </Button>
       </form>
       <div className="mt-6 text-center">
@@ -266,7 +258,7 @@ function LoginForm({ recoverable, onSignedIn, onRecovered }: { recoverable: bool
           aria-expanded={lost}
           className="text-[13.5px] font-medium text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink hover:decoration-accent"
         >
-          ¿Has perdido la clave?
+          {t('login.lostKey')}
         </button>
       </div>
       {lost && <RecoveryPanel recoverable={recoverable} onRecovered={onRecovered} />}
@@ -275,6 +267,7 @@ function LoginForm({ recoverable, onSignedIn, onRecovered }: { recoverable: bool
 }
 
 function RecoveryPanel({ recoverable, onRecovered }: { recoverable: boolean; onRecovered: (accessKey: string) => void }) {
+  const { t } = useTranslation('auth')
   const [setupCode, setSetupCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -284,7 +277,7 @@ function RecoveryPanel({ recoverable, onRecovered }: { recoverable: boolean; onR
     setError(null)
     const parsed = recoverInput.safeParse({ setupCode })
     if (!parsed.success) {
-      setError('Introduce el nuevo código de configuración.')
+      setError(t('recovery.missingSetupCode'))
       return
     }
     setBusy(true)
@@ -300,25 +293,23 @@ function RecoveryPanel({ recoverable, onRecovered }: { recoverable: boolean; onR
 
   return (
     <div className="mt-4 rounded-[14px] border border-line bg-sunken p-4 text-[13px] leading-relaxed text-ink-2">
-      <p>Quien administra esta copia puede generar una clave nueva:</p>
+      <p>{t('recovery.intro')}</p>
       <ul className="mt-2 flex list-disc flex-col gap-1.5 pl-5">
         <li>
-          Con Docker:
-          <code className="mt-1 block rounded-[8px] border border-line bg-sheet px-2.5 py-1.5 font-mono text-[12px] break-words text-ink">
-            docker compose exec app node dist/cli.js reset-access
-          </code>
+          {t('recovery.withDocker')}
+          <code className="mt-1 block rounded-[8px] border border-line bg-sheet px-2.5 py-1.5 font-mono text-[12px] break-words text-ink">{RESET_ACCESS_COMMAND}</code>
         </li>
         <li>
-          Con un código nuevo: cambia <code className="font-mono text-[12px] text-ink">SETUP_CODE</code> en la configuración de la copia, reiníciala e introdúcelo aquí.
+          <Trans t={t} i18nKey="recovery.withNewCode" components={{ code: <code className="font-mono text-[12px] text-ink" /> }} />
         </li>
       </ul>
-      <p className="mt-2">La bóveda no se ve afectada: sigue protegida por su contraseña maestra.</p>
+      <p className="mt-2">{t('recovery.vaultUnaffected')}</p>
       {recoverable && (
         <form onSubmit={submit} className="mt-4 flex flex-col gap-3" noValidate>
-          <SecretField label="Nuevo código de configuración" value={setupCode} onChange={setSetupCode} autoComplete="off" />
+          <SecretField field="newSetupCode" value={setupCode} onChange={setSetupCode} autoComplete="off" />
           {error && <ErrorNote>{error}</ErrorNote>}
           <Button type="submit" variant="primary" loading={busy}>
-            Recuperar el acceso
+            {t('recovery.submit')}
           </Button>
         </form>
       )}

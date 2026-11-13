@@ -1,9 +1,11 @@
 import { Dialog as D } from 'radix-ui'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '../../lib/cn'
 
 /** Right-hand drawer built on the accessible Radix dialog. */
 export function Sheet({ open, onOpenChange, title, children, width = 'max-w-[640px]', label }: { open: boolean; onOpenChange: (open: boolean) => void; title: ReactNode; children: ReactNode; width?: string; label?: string }) {
+  const { t } = useTranslation()
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
@@ -17,7 +19,7 @@ export function Sheet({ open, onOpenChange, title, children, width = 'max-w-[640
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <D.Title className="sr-only">{title}</D.Title>
-          <D.Description className="sr-only">Detalle</D.Description>
+          <D.Description className="sr-only">{t('dialog.details')}</D.Description>
           {children}
         </D.Content>
       </D.Portal>

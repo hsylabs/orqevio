@@ -1,6 +1,7 @@
 import type { CardDetailDTO, ChecklistDTO } from '@orqevio/shared'
 import { Ellipsis, ListChecks, Plus, Trash, X } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Checkbox } from '../../components/ui/Checkbox'
 import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from '../../components/ui/Menu'
@@ -8,6 +9,7 @@ import { del, errorMessage, patch, post } from '../../lib/api'
 import { keys, queryClient } from '../../lib/queries'
 
 export function Checklists({ card }: { card: CardDetailDTO }) {
+  const { t } = useTranslation('boards')
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: keys.card(card.id) }),
@@ -55,25 +57,25 @@ export function Checklists({ card }: { card: CardDetailDTO }) {
                 value={cl.title}
                 onSave={(title) => run(() => patch(`/checklists/${cl.id}`, { title }))}
                 className="text-[13.5px] font-semibold"
-                label="Título de la checklist"
+                label={t('checklist.titleLabel')}
               />
               <span className="ml-auto font-mono text-[11px] text-ink-3 tabular">
                 {done}/{cl.items.length}
               </span>
               <MenuRoot>
                 <MenuTrigger asChild>
-                  <button type="button" aria-label="Acciones de la checklist" className="grid size-6 place-items-center rounded-[6px] text-ink-3 hover:bg-hover hover:text-ink">
+                  <button type="button" aria-label={t('checklist.actions')} className="grid size-6 place-items-center rounded-[6px] text-ink-3 hover:bg-hover hover:text-ink">
                     <Ellipsis className="size-4" />
                   </button>
                 </MenuTrigger>
                 <MenuContent>
                   <MenuItem icon={<Trash />} danger onSelect={() => void run(() => del(`/checklists/${cl.id}`))}>
-                    Eliminar checklist
+                    {t('checklist.delete')}
                   </MenuItem>
                 </MenuContent>
               </MenuRoot>
             </div>
-            <div className="mt-2 h-1 overflow-hidden rounded-full bg-sunken" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Progreso">
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-sunken" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={t('checklist.progress')}>
               <div className="h-full rounded-full transition-[width] duration-500 ease-[var(--ease-out-quint)]" style={{ width: `${pct}%`, background: pct === 100 ? 'var(--ok)' : 'var(--accent)' }} />
             </div>
             <ul className="mt-2 flex flex-col">
@@ -92,7 +94,7 @@ export function Checklists({ card }: { card: CardDetailDTO }) {
                     value={item.text}
                     onSave={(text) => run(() => patch(`/checklist-items/${item.id}`, { text }))}
                     className={item.done ? 'text-[13.5px] text-ink-3 line-through decoration-ink-4' : 'text-[13.5px]'}
-                    label="Elemento"
+                    label={t('checklist.item')}
                   />
                   <button
                     type="button"
@@ -100,7 +102,7 @@ export function Checklists({ card }: { card: CardDetailDTO }) {
                       patchItemLocally(item.id, () => null)
                       void run(() => del(`/checklist-items/${item.id}`))
                     }}
-                    aria-label={`Eliminar «${item.text}»`}
+                    aria-label={t('checklist.deleteItem', { text: item.text })}
                     className="ml-auto grid size-6 shrink-0 place-items-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 hover:bg-press hover:text-ink focus-visible:opacity-100"
                   >
                     <X className="size-3.5" />
@@ -117,6 +119,7 @@ export function Checklists({ card }: { card: CardDetailDTO }) {
 }
 
 function AddItem({ onAdd }: { onAdd: (text: string) => Promise<void> }) {
+  const { t } = useTranslation('boards')
   const [text, setText] = useState('')
   const [open, setOpen] = useState(false)
   async function submit(e: FormEvent) {
@@ -130,7 +133,7 @@ function AddItem({ onAdd }: { onAdd: (text: string) => Promise<void> }) {
     return (
       <button type="button" onClick={() => setOpen(true)} className="mt-1 flex items-center gap-2 rounded-[8px] px-1 py-1 text-[13px] text-ink-3 hover:text-ink">
         <Plus className="size-4" />
-        Añadir elemento
+        {t('checklist.addItem')}
       </button>
     )
   }
@@ -143,8 +146,8 @@ function AddItem({ onAdd }: { onAdd: (text: string) => Promise<void> }) {
         onChange={(e) => setText(e.target.value)}
         onBlur={() => !text.trim() && setOpen(false)}
         onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
-        placeholder="Nuevo elemento y Enter"
-        aria-label="Nuevo elemento"
+        placeholder={t('checklist.newItemPlaceholder')}
+        aria-label={t('checklist.newItem')}
         maxLength={500}
         className="h-8 flex-1 bg-transparent text-[13.5px] outline-none placeholder:text-ink-3"
       />

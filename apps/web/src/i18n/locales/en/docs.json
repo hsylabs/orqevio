@@ -1,0 +1,150 @@
+{
+  "page": {
+    "status": {
+      "saving": "Saving…",
+      "pending": "Unsaved changes",
+      "saved": "Saved",
+      "error": "Not saved"
+    },
+    "actions": "Page actions",
+    "newSubpage": "New subpage",
+    "move": "Move to…",
+    "delete": "Delete page",
+    "titleLabel": "Page title",
+    "editedBy": "Edited by <name>{{name}}</name> · {{time}}",
+    "agentWorking": "{{name}} is working here",
+    "agentUpdated": "{{name}} updated this page",
+    "linkedTasks": "Linked tasks",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> changed this page while you were editing. Your latest changes weren’t saved.",
+      "byOtherSession": "<strong>Another session</strong> changed this page while you were editing. Your latest changes weren’t saved.",
+      "loadTheirs": "Load their version",
+      "keepMine": "Keep mine"
+    },
+    "content": "Page content",
+    "subpages": "Subpages",
+    "attachments": "Attachments"
+  },
+  "editor": {
+    "placeholder": "Write, or press “/” to insert…",
+    "headingPlaceholder": "Heading",
+    "label": "Content",
+    "uploading": "Uploading {{name}}…",
+    "uploaded": "File attached",
+    "noBlocks": "No blocks match",
+    "mentionHint": "Type to search tasks and pages",
+    "groups": {
+      "blocks": "Blocks",
+      "lists": "Lists",
+      "insert": "Insert",
+      "tasks": "Tasks",
+      "pages": "Pages"
+    },
+    "slash": {
+      "p": {
+        "title": "Text",
+        "subtitle": "Plain paragraph",
+        "keywords": "text paragraph body"
+      },
+      "h1": {
+        "title": "Heading 1",
+        "subtitle": "Large heading",
+        "keywords": "heading title h1"
+      },
+      "h2": {
+        "title": "Heading 2",
+        "subtitle": "Section heading",
+        "keywords": "heading title h2"
+      },
+      "h3": {
+        "title": "Heading 3",
+        "subtitle": "Subsection",
+        "keywords": "heading title h3"
+      },
+      "ul": {
+        "title": "List",
+        "subtitle": "Bulleted list",
+        "keywords": "list bullet bulleted ul"
+      },
+      "ol": {
+        "title": "Numbered list",
+        "subtitle": "1, 2, 3…",
+        "keywords": "list numbered ordered ol"
+      },
+      "todo": {
+        "title": "To-do list",
+        "subtitle": "Checkboxes to tick off",
+        "keywords": "todo task checklist check"
+      },
+      "quote": {
+        "title": "Quote",
+        "subtitle": "Make a passage stand out",
+        "keywords": "quote blockquote"
+      },
+      "code": {
+        "title": "Code",
+        "subtitle": "Code block",
+        "keywords": "code snippet"
+      },
+      "table": {
+        "title": "Table",
+        "subtitle": "3 × 3 with a header row",
+        "keywords": "table grid"
+      },
+      "hr": {
+        "title": "Divider",
+        "subtitle": "Horizontal line",
+        "keywords": "divider separator hr line rule"
+      },
+      "mention": {
+        "title": "Link a task or page",
+        "subtitle": "Type @ and search",
+        "keywords": "mention link task page"
+      },
+      "image": {
+        "title": "Image",
+        "subtitle": "Upload a PNG, JPG, GIF or WebP",
+        "keywords": "image photo picture"
+      },
+      "file": {
+        "title": "File",
+        "subtitle": "Attach any file",
+        "keywords": "file attachment upload"
+      }
+    },
+    "mention": {
+      "card": "Task · {{board}} · {{column}}",
+      "page": "Page · {{project}}"
+    },
+    "menu": {
+      "slash": "Insert block",
+      "mention": "Link a task or page",
+      "searching": "Searching…",
+      "noMatches": "No matches"
+    },
+    "format": {
+      "linkPlaceholder": "https://… or /doc/…",
+      "linkLabel": "Link address",
+      "openLink": "Open link",
+      "editLink": "Edit link",
+      "removeLink": "Remove link",
+      "bold": "Bold",
+      "italic": "Italic",
+      "strike": "Strikethrough",
+      "code": "Code",
+      "link": "Link"
+    }
+  },
+  "icon": {
+    "change": "Change icon",
+    "add": "Add icon",
+    "use": "Use {{icon}}",
+    "remove": "Remove icon"
+  },
+  "move": {
+    "title": "Move page",
+    "description": "Choose where to put it in the project.",
+    "root": "project root",
+    "moved": "Page moved"
+  }
+}

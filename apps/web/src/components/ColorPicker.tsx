@@ -1,30 +1,23 @@
 import { PALETTE, type PaletteColor } from '@orqevio/shared'
+import { t } from 'i18next'
 import { Check } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/cn'
 
-export const COLOR_NAMES: Record<PaletteColor, string> = {
-  tomato: 'Caqui',
-  amber: 'Ámbar',
-  lime: 'Lima',
-  jade: 'Jade',
-  teal: 'Turquesa',
-  cobalt: 'Cobalto',
-  iris: 'Iris',
-  rose: 'Rosa',
-  slate: 'Pizarra',
-}
+export const colorName = (color: PaletteColor) => t(`colors.${color}`)
 
-export function ColorPicker({ value, onChange, label = 'Color' }: { value: PaletteColor; onChange: (c: PaletteColor) => void; label?: string }) {
+export function ColorPicker({ value, onChange, label }: { value: PaletteColor; onChange: (c: PaletteColor) => void; label?: string }) {
+  const { t } = useTranslation()
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5">
+    <div role="radiogroup" aria-label={label ?? t('color')} className="flex flex-wrap gap-1.5">
       {PALETTE.map((c) => (
         <button
           key={c}
           type="button"
           role="radio"
           aria-checked={value === c}
-          aria-label={COLOR_NAMES[c]}
-          title={COLOR_NAMES[c]}
+          aria-label={t(`colors.${c}`)}
+          title={t(`colors.${c}`)}
           onClick={() => onChange(c)}
           className={cn(
             `c-${c}`,

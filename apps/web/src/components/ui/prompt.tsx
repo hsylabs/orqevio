@@ -1,4 +1,5 @@
 import { type FormEvent, type ReactNode, createContext, useCallback, useContext, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from './Button'
 import { Dialog } from './Dialog'
 import { Field } from './Field'
@@ -17,6 +18,7 @@ const PromptContext = createContext<(opts: PromptOptions) => Promise<string | nu
 
 /** Promise-based single-field prompt: `const name = await prompt({...})`. */
 export function PromptProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation()
   const [opts, setOpts] = useState<PromptOptions | null>(null)
   const [value, setValue] = useState('')
   const resolver = useRef<(value: string | null) => void>(() => {})
@@ -51,10 +53,10 @@ export function PromptProvider({ children }: { children: ReactNode }) {
           />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => close(null)}>
-              Cancelar
+              {t('actions.cancel')}
             </Button>
             <Button type="submit" variant="primary" disabled={!value.trim()}>
-              {opts?.confirmLabel ?? 'Guardar'}
+              {opts?.confirmLabel ?? t('actions.save')}
             </Button>
           </div>
         </form>

@@ -1,4 +1,5 @@
 import type { BoardRefDTO, PageNodeDTO } from '@orqevio/shared'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { useConfirm } from '../../components/ui/confirm'
@@ -8,6 +9,7 @@ import { keys, queryClient } from '../../lib/queries'
 
 /** Shared creation/deletion flows used by the sidebar, project page and palette. */
 export function useStructureActions(workspaceId: string) {
+  const { t } = useTranslation(['shell', 'common'])
   const navigate = useNavigate()
   const prompt = usePrompt()
   const confirm = useConfirm()
@@ -15,7 +17,7 @@ export function useStructureActions(workspaceId: string) {
 
   return {
     async createBoard(projectId: string) {
-      const name = await prompt({ title: 'Nuevo tablero', label: 'Nombre del tablero', placeholder: 'p. ej. Sprint de lanzamiento', confirmLabel: 'Crear tablero', maxLength: 80 })
+      const name = await prompt({ title: t('actions.newBoard.title'), label: t('actions.newBoard.label'), placeholder: t('actions.newBoard.placeholder'), confirmLabel: t('actions.newBoard.confirm'), maxLength: 80 })
       if (!name) return
       try {
         const board = await post<BoardRefDTO>(`/projects/${projectId}/boards`, { name })
@@ -36,42 +38,42 @@ export function useStructureActions(workspaceId: string) {
     },
     async deleteBoard(board: { id: string; name: string }) {
       const ok = await confirm({
-        title: `¿Eliminar «${board.name}»?`,
-        description: 'Se eliminarán sus columnas y tarjetas. Esta acción no se puede deshacer.',
-        confirmLabel: 'Eliminar tablero',
+        title: t('actions.deleteBoard.title', { name: board.name }),
+        description: t('actions.deleteBoard.body'),
+        confirmLabel: t('actions.deleteBoard.confirm'),
         danger: true,
       })
       if (!ok) return false
       await del(`/boards/${board.id}`)
       await refresh()
-      toast.success('Tablero eliminado')
+      toast.success(t('actions.deleteBoard.done'))
       return true
     },
     async deletePage(page: { id: string; title: string }) {
       const ok = await confirm({
-        title: `¿Eliminar «${page.title || 'Sin título'}»?`,
-        description: 'También se eliminarán sus subpáginas y adjuntos. Esta acción no se puede deshacer.',
-        confirmLabel: 'Eliminar página',
+        title: t('actions.deletePage.title', { name: page.title || t('common:untitled') }),
+        description: t('actions.deletePage.body'),
+        confirmLabel: t('actions.deletePage.confirm'),
         danger: true,
       })
       if (!ok) return false
       await del(`/pages/${page.id}`)
       await refresh()
-      toast.success('Página eliminada')
+      toast.success(t('actions.deletePage.done'))
       return true
     },
     async deleteProject(project: { id: string; name: string }) {
       const ok = await confirm({
-        title: `¿Eliminar el proyecto «${project.name}»?`,
-        description: 'Se eliminarán todos sus tableros, tarjetas, páginas y adjuntos. Esta acción no se puede deshacer.',
-        confirmLabel: 'Eliminar proyecto',
+        title: t('actions.deleteProject.title', { name: project.name }),
+        description: t('actions.deleteProject.body'),
+        confirmLabel: t('actions.deleteProject.confirm'),
         danger: true,
       })
       if (!ok) return false
       await del(`/projects/${project.id}`)
       await refresh()
       navigate(`/w/${workspaceId}`)
-      toast.success('Proyecto eliminado')
+      toast.success(t('actions.deleteProject.done'))
       return true
     },
   }

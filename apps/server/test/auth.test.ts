@@ -33,9 +33,11 @@ describe('access to a copy', () => {
   it('claims once: creates the owner, a workspace, a hardened cookie and a one-time access key', async () => {
     const client = new Client(h)
     // Case, spaces and dashes in the setup code do not matter.
-    const res = await client.post('/api/auth/claim', { setupCode: ` ${SETUP_CODE.toUpperCase().replaceAll('-', ' ')} `, name: 'Marta Ruiz' })
+    // The language the claim screen was shown in becomes the owner's, and names the first workspace.
+    const res = await client.post('/api/auth/claim', { setupCode: ` ${SETUP_CODE.toUpperCase().replaceAll('-', ' ')} `, name: 'Marta Ruiz', locale: 'es' })
     expect(res.status).toBe(201)
     expect(res.body.user.name).toBe('Marta Ruiz')
+    expect(res.body.user.locale).toBe('es')
     expect(res.body.user).not.toHaveProperty('email')
     expect(res.body.accessKey).toMatch(KEY_FORMAT)
     const cookie = res.headers.get('set-cookie')!
@@ -76,6 +78,15 @@ describe('access to a copy', () => {
     const res = await client.request('POST', `/api/workspaces/${workspaceId}/projects`, { name: 'X' }, { Origin: 'https://evil.example' })
     expect(res.status).toBe(403)
     expect(res.body.error.code).toBe('bad_origin')
+  })
+
+  it('changes the language of the account and refuses unknown ones', async () => {
+    const { client } = await signInOwner(h)
+    expect((await client.patch('/api/account', { locale: 'de' })).body.locale).toBe('de')
+    expect((await client.get('/api/auth/me')).body.user.locale).toBe('de')
+    const unknown = await client.patch('/api/account', { locale: 'xx' })
+    expect(unknown.status).toBe(400)
+    expect((await client.patch('/api/account', { locale: 'es' })).body.locale).toBe('es')
   })
 
   it('replaces the access key and signs out the other sessions', async () => {

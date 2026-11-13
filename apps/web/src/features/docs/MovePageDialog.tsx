@@ -1,5 +1,6 @@
 import type { PageNodeDTO } from '@orqevio/shared'
 import { CornerDownRight, FileText, FolderOpen } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Dialog } from '../../components/ui/Dialog'
 import { errorMessage, post } from '../../lib/api'
@@ -7,6 +8,7 @@ import { cn } from '../../lib/cn'
 import { keys, queryClient } from '../../lib/queries'
 
 export function MovePageDialog({ open, onOpenChange, pageId, projectName, pages, workspaceId }: { open: boolean; onOpenChange: (o: boolean) => void; pageId: string; projectName: string; pages: PageNodeDTO[]; workspaceId: string }) {
+  const { t } = useTranslation('docs')
   // Exclude the page itself and its descendants.
   const blocked = new Set<string>([pageId])
   let grew = true
@@ -36,19 +38,19 @@ export function MovePageDialog({ open, onOpenChange, pageId, projectName, pages,
         queryClient.invalidateQueries({ queryKey: keys.page(pageId) }),
       ])
       onOpenChange(false)
-      toast.success('Página movida')
+      toast.success(t('move.moved'))
     } catch (error) {
       toast.error(errorMessage(error))
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title="Mover página" description="Elige dónde colocarla dentro del proyecto.">
+    <Dialog open={open} onOpenChange={onOpenChange} title={t('move.title')} description={t('move.description')}>
       <div className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto">
         <button type="button" disabled={current?.parentId === null} onClick={() => void move(null)} className="flex items-center gap-2.5 rounded-[9px] px-2.5 py-2 text-left text-[13.5px] hover:bg-hover disabled:opacity-40">
           <FolderOpen className="size-4 text-ink-3" />
           <span className="font-medium">{projectName}</span>
-          <span className="text-[12px] text-ink-3">raíz del proyecto</span>
+          <span className="text-[12px] text-ink-3">{t('move.root')}</span>
         </button>
         {ordered.map(({ page, depth }) => (
           <button
@@ -61,7 +63,7 @@ export function MovePageDialog({ open, onOpenChange, pageId, projectName, pages,
           >
             {depth > 0 ? <CornerDownRight className="size-3.5 text-ink-4" /> : null}
             <span className="w-4 text-center text-[13px]">{page.icon ?? <FileText className="size-4 text-ink-3" />}</span>
-            <span className="truncate">{page.title || 'Sin título'}</span>
+            <span className="truncate">{page.title || t('untitled', { ns: 'common' })}</span>
           </button>
         ))}
       </div>

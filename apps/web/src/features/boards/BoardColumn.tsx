@@ -3,6 +3,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import { Ellipsis, Pencil, Plus, Trash } from 'lucide-react'
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from '../../components/ui/Menu'
 import { cn } from '../../lib/cn'
 import { SortableCard } from './CardItem'
@@ -20,6 +21,7 @@ interface ColumnProps {
 }
 
 export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onOpenCard, onAddCard, onRename, onDelete }: ColumnProps) {
+  const { t } = useTranslation('boards')
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: column.id,
     data: { type: 'column', title: column.name },
@@ -42,7 +44,7 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
     <section
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      aria-label={`Columna ${column.name}`}
+      aria-label={t('column.region', { name: column.name })}
       className={cn('flex max-h-full w-[288px] shrink-0 flex-col rounded-[14px] bg-sunken shadow-[inset_0_0_0_1px_var(--line)]', isDragging && 'opacity-40')}
     >
       <header className="flex h-10 shrink-0 items-center gap-1.5 pt-1 pr-1.5 pl-3">
@@ -60,7 +62,7 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
               }
             }}
             maxLength={60}
-            aria-label="Nombre de la columna"
+            aria-label={t('column.name')}
             className="h-7 min-w-0 flex-1 rounded-[7px] border border-accent bg-surface px-2 text-[13px] font-semibold outline-none"
           />
         ) : (
@@ -70,46 +72,46 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
             {...listeners}
             type="button"
             onDoubleClick={() => setRenaming(true)}
-            aria-roledescription="columna"
-            aria-label={`${column.name}. Doble clic para renombrar, espacio para mover`}
+            aria-roledescription={t('column.roleDescription')}
+            aria-label={t('column.handle', { name: column.name })}
             className={cn('flex min-w-0 flex-1 items-center gap-2 rounded-[7px] py-1 text-left', !dragDisabled && 'cursor-grab active:cursor-grabbing')}
           >
             <span className="truncate text-[13px] font-semibold text-ink">{column.name}</span>
             <span className="font-mono text-[11px] text-ink-3 tabular">{cards.length}</span>
           </button>
         )}
-        <button type="button" onClick={() => setComposing(true)} aria-label={`Añadir tarjeta a ${column.name}`} className="grid size-7 place-items-center rounded-[7px] text-ink-3 hover:bg-hover hover:text-ink">
+        <button type="button" onClick={() => setComposing(true)} aria-label={t('column.addCardTo', { name: column.name })} className="grid size-7 place-items-center rounded-[7px] text-ink-3 hover:bg-hover hover:text-ink">
           <Plus className="size-[15px]" />
         </button>
         <MenuRoot>
           <MenuTrigger asChild>
-            <button type="button" aria-label={`Acciones de ${column.name}`} className="grid size-7 place-items-center rounded-[7px] text-ink-3 hover:bg-hover hover:text-ink data-[state=open]:bg-hover">
+            <button type="button" aria-label={t('column.actions', { name: column.name })} className="grid size-7 place-items-center rounded-[7px] text-ink-3 hover:bg-hover hover:text-ink data-[state=open]:bg-hover">
               <Ellipsis className="size-[15px]" />
             </button>
           </MenuTrigger>
           <MenuContent>
             <MenuItem icon={<Pencil />} onSelect={() => setRenaming(true)}>
-              Renombrar
+              {t('actions.rename')}
             </MenuItem>
             <MenuItem icon={<Plus />} onSelect={() => setComposing(true)}>
-              Añadir tarjeta
+              {t('column.addCard')}
             </MenuItem>
             <MenuSeparator />
             <MenuItem icon={<Trash />} danger onSelect={() => void onDelete(column, cards.length)}>
-              Eliminar columna
+              {t('column.delete')}
             </MenuItem>
           </MenuContent>
         </MenuRoot>
       </header>
 
       <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-        <ol className="flex min-h-[8px] flex-col gap-2 overflow-y-auto px-2 pt-3 pb-2" aria-label={`Tarjetas de ${column.name}`}>
+        <ol className="flex min-h-[8px] flex-col gap-2 overflow-y-auto px-2 pt-3 pb-2" aria-label={t('column.cards', { name: column.name })}>
           {cards.map((card) => (
             <SortableCard key={card.id} card={card} labels={labels} onOpen={onOpenCard} disabled={dragDisabled} />
           ))}
           {cards.length === 0 && !composing && (
             <li className="list-none rounded-[10px] border border-dashed border-line-strong/70 px-3 py-5 text-center text-[12px] text-ink-3">
-              {filtered ? 'Nada coincide con el filtro' : 'Suelta tarjetas aquí'}
+              {filtered ? t('column.noMatches') : t('column.dropHere')}
             </li>
           )}
         </ol>
@@ -128,7 +130,7 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
             className="flex h-8 w-full items-center gap-1.5 rounded-[9px] px-2 text-[13px] text-ink-3 transition-colors hover:bg-hover hover:text-ink"
           >
             <Plus className="size-[15px]" />
-            Añadir tarjeta
+            {t('column.addCard')}
           </button>
         )}
       </div>
@@ -137,6 +139,7 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
 }
 
 function Composer({ onSubmit, onClose }: { onSubmit: (title: string) => Promise<void>; onClose: () => void }) {
+  const { t } = useTranslation('boards')
   const [title, setTitle] = useState('')
   const [busy, setBusy] = useState(false)
   const ref = useRef<HTMLTextAreaElement>(null)
@@ -172,17 +175,17 @@ function Composer({ onSubmit, onClose }: { onSubmit: (title: string) => Promise<
         onChange={(e) => setTitle(e.target.value)}
         onKeyDown={onKeyDown}
         onBlur={() => !title.trim() && onClose()}
-        placeholder="¿Qué hay que hacer?"
-        aria-label="Título de la tarjeta"
+        placeholder={t('composer.placeholder')}
+        aria-label={t('card.title')}
         maxLength={300}
         className="block w-full resize-none bg-transparent text-[13.5px] leading-snug outline-none placeholder:text-ink-3"
       />
       <div className="mt-1.5 flex items-center justify-between">
         <span className="text-[11px] text-ink-3">
-          <kbd className="kbd">↵</kbd> añadir · <kbd className="kbd">esc</kbd> cerrar
+          <Trans t={t} i18nKey="composer.hint" components={{ kbd: <kbd className="kbd" /> }} />
         </span>
         <button type="submit" disabled={!title.trim() || busy} className="h-7 rounded-[8px] bg-ink px-2.5 text-[12px] font-medium text-sheet disabled:opacity-40">
-          Añadir
+          {t('composer.submit')}
         </button>
       </div>
     </form>

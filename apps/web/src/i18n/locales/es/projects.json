@@ -1,0 +1,30 @@
+{
+  "edit": "Editar",
+  "delete": "Eliminar proyecto",
+  "summary": "{{boards}} · {{pages}}",
+  "boardCount_one": "{{count}} tablero",
+  "boardCount_many": "{{count}} tableros",
+  "boardCount_other": "{{count}} tableros",
+  "pageCount_one": "{{count}} página",
+  "pageCount_many": "{{count}} páginas",
+  "pageCount_other": "{{count}} páginas",
+  "boards": {
+    "title": "Tableros",
+    "new": "Nuevo tablero",
+    "openCards_one": "{{count}} tarjeta abierta",
+    "openCards_many": "{{count}} tarjetas abiertas",
+    "openCards_other": "{{count}} tarjetas abiertas",
+    "empty": "Crea un tablero Kanban para organizar las tareas de este proyecto."
+  },
+  "docs": {
+    "title": "Documentos",
+    "new": "Nueva página",
+    "subpages_one": "{{count}} subpágina",
+    "subpages_many": "{{count}} subpáginas",
+    "subpages_other": "{{count}} subpáginas",
+    "emptyTitle": "Sin documentos todavía",
+    "emptyAction": "Escribir la primera página",
+    "emptyBody": "Especificaciones, decisiones, procesos o notas de reunión. En Markdown y enlazados con tus tareas."
+  },
+  "recent": "Editado recientemente"
+}

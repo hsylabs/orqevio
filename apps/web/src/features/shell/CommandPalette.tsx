@@ -2,6 +2,7 @@ import { Command } from 'cmdk'
 import { Dialog as D } from 'radix-ui'
 import { Bot, FileText, FolderOpen, House, LockKeyhole, Moon, Plus, Search, Settings, SquareKanban, Sun } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { patch } from '../../lib/api'
 import { useSearch } from '../../lib/queries'
@@ -10,6 +11,7 @@ import { lockVault, useVaultLocked } from '../vault/session'
 import { useWorkspace } from './workspace'
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { t } = useTranslation(['shell', 'common'])
   const { workspaceId, overview, openNewProject } = useWorkspace()
   const navigate = useNavigate()
   const vaultLocked = useVaultLocked()
@@ -19,8 +21,8 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   const base = `/w/${workspaceId}`
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(query), 160)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setDebounced(query), 160)
+    return () => clearTimeout(timer)
   }, [query])
 
   useEffect(() => {
@@ -45,29 +47,29 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
       <D.Portal>
         <D.Overlay className="fixed inset-0 z-40 bg-[rgb(20_18_14/0.28)] backdrop-blur-[2px] data-[state=open]:animate-[overlay-in_0.15s_ease-out]" />
         <D.Content
-          aria-label="Paleta de comandos"
+          aria-label={t('palette.label')}
           className="fixed top-[14vh] left-1/2 z-50 w-[calc(100vw-32px)] max-w-[620px] -translate-x-1/2 overflow-hidden rounded-[18px] border border-line bg-sheet shadow-lg outline-none data-[state=open]:animate-[pop_0.18s_var(--ease-out-quint)]"
         >
-          <D.Title className="sr-only">Buscar</D.Title>
-          <D.Description className="sr-only">Busca proyectos, tableros, páginas y tarjetas, o ejecuta una acción.</D.Description>
-          <Command label="Paleta de comandos" loop className="flex max-h-[min(70vh,560px)] flex-col">
+          <D.Title className="sr-only">{t('palette.title')}</D.Title>
+          <D.Description className="sr-only">{t('palette.description')}</D.Description>
+          <Command label={t('palette.label')} loop className="flex max-h-[min(70vh,560px)] flex-col">
             <div className="flex items-center gap-3 border-b border-line px-4">
               <Search className="size-[18px] shrink-0 text-ink-3" />
               <Command.Input
                 value={query}
                 onValueChange={setQuery}
-                placeholder="Busca tareas, documentos o acciones…"
+                placeholder={t('palette.placeholder')}
                 className="h-14 flex-1 bg-transparent text-[15.5px] outline-none placeholder:text-ink-3"
               />
               <kbd className="kbd">esc</kbd>
             </div>
             <Command.List className="min-h-0 flex-1 overflow-y-auto p-2 [&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pt-2.5 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:text-ink-3 [&_[cmdk-group-heading]]:uppercase">
               <Command.Empty className="px-4 py-10 text-center text-[13.5px] text-ink-3">
-                {search.isFetching ? 'Buscando…' : 'Sin resultados. Prueba con otras palabras.'}
+                {search.isFetching ? t('palette.searching') : t('palette.noResults')}
               </Command.Empty>
 
               {contentResults.length > 0 && (
-                <Command.Group heading="En el contenido">
+                <Command.Group heading={t('palette.inContent')}>
                   {contentResults.map((r) => (
                     <Item
                       key={`${r.type}-${r.id}`}
@@ -77,38 +79,38 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                       onSelect={() => go(r.type === 'card' ? `${base}/b/${r.boardId}?card=${r.id}` : `${base}/d/${r.id}`)}
                       hint={r.type === 'card' ? `${r.boardName} · ${r.columnName}` : r.projectName}
                     >
-                      <span className="block truncate">{r.title || 'Sin título'}</span>
+                      <span className="block truncate">{r.title || t('common:untitled')}</span>
                       {r.excerpt && <span className="block truncate text-[12px] text-ink-3">{r.excerpt}</span>}
                     </Item>
                   ))}
                 </Command.Group>
               )}
 
-              <Command.Group heading="Navegar">
-                <Item value="Inicio" icon={<House />} onSelect={() => go(base)}>
-                  Inicio
+              <Command.Group heading={t('palette.navigate')}>
+                <Item value={t('palette.keywords.home')} icon={<House />} onSelect={() => go(base)}>
+                  {t('nav.home')}
                 </Item>
-                <Item value="Bóveda contraseñas" icon={<LockKeyhole />} onSelect={() => go(`${base}/vault`)}>
-                  Bóveda
+                <Item value={t('palette.keywords.vault')} icon={<LockKeyhole />} onSelect={() => go(`${base}/vault`)}>
+                  {t('nav.vault')}
                 </Item>
-                <Item value="Agentes MCP tokens" icon={<Bot />} onSelect={() => go(`${base}/agents`)}>
-                  Agentes
+                <Item value={t('palette.keywords.agents')} icon={<Bot />} onSelect={() => go(`${base}/agents`)}>
+                  {t('nav.agents')}
                 </Item>
-                <Item value="Ajustes cuenta" icon={<Settings />} onSelect={() => go(`${base}/settings`)}>
-                  Ajustes
+                <Item value={t('palette.keywords.settings')} icon={<Settings />} onSelect={() => go(`${base}/settings`)}>
+                  {t('user.settings')}
                 </Item>
               </Command.Group>
 
               {projects.length > 0 && (
-                <Command.Group heading="Proyectos, tableros y páginas">
+                <Command.Group heading={t('palette.structure')}>
                   {projects.map((p) => (
-                    <Item key={p.id} value={`proyecto ${p.name} ${p.id}`} icon={<FolderOpen />} onSelect={() => go(`${base}/p/${p.id}`)} hint="Proyecto">
+                    <Item key={p.id} value={`${t('palette.keywords.project')} ${p.name} ${p.id}`} icon={<FolderOpen />} onSelect={() => go(`${base}/p/${p.id}`)} hint={t('palette.project')}>
                       {p.name}
                     </Item>
                   ))}
                   {projects.flatMap((p) =>
                     p.boards.map((b) => (
-                      <Item key={b.id} value={`tablero ${b.name} ${p.name} ${b.id}`} icon={<SquareKanban />} onSelect={() => go(`${base}/b/${b.id}`)} hint={p.name}>
+                      <Item key={b.id} value={`${t('palette.keywords.board')} ${b.name} ${p.name} ${b.id}`} icon={<SquareKanban />} onSelect={() => go(`${base}/b/${b.id}`)} hint={p.name}>
                         {b.name}
                       </Item>
                     )),
@@ -117,24 +119,24 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                     p.pages.map((pg) => (
                       <Item
                         key={pg.id}
-                        value={`página ${pg.title || 'Sin título'} ${p.name} ${pg.id}`}
+                        value={`${t('palette.keywords.page')} ${pg.title || t('common:untitled')} ${p.name} ${pg.id}`}
                         icon={pg.icon ? <span className="text-[14px]">{pg.icon}</span> : <FileText />}
                         onSelect={() => go(`${base}/d/${pg.id}`)}
                         hint={p.name}
                       >
-                        {pg.title || 'Sin título'}
+                        {pg.title || t('common:untitled')}
                       </Item>
                     )),
                   )}
                 </Command.Group>
               )}
 
-              <Command.Group heading="Acciones">
-                <Item value="Nuevo proyecto crear" icon={<Plus />} onSelect={() => run(openNewProject)}>
-                  Nuevo proyecto
+              <Command.Group heading={t('palette.actions')}>
+                <Item value={t('palette.keywords.newProject')} icon={<Plus />} onSelect={() => run(openNewProject)}>
+                  {t('palette.newProject')}
                 </Item>
                 <Item
-                  value="Cambiar tema claro oscuro apariencia"
+                  value={t('palette.keywords.theme')}
                   icon={dark ? <Sun /> : <Moon />}
                   onSelect={() =>
                     run(() => {
@@ -144,11 +146,11 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                     })
                   }
                 >
-                  {dark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+                  {dark ? t('palette.lightTheme') : t('palette.darkTheme')}
                 </Item>
                 {!vaultLocked && (
-                  <Item value="Bloquear bóveda" icon={<LockKeyhole />} onSelect={() => run(lockVault)}>
-                    Bloquear la bóveda
+                  <Item value={t('palette.keywords.lockVault')} icon={<LockKeyhole />} onSelect={() => run(lockVault)}>
+                    {t('palette.lockVault')}
                   </Item>
                 )}
               </Command.Group>
@@ -156,12 +158,12 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
             <div className="flex items-center gap-4 border-t border-line px-4 py-2 text-[11.5px] text-ink-3">
               <span className="flex items-center gap-1.5">
                 <kbd className="kbd">↑</kbd>
-                <kbd className="kbd">↓</kbd> navegar
+                <kbd className="kbd">↓</kbd> {t('palette.hintNavigate')}
               </span>
               <span className="flex items-center gap-1.5">
-                <kbd className="kbd">↵</kbd> abrir
+                <kbd className="kbd">↵</kbd> {t('palette.hintOpen')}
               </span>
-              {search.isFetching && <span className="ml-auto">Buscando…</span>}
+              {search.isFetching && <span className="ml-auto">{t('palette.searching')}</span>}
             </div>
           </Command>
         </D.Content>

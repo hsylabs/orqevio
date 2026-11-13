@@ -20,6 +20,8 @@ export const users = sqliteTable('users', {
   id: id(),
   name: text('name').notNull(),
   theme: text('theme', { enum: ['system', 'light', 'dark'] }).notNull().default('system'),
+  /** One of LOCALES: the app's language for this user, set when the copy is claimed and in Settings. */
+  locale: text('locale').notNull().default('en'),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 })

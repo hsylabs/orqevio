@@ -1,11 +1,19 @@
-/** Where the browser goes back to, as the owner should read it. */
-export function destination(uri: string) {
+/**
+ * Where the browser goes back to, as the owner should read it. Each screen has a
+ * whole sentence for every kind, with the name as `{{name}}`:
+ * - `plain`: a website, named by its host (or an address that does not parse, as is);
+ * - `computer`: a server on this computer, named by its host;
+ * - `app`: an app of this computer, named by its URL scheme.
+ */
+export type Destination = { kind: 'plain' | 'computer' | 'app'; name: string; local: boolean }
+
+export function destination(uri: string): Destination {
   try {
     const url = new URL(uri)
-    if (url.protocol === 'https:') return { label: url.hostname, local: false }
-    if (url.protocol === 'http:') return { label: `${url.hostname}, en este ordenador`, local: true }
-    return { label: `la aplicación «${url.protocol.slice(0, -1)}» de este ordenador`, local: true }
+    if (url.protocol === 'https:') return { kind: 'plain', name: url.hostname, local: false }
+    if (url.protocol === 'http:') return { kind: 'computer', name: url.hostname, local: true }
+    return { kind: 'app', name: url.protocol.slice(0, -1), local: true }
   } catch {
-    return { label: uri, local: true }
+    return { kind: 'plain', name: uri, local: true }
   }
 }

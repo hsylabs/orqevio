@@ -1,0 +1,38 @@
+{
+  "title": "Home",
+  "greeting": "{{greeting}}, <name>{{name}}</name>.",
+  "onboarding": {
+    "title": "Getting started",
+    "dismiss": "Hide getting started",
+    "progress": "{{done}} of {{total}} done",
+    "project": {
+      "title": "Create a project",
+      "body": "Group boards and documents together."
+    },
+    "page": {
+      "title": "Write a page",
+      "body": "Document in Markdown, with “/” and “@”."
+    },
+    "vault": {
+      "title": "Set up the vault",
+      "body": "End-to-end encrypted."
+    },
+    "agent": {
+      "title": "Connect an agent",
+      "body": "Claude, Cursor or VS Code, over MCP."
+    }
+  },
+  "due": {
+    "title": "Due soon",
+    "empty": "Nothing is due in the next 7 days."
+  },
+  "recent": {
+    "title": "Recent documents",
+    "empty": "No documents yet."
+  },
+  "activity": {
+    "title": "Activity",
+    "agents": "Agent activity",
+    "empty": "What you and your agents do will show up here."
+  }
+}

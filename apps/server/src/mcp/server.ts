@@ -281,7 +281,7 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       'create_board',
       {
         title: 'Create board',
-        description: 'Creates a Kanban board in a project. Without columns it gets "Por hacer", "En curso" and "Hecho".',
+        description: 'Creates a Kanban board in a project. Without columns it gets three, To do, In progress and Done, named in the owner’s language.',
         inputSchema: { project_id: uuid, name: z.string().min(1).max(80), columns: z.array(z.string().min(1).max(60)).max(20).optional() },
         annotations: WRITE,
       },

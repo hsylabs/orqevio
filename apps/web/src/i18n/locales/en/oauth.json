@@ -1,0 +1,34 @@
+{
+  "problems": {
+    "unknown_client": "Orqevio doesn’t recognize this app, or the description it publishes isn’t valid.",
+    "bad_redirect": "The address it wants to return to doesn’t belong to this app. To keep you safe, nothing is sent there."
+  },
+  "problem": {
+    "title": "This app can’t be connected",
+    "home": "Go to Orqevio"
+  },
+  "leaving": {
+    "title": "Returning to the app…",
+    "subtitle": {
+      "plain": "Taking you back to {{name}}.",
+      "computer": "Taking you back to {{name}} on this computer.",
+      "app": "Taking you back to the “{{name}}” app on this computer."
+    }
+  },
+  "consent": {
+    "title": "Connect {{name}}",
+    "subtitle": "An app wants to work in your copy of Orqevio through MCP. Choose what it can access.",
+    "app": "App",
+    "returnsTo": {
+      "plain": "When you’re done, you’ll return to {{name}}",
+      "computer": "When you’re done, you’ll return to {{name}} on this computer",
+      "app": "When you’re done, you’ll return to the “{{name}}” app on this computer"
+    },
+    "publishedBy": "Its description is published by {{publisher}}.",
+    "unverified": "It registered itself, so its name isn’t verified. Only continue if you just connected it yourself.",
+    "local": "A program on this computer will receive the access.",
+    "workspace": "Workspace",
+    "allow": "Allow access",
+    "revokeLater": "You can revoke this access at any time in Agents."
+  }
+}

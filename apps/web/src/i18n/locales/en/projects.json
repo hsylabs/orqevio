@@ -1,0 +1,26 @@
+{
+  "edit": "Edit",
+  "delete": "Delete project",
+  "summary": "{{boards}} · {{pages}}",
+  "boardCount_one": "{{count}} board",
+  "boardCount_other": "{{count}} boards",
+  "pageCount_one": "{{count}} page",
+  "pageCount_other": "{{count}} pages",
+  "boards": {
+    "title": "Boards",
+    "new": "New board",
+    "openCards_one": "{{count}} open card",
+    "openCards_other": "{{count}} open cards",
+    "empty": "Create a Kanban board to organize this project’s tasks."
+  },
+  "docs": {
+    "title": "Documents",
+    "new": "New page",
+    "subpages_one": "{{count}} subpage",
+    "subpages_other": "{{count}} subpages",
+    "emptyTitle": "No documents yet",
+    "emptyAction": "Write the first page",
+    "emptyBody": "Specs, decisions, processes or meeting notes. In Markdown and linked to your tasks."
+  },
+  "recent": "Recently edited"
+}
