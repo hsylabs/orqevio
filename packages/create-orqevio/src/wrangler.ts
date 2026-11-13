@@ -29,6 +29,11 @@ export interface WranglerOptions {
   /** Written to Wrangler's stdin, for commands that read a secret. */
   input?: string
   /**
+   * Shows Wrangler's output as it comes, like the attached terminal would, and also
+   * hands it here (used to read the sign-in link).
+   */
+  onOutput?: (text: string) => void
+  /**
    * Where Wrangler runs. Never the user's current folder, so a wrangler.toml or
    * .env there cannot change what is deployed or which account is used.
    */
@@ -41,11 +46,16 @@ export function runWrangler(args: string[], options: WranglerOptions = {}): Prom
       cwd: options.cwd ?? tmpdir(),
       // Wrangler's anonymous telemetry stays off unless the user turned it on themselves.
       env: { WRANGLER_SEND_METRICS: 'false', ...process.env, ...options.env },
-      stdio: [options.input !== undefined ? 'pipe' : 'inherit', options.capture ? 'pipe' : 'inherit', options.capture ? 'pipe' : 'inherit'],
+      stdio: [options.input !== undefined ? 'pipe' : 'inherit', options.capture || options.onOutput ? 'pipe' : 'inherit', options.capture ? 'pipe' : 'inherit'],
     })
     let stdout = ''
     let stderr = ''
-    child.stdout?.on('data', (chunk) => (stdout += chunk))
+    child.stdout?.on('data', (chunk) => {
+      if (options.onOutput) {
+        process.stdout.write(chunk)
+        options.onOutput(String(chunk))
+      } else stdout += chunk
+    })
     child.stderr?.on('data', (chunk) => (stderr += chunk))
     if (options.input !== undefined) child.stdin!.end(options.input)
     child.on('error', reject)

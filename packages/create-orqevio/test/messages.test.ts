@@ -24,6 +24,7 @@ describe('installer languages', () => {
     expect(m.whichAccount(3)).toContain('3')
     expect(m.unknownOption('--x')).toContain('--x')
     expect(m.missingValue('--x')).toContain('--x')
+    expect(m.signInFailed('MANUAL-CMD')).toContain('MANUAL-CMD')
     expect(m.no.test('')).toBe(false)
   })
 

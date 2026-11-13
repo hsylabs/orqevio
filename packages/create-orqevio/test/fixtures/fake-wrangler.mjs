@@ -29,6 +29,11 @@ if (command !== 'login' && accounts.length > 1 && !process.env.CLOUDFLARE_ACCOUN
   process.exit(1)
 }
 if (command === 'login') {
+  // Like Wrangler with --browser=false: it only prints the link, in two pieces here.
+  if (args.includes('--browser=false')) {
+    process.stdout.write('Visit this link to authenticate: https://dash.cloudflare.com/oauth2/auth?response_type=code')
+    process.stdout.write('&client_id=abc&state=xyz\n')
+  }
   state.loggedIn = state.loginWorks !== false
   save()
   process.exit(state.loggedIn ? 0 : 1)

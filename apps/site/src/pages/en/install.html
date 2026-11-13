@@ -31,6 +31,7 @@
     <ul>
       <li><strong>Several copies:</strong> add <code>--name &lt;name&gt;</code> to any command.</li>
       <li><strong>Several Cloudflare accounts:</strong> the installer asks which one to use, or pass it with <code>--account &lt;id&gt;</code>.</li>
+      <li><strong>If the browser doesn’t open</strong> to sign in, open the link the installer shows. If that doesn’t work either, sign in on its own with <code>npx wrangler login --browser=false</code> and run the installer again.</li>
       <li><strong>Language:</strong> the installer speaks your terminal’s language; choose another with <code>--lang &lt;code&gt;</code>.</li>
       <li><strong>Privacy:</strong> the installer turns off Wrangler’s telemetry, unless you turned it on yourself, and works in a temporary folder that it deletes when it finishes.</li>
     </ul>

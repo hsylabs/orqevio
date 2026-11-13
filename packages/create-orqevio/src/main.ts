@@ -9,6 +9,7 @@ import { DEFAULT_NAME, type BaseConfig, copyConfig, isValidName, loadOrqevio } f
 import { parseJsonc } from './jsonc'
 import { CATALOGS, LANGUAGES, type Language, type Messages, detectLanguage, isLanguage } from './messages'
 import { generateSetupCode } from './setup-code'
+import { openOnWindows } from './browser'
 import { deployedUrls, runWrangler } from './wrangler'
 
 export interface Io {
@@ -28,7 +29,14 @@ export interface Deps {
   orqevio?: ReturnType<typeof loadOrqevio>
   /** The language of the messages; by default the terminal's (see detectLanguage). */
   language?: Language
+  /** The operating system (tests pass their own). */
+  platform?: NodeJS.Platform
+  /** How a link is opened on Windows (tests pass their own). */
+  openOnWindows?: (url: string) => void
 }
+
+/** Signs in without the installer, for when the browser never opens. */
+export const MANUAL_SIGN_IN = 'npx wrangler login --browser=false'
 
 const R2_DASHBOARD = 'https://dash.cloudflare.com/?to=/:account/r2/overview'
 
@@ -83,7 +91,7 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
   }
 
   io.out(`\n${m.heading(command, orqevio.version, name)}\n`)
-  const accounts = await signIn(io, m)
+  const accounts = await signIn(io, m, deps)
   if (!accounts) return 1
   const account = await chooseAccount(accounts, givenAccount ?? process.env.CLOUDFLARE_ACCOUNT_ID, io, m)
   if (!account) return 1
@@ -180,14 +188,37 @@ interface Account {
 }
 
 /** Signs in with Wrangler's own login when needed; returns the accounts this login can use. */
-async function signIn(io: Io, m: Messages): Promise<Account[] | null> {
+async function signIn(io: Io, m: Messages, deps: Deps): Promise<Account[] | null> {
   let accounts = await whoami()
   if (!accounts) {
     io.out(m.signInPrompt)
-    if ((await runWrangler(['login'])).code === 0) accounts = await whoami()
+    if ((await login(deps)).code === 0) accounts = await whoami()
   }
-  if (!accounts) io.err(m.signInFailed)
+  if (!accounts) io.err(m.signInFailed(MANUAL_SIGN_IN))
   return accounts
+}
+
+/**
+ * Wrangler's login. On Windows, Wrangler only prints the link and the installer opens
+ * it (see openOnWindows): the way Wrangler opens it there gets blocked by antivirus.
+ */
+function login(deps: Deps) {
+  if ((deps.platform ?? process.platform) !== 'win32') return runWrangler(['login'])
+  const open = deps.openOnWindows ?? openOnWindows
+  let seen = ''
+  let opened = false
+  return runWrangler(['login', '--browser=false'], {
+    onOutput: (text) => {
+      if (opened) return
+      seen += text
+      // The whole link, up to the end of its line (output can arrive in pieces).
+      const url = /Visit this link to authenticate: (https:\/\/\S+)\s/.exec(seen)?.[1]
+      if (url) {
+        opened = true
+        open(url)
+      }
+    },
+  })
 }
 
 async function whoami(): Promise<Account[] | null> {

@@ -208,6 +208,29 @@ describe('create-orqevio', () => {
     expect(failed.err).toContain('No se ha podido desplegar')
   })
 
+  it('on Windows, opens the sign-in link itself instead of letting Wrangler use PowerShell', async () => {
+    setState({ loggedIn: false })
+    const opened: string[] = []
+    const out: string[] = []
+    const io: Io = { out: (t) => out.push(t), err: (t) => out.push(t) }
+    const code = await main(['--name', 'ana'], io, { orqevio, language: 'es', platform: 'win32', openOnWindows: (url) => opened.push(url) })
+    expect(code).toBe(0)
+    expect(calls().find((c) => c.args[0] === 'login')!.args).toEqual(['login', '--browser=false'])
+    expect(opened).toEqual(['https://dash.cloudflare.com/oauth2/auth?response_type=code&client_id=abc&state=xyz'])
+    expect(out.join('\n')).toContain('abre tú el enlace que aparece abajo')
+  })
+
+  it('elsewhere, lets Wrangler open the browser, and explains how to sign in by hand if it fails', async () => {
+    setState({ loggedIn: false, loginWorks: false })
+    const opened: string[] = []
+    const out: string[] = []
+    const io: Io = { out: (t) => out.push(t), err: (t) => out.push(t) }
+    expect(await main(['--name', 'ana'], io, { orqevio, language: 'es', platform: 'darwin', openOnWindows: (url) => opened.push(url) })).toBe(1)
+    expect(calls().find((c) => c.args[0] === 'login')!.args).toEqual(['login'])
+    expect(opened).toEqual([])
+    expect(out.join('\n')).toContain('inicia sesión aparte con npx wrangler login --browser=false')
+  })
+
   it('asks which account to use when the login has several, and uses it for every call', async () => {
     const accounts = [
       { id: 'acc-1', name: 'Personal' },

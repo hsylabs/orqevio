@@ -24,7 +24,7 @@ export interface Messages {
   copyNotFound(name: string, installCommand: string): string
   r2Disabled(dashboardUrl: string, retryCommand: string): string
   signInPrompt: string
-  signInFailed: string
+  signInFailed(manualCommand: string): string
   noAccessToAccount(account: string, accounts: string): string
   noAccounts: string
   chooseAccountWithFlag(accounts: string): string
