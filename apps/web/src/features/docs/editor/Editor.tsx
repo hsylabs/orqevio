@@ -141,7 +141,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       const results = await get<SearchResultDTO[]>(`/workspaces/${workspaceId}/search?q=${encodeURIComponent(query.trim())}`)
       return results.slice(0, 8).map((r) => ({
         id: `${r.type}-${r.id}`,
-        title: r.title || t('untitled'),
+        title: r.title || t('untitled', { ns: 'common' }),
         subtitle: r.type === 'card' ? t('editor.mention.card', { board: r.boardName, column: r.columnName }) : t('editor.mention.page', { project: r.projectName }),
         icon: r.type === 'card' ? '▤' : (r.icon ?? '¶'),
         group: r.type === 'card' ? t('editor.groups.tasks') : t('editor.groups.pages'),
@@ -152,7 +152,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
             .focus()
             .deleteRange(range)
             .insertContent([
-              { type: 'text', text: r.title || t('untitled'), marks: [{ type: 'link', attrs: { href } }] },
+              { type: 'text', text: r.title || t('untitled', { ns: 'common' }), marks: [{ type: 'link', attrs: { href } }] },
               { type: 'text', text: ' ' },
             ])
             .run()

@@ -118,7 +118,7 @@ export function HomePage() {
                     <Link to={`${base}/d/${p.id}`} className="flex items-center gap-3 rounded-[10px] px-2.5 py-2 transition-colors hover:bg-hover">
                       <span className="w-4 text-center text-[14px]">{p.icon ?? <FileText className="size-4 text-ink-3" />}</span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13.5px] font-medium">{p.title || t('recent.untitled')}</span>
+                        <span className="block truncate text-[13.5px] font-medium">{p.title || t('untitled', { ns: 'common' })}</span>
                         <span className="block truncate text-[12px] text-ink-3">{p.projectName}</span>
                       </span>
                       <span className="shrink-0 text-[11.5px] text-ink-3">{relativeTime(p.updatedAt)}</span>

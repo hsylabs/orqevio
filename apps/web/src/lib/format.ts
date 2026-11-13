@@ -91,8 +91,3 @@ export const formatNumber = (n: number) => new Intl.NumberFormat(currentLocale()
 
 /** "a, b and c" */
 export const formatList = (items: string[]) => new Intl.ListFormat(currentLocale(), { type: 'conjunction' }).format(items)
-
-/** @deprecated Being replaced by plural keys in the catalogs. */
-export function plural(n: number, one: string, many: string) {
-  return `${n} ${n === 1 ? one : many}`
-}

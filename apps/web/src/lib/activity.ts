@@ -27,14 +27,14 @@ export function activityKey(action: string, self = false): Known | AboutThisCard
 
 /** What an entry is about: its title, or a placeholder for an untitled page. */
 export function activityTarget(a: { entityType: string; summary: string }) {
-  return a.summary || (a.entityType === 'page' ? t('activity:untitledPage') : '')
+  return a.summary || (a.entityType === 'page' ? t('common:untitled') : '')
 }
 
 export function activityDetail(a: Pick<ActivityDTO, 'action' | 'meta'>): string | null {
   const m = a.meta ?? {}
   if (a.action === 'card.moved' && m.to) return m.from ? t('activity:detail.movedFromTo', { from: m.from, to: m.to }) : t('activity:detail.movedTo', { to: m.to })
   if (a.action === 'card.created' && m.column) return t('activity:detail.createdIn', { column: m.column })
-  if (a.action === 'card.linked' && 'page' in m) return t('activity:detail.linkedPage', { page: m.page || t('activity:untitledPage') })
+  if (a.action === 'card.linked' && 'page' in m) return t('activity:detail.linkedPage', { page: m.page || t('common:untitled') })
   return null
 }
 

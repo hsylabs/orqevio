@@ -102,7 +102,7 @@ export function ProjectPage() {
                     <li key={p.id} className="border-b border-line last:border-b-0">
                       <Link to={`/w/${workspaceId}/d/${p.id}`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-hover">
                         <span className="w-5 text-center text-[16px]">{p.icon ?? <FileText className="size-4 text-ink-3" />}</span>
-                        <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{p.title || t('docs:untitled')}</span>
+                        <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{p.title || t('untitled', { ns: 'common' })}</span>
                         {childCount(p.id) > 0 && <span className="text-[12px] text-ink-3">{t('docs.subpages', { count: childCount(p.id) })}</span>}
                       </Link>
                     </li>
@@ -122,7 +122,7 @@ export function ProjectPage() {
                     <li key={p.id}>
                       <Link to={`/w/${workspaceId}/d/${p.id}`} className="flex items-center gap-2.5 rounded-[9px] px-2 py-1.5 hover:bg-hover">
                         <span className="w-4 text-center text-[13px]">{p.icon ?? <FileText className="size-3.5 text-ink-3" />}</span>
-                        <span className="min-w-0 flex-1 truncate text-[13.5px]">{p.title || t('docs:untitled')}</span>
+                        <span className="min-w-0 flex-1 truncate text-[13.5px]">{p.title || t('untitled', { ns: 'common' })}</span>
                         <span className="text-[11.5px] text-ink-3">{relativeTime(p.updatedAt)}</span>
                       </Link>
                     </li>

@@ -28,8 +28,7 @@
   },
   "recent": {
     "title": "Documentos recientes",
-    "empty": "Todavía no hay documentos.",
-    "untitled": "Sin título"
+    "empty": "Todavía no hay documentos."
   },
   "activity": {
     "title": "Actividad",

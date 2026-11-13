@@ -188,8 +188,8 @@ function DocBody({ page }: { page: PageDTO }) {
       <PageHeader
         crumbs={[
           { label: page.project.name, to: `/w/${workspaceId}/p/${page.project.id}` },
-          ...page.breadcrumbs.map((b) => ({ label: `${b.icon ? `${b.icon} ` : ''}${b.title || t('untitled')}`, to: `/w/${workspaceId}/d/${b.id}` })),
-          { label: `${icon ? `${icon} ` : ''}${title || t('untitled')}` },
+          ...page.breadcrumbs.map((b) => ({ label: `${b.icon ? `${b.icon} ` : ''}${b.title || t('untitled', { ns: 'common' })}`, to: `/w/${workspaceId}/d/${b.id}` })),
+          { label: `${icon ? `${icon} ` : ''}${title || t('untitled', { ns: 'common' })}` },
         ]}
         actions={
           <>
@@ -239,7 +239,7 @@ function DocBody({ page }: { page: PageDTO }) {
               value={title}
               rows={1}
               maxLength={200}
-              placeholder={t('untitled')}
+              placeholder={t('untitled', { ns: 'common' })}
               aria-label={t('page.titleLabel')}
               onFocus={() => (titleFocused.current = true)}
               onBlur={() => (titleFocused.current = false)}
@@ -348,7 +348,7 @@ function DocBody({ page }: { page: PageDTO }) {
                       <Link key={c.id} to={`/w/${workspaceId}/d/${c.id}`} className="group flex items-center gap-3 rounded-[12px] border border-line bg-surface px-3 py-2.5 shadow-sm transition-all hover:-translate-y-px hover:border-line-strong hover:shadow-md">
                         <CornerDownRight className="size-3.5 text-ink-4" />
                         <span className="text-[15px]">{c.icon ?? <FileText className="size-4 text-ink-3" />}</span>
-                        <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">{c.title || t('untitled')}</span>
+                        <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">{c.title || t('untitled', { ns: 'common' })}</span>
                         <span className="text-[11.5px] text-ink-3">{relativeTime(c.updatedAt)}</span>
                       </Link>
                     ))}

@@ -55,7 +55,7 @@ export function LinkedPages({ card }: { card: CardDetailDTO }) {
         <div key={p.id} className="group flex items-center gap-2.5 rounded-[10px] border border-line bg-surface px-2.5 py-2 transition-colors hover:border-line-strong">
           <span className="grid size-7 shrink-0 place-items-center rounded-[7px] bg-sunken text-[14px] text-ink-3">{p.icon ?? <FileText className="size-4" />}</span>
           <Link to={`/w/${workspaceId}/d/${p.id}`} className="min-w-0 flex-1 truncate text-[13.5px] font-medium hover:underline hover:decoration-accent hover:underline-offset-2">
-            {p.title || t('docs:untitled')}
+            {p.title || t('untitled', { ns: 'common' })}
           </Link>
           {p.sources.includes('mention') && <span className="rounded-full bg-sunken px-2 py-0.5 text-[11px] text-ink-3">{t('linked.mentioned')}</span>}
           {p.sources.includes('manual') && (
@@ -89,7 +89,7 @@ export function LinkedPages({ card }: { card: CardDetailDTO }) {
               .map((s) => (
                 <button key={s.id} type="button" onClick={() => void link(s.id)} className="flex w-full items-center gap-2.5 rounded-[8px] px-2 py-1.5 text-left hover:bg-hover">
                   <span className="grid w-4 place-items-center text-[13px] text-ink-3">{s.icon ?? <FileText className="size-4" />}</span>
-                  <span className="min-w-0 flex-1 truncate text-[13.5px]">{s.title || t('docs:untitled')}</span>
+                  <span className="min-w-0 flex-1 truncate text-[13.5px]">{s.title || t('untitled', { ns: 'common' })}</span>
                   <span className="shrink-0 text-[11.5px] text-ink-3">{s.hint}</span>
                 </button>
               ))

@@ -63,7 +63,7 @@ export function MovePageDialog({ open, onOpenChange, pageId, projectName, pages,
           >
             {depth > 0 ? <CornerDownRight className="size-3.5 text-ink-4" /> : null}
             <span className="w-4 text-center text-[13px]">{page.icon ?? <FileText className="size-4 text-ink-3" />}</span>
-            <span className="truncate">{page.title || t('untitled')}</span>
+            <span className="truncate">{page.title || t('untitled', { ns: 'common' })}</span>
           </button>
         ))}
       </div>
