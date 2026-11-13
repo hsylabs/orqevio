@@ -1,6 +1,7 @@
-import type { Theme } from '@orqevio/shared'
+import type { Locale, MeDTO, Theme, UserDTO } from '@orqevio/shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, type ReactNode, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
@@ -8,6 +9,8 @@ import { Dialog } from '../../components/ui/Dialog'
 import { Field } from '../../components/ui/Field'
 import { Segmented } from '../../components/ui/Segmented'
 import { useConfirm } from '../../components/ui/confirm'
+import { applyLocale } from '../../i18n'
+import { LanguageSelect } from '../../i18n/LanguageSelect'
 import { del, errorMessage, patch, post } from '../../lib/api'
 import { keys } from '../../lib/queries'
 import { applyTheme } from '../../lib/theme'
@@ -30,6 +33,7 @@ function Section({ title, description, children }: { title: string; description?
 }
 
 export function SettingsPage() {
+  const { t } = useTranslation('settings')
   const { me, workspaceId } = useWorkspace()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -97,6 +101,20 @@ export function SettingsPage() {
                 { value: 'light', label: 'Claro' },
                 { value: 'dark', label: 'Oscuro' },
               ]}
+            />
+          </Section>
+
+          <Section title={t('language.title')} description={t('language.description')}>
+            <LanguageSelect
+              onChange={async (locale: Locale) => {
+                await applyLocale(locale)
+                try {
+                  const user = await patch<UserDTO>('/account', { locale })
+                  queryClient.setQueryData<MeDTO>(keys.me, (current) => (current ? { ...current, user } : current))
+                } catch (error) {
+                  toast.error(errorMessage(error))
+                }
+              }}
             />
           </Section>
 

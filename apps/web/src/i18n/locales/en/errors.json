@@ -1,0 +1,16 @@
+{
+  "codes": {
+    "invalid_access_key": "The access key isn’t correct.",
+    "invalid_setup_code": "The setup code isn’t correct.",
+    "already_claimed": "This copy is already set up. Sign in with your access key.",
+    "not_claimed": "This copy isn’t set up yet.",
+    "rate_limited": "Too many attempts. Wait a few minutes.",
+    "network": "There’s no connection to the server.",
+    "file_too_large": "The file is larger than the maximum allowed size.",
+    "upload_incomplete": "The upload was interrupted. Try again.",
+    "last_workspace": "You need to keep at least one workspace."
+  },
+  "notFound": "The item couldn’t be found.",
+  "server": "Something went wrong on the server. Try again.",
+  "unknown": "Something went wrong. Try again."
+}

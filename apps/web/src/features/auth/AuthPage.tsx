@@ -7,6 +7,8 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { LogoMark, Wordmark } from '../../components/Logo'
 import { Button } from '../../components/ui/Button'
 import { Field } from '../../components/ui/Field'
+import { applyLocale, currentLocale } from '../../i18n'
+import { LanguageSelect } from '../../i18n/LanguageSelect'
 import { errorMessage, post } from '../../lib/api'
 import { keys, useAccessState } from '../../lib/queries'
 import { FullScreenLoader } from '../shell/States'
@@ -69,6 +71,8 @@ function AuthLayout({ title, subtitle, children }: { title: string; subtitle: Re
           <p className="mt-2 text-[14px] leading-relaxed text-ink-2">{subtitle}</p>
           <div className="mt-8">{children}</div>
         </div>
+        {/* The language the copy is claimed in becomes its owner's. */}
+        <LanguageSelect compact className="mt-12" onChange={(locale) => void applyLocale(locale)} />
       </main>
     </div>
   )
@@ -184,7 +188,7 @@ function SetupForm({ onClaimed }: { onClaimed: (accessKey: string) => void }) {
   async function submit(e: FormEvent) {
     e.preventDefault()
     setError(null)
-    const parsed = claimInput.safeParse({ setupCode, name })
+    const parsed = claimInput.safeParse({ setupCode, name, locale: currentLocale() })
     if (!parsed.success) {
       const errs: Record<string, string> = {}
       for (const issue of parsed.error.issues) {

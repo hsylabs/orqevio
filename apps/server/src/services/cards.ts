@@ -431,7 +431,7 @@ export class CardService {
     await this.activity.record(
       actor,
       card.workspaceId,
-      { action: 'card.linked', entityType: 'card', entityId: cardId, summary: card.title, meta: { page: page.title || 'Untitled' } },
+      { action: 'card.linked', entityType: 'card', entityId: cardId, summary: card.title, meta: { page: page.title } },
       { boardId: card.boardId, cardId, pageId },
     )
   }

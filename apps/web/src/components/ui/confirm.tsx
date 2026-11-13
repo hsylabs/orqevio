@@ -1,4 +1,5 @@
 import { type ReactNode, createContext, useCallback, useContext, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from './Button'
 import { Dialog } from './Dialog'
 
@@ -13,6 +14,7 @@ const ConfirmContext = createContext<(opts: ConfirmOptions) => Promise<boolean>>
 
 /** Promise-based confirmation dialog: `if (await confirm({...})) …` */
 export function ConfirmProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation()
   const [opts, setOpts] = useState<ConfirmOptions | null>(null)
   const resolver = useRef<(value: boolean) => void>(() => {})
   const confirm = useCallback((o: ConfirmOptions) => {
@@ -37,10 +39,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         footer={
           <>
             <Button variant="ghost" onClick={() => close(false)}>
-              Cancelar
+              {t('actions.cancel')}
             </Button>
             <Button variant={opts?.danger ? 'danger' : 'primary'} onClick={() => close(true)} autoFocus>
-              {opts?.confirmLabel ?? 'Confirmar'}
+              {opts?.confirmLabel ?? t('actions.confirm')}
             </Button>
           </>
         }

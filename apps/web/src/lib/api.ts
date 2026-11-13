@@ -1,4 +1,5 @@
 import { type ApiErrorBody, UPLOAD_NAME_HEADER } from '@orqevio/shared'
+import { t } from 'i18next'
 
 export class ApiError extends Error {
   constructor(
@@ -31,7 +32,7 @@ export async function api<T = unknown>(method: Method, path: string, body?: unkn
     res = await fetch(`/api${path}`, init)
   } catch (error) {
     if ((error as Error).name === 'AbortError') throw error
-    throw new ApiError(0, 'network', 'No hay conexión con el servidor')
+    throw new ApiError(0, 'network', 'No connection to the server')
   }
   if (res.status === 204) return undefined as T
   const text = await res.text()
@@ -57,24 +58,17 @@ export const patch = <T>(path: string, body: unknown) => api<T>('PATCH', path, b
 export const put = <T>(path: string, body: unknown) => api<T>('PUT', path, body)
 export const del = <T>(path: string) => api<T>('DELETE', path)
 
-/** Spanish, human-friendly message for any thrown value. */
+const KNOWN_ERRORS = ['invalid_access_key', 'invalid_setup_code', 'already_claimed', 'not_claimed', 'rate_limited', 'network', 'file_too_large', 'upload_incomplete', 'last_workspace'] as const
+const isKnown = (code: string): code is (typeof KNOWN_ERRORS)[number] => (KNOWN_ERRORS as readonly string[]).includes(code)
+
+/** A human-friendly message for any thrown value, in the app's language. */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    const known: Record<string, string> = {
-      invalid_access_key: 'La clave de acceso no es correcta.',
-      invalid_setup_code: 'El código de configuración no es correcto.',
-      already_claimed: 'Esta copia ya está configurada. Entra con tu clave de acceso.',
-      not_claimed: 'Esta copia aún no está configurada.',
-      rate_limited: 'Demasiados intentos. Espera unos minutos.',
-      network: 'No hay conexión con el servidor.',
-      file_too_large: 'El archivo supera el tamaño máximo permitido.',
-      upload_incomplete: 'La subida se interrumpió. Vuelve a intentarlo.',
-      last_workspace: 'Necesitas conservar al menos un espacio.',
-    }
-    if (known[error.code]) return known[error.code]!
-    if (error.status === 404) return 'No se ha encontrado el elemento.'
-    if (error.status >= 500) return 'Algo ha fallado en el servidor. Inténtalo de nuevo.'
+    if (isKnown(error.code)) return t(`errors:codes.${error.code}`)
+    if (error.status === 404) return t('errors:notFound')
+    if (error.status >= 500) return t('errors:server')
+    // Anything else is a validation detail from the server, which speaks English.
     return error.message
   }
-  return 'Algo ha fallado. Inténtalo de nuevo.'
+  return t('errors:unknown')
 }
