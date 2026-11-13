@@ -1,0 +1,38 @@
+{
+  "name": "日本語",
+  "skip": "本文へスキップ",
+  "home": "Orqevioのホーム",
+  "nav": {
+    "main": "メイン",
+    "footer": "フッター",
+    "languages": "言語",
+    "install": "インストール",
+    "privacy": "プライバシー",
+    "license": "ライセンス"
+  },
+  "copy": {
+    "button": "コピー",
+    "label": "コマンドをコピー",
+    "done": "コピーしました",
+    "failed": "コピーできませんでした"
+  },
+  "pages": {
+    "home": {
+      "title": "Orqevio · タスク、ドキュメント、保管庫を、あなた専用の環境で",
+      "description": "タスク、ドキュメント、エンドツーエンドで暗号化された保管庫をひとつに。Orqevioは、あなたのCloudflareアカウントやサーバーで動くワークスペースです。AIエージェントもMCPで参加できます。",
+      "share": "タスク、ドキュメント、暗号化された保管庫を、あなた専用のOrqevioに。AIエージェントともMCPでつながります。"
+    },
+    "install": {
+      "title": "Orqevioのインストール · CloudflareでもDockerでも",
+      "description": "コマンド1つでCloudflareアカウントに、「Deploy to Cloudflare」ボタンで、またはDockerでサーバーに。Orqevioのインストール、初回ログイン、更新の手順を説明します。"
+    },
+    "privacy": {
+      "title": "プライバシー · Orqevio",
+      "description": "orqevio.comは誰のデータも保存しません。Cookie、アクセス解析、フォームはありません。Orqevioは、それぞれの所有者のCloudflareアカウントかサーバーで動きます。"
+    },
+    "404": {
+      "title": "ページが見つかりません · Orqevio",
+      "description": "お探しのページはorqevio.comに見つかりませんでした。アドレスをご確認のうえ、ホームに戻るか、Orqevioのインストールガイドをご覧ください。"
+    }
+  }
+}
