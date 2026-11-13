@@ -41,6 +41,7 @@ import { ArchivedPanel } from './ArchivedPanel'
 import { BoardColumn } from './BoardColumn'
 import { CardView } from './CardItem'
 import { CardSheet } from './CardSheet'
+import { withNewCard } from './board-cache'
 
 type DueFilter = 'all' | 'overdue' | 'week' | 'none'
 interface Filter {
@@ -303,7 +304,7 @@ export function BoardPage() {
   async function addCard(columnId: string, title: string) {
     try {
       const card = await post<CardSummaryDTO>(`/columns/${columnId}/cards`, { title })
-      queryClient.setQueryData<BoardDTO>(keys.board(boardId), (prev) => (prev ? { ...prev, cards: [...prev.cards, card] } : prev))
+      queryClient.setQueryData<BoardDTO>(keys.board(boardId), (prev) => (prev ? withNewCard(prev, card) : prev))
       void queryClient.invalidateQueries({ queryKey: keys.overview(workspaceId) })
     } catch (error) {
       toast.error(errorMessage(error))
