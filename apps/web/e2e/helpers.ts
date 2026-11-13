@@ -1,10 +1,37 @@
 import path from 'node:path'
 import { type Page, test as base, expect } from '@playwright/test'
 
-/** Test fixture that fails the test on any uncaught page error or console error. */
+/**
+ * Firefox sometimes loses the commit of a new tab's first navigation, the one that
+ * moves it from about:blank to another process: Juggler reports the navigation as
+ * started (twice) and the page loads and renders, but Page.navigationCommitted never
+ * arrives, so page.goto waits until the test times out. Every new page therefore
+ * first opens a tiny page of the copy, and checks that one through the document;
+ * the navigations of the tests are then ordinary, fully tracked ones.
+ */
+export async function settle(page: Page, baseURL: string) {
+  await Promise.race([
+    page.goto(`${baseURL}/healthz`, { waitUntil: 'commit' }),
+    expect.poll(() => page.evaluate(() => location.pathname).catch(() => ''), { timeout: 15_000 }).toBe('/healthz'),
+  ])
+}
+
+/**
+ * Test fixture that fails the test on any uncaught page error or console error.
+ * When a test fails, it also reports the page's load state and the requests still
+ * in flight, to explain pages that never finish loading.
+ */
 export const test = base.extend<{ consoleErrors: string[] }>({
+  page: async ({ page, baseURL }, use) => {
+    await settle(page, baseURL!)
+    await use(page)
+  },
   consoleErrors: [
-    async ({ page }, use) => {
+    async ({ page }, use, testInfo) => {
+      const inFlight = new Map<object, string>()
+      page.on('request', (r) => inFlight.set(r, `${r.method()} ${r.url()} (${r.resourceType()}, since ${new Date().toISOString()})`))
+      page.on('requestfinished', (r) => inFlight.delete(r))
+      page.on('requestfailed', (r) => inFlight.delete(r))
       // Every browser blocks CSP violations, but not all of them log one: report them all.
       await page.addInitScript(() =>
         document.addEventListener('securitypolicyviolation', (e) => console.error(`CSP violation: ${e.effectiveDirective} blocked ${e.blockedURI || 'inline code'} in ${e.sourceFile}`)),
@@ -15,6 +42,23 @@ export const test = base.extend<{ consoleErrors: string[] }>({
         if (m.type() === 'error') errors.push(`console: ${m.text()}`)
       })
       await use(errors)
+      if (testInfo.status !== testInfo.expectedStatus) {
+        const state = await Promise.race([
+          page.evaluate(() => ({
+            url: location.href,
+            readyState: document.readyState,
+            painted: document.getElementById('root')?.childElementCount ?? 0,
+            unfinished: performance
+              .getEntriesByType('resource')
+              .filter((e) => (e as PerformanceResourceTiming).responseEnd === 0)
+              .map((e) => e.name),
+          })),
+          new Promise((resolve) => setTimeout(() => resolve('the page did not answer'), 5000)),
+        ]).catch((error: Error) => `the page could not be inspected: ${error.message}`)
+        const report = JSON.stringify({ page: state, requestsInFlight: [...inFlight.values()] }, null, 2)
+        console.log(`Page diagnostics for "${testInfo.title}":\n${report}`)
+        await testInfo.attach('page-diagnostics', { body: report, contentType: 'application/json' })
+      }
       expect(errors, 'browser console errors').toEqual([])
     },
     { auto: true },

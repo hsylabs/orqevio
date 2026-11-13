@@ -1,4 +1,4 @@
-import { OWNER_STATE, expect, openNewWorkspace, test } from './helpers'
+import { OWNER_STATE, expect, openNewWorkspace, settle, test } from './helpers'
 
 test('the app speaks the language of the account, chosen in Settings', async ({ page, browser, baseURL }) => {
   await openNewWorkspace(page, 'Idiomas E2E')
@@ -24,6 +24,7 @@ test('the app speaks the language of the account, chosen in Settings', async ({ 
     // Another device signed in to the account follows it, whatever its browser says.
     const device = await browser.newContext({ storageState: OWNER_STATE, locale: 'es-ES', baseURL })
     const other = await device.newPage()
+    await settle(other, baseURL!)
     await other.goto('/')
     await expect(other.getByRole('link', { name: 'Home' })).toBeVisible()
     await device.close()
@@ -32,6 +33,7 @@ test('the app speaks the language of the account, chosen in Settings', async ({ 
     // Contexts made in a test inherit the owner's session unless told otherwise.
     const visitor = await browser.newContext({ locale: 'en-US', baseURL, storageState: { cookies: [], origins: [] } })
     const signIn = await visitor.newPage()
+    await settle(signIn, baseURL!)
     await signIn.goto('/login')
     await expect(signIn.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
     await signIn.getByLabel('Language').selectOption('es')
