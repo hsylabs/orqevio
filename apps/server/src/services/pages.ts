@@ -94,7 +94,7 @@ export class PageService {
     await this.activity.record(
       actor,
       page.workspaceId,
-      { action: 'page.created', entityType: 'page', entityId: page.id, summary: page.title || 'Sin título' },
+      { action: 'page.created', entityType: 'page', entityId: page.id, summary: page.title },
       { pageId: page.id, projectId, version: page.version, structure: true },
     )
     return toNode(page)
@@ -228,7 +228,7 @@ export class PageService {
     await this.activity.record(
       actor,
       page.workspaceId,
-      { action: 'page.updated', entityType: 'page', entityId: pageId, summary: page.title || 'Sin título', coalesce: true },
+      { action: 'page.updated', entityType: 'page', entityId: pageId, summary: page.title, coalesce: true },
       { pageId, projectId: page.projectId, version: page.version, structure: structural },
     )
     return { id: page.id, version: page.version, title: page.title, icon: page.icon, updatedAt: page.updatedAt.toISOString() }
@@ -253,7 +253,7 @@ export class PageService {
     await this.activity.record(
       actor,
       page.workspaceId,
-      { action: 'page.moved', entityType: 'page', entityId: pageId, summary: page.title || 'Sin título' },
+      { action: 'page.moved', entityType: 'page', entityId: pageId, summary: page.title },
       { pageId, projectId: page.projectId, structure: true },
     )
   }
@@ -265,7 +265,7 @@ export class PageService {
     await this.activity.record(
       actor,
       page.workspaceId,
-      { action: 'page.deleted', entityType: 'page', entityId: pageId, summary: page.title || 'Sin título' },
+      { action: 'page.deleted', entityType: 'page', entityId: pageId, summary: page.title },
       { pageId, projectId: page.projectId, structure: true },
     )
   }

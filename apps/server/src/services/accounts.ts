@@ -1,4 +1,5 @@
 import type { AccessStateDTO, MeDTO, Theme, UserDTO } from '@orqevio/shared'
+import { DEFAULT_LOCALE, defaultWorkspaceName, isLocale } from '@orqevio/shared'
 import { claimInput, confirmAccessKeyInput, recoverInput, rotateAccessKeyInput, unlockInput, updateAccountInput } from '@orqevio/shared'
 import { and, asc, eq, gt, ne } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
@@ -17,6 +18,7 @@ const toUserDTO = (u: typeof users.$inferSelect): UserDTO => ({
   id: u.id,
   name: u.name,
   theme: u.theme as Theme,
+  locale: isLocale(u.locale) ? u.locale : DEFAULT_LOCALE,
   createdAt: u.createdAt.toISOString(),
 })
 
@@ -68,7 +70,8 @@ export class AccountService {
   }
 
   async claim(input: unknown, userAgent: string | null) {
-    const { setupCode, name } = parse(claimInput, input)
+    // The language the claim screen was shown in becomes the owner's.
+    const { setupCode, name, locale = DEFAULT_LOCALE } = parse(claimInput, input)
     const expected = secretFingerprint(this.currentSetupCode())
     if (!safeEqual(secretFingerprint(setupCode), expected)) throw invalidSetupCode()
     const accessKey = generateAccessKey()
@@ -77,11 +80,11 @@ export class AccountService {
       const existing = tx.select().from(users).orderBy(asc(users.createdAt)).limit(1).get()
       let owner: typeof users.$inferSelect
       if (existing) {
-        owner = tx.update(users).set({ name, updatedAt: new Date() }).where(eq(users.id, existing.id)).returning().get()!
+        owner = tx.update(users).set({ name, locale, updatedAt: new Date() }).where(eq(users.id, existing.id)).returning().get()!
       } else {
-        owner = tx.insert(users).values({ name }).returning().get()
+        owner = tx.insert(users).values({ name, locale }).returning().get()
         const firstName = name.split(/\s+/)[0] ?? name
-        const w = tx.insert(workspaces).values({ name: `Espacio de ${firstName}`.slice(0, 60) }).returning().get()
+        const w = tx.insert(workspaces).values({ name: defaultWorkspaceName(locale, firstName).slice(0, 60) }).returning().get()
         tx.insert(workspaceMembers).values({ workspaceId: w.id, userId: owner.id, role: 'owner' }).run()
       }
       const claimed = tx

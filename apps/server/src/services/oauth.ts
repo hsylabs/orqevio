@@ -141,7 +141,7 @@ function hostOf(uri: string) {
     const url = new URL(uri)
     return url.hostname || url.protocol.replace(':', '')
   } catch {
-    return 'Aplicación'
+    return 'Application'
   }
 }
 

@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { defaultWorkspaceName } from '@orqevio/shared'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -104,7 +105,7 @@ export async function signUp(harness: Harness, name = 'Ana López') {
     return { client, user: me.body.user, workspaceId: harness.owner.workspaceId, accessKey: res.body.accessKey as string }
   }
   const [user] = await harness.db.insert(users).values({ name }).returning()
-  const [workspace] = await harness.db.insert(workspaces).values({ name: `Espacio de ${name.split(/\s+/)[0]}` }).returning()
+  const [workspace] = await harness.db.insert(workspaces).values({ name: defaultWorkspaceName('en', name.split(/\s+/)[0]!) }).returning()
   await harness.db.insert(workspaceMembers).values({ workspaceId: workspace!.id, userId: user!.id, role: 'owner' })
   const token = randomBytes(32).toString('base64url')
   await harness.db.insert(sessions).values({ id: sha256(token), userId: user!.id, expiresAt: new Date(Date.now() + 86_400_000) })

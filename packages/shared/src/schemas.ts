@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { PALETTE } from './colors'
+import { LOCALES } from './locales'
 import { SCOPES } from './scopes'
 
 /** Input schemas shared by the REST API, the MCP tools and the web forms. */
@@ -17,7 +18,7 @@ export const MAX_MARKDOWN = 200_000
 // chosen at install time, and then opened with the generated access key.
 const secret = z.string().trim().min(1, 'Required').max(256)
 
-export const claimInput = z.object({ setupCode: secret, name: name(80) })
+export const claimInput = z.object({ setupCode: secret, name: name(80), locale: z.enum(LOCALES).optional() })
 export const unlockInput = z.object({ accessKey: secret })
 export const recoverInput = z.object({ setupCode: secret })
 export const rotateAccessKeyInput = z.object({ currentAccessKey: secret })
@@ -25,6 +26,7 @@ export const confirmAccessKeyInput = z.object({ accessKey: secret })
 export const updateAccountInput = z.object({
   name: name(80).optional(),
   theme: z.enum(['system', 'light', 'dark']).optional(),
+  locale: z.enum(LOCALES).optional(),
 })
 
 // ── Workspaces & projects ───────────────────────────────────────

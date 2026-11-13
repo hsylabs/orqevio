@@ -1,3 +1,4 @@
+import type { Locale } from './locales'
 import type { PaletteColor } from './colors'
 import type { KdfParams } from './schemas'
 import type { Scope } from './scopes'
@@ -16,6 +17,8 @@ export interface UserDTO {
   id: string
   name: string
   theme: Theme
+  /** The language the app shows to this user, and in which it names what it creates for them. */
+  locale: Locale
   createdAt: string
 }
 
