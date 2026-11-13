@@ -1,0 +1,94 @@
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">Il tuo spazio di lavoro, nella tua copia personale</span>
+        <h1>Organizza.<br />Documenta.<br /><em>Proteggi.</em></h1>
+        <p class="lead">Attività, documentazione e una cassaforte con crittografia end-to-end, in una copia ospitata nel tuo account Cloudflare o sul tuo server. I tuoi agenti IA ci lavorano tramite MCP, con i permessi che scegli tu.</p>
+        <div class="actions">
+          <a class="button primary" href="{{base}}/install/">Installa la tua copia</a>
+          <a class="button secondary" href="https://github.com/hsylabs/orqevio">Guarda il codice</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
+        <p class="caption">Un comando e pochi minuti: accedi a Cloudflare, scegli un nome e ricevi l’indirizzo della tua copia. Per l’uso personale basta il piano gratuito di Cloudflare.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="features">
+    <div class="wrap">
+      <h2 id="features">Quattro pezzi che lavorano insieme</h2>
+      <p class="lead">Tutto ciò che ti serve per portare avanti i tuoi progetti, in un unico posto e con le modifiche in tempo reale.</p>
+      <div class="grid two">
+        <article class="card">
+          <span class="tag">01 · Attività</span>
+          <h3>Bacheche sempre in movimento</h3>
+          <p>Progetti con bacheche Kanban, etichette, scadenze, checklist e allegati. Trascina con il mouse o con la tastiera, e archivia ciò che non ti serve più.</p>
+        </article>
+        <article class="card">
+          <span class="tag">02 · Documentazione</span>
+          <h3>Conoscenza collegata</h3>
+          <p>Pagine Markdown annidate con un editor a blocchi, tabelle e immagini. Collega le attività dai tuoi documenti e cerca ovunque senza preoccuparti di accenti o maiuscole.</p>
+        </article>
+        <article class="card">
+          <span class="tag">03 · Cassaforte</span>
+          <h3>Password che puoi leggere solo tu</h3>
+          <p>Login e note cifrati nel tuo browser prima ancora di lasciarlo, con generatore di password, codici di verifica in due passaggi e blocco automatico. Importa dal tuo browser o da Bitwarden.</p>
+        </article>
+        <article class="card agent">
+          <span class="tag">04 · Agenti</span>
+          <h3>I tuoi agenti, con permessi chiari</h3>
+          <p>Un server MCP con cui Claude e altri assistenti consultano la documentazione, creano attività e riorganizzano le bacheche. Vedi in tempo reale cosa fanno, e la cassaforte resta sempre fuori dalla loro portata.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="copy">
+    <div class="wrap">
+      <h2 id="copy">Una copia per persona. I tuoi dati, a casa tua.</h2>
+      <p class="lead">Orqevio non è il servizio cloud di qualcun altro: ognuno installa la propria copia, e orqevio.com non conserva i dati di nessuno.</p>
+      <div class="grid two">
+        <div class="card">
+          <h3>Dove si trova la tua copia</h3>
+          <div class="copies">
+            <div class="copy-row"><span class="dot"></span><div><strong>Nel tuo account Cloudflare</strong><span>Un Worker, un database SQLite e un bucket per gli allegati.</span></div></div>
+            <div class="copy-row"><span class="dot"></span><div><strong>Oppure sul tuo server, con Docker</strong><span>Un container e un unico file SQLite.</span></div></div>
+            <div class="copy-row agent"><span class="dot"></span><div><strong>Ci colleghi i tuoi agenti</strong><span>Tramite MCP, con OAuth o con un token per spazio.</span></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Niente account, niente password</h3>
+          <p>Nessuna registrazione, nessuna email. Prendi possesso della tua copia una sola volta con un codice di configurazione e accedi con una chiave casuale a 160 bit che hai solo tu. Se la perdi, ne generi una nuova dal tuo account Cloudflare o dal tuo server.</p>
+          <ul>
+            <li>Per aggiornare basta un comando, o il merge di una pull request.</li>
+            <li>La tua copia ti avvisa quando esce una nuova versione.</li>
+            <li>I tuoi dati, la tua chiave e la tua cassaforte vengono sempre mantenuti.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="security">
+    <div class="wrap">
+      <h2 id="security">Sicurezza senza asterischi</h2>
+      <ul class="checks">
+        <li><strong>Cassaforte zero-knowledge.</strong> Argon2id e AES-256-GCM nel tuo browser: il server salva solo dati cifrati, titoli compresi.</li>
+        <li><strong>Agenti con dei limiti.</strong> Ogni connessione appartiene a un solo spazio e ha permessi per area. Gli agenti non possono eliminare, solo archiviare.</li>
+        <li><strong>Tutto viene registrato.</strong> Ogni modifica mostra chi l’ha fatta, persona o agente, e puoi revocare un accesso all’istante.</li>
+        <li><strong>Sicuro per impostazione predefinita.</strong> Cookie sicuri, protezione CSRF, una Content Security Policy rigorosa e limiti al numero di richieste.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="license">
+    <div class="wrap">
+      <h2 id="license">Codice disponibile, uso libero</h2>
+      <p class="lead">Orqevio è distribuito con la licenza <a href="https://github.com/hsylabs/orqevio/blob/main/LICENSE.md">FSL-1.1-ALv2</a>. Puoi usarlo, modificarlo e ospitare la tua copia, anche al lavoro. L’unica cosa che non consente è offrirlo come prodotto o servizio commerciale in concorrenza con Orqevio. Ogni versione passa alla licenza Apache 2.0 due anni dopo l’uscita.</p>
+      <div class="actions">
+        <a class="button primary" href="{{base}}/install/">Installa la tua copia</a>
+      </div>
+    </div>
+  </section>

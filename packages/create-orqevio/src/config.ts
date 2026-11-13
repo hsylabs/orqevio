@@ -8,10 +8,8 @@ export const DEFAULT_NAME = 'orqevio'
 // R2 bucket, whose names are limited to 63 characters.
 const NAME = /^[a-z0-9](?:[a-z0-9-]{0,48}[a-z0-9])?$/
 
-/** Why `name` cannot be used for a copy, or null if it can. */
-export function nameProblem(name: string): string | null {
-  return NAME.test(name) ? null : 'Usa de 1 a 50 letras minúsculas, números o guiones (sin guion al principio ni al final).'
-}
+/** Whether `name` can name a copy (see the nameRule message). */
+export const isValidName = (name: string) => NAME.test(name)
 
 export const bucketName = (name: string) => `${name}-uploads`
 

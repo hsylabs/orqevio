@@ -1,0 +1,94 @@
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">Dein Arbeitsbereich in deiner eigenen Instanz</span>
+        <h1>Planen.<br />Schreiben.<br /><em>Schützen.</em></h1>
+        <p class="lead">Aufgaben, Dokumentation und ein Ende-zu-Ende-verschlüsselter Tresor in einer Instanz, die in deinem Cloudflare-Konto oder auf deinem Server läuft. Deine KI-Agenten arbeiten über MCP darin, mit genau den Berechtigungen, die du festlegst.</p>
+        <div class="actions">
+          <a class="button primary" href="{{base}}/install/">Instanz installieren</a>
+          <a class="button secondary" href="https://github.com/hsylabs/orqevio">Code ansehen</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
+        <p class="caption">Ein Befehl und ein paar Minuten: Du meldest dich bei Cloudflare an, wählst einen Namen und bekommst die Adresse deiner Instanz. Für die private Nutzung reicht der kostenlose Plan von Cloudflare.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="features">
+    <div class="wrap">
+      <h2 id="features">Vier Bausteine, die zusammenspielen</h2>
+      <p class="lead">Alles, was du für deine Projekte brauchst, an einem Ort und mit Änderungen in Echtzeit.</p>
+      <div class="grid two">
+        <article class="card">
+          <span class="tag">01 · Aufgaben</span>
+          <h3>Boards, die in Bewegung bleiben</h3>
+          <p>Projekte mit Kanban-Boards, Labels, Fälligkeiten, Checklisten und Anhängen. Verschiebe Karten mit Maus oder Tastatur und archiviere, was du nicht mehr brauchst.</p>
+        </article>
+        <article class="card">
+          <span class="tag">02 · Dokumentation</span>
+          <h3>Vernetztes Wissen</h3>
+          <p>Verschachtelte Markdown-Seiten mit Block-Editor, Tabellen und Bildern. Verknüpfe Aufgaben direkt aus deinen Dokumenten und durchsuche alles, ohne auf Akzente oder Groß- und Kleinschreibung zu achten.</p>
+        </article>
+        <article class="card">
+          <span class="tag">03 · Tresor</span>
+          <h3>Passwörter, die nur du lesen kannst</h3>
+          <p>Logins und Notizen werden in deinem Browser verschlüsselt, bevor sie ihn verlassen. Dazu kommen ein Passwortgenerator, Zwei-Faktor-Codes und automatisches Sperren. Importiere aus deinem Browser oder aus Bitwarden.</p>
+        </article>
+        <article class="card agent">
+          <span class="tag">04 · Agenten</span>
+          <h3>Deine Agenten, mit klaren Berechtigungen</h3>
+          <p>Ein MCP-Server, über den Claude und andere Assistenten Dokumentation nachschlagen, Aufgaben erstellen und Boards neu ordnen. Du siehst live, was sie tun, und der Tresor bleibt immer außer ihrer Reichweite.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="copy">
+    <div class="wrap">
+      <h2 id="copy">Eine Instanz pro Person. Deine Daten bleiben bei dir.</h2>
+      <p class="lead">Orqevio ist kein fremder Cloud-Dienst: Jede Person installiert ihre eigene Instanz, und orqevio.com speichert keinerlei Daten.</p>
+      <div class="grid two">
+        <div class="card">
+          <h3>Wo deine Instanz läuft</h3>
+          <div class="copies">
+            <div class="copy-row"><span class="dot"></span><div><strong>In deinem Cloudflare-Konto</strong><span>Ein Worker, eine SQLite-Datenbank und ein Bucket für Anhänge.</span></div></div>
+            <div class="copy-row"><span class="dot"></span><div><strong>Oder auf deinem Server, mit Docker</strong><span>Ein Container und eine einzige SQLite-Datei.</span></div></div>
+            <div class="copy-row agent"><span class="dot"></span><div><strong>Deine Agenten verbinden sich damit</strong><span>Über MCP, mit OAuth oder einem Token pro Arbeitsbereich.</span></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Keine Konten, keine Passwörter</h3>
+          <p>Keine Registrierung, keine E-Mail. Du richtest deine Instanz einmal mit einem Einrichtungscode ein und meldest dich mit einem zufälligen 160-Bit-Schlüssel an, den nur du hast. Verlierst du ihn, erzeugst du über dein Cloudflare-Konto oder deinen Server einen neuen.</p>
+          <ul>
+            <li>Updates gehen mit einem einzigen Befehl oder per Merge eines Pull-Requests.</li>
+            <li>Deine Instanz sagt dir Bescheid, wenn es eine neue Version gibt.</li>
+            <li>Deine Daten, dein Schlüssel und dein Tresor bleiben immer erhalten.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="security">
+    <div class="wrap">
+      <h2 id="security">Sicherheit ohne Kleingedrucktes</h2>
+      <ul class="checks">
+        <li><strong>Zero-Knowledge-Tresor.</strong> Argon2id und AES-256-GCM in deinem Browser: Der Server speichert nur verschlüsselte Daten, auch die Titel.</li>
+        <li><strong>Agenten mit Grenzen.</strong> Jede Verbindung gehört zu genau einem Arbeitsbereich und hat eigene Berechtigungen für Aufgaben und Dokumente. Agenten können nichts löschen, nur archivieren.</li>
+        <li><strong>Alles wird protokolliert.</strong> Bei jeder Änderung siehst du, wer sie vorgenommen hat, Mensch oder Agent, und du kannst Zugriffe sofort widerrufen.</li>
+        <li><strong>Ab Werk abgesichert.</strong> Sichere Cookies, CSRF-Schutz, eine strenge Content Security Policy und Ratenbegrenzung.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="license">
+    <div class="wrap">
+      <h2 id="license">Quellcode verfügbar, frei nutzbar</h2>
+      <p class="lead">Orqevio erscheint unter der Lizenz <a href="https://github.com/hsylabs/orqevio/blob/main/LICENSE.md">FSL-1.1-ALv2</a>. Du darfst es nutzen, verändern und deine Instanz selbst hosten, auch beruflich. Nicht erlaubt ist nur, es als kommerzielles Produkt oder als Dienst anzubieten, der mit Orqevio konkurriert. Zwei Jahre nach ihrer Veröffentlichung wechselt jede Version zur Lizenz Apache 2.0.</p>
+      <div class="actions">
+        <a class="button primary" href="{{base}}/install/">Instanz installieren</a>
+      </div>
+    </div>
+  </section>

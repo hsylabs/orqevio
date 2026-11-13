@@ -1,0 +1,94 @@
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">Seu espaço de trabalho, na sua própria cópia</span>
+        <h1>Organize.<br />Documente.<br /><em>Proteja.</em></h1>
+        <p class="lead">Tarefas, documentação e um cofre criptografado de ponta a ponta, em uma cópia que fica na sua conta da Cloudflare ou no seu servidor. Seus agentes de IA trabalham nela via MCP, com as permissões que você escolher.</p>
+        <div class="actions">
+          <a class="button primary" href="{{base}}/install/">Instalar sua cópia</a>
+          <a class="button secondary" href="https://github.com/hsylabs/orqevio">Ver o código</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
+        <p class="caption">Um comando e alguns minutos: você faz login na Cloudflare, escolhe um nome e recebe o endereço da sua cópia. O plano gratuito da Cloudflare basta para uso pessoal.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="features">
+    <div class="wrap">
+      <h2 id="features">Quatro peças que trabalham juntas</h2>
+      <p class="lead">Tudo de que você precisa para tocar seus projetos, em um só lugar, com as mudanças aparecendo em tempo real.</p>
+      <div class="grid two">
+        <article class="card">
+          <span class="tag">01 · Tarefas</span>
+          <h3>Quadros sempre em movimento</h3>
+          <p>Projetos com quadros Kanban, etiquetas, prazos, checklists e anexos. Arraste com o mouse ou com o teclado, e arquive o que não precisar mais.</p>
+        </article>
+        <article class="card">
+          <span class="tag">02 · Documentação</span>
+          <h3>Conhecimento conectado</h3>
+          <p>Páginas em Markdown aninhadas, com editor de blocos, tabelas e imagens. Vincule tarefas a partir dos seus documentos e busque em tudo sem se preocupar com acentos ou maiúsculas.</p>
+        </article>
+        <article class="card">
+          <span class="tag">03 · Cofre</span>
+          <h3>Senhas que só você consegue ler</h3>
+          <p>Logins e notas criptografados no seu navegador antes mesmo de saírem dele, com gerador de senhas, códigos de verificação em duas etapas e bloqueio automático. Importe do seu navegador ou do Bitwarden.</p>
+        </article>
+        <article class="card agent">
+          <span class="tag">04 · Agentes</span>
+          <h3>Seus agentes, com permissões claras</h3>
+          <p>Um servidor MCP para que o Claude e outros assistentes consultem a documentação, criem tarefas e reorganizem quadros. Você vê o que eles fazem em tempo real, e o cofre fica sempre fora do alcance deles.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="copy">
+    <div class="wrap">
+      <h2 id="copy">Uma cópia por pessoa. Seus dados ficam em casa.</h2>
+      <p class="lead">O Orqevio não é o serviço em nuvem de outra empresa: cada pessoa instala a própria cópia, e o orqevio.com não guarda dados de ninguém.</p>
+      <div class="grid two">
+        <div class="card">
+          <h3>Onde fica sua cópia</h3>
+          <div class="copies">
+            <div class="copy-row"><span class="dot"></span><div><strong>Na sua conta da Cloudflare</strong><span>Um Worker, um banco de dados SQLite e um bucket para os anexos.</span></div></div>
+            <div class="copy-row"><span class="dot"></span><div><strong>Ou no seu servidor, com Docker</strong><span>Um contêiner e um único arquivo SQLite.</span></div></div>
+            <div class="copy-row agent"><span class="dot"></span><div><strong>Seus agentes se conectam a ela</strong><span>Via MCP, com OAuth ou com um token por espaço.</span></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Sem contas e sem senhas</h3>
+          <p>Sem cadastro e sem e-mail. Você configura sua cópia uma única vez com um código de configuração e entra com uma chave aleatória de 160 bits que só você tem. Se perdê-la, você gera uma nova pela sua conta da Cloudflare ou pelo seu servidor.</p>
+          <ul>
+            <li>Atualizar é um comando, ou o merge de um pull request.</li>
+            <li>Sua cópia avisa quando há uma nova versão.</li>
+            <li>Seus dados, sua chave e seu cofre são sempre preservados.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="security">
+    <div class="wrap">
+      <h2 id="security">Segurança sem letras miúdas</h2>
+      <ul class="checks">
+        <li><strong>Cofre de conhecimento zero.</strong> Argon2id e AES-256-GCM no seu navegador: o servidor só armazena dados criptografados, inclusive os títulos.</li>
+        <li><strong>Agentes com limites.</strong> Cada conexão pertence a um único espaço e tem permissões por área. Os agentes não podem excluir nada, só arquivar.</li>
+        <li><strong>Tudo fica registrado.</strong> Cada alteração mostra quem a fez, pessoa ou agente, e você pode revogar um acesso na hora.</li>
+        <li><strong>Seguro por padrão.</strong> Cookies seguros, proteção contra CSRF, uma política de segurança de conteúdo rígida e limites de requisições.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="license">
+    <div class="wrap">
+      <h2 id="license">Código disponível, uso livre</h2>
+      <p class="lead">O Orqevio é distribuído sob a licença <a href="https://github.com/hsylabs/orqevio/blob/main/LICENSE.md">FSL-1.1-ALv2</a>. Você pode usá-lo, modificá-lo e hospedar sua cópia, inclusive no trabalho. A única coisa que ela não permite é oferecê-lo como produto ou serviço comercial que concorra com o Orqevio. Cada versão passa para a licença Apache 2.0 dois anos após o lançamento.</p>
+      <div class="actions">
+        <a class="button primary" href="{{base}}/install/">Instalar sua cópia</a>
+      </div>
+    </div>
+  </section>

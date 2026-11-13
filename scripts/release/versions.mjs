@@ -18,7 +18,7 @@ const MANIFESTS = [
 const SERVER_VERSION = 'apps/server/src/version.ts'
 const TEMPLATE = 'templates/cloudflare/package.json'
 export const CHANGELOG = 'CHANGELOG.md'
-export const UNRELEASED = '## [Sin publicar]'
+export const UNRELEASED = '## [Unreleased]'
 
 const read = (file) => readFileSync(path.join(root, file), 'utf8')
 const write = (file, text) => writeFileSync(path.join(root, file), text)

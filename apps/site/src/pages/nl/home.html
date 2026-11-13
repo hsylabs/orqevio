@@ -1,0 +1,94 @@
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">Je werkruimte, in je eigen installatie</span>
+        <h1>Organiseer.<br />Documenteer.<br /><em>Bescherm.</em></h1>
+        <p class="lead">Taken, documentatie en een end-to-end versleutelde kluis, in een installatie die draait in je eigen Cloudflare-account of op je eigen server. Je AI-agents werken mee via MCP, met de rechten die jij kiest.</p>
+        <div class="actions">
+          <a class="button primary" href="{{base}}/install/">Orqevio installeren</a>
+          <a class="button secondary" href="https://github.com/hsylabs/orqevio">Bekijk de code</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
+        <p class="caption">Eén opdracht en een paar minuten: je logt in bij Cloudflare, kiest een naam en krijgt het adres van je installatie. Voor persoonlijk gebruik is het gratis abonnement van Cloudflare genoeg.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="features">
+    <div class="wrap">
+      <h2 id="features">Vier onderdelen die samenwerken</h2>
+      <p class="lead">Alles wat je nodig hebt voor je projecten, op één plek. Elke wijziging zie je meteen.</p>
+      <div class="grid two">
+        <article class="card">
+          <span class="tag">01 · Taken</span>
+          <h3>Borden die in beweging blijven</h3>
+          <p>Projecten met kanbanborden, labels, deadlines, checklists en bijlagen. Sleep met de muis of met het toetsenbord, en archiveer wat je niet meer nodig hebt.</p>
+        </article>
+        <article class="card">
+          <span class="tag">02 · Documentatie</span>
+          <h3>Kennis die met elkaar verbonden is</h3>
+          <p>Geneste Markdown-pagina’s met een blokeditor, tabellen en afbeeldingen. Koppel taken vanuit je documenten en doorzoek alles zonder je druk te maken over accenten of hoofdletters.</p>
+        </article>
+        <article class="card">
+          <span class="tag">03 · Kluis</span>
+          <h3>Wachtwoorden die alleen jij kunt lezen</h3>
+          <p>Logins en notities worden in je browser versleuteld voordat ze die ooit verlaten. Met een wachtwoordgenerator, codes voor tweestapsverificatie en automatisch vergrendelen. Importeer vanuit je browser of Bitwarden.</p>
+        </article>
+        <article class="card agent">
+          <span class="tag">04 · Agents</span>
+          <h3>Je agents, met duidelijke rechten</h3>
+          <p>Een MCP-server waarmee Claude en andere assistenten documentatie kunnen raadplegen, taken kunnen aanmaken en borden kunnen reorganiseren. Je ziet live wat ze doen, en de kluis blijft altijd buiten hun bereik.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="copy">
+    <div class="wrap">
+      <h2 id="copy">Eén installatie per persoon. Je gegevens blijven thuis.</h2>
+      <p class="lead">Orqevio is geen clouddienst van een ander: iedereen zet een eigen installatie op, en orqevio.com bewaart van niemand gegevens.</p>
+      <div class="grid two">
+        <div class="card">
+          <h3>Waar je installatie draait</h3>
+          <div class="copies">
+            <div class="copy-row"><span class="dot"></span><div><strong>In je Cloudflare-account</strong><span>Een Worker, een SQLite-database en een bucket voor bijlagen.</span></div></div>
+            <div class="copy-row"><span class="dot"></span><div><strong>Of op je eigen server, met Docker</strong><span>Eén container en één SQLite-bestand.</span></div></div>
+            <div class="copy-row agent"><span class="dot"></span><div><strong>Je agents maken er verbinding mee</strong><span>Via MCP, met OAuth of een token per werkruimte.</span></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Geen accounts, geen wachtwoorden</h3>
+          <p>Geen registratie, geen e-mailadres. Je stelt je installatie één keer in met een installatiecode en logt in met een willekeurige sleutel van 160 bits die alleen jij hebt. Ben je hem kwijt, dan genereer je een nieuwe vanuit je Cloudflare-account of op je server.</p>
+          <ul>
+            <li>Bijwerken is één opdracht, of een pull request mergen.</li>
+            <li>Je installatie laat je weten wanneer er een nieuwe versie is.</li>
+            <li>Je gegevens, je sleutel en je kluis blijven altijd behouden.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="security">
+    <div class="wrap">
+      <h2 id="security">Beveiliging zonder kleine lettertjes</h2>
+      <ul class="checks">
+        <li><strong>Zero-knowledge-kluis.</strong> Argon2id en AES-256-GCM in je browser: de server bewaart alleen versleutelde gegevens, titels inbegrepen.</li>
+        <li><strong>Agents met grenzen.</strong> Elke koppeling hoort bij één werkruimte en heeft rechten per onderdeel. Agents kunnen niets verwijderen, alleen archiveren.</li>
+        <li><strong>Alles wordt vastgelegd.</strong> Bij elke wijziging zie je wie die heeft gedaan, mens of agent, en je kunt toegang direct intrekken.</li>
+        <li><strong>Standaard veilig.</strong> Beveiligde cookies, bescherming tegen CSRF, een strikte Content Security Policy en limieten op het aantal verzoeken.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="license">
+    <div class="wrap">
+      <h2 id="license">Broncode beschikbaar, vrij te gebruiken</h2>
+      <p class="lead">Orqevio wordt uitgebracht onder de licentie <a href="https://github.com/hsylabs/orqevio/blob/main/LICENSE.md">FSL-1.1-ALv2</a>. Je mag het gebruiken, aanpassen en je eigen installatie hosten, ook voor je werk. Het enige wat niet mag, is Orqevio aanbieden als commercieel product of commerciële dienst die ermee concurreert. Elke versie valt twee jaar na verschijnen onder Apache 2.0.</p>
+      <div class="actions">
+        <a class="button primary" href="{{base}}/install/">Orqevio installeren</a>
+      </div>
+    </div>
+  </section>
