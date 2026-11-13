@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { type Io, main } from '../src/main'
+import type { Language } from '../src/messages'
 
 const FAKE = path.join(import.meta.dirname, 'fixtures/fake-wrangler.mjs')
 const CODE = /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/
@@ -45,16 +46,26 @@ const calls = (): Array<{ args: string[]; cwd: string; metrics: string | null; a
   existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n').map((line) => JSON.parse(line)) : []
 const commands = () => calls().map((c) => c.args.slice(0, 2).join(' '))
 
-async function run(argv: string[], answers: string[] | null = null) {
+// The assertions below read the Spanish messages; the English ones have tests of their own.
+async function run(argv: string[], answers: string[] | null = null, language: Language = 'es') {
   const out: string[] = []
   const err: string[] = []
   const io: Io = { out: (t) => out.push(t), err: (t) => err.push(t) }
   if (answers) io.ask = async () => answers.shift() ?? ''
-  const code = await main(argv, io, { orqevio })
+  const code = await main(argv, io, { orqevio, language })
   return { code, out: out.join('\n'), err: err.join('\n') }
 }
 
 describe('create-orqevio', () => {
+  it('speaks the language asked for, and the terminal’s otherwise', async () => {
+    expect((await run(['--help'], null, 'en')).out).toContain('Installs your own copy of Orqevio')
+    expect((await run(['--help', '--lang', 'es'], null, 'en')).out).toContain('Instala tu propia copia de Orqevio')
+    const unknown = await run(['--lang', 'xx'], null, 'en')
+    expect(unknown.code).toBe(2)
+    expect(unknown.err).toContain('Unknown language “xx”')
+    expect(calls()).toHaveLength(0)
+  })
+
   it('shows help and version, and rejects bad input without calling Wrangler', async () => {
     expect((await run(['--help'])).out).toContain('npx create-orqevio@latest update')
     expect((await run(['--version'])).out).toBe('9.9.9')
