@@ -43,14 +43,24 @@ export function setVersions(version) {
   write(TEMPLATE, `${JSON.stringify(template, null, 2)}\n`)
 }
 
-/** The notes of one version in CHANGELOG.md, without its heading; null if it has none. */
-export function releaseNotes(version, changelog = read(CHANGELOG)) {
+/** A test version, such as 1.0.0-rc.1. */
+export const isPrerelease = (version) => version.includes('-')
+
+function sectionNotes(heading, changelog) {
   const lines = changelog.split('\n')
-  const start = lines.findIndex((line) => line.startsWith(`## [${version}]`))
+  const start = lines.findIndex((line) => line.startsWith(heading))
   if (start === -1) return null
   const end = lines.findIndex((line, i) => i > start && line.startsWith('## '))
-  const notes = lines.slice(start + 1, end === -1 ? undefined : end).join('\n').trim()
-  return notes || null
+  return lines.slice(start + 1, end === -1 ? undefined : end).join('\n').trim() || null
+}
+
+/**
+ * The notes of one version in CHANGELOG.md, without its heading; null if it has none.
+ * A test version without a section of its own ships the unreleased notes, which stay
+ * where they are so that the final version gets them all.
+ */
+export function releaseNotes(version, changelog = read(CHANGELOG)) {
+  return sectionNotes(`## [${version}]`, changelog) ?? (isPrerelease(version) ? sectionNotes(UNRELEASED, changelog) : null)
 }
 
 /** Turns the unreleased notes into the section of `version`, dated today. */

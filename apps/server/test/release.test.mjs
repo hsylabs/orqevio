@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { currentVersions, releaseChangelog, releaseNotes } from '../../../scripts/release/versions.mjs'
+import { currentVersions, isPrerelease, releaseChangelog, releaseNotes } from '../../../scripts/release/versions.mjs'
 import { VERSION } from '../src/version'
 
 describe('releases', () => {
@@ -26,5 +26,17 @@ describe('releases', () => {
     expect(releaseNotes('0.3.0', released)).toBeNull()
     expect(() => releaseChangelog('0.1.0', '2026-12-01', changelog)).toThrow(/already has a section/)
     expect(() => releaseChangelog('0.2.0', '2026-12-01', '# Registro de cambios\n')).toThrow(/Sin publicar/)
+  })
+
+  it('give a test version the unreleased notes and keep them for the final one', () => {
+    const changelog = '# Registro de cambios\n\n## [Sin publicar]\n\n- Algo nuevo.\n\n## [0.1.0] - 2026-11-12\n\n- Primera versión.\n'
+    expect(isPrerelease('0.2.0-rc.1')).toBe(true)
+    expect(isPrerelease('0.2.0')).toBe(false)
+    expect(releaseNotes('0.2.0-rc.1', changelog)).toBe('- Algo nuevo.')
+    // The final version still needs its own section, which takes all the notes.
+    expect(releaseNotes('0.2.0', changelog)).toBeNull()
+    const final = releaseChangelog('0.2.0', '2026-12-01', changelog)
+    expect(releaseNotes('0.2.0', final)).toBe('- Algo nuevo.')
+    expect(releaseNotes('0.2.0-rc.2', final)).toBeNull()
   })
 })
