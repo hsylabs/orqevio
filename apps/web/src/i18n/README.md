@@ -55,6 +55,14 @@ A missing form shows the key instead of the text.
 - **English**: American spelling, sentence case, short and friendly, second person.
   Contractions are fine. Typographic apostrophes and quotes: ’ “ ”.
 - **Spanish**: Spain, informal *tú*. Quotes « ».
+- **French**: *vous*. Quotes « » with a narrow no-break space inside (« texte »), and a narrow
+  no-break space before ; : ! ? as French typography requires.
+- **Portuguese** (`pt`): Brazilian Portuguese, *você*. Quotes “ ”.
+- **Italian**: informal *tu*. Quotes « ».
+- **German**: informal *du*, as most modern apps. Quotes „ “.
+- **Dutch**: informal *je*/*jij*. Quotes ‘ ’ for short names, “ ” for longer text.
+- **Japanese**: polite です/ます form, no spaces between words, full-width punctuation (、。),
+  quotes 「 」. Keep product and protocol names (Orqevio, MCP, OAuth, Markdown) in Latin script.
 - Keep product words consistent:
 
 | English | Español |
