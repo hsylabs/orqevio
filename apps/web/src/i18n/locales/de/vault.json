@@ -1,0 +1,298 @@
+{
+  "title": "Tresor",
+  "back": "← Zurück",
+  "reveal": {
+    "show": "Anzeigen",
+    "hide": "Verbergen"
+  },
+  "types": {
+    "login": "Login",
+    "note": "Sichere Notiz"
+  },
+  "untitled": {
+    "login": "Unbenannt",
+    "note": "Unbenannte Notiz"
+  },
+  "master": {
+    "label": "Master-Passwort",
+    "new": "Neues Master-Passwort",
+    "repeatNew": "Neues Passwort wiederholen",
+    "newTooShort": "Das neue Passwort muss mindestens 12 Zeichen lang sein.",
+    "mismatch": "Die Passwörter stimmen nicht überein.",
+    "wrong": "Falsches Master-Passwort."
+  },
+  "unsupported": {
+    "insecureTitle": "Der Tresor braucht eine sichere Verbindung",
+    "browserTitle": "Der Tresor funktioniert in diesem Browser nicht",
+    "blockers": {
+      "secure_context": "Du hast Orqevio über eine unverschlüsselte Verbindung (http://) geöffnet. Browser erlauben die Verschlüsselung des Tresors nur über sichere Verbindungen: Öffne deine Instanz über https:// (zum Beispiel hinter Caddy, Nginx oder Traefik) oder, auf demselben Computer, über http://localhost.",
+      "webcrypto": "Dieser Browser bietet kein WebCrypto, mit dem der Tresor deine Daten verschlüsselt.",
+      "workers": "Dieser Browser unterstützt keine Web Workers, mit denen der Tresor deinen Schlüssel ableitet, ohne die Seite einzufrieren.",
+      "webassembly": "Dieser Browser unterstützt kein WebAssembly, mit dem der Tresor deinen Schlüssel mit Argon2id ableitet."
+    },
+    "updateBrowser": "Verwende eine aktuelle Version von Chrome, Edge, Firefox oder Safari.",
+    "restWorks": "Deine Aufgaben und Dokumente funktionieren weiterhin wie gewohnt."
+  },
+  "toolbar": {
+    "autoLockTimer": "Sperrt sich bei Inaktivität automatisch",
+    "generator": "Generator",
+    "options": "Tresor-Optionen",
+    "changeMaster": "Master-Passwort ändern",
+    "import": "Importieren…",
+    "export": "Exportieren…",
+    "autoLock": "Automatisch sperren",
+    "autoLockMinutes_one": "Nach {{count}} Minute Inaktivität",
+    "autoLockMinutes_other": "Nach {{count}} Minuten Inaktivität",
+    "autoLockHours_one": "Nach {{count}} Stunde Inaktivität",
+    "autoLockHours_other": "Nach {{count}} Stunden Inaktivität",
+    "lock": "Sperren",
+    "generatorTitle": "Passwortgenerator",
+    "generatorDescription": "Kryptografischer Zufall ohne Verzerrung, direkt aus deinem Browser."
+  },
+  "list": {
+    "search": "Tresor durchsuchen",
+    "new": "Neu",
+    "filter": "Filtern",
+    "filters": {
+      "all": "Alle",
+      "logins": "Logins",
+      "notes": "Notizen"
+    },
+    "label": "Tresoreinträge",
+    "noMatches": "Keine Treffer.",
+    "empty": "Dein Tresor ist leer.",
+    "footer_one": "{{count}} Eintrag · nur in diesem Browser entschlüsselt",
+    "footer_other": "{{count}} Einträge · nur in diesem Browser entschlüsselt"
+  },
+  "empty": {
+    "select": "Wähle einen Eintrag aus",
+    "first": "Speichere deinen ersten Login",
+    "newLogin": "Neuer Login",
+    "body": "Alles wird in deinem Browser verschlüsselt, bevor es an den Server geht. Weder der Server noch deine Agenten können es lesen."
+  },
+  "delete": {
+    "title": "„{{title}}“ löschen?",
+    "description": "Der Eintrag wird endgültig aus deinem Tresor gelöscht.",
+    "confirm": "Löschen"
+  },
+  "detail": {
+    "updatedLogin": "Login · aktualisiert {{time}}",
+    "updatedNote": "Sichere Notiz · aktualisiert {{time}}",
+    "favorite": "Als Favorit markieren",
+    "unfavorite": "Aus Favoriten entfernen",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "username": "Benutzername",
+    "copyUsername": "Benutzernamen kopieren",
+    "usernameCopied": "Benutzername kopiert",
+    "password": "Passwort",
+    "showPassword": "Passwort anzeigen",
+    "hidePassword": "Passwort verbergen",
+    "copyPassword": "Passwort kopieren",
+    "passwordCopied": "Passwort kopiert · Zwischenablage wird in 30 s geleert",
+    "website": "Website",
+    "openWebsite": "Website öffnen",
+    "copyUrl": "URL kopieren",
+    "urlCopied": "URL kopiert",
+    "content": "Inhalt",
+    "notes": "Notizen",
+    "copyNotes": "Notizen kopieren",
+    "notesCopied": "Kopiert",
+    "clipboardClears": "Wenn du etwas kopierst, wird die Zwischenablage nach 30 Sekunden automatisch geleert."
+  },
+  "totp": {
+    "label": "Bestätigungscode",
+    "copy": "Code kopieren",
+    "copied": "Code kopiert · Zwischenablage wird in 30 s geleert",
+    "current": "Aktueller Bestätigungscode",
+    "changesIn_one": "Ändert sich in {{count}} Sekunde",
+    "changesIn_other": "Ändert sich in {{count}} Sekunden",
+    "problems": {
+      "empty": "Gib den geheimen Schlüssel oder den otpauth://-Link ein.",
+      "not_totp": "Es werden nur zeitbasierte Codes (TOTP) unterstützt.",
+      "bad_secret": "Der geheime Schlüssel darf nur die Buchstaben A bis Z und die Ziffern 2 bis 7 enthalten.",
+      "too_short": "Der geheime Schlüssel ist zu kurz.",
+      "bad_parameters": "Der otpauth://-Link enthält ungültige Parameter."
+    }
+  },
+  "editor": {
+    "editTitle": "Eintrag bearbeiten",
+    "newLogin": "Neuer Login",
+    "newNote": "Neue sichere Notiz",
+    "name": "Name",
+    "namePlaceholderLogin": "z. B. Bank, GitHub, Büro-WLAN",
+    "namePlaceholderNote": "z. B. Backup-Codes",
+    "username": "Benutzername oder E-Mail",
+    "password": "Passwort",
+    "generate": "Passwort generieren",
+    "website": "Website",
+    "websitePlaceholder": "beispiel.de",
+    "totp": "Zwei-Faktor-Authentifizierung (TOTP)",
+    "totpPlaceholder": "Geheimer Schlüssel oder otpauth://-Link",
+    "totpHint": "Der Schlüssel, den der Dienst neben dem QR-Code anzeigt, wenn du die Zwei-Faktor-Authentifizierung aktivierst.",
+    "content": "Inhalt",
+    "notes": "Notizen",
+    "save": "Verschlüsseln und speichern"
+  },
+  "changeMaster": {
+    "title": "Master-Passwort ändern",
+    "description": "Deine Einträge werden nicht neu verschlüsselt: Nur der Tresorschlüssel wird mit dem neuen Passwort geschützt. Dein Wiederherstellungsschlüssel bleibt gültig.",
+    "current": "Aktuelles Master-Passwort",
+    "submit": "Ändern",
+    "wrongCurrent": "Das aktuelle Master-Passwort ist nicht korrekt.",
+    "done": "Master-Passwort aktualisiert"
+  },
+  "strength": {
+    "emptyHint": "Verwende mindestens 12 Zeichen. Ein Satz aus mehreren Wörtern ist leicht zu merken und schwer zu erraten.",
+    "tooShort": "Zu kurz",
+    "tooShortHint": "Du brauchst mindestens 12 Zeichen.",
+    "fair": "Könnte stärker sein",
+    "fairHint": "Füge weitere Wörter oder mehr verschiedene Zeichen hinzu.",
+    "good": "Gut",
+    "veryGood": "Sehr gut",
+    "rememberHint": "Denk daran: Wenn du es vergisst, kann nur der Wiederherstellungsschlüssel den Tresor öffnen."
+  },
+  "generator": {
+    "regenerate": "Neu generieren",
+    "copied": "Kopiert · Zwischenablage wird in 30 s geleert",
+    "entropy": "≈ {{bits}} Bit Entropie",
+    "length": "Länge",
+    "sets": {
+      "upper": "Großbuchstaben",
+      "lower": "Kleinbuchstaben",
+      "digits": "Ziffern",
+      "symbols": "Sonderzeichen"
+    },
+    "avoidAmbiguous": "Verwechselbare Zeichen vermeiden (I, l, 1, O, 0)",
+    "use": "Dieses Passwort verwenden",
+    "rating": {
+      "weak": "Schwach",
+      "fair": "Mittel",
+      "strong": "Stark",
+      "excellent": "Ausgezeichnet"
+    }
+  },
+  "gate": {
+    "guarantees": {
+      "encryption": "AES-256-GCM-Verschlüsselung in deinem Browser",
+      "kdf": "Schlüssel mit Argon2id abgeleitet",
+      "agents": "Agenten und MCP haben keinen Zugriff"
+    },
+    "decryptFailed_one": "{{count}} Eintrag konnte nicht entschlüsselt werden und wurde übersprungen.",
+    "decryptFailed_other": "{{count}} Einträge konnten nicht entschlüsselt werden und wurden übersprungen.",
+    "setup": {
+      "title": "Richte deinen Tresor ein",
+      "subtitle": "Wähle ein Master-Passwort. Es wird in deinem Browser verwendet, um deine Geheimnisse zu verschlüsseln, und nie an den Server gesendet.",
+      "tooShort": "Verwende mindestens 12 Zeichen.",
+      "failed": "Der Tresor konnte in diesem Browser nicht erstellt werden.",
+      "repeat": "Master-Passwort wiederholen",
+      "busy": "Schlüssel werden erzeugt…",
+      "submit": "Tresor erstellen",
+      "ready": "Dein Tresor ist bereit. Nur du kannst ihn öffnen."
+    },
+    "recoveryKey": {
+      "title": "Speichere deinen Wiederherstellungsschlüssel",
+      "subtitle": "Nur damit kannst du den Tresor wiederherstellen, wenn du dein Master-Passwort vergisst. Er wird nur einmal angezeigt.",
+      "copied": "Wiederherstellungsschlüssel kopiert",
+      "download": ".txt herunterladen",
+      "fileName": "orqevio-wiederherstellungsschluessel.txt",
+      "fileText": "Orqevio — Wiederherstellungsschlüssel für den Tresor\n\n{{recoveryKey}}\n\nBewahre ihn außerhalb von Orqevio auf (zum Beispiel ausgedruckt oder in einem anderen Passwort-Manager).\nDamit kannst du das Master-Passwort zurücksetzen. Niemand sonst kann ihn für dich wiederherstellen.\n",
+      "saved": "Ich habe ihn an einem sicheren Ort außerhalb von Orqevio gespeichert.",
+      "open": "Meinen Tresor öffnen"
+    },
+    "unlock": {
+      "title": "Tresor gesperrt",
+      "subtitle": "Gib dein Master-Passwort ein, um deine Logins in diesem Browser zu entschlüsseln.",
+      "busy": "Wird entschlüsselt…",
+      "submit": "Entsperren",
+      "forgot": "Master-Passwort vergessen?"
+    },
+    "recover": {
+      "title": "Tresor wiederherstellen",
+      "subtitle": "Wähle mit dem Wiederherstellungsschlüssel, den du beim Erstellen des Tresors gespeichert hast, ein neues Master-Passwort.",
+      "recoveryKey": "Wiederherstellungsschlüssel",
+      "recoveryKeyPlaceholder": "XXXX-XXXX-XXXX-…",
+      "submit": "Zurücksetzen und öffnen",
+      "noKey": "Ich habe den Schlüssel nicht",
+      "invalidKey": "Der Wiederherstellungsschlüssel ist ungültig.",
+      "done": "Master-Passwort zurückgesetzt"
+    },
+    "reset": {
+      "title": "Tresor zurücksetzen",
+      "description": "Ohne das Master-Passwort oder den Wiederherstellungsschlüssel kann niemand deine Daten entschlüsseln, auch wir nicht. Beim Zurücksetzen werden alle Einträge endgültig gelöscht.",
+      "accessKey": "Zugangsschlüssel",
+      "accessKeyHint": "Bestätige mit dem Zugangsschlüssel dieser Instanz, dass du es bist (nicht mit dem Master-Passwort).",
+      "submit": "Löschen und zurücksetzen",
+      "done": "Tresor zurückgesetzt. Du kannst ihn neu einrichten."
+    }
+  },
+  "import": {
+    "title": "In den Tresor importieren",
+    "description": "Die Datei wird in diesem Browser gelesen und verschlüsselt: Der Server erhält nur bereits verschlüsselte Einträge.",
+    "formats": "Unterstützt werden die CSV-Exporte von Chrome, Edge, Firefox und Safari, CSV und unverschlüsseltes JSON von Bitwarden sowie verschlüsselte Orqevio-Exporte.",
+    "choose": "Datei auswählen",
+    "fileLabel": "Zu importierende Datei",
+    "tooLarge": "Die Datei ist zu groß (über {{size}} MB).",
+    "problems": {
+      "empty": "Die Datei ist leer.",
+      "unknown_format": "Orqevio erkennt diese Datei nicht. Verwende den CSV-Export von Chrome, Edge, Firefox oder Safari, CSV oder JSON von Bitwarden oder einen Orqevio-Export.",
+      "bitwarden_encrypted": "Das ist ein verschlüsselter Bitwarden-Export. Exportiere ihn erneut unverschlüsselt als „.json“ oder „.csv“ und importiere ihn hier.",
+      "no_items": "Die Datei enthält keine Logins oder Notizen."
+    },
+    "encrypted_one": "Das ist ein verschlüsselter Orqevio-Export mit {{count}} Eintrag. Gib das Master-Passwort ein, das du beim Exportieren hattest.",
+    "encrypted_other": "Das ist ein verschlüsselter Orqevio-Export mit {{count}} Einträgen. Gib das Master-Passwort ein, das du beim Exportieren hattest.",
+    "exportPassword": "Export-Passwort",
+    "decrypt": "Entschlüsseln",
+    "wrongPassword": "Mit diesem Passwort wurde der Export nicht erstellt.",
+    "sources": {
+      "chromeOrEdge": "Aus Chrome oder Edge:",
+      "firefox": "Aus Firefox:",
+      "safari": "Aus Safari:",
+      "bitwardenCsv": "Aus Bitwarden (CSV):",
+      "bitwardenJson": "Aus Bitwarden (JSON):",
+      "csv": "Aus einer CSV-Datei:",
+      "orqevio": "Aus Orqevio (verschlüsselt):"
+    },
+    "newLogins_one": "{{count}} neuer Login",
+    "newLogins_other": "{{count}} neue Logins",
+    "newNotes_one": "{{count}} neue Notiz",
+    "newNotes_other": "{{count}} neue Notizen",
+    "nothingNew": "Nichts Neues zu importieren",
+    "duplicates_one": "{{count}} Eintrag ist bereits in deinem Tresor und wird übersprungen",
+    "duplicates_other": "{{count}} Einträge sind bereits in deinem Tresor und werden übersprungen",
+    "unsupported_one": "{{count}} Eintrag wird nicht unterstützt (Zahlungskarten oder Identitäten) und nicht importiert",
+    "unsupported_other": "{{count}} Einträge werden nicht unterstützt (Zahlungskarten oder Identitäten) und nicht importiert",
+    "unencryptedWarning": "Die gewählte Datei ist nicht verschlüsselt: Lösche sie von deinem Computer, wenn du fertig bist.",
+    "chooseAnother": "Andere wählen",
+    "progress": "{{done}} von {{total}} werden verschlüsselt…",
+    "submit_one": "{{count}} Eintrag importieren",
+    "submit_other": "{{count}} Einträge importieren",
+    "failed_one": "{{count}} Eintrag konnte nicht importiert werden. Importiere die Datei erneut: Bereits importierte Einträge werden übersprungen.",
+    "failed_other": "{{count}} Einträge konnten nicht importiert werden. Importiere die Datei erneut: Bereits importierte Einträge werden übersprungen.",
+    "done_one": "{{count}} Eintrag importiert",
+    "done_other": "{{count}} Einträge importiert",
+    "locked": "Der Tresor wurde gesperrt, bevor der Import abgeschlossen war. Entsperre ihn und importiere die Datei erneut: Bereits Importiertes wird übersprungen.",
+    "untitledNote": "Notiz",
+    "untitledLogin": "Unbenannt",
+    "damaged": "Dieser Export ist beschädigt und kann nicht gelesen werden."
+  },
+  "export": {
+    "title": "Tresor exportieren",
+    "description": "Lade alle deine Einträge als Datei herunter, erstellt in diesem Browser.",
+    "kind": "Exportart",
+    "kinds": {
+      "encrypted": "Verschlüsselt",
+      "plain": "Unverschlüsselt"
+    },
+    "encryptedInfo": "Nur dein aktuelles Master-Passwort öffnet ihn. Nutze ihn als Backup oder um deine Einträge in eine andere Orqevio-Instanz zu übertragen.",
+    "plainInfo": "Im JSON-Format von Bitwarden, das die meisten Passwort-Manager importieren können. Wer die Datei hat, kann sie lesen.",
+    "understood": "Mir ist klar, dass die Datei nicht verschlüsselt ist und jeder, der sie hat, alle meine Passwörter lesen kann.",
+    "submitPlain": "Unverschlüsselt exportieren",
+    "submitEncrypted": "Verschlüsselt exportieren",
+    "fileNameEncrypted": "orqevio-tresor-verschluesselt-{{date}}.json",
+    "fileNamePlain": "orqevio-tresor-unverschluesselt-{{date}}.json",
+    "done_one": "{{count}} Eintrag exportiert",
+    "done_other": "{{count}} Einträge exportiert",
+    "tooLarge": "Der Export ist größer als {{size}} MB: Orqevio kann ihn nicht importieren."
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "edit": "Bearbeiten",
+  "delete": "Projekt löschen",
+  "summary": "{{boards}} · {{pages}}",
+  "boardCount_one": "{{count}} Board",
+  "boardCount_other": "{{count}} Boards",
+  "pageCount_one": "{{count}} Seite",
+  "pageCount_other": "{{count}} Seiten",
+  "boards": {
+    "title": "Boards",
+    "new": "Neues Board",
+    "openCards_one": "{{count}} offene Karte",
+    "openCards_other": "{{count}} offene Karten",
+    "empty": "Erstelle ein Kanban-Board, um die Aufgaben dieses Projekts zu organisieren."
+  },
+  "docs": {
+    "title": "Dokumente",
+    "new": "Neue Seite",
+    "subpages_one": "{{count}} Unterseite",
+    "subpages_other": "{{count}} Unterseiten",
+    "emptyTitle": "Noch keine Dokumente",
+    "emptyAction": "Erste Seite schreiben",
+    "emptyBody": "Spezifikationen, Entscheidungen, Abläufe oder Besprechungsnotizen. In Markdown und mit deinen Aufgaben verknüpft."
+  },
+  "recent": "Zuletzt bearbeitet"
+}

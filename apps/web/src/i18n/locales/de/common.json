@@ -1,0 +1,51 @@
+{
+  "language": "Sprache",
+  "skipToContent": "Zum Inhalt springen",
+  "loading": "Wird geladen",
+  "actions": {
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen",
+    "save": "Speichern",
+    "close": "Schließen",
+    "copy": "Kopieren",
+    "view": "Ansehen",
+    "backHome": "Zur Startseite"
+  },
+  "dialog": {
+    "fallbackTitle": "Dialog",
+    "details": "Details"
+  },
+  "copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen",
+  "notFound": {
+    "title": "Hier ist nichts",
+    "body": "Die Seite existiert nicht oder du hast keinen Zugriff darauf."
+  },
+  "time": {
+    "justNow": "gerade eben"
+  },
+  "due": {
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "yesterday": "Gestern"
+  },
+  "greeting": {
+    "night": "Guten Abend",
+    "morning": "Guten Morgen",
+    "afternoon": "Guten Tag",
+    "evening": "Guten Abend"
+  },
+  "color": "Farbe",
+  "colors": {
+    "tomato": "Koralle",
+    "amber": "Bernstein",
+    "lime": "Limette",
+    "jade": "Jade",
+    "teal": "Türkis",
+    "cobalt": "Kobalt",
+    "iris": "Iris",
+    "rose": "Pink",
+    "slate": "Schiefer"
+  },
+  "untitled": "Unbenannt",
+  "quoted": "„{{text}}“"
+}

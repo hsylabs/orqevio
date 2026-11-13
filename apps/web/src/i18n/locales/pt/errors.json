@@ -1,0 +1,16 @@
+{
+  "codes": {
+    "invalid_access_key": "A chave de acesso não está correta.",
+    "invalid_setup_code": "O código de configuração não está correto.",
+    "already_claimed": "Esta cópia já está configurada. Entre com sua chave de acesso.",
+    "not_claimed": "Esta cópia ainda não foi configurada.",
+    "rate_limited": "Muitas tentativas. Aguarde alguns minutos.",
+    "network": "Sem conexão com o servidor.",
+    "file_too_large": "O arquivo excede o tamanho máximo permitido.",
+    "upload_incomplete": "O envio foi interrompido. Tente novamente.",
+    "last_workspace": "Você precisa manter pelo menos um espaço."
+  },
+  "notFound": "O item não foi encontrado.",
+  "server": "Algo deu errado no servidor. Tente novamente.",
+  "unknown": "Algo deu errado. Tente novamente."
+}

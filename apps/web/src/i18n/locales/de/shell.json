@@ -1,0 +1,137 @@
+{
+  "nav": {
+    "label": "Hauptnavigation",
+    "search": "Suchen oder öffnen…",
+    "home": "Startseite",
+    "vault": "Tresor",
+    "agents": "Agenten",
+    "agentLive": "Agent aktiv",
+    "projects": "Projekte",
+    "newProject": "Neues Projekt",
+    "firstProject": {
+      "title": "Erstelle dein erstes Projekt",
+      "body": "Fasse Boards und Dokumente an einem Ort zusammen."
+    },
+    "vaultLocked": "Gesperrt",
+    "vaultUnlocked": "Entsperrt"
+  },
+  "workspace": {
+    "fallback": "Arbeitsbereich",
+    "heading": "Arbeitsbereiche",
+    "new": "Neuer Arbeitsbereich",
+    "newDescription": "Arbeitsbereiche trennen Kontexte, zum Beispiel Privates und Berufliches. Jedes Agenten-Token gehört zu genau einem Arbeitsbereich.",
+    "name": "Name",
+    "create": "Arbeitsbereich erstellen",
+    "settings": "Einstellungen"
+  },
+  "project": {
+    "collapse": "{{name}} einklappen",
+    "expand": "{{name}} ausklappen",
+    "actions": "Aktionen für {{name}}",
+    "newBoard": "Neues Board",
+    "newPage": "Neue Seite",
+    "newPageIn": "Neue Seite in {{name}}",
+    "rename": "Name und Farbe",
+    "delete": "Projekt löschen",
+    "empty": "Leer"
+  },
+  "tree": {
+    "collapse": "Einklappen",
+    "expand": "Ausklappen",
+    "newSubpage": "Neue Unterseite"
+  },
+  "user": {
+    "updateAvailable": "Eine neue Version von Orqevio ist verfügbar",
+    "settings": "Einstellungen",
+    "newVersion": "Neue Version",
+    "appearance": "Darstellung",
+    "theme": {
+      "system": "System",
+      "light": "Hell",
+      "dark": "Dunkel"
+    },
+    "signOut": "Abmelden"
+  },
+  "header": {
+    "hideSidebar": "Seitenleiste ausblenden",
+    "showSidebar": "Seitenleiste einblenden",
+    "toggleSidebar": "Seitenleiste umschalten",
+    "breadcrumb": "Navigationspfad"
+  },
+  "newProject": {
+    "title": "Neues Projekt",
+    "description": "Ein Projekt fasst zusammengehörige Boards und Dokumente zusammen.",
+    "name": "Name",
+    "namePlaceholder": "z. B. Website-Launch",
+    "color": "Farbe",
+    "withBoard": "Board erstellen",
+    "startWithBoard": "Mit einem Board starten",
+    "boardHint": "Spalten {{columns}}. Du kannst sie jederzeit ändern.",
+    "boardName": "Aufgaben",
+    "create": "Projekt erstellen"
+  },
+  "projectSettings": {
+    "title": "Projekt",
+    "name": "Name",
+    "description": "Beschreibung",
+    "optional": "Optional",
+    "color": "Farbe"
+  },
+  "actions": {
+    "newBoard": {
+      "title": "Neues Board",
+      "label": "Name des Boards",
+      "placeholder": "z. B. Launch-Sprint",
+      "confirm": "Board erstellen"
+    },
+    "deleteBoard": {
+      "title": "„{{name}}“ löschen?",
+      "body": "Alle Spalten und Karten des Boards werden gelöscht. Das lässt sich nicht rückgängig machen.",
+      "confirm": "Board löschen",
+      "done": "Board gelöscht"
+    },
+    "deletePage": {
+      "title": "„{{name}}“ löschen?",
+      "body": "Auch die Unterseiten und Anhänge der Seite werden gelöscht. Das lässt sich nicht rückgängig machen.",
+      "confirm": "Seite löschen",
+      "done": "Seite gelöscht"
+    },
+    "deleteProject": {
+      "title": "Projekt „{{name}}“ löschen?",
+      "body": "Alle Boards, Karten, Seiten und Anhänge des Projekts werden gelöscht. Das lässt sich nicht rückgängig machen.",
+      "confirm": "Projekt löschen",
+      "done": "Projekt gelöscht"
+    }
+  },
+  "palette": {
+    "label": "Befehlspalette",
+    "title": "Suche",
+    "description": "Durchsuche Projekte, Boards, Seiten und Karten oder führe eine Aktion aus.",
+    "placeholder": "Aufgaben, Dokumente oder Aktionen suchen…",
+    "searching": "Suche läuft…",
+    "noResults": "Keine Ergebnisse. Versuch es mit anderen Wörtern.",
+    "inContent": "Im Inhalt",
+    "navigate": "Gehe zu",
+    "structure": "Projekte, Boards und Seiten",
+    "project": "Projekt",
+    "actions": "Aktionen",
+    "newProject": "Neues Projekt",
+    "lightTheme": "Zum hellen Design wechseln",
+    "darkTheme": "Zum dunklen Design wechseln",
+    "lockVault": "Tresor sperren",
+    "hintNavigate": "navigieren",
+    "hintOpen": "öffnen",
+    "keywords": {
+      "home": "Startseite Start Home",
+      "vault": "Tresor Passwörter Kennwörter",
+      "agents": "Agenten MCP Tokens",
+      "settings": "Einstellungen Konto",
+      "project": "Projekt",
+      "board": "Board",
+      "page": "Seite",
+      "newProject": "Neues Projekt erstellen anlegen",
+      "theme": "Design ändern hell dunkel Darstellung Theme",
+      "lockVault": "Tresor sperren"
+    }
+  }
+}

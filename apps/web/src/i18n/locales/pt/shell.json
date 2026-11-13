@@ -1,0 +1,137 @@
+{
+  "nav": {
+    "label": "Navegação principal",
+    "search": "Buscar ou ir para…",
+    "home": "Início",
+    "vault": "Cofre",
+    "agents": "Agentes",
+    "agentLive": "Agente ativo",
+    "projects": "Projetos",
+    "newProject": "Novo projeto",
+    "firstProject": {
+      "title": "Crie seu primeiro projeto",
+      "body": "Agrupe quadros e documentos em um só lugar."
+    },
+    "vaultLocked": "Bloqueado",
+    "vaultUnlocked": "Desbloqueado"
+  },
+  "workspace": {
+    "fallback": "Espaço",
+    "heading": "Espaços",
+    "new": "Novo espaço",
+    "newDescription": "Os espaços mantêm contextos separados, como o pessoal e o profissional. Cada token de agente pertence a um único espaço.",
+    "name": "Nome",
+    "create": "Criar espaço",
+    "settings": "Configurações"
+  },
+  "project": {
+    "collapse": "Recolher {{name}}",
+    "expand": "Expandir {{name}}",
+    "actions": "Ações de {{name}}",
+    "newBoard": "Novo quadro",
+    "newPage": "Nova página",
+    "newPageIn": "Nova página em {{name}}",
+    "rename": "Nome e cor",
+    "delete": "Excluir projeto",
+    "empty": "Vazio"
+  },
+  "tree": {
+    "collapse": "Recolher",
+    "expand": "Expandir",
+    "newSubpage": "Nova subpágina"
+  },
+  "user": {
+    "updateAvailable": "Há uma nova versão do Orqevio disponível",
+    "settings": "Configurações",
+    "newVersion": "Nova versão",
+    "appearance": "Aparência",
+    "theme": {
+      "system": "Sistema",
+      "light": "Claro",
+      "dark": "Escuro"
+    },
+    "signOut": "Sair"
+  },
+  "header": {
+    "hideSidebar": "Ocultar barra lateral",
+    "showSidebar": "Mostrar barra lateral",
+    "toggleSidebar": "Alternar barra lateral",
+    "breadcrumb": "Trilha de navegação"
+  },
+  "newProject": {
+    "title": "Novo projeto",
+    "description": "Um projeto agrupa quadros e documentos relacionados.",
+    "name": "Nome",
+    "namePlaceholder": "ex.: Lançamento do site",
+    "color": "Cor",
+    "withBoard": "Criar um quadro",
+    "startWithBoard": "Começar com um quadro",
+    "boardHint": "Colunas {{columns}}. Você pode alterá-las quando quiser.",
+    "boardName": "Tarefas",
+    "create": "Criar projeto"
+  },
+  "projectSettings": {
+    "title": "Projeto",
+    "name": "Nome",
+    "description": "Descrição",
+    "optional": "Opcional",
+    "color": "Cor"
+  },
+  "actions": {
+    "newBoard": {
+      "title": "Novo quadro",
+      "label": "Nome do quadro",
+      "placeholder": "ex.: Sprint de lançamento",
+      "confirm": "Criar quadro"
+    },
+    "deleteBoard": {
+      "title": "Excluir “{{name}}”?",
+      "body": "As colunas e os cartões deste quadro serão excluídos. Esta ação não pode ser desfeita.",
+      "confirm": "Excluir quadro",
+      "done": "Quadro excluído"
+    },
+    "deletePage": {
+      "title": "Excluir “{{name}}”?",
+      "body": "As subpáginas e os anexos desta página também serão excluídos. Esta ação não pode ser desfeita.",
+      "confirm": "Excluir página",
+      "done": "Página excluída"
+    },
+    "deleteProject": {
+      "title": "Excluir o projeto “{{name}}”?",
+      "body": "Todos os quadros, cartões, páginas e anexos deste projeto serão excluídos. Esta ação não pode ser desfeita.",
+      "confirm": "Excluir projeto",
+      "done": "Projeto excluído"
+    }
+  },
+  "palette": {
+    "label": "Paleta de comandos",
+    "title": "Buscar",
+    "description": "Busque projetos, quadros, páginas e cartões, ou execute uma ação.",
+    "placeholder": "Busque tarefas, documentos ou ações…",
+    "searching": "Buscando…",
+    "noResults": "Nenhum resultado. Tente outras palavras.",
+    "inContent": "No conteúdo",
+    "navigate": "Ir para",
+    "structure": "Projetos, quadros e páginas",
+    "project": "Projeto",
+    "actions": "Ações",
+    "newProject": "Novo projeto",
+    "lightTheme": "Mudar para o tema claro",
+    "darkTheme": "Mudar para o tema escuro",
+    "lockVault": "Bloquear o cofre",
+    "hintNavigate": "navegar",
+    "hintOpen": "abrir",
+    "keywords": {
+      "home": "Início inicio home",
+      "vault": "Cofre senhas vault",
+      "agents": "Agentes MCP tokens",
+      "settings": "Configurações configuracoes conta ajustes",
+      "project": "projeto",
+      "board": "quadro",
+      "page": "página pagina",
+      "newProject": "Novo projeto criar",
+      "theme": "Mudar tema claro escuro aparência aparencia",
+      "lockVault": "Bloquear cofre"
+    }
+  }
+}
