@@ -27,7 +27,8 @@ test('the app speaks the language of the account, chosen in Settings', async ({ 
     await device.close()
 
     // Before signing in, a device uses its own language, and the picker changes it.
-    const visitor = await browser.newContext({ locale: 'en-US', baseURL })
+    // Contexts made in a test inherit the owner's session unless told otherwise.
+    const visitor = await browser.newContext({ locale: 'en-US', baseURL, storageState: { cookies: [], origins: [] } })
     const signIn = await visitor.newPage()
     await signIn.goto('/login')
     await expect(signIn.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
