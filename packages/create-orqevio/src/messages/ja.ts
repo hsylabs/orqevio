@@ -111,4 +111,19 @@ Cloudflareアカウントが必要です（無料プランで十分です）。�
       `「${name}」をアンインストールしました。WorkerとバケットはCloudflareアカウントから削除されました。`,
       `ほかにWranglerを使っていなければ、${logoutCommand} でログアウトしてください。`,
     ].join('\n'),
+  emptyingThroughCopy: (bucket) =>
+    [
+      '',
+      `バケット「${bucket}」にはまだ添付ファイルがあり、Cloudflareは空のバケットしか削除できません。`,
+      'インストーラーがアクセスキーでOrqevioにログインし、データを削除させることができます（設定 → Orqevioのアンインストールと同じ処理です）。',
+      '別の方法で行う場合は、何も入力せずにEnterを押してください。',
+    ].join('\n'),
+  askAddress: (name) => `Orqevioのアドレス（例：https://${name}.<サブドメイン>.workers.dev）：`,
+  askAccessKey: 'Orqevioのアクセスキー（入力中は表示されません）：',
+  badAddress: (address) => `「${address}」はアドレスではありません。ブラウザーで開いているアドレスを使ってください。`,
+  notOrqevio: (origin) => `${origin}ではOrqevioが応答しません。`,
+  otherCopy: (origin, other, name) => `${origin}は「${other}」で、「${name}」ではありません。`,
+  wrongAccessKey: 'このアクセスキーは正しくありません。',
+  copyUnreachable: (origin, detail) => `${origin}のOrqevioに接続できませんでした（${detail}）。何も削除していません。`,
+  copyEmptied: 'Orqevioがデータと添付ファイルを削除しました。',
 }

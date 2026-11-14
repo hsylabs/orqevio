@@ -47,13 +47,42 @@ const calls = (): Array<{ args: string[]; cwd: string; metrics: string | null; a
 const commands = () => calls().map((c) => c.args.slice(0, 2).join(' '))
 
 // The assertions below read the Spanish messages; the English ones have tests of their own.
-async function run(argv: string[], answers: string[] | null = null, language: Language = 'es') {
+async function run(argv: string[], answers: string[] | null = null, language: Language = 'es', extra: { secrets?: string[]; fetch?: typeof fetch } = {}) {
   const out: string[] = []
   const err: string[] = []
   const io: Io = { out: (t) => out.push(t), err: (t) => err.push(t) }
   if (answers) io.ask = async () => answers.shift() ?? ''
-  const code = await main(argv, io, { orqevio, language })
+  if (extra.secrets) io.askSecret = async () => extra.secrets!.shift() ?? ''
+  const code = await main(argv, io, { orqevio, language, fetch: extra.fetch })
   return { code, out: out.join('\n'), err: err.join('\n') }
+}
+
+/**
+ * Stands in for a running copy: its session, sign-in and uninstall endpoints. Uninstalling
+ * empties the fake Wrangler's bucket, as the real copy empties its R2 bucket.
+ */
+function fakeCopy({ name = 'ana', accessKey = 'CLAVE-BUENA' } = {}) {
+  const calls: Array<{ origin: string; path: string; body: Record<string, string> | null; cookie: string | null }> = []
+  const respond = (status: number, data: unknown, headers: Record<string, string> = {}) =>
+    new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...headers } })
+  const impl = (async (input: string | URL | Request, init: RequestInit = {}) => {
+    const url = new URL(String(input))
+    const headers = new Headers(init.headers)
+    const body = init.body ? (JSON.parse(String(init.body)) as Record<string, string>) : null
+    calls.push({ origin: url.origin, path: url.pathname, body, cookie: headers.get('cookie') })
+    if (url.pathname === '/api/auth/session') return respond(200, { user: null, workspaces: [], claimed: true, recoverable: false, install: 'cli', copyName: name })
+    if (url.pathname === '/api/auth/login') {
+      return body?.accessKey === accessKey ? respond(200, { user: {} }, { 'Set-Cookie': 'orqevio_session=sesion; Path=/; HttpOnly; Secure' }) : respond(401, { error: { code: 'invalid_access_key' } })
+    }
+    if (url.pathname === '/api/account/uninstall') {
+      if (headers.get('cookie') !== 'orqevio_session=sesion') return respond(401, { error: { code: 'unauthorized' } })
+      if (body?.accessKey !== accessKey) return respond(403, { error: { code: 'invalid_access_key' } })
+      writeFileSync(state, JSON.stringify({ ...JSON.parse(readFileSync(state, 'utf8')), bucket: 'empty' }))
+      return respond(200, { at: '2026-11-14T12:00:00.000Z', install: 'cli', copyName: name, bucket: null })
+    }
+    return respond(404, {})
+  }) as typeof fetch
+  return { impl, calls }
 }
 
 describe('create-orqevio', () => {
@@ -231,6 +260,52 @@ describe('create-orqevio', () => {
     expect(result.err).toContain('Ajustes → Desinstalar Orqevio')
     expect(result.err).toContain('R2 → ana-uploads → Settings → Empty Bucket')
     expect(result.err).toContain('npx create-orqevio@latest uninstall --name ana')
+    expect(commands()).not.toContain('delete --name')
+    expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: true, bucket: 'full' })
+  })
+
+  it('has the copy delete its attachments with its access key, then removes everything in one go', async () => {
+    setState({ exists: true, bucket: 'full' })
+    const copy = fakeCopy()
+    const result = await run(['uninstall', '--name', 'ana'], ['ana', 'ana.ana.workers.dev'], 'es', { secrets: ['CLAVE-BUENA'], fetch: copy.impl })
+    expect(result.code).toBe(0)
+    expect(result.out).toContain('El instalador puede entrar en tu copia con su clave de acceso')
+    expect(result.out).toContain('Tu copia ha borrado sus datos y sus adjuntos')
+    expect(result.out).toContain('La copia «ana» está desinstalada')
+    // The copy is found by its address (https by default) and checked by its name before the key is sent.
+    expect(copy.calls.map((c) => `${c.origin}${c.path}`)).toEqual([
+      'https://ana.ana.workers.dev/api/auth/session',
+      'https://ana.ana.workers.dev/api/auth/login',
+      'https://ana.ana.workers.dev/api/account/uninstall',
+    ])
+    expect(copy.calls[2]!.cookie).toBe('orqevio_session=sesion')
+    // The bucket is tried, emptied through the copy and deleted; then the Worker goes.
+    expect(calls().filter((c) => c.args.includes('delete')).map((c) => c.args.join(' '))).toEqual([
+      'r2 bucket delete ana-uploads',
+      'r2 bucket delete ana-uploads',
+      'delete --name ana --force',
+    ])
+    expect(JSON.parse(readFileSync(state, 'utf8')).bucket).toBeUndefined()
+    // The key only travels to the copy: never to Wrangler, never on screen.
+    expect(readFileSync(log, 'utf8')).not.toContain('CLAVE-BUENA')
+    expect(result.out + result.err).not.toContain('CLAVE-BUENA')
+  })
+
+  it('deletes nothing with a wrong key, the address of another copy or no answer', async () => {
+    setState({ exists: true, bucket: 'full' })
+    const copy = fakeCopy()
+    const wrong = await run(['uninstall', '--name', 'ana'], ['ana', 'https://ana.ana.workers.dev', 'http://example.com', ''], 'es', { secrets: ['CLAVE-MALA'], fetch: copy.impl })
+    expect(wrong.code).toBe(1)
+    expect(wrong.err).toContain('Esa clave de acceso no es válida')
+    expect(wrong.err).toContain('«http://example.com» no es una dirección')
+    expect(wrong.err).toContain('El bucket «ana-uploads» todavía guarda adjuntos')
+    expect(copy.calls.some((c) => c.path === '/api/account/uninstall')).toBe(false)
+
+    const other = fakeCopy({ name: 'otra' })
+    const elsewhere = await run(['uninstall', '--name', 'ana'], ['ana', 'https://otra.ana.workers.dev', ''], 'es', { secrets: ['CLAVE-BUENA'], fetch: other.impl })
+    expect(elsewhere.err).toContain('https://otra.ana.workers.dev es la copia «otra», no «ana»')
+    expect(other.calls.map((c) => c.path)).toEqual(['/api/auth/session'])
+
     expect(commands()).not.toContain('delete --name')
     expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: true, bucket: 'full' })
   })
