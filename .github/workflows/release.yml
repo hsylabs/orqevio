@@ -90,13 +90,12 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: release
-      # --provenance also signs the first release, published with a token before trusted
-      # publishing can be set up; with trusted publishing npm adds it on its own.
+      # Trusted publishing: npm signs in with this job's OIDC token (no npm token at all)
+      # and adds the provenance attestation on its own; --provenance only makes it explicit.
+      # Both packages need a trusted publisher on npmjs.com for release.yml and this environment.
       - name: Publish orqevio, then create-orqevio (which depends on it)
         env:
           TAG: ${{ needs.verify.outputs.prerelease == 'true' && 'next' || 'latest' }}
-          # Only needed until trusted publishing is configured for both packages.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         # The ./ makes npm read a file: "packs/name.tgz" alone is a GitHub "user/repo" to npm.
         run: |
           npm publish ./packs/orqevio-*.tgz --access public --tag "$TAG" --provenance
