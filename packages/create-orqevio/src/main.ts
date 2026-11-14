@@ -36,9 +36,22 @@ export interface Deps {
   openOnWindows?: (url: string) => void
   /** How the installer reaches a copy over HTTP (tests pass their own). */
   fetch?: typeof fetch
-  /** How often and how long uninstall waits for a copy to receive its authorization. */
-  uninstallWait?: { intervalMs: number; timeoutMs: number }
+  /**
+   * How uninstall waits for a copy to receive its authorization: every `fastMs` at first,
+   * then every `slowMs` (so the copy can go idle and pick it up) until `timeoutMs`.
+   */
+  uninstallWait?: UninstallWait
 }
+
+interface UninstallWait {
+  fastMs: number
+  slowAfterMs: number
+  slowMs: number
+  timeoutMs: number
+}
+
+// Cloudflare lets an active copy run its previous version for up to 5 minutes; a minute more for the margin.
+const UNINSTALL_WAIT: UninstallWait = { fastMs: 3000, slowAfterMs: 30_000, slowMs: 15_000, timeoutMs: 6 * 60_000 }
 
 /** Signs in without the installer, for when the browser never opens. */
 export const MANUAL_SIGN_IN = 'npx wrangler login --browser=false'
@@ -379,14 +392,35 @@ async function deployRepo(orqevio: ReturnType<typeof loadOrqevio>, dryRun: boole
 
 async function recover(name: string, env: Record<string, string>, io: Io, m: Messages) {
   const setupCode = generateSetupCode()
-  // The code goes through stdin, never on the command line.
-  const run = await runWrangler(['secret', 'put', 'SETUP_CODE', '--name', name], { input: setupCode, env })
-  if (run.code !== 0) {
+  io.out(m.settingSetupCode)
+  const failure = await putSecret(name, 'SETUP_CODE', setupCode, env)
+  if (failure !== null) {
+    io.err(failure)
     io.err(m.setupCodeFailed)
     return 1
   }
   io.out(m.recovered(setupCode))
   return 0
+}
+
+/**
+ * Sets a secret of the copy's Worker so that the copy sees it within seconds. `wrangler secret put`
+ * deploys with Cloudflare's default for Durable Objects, which lets an active copy keep running its
+ * previous version, and so the previous secret, for up to 5 minutes. Instead, the secret goes into a
+ * new version, deployed with the "immediate" code update. The value goes through stdin, never on the
+ * command line. Null once deployed; otherwise what Wrangler said.
+ */
+async function putSecret(name: string, key: string, value: string, env: Record<string, string>): Promise<string | null> {
+  const message = `create-orqevio: ${key}`
+  const created = await runWrangler(['versions', 'secret', 'put', key, '--name', name, '--message', message], { input: value, env, capture: true })
+  const output = `${created.stdout}${created.stderr}`
+  const version = /Created version ([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i.exec(output)?.[1]
+  if (created.code !== 0 || !version) return output.trim()
+  const deployed = await runWrangler(
+    ['versions', 'deploy', `${version}@100%`, '--name', name, '--yes', '--durable-objects-code-update-mode', 'immediate', '--message', message],
+    { env, capture: true },
+  )
+  return deployed.code === 0 ? null : `${deployed.stdout}${deployed.stderr}`.trim()
 }
 
 /**
@@ -448,7 +482,7 @@ async function deleteBucket(bucket: string, env: Record<string, string>, io: Io)
  * A blank answer stops without deleting anything. True once the copy is empty.
  */
 async function emptyThroughCopy(name: string, bucket: string, env: Record<string, string>, io: Io, m: Messages, deps: Deps) {
-  const { intervalMs, timeoutMs } = deps.uninstallWait ?? { intervalMs: 3000, timeoutMs: 90_000 }
+  const wait = deps.uninstallWait ?? UNINSTALL_WAIT
   io.out(m.emptyingThroughCopy(bucket))
   for (let attempt = 0; attempt < 3; attempt++) {
     const address = (await io.ask!(m.askAddress(name))).trim()
@@ -460,23 +494,30 @@ async function emptyThroughCopy(name: string, bucket: string, env: Record<string
     }
     // Expires on its own, in case the uninstall stops half-way and the copy stays.
     const token = `${Date.now() + 15 * 60_000}.${randomBytes(32).toString('base64url')}`
-    const set = await runWrangler(['secret', 'put', 'ORQEVIO_UNINSTALL_TOKEN', '--name', name], { input: token, env, capture: true })
-    if (set.code !== 0) {
-      io.err((set.stderr || set.stdout).trim())
+    const failure = await putSecret(name, 'ORQEVIO_UNINSTALL_TOKEN', token, env)
+    if (failure !== null) {
+      io.err(failure)
       io.err(m.uninstallFailed)
       return false
     }
     io.out(m.authorizingCopy)
     // The secret takes a few seconds to reach the copy: until then it answers not-authorized.
-    const deadline = Date.now() + timeoutMs
+    const started = Date.now()
+    let saidWaiting = false
     for (;;) {
       const result = await emptyCopy(origin, name, token, deps.fetch)
       if (result.ok) {
         io.out(m.copyEmptied)
         return true
       }
-      if (result.reason === 'not-authorized' && Date.now() < deadline) {
-        await new Promise((resolve) => setTimeout(resolve, intervalMs))
+      const elapsed = Date.now() - started
+      if (result.reason === 'not-authorized' && elapsed < wait.timeoutMs) {
+        const slow = elapsed >= wait.slowAfterMs
+        if (slow && !saidWaiting) {
+          io.out(m.waitingForCopy(Math.ceil(wait.timeoutMs / 60_000)))
+          saidWaiting = true
+        }
+        await new Promise((resolve) => setTimeout(resolve, slow ? wait.slowMs : wait.fastMs))
         continue
       }
       if (result.reason === 'not-authorized') io.err(m.notThisAccount(origin, name))

@@ -24,7 +24,10 @@
         "name": "COPY",
         "class_name": "OrqevioCopy"
       }
-    ]
+    ],
+    "code_update_strategy": {
+      "mode": "immediate"
+    }
   },
   "migrations": [
     {

@@ -52,19 +52,21 @@ async function run(argv: string[], answers: string[] | null = null, language: La
   const err: string[] = []
   const io: Io = { out: (t) => out.push(t), err: (t) => err.push(t) }
   if (answers) io.ask = async () => answers.shift() ?? ''
-  const code = await main(argv, io, { orqevio, language, fetch: extra.fetch, uninstallWait: { intervalMs: 5, timeoutMs: 60 } })
+  const code = await main(argv, io, { orqevio, language, fetch: extra.fetch, uninstallWait: { fastMs: 2, slowAfterMs: 10, slowMs: 5, timeoutMs: 60 } })
   return { code, out: out.join('\n'), err: err.join('\n') }
 }
 
 /**
  * Stands in for a running copy in a Cloudflare account. It uninstalls only with the token the
- * installer set as its Worker secret in that same account (read back from the fake Wrangler's
- * log), and uninstalling empties the fake Wrangler's bucket, as the real copy empties R2.
+ * installer deployed as its Worker secret in that same account (read back from the fake Wrangler's
+ * state), and uninstalling empties the fake Wrangler's bucket, as the real copy empties R2.
+ * `lagging` answers are refused as if the secret had not reached the copy yet.
  */
-function fakeCopy({ name = 'ana', account = 'acc-1' } = {}) {
+function fakeCopy({ name = 'ana', account = 'acc-1', lagging = 0 } = {}) {
   const requests: Array<{ origin: string; path: string; body: Record<string, string> | null }> = []
   const respond = (status: number, data: unknown) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
   let uninstalled = false
+  let refused = 0
   const impl = (async (input: string | URL | Request, init: RequestInit = {}) => {
     const url = new URL(String(input))
     const body = init.body ? (JSON.parse(String(init.body)) as Record<string, string>) : null
@@ -74,10 +76,8 @@ function fakeCopy({ name = 'ana', account = 'acc-1' } = {}) {
     }
     if (url.pathname === '/api/uninstall') {
       if (uninstalled) return respond(410, { error: { code: 'uninstalled' } })
-      const secret = calls()
-        .filter((c) => c.args.join(' ') === `secret put ORQEVIO_UNINSTALL_TOKEN --name ${name}` && c.account === account)
-        .at(-1)?.stdin
-      if (!secret || body?.token !== secret) return respond(403, { error: { code: 'uninstall_not_authorized' } })
+      const secret = deployedSecrets(account, name).ORQEVIO_UNINSTALL_TOKEN
+      if (!secret || body?.token !== secret || refused++ < lagging) return respond(403, { error: { code: 'uninstall_not_authorized' } })
       uninstalled = true
       writeFileSync(state, JSON.stringify({ ...JSON.parse(readFileSync(state, 'utf8')), bucket: 'empty' }))
       return respond(200, { at: '2026-11-14T12:00:00.000Z', install: 'cli', copyName: name, bucket: null })
@@ -85,6 +85,21 @@ function fakeCopy({ name = 'ana', account = 'acc-1' } = {}) {
     return respond(404, {})
   }) as typeof fetch
   return { impl, calls: requests }
+}
+
+/** The secrets the fake Wrangler deployed to a Worker of an account. */
+const deployedSecrets = (account: string, worker: string): Record<string, string> =>
+  JSON.parse(readFileSync(state, 'utf8')).secrets?.[account]?.[worker] ?? {}
+
+/** The version the fake Wrangler created with a secret. */
+const secretVersion = (key: string) =>
+  Object.entries(JSON.parse(readFileSync(state, 'utf8')).versions as Record<string, { key: string }>).find(([, v]) => v.key === key)![0]
+
+/** The two Wrangler calls that set a secret: a new version with it, deployed with the immediate update. */
+function secretCalls(key: string) {
+  const put = calls().find((c) => c.args.slice(0, 4).join(' ') === `versions secret put ${key}`)!
+  const deploy = calls().find((c) => c.args.slice(0, 2).join(' ') === 'versions deploy')!
+  return { put, deploy }
 }
 
 describe('create-orqevio', () => {
@@ -212,15 +227,30 @@ describe('create-orqevio', () => {
   it('recovers access with a new code sent through stdin, and never creates an empty Worker', async () => {
     setState({})
     expect((await run(['recover', '--name', 'ana'])).code).toBe(1)
-    expect(commands()).not.toContain('secret put')
+    expect(commands()).not.toContain('versions secret')
 
     setState({ exists: true })
     const result = await run(['recover', '--name', 'ana'])
     expect(result.code).toBe(0)
-    const put = calls().at(-1)!
-    expect(put.args).toEqual(['secret', 'put', 'SETUP_CODE', '--name', 'ana'])
+    expect(result.out).toContain('Guardando un código de configuración nuevo en tu copia')
+    // A new version with the code, deployed so that the copy sees it at once, not in 5 minutes.
+    const { put, deploy } = secretCalls('SETUP_CODE')
+    expect(put.args).toEqual(['versions', 'secret', 'put', 'SETUP_CODE', '--name', 'ana', '--message', 'create-orqevio: SETUP_CODE'])
     expect(put.stdin).toMatch(CODE)
+    expect(deploy.args[2]).toBe(`${secretVersion('SETUP_CODE')}@100%`)
+    expect(deploy.args.slice(3)).toEqual(['--name', 'ana', '--yes', '--durable-objects-code-update-mode', 'immediate', '--message', 'create-orqevio: SETUP_CODE'])
+    expect(deployedSecrets('acc-1', 'ana').SETUP_CODE).toBe(put.stdin)
     expect(result.out).toContain(put.stdin!)
+    expect(calls().every((c) => !c.args.includes(put.stdin!))).toBe(true)
+  })
+
+  it('says so when the new code cannot be deployed, and shows no code that would not work', async () => {
+    setState({ exists: true, versionDeployFails: true })
+    const result = await run(['recover', '--name', 'ana'])
+    expect(result.code).toBe(1)
+    expect(result.err).toContain('[code: 10000]')
+    expect(result.err).toContain('No se ha podido cambiar el código')
+    expect(result.out).not.toContain('Nuevo código de configuración')
   })
 
   it('uninstalls a copy once its name is typed: the bucket first, then the Worker', async () => {
@@ -275,10 +305,13 @@ describe('create-orqevio', () => {
     expect(result.out).toContain('Autorizando a tu copia desde tu cuenta de Cloudflare')
     expect(result.out).toContain('Tu copia ha borrado sus datos y sus adjuntos')
     expect(result.out).toContain('La copia «ana» está desinstalada')
-    // The token goes to the Worker of the chosen account through stdin, and from there to the copy.
-    const secret = calls().find((c) => c.args[0] === 'secret')!
-    expect(secret.args).toEqual(['secret', 'put', 'ORQEVIO_UNINSTALL_TOKEN', '--name', 'ana'])
-    expect(secret.account).toBe('acc-1')
+    expect(result.out).not.toContain('todavía no ha recibido la autorización')
+    // The token goes to the Worker of the chosen account through stdin, deployed with the
+    // immediate update, and from there to the copy.
+    const { put: secret, deploy } = secretCalls('ORQEVIO_UNINSTALL_TOKEN')
+    expect(secret.args).toEqual(['versions', 'secret', 'put', 'ORQEVIO_UNINSTALL_TOKEN', '--name', 'ana', '--message', 'create-orqevio: ORQEVIO_UNINSTALL_TOKEN'])
+    expect(deploy.args).toContain('immediate')
+    expect([secret.account, deploy.account]).toEqual(['acc-1', 'acc-1'])
     expect(secret.stdin).toMatch(/^\d{13}\.[\w-]{43}$/)
     expect(Number(secret.stdin!.split('.')[0])).toBeGreaterThan(Date.now())
     expect(copy.calls.map((c) => `${c.origin}${c.path}`)).toEqual(['https://ana.ana.workers.dev/api/auth/session', 'https://ana.ana.workers.dev/api/uninstall'])
@@ -306,6 +339,28 @@ describe('create-orqevio', () => {
     expect(other.err).toContain('El bucket «ana-uploads» todavía guarda adjuntos')
     expect(named.calls.map((c) => c.path)).toEqual(['/api/auth/session'])
 
+    expect(commands()).not.toContain('delete --name')
+    expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: true, bucket: 'full' })
+  })
+
+  it('waits, saying so, while the authorization takes longer than usual to reach the copy', async () => {
+    setState({ exists: true, bucket: 'full' })
+    const copy = fakeCopy({ lagging: 6 })
+    const result = await run(['uninstall', '--name', 'ana'], ['ana', 'ana.ana.workers.dev'], 'es', { fetch: copy.impl })
+    expect(result.code).toBe(0)
+    expect(result.out.match(/todavía no ha recibido la autorización/g)).toHaveLength(1)
+    expect(result.out).toContain('Sigo esperando (hasta 1 minutos); no se ha borrado nada todavía')
+    expect(copy.calls.filter((c) => c.path === '/api/uninstall')).toHaveLength(7)
+    expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: false })
+  })
+
+  it('deletes nothing when the authorization cannot be deployed', async () => {
+    setState({ exists: true, bucket: 'full', versionDeployFails: true })
+    const copy = fakeCopy()
+    const result = await run(['uninstall', '--name', 'ana'], ['ana', 'ana.ana.workers.dev'], 'es', { fetch: copy.impl })
+    expect(result.code).toBe(1)
+    expect(result.err).toContain('[code: 10000]')
+    expect(copy.calls.filter((c) => c.path === '/api/uninstall')).toHaveLength(0)
     expect(commands()).not.toContain('delete --name')
     expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: true, bucket: 'full' })
   })

@@ -36,6 +36,8 @@ export interface Messages {
   installed(details: { address: string; setupCode: string; updateCommand: string; recoverCommand: string }): string
   cannotReadRepoConfig(detail: string): string
   badRepoName(name: string): string
+  /** While the new setup code is saved in the copy's Worker (a few seconds). */
+  settingSetupCode: string
   setupCodeFailed: string
   recovered(setupCode: string): string
   uninstallNeedsTerminal: string
@@ -53,6 +55,8 @@ export interface Messages {
   otherCopy(origin: string, other: string, name: string): string
   copyUnreachable(origin: string, detail: string): string
   authorizingCopy: string
+  /** Once, when the copy takes longer than usual to receive the authorization. */
+  waitingForCopy(minutes: number): string
   notThisAccount(origin: string, name: string): string
   copyTooOld(updateCommand: string): string
   copyEmptied: string
