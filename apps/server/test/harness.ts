@@ -7,7 +7,7 @@ import { createApp } from '../src/app'
 import { sha256 } from '../src/auth/crypto'
 import { openDatabase, runMigrations } from '../src/db/client'
 import { sessions, users, workspaceMembers, workspaces } from '../src/db/schema'
-import { loadEnv } from '../src/env'
+import { type Env, loadEnv } from '../src/env'
 import { RealtimeBus } from '../src/lib/realtime'
 import { LocalStorage } from '../src/lib/storage-local'
 import { createServices } from '../src/services'
@@ -16,10 +16,10 @@ export const ORIGIN = 'http://localhost:3000'
 export const SETUP_CODE = 'test-setup-code-1234'
 
 /** Each test file gets a fresh copy: its own SQLite file and upload folder. */
-export async function createHarness() {
+export async function createHarness(overrides: Partial<Env> = {}) {
   process.env.APP_URL = ORIGIN
   const dataDir = await mkdtemp(path.join(tmpdir(), 'orqevio-test-'))
-  const env = loadEnv({ dataDir, databasePath: path.join(dataDir, 'orqevio.db'), webDist: path.join(dataDir, 'no-web'), setupCode: SETUP_CODE, updateCheck: false })
+  const env = loadEnv({ dataDir, databasePath: path.join(dataDir, 'orqevio.db'), webDist: path.join(dataDir, 'no-web'), setupCode: SETUP_CODE, updateCheck: false, ...overrides })
   const { db, close } = openDatabase(env.databasePath)
   runMigrations(db, env.migrationsDir)
   const bus = new RealtimeBus()

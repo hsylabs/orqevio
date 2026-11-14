@@ -25,6 +25,8 @@ export const RECOVERY_REASONS = ['lost', 'compromised'] as const
 export const recoverInput = z.object({ setupCode: secret, reason: z.enum(RECOVERY_REASONS) })
 export const rotateAccessKeyInput = z.object({ currentAccessKey: secret })
 export const confirmAccessKeyInput = z.object({ accessKey: secret })
+/** The installer's one-time authorization to uninstall, set as a Worker secret on the copy. */
+export const installerUninstallInput = z.object({ token: z.string().min(40).max(200) })
 export const updateAccountInput = z.object({
   name: name(80).optional(),
   theme: z.enum(['system', 'light', 'dark']).optional(),
