@@ -1,0 +1,1 @@
+ALTER TABLE `oauth_codes` ADD `replace_previous` integer DEFAULT false NOT NULL;

@@ -150,7 +150,7 @@ Si pierdes la clave, genera un código nuevo. Úsalo en **«¿Has perdido la cla
 npx create-orqevio@latest uninstall
 ```
 
-Borra tu copia y todo lo que contiene, después de que escribas su nombre: consulta [Desinstalar](#desinstalar).
+Borra tu copia y todo lo que contiene, en un solo paso, después de que escribas su nombre: consulta [Desinstalar](#desinstalar).
 
 - **Varias copias:** añade `--name <nombre>` a cualquiera de las órdenes.
 - **Varias cuentas de Cloudflare:** el instalador te pregunta cuál usar; también puedes indicarla con `--account <id>` o `CLOUDFLARE_ACCOUNT_ID`.
@@ -160,7 +160,7 @@ Borra tu copia y todo lo que contiene, después de que escribas su nombre: consu
 - **Lo que hace exactamente:**
   - Wrangler trabaja en una carpeta temporal privada, nunca en la carpeta en la que estás.
   - El código de configuración se sube como secreto del Worker y la carpeta se borra al terminar, también si interrumpes el proceso.
-- **Antes de la primera versión publicada en npm:** los paquetes `create-orqevio` y `orqevio` aún no están publicados. Mientras tanto, ejecuta el instalador desde el repositorio:
+- **Desde el repositorio:** para probar cambios que aún no están publicados en npm, ejecuta el instalador desde el código del repositorio:
 
 ```bash
 pnpm install
@@ -246,17 +246,17 @@ Si pierdes la clave, quien administra la copia puede generar otra (en Cloudflare
 docker compose exec app node dist/cli.js reset-access
 ```
 
-Sin Docker:
+Sin Docker, desde la carpeta del repositorio (usa la misma carpeta de datos y el mismo `.env` que `pnpm start` y `pnpm dev`):
 
 ```bash
-node apps/server/dist/cli.js reset-access
+pnpm cli reset-access
 ```
 
 También puedes definir un `SETUP_CODE` nuevo, reiniciar la copia y usar **«¿Has perdido la clave?»** en la pantalla de acceso. En ambos casos se cierran todas las sesiones.
 
 **Tus agentes.** Al recuperar el acceso, Orqevio pregunta por qué. Con **«He perdido la clave»**, tus agentes (tokens y conectores OAuth como Claude) conservan el acceso, y la pantalla los muestra para que revoques el que no reconozcas. Con **«Puede que alguien la tenga»**, se desconectan todos, también los códigos de autorización aún sin canjear: quien tuvo la clave pudo conectar uno suyo. Con la CLI, añade `--revoke-agents` a `reset-access` para lo mismo.
 
-`node dist/cli.js status` muestra si la copia está reclamada y por quién. Nada de esto afecta a la bóveda: su contraseña maestra nunca la conoce el servidor.
+`status` (`docker compose exec app node dist/cli.js status`, o `pnpm cli status` sin Docker) muestra si la copia está reclamada y por quién. Nada de esto afecta a la bóveda: su contraseña maestra nunca la conoce el servidor.
 
 ## Actualizaciones
 
@@ -285,7 +285,11 @@ Cada versión tiene número y notas (`CHANGELOG.md`, en inglés, y las releases 
 | Docker | Los contenedores y el volumen `orqevio-data`: `docker compose down -v`; después, la carpeta donde la instalaste |
 | Desde el código | La carpeta `DATA_DIR`, con el servidor parado |
 
-**Sin pasar por la app.** `npx create-orqevio@latest uninstall` también funciona por su cuenta. Te pide que escribas el nombre de la copia y borra el bucket y, después, el Worker con todos sus datos. Cloudflare solo borra buckets vacíos: si el tuyo aún guarda adjuntos, el instalador se detiene antes de borrar nada y te explica cómo vaciarlo (desde la app o con **Empty Bucket** en el panel).
+**En un solo paso, para las copias instaladas con el comando.** `npx create-orqevio@latest uninstall` hace los dos pasos desde tu ordenador, sin pasar por la app:
+- Te pide que escribas el nombre de la copia.
+- Borra el bucket y, después, el Worker con todos sus datos.
+- Cloudflare solo borra buckets vacíos. Si el tuyo aún guarda adjuntos, el instalador te pide la dirección de tu copia y le pide que borre antes sus datos, como hace el botón. La autoriza desde tu cuenta de Cloudflare con un token de un solo uso (un secreto del Worker que caduca en 15 minutos): no necesita tu clave de acceso, y una copia de otra cuenta, aunque se llame igual, no se puede borrar por error.
+- Si lo prefieres, deja la respuesta en blanco: no se borra nada y te explica las otras formas de vaciar el bucket (desde la app o con **Empty Bucket** en el panel).
 
 ## Conectar agentes por MCP
 

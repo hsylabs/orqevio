@@ -1,6 +1,6 @@
 import type { AccessStateDTO, MeDTO, Theme, UninstalledDTO, UserDTO } from '@orqevio/shared'
 import { DEFAULT_LOCALE, defaultWorkspaceName, isLocale } from '@orqevio/shared'
-import { claimInput, confirmAccessKeyInput, recoverInput, rotateAccessKeyInput, unlockInput, updateAccountInput } from '@orqevio/shared'
+import { claimInput, confirmAccessKeyInput, installerUninstallInput, recoverInput, rotateAccessKeyInput, unlockInput, updateAccountInput } from '@orqevio/shared'
 import { and, asc, eq, gt, isNull, ne } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
 import { generateAccessKey, generateSetupCode, randomToken, safeEqual, secretFingerprint, sha256 } from '../auth/crypto'
@@ -89,10 +89,11 @@ export class AccountService {
   }
 
   async state(): Promise<AccessStateDTO> {
+    const { install, copyName } = this.deps.env
     const uninstalled = await this.uninstalled()
-    if (uninstalled) return { claimed: false, recoverable: false, uninstalled }
+    if (uninstalled) return { claimed: false, recoverable: false, install, copyName, uninstalled }
     const row = await this.instanceRow()
-    return { claimed: Boolean(row), recoverable: this.isRecoverable(row) }
+    return { claimed: Boolean(row), recoverable: this.isRecoverable(row), install, copyName }
   }
 
   /** Set once the copy was uninstalled from Settings; it then refuses everything but saying so. */
@@ -107,6 +108,30 @@ export class AccountService {
     return { at, install: this.deps.env.install, copyName: this.deps.env.copyName, bucket: this.deps.env.copyBucket }
   }
 
+  /** Uninstalling from Settings, confirmed with the access key. */
+  async uninstall(actor: Actor, input: unknown): Promise<UninstalledDTO> {
+    this.access.requireUser(actor)
+    const { accessKey } = parse(confirmAccessKeyInput, input)
+    await this.verifyAccessKey(actor.userId, accessKey)
+    return this.wipe()
+  }
+
+  /**
+   * Uninstalling asked by `npx create-orqevio uninstall`, from the person's computer. It proves
+   * it controls the Cloudflare account this copy lives in by setting ORQEVIO_UNINSTALL_TOKEN on
+   * its Worker first: a copy with the same name in another account never gets it, so an address
+   * typed by mistake cannot erase it. The token expires on its own, should the uninstall stop.
+   */
+  async uninstallFromInstaller(input: unknown): Promise<UninstalledDTO> {
+    const { token } = parse(installerUninstallInput, input)
+    const expected = this.deps.env.uninstallToken
+    const expiresAt = Number(expected?.split('.')[0])
+    if (!expected || !(expiresAt > Date.now()) || !safeEqual(sha256(token), sha256(expected))) {
+      throw forbidden('The installer has not authorized this uninstall', 'uninstall_not_authorized')
+    }
+    return this.wipe()
+  }
+
   /**
    * Uninstalling, the part a copy can do itself: every attachment, then every row
    * (people, workspaces, documents, vault, agents, sessions) goes, and a mark stays
@@ -114,10 +139,7 @@ export class AccountService {
    * copy itself (the Worker and its bucket, or the container) is left to whoever
    * installed it, as the page shown afterwards explains.
    */
-  async uninstall(actor: Actor, input: unknown): Promise<UninstalledDTO> {
-    this.access.requireUser(actor)
-    const { accessKey } = parse(confirmAccessKeyInput, input)
-    await this.verifyAccessKey(actor.userId, accessKey)
+  private async wipe(): Promise<UninstalledDTO> {
     // Attachments first, once no upload is still writing one: if this stops half-way,
     // the data is still there, uploads open again and it can be retried.
     await this.attachments.close()
