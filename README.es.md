@@ -160,7 +160,7 @@ Borra tu copia y todo lo que contiene, después de que escribas su nombre: consu
 - **Lo que hace exactamente:**
   - Wrangler trabaja en una carpeta temporal privada, nunca en la carpeta en la que estás.
   - El código de configuración se sube como secreto del Worker y la carpeta se borra al terminar, también si interrumpes el proceso.
-- **Antes de la primera versión publicada en npm:** los paquetes `create-orqevio` y `orqevio` aún no están publicados. Mientras tanto, ejecuta el instalador desde el repositorio:
+- **Desde el repositorio:** para probar cambios que aún no están publicados en npm, ejecuta el instalador desde el código del repositorio:
 
 ```bash
 pnpm install

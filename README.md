@@ -160,7 +160,7 @@ Deletes your copy and everything in it, after you type its name: see [Uninstalli
 - **What it does, exactly:**
   - Wrangler works in a private temporary folder, never in the folder you're in.
   - The setup code is uploaded as a Worker secret, and the folder is deleted when the installer finishes, even if you interrupt it.
-- **Before the first release on npm:** the `create-orqevio` and `orqevio` packages aren't published yet. Until they are, run the installer from the repository:
+- **From the repository:** to try changes that aren't published on npm yet, run the installer from a checkout:
 
 ```bash
 pnpm install
