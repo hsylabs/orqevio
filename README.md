@@ -146,6 +146,12 @@ npx create-orqevio@latest recover
 
 If you lose your access key, this generates a new code. Use it in **Lost your key?** on the sign-in screen.
 
+```bash
+npx create-orqevio@latest uninstall
+```
+
+Deletes your copy and everything in it, after you type its name: see [Uninstalling](#uninstalling).
+
 - **Several copies:** add `--name <name>` to any of these commands.
 - **Several Cloudflare accounts:** the installer asks which one to use; you can also pass it with `--account <id>` or `CLOUDFLARE_ACCOUNT_ID`.
 - **Language:** the installer speaks your terminal's language; pick another with `--lang <code>` (`en`, `es`, `fr`, `pt`, `it`, `de`, `nl` or `ja`).
@@ -267,6 +273,19 @@ Every release has a version number and release notes (`CHANGELOG.md` and the Git
 - **What it checks:** your copy's server asks `registry.npmjs.org` for the latest published version of `create-orqevio`, at most every 12 hours and only while you're using the app. It stores the answer, so restarting doesn't trigger extra requests.
 - **What it sends:** a GET request with none of your data.
 - **Turning it off:** set `UPDATE_CHECK=off`. Only the owner sees the notice, never agents.
+
+## Uninstalling
+
+**Settings → Uninstall Orqevio** deletes everything for good: workspaces, documents, attachments, the vault, agents and sessions. You confirm with your access key and by typing the copy's name. From then on, the copy only shows how to remove what's left, which depends on how you installed it:
+
+| Installation | What's left, and how to remove it |
+| --- | --- |
+| Command (Cloudflare) | The Worker and its R2 bucket: `npx create-orqevio@latest uninstall` (with `--name <name>` if it isn't `orqevio`) |
+| Button (Cloudflare) | The Worker and its R2 bucket, which you delete in the dashboard; then the repository the button created and, if nothing else uses it, its build token |
+| Docker | The containers and the `orqevio-data` volume: `docker compose down -v`; then the folder where you installed it |
+| From source | The `DATA_DIR` folder, once the server is stopped |
+
+**Without going through the app.** `npx create-orqevio@latest uninstall` also works on its own. It asks you to type the copy's name, then deletes the bucket and, after it, the Worker with all its data. Cloudflare only deletes empty buckets: if yours still holds attachments, the installer stops before deleting anything and tells you how to empty it (from the app, or with **Empty Bucket** in the dashboard).
 
 ## Connecting agents over MCP
 
@@ -407,7 +426,7 @@ apps/web/src
   lib/        API client, queries, real time and formatting
 packages/shared/src  schemas, permissions, types and link helpers
 packages/orqevio     the package deployed to Cloudflare (Worker, web app and base configuration)
-packages/create-orqevio  the installer: npx create-orqevio (install, update, recover)
+packages/create-orqevio  the installer: npx create-orqevio (install, update, recover, uninstall)
 templates/cloudflare the "Deploy to Cloudflare" button template (generated wrangler.jsonc and package.json)
 apps/site            the public website, orqevio.com: static pages with no cookies or analytics
 ```

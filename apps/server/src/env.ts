@@ -33,6 +33,8 @@ export interface Env {
   install: InstallKind
   /** Worker name of a copy installed with `npx create-orqevio` (ORQEVIO_COPY_NAME). */
   copyName: string | null
+  /** Its R2 bucket, which the Deploy to Cloudflare button lets you rename (ORQEVIO_BUCKET). */
+  copyBucket: string | null
   /** Whether the copy looks up the latest published version (UPDATE_CHECK, on by default). */
   updateCheck: boolean
 }
@@ -61,6 +63,7 @@ export function loadEnv(overrides: Partial<Env> = {}): Env {
     setupCode: process.env.SETUP_CODE?.trim() || null,
     install: installKind(process.env.ORQEVIO_INSTALL, 'source'),
     copyName: process.env.ORQEVIO_COPY_NAME?.trim() || null,
+    copyBucket: process.env.ORQEVIO_BUCKET?.trim() || null,
     updateCheck: bool(process.env.UPDATE_CHECK, true),
     ...overrides,
   }

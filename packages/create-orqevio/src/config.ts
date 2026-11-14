@@ -34,16 +34,19 @@ export function loadOrqevio(from = import.meta.url) {
 /** How the app tells this copy to update itself (see ORQEVIO_INSTALL in apps/server/src/env.ts). */
 export type InstallKind = 'cli' | 'button'
 
-/** Wrangler configuration for one copy: its own Worker name and bucket, pointing at the package files. */
-export function copyConfig(base: BaseConfig, distDir: string, name: string, install: InstallKind = 'cli') {
+/**
+ * Wrangler configuration for one copy: its own Worker name and bucket, pointing at the package files.
+ * The copy learns both names from its variables, to say what to delete when it is uninstalled.
+ */
+export function copyConfig(base: BaseConfig, distDir: string, name: string, install: InstallKind = 'cli', bucket = bucketName(name)) {
   return {
     ...base,
     name,
     // Other variables set in the dashboard are kept (keep_vars below).
-    vars: { ...(base.vars as Record<string, string> | undefined), ORQEVIO_INSTALL: install, ORQEVIO_COPY_NAME: name },
+    vars: { ...(base.vars as Record<string, string> | undefined), ORQEVIO_INSTALL: install, ORQEVIO_COPY_NAME: name, ORQEVIO_BUCKET: bucket },
     main: path.join(distDir, base.main),
     assets: { ...base.assets, directory: path.join(distDir, base.assets.directory) },
-    r2_buckets: base.r2_buckets.map((bucket) => (bucket.binding === 'UPLOADS' ? { ...bucket, bucket_name: bucketName(name) } : bucket)),
+    r2_buckets: base.r2_buckets.map((binding) => (binding.binding === 'UPLOADS' ? { ...binding, bucket_name: bucket } : binding)),
     // Variables the owner set in the Cloudflare dashboard (APP_URL, MAX_UPLOAD_MB) survive updates.
     keep_vars: true,
   }

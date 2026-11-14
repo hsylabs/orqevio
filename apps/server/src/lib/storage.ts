@@ -12,6 +12,8 @@ export interface AttachmentStorage {
   stream(key: string): Promise<ReadableStream | null>
   delete(key: string): Promise<void>
   deleteWorkspace(workspaceId: string): Promise<void>
+  /** Removes every stored file (uninstalling the copy). */
+  deleteAll(): Promise<void>
   /** Removes stored files that no database row references and that are older than `minAgeMs`. */
   sweep(isKnown: (key: string) => Promise<boolean>, minAgeMs?: number): Promise<number>
 }

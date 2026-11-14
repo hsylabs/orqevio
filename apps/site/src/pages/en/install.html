@@ -10,6 +10,7 @@
         <a href="#access">First sign-in</a>
         <a href="#agents">Connect agents</a>
         <a href="#update">Update</a>
+        <a href="#uninstall">Uninstall</a>
         <a href="#costs">Costs</a>
       </nav>
     </div>
@@ -82,6 +83,21 @@
           <tr><td>With a command</td><td><code>npx create-orqevio@latest update</code></td></tr>
           <tr><td>With the button</td><td>Merge the Dependabot pull request in your repository</td></tr>
           <tr><td>With Docker</td><td><code>docker compose pull</code> and <code>docker compose up -d</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="uninstall">Uninstall</h2>
+    <p><strong>Settings → Uninstall Orqevio</strong> deletes everything for good: workspaces, documents, attachments, the vault and your agents’ access. You confirm with your access key and by typing the copy’s name. Then the copy shows how to remove what’s left:</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Installation</th><th scope="col">How to remove the rest</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>With a command</td><td><code>npx create-orqevio@latest uninstall</code> deletes the Worker and its bucket</td></tr>
+          <tr><td>With the button</td><td>The Worker and its R2 bucket, in the Cloudflare dashboard; then the repository the button created</td></tr>
+          <tr><td>With Docker</td><td><code>docker compose down -v</code>, then the folder where you installed it</td></tr>
         </tbody>
       </table>
     </div>

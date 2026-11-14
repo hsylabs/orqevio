@@ -1,4 +1,4 @@
-import type { AnonymousSessionDTO, MeDTO, RecoveryReason } from '@orqevio/shared'
+import type { AnonymousSessionDTO, MeDTO, RecoveryReason, UninstalledDTO } from '@orqevio/shared'
 import { claimInput, recoverInput, unlockInput } from '@orqevio/shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
@@ -7,6 +7,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { Navigate, useNavigate, useSearchParams } from 'react-router'
 import { LogoMark, Wordmark } from '../../components/Logo'
 import { Button } from '../../components/ui/Button'
+import { CopyButton } from '../../components/ui/CopyButton'
 import { Field } from '../../components/ui/Field'
 import { applyLocale, currentLocale } from '../../i18n'
 import { LanguageSelect } from '../../i18n/LanguageSelect'
@@ -154,6 +155,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'setup' }) {
   // Decide from a fresh answer: a cached one may predate a session revoked on another device.
   if (!access.isFetchedAfterMount) return <FullScreenLoader />
   const session = access.data as Session | undefined
+  if (session && !session.user && session.uninstalled) return <Uninstalled details={session.uninstalled} />
   if (session?.user) return <Navigate to={next} replace />
   const claimed = session ? session.claimed : true
   const query = params.toString() ? `?${params.toString()}` : ''
@@ -364,5 +366,56 @@ function RecoveredAgents({ reason }: { reason: RecoveryReason }) {
         </>
       )}
     </section>
+  )
+}
+
+/** An uninstalled copy: no data is left, only the copy itself, and how to remove it depends on how it was installed. */
+function Uninstalled({ details }: { details: UninstalledDTO }) {
+  const { t } = useTranslation(['auth', 'common'])
+  const name = details.copyName ?? 'orqevio'
+  const bucket = details.bucket ?? `${name}-uploads`
+  const steps = (keys: Array<'worker' | 'bucket' | 'repository' | 'token'>) => (
+    <ul className="mt-2 flex list-disc flex-col gap-1.5 pl-5">
+      {keys.map((key) => (
+        <li key={key}>{t(`uninstalled.steps.${key}` as const, { name, bucket })}</li>
+      ))}
+    </ul>
+  )
+  const command = (value: string) => (
+    <div className="mt-2 flex items-center gap-2 rounded-[10px] border border-line bg-sheet py-1.5 pr-1.5 pl-3">
+      <code className="min-w-0 flex-1 font-mono text-[12.5px] break-words text-ink">{value}</code>
+      <CopyButton value={value} />
+    </div>
+  )
+  return (
+    <AuthLayout title={t('uninstalled.title')} subtitle={t('uninstalled.subtitle')}>
+      <div className="rounded-[14px] border border-line bg-sunken p-4 text-[13px] leading-relaxed text-ink-2">
+        {details.install === 'cli' && (
+          <>
+            <p>{t('uninstalled.cli')}</p>
+            {command(`npx create-orqevio@latest uninstall${details.copyName && details.copyName !== 'orqevio' ? ` --name ${details.copyName}` : ''}`)}
+          </>
+        )}
+        {details.install === 'button' && (
+          <>
+            <p>{t('uninstalled.button')}</p>
+            {steps(['worker', 'bucket', 'repository', 'token'])}
+          </>
+        )}
+        {details.install === 'cloudflare' && (
+          <>
+            <p>{t('uninstalled.cloudflare')}</p>
+            {steps(['worker', 'bucket'])}
+          </>
+        )}
+        {details.install === 'docker' && (
+          <>
+            <p>{t('uninstalled.docker')}</p>
+            {command('docker compose down -v')}
+          </>
+        )}
+        {details.install === 'source' && <p>{t('uninstalled.source')}</p>}
+      </div>
+    </AuthLayout>
   )
 }
