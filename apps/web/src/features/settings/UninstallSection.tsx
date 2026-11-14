@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
@@ -28,6 +28,9 @@ export function UninstallSection() {
   const [busy, setBusy] = useState(false)
   // The Worker's name on Cloudflare; elsewhere, the address the copy is reached at.
   const name = updates.data?.copyName ?? window.location.hostname
+  // Installed with the command, the installer can also do both steps at once, from the person's computer.
+  const copyName = updates.data?.copyName
+  const oneCommand = updates.data?.install === 'cli' ? `npx create-orqevio@latest uninstall${copyName && copyName !== 'orqevio' ? ` --name ${copyName}` : ''}` : null
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -56,6 +59,11 @@ export function UninstallSection() {
             ))}
           </ul>
           <p className="text-[13px] leading-relaxed text-ink-3">{t('uninstall.afterwards')}</p>
+          {oneCommand && (
+            <p className="text-[13px] leading-relaxed text-ink-3">
+              <Trans t={t} i18nKey="uninstall.oneCommand" values={{ command: oneCommand }} components={{ code: <code className="font-mono text-[12px] break-words text-ink" /> }} />
+            </p>
+          )}
           <Field label={t('uninstall.accessKey')} type="password" autoComplete="current-password" spellCheck={false} className="[&_input]:font-mono" value={accessKey} onChange={(e) => setAccessKey(e.target.value)} autoFocus />
           <Field label={t('uninstall.typeName', { name })} autoComplete="off" spellCheck={false} className="[&_input]:font-mono" value={typed} onChange={(e) => setTyped(e.target.value)} />
           <div className="flex justify-end gap-2">

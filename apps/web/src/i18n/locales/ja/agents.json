@@ -85,6 +85,7 @@
     "expires": "有効期限",
     "expiresUnused": "未使用時の有効期限",
     "never": "なし",
+    "idle": "{{days}}日間使われていません",
     "showActivity": "アクティビティを表示"
   },
   "access": {
