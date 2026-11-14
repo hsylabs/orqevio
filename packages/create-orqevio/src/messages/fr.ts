@@ -81,5 +81,6 @@ navigateur s’ouvre pour que vous puissiez vous connecter.`,
       'Ouvrez votre copie, choisissez « Clé perdue ? » et saisissez ce code pour obtenir',
       'une nouvelle clé d’accès. Toutes les sessions seront déconnectées ; vos données',
       'et votre coffre-fort ne changent pas.',
+      'Si quelqu’un d’autre a pu avoir la clé, répondez « Quelqu’un d’autre l’a peut-être » pour déconnecter aussi vos agents.',
     ].join('\n'),
 }

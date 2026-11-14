@@ -1,6 +1,6 @@
 import { t } from 'i18next'
 import { Copy, Download } from 'lucide-react'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/Button'
 import { copyText } from '../../components/ui/CopyButton'
@@ -25,7 +25,7 @@ function downloadKey(accessKey: string) {
 }
 
 /** Shows a freshly issued access key once, and only lets the user continue after confirming it is saved. */
-export function AccessKeyReveal({ accessKey, confirmLabel, onDone, busy }: { accessKey: string; confirmLabel: string; onDone: () => void; busy?: boolean }) {
+export function AccessKeyReveal({ accessKey, confirmLabel, onDone, busy, children }: { accessKey: string; confirmLabel: string; onDone: () => void; busy?: boolean; children?: ReactNode }) {
   const { t } = useTranslation(['auth', 'common'])
   const [saved, setSaved] = useState(false)
   return (
@@ -44,6 +44,7 @@ export function AccessKeyReveal({ accessKey, confirmLabel, onDone, busy }: { acc
           {t('keyReveal.download')}
         </Button>
       </div>
+      {children}
       <label className="mt-5 flex cursor-pointer items-start gap-3 text-[13px] text-ink-2">
         <input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} className="mt-0.5 size-4 accent-[var(--accent)]" />
         {t('keyReveal.saved')}

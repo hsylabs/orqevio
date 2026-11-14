@@ -79,5 +79,6 @@ sich dein Browser, damit du dich anmelden kannst.`,
       'Öffne deine Instanz, wähle „Schlüssel verloren?“ und gib diesen Code ein, um einen neuen',
       'Zugangsschlüssel zu bekommen. Alle Sitzungen werden abgemeldet; deine Daten und dein',
       'Tresor bleiben unverändert.',
+      'Falls jemand anderes den Schlüssel gehabt haben könnte, antworte „Jemand anderes könnte ihn haben“, um auch deine Agenten zu trennen.',
     ].join('\n'),
 }

@@ -78,5 +78,6 @@ navegador abre para você fazer login.`,
       '',
       'Abra sua cópia, escolha “Perdeu sua chave?” e digite este código para receber uma nova',
       'chave de acesso. Todas as sessões são encerradas; seus dados e seu cofre não mudam.',
+      'Se outra pessoa pode ter tido a chave, responda “Talvez outra pessoa a tenha” para desconectar também seus agentes.',
     ].join('\n'),
 }

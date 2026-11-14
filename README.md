@@ -248,6 +248,8 @@ node apps/server/dist/cli.js reset-access
 
 You can also set a new `SETUP_CODE`, restart the copy and use **Lost your key?** on the sign-in screen. Either way, all sessions are signed out.
 
+**Your agents.** Recovering access asks why. With **I lost my key**, your agents (tokens and OAuth connectors such as Claude) keep their access, and the screen lists them so you can revoke any you don't recognize. With **Someone else may have it**, every agent is disconnected, including authorization codes not yet exchanged: whoever had the key may have connected one of their own. With the CLI, add `--revoke-agents` to `reset-access` for the same.
+
 `node dist/cli.js status` shows whether the copy has been claimed, and by whom. None of this affects the vault: the server never knows its master password.
 
 ## Updates

@@ -1,10 +1,10 @@
 import type { AccessStateDTO, MeDTO, Theme, UserDTO } from '@orqevio/shared'
 import { DEFAULT_LOCALE, defaultWorkspaceName, isLocale } from '@orqevio/shared'
 import { claimInput, confirmAccessKeyInput, recoverInput, rotateAccessKeyInput, unlockInput, updateAccountInput } from '@orqevio/shared'
-import { and, asc, eq, gt, ne } from 'drizzle-orm'
+import { and, asc, eq, gt, isNull, ne } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
 import { generateAccessKey, generateSetupCode, randomToken, safeEqual, secretFingerprint, sha256 } from '../auth/crypto'
-import { instance, sessions, users, workspaceMembers, workspaces } from '../db/schema'
+import { apiTokens, instance, oauthCodes, sessions, users, workspaceMembers, workspaces } from '../db/schema'
 import { AppError, forbidden, unauthorized } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
@@ -113,10 +113,12 @@ export class AccountService {
 
   /**
    * Lost key: whoever controls the installation sets a new SETUP_CODE and enters
-   * it here. Issues a new access key and signs out every session.
+   * it here. Issues a new access key and signs out every session. When the key may
+   * be in someone else's hands, every agent loses its access too: tokens, OAuth
+   * accesses and authorization codes not yet exchanged.
    */
   async recover(input: unknown, userAgent: string | null) {
-    const { setupCode } = parse(recoverInput, input)
+    const { setupCode, reason } = parse(recoverInput, input)
     const row = await this.instanceRow()
     const configured = this.deps.env.setupCode
     if (!row || !configured || !this.isRecoverable(row)) throw invalidSetupCode()
@@ -132,6 +134,7 @@ export class AccountService {
         .all()
       if (updated.length === 0) return false
       tx.delete(sessions).where(eq(sessions.userId, row.ownerId)).run()
+      if (reason === 'compromised') revokeAgents(tx, row.ownerId)
       return true
     })
     if (!consumed) throw invalidSetupCode()
@@ -254,4 +257,14 @@ export class AccountService {
     if (!row || row.ownerId !== userId || !safeEqual(secretFingerprint(accessKey), row.accessKeyHash)) throw invalidAccessKey()
     return row
   }
+}
+
+/**
+ * Takes away every agent's access, OAuth included: whoever held the access key
+ * may have connected one of their own. Codes not exchanged yet go too, so none
+ * turns into a new access afterwards.
+ */
+export function revokeAgents(tx: Pick<Deps['db'], 'update' | 'delete'>, userId: string) {
+  tx.update(apiTokens).set({ revokedAt: new Date() }).where(and(eq(apiTokens.userId, userId), isNull(apiTokens.revokedAt))).run()
+  tx.delete(oauthCodes).where(and(eq(oauthCodes.userId, userId), isNull(oauthCodes.usedAt))).run()
 }
