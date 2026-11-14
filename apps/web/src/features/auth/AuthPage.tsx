@@ -25,7 +25,8 @@ const PILLARS = ['tasks', 'docs', 'vault', 'agents'] as const
 /** The command that issues a new access key on the server itself. */
 const RESET_ACCESS_COMMANDS: Partial<Record<InstallKind, string>> = {
   docker: 'docker compose exec app node dist/cli.js reset-access',
-  source: 'node apps/server/dist/cli.js reset-access',
+  // From the repository: it runs where `pnpm start` and `pnpm dev` keep the data, with the same .env.
+  source: 'pnpm cli reset-access',
 }
 
 /** An installer command for this copy, naming it unless it has the default name. */
