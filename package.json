@@ -13,6 +13,7 @@
     "build": "pnpm --filter @orqevio/web build && pnpm --filter @orqevio/server build",
     "build:cloudflare": "pnpm --filter @orqevio/web build && pnpm --filter orqevio build && pnpm --filter create-orqevio build",
     "start": "pnpm --filter @orqevio/server start",
+    "cli": "pnpm --filter @orqevio/server cli",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "test:e2e": "pnpm --filter @orqevio/web test:e2e",
