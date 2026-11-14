@@ -127,7 +127,7 @@ npx create-orqevio
 
 El instalador:
 
-1. Abre el navegador para que inicies sesión en Cloudflare (inicio de sesión oficial de Wrangler).
+1. Abre el navegador para que inicies sesión en Cloudflare (inicio de sesión oficial de Wrangler). Si no se abre, abre el enlace que muestra el instalador. En Windows, el instalador lo abre él mismo con el Explorador: algunos antivirus (Norton, por ejemplo) bloquean la orden de PowerShell codificada con la que Wrangler abre el navegador. Si aun así no se completa, inicia sesión aparte con `npx wrangler login --browser=false` y vuelve a ejecutar el instalador.
 2. Te pide un nombre para la copia (por defecto, `orqevio`), que forma parte de su dirección.
 3. Despliega la copia y crea su bucket R2.
 4. Te muestra su dirección (`https://orqevio.<tu-subdominio>.workers.dev`) y un **código de configuración** de un solo uso, generado al azar.
@@ -145,6 +145,12 @@ npx create-orqevio@latest recover
 ```
 
 Si pierdes la clave, genera un código nuevo. Úsalo en **«¿Has perdido la clave?»**, en la pantalla de acceso.
+
+```bash
+npx create-orqevio@latest uninstall
+```
+
+Borra tu copia y todo lo que contiene, después de que escribas su nombre: consulta [Desinstalar](#desinstalar).
 
 - **Varias copias:** añade `--name <nombre>` a cualquiera de las órdenes.
 - **Varias cuentas de Cloudflare:** el instalador te pregunta cuál usar; también puedes indicarla con `--account <id>` o `CLOUDFLARE_ACCOUNT_ID`.
@@ -177,7 +183,7 @@ Cloudflare crea en tu cuenta de GitHub o GitLab un repositorio pequeño (la plan
 - **Actualizaciones:** Dependabot propone las versiones nuevas de Orqevio en un pull request; al fusionarlo, la copia se actualiza.
 - **Si pierdes la clave:** cambia el secreto `SETUP_CODE` en el panel de Cloudflare y usa **«¿Has perdido la clave?»**.
 
-El resultado es la misma copia que con el comando. El botón funcionará cuando este repositorio sea público y los paquetes estén publicados en npm.
+El resultado es la misma copia que con el comando.
 
 El plan gratuito de Cloudflare basta para uso personal (límites a noviembre de 2026):
 
@@ -248,6 +254,8 @@ node apps/server/dist/cli.js reset-access
 
 También puedes definir un `SETUP_CODE` nuevo, reiniciar la copia y usar **«¿Has perdido la clave?»** en la pantalla de acceso. En ambos casos se cierran todas las sesiones.
 
+**Tus agentes.** Al recuperar el acceso, Orqevio pregunta por qué. Con **«He perdido la clave»**, tus agentes (tokens y conectores OAuth como Claude) conservan el acceso, y la pantalla los muestra para que revoques el que no reconozcas. Con **«Puede que alguien la tenga»**, se desconectan todos, también los códigos de autorización aún sin canjear: quien tuvo la clave pudo conectar uno suyo. Con la CLI, añade `--revoke-agents` a `reset-access` para lo mismo.
+
 `node dist/cli.js status` muestra si la copia está reclamada y por quién. Nada de esto afecta a la bóveda: su contraseña maestra nunca la conoce el servidor.
 
 ## Actualizaciones
@@ -265,6 +273,19 @@ Cada versión tiene número y notas (`CHANGELOG.md`, en inglés, y las releases 
 - **Qué consulta:** el servidor de tu copia pregunta a `registry.npmjs.org` cuál es la última versión publicada de `create-orqevio`, como mucho cada 12 horas y solo mientras usas la app. Guarda la respuesta, así que reiniciar no provoca consultas de más.
 - **Qué envía:** es una petición GET sin ningún dato tuyo.
 - **Desactivarlo:** con `UPDATE_CHECK=off`. Solo lo ve el propietario, nunca los agentes.
+
+## Desinstalar
+
+**Ajustes → Desinstalar Orqevio** lo borra todo para siempre: espacios, documentos, adjuntos, la bóveda, los agentes y las sesiones. Lo confirmas con tu clave de acceso y escribiendo el nombre de la copia. Desde ese momento, la copia solo muestra cómo quitar lo que queda, que depende de cómo la instalaste:
+
+| Instalación | Qué queda y cómo quitarlo |
+| --- | --- |
+| Comando (Cloudflare) | El Worker y su bucket de R2: `npx create-orqevio@latest uninstall` (con `--name <nombre>` si no se llama `orqevio`) |
+| Botón (Cloudflare) | El Worker y su bucket de R2, que borras en el panel; después, el repositorio que creó el botón y, si nada más lo usa, su token de compilación |
+| Docker | Los contenedores y el volumen `orqevio-data`: `docker compose down -v`; después, la carpeta donde la instalaste |
+| Desde el código | La carpeta `DATA_DIR`, con el servidor parado |
+
+**Sin pasar por la app.** `npx create-orqevio@latest uninstall` también funciona por su cuenta. Te pide que escribas el nombre de la copia y borra el bucket y, después, el Worker con todos sus datos. Cloudflare solo borra buckets vacíos: si el tuyo aún guarda adjuntos, el instalador se detiene antes de borrar nada y te explica cómo vaciarlo (desde la app o con **Empty Bucket** en el panel).
 
 ## Conectar agentes por MCP
 
@@ -320,6 +341,7 @@ claude mcp add --transport http orqevio https://tu-dominio/mcp --header "Authori
 | Documentos · lectura | `list_pages`, `read_page` |
 | Documentos · escritura | `create_page`, `update_page` (reemplazar con `base_version`, o añadir al final) |
 | Escritura + lectura de ambas áreas | `link_card_to_page` |
+| Escritura en cualquiera de las dos áreas | `create_project` (renombrar y borrar proyectos sigue siendo cosa de personas) |
 
 El endpoint es MCP Streamable HTTP sin estado (`POST /mcp`). La misma API REST también acepta los tokens creados en la app con los mismos permisos, salvo cuenta, tokens y bóveda, que exigen sesión en el navegador. Los tokens de OAuth solo valen para `/mcp`.
 
@@ -404,9 +426,13 @@ apps/web/src
   lib/        cliente de API, consultas, tiempo real y formato
 packages/shared/src  esquemas, permisos, tipos y utilidades de enlaces
 packages/orqevio     paquete desplegable en Cloudflare (Worker, web y configuración base)
-packages/create-orqevio  instalador: npx create-orqevio (instalar, actualizar, recuperar)
+packages/create-orqevio  instalador: npx create-orqevio (instalar, actualizar, recuperar, desinstalar)
 templates/cloudflare plantilla del botón «Deploy to Cloudflare» (wrangler.jsonc y package.json generados)
 apps/site            la web pública orqevio.com: páginas estáticas sin cookies ni analítica
 ```
 
 **La web pública.** `pnpm --filter @orqevio/site build` genera `apps/site/dist` con las páginas y las mismas fuentes que la app, servidas desde el propio sitio. `pnpm --filter @orqevio/site preview` la sirve en local con Wrangler. Se publica en `orqevio.com` con Workers Builds desde `main`; la configuración está en «Web pública» de [RELEASING.md](RELEASING.md). Sus pruebas comprueban los enlaces, las fuentes, las cabeceras de seguridad y que la guía de instalación de cada idioma diga lo mismo que el README en inglés.
+
+## Licencia
+
+Orqevio se publica con la [Functional Source License 1.1, con licencia futura Apache 2.0](LICENSE.md) (`FSL-1.1-ALv2`). Puedes usarlo, modificarlo y alojar tu copia, también en tu empresa. Lo único que no permite es ofrecerlo como un producto o servicio comercial que compita con Orqevio. Cada versión pasa a la licencia Apache 2.0 a los dos años de publicarse.

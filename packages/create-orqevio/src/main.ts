@@ -5,10 +5,11 @@ import path from 'node:path'
 import { createInterface } from 'node:readline/promises'
 import { parseArgs } from 'node:util'
 import { readFileSync } from 'node:fs'
-import { DEFAULT_NAME, type BaseConfig, copyConfig, isValidName, loadOrqevio } from './config'
+import { DEFAULT_NAME, type BaseConfig, bucketName, copyConfig, isValidName, loadOrqevio } from './config'
 import { parseJsonc } from './jsonc'
 import { CATALOGS, LANGUAGES, type Language, type Messages, detectLanguage, isLanguage } from './messages'
 import { generateSetupCode } from './setup-code'
+import { openOnWindows } from './browser'
 import { deployedUrls, runWrangler } from './wrangler'
 
 export interface Io {
@@ -18,8 +19,7 @@ export interface Io {
   ask?: (question: string) => Promise<string>
 }
 
-type Command = 'install' | 'update' | 'recover' | 'config' | 'deploy-repo'
-
+type Command = 'install' | 'update' | 'recover' | 'uninstall' | 'config' | 'deploy-repo'
 
 const MIN_NODE = [22, 12] as const
 
@@ -28,7 +28,14 @@ export interface Deps {
   orqevio?: ReturnType<typeof loadOrqevio>
   /** The language of the messages; by default the terminal's (see detectLanguage). */
   language?: Language
+  /** The operating system (tests pass their own). */
+  platform?: NodeJS.Platform
+  /** How a link is opened on Windows (tests pass their own). */
+  openOnWindows?: (url: string) => void
 }
+
+/** Signs in without the installer, for when the browser never opens. */
+export const MANUAL_SIGN_IN = 'npx wrangler login --browser=false'
 
 const R2_DASHBOARD = 'https://dash.cloudflare.com/?to=/:account/r2/overview'
 
@@ -81,9 +88,14 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
     io.out(JSON.stringify(copyConfig(orqevio.base, orqevio.dir, name), null, 2))
     return 0
   }
+  // Uninstalling asks for the copy's name to be typed: there must be someone to type it.
+  if (command === 'uninstall' && !io.ask) {
+    io.err(m.uninstallNeedsTerminal)
+    return 1
+  }
 
   io.out(`\n${m.heading(command, orqevio.version, name)}\n`)
-  const accounts = await signIn(io, m)
+  const accounts = await signIn(io, m, deps)
   if (!accounts) return 1
   const account = await chooseAccount(accounts, givenAccount ?? process.env.CLOUDFLARE_ACCOUNT_ID, io, m)
   if (!account) return 1
@@ -95,6 +107,7 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
     io.err(m.accountUnreachable)
     return 1
   }
+  if (command === 'uninstall') return uninstall(name, exists, env, io, m)
   let mode = command
   if (command === 'install' && exists) {
     const answer = io.ask ? (await io.ask(`${m.askUpdate(name)} ${m.yesNo} `)).trim() : 'n'
@@ -158,7 +171,7 @@ function parse(argv: string[], m: Messages) {
   const { values, positionals } = args
   if (positionals.length > 1) throw new Error(m.extraArgument(positionals[1]!))
   const command = (positionals[0] ?? 'install') as Command
-  if (!['install', 'update', 'recover', 'config', 'deploy-repo'].includes(command)) throw new Error(m.unknownCommand(command))
+  if (!['install', 'update', 'recover', 'uninstall', 'config', 'deploy-repo'].includes(command)) throw new Error(m.unknownCommand(command))
   // Only deploy-repo can deploy without changing anything; anywhere else the flag would be ignored.
   if (values['dry-run'] && command !== 'deploy-repo') throw new Error(m.dryRunOnlyForDeployRepo)
   return {
@@ -180,14 +193,37 @@ interface Account {
 }
 
 /** Signs in with Wrangler's own login when needed; returns the accounts this login can use. */
-async function signIn(io: Io, m: Messages): Promise<Account[] | null> {
+async function signIn(io: Io, m: Messages, deps: Deps): Promise<Account[] | null> {
   let accounts = await whoami()
   if (!accounts) {
     io.out(m.signInPrompt)
-    if ((await runWrangler(['login'])).code === 0) accounts = await whoami()
+    if ((await login(deps)).code === 0) accounts = await whoami()
   }
-  if (!accounts) io.err(m.signInFailed)
+  if (!accounts) io.err(m.signInFailed(MANUAL_SIGN_IN))
   return accounts
+}
+
+/**
+ * Wrangler's login. On Windows, Wrangler only prints the link and the installer opens
+ * it (see openOnWindows): the way Wrangler opens it there gets blocked by antivirus.
+ */
+function login(deps: Deps) {
+  if ((deps.platform ?? process.platform) !== 'win32') return runWrangler(['login'])
+  const open = deps.openOnWindows ?? openOnWindows
+  let seen = ''
+  let opened = false
+  return runWrangler(['login', '--browser=false'], {
+    onOutput: (text) => {
+      if (opened) return
+      seen += text
+      // The whole link, up to the end of its line (output can arrive in pieces).
+      const url = /Visit this link to authenticate: (https:\/\/\S+)\s/.exec(seen)?.[1]
+      if (url) {
+        opened = true
+        open(url)
+      }
+    },
+  })
 }
 
 async function whoami(): Promise<Account[] | null> {
@@ -322,9 +358,9 @@ async function deployRepo(orqevio: ReturnType<typeof loadOrqevio>, dryRun: boole
     io.err(`${m.badRepoName(name)} ${m.nameRule}`)
     return 1
   }
-  const config = copyConfig(orqevio.base, orqevio.dir, name, 'button')
+  // The button lets each resource be renamed: the bucket is whichever the repository names.
   const bucket = repo.r2_buckets?.find((b) => b.binding === 'UPLOADS')?.bucket_name
-  if (bucket) config.r2_buckets = config.r2_buckets.map((b) => (b.binding === 'UPLOADS' ? { ...b, bucket_name: bucket } : b))
+  const config = copyConfig(orqevio.base, orqevio.dir, name, 'button', bucket || undefined)
   return withWorkspace(async (dir) => {
     const configFile = path.join(dir, 'wrangler.json')
     await writeFile(configFile, JSON.stringify(config, null, 2))
@@ -345,6 +381,52 @@ async function recover(name: string, env: Record<string, string>, io: Io, m: Mes
   }
   io.out(m.recovered(setupCode))
   return 0
+}
+
+/**
+ * `uninstall`: deletes the copy's bucket, then its Worker, whose Durable Object holds
+ * the rest of the data. Cloudflare only deletes an empty bucket, and the installer
+ * cannot empty one, so a bucket with attachments stops it before anything is deleted.
+ */
+async function uninstall(name: string, workerFound: boolean, env: Record<string, string>, io: Io, m: Messages) {
+  const bucket = bucketName(name)
+  const bucketFound = await bucketExists(bucket, env)
+  if (!workerFound && bucketFound === false) {
+    io.err(m.nothingToUninstall(name))
+    return 1
+  }
+  io.out(m.uninstallWarning(name, bucket))
+  if ((await io.ask!(m.askUninstallName(name))).trim() !== name) {
+    io.err(m.nothingDeleted)
+    return 1
+  }
+  if (bucketFound !== false) {
+    const run = await runWrangler(['r2', 'bucket', 'delete', bucket], { capture: true, env })
+    const output = run.stdout + run.stderr
+    // Cloudflare's R2 answers 10008 (BucketNotEmpty) and 10006 (NoSuchBucket).
+    if (run.code !== 0 && /\b10008\b/.test(output)) {
+      io.err(m.bucketNotEmpty(bucket, `npx create-orqevio@latest uninstall${nameFlag(name)}`))
+      return 1
+    }
+    if (run.code !== 0 && !/\b10006\b/.test(output)) {
+      io.err(output.trim())
+      io.err(m.uninstallFailed)
+      return 1
+    }
+  }
+  if (workerFound && (await runWrangler(['delete', '--name', name, '--force'], { env })).code !== 0) {
+    io.err(m.uninstallFailed)
+    return 1
+  }
+  io.out(m.uninstalled(name, 'npx wrangler logout'))
+  return 0
+}
+
+/** true or false, or null when the account could not say. */
+async function bucketExists(bucket: string, env: Record<string, string>): Promise<boolean | null> {
+  const run = await runWrangler(['r2', 'bucket', 'info', bucket, '--json'], { capture: true, env })
+  if (run.code === 0) return true
+  return /\b10006\b/.test(run.stdout + run.stderr) ? false : null
 }
 
 function terminalIo(): Io {

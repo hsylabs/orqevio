@@ -8,6 +8,7 @@ export const ja: Messages = {
   npx create-orqevio                   新しいOrqevioをインストール
   npx create-orqevio@latest update     最新バージョンに更新（データはそのまま残ります）
   npx create-orqevio@latest recover    アクセスを回復するための新しいコードを発行
+  npx create-orqevio@latest uninstall  Orqevioとその中身をすべて削除
 
 オプション：
   --name <名前>     Orqevioの名前（既定は${defaultName}）。アドレスの一部になります。
@@ -32,7 +33,7 @@ Cloudflareアカウントが必要です（無料プランで十分です）。�
   badName: (name) => `「${name}」は名前として使えません。`,
   nameRule: '英小文字、数字、ハイフンを1〜50文字で指定してください（先頭と末尾にハイフンは使えません）。',
   heading: (action, version, name) =>
-    `Orqevio ${version} · ${{ install: `「${name}」をインストール中`, update: `「${name}」を更新中`, recover: `「${name}」へのアクセスを回復中` }[action]}`,
+    `Orqevio ${version} · ${{ install: `「${name}」をインストール中`, update: `「${name}」を更新中`, recover: `「${name}」へのアクセスを回復中`, uninstall: `「${name}」をアンインストール中` }[action]}`,
   accountUnreachable: 'Cloudflareアカウントを確認できませんでした。数分後にもう一度お試しください。',
   askUpdate: (name) => `「${name}」という名前のOrqevioがすでにあります。このバージョンに更新しますか？データはそのまま残ります。`,
   nothingChanged: '何も変更していません。別のOrqevioをインストールするには、別の名前を指定してください：npx create-orqevio --name <名前>',
@@ -44,8 +45,8 @@ Cloudflareアカウントが必要です（無料プランで十分です）。�
       '無料枠（ストレージは月10 GBまで）なら料金はかかりませんが、Cloudflareから支払い方法の登録を求められることがあります。',
       `その後、もう一度実行してください：${retryCommand}`,
     ].join('\n'),
-  signInPrompt: 'これから開くブラウザで、Cloudflareにログインしてください…\n',
-  signInFailed: 'Cloudflareへのログインが完了しませんでした。',
+  signInPrompt: 'これから開くブラウザで、Cloudflareにログインしてください。開かない場合は、下に表示されるリンクを自分で開いてください…\n',
+  signInFailed: (command) => `Cloudflareへのログインが完了しませんでした。ブラウザが開かなかった場合は、${command} で別途ログインし、表示されたリンクを開いてから、このコマンドをもう一度実行してください。`,
   noAccessToAccount: (account, accounts) => `このセッションでは、アカウント「${account}」にアクセスできません。利用できるアカウント：\n${accounts}`,
   noAccounts: 'このCloudflareセッションで利用できるアカウントがありません。',
   chooseAccountWithFlag: (accounts) => `Cloudflareアカウントが複数あります。--account <id>で1つ選んでください：\n${accounts}`,
@@ -81,5 +82,33 @@ Cloudflareアカウントが必要です（無料プランで十分です）。�
       'Orqevioを開いて「キーを紛失した場合」を選び、このコードを入力してください。',
       '新しいアクセスキーが発行され、すべてのセッションはログアウトされます。',
       'データと保管庫はそのまま変わりません。',
+      'ほかの人がキーを持っていた可能性がある場合は、「ほかの人が持っているかもしれない」を選ぶと、エージェントの接続も解除されます。',
+    ].join('\n'),
+  uninstallNeedsTerminal: 'アンインストールでは確認のためにOrqevioの名前を入力します。このコマンドはターミナルで実行してください。',
+  nothingToUninstall: (name) => `このアカウントに「${name}」という名前のOrqevioはありません。削除するものはありません。`,
+  uninstallWarning: (name, bucket) =>
+    [
+      `「${name}」とその中身をすべて完全に削除します：`,
+      '  ・Worker（ワークスペース、ドキュメント、保管庫、エージェントを含む）',
+      `  ・バケット「${bucket}」（添付ファイルを含む）`,
+      '元に戻すことはできません。保管庫を残したい場合は、先に保管庫から暗号化されたエクスポートを作成してください。',
+      '',
+    ].join('\n'),
+  askUninstallName: (name) => `確認のため「${name}」と入力してください：`,
+  nothingDeleted: '何も削除していません。',
+  bucketNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `バケット「${bucket}」にはまだ添付ファイルがあり、Cloudflareは空のバケットしか削除できません。何も削除していません。`,
+      `次のいずれかの方法で空にしてから、もう一度 ${retryCommand} を実行してください：`,
+      '  ・Orqevioで：設定 → Orqevioのアンインストール（残りのデータも削除されます）',
+      `  ・Cloudflareのダッシュボードで：R2 → ${bucket} → Settings → Empty Bucket`,
+    ].join('\n'),
+  uninstallFailed: '\nアンインストールが完了しませんでした。上に表示されたWranglerのメッセージを確認してください。コマンドはもう一度実行できます。',
+  uninstalled: (name, logoutCommand) =>
+    [
+      '',
+      `「${name}」をアンインストールしました。WorkerとバケットはCloudflareアカウントから削除されました。`,
+      `ほかにWranglerを使っていなければ、${logoutCommand} でログアウトしてください。`,
     ].join('\n'),
 }

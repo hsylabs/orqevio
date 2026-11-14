@@ -10,6 +10,7 @@
         <a href="#access">Primeiro acesso</a>
         <a href="#agents">Conectar agentes</a>
         <a href="#update">Atualizar</a>
+        <a href="#uninstall">Desinstalar</a>
         <a href="#costs">Custos</a>
       </nav>
     </div>
@@ -31,6 +32,7 @@
     <ul>
       <li><strong>Várias cópias:</strong> adicione <code>--name &lt;nome&gt;</code> a qualquer comando.</li>
       <li><strong>Várias contas da Cloudflare:</strong> o instalador pergunta qual usar, ou você a informa com <code>--account &lt;id&gt;</code>.</li>
+      <li><strong>Se o navegador não abrir</strong> para fazer login, abra o link que o instalador mostra. Se isso também não funcionar, faça login separadamente com <code>npx wrangler login --browser=false</code> e execute o instalador de novo.</li>
       <li><strong>Idioma:</strong> o instalador fala o idioma do seu terminal; escolha outro com <code>--lang &lt;código&gt;</code>.</li>
       <li><strong>Privacidade:</strong> o instalador desativa a telemetria do Wrangler, a menos que você mesmo a tenha ativado, e trabalha em uma pasta temporária que é apagada no final.</li>
     </ul>
@@ -81,6 +83,21 @@
           <tr><td>Com um comando</td><td><code>npx create-orqevio@latest update</code></td></tr>
           <tr><td>Com o botão</td><td>Faça o merge do pull request do Dependabot no seu repositório</td></tr>
           <tr><td>Com Docker</td><td><code>docker compose pull</code> e <code>docker compose up -d</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="uninstall">Desinstalar</h2>
+    <p><strong>Configurações → Desinstalar o Orqevio</strong> apaga tudo para sempre: espaços, documentos, anexos, o cofre e o acesso dos seus agentes. Você confirma com sua chave de acesso e digitando o nome da cópia. Depois, a cópia mostra como remover o que sobrou:</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Instalação</th><th scope="col">Como remover o resto</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Com um comando</td><td><code>npx create-orqevio@latest uninstall</code> apaga o Worker e o bucket dele</td></tr>
+          <tr><td>Com o botão</td><td>O Worker e o bucket do R2, no painel da Cloudflare; depois, o repositório que o botão criou</td></tr>
+          <tr><td>Com Docker</td><td><code>docker compose down -v</code> e, depois, a pasta onde você a instalou</td></tr>
         </tbody>
       </table>
     </div>

@@ -68,6 +68,23 @@ describe('the public website', () => {
     }
   })
 
+  it('opens links to other sites in a new tab, and says so', () => {
+    for (const { lang, file } of pages) {
+      const label = JSON.parse(readFileSync(path.join(root, 'src/i18n', `${lang}.json`), 'utf8')).newTab
+      const anchors = [...read(file).matchAll(/<a\s([^>]*)>([\s\S]*?)<\/a>/g)]
+      expect(anchors.length, file).toBeGreaterThan(0)
+      for (const [, attrs, inner] of anchors) {
+        const href = /href="([^"]+)"/.exec(attrs)?.[1] ?? ''
+        if (/^https:\/\//.test(href) && !href.startsWith(`${ORIGIN}/`)) {
+          expect(attrs, `${file} → ${href}`).toContain('target="_blank" rel="noopener"')
+          expect(inner, `${file} → ${href}`).toContain(`<span class="visually-hidden"> ${label}</span>`)
+        } else {
+          expect(attrs, `${file} → ${href}`).not.toContain('target=')
+        }
+      }
+    }
+  })
+
   it('serves its own fonts, Latin subsets only', () => {
     const css = read('fonts.css')
     const files = readdirSync(path.join(dist, 'fonts'))

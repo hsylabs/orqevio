@@ -42,6 +42,11 @@ export class LocalStorage implements AttachmentStorage {
     await rm(path.join(this.root, workspaceId), { recursive: true, force: true })
   }
 
+  async deleteAll() {
+    const entries = await readdir(this.root).catch(() => [] as string[])
+    for (const entry of entries) await rm(path.join(this.root, entry), { recursive: true, force: true })
+  }
+
   /** Removes files with no database row (rows cascade away when their parent is deleted). */
   async sweep(isKnown: (key: string) => Promise<boolean>, minAgeMs = 60 * 60 * 1000) {
     let removed = 0

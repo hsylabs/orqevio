@@ -60,6 +60,17 @@ export interface MeDTO {
 export interface AccessStateDTO {
   claimed: boolean
   recoverable: boolean
+  /** Set once the copy was uninstalled from Settings: what is left to remove, and how. */
+  uninstalled?: UninstalledDTO
+}
+
+export interface UninstalledDTO {
+  at: string
+  install: InstallKind
+  /** Worker name of a Cloudflare copy, for the commands that remove it. */
+  copyName: string | null
+  /** Its R2 bucket; null when it is the default, `<copyName>-uploads`. */
+  bucket: string | null
 }
 
 /** `GET /auth/session` for visitors without a session. */

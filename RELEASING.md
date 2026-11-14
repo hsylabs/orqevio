@@ -23,7 +23,8 @@ En este orden; cada paso depende del anterior (comprobado el 13-11-2026):
 6. **Publicación de confianza, justo antes de la siguiente versión.** En npmjs.com, en los ajustes de cada paquete → Trusted Publisher → GitHub Actions:
    - organización `hsylabs`, repositorio `orqevio`, flujo `release.yml` y entorno `release`;
    - en «Allowed actions», marca **npm publish**: las configuraciones creadas desde septiembre de 2026 solo permiten `npm stage publish` por defecto;
-   - una configuración nueva caduca si no se usa en 2 días, así que créala cuando vayas a publicar.
+   - una configuración nueva caduca si no se usa en 2 días, así que créala cuando vayas a publicar;
+   - desde `1.0.0-rc.3`, `release.yml` ya no lee `NPM_TOKEN`. Si falta esta configuración, falla el trabajo de npm (después de publicar la imagen de Docker); configúrala y vuelve a lanzar solo ese trabajo («Re-run failed jobs»).
 7. **Retira el token** en cuanto una versión salga con la publicación de confianza: borra el secreto `NPM_TOKEN` y revoca el token en npmjs.com.
 8. **GHCR.** Tras la primera publicación, si el paquete `orqevio` aparece privado en GitHub → Packages, hazlo público (Package settings → Change visibility).
 

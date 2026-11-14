@@ -41,6 +41,16 @@ export class R2Storage implements AttachmentStorage {
     } while (cursor)
   }
 
+  /** Every object of the bucket, a page (up to 1,000) at a time. */
+  async deleteAll() {
+    let cursor: string | undefined
+    do {
+      const page = await this.bucket.list({ cursor })
+      if (page.objects.length) await this.bucket.delete(page.objects.map((o) => o.key))
+      cursor = page.truncated ? page.cursor : undefined
+    } while (cursor)
+  }
+
   async sweep(isKnown: (key: string) => Promise<boolean>, minAgeMs = 60 * 60 * 1000) {
     let removed = 0
     let cursor: string | undefined

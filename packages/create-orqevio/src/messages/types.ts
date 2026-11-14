@@ -1,4 +1,4 @@
-export type Action = 'install' | 'update' | 'recover'
+export type Action = 'install' | 'update' | 'recover' | 'uninstall'
 
 /** Everything the installer says. Commands, URLs and names are passed in, never translated. */
 export interface Messages {
@@ -24,7 +24,7 @@ export interface Messages {
   copyNotFound(name: string, installCommand: string): string
   r2Disabled(dashboardUrl: string, retryCommand: string): string
   signInPrompt: string
-  signInFailed: string
+  signInFailed(manualCommand: string): string
   noAccessToAccount(account: string, accounts: string): string
   noAccounts: string
   chooseAccountWithFlag(accounts: string): string
@@ -38,4 +38,13 @@ export interface Messages {
   badRepoName(name: string): string
   setupCodeFailed: string
   recovered(setupCode: string): string
+  uninstallNeedsTerminal: string
+  nothingToUninstall(name: string): string
+  /** What uninstalling deletes, shown before asking for the name. */
+  uninstallWarning(name: string, bucket: string): string
+  askUninstallName(name: string): string
+  nothingDeleted: string
+  bucketNotEmpty(bucket: string, retryCommand: string): string
+  uninstallFailed: string
+  uninstalled(name: string, logoutCommand: string): string
 }

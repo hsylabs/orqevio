@@ -94,6 +94,11 @@ export function createApi(env: Env) {
   // ── Account ─────────────────────────────────────────────────────
   api.patch('/account', async (c) => c.json(await c.get('services').accounts.update(requireActor(c), await json(c))))
   api.post('/account/access-key', async (c) => c.json(await c.get('services').accounts.rotateAccessKey(requireActor(c), await json(c))))
+  api.post('/account/uninstall', async (c) => {
+    const uninstalled = await c.get('services').accounts.uninstall(requireActor(c), await json(c))
+    clearSessionCookie(c)
+    return c.json(uninstalled)
+  })
   api.post('/account/delete', async (c) => {
     await c.get('services').accounts.remove(requireActor(c), await json(c))
     clearSessionCookie(c)

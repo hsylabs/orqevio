@@ -10,6 +10,7 @@
         <a href="#access">初回ログイン</a>
         <a href="#agents">エージェントの接続</a>
         <a href="#update">更新</a>
+        <a href="#uninstall">アンインストール</a>
         <a href="#costs">費用</a>
       </nav>
     </div>
@@ -31,6 +32,7 @@
     <ul>
       <li><strong>複数のOrqevio：</strong>どのコマンドにも<code>--name &lt;名前&gt;</code>を付けられます。</li>
       <li><strong>複数のCloudflareアカウント：</strong>どのアカウントを使うか、インストーラーが尋ねます。<code>--account &lt;id&gt;</code>で指定することもできます。</li>
+      <li><strong>ログイン用のブラウザが開かない場合：</strong>インストーラーが表示するリンクを開いてください。それでもうまくいかない場合は、<code>npx wrangler login --browser=false</code>で別途ログインしてから、インストーラーをもう一度実行してください。</li>
       <li><strong>言語：</strong>インストーラーはターミナルの言語で表示されます。別の言語にするには<code>--lang &lt;コード&gt;</code>を指定します。</li>
       <li><strong>プライバシー：</strong>インストーラーはWranglerのテレメトリーを無効にします（自分で有効にしている場合を除きます）。作業は一時フォルダーで行い、終了時にそのフォルダーを削除します。</li>
     </ul>
@@ -81,6 +83,21 @@
           <tr><td>コマンドで</td><td><code>npx create-orqevio@latest update</code></td></tr>
           <tr><td>ボタンで</td><td>リポジトリでDependabotのプルリクエストをマージ</td></tr>
           <tr><td>Dockerで</td><td><code>docker compose pull</code>のあとに<code>docker compose up -d</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="uninstall">アンインストール</h2>
+    <p><strong>設定 → Orqevioのアンインストール</strong>で、ワークスペース、ドキュメント、添付ファイル、保管庫、エージェントのアクセスをすべて完全に削除します。アクセスキーとOrqevioの名前を入力して確定します。その後、残りを削除する方法が表示されます：</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">インストール方法</th><th scope="col">残りの削除方法</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>コマンドで</td><td><code>npx create-orqevio@latest uninstall</code>でWorkerとバケットを削除</td></tr>
+          <tr><td>ボタンで</td><td>CloudflareのダッシュボードでWorkerとR2バケットを削除し、ボタンが作成したリポジトリも削除</td></tr>
+          <tr><td>Dockerで</td><td><code>docker compose down -v</code>のあと、インストールしたフォルダーを削除</td></tr>
         </tbody>
       </table>
     </div>

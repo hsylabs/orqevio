@@ -29,6 +29,11 @@ if (command !== 'login' && accounts.length > 1 && !process.env.CLOUDFLARE_ACCOUN
   process.exit(1)
 }
 if (command === 'login') {
+  // Like Wrangler with --browser=false: it only prints the link, in two pieces here.
+  if (args.includes('--browser=false')) {
+    process.stdout.write('Visit this link to authenticate: https://dash.cloudflare.com/oauth2/auth?response_type=code')
+    process.stdout.write('&client_id=abc&state=xyz\n')
+  }
   state.loggedIn = state.loginWorks !== false
   save()
   process.exit(state.loggedIn ? 0 : 1)
@@ -63,6 +68,32 @@ if (command === 'r2' && sub === 'bucket' && args[2] === 'list') {
     process.exit(1)
   }
   process.stdout.write('[]\n')
+  process.exit(0)
+}
+// The copy's bucket, if any: state.bucket is 'empty' or 'full' (it holds attachments).
+const noBucket = () => {
+  process.stderr.write(`✘ [ERROR] A request to the Cloudflare API (/accounts/acc-1/r2/buckets/${args[3]}) failed. The specified bucket does not exist. [code: 10006]\n`)
+  process.exit(1)
+}
+if (command === 'r2' && sub === 'bucket' && args[2] === 'info') {
+  if (!state.bucket) noBucket()
+  process.stdout.write(`${JSON.stringify({ name: args[3], object_count: state.bucket === 'full' ? 3 : 0 })}\n`)
+  process.exit(0)
+}
+if (command === 'r2' && sub === 'bucket' && args[2] === 'delete') {
+  if (!state.bucket) noBucket()
+  if (state.bucket === 'full') {
+    process.stderr.write(`✘ [ERROR] A request to the Cloudflare API (/accounts/acc-1/r2/buckets/${args[3]}) failed. The bucket you tried to delete is not empty. [code: 10008]\n`)
+    process.exit(1)
+  }
+  delete state.bucket
+  save()
+  process.exit(0)
+}
+if (command === 'delete') {
+  if (state.deleteFails || !state.exists) process.exit(1)
+  state.exists = false
+  save()
   process.exit(0)
 }
 if (command === 'secret' && sub === 'put') process.exit(0)

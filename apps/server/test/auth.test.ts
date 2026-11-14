@@ -1,4 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { eq } from 'drizzle-orm'
+import { sha256 } from '../src/auth/crypto'
+import { apiTokens, instance, oauthCodes } from '../src/db/schema'
 import { Client, type Harness, SETUP_CODE, createHarness, signInOwner, signUp } from './harness'
 
 const KEY_FORMAT = /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){7}$/
@@ -110,21 +113,71 @@ describe('access to a copy', () => {
   it('recovers access only after the setup code is changed', async () => {
     const { client } = await signInOwner(h)
     const anonymous = new Client(h)
-    expect((await anonymous.post('/api/auth/recover', { setupCode: SETUP_CODE })).status).toBe(403)
+    expect((await anonymous.post('/api/auth/recover', { setupCode: SETUP_CODE, reason: 'lost' })).status).toBe(403)
 
     h.env.setupCode = 'a-brand-new-setup-code'
     try {
       expect((await anonymous.get('/api/auth/session')).body.recoverable).toBe(true)
-      expect((await anonymous.post('/api/auth/recover', { setupCode: SETUP_CODE })).status).toBe(403)
-      const res = await anonymous.post('/api/auth/recover', { setupCode: 'A BRAND NEW SETUP CODE' })
+      expect((await anonymous.post('/api/auth/recover', { setupCode: SETUP_CODE, reason: 'lost' })).status).toBe(403)
+      const res = await anonymous.post('/api/auth/recover', { setupCode: 'A BRAND NEW SETUP CODE', reason: 'lost' })
       expect(res.status).toBe(200)
       expect(res.body.accessKey).toMatch(KEY_FORMAT)
       expect((await anonymous.get('/api/auth/me')).status).toBe(200)
       // Every earlier session is signed out, and the same code cannot be used twice.
       expect((await client.get('/api/auth/me')).status).toBe(401)
       expect((await new Client(h).get('/api/auth/session')).body.recoverable).toBe(false)
-      expect((await new Client(h).post('/api/auth/recover', { setupCode: 'a-brand-new-setup-code' })).status).toBe(403)
+      expect((await new Client(h).post('/api/auth/recover', { setupCode: 'a-brand-new-setup-code', reason: 'lost' })).status).toBe(403)
       h.owner!.accessKey = res.body.accessKey
+    } finally {
+      h.env.setupCode = SETUP_CODE
+    }
+  })
+
+  it('asks why access is recovered, and disconnects every agent when the key may be stolen', async () => {
+    const { client, workspaceId } = await signInOwner(h)
+    const agent = async (name: string) => {
+      const res = await client.post('/api/tokens', { name, workspaceId, scopes: ['tasks:read'], expiresInDays: 30 })
+      expect(res.status).toBe(201)
+      return res.body.token as string
+    }
+    const works = async (token: string) => (await new Client(h, token).get(`/api/workspaces/${workspaceId}/overview`)).status === 200
+    const recover = (setupCode: string, reason?: string) => new Client(h).post('/api/auth/recover', reason ? { setupCode, reason } : { setupCode })
+    const kept = await agent('Claude')
+    const { ownerId } = h.db.select({ ownerId: instance.ownerId }).from(instance).get()!
+    // An OAuth access (a grant) and a code nobody has exchanged yet.
+    const [grant] = h.db
+      .insert(apiTokens)
+      .values({ userId: ownerId, workspaceId, name: 'Some client', tokenHash: sha256('grant'), prefix: 'OAuth', scopes: ['tasks:read'], oauthClientId: 'https://client.example/meta.json', oauthRedirectUri: 'https://client.example/cb' })
+      .returning({ id: apiTokens.id })
+      .all()
+    h.db
+      .insert(oauthCodes)
+      .values({ id: sha256('pending-code'), userId: ownerId, workspaceId, clientId: 'https://client.example/meta.json', clientName: 'Some client', redirectUri: 'https://client.example/cb', codeChallenge: 'x', scopes: ['tasks:read'], expiresAt: new Date(Date.now() + 60_000) })
+      .run()
+
+    h.env.setupCode = 'lost-key-setup-code'
+    try {
+      // The answer is required.
+      expect((await recover('lost-key-setup-code')).status).toBe(400)
+      expect((await recover('lost-key-setup-code', 'forgot')).status).toBe(400)
+      const lost = await recover('lost-key-setup-code', 'lost')
+      expect(lost.status).toBe(200)
+      expect(await works(kept)).toBe(true)
+      h.owner!.accessKey = lost.body.accessKey
+
+      h.env.setupCode = 'stolen-key-setup-code'
+      const stolen = await recover('stolen-key-setup-code', 'compromised')
+      expect(stolen.status).toBe(200)
+      h.owner!.accessKey = stolen.body.accessKey
+      expect(await works(kept)).toBe(false)
+      expect(h.db.select().from(apiTokens).where(eq(apiTokens.id, grant!.id)).get()!.revokedAt).not.toBeNull()
+      expect(h.db.select().from(oauthCodes).where(eq(oauthCodes.id, sha256('pending-code'))).get()).toBeUndefined()
+      // In the app, the agents show up as revoked.
+      const signedIn = new Client(h)
+      await signedIn.post('/api/auth/login', { accessKey: stolen.body.accessKey })
+      const tokens = (await signedIn.get('/api/tokens')).body as Array<{ revokedAt: string | null }>
+      expect(tokens.length).toBeGreaterThan(0)
+      expect(tokens.every((t) => t.revokedAt)).toBe(true)
     } finally {
       h.env.setupCode = SETUP_CODE
     }
@@ -134,8 +187,8 @@ describe('access to a copy', () => {
     h.env.setupCode = 'another-new-setup-code'
     try {
       const [a, b] = await Promise.all([
-        new Client(h).post('/api/auth/recover', { setupCode: 'another-new-setup-code' }),
-        new Client(h).post('/api/auth/recover', { setupCode: 'another-new-setup-code' }),
+        new Client(h).post('/api/auth/recover', { setupCode: 'another-new-setup-code', reason: 'lost' }),
+        new Client(h).post('/api/auth/recover', { setupCode: 'another-new-setup-code', reason: 'lost' }),
       ])
       expect([a.status, b.status].sort()).toEqual([200, 403])
       const winner = a.status === 200 ? a : b

@@ -50,7 +50,8 @@
       "labels": "Labels en checklists",
       "readPages": "Paginastructuur en Markdown-inhoud",
       "writePages": "Maken en bijwerken, met versiebeheer",
-      "linkCard": "Taken en documenten koppelen"
+      "linkCard": "Taken en documenten koppelen",
+      "createProject": "Projecten aanmaken"
     }
   },
   "revoke": {

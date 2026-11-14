@@ -392,29 +392,43 @@ export class OAuthService {
     if (!VERIFIER.test(verifier) || !safeEqual(createHash('sha256').update(verifier).digest('base64url'), row.codeChallenge)) {
       throw invalidGrant('PKCE verification failed')
     }
-    const [claimed] = await db
-      .update(oauthCodes)
-      .set({ usedAt: new Date() })
-      .where(and(eq(oauthCodes.id, row.id), isNull(oauthCodes.usedAt)))
-      .returning({ id: oauthCodes.id })
-    if (!claimed || !(await this.member(row.userId, row.workspaceId))) throw invalidGrant()
-    const [grant] = await db
-      .insert(apiTokens)
-      .values({
-        userId: row.userId,
-        workspaceId: row.workspaceId,
-        name: row.clientName,
-        // Never handed out: the grant is used through its OAuth tokens.
-        tokenHash: sha256(randomToken(32)),
-        prefix: 'OAuth',
-        scopes: row.scopes,
-        expiresAt: new Date(Date.now() + REFRESH_TTL_MS),
-        oauthClientId: row.clientId,
-        oauthRedirectUri: row.redirectUri,
-      })
-      .returning({ id: apiTokens.id })
-    await db.update(oauthCodes).set({ tokenId: grant!.id }).where(eq(oauthCodes.id, row.id))
-    return this.issue(grant!.id, row.scopes)
+    // Claiming the code and creating its grant happen in one transaction: nothing (such
+    // as a recovery that disconnects every agent) can run between them and miss the grant.
+    const grantId = db.transaction((tx) => {
+      const claimed = tx
+        .update(oauthCodes)
+        .set({ usedAt: new Date() })
+        .where(and(eq(oauthCodes.id, row.id), isNull(oauthCodes.usedAt)))
+        .returning({ id: oauthCodes.id })
+        .all()
+      if (claimed.length === 0) return null
+      const member = tx
+        .select({ userId: workspaceMembers.userId })
+        .from(workspaceMembers)
+        .where(and(eq(workspaceMembers.workspaceId, row.workspaceId), eq(workspaceMembers.userId, row.userId)))
+        .get()
+      if (!member) return null
+      const grant = tx
+        .insert(apiTokens)
+        .values({
+          userId: row.userId,
+          workspaceId: row.workspaceId,
+          name: row.clientName,
+          // Never handed out: the grant is used through its OAuth tokens.
+          tokenHash: sha256(randomToken(32)),
+          prefix: 'OAuth',
+          scopes: row.scopes,
+          expiresAt: new Date(Date.now() + REFRESH_TTL_MS),
+          oauthClientId: row.clientId,
+          oauthRedirectUri: row.redirectUri,
+        })
+        .returning({ id: apiTokens.id })
+        .get()
+      tx.update(oauthCodes).set({ tokenId: grant.id }).where(eq(oauthCodes.id, row.id)).run()
+      return grant.id
+    })
+    if (!grantId) throw invalidGrant()
+    return this.issue(grantId, row.scopes)
   }
 
   private async refresh(form: Record<string, string>) {

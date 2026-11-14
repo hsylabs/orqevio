@@ -7,6 +7,7 @@ Usage:
   npx create-orqevio                   Install a new copy
   npx create-orqevio@latest update     Update your copy to the latest version (your data is kept)
   npx create-orqevio@latest recover    Get a new code to recover your access
+  npx create-orqevio@latest uninstall  Delete your copy and everything in it
 
 Options:
   --name <name>     Name of the copy (${defaultName} by default). It becomes part of its address.
@@ -30,7 +31,7 @@ opens so you can sign in.`,
   badName: (name) => `“${name}” can’t be used as a name.`,
   nameRule: 'Use 1 to 50 lowercase letters, numbers or hyphens (no hyphen at the start or end).',
   heading: (action, version, name) =>
-    `Orqevio ${version} · ${{ install: 'Installing', update: 'Updating', recover: 'Recovering access to' }[action]} the copy “${name}”`,
+    `Orqevio ${version} · ${{ install: 'Installing', update: 'Updating', recover: 'Recovering access to', uninstall: 'Uninstalling' }[action]} the copy “${name}”`,
   accountUnreachable: 'Couldn’t check your Cloudflare account. Try again in a few minutes.',
   askUpdate: (name) => `You already have a copy called “${name}”. Update it to this version? Your data is kept.`,
   nothingChanged: 'Nothing has changed. For another copy, use another name: npx create-orqevio --name <name>',
@@ -42,8 +43,8 @@ opens so you can sign in.`,
       'The included usage is free (10 GB of storage a month), although Cloudflare may ask for a payment method.',
       `Then run again: ${retryCommand}`,
     ].join('\n'),
-  signInPrompt: 'Sign in to Cloudflare in the browser that’s about to open…\n',
-  signInFailed: 'Signing in to Cloudflare wasn’t completed.',
+  signInPrompt: 'Sign in to Cloudflare in the browser that’s about to open. If it doesn’t open, open the link below yourself…\n',
+  signInFailed: (command) => `Signing in to Cloudflare wasn’t completed. If the browser didn’t open, sign in on its own with ${command}, open the link it shows and run this command again.`,
   noAccessToAccount: (account, accounts) => `This session has no access to the account “${account}”. Available accounts:\n${accounts}`,
   noAccounts: 'Your Cloudflare session has no account available.',
   chooseAccountWithFlag: (accounts) => `You have several Cloudflare accounts. Choose one with --account <id>:\n${accounts}`,
@@ -78,5 +79,33 @@ opens so you can sign in.`,
       '',
       'Open your copy, choose “Lost your key?” and enter this code to get a new access key.',
       'Every session is signed out; your data and your vault don’t change.',
+      'If someone else may have had the key, answer “Someone else may have it” to disconnect your agents too.',
+    ].join('\n'),
+  uninstallNeedsTerminal: 'To uninstall, you type the copy’s name to confirm: run this command in a terminal.',
+  nothingToUninstall: (name) => `There’s no copy called “${name}” in this account, so there’s nothing to delete.`,
+  uninstallWarning: (name, bucket) =>
+    [
+      `This deletes the copy “${name}” for good, with everything in it:`,
+      '  · its Worker, with your workspaces, documents, vault and agents;',
+      `  · its bucket “${bucket}”, with the attachments.`,
+      'It can’t be undone. To keep your vault, export an encrypted copy from it first.',
+      '',
+    ].join('\n'),
+  askUninstallName: (name) => `Type “${name}” to confirm: `,
+  nothingDeleted: 'Nothing was deleted.',
+  bucketNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `The bucket “${bucket}” still holds attachments, and Cloudflare only deletes empty buckets. Nothing was deleted.`,
+      `Empty it in one of these two ways, then run ${retryCommand} again:`,
+      '  · in your copy: Settings → Uninstall Orqevio, which also deletes the rest of its data;',
+      `  · in the Cloudflare dashboard: R2 → ${bucket} → Settings → Empty Bucket.`,
+    ].join('\n'),
+  uninstallFailed: '\nThe uninstall didn’t finish. Check Wrangler’s message above; you can run the command again.',
+  uninstalled: (name, logoutCommand) =>
+    [
+      '',
+      `The copy “${name}” is uninstalled: its Worker and its bucket are gone from your Cloudflare account.`,
+      `If you don’t use Wrangler for anything else, sign out with ${logoutCommand}.`,
     ].join('\n'),
 }

@@ -66,5 +66,21 @@
     "accessKey": "Toegangssleutel",
     "confirm": "Definitief wissen",
     "done": "Gegevens gewist"
+  },
+  "uninstall": {
+    "title": "Orqevio verwijderen",
+    "description": "Verwijdert alles definitief, bijlagen inbegrepen, en maakt deze installatie onbruikbaar. Daarna zie je hoe je de installatie zelf uit je Cloudflare-account of van je server haalt.",
+    "action": "Orqevio verwijderen…",
+    "confirmDescription": "Dit kan niet ongedaan worden gemaakt. Je verliest:",
+    "loses": {
+      "data": "Je werkruimtes, projecten, borden en documenten.",
+      "files": "Alle bijlagen.",
+      "vault": "Je kluis. Wil je die bewaren, exporteer dan eerst een versleutelde kopie vanuit de kluis.",
+      "agents": "De toegang van je agents en alle sessies."
+    },
+    "afterwards": "Daarna zie je hoe je de installatie zelf uit je Cloudflare-account of van je server haalt.",
+    "accessKey": "Toegangssleutel",
+    "typeName": "Typ ‘{{name}}’ om te bevestigen",
+    "confirm": "Definitief verwijderen"
   }
 }

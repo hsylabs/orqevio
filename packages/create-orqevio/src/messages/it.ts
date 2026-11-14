@@ -7,6 +7,7 @@ Uso:
   npx create-orqevio                   Installa una nuova copia
   npx create-orqevio@latest update     Aggiorna la tua copia all’ultima versione (senza perdere i dati)
   npx create-orqevio@latest recover    Genera un nuovo codice per recuperare l’accesso
+  npx create-orqevio@latest uninstall  Elimina la tua copia e tutto ciò che contiene
 
 Opzioni:
   --name <nome>     Nome della copia (predefinito: ${defaultName}). Diventa parte del suo indirizzo.
@@ -30,7 +31,7 @@ per farti accedere.`,
   badName: (name) => `«${name}» non si può usare come nome.`,
   nameRule: 'Usa da 1 a 50 lettere minuscole, numeri o trattini (senza trattino all’inizio o alla fine).',
   heading: (action, version, name) =>
-    `Orqevio ${version} · ${{ install: 'Installazione della copia', update: 'Aggiornamento della copia', recover: 'Recupero dell’accesso alla copia' }[action]} «${name}»`,
+    `Orqevio ${version} · ${{ install: 'Installazione della copia', update: 'Aggiornamento della copia', recover: 'Recupero dell’accesso alla copia', uninstall: 'Disinstallazione della copia' }[action]} «${name}»`,
   accountUnreachable: 'Non sono riuscito a controllare il tuo account Cloudflare. Riprova tra qualche minuto.',
   askUpdate: (name) => `Hai già una copia chiamata «${name}». Vuoi aggiornarla a questa versione? I tuoi dati vengono mantenuti.`,
   nothingChanged: 'Non ho cambiato nulla. Per un’altra copia, usa un altro nome: npx create-orqevio --name <nome>',
@@ -42,8 +43,8 @@ per farti accedere.`,
       'L’utilizzo incluso è gratuito (10 GB di spazio al mese), anche se Cloudflare potrebbe chiederti un metodo di pagamento.',
       `Poi esegui di nuovo: ${retryCommand}`,
     ].join('\n'),
-  signInPrompt: 'Accedi a Cloudflare nel browser che sta per aprirsi…\n',
-  signInFailed: 'L’accesso a Cloudflare non è stato completato.',
+  signInPrompt: 'Accedi a Cloudflare nel browser che sta per aprirsi. Se non si apre, apri tu il link che compare qui sotto…\n',
+  signInFailed: (command) => `L’accesso a Cloudflare non è stato completato. Se il browser non si è aperto, accedi a parte con ${command}, apri il link che mostra ed esegui di nuovo questo comando.`,
   noAccessToAccount: (account, accounts) => `Questa sessione non ha accesso all’account «${account}». Account disponibili:\n${accounts}`,
   noAccounts: 'La tua sessione Cloudflare non ha nessun account disponibile.',
   chooseAccountWithFlag: (accounts) => `Hai più account Cloudflare. Scegline uno con --account <id>:\n${accounts}`,
@@ -79,5 +80,33 @@ per farti accedere.`,
       'Apri la tua copia, scegli «Hai perso la chiave?» e inserisci questo codice per ricevere',
       'una nuova chiave di accesso. Tutte le sessioni verranno chiuse; i tuoi dati e la tua',
       'cassaforte non cambiano.',
+      'Se qualcun altro potrebbe aver avuto la chiave, rispondi «Qualcun altro potrebbe averla» per disconnettere anche i tuoi agenti.',
+    ].join('\n'),
+  uninstallNeedsTerminal: 'Per disinstallare devi scrivere il nome della copia: esegui questo comando in un terminale.',
+  nothingToUninstall: (name) => `In questo account non c’è nessuna copia chiamata «${name}»: non c’è niente da eliminare.`,
+  uninstallWarning: (name, bucket) =>
+    [
+      `Questo elimina per sempre la copia «${name}» con tutto ciò che contiene:`,
+      '  · il suo Worker, con i tuoi spazi, documenti, cassaforte e agenti;',
+      `  · il suo bucket «${bucket}», con gli allegati.`,
+      'Non si può annullare. Per conservare la cassaforte, esportane prima una copia cifrata.',
+      '',
+    ].join('\n'),
+  askUninstallName: (name) => `Scrivi «${name}» per confermare: `,
+  nothingDeleted: 'Non è stato eliminato niente.',
+  bucketNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `Il bucket «${bucket}» contiene ancora degli allegati, e Cloudflare elimina solo i bucket vuoti. Non è stato eliminato niente.`,
+      `Svuotalo in uno di questi due modi, poi esegui di nuovo ${retryCommand}:`,
+      '  · nella tua copia: Impostazioni → Disinstallare Orqevio, che elimina anche il resto dei suoi dati;',
+      `  · nella dashboard di Cloudflare: R2 → ${bucket} → Settings → Empty Bucket.`,
+    ].join('\n'),
+  uninstallFailed: '\nLa disinstallazione non è andata a buon fine. Controlla il messaggio di Wrangler qui sopra; puoi eseguire di nuovo il comando.',
+  uninstalled: (name, logoutCommand) =>
+    [
+      '',
+      `La copia «${name}» è disinstallata: il suo Worker e il suo bucket non sono più nel tuo account Cloudflare.`,
+      `Se non usi Wrangler per nient’altro, esci con ${logoutCommand}.`,
     ].join('\n'),
 }

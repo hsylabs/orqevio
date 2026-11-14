@@ -17,6 +17,7 @@ import { applyTheme } from '../../lib/theme'
 import { AccessKeyReveal } from '../auth/AccessKeyReveal'
 import { CopyVersion } from './CopyVersion'
 import { PageHeader } from '../shell/PageHeader'
+import { UninstallSection } from './UninstallSection'
 import { useWorkspace } from '../shell/workspace'
 import { lockVault } from '../vault/session'
 
@@ -189,6 +190,10 @@ export function SettingsPage() {
             <Button variant="ghost" className="text-danger hover:bg-danger-soft hover:text-danger" onClick={() => setDeleteOpen(true)}>
               {t('erase.action')}
             </Button>
+          </Section>
+
+          <Section title={t('uninstall.title')} description={t('uninstall.description')}>
+            <UninstallSection />
           </Section>
         </div>
       </div>

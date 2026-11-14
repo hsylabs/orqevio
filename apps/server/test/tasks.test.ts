@@ -63,6 +63,23 @@ describe('boards and cards', () => {
     expect((await client.get(`/api/boards/${boardId}`)).body.cards).toHaveLength(1)
   })
 
+  it('counts the open cards of each board in the overview', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const first = await seedBoard(client, workspaceId)
+    const second = await seedBoard(client, workspaceId)
+    await client.post(`/api/columns/${first.columns[0]!.id}/cards`, { title: 'A' })
+    await client.post(`/api/columns/${first.columns[2]!.id}/cards`, { title: 'B (done, still open)' })
+    const archived = await client.post(`/api/columns/${first.columns[1]!.id}/cards`, { title: 'C' })
+    await client.post(`/api/cards/${archived.body.id}/archive`)
+    await client.post(`/api/columns/${second.columns[0]!.id}/cards`, { title: 'D' })
+
+    const overview = await client.get(`/api/workspaces/${workspaceId}/overview`)
+    const boards = overview.body.projects.flatMap((p: { boards: Array<{ id: string; cardCount: number }> }) => p.boards)
+    const countOf = (id: string) => boards.find((b: { id: string }) => b.id === id).cardCount
+    expect(countOf(first.boardId)).toBe(2)
+    expect(countOf(second.boardId)).toBe(1)
+  })
+
   it("names default columns in the owner's language, also for their agents", async () => {
     const { client, workspaceId } = await signUp(h)
     expect((await client.patch('/api/account', { locale: 'es' })).body.locale).toBe('es')

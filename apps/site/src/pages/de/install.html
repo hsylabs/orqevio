@@ -10,6 +10,7 @@
         <a href="#access">Erste Anmeldung</a>
         <a href="#agents">Agenten verbinden</a>
         <a href="#update">Aktualisieren</a>
+        <a href="#uninstall">Deinstallieren</a>
         <a href="#costs">Kosten</a>
       </nav>
     </div>
@@ -31,6 +32,7 @@
     <ul>
       <li><strong>Mehrere Instanzen:</strong> Hänge <code>--name &lt;name&gt;</code> an einen beliebigen Befehl an.</li>
       <li><strong>Mehrere Cloudflare-Konten:</strong> Der Installer fragt, welches er verwenden soll, oder du gibst es mit <code>--account &lt;id&gt;</code> an.</li>
+      <li><strong>Falls sich der Browser nicht öffnet</strong>, um dich anzumelden, öffne den Link, den der Installer anzeigt. Klappt auch das nicht, melde dich separat mit <code>npx wrangler login --browser=false</code> an und starte den Installer erneut.</li>
       <li><strong>Sprache:</strong> Der Installer spricht die Sprache deines Terminals; eine andere wählst du mit <code>--lang &lt;code&gt;</code>.</li>
       <li><strong>Datenschutz:</strong> Der Installer schaltet die Telemetrie von Wrangler ab, sofern du sie nicht selbst aktiviert hast, und arbeitet in einem temporären Ordner, den er am Ende löscht.</li>
     </ul>
@@ -81,6 +83,21 @@
           <tr><td>Per Befehl</td><td><code>npx create-orqevio@latest update</code></td></tr>
           <tr><td>Per Button</td><td>Merge den Dependabot-Pull-Request in deinem Repository</td></tr>
           <tr><td>Mit Docker</td><td><code>docker compose pull</code> und <code>docker compose up -d</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="uninstall">Deinstallieren</h2>
+    <p><strong>Einstellungen → Orqevio deinstallieren</strong> löscht alles endgültig: Arbeitsbereiche, Dokumente, Anhänge, den Tresor und den Zugang deiner Agenten. Du bestätigst mit deinem Zugangsschlüssel und indem du den Namen der Instanz eingibst. Danach zeigt dir die Instanz, wie du den Rest entfernst:</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Installation</th><th scope="col">So entfernst du den Rest</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Per Befehl</td><td><code>npx create-orqevio@latest uninstall</code> löscht den Worker und seinen Bucket</td></tr>
+          <tr><td>Per Button</td><td>Den Worker und seinen R2-Bucket im Cloudflare-Dashboard, danach das Repository, das der Button angelegt hat</td></tr>
+          <tr><td>Mit Docker</td><td><code>docker compose down -v</code>, danach den Ordner, in dem du sie installiert hast</td></tr>
         </tbody>
       </table>
     </div>

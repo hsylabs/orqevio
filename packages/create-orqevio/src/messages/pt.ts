@@ -7,6 +7,7 @@ Uso:
   npx create-orqevio                   Instala uma nova cópia
   npx create-orqevio@latest update     Atualiza sua cópia para a versão mais recente (seus dados são mantidos)
   npx create-orqevio@latest recover    Gera um novo código para recuperar seu acesso
+  npx create-orqevio@latest uninstall  Apaga sua cópia e tudo o que ela contém
 
 Opções:
   --name <nome>     Nome da cópia (${defaultName} por padrão). Ele passa a fazer parte do endereço.
@@ -30,7 +31,7 @@ navegador abre para você fazer login.`,
   badName: (name) => `“${name}” não pode ser usado como nome.`,
   nameRule: 'Use de 1 a 50 letras minúsculas, números ou hifens (sem hífen no início nem no fim).',
   heading: (action, version, name) =>
-    `Orqevio ${version} · ${{ install: 'Instalando a cópia', update: 'Atualizando a cópia', recover: 'Recuperando o acesso à cópia' }[action]} “${name}”`,
+    `Orqevio ${version} · ${{ install: 'Instalando a cópia', update: 'Atualizando a cópia', recover: 'Recuperando o acesso à cópia', uninstall: 'Desinstalando a cópia' }[action]} “${name}”`,
   accountUnreachable: 'Não foi possível verificar sua conta da Cloudflare. Tente de novo em alguns minutos.',
   askUpdate: (name) => `Você já tem uma cópia chamada “${name}”. Quer atualizá-la para esta versão? Seus dados são mantidos.`,
   nothingChanged: 'Nada foi alterado. Para outra cópia, use outro nome: npx create-orqevio --name <nome>',
@@ -42,8 +43,8 @@ navegador abre para você fazer login.`,
       'O uso incluído é gratuito (10 GB de armazenamento por mês), embora a Cloudflare possa pedir uma forma de pagamento.',
       `Depois, execute de novo: ${retryCommand}`,
     ].join('\n'),
-  signInPrompt: 'Faça login na Cloudflare no navegador que vai se abrir…\n',
-  signInFailed: 'O login na Cloudflare não foi concluído.',
+  signInPrompt: 'Faça login na Cloudflare no navegador que vai se abrir. Se ele não abrir, abra você mesmo o link que aparece abaixo…\n',
+  signInFailed: (command) => `O login na Cloudflare não foi concluído. Se o navegador não abriu, faça login separadamente com ${command}, abra o link que ele mostrar e execute este comando de novo.`,
   noAccessToAccount: (account, accounts) => `Esta sessão não tem acesso à conta “${account}”. Contas disponíveis:\n${accounts}`,
   noAccounts: 'Sua sessão da Cloudflare não tem nenhuma conta disponível.',
   chooseAccountWithFlag: (accounts) => `Você tem várias contas da Cloudflare. Escolha uma com --account <id>:\n${accounts}`,
@@ -78,5 +79,33 @@ navegador abre para você fazer login.`,
       '',
       'Abra sua cópia, escolha “Perdeu sua chave?” e digite este código para receber uma nova',
       'chave de acesso. Todas as sessões são encerradas; seus dados e seu cofre não mudam.',
+      'Se outra pessoa pode ter tido a chave, responda “Talvez outra pessoa a tenha” para desconectar também seus agentes.',
+    ].join('\n'),
+  uninstallNeedsTerminal: 'Para desinstalar, você precisa digitar o nome da cópia: execute este comando em um terminal.',
+  nothingToUninstall: (name) => `Não há nenhuma cópia chamada “${name}” nesta conta: não há nada para apagar.`,
+  uninstallWarning: (name, bucket) =>
+    [
+      `Isto apaga para sempre a cópia “${name}”, com tudo o que ela contém:`,
+      '  · o Worker dela, com seus espaços, documentos, cofre e agentes;',
+      `  · o bucket “${bucket}”, com os anexos.`,
+      'Não pode ser desfeito. Para manter o cofre, exporte antes uma cópia criptografada dele.',
+      '',
+    ].join('\n'),
+  askUninstallName: (name) => `Digite “${name}” para confirmar: `,
+  nothingDeleted: 'Nada foi apagado.',
+  bucketNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `O bucket “${bucket}” ainda guarda anexos, e a Cloudflare só apaga buckets vazios. Nada foi apagado.`,
+      `Esvazie-o de uma destas duas formas e execute ${retryCommand} de novo:`,
+      '  · na sua cópia: Configurações → Desinstalar o Orqevio, que também apaga o resto dos dados dela;',
+      `  · no painel da Cloudflare: R2 → ${bucket} → Settings → Empty Bucket.`,
+    ].join('\n'),
+  uninstallFailed: '\nA desinstalação não terminou. Confira a mensagem do Wrangler acima; você pode executar o comando de novo.',
+  uninstalled: (name, logoutCommand) =>
+    [
+      '',
+      `A cópia “${name}” foi desinstalada: o Worker e o bucket dela não estão mais na sua conta da Cloudflare.`,
+      `Se você não usa o Wrangler para mais nada, saia da sessão com ${logoutCommand}.`,
     ].join('\n'),
 }
