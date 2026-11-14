@@ -1,4 +1,4 @@
-import type { AnonymousSessionDTO, MeDTO } from '@orqevio/shared'
+import type { AnonymousSessionDTO, MeDTO, RecoveryReason } from '@orqevio/shared'
 import { claimInput, recoverInput, unlockInput } from '@orqevio/shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
@@ -11,7 +11,9 @@ import { Field } from '../../components/ui/Field'
 import { applyLocale, currentLocale } from '../../i18n'
 import { LanguageSelect } from '../../i18n/LanguageSelect'
 import { errorMessage, post } from '../../lib/api'
-import { keys, useAccessState } from '../../lib/queries'
+import { cn } from '../../lib/cn'
+import { keys, useAccessState, useTokens } from '../../lib/queries'
+import { TokenCard, useRevokeToken } from '../agents/TokenCard'
 import { FullScreenLoader } from '../shell/States'
 import { AccessKeyReveal } from './AccessKeyReveal'
 import { OrbitIllustration } from './OrbitIllustration'
@@ -130,7 +132,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'setup' }) {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const queryClient = useQueryClient()
-  const [revealed, setRevealed] = useState<{ accessKey: string; kind: 'setup' | 'recovery' } | null>(null)
+  const [revealed, setRevealed] = useState<{ accessKey: string; kind: 'setup' | 'recovery'; reason?: RecoveryReason } | null>(null)
   const next = params.get('next') ?? '/'
 
   async function enter() {
@@ -142,7 +144,9 @@ export function AuthPage({ mode }: { mode: 'login' | 'setup' }) {
   if (revealed) {
     return (
       <AuthLayout title={t(`revealed.${revealed.kind}.title`)} subtitle={t(`revealed.${revealed.kind}.subtitle`)}>
-        <AccessKeyReveal accessKey={revealed.accessKey} confirmLabel={t('revealed.continue')} onDone={() => void enter()} />
+        <AccessKeyReveal accessKey={revealed.accessKey} confirmLabel={t('revealed.continue')} onDone={() => void enter()}>
+          {revealed.reason && <RecoveredAgents reason={revealed.reason} />}
+        </AccessKeyReveal>
       </AuthLayout>
     )
   }
@@ -162,7 +166,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'setup' }) {
     <LoginForm
       recoverable={Boolean(session && !session.user && session.recoverable)}
       onSignedIn={() => void enter()}
-      onRecovered={(accessKey) => setRevealed({ accessKey, kind: 'recovery' })}
+      onRecovered={(accessKey, reason) => setRevealed({ accessKey, kind: 'recovery', reason })}
     />
   )
 }
@@ -214,7 +218,7 @@ function SetupForm({ onClaimed }: { onClaimed: (accessKey: string) => void }) {
   )
 }
 
-function LoginForm({ recoverable, onSignedIn, onRecovered }: { recoverable: boolean; onSignedIn: () => void; onRecovered: (accessKey: string) => void }) {
+function LoginForm({ recoverable, onSignedIn, onRecovered }: { recoverable: boolean; onSignedIn: () => void; onRecovered: (accessKey: string, reason: RecoveryReason) => void }) {
   const { t } = useTranslation('auth')
   const [accessKey, setAccessKey] = useState('')
   const [fieldError, setFieldError] = useState<string | undefined>()
@@ -266,24 +270,30 @@ function LoginForm({ recoverable, onSignedIn, onRecovered }: { recoverable: bool
   )
 }
 
-function RecoveryPanel({ recoverable, onRecovered }: { recoverable: boolean; onRecovered: (accessKey: string) => void }) {
+function RecoveryPanel({ recoverable, onRecovered }: { recoverable: boolean; onRecovered: (accessKey: string, reason: RecoveryReason) => void }) {
   const { t } = useTranslation('auth')
   const [setupCode, setSetupCode] = useState('')
+  // No answer is chosen for the person: a stolen key needs the agents disconnected.
+  const [reason, setReason] = useState<RecoveryReason | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     setError(null)
-    const parsed = recoverInput.safeParse({ setupCode })
-    if (!parsed.success) {
+    if (!setupCode.trim()) {
       setError(t('recovery.missingSetupCode'))
+      return
+    }
+    const parsed = recoverInput.safeParse({ setupCode, reason })
+    if (!parsed.success) {
+      setError(t('recovery.missingReason'))
       return
     }
     setBusy(true)
     try {
       const res = await post<{ accessKey: string }>('/auth/recover', parsed.data)
-      onRecovered(res.accessKey)
+      onRecovered(res.accessKey, parsed.data.reason)
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -307,6 +317,18 @@ function RecoveryPanel({ recoverable, onRecovered }: { recoverable: boolean; onR
       {recoverable && (
         <form onSubmit={submit} className="mt-4 flex flex-col gap-3" noValidate>
           <SecretField field="newSetupCode" value={setupCode} onChange={setSetupCode} autoComplete="off" />
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-[13px] font-medium text-ink">{t('recovery.reason.legend')}</legend>
+            {(['lost', 'compromised'] as const).map((option) => (
+              <label key={option} className={cn('flex cursor-pointer items-start gap-3 rounded-[10px] border bg-sheet px-3 py-2.5', reason === option ? 'border-accent' : 'border-line')}>
+                <input type="radio" name="recovery-reason" value={option} checked={reason === option} onChange={() => setReason(option)} className="mt-1 size-4 accent-[var(--accent)]" />
+                <span>
+                  <span className="block text-[13px] font-medium text-ink">{t(`recovery.reason.${option}.label`)}</span>
+                  <span className="block text-[12.5px] text-ink-3">{t(`recovery.reason.${option}.hint`)}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
           {error && <ErrorNote>{error}</ErrorNote>}
           <Button type="submit" variant="primary" loading={busy}>
             {t('recovery.submit')}
@@ -314,5 +336,33 @@ function RecoveryPanel({ recoverable, onRecovered }: { recoverable: boolean; onR
         </form>
       )}
     </div>
+  )
+}
+
+/** After recovering: the agents that kept their access, to spot one that isn't yours, or that they were all disconnected. */
+function RecoveredAgents({ reason }: { reason: RecoveryReason }) {
+  const { t } = useTranslation('auth')
+  const tokens = useTokens()
+  const revoke = useRevokeToken()
+  if (reason === 'compromised') return <p className="mt-4 rounded-[12px] border border-line bg-sunken px-3.5 py-3 text-[13px] text-ink-2">{t('revealed.agents.revoked')}</p>
+  const active = (tokens.data ?? []).filter((token) => !token.revokedAt && (!token.expiresAt || new Date(token.expiresAt) > new Date()))
+  return (
+    <section className="mt-4" aria-labelledby="recovered-agents">
+      <h2 id="recovered-agents" className="text-[13px] font-medium text-ink">
+        {t('revealed.agents.title')}
+      </h2>
+      {tokens.data && active.length === 0 ? (
+        <p className="mt-1 text-[12.5px] text-ink-3">{t('revealed.agents.none')}</p>
+      ) : (
+        <>
+          <p className="mt-1 text-[12.5px] text-ink-3">{t('revealed.agents.review')}</p>
+          <div className="mt-2 flex max-h-[320px] flex-col gap-2 overflow-y-auto">
+            {active.map((token) => (
+              <TokenCard key={token.id} token={token} onRevoke={() => void revoke(token)} />
+            ))}
+          </div>
+        </>
+      )}
+    </section>
   )
 }

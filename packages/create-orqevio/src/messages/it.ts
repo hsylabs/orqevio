@@ -79,5 +79,6 @@ per farti accedere.`,
       'Apri la tua copia, scegli «Hai perso la chiave?» e inserisci questo codice per ricevere',
       'una nuova chiave di accesso. Tutte le sessioni verranno chiuse; i tuoi dati e la tua',
       'cassaforte non cambiano.',
+      'Se qualcun altro potrebbe aver avuto la chiave, rispondi «Qualcun altro potrebbe averla» per disconnettere anche i tuoi agenti.',
     ].join('\n'),
 }

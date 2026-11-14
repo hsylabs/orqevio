@@ -78,5 +78,6 @@ opens so you can sign in.`,
       '',
       'Open your copy, choose “Lost your key?” and enter this code to get a new access key.',
       'Every session is signed out; your data and your vault don’t change.',
+      'If someone else may have had the key, answer “Someone else may have it” to disconnect your agents too.',
     ].join('\n'),
 }

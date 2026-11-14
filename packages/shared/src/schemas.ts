@@ -20,7 +20,9 @@ const secret = z.string().trim().min(1, 'Required').max(256)
 
 export const claimInput = z.object({ setupCode: secret, name: name(80), locale: z.enum(LOCALES).optional() })
 export const unlockInput = z.object({ accessKey: secret })
-export const recoverInput = z.object({ setupCode: secret })
+/** Why access is recovered: a stolen key may have let someone connect an agent of their own. */
+export const RECOVERY_REASONS = ['lost', 'compromised'] as const
+export const recoverInput = z.object({ setupCode: secret, reason: z.enum(RECOVERY_REASONS) })
 export const rotateAccessKeyInput = z.object({ currentAccessKey: secret })
 export const confirmAccessKeyInput = z.object({ accessKey: secret })
 export const updateAccountInput = z.object({
@@ -128,6 +130,7 @@ export const vaultSettingsInput = z.object({ autoLockMinutes: z.union([z.literal
 export type ClaimInput = z.infer<typeof claimInput>
 export type UnlockInput = z.infer<typeof unlockInput>
 export type ProjectCreateInput = z.infer<typeof projectCreateInput>
+export type RecoveryReason = (typeof RECOVERY_REASONS)[number]
 export type CardCreateInput = z.infer<typeof cardCreateInput>
 export type CardUpdateInput = z.infer<typeof cardUpdateInput>
 export type PageCreateInput = z.infer<typeof pageCreateInput>

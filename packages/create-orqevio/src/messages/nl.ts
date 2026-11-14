@@ -78,5 +78,6 @@ opent je browser, zodat je kunt inloggen.`,
       '',
       'Open je installatie, kies ‘Sleutel kwijt?’ en voer deze code in. Je krijgt dan een nieuwe',
       'toegangssleutel. Alle sessies worden uitgelogd; je gegevens en je kluis blijven ongewijzigd.',
+      'Kan iemand anders de sleutel hebben gehad, antwoord dan ‘Iemand anders heeft hem misschien’ om ook je agents los te koppelen.',
     ].join('\n'),
 }

@@ -248,6 +248,8 @@ node apps/server/dist/cli.js reset-access
 
 También puedes definir un `SETUP_CODE` nuevo, reiniciar la copia y usar **«¿Has perdido la clave?»** en la pantalla de acceso. En ambos casos se cierran todas las sesiones.
 
+**Tus agentes.** Al recuperar el acceso, Orqevio pregunta por qué. Con **«He perdido la clave»**, tus agentes (tokens y conectores OAuth como Claude) conservan el acceso, y la pantalla los muestra para que revoques el que no reconozcas. Con **«Puede que alguien la tenga»**, se desconectan todos, también los códigos de autorización aún sin canjear: quien tuvo la clave pudo conectar uno suyo. Con la CLI, añade `--revoke-agents` a `reset-access` para lo mismo.
+
 `node dist/cli.js status` muestra si la copia está reclamada y por quién. Nada de esto afecta a la bóveda: su contraseña maestra nunca la conoce el servidor.
 
 ## Actualizaciones

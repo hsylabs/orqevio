@@ -78,5 +78,6 @@ navegador para que inicies sesión.`,
       '',
       'Abre tu copia, pulsa «¿Has perdido la clave?» y escribe este código para recibir una',
       'clave de acceso nueva. Se cerrarán todas las sesiones; tus datos y tu bóveda no cambian.',
+      'Si alguien más pudo tener la clave, responde «Puede que alguien la tenga» para desconectar también a tus agentes.',
     ].join('\n'),
 }
