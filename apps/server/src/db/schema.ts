@@ -147,6 +147,8 @@ export const oauthCodes = sqliteTable(
     usedAt: timestamp('used_at'),
     /** The grant the code was exchanged for: presenting the code again revokes it. */
     tokenId: text('token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
+    /** The owner chose to replace this application's earlier access to the workspace when the code is exchanged. */
+    replacePrevious: integer('replace_previous', { mode: 'boolean' }).notNull().default(false),
   },
   (t) => [index('oauth_codes_expires_idx').on(t.expiresAt)],
 )
