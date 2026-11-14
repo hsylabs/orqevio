@@ -28,6 +28,8 @@ describe('installer languages', () => {
     expect(m.askAddress('NAME')).toContain('https://NAME.')
     expect(m.otherCopy('ORIGIN', 'OTHER', 'NAME')).toMatch(/ORIGIN[\s\S]*OTHER[\s\S]*NAME/)
     expect(m.copyUnreachable('ORIGIN', 'DETAIL')).toMatch(/ORIGIN[\s\S]*DETAIL/)
+    expect(m.notThisAccount('ORIGIN', 'NAME')).toMatch(/ORIGIN[\s\S]*NAME/)
+    expect(m.copyTooOld('UPDATE-CMD')).toContain('UPDATE-CMD')
     for (const text of [m.badAddress('ADDRESS'), m.notOrqevio('ADDRESS')]) expect(text).toContain('ADDRESS')
     expect(m.r2Disabled('DASHBOARD', 'RETRY')).toMatch(/DASHBOARD[\s\S]*RETRY/)
     expect(m.recovered('CODE')).toContain('CODE')

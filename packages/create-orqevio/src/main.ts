@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { rmSync } from 'node:fs'
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -18,8 +19,6 @@ export interface Io {
   err(text: string): void
   /** Asks a question; missing when there is no terminal to answer it. */
   ask?: (question: string) => Promise<string>
-  /** Asks for a secret without showing what is typed. */
-  askSecret?: (question: string) => Promise<string>
 }
 
 type Command = 'install' | 'update' | 'recover' | 'uninstall' | 'config' | 'deploy-repo'
@@ -37,6 +36,8 @@ export interface Deps {
   openOnWindows?: (url: string) => void
   /** How the installer reaches a copy over HTTP (tests pass their own). */
   fetch?: typeof fetch
+  /** How often and how long uninstall waits for a copy to receive its authorization. */
+  uninstallWait?: { intervalMs: number; timeoutMs: number }
 }
 
 /** Signs in without the installer, for when the browser never opens. */
@@ -410,7 +411,7 @@ async function uninstall(name: string, workerFound: boolean, env: Record<string,
   const retryCommand = `npx create-orqevio@latest uninstall${nameFlag(name)}`
   if (bucketFound !== false) {
     let bucketDeleted = await deleteBucket(bucket, env, io)
-    if (bucketDeleted === 'not-empty' && workerFound && (await emptyThroughCopy(name, bucket, io, m, deps))) {
+    if (bucketDeleted === 'not-empty' && workerFound && (await emptyThroughCopy(name, bucket, env, io, m, deps))) {
       bucketDeleted = await deleteBucket(bucket, env, io)
     }
     if (bucketDeleted === 'not-empty') {
@@ -441,11 +442,13 @@ async function deleteBucket(bucket: string, env: Record<string, string>, io: Io)
 }
 
 /**
- * Has the copy delete its data and attachments, signed in with its access key: the address
- * and the key are asked for here, and a blank answer stops without deleting anything.
- * True once the copy is empty.
+ * Has the copy delete its data and attachments. The installer proves it controls the account
+ * by setting a one-time token as a secret of the Worker there, and the copy only uninstalls
+ * with it: a copy at an address typed by mistake (another account, another name) refuses.
+ * A blank answer stops without deleting anything. True once the copy is empty.
  */
-async function emptyThroughCopy(name: string, bucket: string, io: Io, m: Messages, deps: Deps) {
+async function emptyThroughCopy(name: string, bucket: string, env: Record<string, string>, io: Io, m: Messages, deps: Deps) {
+  const { intervalMs, timeoutMs } = deps.uninstallWait ?? { intervalMs: 3000, timeoutMs: 90_000 }
   io.out(m.emptyingThroughCopy(bucket))
   for (let attempt = 0; attempt < 3; attempt++) {
     const address = (await io.ask!(m.askAddress(name))).trim()
@@ -455,18 +458,34 @@ async function emptyThroughCopy(name: string, bucket: string, io: Io, m: Message
       io.err(m.badAddress(address))
       continue
     }
-    const accessKey = (await (io.askSecret ?? io.ask)!(m.askAccessKey)).trim()
-    if (!accessKey) return false
-    const result = await emptyCopy(origin, name, accessKey, deps.fetch)
-    if (result.ok) {
-      io.out(m.copyEmptied)
-      return true
-    }
-    if (result.reason === 'unreachable') {
-      io.err(m.copyUnreachable(origin, result.detail ?? ''))
+    // Expires on its own, in case the uninstall stops half-way and the copy stays.
+    const token = `${Date.now() + 15 * 60_000}.${randomBytes(32).toString('base64url')}`
+    const set = await runWrangler(['secret', 'put', 'ORQEVIO_UNINSTALL_TOKEN', '--name', name], { input: token, env, capture: true })
+    if (set.code !== 0) {
+      io.err((set.stderr || set.stdout).trim())
+      io.err(m.uninstallFailed)
       return false
     }
-    io.err(result.reason === 'wrong-key' ? m.wrongAccessKey : result.reason === 'other-copy' ? m.otherCopy(origin, result.detail ?? '', name) : m.notOrqevio(origin))
+    io.out(m.authorizingCopy)
+    // The secret takes a few seconds to reach the copy: until then it answers not-authorized.
+    const deadline = Date.now() + timeoutMs
+    for (;;) {
+      const result = await emptyCopy(origin, name, token, deps.fetch)
+      if (result.ok) {
+        io.out(m.copyEmptied)
+        return true
+      }
+      if (result.reason === 'not-authorized' && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, intervalMs))
+        continue
+      }
+      if (result.reason === 'not-authorized') io.err(m.notThisAccount(origin, name))
+      else if (result.reason === 'too-old') io.err(m.copyTooOld(`npx create-orqevio@latest update${nameFlag(name)}`))
+      else if (result.reason === 'unreachable') io.err(m.copyUnreachable(origin, result.detail ?? ''))
+      else io.err(result.reason === 'other-copy' ? m.otherCopy(origin, result.detail ?? '', name) : m.notOrqevio(origin))
+      if (result.reason === 'other-copy' || result.reason === 'not-orqevio') break
+      return false
+    }
   }
   return false
 }
@@ -478,43 +497,10 @@ async function bucketExists(bucket: string, env: Record<string, string>): Promis
   return /\b10006\b/.test(run.stdout + run.stderr) ? false : null
 }
 
-/** Reads a line from the terminal without echoing it, for an access key. */
-function readHidden(question: string) {
-  return new Promise<string>((resolve) => {
-    const stdin = process.stdin
-    let value = ''
-    const finish = () => {
-      stdin.off('data', onData)
-      stdin.setRawMode(false)
-      stdin.pause()
-      process.stdout.write('\n')
-    }
-    const onData = (chunk: Buffer) => {
-      for (const char of chunk.toString('utf8')) {
-        if (char === '\r' || char === '\n') {
-          finish()
-          return resolve(value)
-        }
-        if (char === '\u0003') {
-          finish()
-          process.exit(130)
-        }
-        if (char === '\u007f' || char === '\b') value = value.slice(0, -1)
-        else if (char >= ' ') value += char
-      }
-    }
-    process.stdout.write(question)
-    stdin.setRawMode(true)
-    stdin.resume()
-    stdin.on('data', onData)
-  })
-}
-
 function terminalIo(): Io {
   return {
     out: (text) => process.stdout.write(`${text}\n`),
     err: (text) => process.stderr.write(`${text}\n`),
-    askSecret: process.stdin.isTTY ? readHidden : undefined,
     ask: process.stdin.isTTY
       ? async (question) => {
           const rl = createInterface({ input: process.stdin, output: process.stdout })

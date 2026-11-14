@@ -288,8 +288,8 @@ Cada versión tiene número y notas (`CHANGELOG.md`, en inglés, y las releases 
 **En un solo paso, para las copias instaladas con el comando.** `npx create-orqevio@latest uninstall` hace los dos pasos desde tu ordenador, sin pasar por la app:
 - Te pide que escribas el nombre de la copia.
 - Borra el bucket y, después, el Worker con todos sus datos.
-- Cloudflare solo borra buckets vacíos. Si el tuyo aún guarda adjuntos, el instalador te pide la dirección de tu copia y su clave de acceso, y le pide a la copia que borre antes sus datos, como hace el botón. La clave solo se envía a tu copia; no se muestra en pantalla ni se guarda.
-- Si prefieres no darle la clave, deja la respuesta en blanco: no se borra nada y te explica las otras formas de vaciar el bucket (desde la app o con **Empty Bucket** en el panel).
+- Cloudflare solo borra buckets vacíos. Si el tuyo aún guarda adjuntos, el instalador te pide la dirección de tu copia y le pide que borre antes sus datos, como hace el botón. La autoriza desde tu cuenta de Cloudflare con un token de un solo uso (un secreto del Worker que caduca en 15 minutos): no necesita tu clave de acceso, y una copia de otra cuenta, aunque se llame igual, no se puede borrar por error.
+- Si lo prefieres, deja la respuesta en blanco: no se borra nada y te explica las otras formas de vaciar el bucket (desde la app o con **Empty Bucket** en el panel).
 
 ## Conectar agentes por MCP
 

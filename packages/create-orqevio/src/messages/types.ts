@@ -48,12 +48,13 @@ export interface Messages {
   /** Before asking for the copy's address and access key, to have it empty the bucket. */
   emptyingThroughCopy(bucket: string): string
   askAddress(name: string): string
-  askAccessKey: string
   badAddress(address: string): string
   notOrqevio(origin: string): string
   otherCopy(origin: string, other: string, name: string): string
-  wrongAccessKey: string
   copyUnreachable(origin: string, detail: string): string
+  authorizingCopy: string
+  notThisAccount(origin: string, name: string): string
+  copyTooOld(updateCommand: string): string
   copyEmptied: string
   uninstallFailed: string
   uninstalled(name: string, logoutCommand: string): string

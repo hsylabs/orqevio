@@ -288,8 +288,8 @@ Every release has a version number and release notes (`CHANGELOG.md` and the Git
 **In one step, for copies installed with the command.** `npx create-orqevio@latest uninstall` does both steps from your computer, without going through the app:
 - It asks you to type the copy's name.
 - It deletes the bucket and, after it, the Worker with all its data.
-- Cloudflare only deletes empty buckets. If yours still holds attachments, the installer asks for your copy's address and its access key, and has the copy delete its data first, as the button does. The key is only sent to your copy; it isn't shown on screen or saved.
-- If you'd rather not give it the key, leave the answer blank: nothing is deleted, and it tells you the other ways to empty the bucket (from the app, or with **Empty Bucket** in the dashboard).
+- Cloudflare only deletes empty buckets. If yours still holds attachments, the installer asks for your copy's address and has the copy delete its data first, as the button does. It authorizes the copy from your Cloudflare account with a one-time token (a Worker secret that expires in 15 minutes), so your access key isn't needed, and a copy in another account, even one with the same name, can't be erased by mistake.
+- If you'd rather not, leave the answer blank: nothing is deleted, and it tells you the other ways to empty the bucket (from the app, or with **Empty Bucket** in the dashboard).
 
 ## Connecting agents over MCP
 
