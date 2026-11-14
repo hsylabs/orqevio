@@ -89,10 +89,11 @@ export class AccountService {
   }
 
   async state(): Promise<AccessStateDTO> {
+    const { install, copyName } = this.deps.env
     const uninstalled = await this.uninstalled()
-    if (uninstalled) return { claimed: false, recoverable: false, uninstalled }
+    if (uninstalled) return { claimed: false, recoverable: false, install, copyName, uninstalled }
     const row = await this.instanceRow()
-    return { claimed: Boolean(row), recoverable: this.isRecoverable(row) }
+    return { claimed: Boolean(row), recoverable: this.isRecoverable(row), install, copyName }
   }
 
   /** Set once the copy was uninstalled from Settings; it then refuses everything but saying so. */

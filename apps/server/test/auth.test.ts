@@ -17,7 +17,8 @@ describe('access to a copy', () => {
     const client = new Client(h)
     const session = await client.get('/api/auth/session')
     expect(session.status).toBe(200)
-    expect(session.body).toEqual({ user: null, workspaces: [], claimed: false, recoverable: false })
+    // How the copy was installed comes too: the sign-in page gives the recovery steps that apply.
+    expect(session.body).toEqual({ user: null, workspaces: [], claimed: false, recoverable: false, install: 'source', copyName: null })
     const login = await client.post('/api/auth/login', { accessKey: 'AAAA-BBBB' })
     expect(login.status).toBe(409)
     expect(login.body.error.code).toBe('not_claimed')
