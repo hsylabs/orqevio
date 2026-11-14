@@ -87,6 +87,7 @@
     "expires": "Expire",
     "expiresUnused": "Expire si inutilisé",
     "never": "Jamais",
+    "idle": "Inutilisé depuis {{days}} jours",
     "showActivity": "Voir son activité"
   },
   "access": {

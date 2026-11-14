@@ -353,8 +353,15 @@ export interface OAuthClientDTO {
   redirectUri: string
 }
 
+/** An access the same application already has, so reconnecting can replace it instead of adding another. */
+export interface OAuthExistingAccessDTO {
+  workspaceId: string
+  createdAt: string
+  lastUsedAt: string | null
+}
+
 export type OAuthRequestDTO =
-  | { kind: 'consent'; client: OAuthClientDTO; scopes: Scope[] }
+  | { kind: 'consent'; client: OAuthClientDTO; scopes: Scope[]; existing: OAuthExistingAccessDTO[] }
   /** Shown to the owner and never sent back: the application is unknown, or the return address is not its own. */
   | { kind: 'problem'; problem: 'unknown_client' | 'bad_redirect'; detail: string }
   /** The request cannot go ahead; the application is told why at this address. */

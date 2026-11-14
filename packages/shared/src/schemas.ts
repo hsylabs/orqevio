@@ -147,4 +147,6 @@ export const oauthDecisionInput = oauthRequestInput.extend({
   allow: z.boolean(),
   workspaceId: z.string().optional(),
   scopes: z.array(z.enum(SCOPES)).max(SCOPES.length).optional(),
+  /** Revoke this application's earlier access to the workspace once the new one is created. */
+  replace: z.boolean().optional(),
 })
