@@ -127,7 +127,7 @@ npx create-orqevio
 
 The installer:
 
-1. Opens your browser so you can sign in to Cloudflare (Wrangler's official sign-in).
+1. Opens your browser so you can sign in to Cloudflare (Wrangler's official sign-in). If it doesn't open, open the link the installer shows. On Windows, the installer opens it itself, through Explorer: some antivirus programs (Norton, for example) block the encoded PowerShell command Wrangler uses to open the browser. If signing in still fails, sign in on its own with `npx wrangler login --browser=false` and run the installer again.
 2. Asks you for a name for the copy (`orqevio` by default), which becomes part of its address.
 3. Deploys the copy and creates its R2 bucket.
 4. Shows you its address (`https://orqevio.<your-subdomain>.workers.dev`) and a randomly generated, single-use **setup code**.
