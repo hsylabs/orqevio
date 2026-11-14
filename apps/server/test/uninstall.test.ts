@@ -52,4 +52,39 @@ describe('uninstalling a copy', () => {
     const restarted = createServices({ db: h.db, bus: h.bus, env: h.env, storage: new LocalStorage(uploads) })
     expect(await restarted.accounts.uninstalled()).toMatchObject({ install: 'source' })
   })
+
+  it('waits for an upload still being written, so its file goes too, and refuses new ones meanwhile', async () => {
+    const other = await createHarness()
+    try {
+      const { client, workspaceId, accessKey } = await signUp(other)
+      const { projectId } = await seedBoard(client, workspaceId)
+      const page = await client.post(`/api/projects/${projectId}/pages`, { title: 'Notas' })
+      const url = `/api/pages/${page.body.id}/attachments`
+      let release!: () => void
+      const gate = new Promise<void>((resolve) => (release = resolve))
+      const slow = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          controller.enqueue(new TextEncoder().encode('hola '))
+          await gate
+          controller.enqueue(new TextEncoder().encode('mundo'))
+          controller.close()
+        },
+      })
+      const upload = client.request('POST', url, slow, { 'Content-Type': 'text/plain', 'Content-Length': '10', 'X-File-Name': 'a.txt' })
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      let done = false
+      const uninstall = client.post('/api/account/uninstall', { accessKey }).finally(() => (done = true))
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      expect(done).toBe(false)
+      expect((await client.upload(url, 'otro', { name: 'b.txt', type: 'text/plain' })).status).toBe(410)
+
+      release()
+      expect((await upload).status).toBe(201)
+      expect((await uninstall).status).toBe(200)
+      expect(readdirSync(path.join(other.env.dataDir, 'uploads'))).toEqual([])
+      expect((other.db.get(sql.raw('select count(*) as n from attachments')) as { n: number }).n).toBe(0)
+    } finally {
+      await other.close()
+    }
+  })
 })

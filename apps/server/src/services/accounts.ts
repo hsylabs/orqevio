@@ -10,6 +10,7 @@ import { AppError, forbidden, unauthorized } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { Deps } from './deps'
+import type { AttachmentService } from './attachments'
 import type { WorkspaceService } from './workspaces'
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -69,6 +70,7 @@ export class AccountService {
     private readonly deps: Deps,
     private readonly access: Access,
     private readonly workspaces: WorkspaceService,
+    private readonly attachments: AttachmentService,
   ) {}
 
   private currentSetupCode() {
@@ -116,14 +118,21 @@ export class AccountService {
     this.access.requireUser(actor)
     const { accessKey } = parse(confirmAccessKeyInput, input)
     await this.verifyAccessKey(actor.userId, accessKey)
-    // Attachments first: if this stops half-way, the data is still there and it can be retried.
-    await this.deps.storage.deleteAll()
+    // Attachments first, once no upload is still writing one: if this stops half-way,
+    // the data is still there, uploads open again and it can be retried.
+    await this.attachments.close()
     const at = new Date().toISOString()
-    this.deps.db.transaction((tx) => {
-      // Every table, children first, without relying on cascades; search indexes follow by trigger.
-      for (const table of UNINSTALL_ORDER) tx.delete(table).run()
-      tx.insert(copyState).values({ key: UNINSTALLED_KEY, value: at }).run()
-    })
+    try {
+      await this.deps.storage.deleteAll()
+      this.deps.db.transaction((tx) => {
+        // Every table, children first, without relying on cascades; search indexes follow by trigger.
+        for (const table of UNINSTALL_ORDER) tx.delete(table).run()
+        tx.insert(copyState).values({ key: UNINSTALLED_KEY, value: at }).run()
+      })
+    } catch (error) {
+      this.attachments.reopen()
+      throw error
+    }
     this.uninstalledState = this.uninstalledDetails(at)
     this.generatedSetupCode = null
     return this.uninstalledState
