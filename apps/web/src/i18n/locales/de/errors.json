@@ -2,6 +2,7 @@
   "codes": {
     "invalid_access_key": "Der Zugangsschlüssel ist nicht korrekt.",
     "invalid_setup_code": "Der Einrichtungscode ist nicht korrekt.",
+    "recovery_not_ready": "Deine Instanz hat noch keinen neuen Einrichtungscode. Wenn du ihn gerade geändert hast, warte einen Moment (manchmal ein paar Minuten) und versuche es noch einmal.",
     "already_claimed": "Diese Instanz ist bereits eingerichtet. Melde dich mit deinem Zugangsschlüssel an.",
     "not_claimed": "Diese Instanz ist noch nicht eingerichtet.",
     "rate_limited": "Zu viele Versuche. Warte ein paar Minuten.",

@@ -2,6 +2,7 @@
   "codes": {
     "invalid_access_key": "La clé d’accès est incorrecte.",
     "invalid_setup_code": "Le code de configuration est incorrect.",
+    "recovery_not_ready": "Votre copie n’a pas encore de nouveau code de configuration. Si vous venez de le changer, patientez un instant (parfois quelques minutes) et réessayez.",
     "already_claimed": "Cette copie est déjà configurée. Connectez-vous avec votre clé d’accès.",
     "not_claimed": "Cette copie n’est pas encore configurée.",
     "rate_limited": "Trop de tentatives. Patientez quelques minutes.",

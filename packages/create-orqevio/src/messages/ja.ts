@@ -73,6 +73,7 @@ Cloudflareアカウントが必要です（無料プランで十分です）。�
     ].join('\n'),
   cannotReadRepoConfig: (detail) => `このフォルダーのwrangler.jsoncを読み込めません：${detail}`,
   badRepoName: (name) => `wrangler.jsoncのWorker名（「${name}」）は使えません。`,
+  settingSetupCode: '新しいセットアップコードをOrqevioに保存しています…',
   setupCodeFailed: '\nコードを変更できませんでした。上に表示されたWranglerのメッセージを確認してください。',
   recovered: (setupCode) =>
     [
@@ -124,6 +125,7 @@ Cloudflareアカウントが必要です（無料プランで十分です）。�
   otherCopy: (origin, other, name) => `${origin}は「${other}」で、「${name}」ではありません。`,
   copyUnreachable: (origin, detail) => `${origin}のOrqevioに接続できませんでした（${detail}）。何も削除していません。`,
   authorizingCopy: 'CloudflareアカウントからOrqevioに許可を与え、応答を待っています（数秒かかります）…',
+  waitingForCopy: (minutes) => `Orqevioにまだ許可が届いていません。Cloudflareでは数分かかることがあります。最大${minutes}分まで待ちます。まだ何も削除していません。`,
   notThisAccount: (origin, name) => `${origin}はこのCloudflareアカウントの「${name}」ではありません（許可が届きませんでした）。何も削除していません。`,
   copyTooOld: (updateCommand) => `お使いのOrqevioは以前のバージョンのため、この操作に対応していません。${updateCommand}で更新してからもう一度このコマンドを実行するか、アプリまたはダッシュボードでバケットを空にしてください。`,
   copyEmptied: 'Orqevioがデータと添付ファイルを削除しました。',

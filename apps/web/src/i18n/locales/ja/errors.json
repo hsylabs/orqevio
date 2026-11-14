@@ -2,6 +2,7 @@
   "codes": {
     "invalid_access_key": "アクセスキーが正しくありません。",
     "invalid_setup_code": "セットアップコードが正しくありません。",
+    "recovery_not_ready": "Orqevioにはまだ新しいセットアップコードがありません。変更したばかりの場合は、少し待ってから（数分かかることもあります）もう一度お試しください。",
     "already_claimed": "このOrqevioはすでにセットアップされています。アクセスキーでログインしてください。",
     "not_claimed": "このOrqevioはまだセットアップされていません。",
     "rate_limited": "試行回数が多すぎます。数分待ってからお試しください。",

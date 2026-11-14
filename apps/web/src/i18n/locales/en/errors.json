@@ -2,6 +2,7 @@
   "codes": {
     "invalid_access_key": "The access key isn’t correct.",
     "invalid_setup_code": "The setup code isn’t correct.",
+    "recovery_not_ready": "Your copy doesn’t have a new setup code yet. If you just changed it, wait a moment (sometimes a few minutes) and try again.",
     "already_claimed": "This copy is already set up. Sign in with your access key.",
     "not_claimed": "This copy isn’t set up yet.",
     "rate_limited": "Too many attempts. Wait a few minutes.",

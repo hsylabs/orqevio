@@ -1,5 +1,6 @@
 // Stands in for Wrangler in the installer tests: records every call and
 // answers like Wrangler would, driven by a small state file.
+import { randomUUID } from 'node:crypto'
 import { appendFileSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 
 const args = process.argv.slice(2)
@@ -13,7 +14,8 @@ const secretsFile = flag('--secrets-file')
 if (secretsFile) record.secrets = { content: readFileSync(secretsFile, 'utf8'), mode: statSync(secretsFile).mode & 0o777 }
 const config = flag('--config')
 if (config) record.config = JSON.parse(readFileSync(config, 'utf8'))
-if (!process.stdin.isTTY && args[0] === 'secret') record.stdin = readFileSync(0, 'utf8')
+const readsSecret = args[0] === 'secret' || (args[0] === 'versions' && args[1] === 'secret')
+if (!process.stdin.isTTY && readsSecret) record.stdin = readFileSync(0, 'utf8')
 appendFileSync(process.env.FAKE_WRANGLER_LOG, `${JSON.stringify(record)}\n`)
 
 const [command, sub] = args
@@ -97,4 +99,28 @@ if (command === 'delete') {
   process.exit(0)
 }
 if (command === 'secret' && sub === 'put') process.exit(0)
+// Like Cloudflare: a secret put in a new version only reaches the copy once that version is
+// deployed. state.secrets[account][worker] holds the deployed ones, which the fake copy reads.
+if (command === 'versions' && sub === 'secret' && args[2] === 'put') {
+  if (!state.exists || state.secretFails) {
+    process.stderr.write('✘ [ERROR] There are currently no uploaded versions of this Worker. Please upload a version before modifying a secret.\n')
+    process.exit(1)
+  }
+  const id = randomUUID()
+  state.versions = { ...state.versions, [id]: { worker: flag('--name'), key: args[3], value: record.stdin, account: record.account } }
+  save()
+  process.stdout.write(`🌀 Creating the secret for the Worker "${flag('--name')}"\n✨ Success! Created version ${id} with secret ${args[3]}.\n`)
+  process.exit(0)
+}
+if (command === 'versions' && sub === 'deploy') {
+  const version = state.versions?.[args[2]?.replace(/@100%$/, '')]
+  if (!version || state.versionDeployFails) {
+    process.stderr.write('✘ [ERROR] A request to the Cloudflare API failed. [code: 10000]\n')
+    process.exit(1)
+  }
+  const accountSecrets = (state.secrets ??= {})[version.account ?? 'acc-1'] ??= {}
+  ;(accountSecrets[version.worker] ??= {})[version.key] = version.value
+  save()
+  process.exit(0)
+}
 process.exit(3)

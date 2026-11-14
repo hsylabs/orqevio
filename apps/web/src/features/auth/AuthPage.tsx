@@ -190,7 +190,6 @@ export function AuthPage({ mode }: { mode: 'login' | 'setup' }) {
     <SetupForm onClaimed={(accessKey) => setRevealed({ accessKey, kind: 'setup' })} />
   ) : (
     <LoginForm
-      recoverable={Boolean(session && !session.user && session.recoverable)}
       copy={{ install: session && !session.user ? session.install : 'source', copyName: session && !session.user ? session.copyName : null }}
       onSignedIn={() => void enter()}
       onRecovered={(accessKey, reason) => setRevealed({ accessKey, kind: 'recovery', reason })}
@@ -246,12 +245,10 @@ function SetupForm({ onClaimed }: { onClaimed: (accessKey: string) => void }) {
 }
 
 function LoginForm({
-  recoverable,
   copy,
   onSignedIn,
   onRecovered,
 }: {
-  recoverable: boolean
   copy: CopyInfo
   onSignedIn: () => void
   onRecovered: (accessKey: string, reason: RecoveryReason) => void
@@ -302,15 +299,18 @@ function LoginForm({
           {t('login.lostKey')}
         </button>
       </div>
-      {lost && <RecoveryPanel recoverable={recoverable} copy={copy} onRecovered={onRecovered} />}
+      {lost && <RecoveryPanel copy={copy} onRecovered={onRecovered} />}
     </AuthLayout>
   )
 }
 
-function RecoveryPanel({ recoverable, copy, onRecovered }: { recoverable: boolean; copy: CopyInfo; onRecovered: (accessKey: string, reason: RecoveryReason) => void }) {
+/**
+ * The steps for this kind of install, and the form for the new code, shown from the start:
+ * the copy says so (recovery_not_ready) when the code has not reached it yet. Nothing polls
+ * meanwhile, which lets a copy on Cloudflare go idle and pick up a new secret sooner.
+ */
+function RecoveryPanel({ copy, onRecovered }: { copy: CopyInfo; onRecovered: (accessKey: string, reason: RecoveryReason) => void }) {
   const { t } = useTranslation('auth')
-  // The new code is usually being set right now, elsewhere: ask again until it is in place.
-  useAccessState({ pollMs: recoverable ? undefined : 5000 })
   const code = <code className="font-mono text-[12px] text-ink" />
   const resetCommand = RESET_ACCESS_COMMANDS[copy.install]
   const [setupCode, setSetupCode] = useState('')
@@ -375,28 +375,25 @@ function RecoveryPanel({ recoverable, copy, onRecovered }: { recoverable: boolea
         </>
       )}
       <p className="mt-2">{t('recovery.vaultUnaffected')}</p>
-      {!recoverable && <p className="mt-2 text-ink-3">{t('recovery.waiting')}</p>}
-      {recoverable && (
-        <form onSubmit={submit} className="mt-4 flex flex-col gap-3" noValidate>
-          <SecretField field="newSetupCode" value={setupCode} onChange={setSetupCode} autoComplete="off" />
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-[13px] font-medium text-ink">{t('recovery.reason.legend')}</legend>
-            {(['lost', 'compromised'] as const).map((option) => (
-              <label key={option} className={cn('flex cursor-pointer items-start gap-3 rounded-[10px] border bg-sheet px-3 py-2.5', reason === option ? 'border-accent' : 'border-line')}>
-                <input type="radio" name="recovery-reason" value={option} checked={reason === option} onChange={() => setReason(option)} className="mt-1 size-4 accent-[var(--accent)]" />
-                <span>
-                  <span className="block text-[13px] font-medium text-ink">{t(`recovery.reason.${option}.label`)}</span>
-                  <span className="block text-[12.5px] text-ink-3">{t(`recovery.reason.${option}.hint`)}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-          {error && <ErrorNote>{error}</ErrorNote>}
-          <Button type="submit" variant="primary" loading={busy}>
-            {t('recovery.submit')}
-          </Button>
-        </form>
-      )}
+      <form onSubmit={submit} className="mt-4 flex flex-col gap-3" noValidate>
+        <SecretField field="newSetupCode" value={setupCode} onChange={setSetupCode} autoComplete="off" />
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-[13px] font-medium text-ink">{t('recovery.reason.legend')}</legend>
+          {(['lost', 'compromised'] as const).map((option) => (
+            <label key={option} className={cn('flex cursor-pointer items-start gap-3 rounded-[10px] border bg-sheet px-3 py-2.5', reason === option ? 'border-accent' : 'border-line')}>
+              <input type="radio" name="recovery-reason" value={option} checked={reason === option} onChange={() => setReason(option)} className="mt-1 size-4 accent-[var(--accent)]" />
+              <span>
+                <span className="block text-[13px] font-medium text-ink">{t(`recovery.reason.${option}.label`)}</span>
+                <span className="block text-[12.5px] text-ink-3">{t(`recovery.reason.${option}.hint`)}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+        {error && <ErrorNote>{error}</ErrorNote>}
+        <Button type="submit" variant="primary" loading={busy}>
+          {t('recovery.submit')}
+        </Button>
+      </form>
     </div>
   )
 }
