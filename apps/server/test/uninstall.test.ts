@@ -87,4 +87,29 @@ describe('uninstalling a copy', () => {
       await other.close()
     }
   })
+
+  it('lets the installer uninstall, with the token it set on the copy, and nothing else', async () => {
+    const token = `${Date.now() + 15 * 60 * 1000}.${'a'.repeat(43)}`
+    const authorized = await createHarness({ uninstallToken: token })
+    const expired = await createHarness({ uninstallToken: `${Date.now() - 1000}.${'b'.repeat(43)}` })
+    const unset = await createHarness()
+    try {
+      for (const target of [authorized, expired, unset]) await signUp(target)
+      const ask = (target: Harness, body: unknown) => new Client(target).post('/api/uninstall', body)
+      // Without the right token, or with an expired one, nothing happens.
+      expect((await ask(unset, { token })).body.error.code).toBe('uninstall_not_authorized')
+      expect((await ask(expired, { token: `${Date.now() - 1000}.${'b'.repeat(43)}` })).status).toBe(403)
+      expect((await ask(authorized, { token: `${token.slice(0, -1)}b` })).status).toBe(403)
+      expect((await ask(authorized, { token: 'short' })).status).toBe(400)
+      for (const target of [authorized, expired, unset]) expect((target.db.get(sql.raw('select count(*) as n from users')) as { n: number }).n).toBe(1)
+
+      const done = await ask(authorized, { token })
+      expect(done.status).toBe(200)
+      expect((authorized.db.get(sql.raw('select count(*) as n from users')) as { n: number }).n).toBe(0)
+      expect((await new Client(authorized).get('/api/auth/session')).body.uninstalled).toBeTruthy()
+      expect((await ask(authorized, { token })).status).toBe(410)
+    } finally {
+      for (const target of [authorized, expired, unset]) await target.close()
+    }
+  })
 })

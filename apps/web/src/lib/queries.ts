@@ -58,12 +58,16 @@ export const useMe = () =>
     staleTime: 60_000,
   })
 
-/** Raw session, including whether this copy is claimed yet (sign-in screens). */
-export const useAccessState = () =>
+/**
+ * Raw session, including whether this copy is claimed yet (sign-in screens).
+ * pollMs keeps asking, for a screen waiting on something done elsewhere (a new setup code).
+ */
+export const useAccessState = ({ pollMs }: { pollMs?: number } = {}) =>
   useQuery({
     queryKey: keys.access,
     queryFn: ({ signal }) => get<MeDTO | AnonymousSessionDTO>('/auth/session', signal),
     staleTime: 0,
+    refetchInterval: pollMs ?? false,
   })
 
 export const useOverview = (wid: string | undefined) =>

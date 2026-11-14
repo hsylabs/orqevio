@@ -28,6 +28,10 @@
     "unverified": "De app heeft zichzelf geregistreerd, dus de naam is niet geverifieerd. Ga alleen verder als je hem zelf net hebt gekoppeld.",
     "local": "Een programma op deze computer krijgt de toegang.",
     "workspace": "Werkruimte",
+    "existing": "{{name}} heeft al toegang tot deze werkruimte (laatst gebruikt {{when}}).",
+    "existingUnused": "{{name}} heeft al toegang tot deze werkruimte, al is die nog niet gebruikt.",
+    "replace": "Eerdere toegang vervangen",
+    "replaceHint": "Die werkt niet meer zodra deze is verbonden. Vink het uit als je een ander {{name}}-account verbindt.",
     "allow": "Toegang toestaan",
     "revokeLater": "Je kunt deze toegang altijd intrekken onder Agents."
   }

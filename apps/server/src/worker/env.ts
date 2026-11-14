@@ -16,6 +16,8 @@ export interface Bindings {
   ORQEVIO_INSTALL?: string
   ORQEVIO_COPY_NAME?: string
   ORQEVIO_BUCKET?: string
+  /** Secret: set by `npx create-orqevio uninstall` to have the copy delete its data. */
+  ORQEVIO_UNINSTALL_TOKEN?: string
   /** "off" stops the copy from looking up the latest published version. */
   UPDATE_CHECK?: string
 }
@@ -42,6 +44,7 @@ export function workerEnv(bindings: Bindings): Env {
     install: installKind(bindings.ORQEVIO_INSTALL, 'cloudflare'),
     copyName: bindings.ORQEVIO_COPY_NAME?.trim() || null,
     copyBucket: bindings.ORQEVIO_BUCKET?.trim() || null,
+    uninstallToken: bindings.ORQEVIO_UNINSTALL_TOKEN?.trim() || null,
     updateCheck: !['0', 'false', 'no', 'off'].includes((bindings.UPDATE_CHECK ?? '').toLowerCase()),
   }
 }

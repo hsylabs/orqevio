@@ -78,7 +78,8 @@
       "vault": "Tu bóveda. Si quieres conservarla, exporta antes una copia cifrada desde la bóveda.",
       "agents": "El acceso de tus agentes y todas las sesiones."
     },
-    "afterwards": "A continuación verás cómo quitar la propia copia de tu cuenta de Cloudflare o de tu servidor.",
+    "afterwards": "Este es el paso 1 de 2. En el paso 2 verás cómo quitar la propia copia de tu cuenta de Cloudflare o de tu servidor.",
+    "oneCommand": "¿La instalaste con el comando? Desde tu ordenador, <code>{{command}}</code> hace los dos pasos de una vez.",
     "accessKey": "Clave de acceso",
     "typeName": "Escribe «{{name}}» para confirmar",
     "confirm": "Desinstalar para siempre"

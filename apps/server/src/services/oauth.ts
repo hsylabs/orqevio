@@ -1,7 +1,7 @@
 import type { OAuthDecisionDTO, OAuthRequestDTO, Scope } from '@orqevio/shared'
 import { SCOPES, oauthDecisionInput, oauthRequestInput } from '@orqevio/shared'
 import { createHash, createHmac } from 'node:crypto'
-import { and, eq, gt, isNull, lt, or } from 'drizzle-orm'
+import { and, desc, eq, gt, isNull, lt, or } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Actor, AgentActor } from '../auth/actor'
 import { randomToken, safeEqual, sha256 } from '../auth/crypto'
@@ -335,7 +335,19 @@ export class OAuthService {
     }
     if (checked.kind === 'redirect') return checked
     const { client } = checked
-    return { kind: 'consent', client: { id: client.id, name: client.name, publishedBy: client.publishedBy, redirectUri: checked.redirectUri }, scopes: checked.scopes }
+    // What this application can already reach, so the screen can offer to replace it when reconnecting.
+    const now = new Date()
+    const existing = await this.deps.db
+      .select({ workspaceId: apiTokens.workspaceId, createdAt: apiTokens.createdAt, lastUsedAt: apiTokens.lastUsedAt })
+      .from(apiTokens)
+      .where(and(eq(apiTokens.userId, actor.userId), eq(apiTokens.oauthClientId, client.id), isNull(apiTokens.revokedAt), or(isNull(apiTokens.expiresAt), gt(apiTokens.expiresAt, now))))
+      .orderBy(desc(apiTokens.lastUsedAt))
+    return {
+      kind: 'consent',
+      client: { id: client.id, name: client.name, publishedBy: client.publishedBy, redirectUri: checked.redirectUri },
+      scopes: checked.scopes,
+      existing: existing.map((e) => ({ workspaceId: e.workspaceId, createdAt: e.createdAt.toISOString(), lastUsedAt: e.lastUsedAt?.toISOString() ?? null })),
+    }
   }
 
   /** The owner's answer: an authorization code, or access_denied. */
@@ -364,6 +376,7 @@ export class OAuthService {
       codeChallenge: checked.codeChallenge,
       scopes,
       expiresAt: new Date(now + CODE_TTL_MS),
+      replacePrevious: data.replace === true,
     })
     return reply({ code })
   }
@@ -408,6 +421,13 @@ export class OAuthService {
         .where(and(eq(workspaceMembers.workspaceId, row.workspaceId), eq(workspaceMembers.userId, row.userId)))
         .get()
       if (!member) return null
+      // Reconnecting: the application's earlier access to this workspace ends as the new one starts.
+      if (row.replacePrevious) {
+        tx.update(apiTokens)
+          .set({ revokedAt: new Date() })
+          .where(and(eq(apiTokens.userId, row.userId), eq(apiTokens.workspaceId, row.workspaceId), eq(apiTokens.oauthClientId, row.clientId), isNull(apiTokens.revokedAt)))
+          .run()
+      }
       const grant = tx
         .insert(apiTokens)
         .values({

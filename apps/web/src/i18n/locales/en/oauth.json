@@ -28,6 +28,10 @@
     "unverified": "It registered itself, so its name isn’t verified. Only continue if you just connected it yourself.",
     "local": "A program on this computer will receive the access.",
     "workspace": "Workspace",
+    "existing": "{{name}} already has access to this workspace (last used {{when}}).",
+    "existingUnused": "{{name}} already has access to this workspace, although it hasn’t used it yet.",
+    "replace": "Replace the earlier access",
+    "replaceHint": "It stops working as soon as this one is connected. Untick it if you’re connecting another {{name}} account.",
     "allow": "Allow access",
     "revokeLater": "You can revoke this access at any time in Agents."
   }

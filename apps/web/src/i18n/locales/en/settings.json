@@ -78,7 +78,8 @@
       "vault": "Your vault. To keep it, export an encrypted copy from the vault first.",
       "agents": "Your agents’ access and every session."
     },
-    "afterwards": "Next, you’ll see how to remove the copy itself from your Cloudflare account or your server.",
+    "afterwards": "This is step 1 of 2. In step 2 you’ll see how to remove the copy itself from your Cloudflare account or your server.",
+    "oneCommand": "Installed it with the command? From your computer, <code>{{command}}</code> does both steps at once.",
     "accessKey": "Access key",
     "typeName": "Type “{{name}}” to confirm",
     "confirm": "Uninstall for good"

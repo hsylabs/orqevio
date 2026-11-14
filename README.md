@@ -150,7 +150,7 @@ If you lose your access key, this generates a new code. Use it in **Lost your ke
 npx create-orqevio@latest uninstall
 ```
 
-Deletes your copy and everything in it, after you type its name: see [Uninstalling](#uninstalling).
+Deletes your copy and everything in it, in one step, after you type its name: see [Uninstalling](#uninstalling).
 
 - **Several copies:** add `--name <name>` to any of these commands.
 - **Several Cloudflare accounts:** the installer asks which one to use; you can also pass it with `--account <id>` or `CLOUDFLARE_ACCOUNT_ID`.
@@ -160,7 +160,7 @@ Deletes your copy and everything in it, after you type its name: see [Uninstalli
 - **What it does, exactly:**
   - Wrangler works in a private temporary folder, never in the folder you're in.
   - The setup code is uploaded as a Worker secret, and the folder is deleted when the installer finishes, even if you interrupt it.
-- **Before the first release on npm:** the `create-orqevio` and `orqevio` packages aren't published yet. Until they are, run the installer from the repository:
+- **From the repository:** to try changes that aren't published on npm yet, run the installer from a checkout:
 
 ```bash
 pnpm install
@@ -246,17 +246,17 @@ If you lose your access key, whoever manages the copy can generate a new one (on
 docker compose exec app node dist/cli.js reset-access
 ```
 
-Without Docker:
+Without Docker, from the repository folder (it uses the same data folder and `.env` as `pnpm start` and `pnpm dev`):
 
 ```bash
-node apps/server/dist/cli.js reset-access
+pnpm cli reset-access
 ```
 
 You can also set a new `SETUP_CODE`, restart the copy and use **Lost your key?** on the sign-in screen. Either way, all sessions are signed out.
 
 **Your agents.** Recovering access asks why. With **I lost my key**, your agents (tokens and OAuth connectors such as Claude) keep their access, and the screen lists them so you can revoke any you don't recognize. With **Someone else may have it**, every agent is disconnected, including authorization codes not yet exchanged: whoever had the key may have connected one of their own. With the CLI, add `--revoke-agents` to `reset-access` for the same.
 
-`node dist/cli.js status` shows whether the copy has been claimed, and by whom. None of this affects the vault: the server never knows its master password.
+`status` (`docker compose exec app node dist/cli.js status`, or `pnpm cli status` without Docker) shows whether the copy has been claimed, and by whom. None of this affects the vault: the server never knows its master password.
 
 ## Updates
 
@@ -285,7 +285,11 @@ Every release has a version number and release notes (`CHANGELOG.md` and the Git
 | Docker | The containers and the `orqevio-data` volume: `docker compose down -v`; then the folder where you installed it |
 | From source | The `DATA_DIR` folder, once the server is stopped |
 
-**Without going through the app.** `npx create-orqevio@latest uninstall` also works on its own. It asks you to type the copy's name, then deletes the bucket and, after it, the Worker with all its data. Cloudflare only deletes empty buckets: if yours still holds attachments, the installer stops before deleting anything and tells you how to empty it (from the app, or with **Empty Bucket** in the dashboard).
+**In one step, for copies installed with the command.** `npx create-orqevio@latest uninstall` does both steps from your computer, without going through the app:
+- It asks you to type the copy's name.
+- It deletes the bucket and, after it, the Worker with all its data.
+- Cloudflare only deletes empty buckets. If yours still holds attachments, the installer asks for your copy's address and has the copy delete its data first, as the button does. It authorizes the copy from your Cloudflare account with a one-time token (a Worker secret that expires in 15 minutes), so your access key isn't needed, and a copy in another account, even one with the same name, can't be erased by mistake.
+- If you'd rather not, leave the answer blank: nothing is deleted, and it tells you the other ways to empty the bucket (from the app, or with **Empty Bucket** in the dashboard).
 
 ## Connecting agents over MCP
 

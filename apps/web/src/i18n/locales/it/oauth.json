@@ -28,6 +28,10 @@
     "unverified": "Si è registrata da sola, quindi il suo nome non è verificato. Continua solo se l’hai appena collegata tu.",
     "local": "L’accesso verrà concesso a un programma su questo computer.",
     "workspace": "Spazio",
+    "existing": "{{name}} ha già accesso a questo spazio (ultimo utilizzo: {{when}}).",
+    "existingUnused": "{{name}} ha già accesso a questo spazio, anche se non l’ha ancora usato.",
+    "replace": "Sostituisci l’accesso precedente",
+    "replaceHint": "Smette di funzionare appena questo viene collegato. Togli la spunta se stai collegando un altro account di {{name}}.",
     "allow": "Consenti l’accesso",
     "revokeLater": "Puoi revocare questo accesso in qualsiasi momento in Agenti."
   }

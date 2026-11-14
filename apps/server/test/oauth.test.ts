@@ -123,7 +123,7 @@ describe('connecting an application with OAuth', () => {
     const clientId = await register()
     const { challenge } = pkce()
     const consent = await owner.post('/api/oauth/request', { params: authorizeParams(clientId, challenge) })
-    expect(consent.body).toEqual({ kind: 'consent', client: { id: clientId, name: 'Claude', publishedBy: null, redirectUri: REDIRECT }, scopes: ['tasks:read', 'tasks:write'] })
+    expect(consent.body).toEqual({ kind: 'consent', client: { id: clientId, name: 'Claude', publishedBy: null, redirectUri: REDIRECT }, scopes: ['tasks:read', 'tasks:write'], existing: [] })
 
     const { tokens } = await connectApp(['tasks:read'])
     expect(tokens).toMatchObject({ token_type: 'Bearer', expires_in: 3600, scope: 'tasks:read' })
@@ -207,6 +207,49 @@ describe('connecting an application with OAuth', () => {
     const revoked = await call('/oauth/revoke', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `token=${second.tokens.refresh_token}` })
     expect(revoked.status).toBe(200)
     expect(await mcpStatus(second.tokens.access_token)).toBe(401)
+  })
+
+  it('replaces the earlier access of an application that reconnects, only when the owner says so', async () => {
+    // A name of its own, so the accesses of the other tests do not count here.
+    const clientId = await register([REDIRECT], 'Claude (reconecta)')
+    expect(await register([REDIRECT], 'Claude (reconecta)')).toBe(clientId)
+    const connect = async (replace?: boolean) => {
+      const { verifier, challenge } = pkce()
+      const params = authorizeParams(clientId, challenge)
+      const decision = await owner.post('/api/oauth/decision', { params, allow: true, workspaceId, scopes: ['tasks:read'], replace })
+      const code = new URL(decision.body.redirect).searchParams.get('code')!
+      return { code, verifier }
+    }
+    const exchange = async ({ code, verifier }: { code: string; verifier: string }) => {
+      const res = await token({ grant_type: 'authorization_code', code, code_verifier: verifier, client_id: clientId, redirect_uri: REDIRECT, resource: RESOURCE })
+      expect(res.status).toBe(200)
+      return res.body.access_token as string
+    }
+    const existing = async () => (await owner.post('/api/oauth/request', { params: authorizeParams(clientId, pkce().challenge) })).body.existing as Array<{ workspaceId: string }>
+
+    expect(await existing()).toEqual([])
+    const first = await exchange(await connect())
+    // Without replacing, both accesses work: two accounts of the same application are both legitimate.
+    const second = await exchange(await connect(false))
+    expect(await mcpStatus(first)).toBe(200)
+    expect(await mcpStatus(second)).toBe(200)
+    expect((await existing()).map((e) => e.workspaceId)).toEqual([workspaceId, workspaceId])
+
+    // Replacing ends the earlier ones only when the new access is created, not when the owner answers.
+    const pending = await connect(true)
+    expect(await mcpStatus(second)).toBe(200)
+    const third = await exchange(pending)
+    expect(await mcpStatus(first)).toBe(401)
+    expect(await mcpStatus(second)).toBe(401)
+    expect(await mcpStatus(third)).toBe(200)
+    expect(await existing()).toHaveLength(1)
+
+    // Other applications keep their access.
+    const other = await connectApp()
+    const fourth = await exchange(await connect(true))
+    expect(await mcpStatus(other.tokens.access_token)).toBe(200)
+    expect(await mcpStatus(third)).toBe(401)
+    expect(await mcpStatus(fourth)).toBe(200)
   })
 })
 

@@ -47,13 +47,44 @@ const calls = (): Array<{ args: string[]; cwd: string; metrics: string | null; a
 const commands = () => calls().map((c) => c.args.slice(0, 2).join(' '))
 
 // The assertions below read the Spanish messages; the English ones have tests of their own.
-async function run(argv: string[], answers: string[] | null = null, language: Language = 'es') {
+async function run(argv: string[], answers: string[] | null = null, language: Language = 'es', extra: { fetch?: typeof fetch } = {}) {
   const out: string[] = []
   const err: string[] = []
   const io: Io = { out: (t) => out.push(t), err: (t) => err.push(t) }
   if (answers) io.ask = async () => answers.shift() ?? ''
-  const code = await main(argv, io, { orqevio, language })
+  const code = await main(argv, io, { orqevio, language, fetch: extra.fetch, uninstallWait: { intervalMs: 5, timeoutMs: 60 } })
   return { code, out: out.join('\n'), err: err.join('\n') }
+}
+
+/**
+ * Stands in for a running copy in a Cloudflare account. It uninstalls only with the token the
+ * installer set as its Worker secret in that same account (read back from the fake Wrangler's
+ * log), and uninstalling empties the fake Wrangler's bucket, as the real copy empties R2.
+ */
+function fakeCopy({ name = 'ana', account = 'acc-1' } = {}) {
+  const requests: Array<{ origin: string; path: string; body: Record<string, string> | null }> = []
+  const respond = (status: number, data: unknown) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+  let uninstalled = false
+  const impl = (async (input: string | URL | Request, init: RequestInit = {}) => {
+    const url = new URL(String(input))
+    const body = init.body ? (JSON.parse(String(init.body)) as Record<string, string>) : null
+    requests.push({ origin: url.origin, path: url.pathname, body })
+    if (url.pathname === '/api/auth/session') {
+      return respond(200, { user: null, workspaces: [], claimed: !uninstalled, recoverable: false, install: 'cli', copyName: name, ...(uninstalled ? { uninstalled: { install: 'cli' } } : {}) })
+    }
+    if (url.pathname === '/api/uninstall') {
+      if (uninstalled) return respond(410, { error: { code: 'uninstalled' } })
+      const secret = calls()
+        .filter((c) => c.args.join(' ') === `secret put ORQEVIO_UNINSTALL_TOKEN --name ${name}` && c.account === account)
+        .at(-1)?.stdin
+      if (!secret || body?.token !== secret) return respond(403, { error: { code: 'uninstall_not_authorized' } })
+      uninstalled = true
+      writeFileSync(state, JSON.stringify({ ...JSON.parse(readFileSync(state, 'utf8')), bucket: 'empty' }))
+      return respond(200, { at: '2026-11-14T12:00:00.000Z', install: 'cli', copyName: name, bucket: null })
+    }
+    return respond(404, {})
+  }) as typeof fetch
+  return { impl, calls: requests }
 }
 
 describe('create-orqevio', () => {
@@ -233,6 +264,61 @@ describe('create-orqevio', () => {
     expect(result.err).toContain('npx create-orqevio@latest uninstall --name ana')
     expect(commands()).not.toContain('delete --name')
     expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: true, bucket: 'full' })
+  })
+
+  it('has the copy delete its attachments, authorized from the account, then removes everything in one go', async () => {
+    setState({ exists: true, bucket: 'full' })
+    const copy = fakeCopy()
+    const result = await run(['uninstall', '--name', 'ana'], ['ana', 'ana.ana.workers.dev'], 'es', { fetch: copy.impl })
+    expect(result.code).toBe(0)
+    expect(result.out).toContain('El instalador puede pedirle a tu copia que los borre')
+    expect(result.out).toContain('Autorizando a tu copia desde tu cuenta de Cloudflare')
+    expect(result.out).toContain('Tu copia ha borrado sus datos y sus adjuntos')
+    expect(result.out).toContain('La copia «ana» está desinstalada')
+    // The token goes to the Worker of the chosen account through stdin, and from there to the copy.
+    const secret = calls().find((c) => c.args[0] === 'secret')!
+    expect(secret.args).toEqual(['secret', 'put', 'ORQEVIO_UNINSTALL_TOKEN', '--name', 'ana'])
+    expect(secret.account).toBe('acc-1')
+    expect(secret.stdin).toMatch(/^\d{13}\.[\w-]{43}$/)
+    expect(Number(secret.stdin!.split('.')[0])).toBeGreaterThan(Date.now())
+    expect(copy.calls.map((c) => `${c.origin}${c.path}`)).toEqual(['https://ana.ana.workers.dev/api/auth/session', 'https://ana.ana.workers.dev/api/uninstall'])
+    expect(copy.calls[1]!.body).toEqual({ token: secret.stdin })
+    // The bucket is tried, emptied through the copy and deleted; then the Worker goes.
+    expect(calls().filter((c) => c.args.includes('delete')).map((c) => c.args.join(' '))).toEqual(['r2 bucket delete ana-uploads', 'r2 bucket delete ana-uploads', 'delete --name ana --force'])
+    expect(JSON.parse(readFileSync(state, 'utf8')).bucket).toBeUndefined()
+    expect(result.out + result.err).not.toContain(secret.stdin)
+  })
+
+  it('never erases a copy of another account, even one with the same name, nor anything without an answer', async () => {
+    setState({ exists: true, bucket: 'full' })
+    // Same name, another Cloudflare account: it never receives the token, so it refuses.
+    const elsewhere = fakeCopy({ account: 'acc-2' })
+    const result = await run(['uninstall', '--name', 'ana'], ['ana', 'https://ana.otra.workers.dev'], 'es', { fetch: elsewhere.impl })
+    expect(result.code).toBe(1)
+    expect(result.err).toContain('https://ana.otra.workers.dev no es la copia «ana» de esta cuenta de Cloudflare')
+    expect(elsewhere.calls.filter((c) => c.path === '/api/uninstall').length).toBeGreaterThan(0)
+    expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: true, bucket: 'full' })
+
+    const named = fakeCopy({ name: 'otra' })
+    const other = await run(['uninstall', '--name', 'ana'], ['ana', 'https://otra.ana.workers.dev', 'http://example.com', ''], 'es', { fetch: named.impl })
+    expect(other.err).toContain('https://otra.ana.workers.dev es la copia «otra», no «ana»')
+    expect(other.err).toContain('«http://example.com» no es una dirección')
+    expect(other.err).toContain('El bucket «ana-uploads» todavía guarda adjuntos')
+    expect(named.calls.map((c) => c.path)).toEqual(['/api/auth/session'])
+
+    expect(commands()).not.toContain('delete --name')
+    expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: true, bucket: 'full' })
+  })
+
+  it('tells the owner of an older copy to update it first', async () => {
+    setState({ exists: true, bucket: 'full' })
+    const old = fakeCopy()
+    const tooOld = (async (input: string | URL | Request, init?: RequestInit) =>
+      new URL(String(input)).pathname === '/api/uninstall' ? new Response('{}', { status: 404 }) : old.impl(input, init)) as typeof fetch
+    const result = await run(['uninstall', '--name', 'ana'], ['ana', 'https://ana.ana.workers.dev'], 'es', { fetch: tooOld })
+    expect(result.code).toBe(1)
+    expect(result.err).toContain('Actualízala con npx create-orqevio@latest update --name ana')
+    expect(commands()).not.toContain('delete --name')
   })
 
   it('finishes an uninstall left halfway, and says when there is nothing to delete', async () => {

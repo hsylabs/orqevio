@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { rmSync } from 'node:fs'
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -10,6 +11,7 @@ import { parseJsonc } from './jsonc'
 import { CATALOGS, LANGUAGES, type Language, type Messages, detectLanguage, isLanguage } from './messages'
 import { generateSetupCode } from './setup-code'
 import { openOnWindows } from './browser'
+import { copyOrigin, emptyCopy } from './copy'
 import { deployedUrls, runWrangler } from './wrangler'
 
 export interface Io {
@@ -32,6 +34,10 @@ export interface Deps {
   platform?: NodeJS.Platform
   /** How a link is opened on Windows (tests pass their own). */
   openOnWindows?: (url: string) => void
+  /** How the installer reaches a copy over HTTP (tests pass their own). */
+  fetch?: typeof fetch
+  /** How often and how long uninstall waits for a copy to receive its authorization. */
+  uninstallWait?: { intervalMs: number; timeoutMs: number }
 }
 
 /** Signs in without the installer, for when the browser never opens. */
@@ -107,7 +113,7 @@ export async function main(argv: string[], io: Io = terminalIo(), deps: Deps = {
     io.err(m.accountUnreachable)
     return 1
   }
-  if (command === 'uninstall') return uninstall(name, exists, env, io, m)
+  if (command === 'uninstall') return uninstall(name, exists, env, io, m, deps)
   let mode = command
   if (command === 'install' && exists) {
     const answer = io.ask ? (await io.ask(`${m.askUpdate(name)} ${m.yesNo} `)).trim() : 'n'
@@ -385,10 +391,12 @@ async function recover(name: string, env: Record<string, string>, io: Io, m: Mes
 
 /**
  * `uninstall`: deletes the copy's bucket, then its Worker, whose Durable Object holds
- * the rest of the data. Cloudflare only deletes an empty bucket, and the installer
- * cannot empty one, so a bucket with attachments stops it before anything is deleted.
+ * the rest of the data. Cloudflare only deletes an empty bucket, and Wrangler cannot
+ * list or empty one: when it still holds attachments, the copy itself deletes them
+ * (as Settings → Uninstall does), signed in with the access key the person types.
+ * Nothing is deleted until the bucket is gone.
  */
-async function uninstall(name: string, workerFound: boolean, env: Record<string, string>, io: Io, m: Messages) {
+async function uninstall(name: string, workerFound: boolean, env: Record<string, string>, io: Io, m: Messages, deps: Deps) {
   const bucket = bucketName(name)
   const bucketFound = await bucketExists(bucket, env)
   if (!workerFound && bucketFound === false) {
@@ -400,16 +408,17 @@ async function uninstall(name: string, workerFound: boolean, env: Record<string,
     io.err(m.nothingDeleted)
     return 1
   }
+  const retryCommand = `npx create-orqevio@latest uninstall${nameFlag(name)}`
   if (bucketFound !== false) {
-    const run = await runWrangler(['r2', 'bucket', 'delete', bucket], { capture: true, env })
-    const output = run.stdout + run.stderr
-    // Cloudflare's R2 answers 10008 (BucketNotEmpty) and 10006 (NoSuchBucket).
-    if (run.code !== 0 && /\b10008\b/.test(output)) {
-      io.err(m.bucketNotEmpty(bucket, `npx create-orqevio@latest uninstall${nameFlag(name)}`))
+    let bucketDeleted = await deleteBucket(bucket, env, io)
+    if (bucketDeleted === 'not-empty' && workerFound && (await emptyThroughCopy(name, bucket, env, io, m, deps))) {
+      bucketDeleted = await deleteBucket(bucket, env, io)
+    }
+    if (bucketDeleted === 'not-empty') {
+      io.err(m.bucketNotEmpty(bucket, retryCommand))
       return 1
     }
-    if (run.code !== 0 && !/\b10006\b/.test(output)) {
-      io.err(output.trim())
+    if (bucketDeleted === 'failed') {
       io.err(m.uninstallFailed)
       return 1
     }
@@ -420,6 +429,65 @@ async function uninstall(name: string, workerFound: boolean, env: Record<string,
   }
   io.out(m.uninstalled(name, 'npx wrangler logout'))
   return 0
+}
+
+/** Deletes the bucket; Cloudflare's R2 answers 10008 (BucketNotEmpty) and 10006 (NoSuchBucket). */
+async function deleteBucket(bucket: string, env: Record<string, string>, io: Io): Promise<'deleted' | 'not-empty' | 'failed'> {
+  const run = await runWrangler(['r2', 'bucket', 'delete', bucket], { capture: true, env })
+  const output = run.stdout + run.stderr
+  if (run.code === 0 || /\b10006\b/.test(output)) return 'deleted'
+  if (/\b10008\b/.test(output)) return 'not-empty'
+  io.err(output.trim())
+  return 'failed'
+}
+
+/**
+ * Has the copy delete its data and attachments. The installer proves it controls the account
+ * by setting a one-time token as a secret of the Worker there, and the copy only uninstalls
+ * with it: a copy at an address typed by mistake (another account, another name) refuses.
+ * A blank answer stops without deleting anything. True once the copy is empty.
+ */
+async function emptyThroughCopy(name: string, bucket: string, env: Record<string, string>, io: Io, m: Messages, deps: Deps) {
+  const { intervalMs, timeoutMs } = deps.uninstallWait ?? { intervalMs: 3000, timeoutMs: 90_000 }
+  io.out(m.emptyingThroughCopy(bucket))
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const address = (await io.ask!(m.askAddress(name))).trim()
+    if (!address) return false
+    const origin = copyOrigin(address)
+    if (!origin) {
+      io.err(m.badAddress(address))
+      continue
+    }
+    // Expires on its own, in case the uninstall stops half-way and the copy stays.
+    const token = `${Date.now() + 15 * 60_000}.${randomBytes(32).toString('base64url')}`
+    const set = await runWrangler(['secret', 'put', 'ORQEVIO_UNINSTALL_TOKEN', '--name', name], { input: token, env, capture: true })
+    if (set.code !== 0) {
+      io.err((set.stderr || set.stdout).trim())
+      io.err(m.uninstallFailed)
+      return false
+    }
+    io.out(m.authorizingCopy)
+    // The secret takes a few seconds to reach the copy: until then it answers not-authorized.
+    const deadline = Date.now() + timeoutMs
+    for (;;) {
+      const result = await emptyCopy(origin, name, token, deps.fetch)
+      if (result.ok) {
+        io.out(m.copyEmptied)
+        return true
+      }
+      if (result.reason === 'not-authorized' && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, intervalMs))
+        continue
+      }
+      if (result.reason === 'not-authorized') io.err(m.notThisAccount(origin, name))
+      else if (result.reason === 'too-old') io.err(m.copyTooOld(`npx create-orqevio@latest update${nameFlag(name)}`))
+      else if (result.reason === 'unreachable') io.err(m.copyUnreachable(origin, result.detail ?? ''))
+      else io.err(result.reason === 'other-copy' ? m.otherCopy(origin, result.detail ?? '', name) : m.notOrqevio(origin))
+      if (result.reason === 'other-copy' || result.reason === 'not-orqevio') break
+      return false
+    }
+  }
+  return false
 }
 
 /** true or false, or null when the account could not say. */

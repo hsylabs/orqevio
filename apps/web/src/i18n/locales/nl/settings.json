@@ -78,7 +78,8 @@
       "vault": "Je kluis. Wil je die bewaren, exporteer dan eerst een versleutelde kopie vanuit de kluis.",
       "agents": "De toegang van je agents en alle sessies."
     },
-    "afterwards": "Daarna zie je hoe je de installatie zelf uit je Cloudflare-account of van je server haalt.",
+    "afterwards": "Dit is stap 1 van 2. In stap 2 zie je hoe je de installatie zelf uit je Cloudflare-account of van je server haalt.",
+    "oneCommand": "Met de opdracht geïnstalleerd? Op je computer doet <code>{{command}}</code> beide stappen in één keer.",
     "accessKey": "Toegangssleutel",
     "typeName": "Typ ‘{{name}}’ om te bevestigen",
     "confirm": "Definitief verwijderen"

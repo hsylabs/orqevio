@@ -78,7 +78,8 @@
       "vault": "Seu cofre. Para mantê-lo, exporte antes uma cópia criptografada pelo cofre.",
       "agents": "O acesso dos seus agentes e todas as sessões."
     },
-    "afterwards": "Em seguida, você verá como remover a própria cópia da sua conta da Cloudflare ou do seu servidor.",
+    "afterwards": "Esta é a etapa 1 de 2. Na etapa 2, você verá como remover a própria cópia da sua conta da Cloudflare ou do seu servidor.",
+    "oneCommand": "Instalou com o comando? No seu computador, <code>{{command}}</code> faz as duas etapas de uma vez.",
     "accessKey": "Chave de acesso",
     "typeName": "Digite “{{name}}” para confirmar",
     "confirm": "Desinstalar para sempre"

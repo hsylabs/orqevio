@@ -28,6 +28,10 @@
     "unverified": "Diese App hat sich selbst registriert, daher ist ihr Name nicht verifiziert. Fahre nur fort, wenn du sie gerade selbst verbunden hast.",
     "local": "Ein Programm auf diesem Computer erhält den Zugriff.",
     "workspace": "Arbeitsbereich",
+    "existing": "{{name}} hat bereits Zugriff auf diesen Arbeitsbereich (zuletzt benutzt {{when}}).",
+    "existingUnused": "{{name}} hat bereits Zugriff auf diesen Arbeitsbereich, hat ihn aber noch nicht benutzt.",
+    "replace": "Bisherigen Zugriff ersetzen",
+    "replaceHint": "Er funktioniert nicht mehr, sobald dieser verbunden ist. Entferne das Häkchen, wenn du ein weiteres {{name}}-Konto verbindest.",
     "allow": "Zugriff erlauben",
     "revokeLater": "Du kannst diesen Zugriff jederzeit unter Agenten widerrufen."
   }

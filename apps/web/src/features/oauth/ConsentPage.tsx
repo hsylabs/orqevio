@@ -9,6 +9,7 @@ import { LogoMark, Wordmark } from '../../components/Logo'
 import { Avatar } from '../../components/ui/Avatar'
 import { Button } from '../../components/ui/Button'
 import { errorMessage, post } from '../../lib/api'
+import { relativeTime } from '../../lib/format'
 import { useMe } from '../../lib/queries'
 import { localPref } from '../../lib/theme'
 import { AccessRows } from '../agents/AccessRows'
@@ -98,12 +99,16 @@ function Consent({ params, request, workspaces }: { params: Record<string, strin
   const [leaving, setLeaving] = useState<string | null>(null)
   const scopes = scopesFromLevels({ tasks, docs })
   const back = destination(client.redirectUri)
+  // Reconnecting: the access this application already has here is replaced, unless it is another account of it.
+  const [replace, setReplace] = useState(true)
+  const previous = request.existing.filter((access) => access.workspaceId === workspaceId)
+  const lastUsed = previous.map((access) => access.lastUsedAt).filter((when): when is string => when !== null).sort().at(-1)
 
   async function decide(allow: boolean) {
     setBusy(allow ? 'allow' : 'deny')
     setError(null)
     try {
-      const { redirect } = await post<OAuthDecisionDTO>('/oauth/decision', { params, allow, workspaceId, scopes })
+      const { redirect } = await post<OAuthDecisionDTO>('/oauth/decision', { params, allow, workspaceId, scopes, replace: previous.length > 0 && replace })
       setLeaving(redirect)
     } catch (err) {
       setError(errorMessage(err))
@@ -151,6 +156,19 @@ function Consent({ params, request, workspaces }: { params: Record<string, strin
             ))}
           </select>
         </label>
+
+        {previous.length > 0 && (
+          <section className="rounded-[14px] border border-line bg-sunken p-4 text-[13px] leading-relaxed">
+            <p className="text-ink-2">{lastUsed ? t('consent.existing', { name: client.name, when: relativeTime(lastUsed) }) : t('consent.existingUnused', { name: client.name })}</p>
+            <label className="mt-3 flex cursor-pointer items-start gap-2.5">
+              <input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} className="mt-0.5 size-4 shrink-0 accent-[var(--accent)]" />
+              <span>
+                <span className="block font-medium text-ink">{t('consent.replace')}</span>
+                <span className="block text-[12.5px] text-ink-3">{t('consent.replaceHint', { name: client.name })}</span>
+              </span>
+            </label>
+          </section>
+        )}
 
         <AccessRows tasks={tasks} docs={docs} onTasks={setTasks} onDocs={setDocs} />
         {scopes.length === 0 && <p className="text-[12.5px] text-danger">{t('agents:access.atLeastOne')}</p>}

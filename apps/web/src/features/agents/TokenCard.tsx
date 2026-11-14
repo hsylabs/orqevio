@@ -1,6 +1,6 @@
 import type { TokenDTO } from '@orqevio/shared'
 import { levelFromScopes } from '@orqevio/shared'
-import { LockKeyhole, Trash as TrashIcon } from 'lucide-react'
+import { Clock, LockKeyhole, Trash as TrashIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Avatar } from '../../components/ui/Avatar'
@@ -40,6 +40,7 @@ export function TokenCard({ token, onRevoke, onShowActivity, inactive }: { token
   const tasks = levelFromScopes(token.scopes, 'tasks')
   const docs = levelFromScopes(token.scopes, 'docs')
   const back = token.oauth ? destination(token.oauth.redirectUri) : null
+  const idle = token.revokedAt ? null : idleDays(token.lastUsedAt ?? token.createdAt)
   return (
     <article className={cn('rounded-[16px] border border-line bg-surface p-4 shadow-sm', inactive && 'opacity-60')}>
       <div className="flex items-start gap-3">
@@ -64,6 +65,11 @@ export function TokenCard({ token, onRevoke, onShowActivity, inactive }: { token
         <span className="inline-flex h-6 items-center gap-1 rounded-full bg-sunken px-2 text-[11.5px] text-ink-3">
           <LockKeyhole className="size-3" /> {t('token.vaultNever')}
         </span>
+        {idle !== null && (
+          <span className="inline-flex h-6 items-center gap-1 rounded-full bg-sunken px-2 text-[11.5px] font-medium text-warn">
+            <Clock className="size-3" /> {t('token.idle', { days: idle })}
+          </span>
+        )}
       </div>
       <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3 text-[11.5px]">
         <div>
@@ -87,6 +93,14 @@ export function TokenCard({ token, onRevoke, onShowActivity, inactive }: { token
     </article>
   )
 }
+
+/** Whole days since an access was last used (or created, if never), from a week on: below that, null. */
+export function idleDays(since: string, now = Date.now()) {
+  const days = Math.floor((now - new Date(since).getTime()) / 86_400_000)
+  return days >= IDLE_DAYS ? days : null
+}
+
+const IDLE_DAYS = 7
 
 function ScopePill({ area, level }: { area: 'tasks' | 'docs'; level: 'none' | 'read' | 'write' }) {
   const { t } = useTranslation('agents')

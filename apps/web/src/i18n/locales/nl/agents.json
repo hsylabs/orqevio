@@ -86,6 +86,7 @@
     "expires": "Verloopt",
     "expiresUnused": "Verloopt indien ongebruikt",
     "never": "Nooit",
+    "idle": "{{days}} dagen niet gebruikt",
     "showActivity": "Activiteit bekijken"
   },
   "access": {

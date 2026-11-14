@@ -87,6 +87,7 @@
     "expires": "Caduca",
     "expiresUnused": "Caduca si no se usa",
     "never": "Nunca",
+    "idle": "Sin uso desde hace {{days}} días",
     "showActivity": "Ver su actividad"
   },
   "access": {

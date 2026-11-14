@@ -1,4 +1,4 @@
-import type { AnonymousSessionDTO, MeDTO, RecoveryReason, UninstalledDTO } from '@orqevio/shared'
+import type { AnonymousSessionDTO, InstallKind, MeDTO, RecoveryReason, UninstalledDTO } from '@orqevio/shared'
 import { claimInput, recoverInput, unlockInput } from '@orqevio/shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
@@ -22,7 +22,31 @@ import { OrbitIllustration } from './OrbitIllustration'
 const PILLARS = ['tasks', 'docs', 'vault', 'agents'] as const
 
 /** What whoever manages the copy runs to issue a new access key; a command, never translated. */
-const RESET_ACCESS_COMMAND = 'docker compose exec app node dist/cli.js reset-access'
+/** The command that issues a new access key on the server itself. */
+const RESET_ACCESS_COMMANDS: Partial<Record<InstallKind, string>> = {
+  docker: 'docker compose exec app node dist/cli.js reset-access',
+  // From the repository: it runs where `pnpm start` and `pnpm dev` keep the data, with the same .env.
+  source: 'pnpm cli reset-access',
+}
+
+/** An installer command for this copy, naming it unless it has the default name. */
+const installerCommand = (action: 'recover' | 'uninstall', copyName: string | null) =>
+  `npx create-orqevio@latest ${action}${copyName && copyName !== 'orqevio' ? ` --name ${copyName}` : ''}`
+
+/** How the copy was installed and its Worker name, as the session reports them. */
+interface CopyInfo {
+  install: InstallKind
+  copyName: string | null
+}
+
+function CommandLine({ value }: { value: string }) {
+  return (
+    <div className="mt-2 flex items-center gap-2 rounded-[10px] border border-line bg-sheet py-1.5 pr-1.5 pl-3">
+      <code className="min-w-0 flex-1 font-mono text-[12.5px] break-words text-ink">{value}</code>
+      <CopyButton value={value} />
+    </div>
+  )
+}
 
 function AuthLayout({ title, subtitle, children }: { title: string; subtitle: ReactNode; children: ReactNode }) {
   const { t } = useTranslation('auth')
@@ -167,6 +191,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'setup' }) {
   ) : (
     <LoginForm
       recoverable={Boolean(session && !session.user && session.recoverable)}
+      copy={{ install: session && !session.user ? session.install : 'source', copyName: session && !session.user ? session.copyName : null }}
       onSignedIn={() => void enter()}
       onRecovered={(accessKey, reason) => setRevealed({ accessKey, kind: 'recovery', reason })}
     />
@@ -220,7 +245,17 @@ function SetupForm({ onClaimed }: { onClaimed: (accessKey: string) => void }) {
   )
 }
 
-function LoginForm({ recoverable, onSignedIn, onRecovered }: { recoverable: boolean; onSignedIn: () => void; onRecovered: (accessKey: string, reason: RecoveryReason) => void }) {
+function LoginForm({
+  recoverable,
+  copy,
+  onSignedIn,
+  onRecovered,
+}: {
+  recoverable: boolean
+  copy: CopyInfo
+  onSignedIn: () => void
+  onRecovered: (accessKey: string, reason: RecoveryReason) => void
+}) {
   const { t } = useTranslation('auth')
   const [accessKey, setAccessKey] = useState('')
   const [fieldError, setFieldError] = useState<string | undefined>()
@@ -267,13 +302,17 @@ function LoginForm({ recoverable, onSignedIn, onRecovered }: { recoverable: bool
           {t('login.lostKey')}
         </button>
       </div>
-      {lost && <RecoveryPanel recoverable={recoverable} onRecovered={onRecovered} />}
+      {lost && <RecoveryPanel recoverable={recoverable} copy={copy} onRecovered={onRecovered} />}
     </AuthLayout>
   )
 }
 
-function RecoveryPanel({ recoverable, onRecovered }: { recoverable: boolean; onRecovered: (accessKey: string, reason: RecoveryReason) => void }) {
+function RecoveryPanel({ recoverable, copy, onRecovered }: { recoverable: boolean; copy: CopyInfo; onRecovered: (accessKey: string, reason: RecoveryReason) => void }) {
   const { t } = useTranslation('auth')
+  // The new code is usually being set right now, elsewhere: ask again until it is in place.
+  useAccessState({ pollMs: recoverable ? undefined : 5000 })
+  const code = <code className="font-mono text-[12px] text-ink" />
+  const resetCommand = RESET_ACCESS_COMMANDS[copy.install]
   const [setupCode, setSetupCode] = useState('')
   // No answer is chosen for the person: a stolen key needs the agents disconnected.
   const [reason, setReason] = useState<RecoveryReason | null>(null)
@@ -305,17 +344,38 @@ function RecoveryPanel({ recoverable, onRecovered }: { recoverable: boolean; onR
 
   return (
     <div className="mt-4 rounded-[14px] border border-line bg-sunken p-4 text-[13px] leading-relaxed text-ink-2">
-      <p>{t('recovery.intro')}</p>
-      <ul className="mt-2 flex list-disc flex-col gap-1.5 pl-5">
-        <li>
-          {t('recovery.withDocker')}
-          <code className="mt-1 block rounded-[8px] border border-line bg-sheet px-2.5 py-1.5 font-mono text-[12px] break-words text-ink">{RESET_ACCESS_COMMAND}</code>
-        </li>
-        <li>
-          <Trans t={t} i18nKey="recovery.withNewCode" components={{ code: <code className="font-mono text-[12px] text-ink" /> }} />
-        </li>
-      </ul>
+      {copy.install === 'cli' && (
+        <>
+          <p>{t('recovery.cli')}</p>
+          <CommandLine value={installerCommand('recover', copy.copyName)} />
+        </>
+      )}
+      {copy.install === 'button' && (
+        <p>
+          <Trans t={t} i18nKey="recovery.button" values={{ name: copy.copyName ?? 'orqevio' }} components={{ code }} />
+        </p>
+      )}
+      {copy.install === 'cloudflare' && (
+        <p>
+          <Trans t={t} i18nKey="recovery.cloudflare" components={{ code }} />
+        </p>
+      )}
+      {resetCommand && (
+        <>
+          <p>{t('recovery.intro')}</p>
+          <ul className="mt-2 flex list-disc flex-col gap-1.5 pl-5">
+            <li>
+              {t('recovery.withCommand')}
+              <CommandLine value={resetCommand} />
+            </li>
+            <li>
+              <Trans t={t} i18nKey="recovery.withNewCode" components={{ code }} />
+            </li>
+          </ul>
+        </>
+      )}
       <p className="mt-2">{t('recovery.vaultUnaffected')}</p>
+      {!recoverable && <p className="mt-2 text-ink-3">{t('recovery.waiting')}</p>}
       {recoverable && (
         <form onSubmit={submit} className="mt-4 flex flex-col gap-3" noValidate>
           <SecretField field="newSetupCode" value={setupCode} onChange={setSetupCode} autoComplete="off" />
@@ -381,19 +441,13 @@ function Uninstalled({ details }: { details: UninstalledDTO }) {
       ))}
     </ul>
   )
-  const command = (value: string) => (
-    <div className="mt-2 flex items-center gap-2 rounded-[10px] border border-line bg-sheet py-1.5 pr-1.5 pl-3">
-      <code className="min-w-0 flex-1 font-mono text-[12.5px] break-words text-ink">{value}</code>
-      <CopyButton value={value} />
-    </div>
-  )
   return (
     <AuthLayout title={t('uninstalled.title')} subtitle={t('uninstalled.subtitle')}>
       <div className="rounded-[14px] border border-line bg-sunken p-4 text-[13px] leading-relaxed text-ink-2">
         {details.install === 'cli' && (
           <>
             <p>{t('uninstalled.cli')}</p>
-            {command(`npx create-orqevio@latest uninstall${details.copyName && details.copyName !== 'orqevio' ? ` --name ${details.copyName}` : ''}`)}
+            <CommandLine value={installerCommand('uninstall', details.copyName)} />
           </>
         )}
         {details.install === 'button' && (
@@ -411,7 +465,7 @@ function Uninstalled({ details }: { details: UninstalledDTO }) {
         {details.install === 'docker' && (
           <>
             <p>{t('uninstalled.docker')}</p>
-            {command('docker compose down -v')}
+            <CommandLine value="docker compose down -v" />
           </>
         )}
         {details.install === 'source' && <p>{t('uninstalled.source')}</p>}

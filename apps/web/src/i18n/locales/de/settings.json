@@ -78,7 +78,8 @@
       "vault": "Deinen Tresor. Wenn du ihn behalten willst, exportiere vorher eine verschlüsselte Kopie aus dem Tresor.",
       "agents": "Den Zugang deiner Agenten und alle Sitzungen."
     },
-    "afterwards": "Anschließend siehst du, wie du die Instanz selbst aus deinem Cloudflare-Konto oder von deinem Server entfernst.",
+    "afterwards": "Das ist Schritt 1 von 2. In Schritt 2 siehst du, wie du die Instanz selbst aus deinem Cloudflare-Konto oder von deinem Server entfernst.",
+    "oneCommand": "Mit dem Befehl installiert? Auf deinem Computer erledigt <code>{{command}}</code> beide Schritte auf einmal.",
     "accessKey": "Zugangsschlüssel",
     "typeName": "Gib „{{name}}“ ein, um zu bestätigen",
     "confirm": "Endgültig deinstallieren"

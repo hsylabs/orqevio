@@ -35,6 +35,11 @@ export interface Env {
   copyName: string | null
   /** Its R2 bucket, which the Deploy to Cloudflare button lets you rename (ORQEVIO_BUCKET). */
   copyBucket: string | null
+  /**
+   * Set by `npx create-orqevio uninstall` (ORQEVIO_UNINSTALL_TOKEN, a Worker secret) to prove it
+   * controls the Cloudflare account the copy lives in: "<expiry in ms>.<random>".
+   */
+  uninstallToken: string | null
   /** Whether the copy looks up the latest published version (UPDATE_CHECK, on by default). */
   updateCheck: boolean
 }
@@ -64,6 +69,7 @@ export function loadEnv(overrides: Partial<Env> = {}): Env {
     install: installKind(process.env.ORQEVIO_INSTALL, 'source'),
     copyName: process.env.ORQEVIO_COPY_NAME?.trim() || null,
     copyBucket: process.env.ORQEVIO_BUCKET?.trim() || null,
+    uninstallToken: process.env.ORQEVIO_UNINSTALL_TOKEN?.trim() || null,
     updateCheck: bool(process.env.UPDATE_CHECK, true),
     ...overrides,
   }

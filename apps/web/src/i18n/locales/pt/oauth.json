@@ -28,6 +28,10 @@
     "unverified": "Ele se registrou sozinho, então o nome dele não foi verificado. Só continue se foi você quem acabou de conectá-lo.",
     "local": "Um programa neste computador vai receber o acesso.",
     "workspace": "Espaço",
+    "existing": "{{name}} já tem acesso a este espaço (último uso: {{when}}).",
+    "existingUnused": "{{name}} já tem acesso a este espaço, embora ainda não o tenha usado.",
+    "replace": "Substituir o acesso anterior",
+    "replaceHint": "Ele deixa de funcionar assim que este for conectado. Desmarque se estiver conectando outra conta do {{name}}.",
     "allow": "Permitir acesso",
     "revokeLater": "Você pode revogar este acesso a qualquer momento em Agentes."
   }

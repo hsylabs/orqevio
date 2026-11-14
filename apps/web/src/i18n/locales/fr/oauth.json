@@ -28,6 +28,10 @@
     "unverified": "Elle s’est enregistrée elle-même : son nom n’est donc pas vérifié. Ne continuez que si vous venez de la connecter vous-même.",
     "local": "Un programme de cet ordinateur recevra l’accès.",
     "workspace": "Espace",
+    "existing": "{{name}} a déjà accès à cet espace (dernière utilisation : {{when}}).",
+    "existingUnused": "{{name}} a déjà accès à cet espace, même s’il ne l’a pas encore utilisé.",
+    "replace": "Remplacer l’accès précédent",
+    "replaceHint": "Il cesse de fonctionner dès que celui-ci est connecté. Décochez la case si vous connectez un autre compte {{name}}.",
     "allow": "Autoriser l’accès",
     "revokeLater": "Vous pourrez révoquer cet accès à tout moment dans Agents."
   }
