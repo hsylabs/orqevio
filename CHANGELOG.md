@@ -6,6 +6,8 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-14
+
 First release.
 
 ### Tasks, documents and agents
@@ -16,6 +18,7 @@ First release.
 - OAuth connections for MCP clients such as Claude connectors: all you need is the `/mcp` address, your copy asks for your permission on a consent screen, and you can revoke access from **Agents**.
 - Live updates over WebSocket, including changes made by agents.
 - Agents that can write can start a project in an empty workspace (`create_project`); renaming and deleting stay in the app.
+- Reconnecting an application such as Claude replaces its earlier access to the workspace, instead of adding another one; **Agents** flags accesses that haven't been used for a week.
 
 ### Vault
 - End-to-end-encrypted credentials and notes, with a password generator, a recovery key and auto-lock.
@@ -29,6 +32,7 @@ First release.
 - Install it on your own server with Docker; your data lives in a single SQLite file.
 - On Windows, the installer opens the Cloudflare sign-in itself, so antivirus programs that block the PowerShell command Wrangler uses don't get in the way.
 - Recovering access asks why: if someone else may have your key, every agent is disconnected as well; if you only lost it, the screen lists the agents still connected so you can revoke any you don't recognize. With Docker, `reset-access --revoke-agents` does the same.
-- Uninstall from **Settings**: everything is deleted, attachments included, and the copy then shows how to remove what's left. `npx create-orqevio uninstall` removes the Worker and its bucket from your Cloudflare account.
+- The sign-in screen gives the recovery steps for how your copy was installed, and the form appears as soon as the new code is in place.
+- Uninstall from **Settings**: everything is deleted, attachments included, and the copy then shows how to remove what's left. On Cloudflare, `npx create-orqevio uninstall` does it all in one step: if your copy still holds attachments, it asks for the copy's address and has it delete them first, authorized from your Cloudflare account.
 - In English, Spanish, French, Portuguese, Italian, German, Dutch and Japanese. Your copy takes your browser's language when you claim it, and you can change it in Settings; new boards get their columns in that language. The installer speaks your terminal's language, or the one you pick with `--lang`.
 - Tested in Chromium, Firefox and WebKit (Safari's engine). If you open your copy over `http://` from another address, the vault explains that it needs HTTPS, and the rest of the app keeps working.
