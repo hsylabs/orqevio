@@ -15,6 +15,7 @@ export interface Bindings {
   /** Set by the installer ("cli") or the Deploy to Cloudflare template ("button"). */
   ORQEVIO_INSTALL?: string
   ORQEVIO_COPY_NAME?: string
+  ORQEVIO_BUCKET?: string
   /** "off" stops the copy from looking up the latest published version. */
   UPDATE_CHECK?: string
 }
@@ -40,6 +41,7 @@ export function workerEnv(bindings: Bindings): Env {
     setupCode: bindings.SETUP_CODE?.trim() || null,
     install: installKind(bindings.ORQEVIO_INSTALL, 'cloudflare'),
     copyName: bindings.ORQEVIO_COPY_NAME?.trim() || null,
+    copyBucket: bindings.ORQEVIO_BUCKET?.trim() || null,
     updateCheck: !['0', 'false', 'no', 'off'].includes((bindings.UPDATE_CHECK ?? '').toLowerCase()),
   }
 }

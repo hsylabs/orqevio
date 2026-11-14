@@ -7,6 +7,7 @@ Uso:
   npx create-orqevio                   Instala una copia nueva
   npx create-orqevio@latest update     Actualiza tu copia a la última versión (tus datos se conservan)
   npx create-orqevio@latest recover    Genera un código nuevo para recuperar el acceso
+  npx create-orqevio@latest uninstall  Borra tu copia y todo lo que contiene
 
 Opciones:
   --name <nombre>   Nombre de la copia (por defecto, ${defaultName}). Forma parte de su dirección.
@@ -30,7 +31,7 @@ navegador para que inicies sesión.`,
   badName: (name) => `«${name}» no vale como nombre.`,
   nameRule: 'Usa de 1 a 50 letras minúsculas, números o guiones (sin guion al principio ni al final).',
   heading: (action, version, name) =>
-    `Orqevio ${version} · ${{ install: 'instalar la copia', update: 'actualizar la copia', recover: 'recuperar el acceso a la copia' }[action]} «${name}»`,
+    `Orqevio ${version} · ${{ install: 'instalar la copia', update: 'actualizar la copia', recover: 'recuperar el acceso a la copia', uninstall: 'desinstalar la copia' }[action]} «${name}»`,
   accountUnreachable: 'No he podido consultar tu cuenta de Cloudflare. Vuelve a intentarlo en unos minutos.',
   askUpdate: (name) => `Ya tienes una copia llamada «${name}». ¿La actualizo a esta versión? Tus datos se conservan.`,
   nothingChanged: 'No he cambiado nada. Para otra copia, usa otro nombre: npx create-orqevio --name <nombre>',
@@ -79,5 +80,32 @@ navegador para que inicies sesión.`,
       'Abre tu copia, pulsa «¿Has perdido la clave?» y escribe este código para recibir una',
       'clave de acceso nueva. Se cerrarán todas las sesiones; tus datos y tu bóveda no cambian.',
       'Si alguien más pudo tener la clave, responde «Puede que alguien la tenga» para desconectar también a tus agentes.',
+    ].join('\n'),
+  uninstallNeedsTerminal: 'Para desinstalar tienes que escribir el nombre de la copia: ejecuta este comando en una terminal.',
+  nothingToUninstall: (name) => `No hay ninguna copia llamada «${name}» en esta cuenta: no hay nada que borrar.`,
+  uninstallWarning: (name, bucket) =>
+    [
+      `Esto borra para siempre la copia «${name}» con todo lo que contiene:`,
+      '  · su Worker, con tus espacios, documentos, bóveda y agentes;',
+      `  · su bucket «${bucket}», con los adjuntos.`,
+      'No se puede deshacer. Si quieres conservar la bóveda, exporta antes una copia cifrada desde ella.',
+      '',
+    ].join('\n'),
+  askUninstallName: (name) => `Escribe «${name}» para confirmar: `,
+  nothingDeleted: 'No se ha borrado nada.',
+  bucketNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `El bucket «${bucket}» todavía guarda adjuntos, y Cloudflare solo borra buckets vacíos. No se ha borrado nada.`,
+      `Vacíalo de una de estas dos formas y vuelve a ejecutar ${retryCommand}:`,
+      '  · en tu copia: Ajustes → Desinstalar Orqevio, que además borra el resto de sus datos;',
+      `  · en el panel de Cloudflare: R2 → ${bucket} → Settings → Empty Bucket.`,
+    ].join('\n'),
+  uninstallFailed: '\nLa desinstalación no ha terminado. Revisa el mensaje de Wrangler de arriba; puedes volver a ejecutar el comando.',
+  uninstalled: (name, logoutCommand) =>
+    [
+      '',
+      `La copia «${name}» está desinstalada: su Worker y su bucket ya no están en tu cuenta de Cloudflare.`,
+      `Si no usas Wrangler para nada más, cierra la sesión con ${logoutCommand}.`,
     ].join('\n'),
 }

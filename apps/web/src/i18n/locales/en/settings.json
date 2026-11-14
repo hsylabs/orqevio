@@ -66,5 +66,21 @@
     "accessKey": "Access key",
     "confirm": "Erase permanently",
     "done": "Data erased"
+  },
+  "uninstall": {
+    "title": "Uninstall Orqevio",
+    "description": "Deletes everything for good, attachments included, and leaves this copy unusable. Then it shows how to remove the copy itself from your Cloudflare account or your server.",
+    "action": "Uninstall Orqevio…",
+    "confirmDescription": "This can’t be undone. You’ll lose:",
+    "loses": {
+      "data": "Your workspaces, projects, boards and documents.",
+      "files": "Every attachment.",
+      "vault": "Your vault. To keep it, export an encrypted copy from the vault first.",
+      "agents": "Your agents’ access and every session."
+    },
+    "afterwards": "Next, you’ll see how to remove the copy itself from your Cloudflare account or your server.",
+    "accessKey": "Access key",
+    "typeName": "Type “{{name}}” to confirm",
+    "confirm": "Uninstall for good"
   }
 }

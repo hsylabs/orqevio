@@ -14,7 +14,8 @@ const viewport = { width: 1440, height: 900 }
  *   pnpm build && pnpm start          # in another terminal, with SETUP_CODE set (and an empty DATA_DIR)
  *   pnpm test:e2e                     # with the same SETUP_CODE
  * Override the target with E2E_BASE_URL. The "setup" project claims the copy
- * once and the other tests reuse the owner's session.
+ * once and the other tests reuse the owner's session; the "uninstall" project
+ * runs last, because it deletes the copy.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -35,8 +36,10 @@ export default defineConfig({
     {
       name: browser,
       dependencies: ['setup'],
-      testIgnore: 'setup.e2e.ts',
+      testIgnore: ['setup.e2e.ts', 'uninstall.e2e.ts'],
       use: { ...ENGINES[browser], viewport, storageState: 'e2e/.auth/owner.json' },
     },
+    // Uninstalling deletes the whole copy: once every other test is done.
+    { name: 'uninstall', dependencies: [browser], testMatch: 'uninstall.e2e.ts', use: { ...ENGINES[browser], viewport, storageState: 'e2e/.auth/owner.json' } },
   ],
 })

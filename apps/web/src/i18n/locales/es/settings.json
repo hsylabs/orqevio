@@ -66,5 +66,21 @@
     "accessKey": "Clave de acceso",
     "confirm": "Borrar definitivamente",
     "done": "Datos borrados"
+  },
+  "uninstall": {
+    "title": "Desinstalar Orqevio",
+    "description": "Borra todo para siempre, adjuntos incluidos, y deja esta copia inservible. Después te explica cómo quitar la propia copia de tu cuenta de Cloudflare o de tu servidor.",
+    "action": "Desinstalar Orqevio…",
+    "confirmDescription": "No se puede deshacer. Perderás:",
+    "loses": {
+      "data": "Tus espacios, proyectos, tableros y documentos.",
+      "files": "Todos los adjuntos.",
+      "vault": "Tu bóveda. Si quieres conservarla, exporta antes una copia cifrada desde la bóveda.",
+      "agents": "El acceso de tus agentes y todas las sesiones."
+    },
+    "afterwards": "A continuación verás cómo quitar la propia copia de tu cuenta de Cloudflare o de tu servidor.",
+    "accessKey": "Clave de acceso",
+    "typeName": "Escribe «{{name}}» para confirmar",
+    "confirm": "Desinstalar para siempre"
   }
 }

@@ -10,6 +10,7 @@
         <a href="#access">Première connexion</a>
         <a href="#agents">Connecter des agents</a>
         <a href="#update">Mettre à jour</a>
+        <a href="#uninstall">Désinstaller</a>
         <a href="#costs">Coûts</a>
       </nav>
     </div>
@@ -82,6 +83,21 @@
           <tr><td>Avec une commande</td><td><code>npx create-orqevio@latest update</code></td></tr>
           <tr><td>Avec le bouton</td><td>Fusionnez la pull request de Dependabot dans votre dépôt</td></tr>
           <tr><td>Avec Docker</td><td><code>docker compose pull</code> puis <code>docker compose up -d</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="uninstall">Désinstaller</h2>
+    <p><strong>Paramètres → Désinstaller Orqevio</strong> supprime tout définitivement : espaces, documents, pièces jointes, coffre-fort et accès de vos agents. Vous confirmez avec votre clé d’accès et en saisissant le nom de la copie. La copie vous montre ensuite comment retirer ce qui reste :</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Installation</th><th scope="col">Comment retirer le reste</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Avec une commande</td><td><code>npx create-orqevio@latest uninstall</code> supprime le Worker et son bucket</td></tr>
+          <tr><td>Avec le bouton</td><td>Le Worker et son bucket R2, dans le tableau de bord Cloudflare, puis le dépôt créé par le bouton</td></tr>
+          <tr><td>Avec Docker</td><td><code>docker compose down -v</code>, puis le dossier où vous l’avez installée</td></tr>
         </tbody>
       </table>
     </div>

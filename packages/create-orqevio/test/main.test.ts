@@ -79,7 +79,7 @@ describe('create-orqevio', () => {
     expect((await run(['--version'])).out).toBe('9.9.9')
     expect((await run(['borrar'])).code).toBe(2)
     // A dry run that would really deploy is refused.
-    for (const command of [[], ['update'], ['recover']]) {
+    for (const command of [[], ['update'], ['recover'], ['uninstall']]) {
       const dry = await run([...command, '--dry-run', '--name', 'ana'])
       expect(dry.code).toBe(2)
       expect(dry.err).toContain('--dry-run solo vale con deploy-repo')
@@ -106,7 +106,7 @@ describe('create-orqevio', () => {
       // Variables set in the Cloudflare dashboard survive deploys.
       keep_vars: true,
       // The app tells the owner how this copy updates.
-      vars: { ORQEVIO_INSTALL: 'cli', ORQEVIO_COPY_NAME: 'ana' },
+      vars: { ORQEVIO_INSTALL: 'cli', ORQEVIO_COPY_NAME: 'ana', ORQEVIO_BUCKET: 'ana-uploads' },
     })
     expect(calls().filter((c) => c.args[0] !== 'whoami' && c.args[0] !== 'login').every((c) => c.account === 'acc-1')).toBe(true)
     const code = deploy.secrets!.content.match(/^SETUP_CODE=(.+)\n$/)![1]!
@@ -190,6 +190,70 @@ describe('create-orqevio', () => {
     expect(put.args).toEqual(['secret', 'put', 'SETUP_CODE', '--name', 'ana'])
     expect(put.stdin).toMatch(CODE)
     expect(result.out).toContain(put.stdin!)
+  })
+
+  it('uninstalls a copy once its name is typed: the bucket first, then the Worker', async () => {
+    setState({ exists: true, bucket: 'empty' })
+    const result = await run(['uninstall', '--name', 'ana'], ['ana'])
+    expect(result.code).toBe(0)
+    expect(result.out).toContain('Esto borra para siempre la copia «ana»')
+    expect(result.out).toContain('su bucket «ana-uploads»')
+    expect(result.out).toContain('La copia «ana» está desinstalada')
+    expect(result.out).toContain('npx wrangler logout')
+    const deletes = calls().filter((c) => c.args.includes('delete'))
+    expect(deletes.map((c) => c.args)).toEqual([
+      ['r2', 'bucket', 'delete', 'ana-uploads'],
+      ['delete', '--name', 'ana', '--force'],
+    ])
+    expect(deletes.every((c) => c.account === 'acc-1')).toBe(true)
+    expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: false })
+    expect(JSON.parse(readFileSync(state, 'utf8')).bucket).toBeUndefined()
+  })
+
+  it('never deletes anything without the name typed, or without a terminal to type it', async () => {
+    setState({ exists: true, bucket: 'empty' })
+    const wrong = await run(['uninstall', '--name', 'ana'], ['orqevio'])
+    expect(wrong.code).toBe(1)
+    expect(wrong.err).toContain('No se ha borrado nada')
+    expect(calls().some((c) => c.args.includes('delete'))).toBe(false)
+
+    const unattended = await run(['uninstall', '--name', 'ana'])
+    expect(unattended.code).toBe(1)
+    expect(unattended.err).toContain('ejecuta este comando en una terminal')
+    expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: true, bucket: 'empty' })
+  })
+
+  it('keeps the Worker when the bucket still holds attachments, and says how to empty it', async () => {
+    setState({ exists: true, bucket: 'full' })
+    const result = await run(['uninstall', '--name', 'ana'], ['ana'])
+    expect(result.code).toBe(1)
+    expect(result.err).toContain('El bucket «ana-uploads» todavía guarda adjuntos')
+    expect(result.err).toContain('Ajustes → Desinstalar Orqevio')
+    expect(result.err).toContain('R2 → ana-uploads → Settings → Empty Bucket')
+    expect(result.err).toContain('npx create-orqevio@latest uninstall --name ana')
+    expect(commands()).not.toContain('delete --name')
+    expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: true, bucket: 'full' })
+  })
+
+  it('finishes an uninstall left halfway, and says when there is nothing to delete', async () => {
+    setState({ exists: true })
+    expect((await run(['uninstall', '--name', 'ana'], ['ana'])).code).toBe(0)
+    expect(calls().filter((c) => c.args.includes('delete')).map((c) => c.args[0])).toEqual(['delete'])
+
+    setState({ exists: false, bucket: 'empty' })
+    expect((await run(['uninstall', '--name', 'ana'], ['ana'])).code).toBe(0)
+    expect(JSON.parse(readFileSync(state, 'utf8')).bucket).toBeUndefined()
+
+    setState({ exists: false })
+    const nothing = await run(['uninstall', '--name', 'ana'], ['ana'])
+    expect(nothing.code).toBe(1)
+    expect(nothing.err).toContain('No hay ninguna copia llamada «ana» en esta cuenta')
+    expect(nothing.out).not.toContain('Esto borra')
+
+    setState({ exists: true, deleteFails: true })
+    const failed = await run(['uninstall', '--name', 'ana'], ['ana'])
+    expect(failed.code).toBe(1)
+    expect(failed.err).toContain('La desinstalación no ha terminado')
   })
 
   it('reports failures: sign-in, account query and deploy', async () => {
@@ -289,7 +353,7 @@ describe('create-orqevio', () => {
       r2_buckets: [{ binding: 'UPLOADS', bucket_name: 'mis-adjuntos' }],
       migrations: [{ tag: 'v1' }, { tag: 'v2' }],
       keep_vars: true,
-      vars: { ORQEVIO_INSTALL: 'button', ORQEVIO_COPY_NAME: 'mi-copia' },
+      vars: { ORQEVIO_INSTALL: 'button', ORQEVIO_COPY_NAME: 'mi-copia', ORQEVIO_BUCKET: 'mis-adjuntos' },
     })
     expect(deploy!.args).not.toContain('--secrets-file')
     expect(dry!.args).toContain('--dry-run')

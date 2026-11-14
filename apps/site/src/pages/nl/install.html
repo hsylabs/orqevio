@@ -10,6 +10,7 @@
         <a href="#access">Eerste keer inloggen</a>
         <a href="#agents">Agents koppelen</a>
         <a href="#update">Bijwerken</a>
+        <a href="#uninstall">Verwijderen</a>
         <a href="#costs">Kosten</a>
       </nav>
     </div>
@@ -82,6 +83,21 @@
           <tr><td>Met een opdracht</td><td><code>npx create-orqevio@latest update</code></td></tr>
           <tr><td>Met de knop</td><td>Merge de pull request van Dependabot in je repository</td></tr>
           <tr><td>Met Docker</td><td><code>docker compose pull</code> en <code>docker compose up -d</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="uninstall">Verwijderen</h2>
+    <p><strong>Instellingen → Orqevio verwijderen</strong> wist alles definitief: werkruimtes, documenten, bijlagen, de kluis en de toegang van je agents. Je bevestigt met je toegangssleutel en door de naam van de installatie te typen. Daarna laat de installatie zien hoe je de rest weghaalt:</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Installatie</th><th scope="col">Zo haal je de rest weg</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Met een opdracht</td><td><code>npx create-orqevio@latest uninstall</code> verwijdert de Worker en de bucket</td></tr>
+          <tr><td>Met de knop</td><td>De Worker en de R2-bucket, in het Cloudflare-dashboard; daarna de repository die de knop maakte</td></tr>
+          <tr><td>Met Docker</td><td><code>docker compose down -v</code>, en daarna de map waarin je hem installeerde</td></tr>
         </tbody>
       </table>
     </div>
