@@ -53,6 +53,11 @@ const UNINSTALL_ORDER = [
 ]
 
 const invalidSetupCode = () => forbidden('The setup code is not valid', 'invalid_setup_code')
+/**
+ * The copy still has the setup code that claimed it, or last recovered it: a new one is not set,
+ * or has not reached the copy yet (Cloudflare can take a moment to deploy a new secret).
+ */
+const recoveryNotReady = () => new AppError(409, 'recovery_not_ready', 'This copy has no new setup code yet: set one, or wait for it to arrive')
 const invalidAccessKey = () => forbidden('The access key is not valid', 'invalid_access_key')
 
 /**
@@ -221,7 +226,8 @@ export class AccountService {
     const { setupCode, reason } = parse(recoverInput, input)
     const row = await this.instanceRow()
     const configured = this.deps.env.setupCode
-    if (!row || !configured || !this.isRecoverable(row)) throw invalidSetupCode()
+    if (!row) throw invalidSetupCode()
+    if (!configured || !this.isRecoverable(row)) throw recoveryNotReady()
     if (!safeEqual(secretFingerprint(setupCode), secretFingerprint(configured))) throw invalidSetupCode()
     const accessKey = generateAccessKey()
     // The new setup code is consumed atomically: of two concurrent recoveries, only the first one wins.
@@ -237,7 +243,8 @@ export class AccountService {
       if (reason === 'compromised') revokeAgents(tx, row.ownerId)
       return true
     })
-    if (!consumed) throw invalidSetupCode()
+    // The other recovery used this code first.
+    if (!consumed) throw recoveryNotReady()
     const user = await this.owner(row.ownerId)
     return { user: toUserDTO(user), accessKey, session: await this.createSession(user.id, userAgent) }
   }

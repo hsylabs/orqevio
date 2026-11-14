@@ -6,6 +6,11 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+### Fixed
+- On Cloudflare, a new setup code (`recover`) and the one-time authorization to uninstall now reach your copy within seconds, instead of up to five minutes. The installer deploys them with Cloudflare's immediate update for Durable Objects, and updates of your copy apply at once too.
+- The recovery form is there as soon as you open **Lost your key?**. If the new setup code hasn't reached your copy yet, it tells you so, instead of making you wait for the form to appear.
+- Uninstalling in one step waits up to six minutes for your copy to receive its authorization, and says it's waiting, instead of giving up after 90 seconds.
+
 ## [1.0.0] - 2026-11-14
 
 First release.

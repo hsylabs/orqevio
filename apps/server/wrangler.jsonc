@@ -14,7 +14,10 @@
     "run_worker_first": ["/*", "!/assets/*"]
   },
   "durable_objects": {
-    "bindings": [{ "name": "COPY", "class_name": "OrqevioCopy" }]
+    "bindings": [{ "name": "COPY", "class_name": "OrqevioCopy" }],
+    // Deploys reach the copy at once. By default Cloudflare lets an active Durable Object
+    // run its previous version, with its previous secrets, for up to 5 minutes.
+    "code_update_strategy": { "mode": "immediate" }
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["OrqevioCopy"] }],
   "r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "orqevio-uploads" }],

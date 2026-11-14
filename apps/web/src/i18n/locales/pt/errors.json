@@ -2,6 +2,7 @@
   "codes": {
     "invalid_access_key": "A chave de acesso não está correta.",
     "invalid_setup_code": "O código de configuração não está correto.",
+    "recovery_not_ready": "Sua cópia ainda não tem um novo código de configuração. Se você acabou de alterá-lo, espere um pouco (às vezes alguns minutos) e tente de novo.",
     "already_claimed": "Esta cópia já está configurada. Entre com sua chave de acesso.",
     "not_claimed": "Esta cópia ainda não foi configurada.",
     "rate_limited": "Muitas tentativas. Aguarde alguns minutos.",

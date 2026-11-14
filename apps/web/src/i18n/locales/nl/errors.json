@@ -2,6 +2,7 @@
   "codes": {
     "invalid_access_key": "De toegangssleutel klopt niet.",
     "invalid_setup_code": "De installatiecode klopt niet.",
+    "recovery_not_ready": "Je installatie heeft nog geen nieuwe installatiecode. Heb je die net gewijzigd? Wacht even (soms een paar minuten) en probeer het opnieuw.",
     "already_claimed": "Deze installatie is al ingesteld. Log in met je toegangssleutel.",
     "not_claimed": "Deze installatie is nog niet ingesteld.",
     "rate_limited": "Te veel pogingen. Wacht een paar minuten.",

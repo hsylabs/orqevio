@@ -114,7 +114,10 @@ describe('access to a copy', () => {
   it('recovers access only after the setup code is changed', async () => {
     const { client } = await signInOwner(h)
     const anonymous = new Client(h)
-    expect((await anonymous.post('/api/auth/recover', { setupCode: SETUP_CODE, reason: 'lost' })).status).toBe(403)
+    // Until a new code is in place (it can take Cloudflare a moment), the copy says so.
+    const early = await anonymous.post('/api/auth/recover', { setupCode: 'a-brand-new-setup-code', reason: 'lost' })
+    expect(early.status).toBe(409)
+    expect(early.body.error.code).toBe('recovery_not_ready')
 
     h.env.setupCode = 'a-brand-new-setup-code'
     try {
@@ -127,7 +130,9 @@ describe('access to a copy', () => {
       // Every earlier session is signed out, and the same code cannot be used twice.
       expect((await client.get('/api/auth/me')).status).toBe(401)
       expect((await new Client(h).get('/api/auth/session')).body.recoverable).toBe(false)
-      expect((await new Client(h).post('/api/auth/recover', { setupCode: 'a-brand-new-setup-code', reason: 'lost' })).status).toBe(403)
+      const reused = await new Client(h).post('/api/auth/recover', { setupCode: 'a-brand-new-setup-code', reason: 'lost' })
+      expect(reused.status).toBe(409)
+      expect(reused.body.error.code).toBe('recovery_not_ready')
       h.owner!.accessKey = res.body.accessKey
     } finally {
       h.env.setupCode = SETUP_CODE
@@ -191,7 +196,7 @@ describe('access to a copy', () => {
         new Client(h).post('/api/auth/recover', { setupCode: 'another-new-setup-code', reason: 'lost' }),
         new Client(h).post('/api/auth/recover', { setupCode: 'another-new-setup-code', reason: 'lost' }),
       ])
-      expect([a.status, b.status].sort()).toEqual([200, 403])
+      expect([a.status, b.status].sort()).toEqual([200, 409])
       const winner = a.status === 200 ? a : b
       expect((await new Client(h).post('/api/auth/login', { accessKey: winner.body.accessKey })).status).toBe(200)
       h.owner!.accessKey = winner.body.accessKey
