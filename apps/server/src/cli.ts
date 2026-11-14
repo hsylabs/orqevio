@@ -4,6 +4,8 @@
  *   node dist/cli.js reset-access   Issues a new access key and signs out every session.
  *     --revoke-agents               Also disconnects every agent (tokens and OAuth), for a key
  *                                   that may be in someone else's hands.
+ * From a checkout, `pnpm cli <command>` runs it from apps/server with the repository's .env,
+ * the folder and configuration `pnpm start` and `pnpm dev` use.
  * The vault is unaffected: its master password is never known to the server.
  */
 import { eq } from 'drizzle-orm'

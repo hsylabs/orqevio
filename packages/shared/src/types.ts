@@ -60,6 +60,9 @@ export interface MeDTO {
 export interface AccessStateDTO {
   claimed: boolean
   recoverable: boolean
+  /** How the copy was installed and its Worker name, so the sign-in page gives the right recovery steps. */
+  install: InstallKind
+  copyName: string | null
   /** Set once the copy was uninstalled from Settings: what is left to remove, and how. */
   uninstalled?: UninstalledDTO
 }
