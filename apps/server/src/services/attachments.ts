@@ -3,7 +3,7 @@ import type { AttachmentDTO } from '@orqevio/shared'
 import { eq } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { attachments, cards, pages } from '../db/schema'
-import { AppError, badRequest, notFound } from '../lib/errors'
+import { AppError, badRequest, notFound, uninstalled } from '../lib/errors'
 import { LengthMismatchError, exactLength, peek } from '../lib/upload-stream'
 import type { Access } from './access'
 import type { ActivityService } from './activity'
@@ -64,7 +64,35 @@ export class AttachmentService {
    * Streams the file straight to storage: memory and CPU stay flat whatever its
    * size, which matters on Cloudflare (128 MB per copy, CPU billed per request).
    */
+  /** Uploads still running, which uninstalling waits for (see close). */
+  private readonly inFlight = new Set<Promise<unknown>>()
+  private closed = false
+
   async upload(actor: Actor, target: { pageId?: string; cardId?: string }, file: IncomingFile): Promise<AttachmentDTO> {
+    if (this.closed) throw uninstalled()
+    const work = this.store(actor, target, file)
+    this.inFlight.add(work)
+    try {
+      return await work
+    } finally {
+      this.inFlight.delete(work)
+    }
+  }
+
+  /**
+   * Refuses new uploads and waits for the running ones, so that deleting every stored
+   * file afterwards cannot miss one still being written. reopen() undoes it.
+   */
+  async close() {
+    this.closed = true
+    await Promise.allSettled([...this.inFlight])
+  }
+
+  reopen() {
+    this.closed = false
+  }
+
+  private async store(actor: Actor, target: { pageId?: string; cardId?: string }, file: IncomingFile): Promise<AttachmentDTO> {
     this.access.requireUser(actor)
     if (/^multipart\/form-data/i.test(file.type)) {
       throw new AppError(415, 'raw_upload_required', 'Send the file itself as the request body, with its name in the X-File-Name header')

@@ -23,6 +23,7 @@ export function createServices(deps: Deps) {
   const cards = new CardService(deps, access, activity)
   const workspaces = new WorkspaceService(deps, access, activity, cards)
   const tokens = new TokenService(deps, access)
+  const attachments = new AttachmentService(deps, access, activity)
   return {
     access,
     activity,
@@ -31,11 +32,11 @@ export function createServices(deps: Deps) {
     boards: new BoardService(deps, access, activity, cards),
     pages: new PageService(deps, access, activity),
     search: new SearchService(deps, access),
-    attachments: new AttachmentService(deps, access, activity),
+    attachments,
     tokens,
     oauth: new OAuthService(deps, access, tokens),
     vault: new VaultService(deps, access),
-    accounts: new AccountService(deps, access, workspaces),
+    accounts: new AccountService(deps, access, workspaces, attachments),
     updates: new UpdateService(deps, access),
   }
 }

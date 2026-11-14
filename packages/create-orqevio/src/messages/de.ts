@@ -7,6 +7,7 @@ Verwendung:
   npx create-orqevio                   Installiert eine neue Instanz
   npx create-orqevio@latest update     Aktualisiert deine Instanz auf die neueste Version (deine Daten bleiben erhalten)
   npx create-orqevio@latest recover    Erzeugt einen neuen Code, mit dem du deinen Zugang wiederherstellst
+  npx create-orqevio@latest uninstall  Löscht deine Instanz mit allem, was darin ist
 
 Optionen:
   --name <name>     Name der Instanz (standardmäßig ${defaultName}). Er wird Teil ihrer Adresse.
@@ -30,7 +31,7 @@ sich dein Browser, damit du dich anmelden kannst.`,
   badName: (name) => `„${name}“ kann nicht als Name verwendet werden.`,
   nameRule: 'Verwende 1 bis 50 Kleinbuchstaben, Ziffern oder Bindestriche (kein Bindestrich am Anfang oder Ende).',
   heading: (action, version, name) =>
-    `Orqevio ${version} · ${{ install: `Instanz „${name}“ wird installiert`, update: `Instanz „${name}“ wird aktualisiert`, recover: `Zugang zur Instanz „${name}“ wird wiederhergestellt` }[action]}`,
+    `Orqevio ${version} · ${{ install: `Instanz „${name}“ wird installiert`, update: `Instanz „${name}“ wird aktualisiert`, recover: `Zugang zur Instanz „${name}“ wird wiederhergestellt`, uninstall: `Instanz „${name}“ wird deinstalliert` }[action]}`,
   accountUnreachable: 'Dein Cloudflare-Konto konnte nicht geprüft werden. Versuch es in ein paar Minuten noch einmal.',
   askUpdate: (name) => `Du hast bereits eine Instanz namens „${name}“. Auf diese Version aktualisieren? Deine Daten bleiben erhalten.`,
   nothingChanged: 'Es wurde nichts geändert. Für eine weitere Instanz nimm einen anderen Namen: npx create-orqevio --name <name>',
@@ -80,5 +81,32 @@ sich dein Browser, damit du dich anmelden kannst.`,
       'Zugangsschlüssel zu bekommen. Alle Sitzungen werden abgemeldet; deine Daten und dein',
       'Tresor bleiben unverändert.',
       'Falls jemand anderes den Schlüssel gehabt haben könnte, antworte „Jemand anderes könnte ihn haben“, um auch deine Agenten zu trennen.',
+    ].join('\n'),
+  uninstallNeedsTerminal: 'Zum Deinstallieren gibst du den Namen der Instanz ein: Führe diesen Befehl in einem Terminal aus.',
+  nothingToUninstall: (name) => `In diesem Konto gibt es keine Instanz namens „${name}“, also gibt es nichts zu löschen.`,
+  uninstallWarning: (name, bucket) =>
+    [
+      `Damit wird die Instanz „${name}“ endgültig gelöscht, mit allem, was darin ist:`,
+      '  · ihr Worker, mit deinen Arbeitsbereichen, Dokumenten, deinem Tresor und deinen Agenten;',
+      `  · ihr Bucket „${bucket}“, mit den Anhängen.`,
+      'Das lässt sich nicht rückgängig machen. Wenn du deinen Tresor behalten willst, exportiere vorher eine verschlüsselte Kopie daraus.',
+      '',
+    ].join('\n'),
+  askUninstallName: (name) => `Gib „${name}“ ein, um zu bestätigen: `,
+  nothingDeleted: 'Es wurde nichts gelöscht.',
+  bucketNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `Der Bucket „${bucket}“ enthält noch Anhänge, und Cloudflare löscht nur leere Buckets. Es wurde nichts gelöscht.`,
+      `Leere ihn auf eine dieser beiden Arten und führe dann ${retryCommand} noch einmal aus:`,
+      '  · in deiner Instanz: Einstellungen → Orqevio deinstallieren, was auch die übrigen Daten löscht;',
+      `  · im Cloudflare-Dashboard: R2 → ${bucket} → Settings → Empty Bucket.`,
+    ].join('\n'),
+  uninstallFailed: '\nDie Deinstallation wurde nicht abgeschlossen. Sieh dir die Meldung von Wrangler oben an; du kannst den Befehl noch einmal ausführen.',
+  uninstalled: (name, logoutCommand) =>
+    [
+      '',
+      `Die Instanz „${name}“ ist deinstalliert: Ihr Worker und ihr Bucket sind aus deinem Cloudflare-Konto entfernt.`,
+      `Wenn du Wrangler sonst nicht nutzt, melde dich mit ${logoutCommand} ab.`,
     ].join('\n'),
 }

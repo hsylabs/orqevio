@@ -66,5 +66,21 @@
     "accessKey": "Zugangsschlüssel",
     "confirm": "Endgültig löschen",
     "done": "Daten gelöscht"
+  },
+  "uninstall": {
+    "title": "Orqevio deinstallieren",
+    "description": "Löscht alles endgültig, Anhänge eingeschlossen, und macht diese Instanz unbrauchbar. Danach siehst du, wie du die Instanz selbst aus deinem Cloudflare-Konto oder von deinem Server entfernst.",
+    "action": "Orqevio deinstallieren…",
+    "confirmDescription": "Das lässt sich nicht rückgängig machen. Du verlierst:",
+    "loses": {
+      "data": "Deine Arbeitsbereiche, Projekte, Boards und Dokumente.",
+      "files": "Alle Anhänge.",
+      "vault": "Deinen Tresor. Wenn du ihn behalten willst, exportiere vorher eine verschlüsselte Kopie aus dem Tresor.",
+      "agents": "Den Zugang deiner Agenten und alle Sitzungen."
+    },
+    "afterwards": "Anschließend siehst du, wie du die Instanz selbst aus deinem Cloudflare-Konto oder von deinem Server entfernst.",
+    "accessKey": "Zugangsschlüssel",
+    "typeName": "Gib „{{name}}“ ein, um zu bestätigen",
+    "confirm": "Endgültig deinstallieren"
   }
 }

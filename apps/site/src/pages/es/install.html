@@ -10,6 +10,7 @@
         <a href="#access">Primer acceso</a>
         <a href="#agents">Conectar agentes</a>
         <a href="#update">Actualizar</a>
+        <a href="#uninstall">Desinstalar</a>
         <a href="#costs">Costes</a>
       </nav>
     </div>
@@ -82,6 +83,21 @@
           <tr><td>Con un comando</td><td><code>npx create-orqevio@latest update</code></td></tr>
           <tr><td>Con el botón</td><td>Fusiona el pull request de Dependabot en tu repositorio</td></tr>
           <tr><td>Con Docker</td><td><code>docker compose pull</code> y <code>docker compose up -d</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="uninstall">Desinstalar</h2>
+    <p><strong>Ajustes → Desinstalar Orqevio</strong> lo borra todo para siempre: espacios, documentos, adjuntos, la bóveda y el acceso de tus agentes. Lo confirmas con tu clave de acceso y escribiendo el nombre de la copia. Después, la copia te explica cómo quitar lo que queda:</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Instalación</th><th scope="col">Cómo quitar lo que queda</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Con un comando</td><td><code>npx create-orqevio@latest uninstall</code> borra el Worker y su bucket</td></tr>
+          <tr><td>Con el botón</td><td>El Worker y su bucket de R2, en el panel de Cloudflare; después, el repositorio que creó el botón</td></tr>
+          <tr><td>Con Docker</td><td><code>docker compose down -v</code> y, después, la carpeta donde la instalaste</td></tr>
         </tbody>
       </table>
     </div>

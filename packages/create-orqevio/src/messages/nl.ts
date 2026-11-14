@@ -7,6 +7,7 @@ Gebruik:
   npx create-orqevio                   Een nieuwe installatie opzetten
   npx create-orqevio@latest update     Bijwerken naar de nieuwste versie (je gegevens blijven behouden)
   npx create-orqevio@latest recover    Een nieuwe code krijgen om je toegang te herstellen
+  npx create-orqevio@latest uninstall  Je installatie met alles erin verwijderen
 
 Opties:
   --name <naam>     Naam van de installatie (standaard ${defaultName}). Wordt onderdeel van het adres.
@@ -30,7 +31,7 @@ opent je browser, zodat je kunt inloggen.`,
   badName: (name) => `‘${name}’ kan niet als naam worden gebruikt.`,
   nameRule: 'Gebruik 1 tot 50 kleine letters, cijfers of koppeltekens (geen koppelteken aan het begin of eind).',
   heading: (action, version, name) =>
-    `Orqevio ${version} · ${{ install: `Installatie ‘${name}’ opzetten`, update: `Installatie ‘${name}’ bijwerken`, recover: `Toegang tot installatie ‘${name}’ herstellen` }[action]}`,
+    `Orqevio ${version} · ${{ install: `Installatie ‘${name}’ opzetten`, update: `Installatie ‘${name}’ bijwerken`, recover: `Toegang tot installatie ‘${name}’ herstellen`, uninstall: `Installatie ‘${name}’ verwijderen` }[action]}`,
   accountUnreachable: 'Je Cloudflare-account kon niet worden gecontroleerd. Probeer het over een paar minuten opnieuw.',
   askUpdate: (name) => `Je hebt al een installatie met de naam ‘${name}’. Bijwerken naar deze versie? Je gegevens blijven behouden.`,
   nothingChanged: 'Er is niets gewijzigd. Voor een extra installatie kies je een andere naam: npx create-orqevio --name <naam>',
@@ -79,5 +80,32 @@ opent je browser, zodat je kunt inloggen.`,
       'Open je installatie, kies ‘Sleutel kwijt?’ en voer deze code in. Je krijgt dan een nieuwe',
       'toegangssleutel. Alle sessies worden uitgelogd; je gegevens en je kluis blijven ongewijzigd.',
       'Kan iemand anders de sleutel hebben gehad, antwoord dan ‘Iemand anders heeft hem misschien’ om ook je agents los te koppelen.',
+    ].join('\n'),
+  uninstallNeedsTerminal: 'Om te verwijderen typ je de naam van de installatie: voer deze opdracht uit in een terminal.',
+  nothingToUninstall: (name) => `Er staat geen installatie met de naam ‘${name}’ in dit account, dus er is niets te verwijderen.`,
+  uninstallWarning: (name, bucket) =>
+    [
+      `Hiermee verwijder je de installatie ‘${name}’ definitief, met alles erin:`,
+      '  · de Worker, met je werkruimtes, documenten, kluis en agents;',
+      `  · de bucket ‘${bucket}’, met de bijlagen.`,
+      'Dit kan niet ongedaan worden gemaakt. Wil je je kluis bewaren, exporteer daar dan eerst een versleutelde kopie van.',
+      '',
+    ].join('\n'),
+  askUninstallName: (name) => `Typ ‘${name}’ om te bevestigen: `,
+  nothingDeleted: 'Er is niets verwijderd.',
+  bucketNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `De bucket ‘${bucket}’ bevat nog bijlagen, en Cloudflare verwijdert alleen lege buckets. Er is niets verwijderd.`,
+      `Maak hem op een van deze twee manieren leeg en voer daarna ${retryCommand} opnieuw uit:`,
+      '  · in je installatie: Instellingen → Orqevio verwijderen, waarmee ook de rest van de gegevens verdwijnt;',
+      `  · in het Cloudflare-dashboard: R2 → ${bucket} → Settings → Empty Bucket.`,
+    ].join('\n'),
+  uninstallFailed: '\nHet verwijderen is niet afgerond. Bekijk de melding van Wrangler hierboven; je kunt de opdracht opnieuw uitvoeren.',
+  uninstalled: (name, logoutCommand) =>
+    [
+      '',
+      `De installatie ‘${name}’ is verwijderd: de Worker en de bucket staan niet meer in je Cloudflare-account.`,
+      `Gebruik je Wrangler verder nergens voor, meld je dan af met ${logoutCommand}.`,
     ].join('\n'),
 }

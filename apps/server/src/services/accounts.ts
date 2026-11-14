@@ -1,14 +1,16 @@
-import type { AccessStateDTO, MeDTO, Theme, UserDTO } from '@orqevio/shared'
+import type { AccessStateDTO, MeDTO, Theme, UninstalledDTO, UserDTO } from '@orqevio/shared'
 import { DEFAULT_LOCALE, defaultWorkspaceName, isLocale } from '@orqevio/shared'
 import { claimInput, confirmAccessKeyInput, recoverInput, rotateAccessKeyInput, unlockInput, updateAccountInput } from '@orqevio/shared'
 import { and, asc, eq, gt, isNull, ne } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
 import { generateAccessKey, generateSetupCode, randomToken, safeEqual, secretFingerprint, sha256 } from '../auth/crypto'
-import { apiTokens, instance, oauthCodes, sessions, users, workspaceMembers, workspaces } from '../db/schema'
+import * as schema from '../db/schema'
+import { apiTokens, copyState, instance, oauthCodes, sessions, users, workspaceMembers, workspaces } from '../db/schema'
 import { AppError, forbidden, unauthorized } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { Deps } from './deps'
+import type { AttachmentService } from './attachments'
 import type { WorkspaceService } from './workspaces'
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -22,6 +24,34 @@ const toUserDTO = (u: typeof users.$inferSelect): UserDTO => ({
   createdAt: u.createdAt.toISOString(),
 })
 
+const UNINSTALLED_KEY = 'uninstalled'
+/** Every table of the copy, each after those that point at it. */
+const UNINSTALL_ORDER = [
+  schema.cardLabels,
+  schema.checklistItems,
+  schema.checklists,
+  schema.cardPageLinks,
+  schema.attachments,
+  schema.activity,
+  schema.labels,
+  schema.cards,
+  schema.columns,
+  schema.boards,
+  schema.pages,
+  schema.projects,
+  schema.oauthTokens,
+  schema.oauthCodes,
+  schema.apiTokens,
+  schema.sessions,
+  schema.workspaceMembers,
+  schema.vaultItems,
+  schema.vaults,
+  schema.workspaces,
+  schema.instance,
+  schema.users,
+  schema.copyState,
+]
+
 const invalidSetupCode = () => forbidden('The setup code is not valid', 'invalid_setup_code')
 const invalidAccessKey = () => forbidden('The access key is not valid', 'invalid_access_key')
 
@@ -33,11 +63,14 @@ const invalidAccessKey = () => forbidden('The access key is not valid', 'invalid
 export class AccountService {
   /** Generated when the operator did not set SETUP_CODE; lives only in memory. */
   private generatedSetupCode: string | null = null
+  /** Read once: uninstalling is final, so a copy found uninstalled stays so. */
+  private uninstalledState: UninstalledDTO | null | undefined
 
   constructor(
     private readonly deps: Deps,
     private readonly access: Access,
     private readonly workspaces: WorkspaceService,
+    private readonly attachments: AttachmentService,
   ) {}
 
   private currentSetupCode() {
@@ -56,8 +89,53 @@ export class AccountService {
   }
 
   async state(): Promise<AccessStateDTO> {
+    const uninstalled = await this.uninstalled()
+    if (uninstalled) return { claimed: false, recoverable: false, uninstalled }
     const row = await this.instanceRow()
     return { claimed: Boolean(row), recoverable: this.isRecoverable(row) }
+  }
+
+  /** Set once the copy was uninstalled from Settings; it then refuses everything but saying so. */
+  async uninstalled(): Promise<UninstalledDTO | null> {
+    if (this.uninstalledState !== undefined && this.uninstalledState !== null) return this.uninstalledState
+    const [row] = await this.deps.db.select({ value: copyState.value }).from(copyState).where(eq(copyState.key, UNINSTALLED_KEY))
+    this.uninstalledState = row ? this.uninstalledDetails(row.value) : null
+    return this.uninstalledState
+  }
+
+  private uninstalledDetails(at: string): UninstalledDTO {
+    return { at, install: this.deps.env.install, copyName: this.deps.env.copyName, bucket: this.deps.env.copyBucket }
+  }
+
+  /**
+   * Uninstalling, the part a copy can do itself: every attachment, then every row
+   * (people, workspaces, documents, vault, agents, sessions) goes, and a mark stays
+   * so the empty copy cannot be claimed again with its old setup code. Removing the
+   * copy itself (the Worker and its bucket, or the container) is left to whoever
+   * installed it, as the page shown afterwards explains.
+   */
+  async uninstall(actor: Actor, input: unknown): Promise<UninstalledDTO> {
+    this.access.requireUser(actor)
+    const { accessKey } = parse(confirmAccessKeyInput, input)
+    await this.verifyAccessKey(actor.userId, accessKey)
+    // Attachments first, once no upload is still writing one: if this stops half-way,
+    // the data is still there, uploads open again and it can be retried.
+    await this.attachments.close()
+    const at = new Date().toISOString()
+    try {
+      await this.deps.storage.deleteAll()
+      this.deps.db.transaction((tx) => {
+        // Every table, children first, without relying on cascades; search indexes follow by trigger.
+        for (const table of UNINSTALL_ORDER) tx.delete(table).run()
+        tx.insert(copyState).values({ key: UNINSTALLED_KEY, value: at }).run()
+      })
+    } catch (error) {
+      this.attachments.reopen()
+      throw error
+    }
+    this.uninstalledState = this.uninstalledDetails(at)
+    this.generatedSetupCode = null
+    return this.uninstalledState
   }
 
   /**
