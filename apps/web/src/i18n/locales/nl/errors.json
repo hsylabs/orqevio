@@ -2,6 +2,7 @@
   "codes": {
     "invalid_access_key": "De toegangssleutel klopt niet.",
     "invalid_setup_code": "De installatiecode klopt niet.",
+    "setup_code_too_short": "De installatiecode van deze kopie heeft minder dan 12 letters van A tot Z of cijfers en kan dus niet worden gebruikt. Stel een langere in (andere tekens, zoals accenten of andere alfabetten, tellen niet mee) en probeer het opnieuw.",
     "recovery_not_ready": "Je installatie heeft nog geen nieuwe installatiecode. Heb je die net gewijzigd? Wacht even (soms een paar minuten) en probeer het opnieuw.",
     "already_claimed": "Deze installatie is al ingesteld. Log in met je toegangssleutel.",
     "not_claimed": "Deze installatie is nog niet ingesteld.",

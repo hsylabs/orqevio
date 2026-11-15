@@ -33,7 +33,7 @@ export function templatePackageJson(installerVersion: string) {
       bindings: {
         SETUP_CODE: {
           description:
-            'One-off code to claim your copy the first time: at least 12 letters or digits, for example from `openssl rand -hex 8`. Keep it until you open your copy; to recover access later, set a new one here and use **Lost your key?** on the sign-in screen.',
+            'One-off code to claim your copy the first time: at least 12 letters A–Z or digits (other characters don’t count), for example from `openssl rand -hex 8`. Keep it until you open your copy; to recover access later, set a new one here and use **Lost your key?** on the sign-in screen.',
         },
         UPLOADS: { description: 'R2 bucket for the files attached to cards and documents.' },
         COPY: { description: 'Durable Object that keeps your data in its own SQLite database.' },

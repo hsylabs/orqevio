@@ -3,7 +3,7 @@ import { DEFAULT_LOCALE, defaultWorkspaceName, isLocale } from '@orqevio/shared'
 import { claimInput, confirmAccessKeyInput, installerUninstallInput, recoverInput, rotateAccessKeyInput, unlockInput, updateAccountInput } from '@orqevio/shared'
 import { and, asc, eq, gt, isNull, ne, sql } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
-import { generateAccessKey, generateSetupCode, randomToken, safeEqual, secretFingerprint, sha256 } from '../auth/crypto'
+import { MIN_SETUP_CODE_LENGTH, generateAccessKey, generateSetupCode, isWeakSetupCode, randomToken, safeEqual, secretFingerprint, sha256 } from '../auth/crypto'
 import * as schema from '../db/schema'
 import { apiTokens, copyState, instance, oauthCodes, pages, sessions, users, workspaceMembers, workspaces } from '../db/schema'
 import { AppError, forbidden, unauthorized } from '../lib/errors'
@@ -58,6 +58,8 @@ const invalidSetupCode = () => forbidden('The setup code is not valid', 'invalid
  * The copy still has the setup code that claimed it, or last recovered it: a new one is not set,
  * or has not reached the copy yet (Cloudflare can take a moment to deploy a new secret).
  */
+const weakSetupCode = () =>
+  new AppError(409, 'setup_code_too_short', `The setup code set for this copy has fewer than ${MIN_SETUP_CODE_LENGTH} letters A–Z or digits: set a longer one`)
 const recoveryNotReady = () => new AppError(409, 'recovery_not_ready', 'This copy has no new setup code yet: set one, or wait for it to arrive')
 const invalidAccessKey = () => forbidden('The access key is not valid', 'invalid_access_key')
 
@@ -181,6 +183,7 @@ export class AccountService {
   async claim(input: unknown, userAgent: string | null) {
     // The language the claim screen was shown in becomes the owner's.
     const { setupCode, name, locale = DEFAULT_LOCALE } = parse(claimInput, input)
+    if (isWeakSetupCode(this.currentSetupCode())) throw weakSetupCode()
     const expected = secretFingerprint(this.currentSetupCode())
     if (!safeEqual(secretFingerprint(setupCode), expected)) throw invalidSetupCode()
     const accessKey = generateAccessKey()
@@ -232,6 +235,7 @@ export class AccountService {
     const configured = this.deps.env.setupCode
     if (!row) throw invalidSetupCode()
     if (!configured || !this.isRecoverable(row)) throw recoveryNotReady()
+    if (isWeakSetupCode(configured)) throw weakSetupCode()
     if (!safeEqual(secretFingerprint(setupCode), secretFingerprint(configured))) throw invalidSetupCode()
     const accessKey = generateAccessKey()
     // The new setup code is consumed atomically: of two concurrent recoveries, only the first one wins.

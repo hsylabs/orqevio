@@ -13,6 +13,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
 - The subpages and attachments at the bottom of a page can be clicked again: the editor above them took the clicks, so only the keyboard and the sidebar reached them.
 - On Cloudflare, pages with ten or more levels of subpages can be deleted, and so can the project, the workspace or the account that holds them, and the copy can be uninstalled. Deleting them failed with an internal error and left everything in place: the database there allows only a few levels of cascading deletes, so pages are now deleted deepest first.
 - Editing a page or a card description no longer deletes or changes the Markdown the editor can't show. Headings of levels 4 to 6, images in a line of text and linked images such as badges are kept and shown, and HTML is kept as written and shown as its source. Text that looks like Markdown (`\# not a heading`, `1\. not a list`) stays text, and `&`, `<`, `>` and `&nbsp;` are written back as they were instead of as entities. An image whose name has brackets stays an image.
+- A copy refuses to be claimed or recovered while its `SETUP_CODE` has fewer than 12 letters A–Z or digits, and says why. Only those characters count, so a code written in another alphabet, or in symbols, came down to nothing and accepted any symbol as the code: anyone could claim the copy, or take it over through recovery. The README and the Cloudflare template now say which characters count.
 
 ## [1.0.1] - 2026-11-15
 
