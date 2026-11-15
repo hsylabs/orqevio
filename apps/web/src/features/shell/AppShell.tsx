@@ -28,7 +28,11 @@ export function AppShell() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [newProjectOpen, setNewProjectOpen] = useState(false)
 
-  useRealtime(wid, me.data?.user.id)
+  // Live updates only for a session that is still valid and a workspace this person can open:
+  // otherwise the server refuses the connection, again and again.
+  const sessionEnded = me.error instanceof ApiError && me.error.status === 401
+  const knownWorkspace = Boolean(wid && me.data?.workspaces.some((w) => w.id === wid))
+  useRealtime(knownWorkspace ? wid : undefined, sessionEnded ? undefined : me.data?.user.id)
 
   useEffect(() => {
     if (wid) setLocalPref('workspace', wid)
@@ -105,7 +109,9 @@ export function AppShell() {
 
   if (me.isPending) return <FullScreenLoader />
   if (me.error) {
-    if (me.error instanceof ApiError && me.error.status === 401) {
+    // An error from before is being checked again: wait for the answer before leaving.
+    if (me.isFetching) return <FullScreenLoader />
+    if (sessionEnded) {
       return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />
     }
     return <FullScreenLoader />

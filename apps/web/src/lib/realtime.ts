@@ -110,6 +110,7 @@ export function useRealtime(workspaceId: string | undefined, selfId: string | un
     let pongDeadline: ReturnType<typeof setTimeout> | undefined
     let attempts = 0
     let closed = false
+    let opened = false
 
     const stopTimers = () => {
       clearInterval(ping)
@@ -137,6 +138,7 @@ export function useRealtime(workspaceId: string | undefined, selfId: string | un
         }
       }
       ws.onopen = () => {
+        opened = true
         ping = setInterval(() => {
           if (ws.readyState !== WebSocket.OPEN) return
           ws.send('ping')
@@ -148,10 +150,13 @@ export function useRealtime(workspaceId: string | undefined, selfId: string | un
       ws.onclose = (event) => {
         stopTimers()
         if (closed) return
-        if (event.code === LIVE_CLOSE.sessionEnded || event.code === LIVE_CLOSE.noAccess) {
-          // Let the app react (sign-in screen or "not found") instead of retrying blindly.
-          void queryClient.invalidateQueries({ queryKey: keys.me })
-        }
+        const refused = event.code === LIVE_CLOSE.sessionEnded || event.code === LIVE_CLOSE.noAccess
+        // A refused connection, or one that never opened (the browser hides why), may mean the
+        // session or the access is gone: let the app check and react (sign-in screen or "not found").
+        if (refused || !opened) void queryClient.invalidateQueries({ queryKey: keys.me })
+        // The server said no: trying again would only fail again. The app takes over from here.
+        if (refused) return
+        opened = false
         attempts++
         retry = setTimeout(open, Math.min(1000 * 2 ** attempts, 20_000))
       }
