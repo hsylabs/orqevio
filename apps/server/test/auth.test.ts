@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { sha256 } from '../src/auth/crypto'
-import { apiTokens, instance, oauthCodes } from '../src/db/schema'
-import { Client, type Harness, SETUP_CODE, createHarness, signInOwner, signUp } from './harness'
+import { apiTokens, instance, oauthCodes, pages } from '../src/db/schema'
+import { Client, type Harness, SETUP_CODE, createHarness, createPageChain, seedBoard, signInOwner, signUp } from './harness'
 
 const KEY_FORMAT = /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){7}$/
 
@@ -221,9 +221,13 @@ describe('access to a copy', () => {
   })
 
   it('deleting the copy needs the access key and leaves it ready to be claimed again', async () => {
-    const { client, accessKey } = await signInOwner(h)
+    const { client, accessKey, workspaceId: owned } = await signInOwner(h)
+    // Its workspaces go with every page, also a deep tree of them.
+    const { projectId } = await seedBoard(client, owned)
+    const tree = await createPageChain(client, projectId, 120)
     expect((await client.post('/api/account/delete', { accessKey: 'ZZZZ-ZZZZ' })).status).toBe(403)
     expect((await client.post('/api/account/delete', { accessKey })).status).toBe(204)
+    expect(h.db.select({ id: pages.id }).from(pages).where(eq(pages.id, tree.at(-1)!)).all()).toEqual([])
     expect((await new Client(h).get('/api/auth/session')).body).toMatchObject({ user: null, claimed: false })
     h.owner = null
     const { workspaceId } = await signUp(h, 'Nueva Dueña')

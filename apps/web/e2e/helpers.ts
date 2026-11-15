@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { type Page, test as base, expect } from '@playwright/test'
+import { type APIRequestContext, type Page, test as base, expect } from '@playwright/test'
 
 /**
  * Firefox sometimes loses the commit of a new tab's first navigation, the one that
@@ -90,6 +90,17 @@ export async function createProject(page: Page, name: string) {
   await page.waitForURL(/\/b\/[0-9a-f-]{36}/)
   await expect(page.getByRole('region', { name: 'Columna Por hacer' })).toBeVisible()
   return page.url().split('/b/')[1]!.split('?')[0]!
+}
+
+/** Creates a chain of nested pages, each inside the previous one, and returns their ids from the top. */
+export async function createPageChain(request: APIRequestContext, projectId: string, levels: number) {
+  const ids: string[] = []
+  for (let i = 0; i < levels; i++) {
+    const res = await request.post(`/api/projects/${projectId}/pages`, { data: { title: `Nivel ${i + 1}`, parentId: ids.at(-1) ?? null } })
+    expect(res.status(), await res.text()).toBe(201)
+    ids.push(((await res.json()) as { id: string }).id)
+  }
+  return ids
 }
 
 export async function addCard(page: Page, column: string, title: string) {

@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createServices } from '../src/services'
 import { LocalStorage } from '../src/lib/storage-local'
-import { Client, type Harness, createHarness, seedBoard, signUp } from './harness'
+import { Client, type Harness, createHarness, createPageChain, seedBoard, signUp } from './harness'
 
 // Uninstalling is final, so it gets a copy of its own.
 let h: Harness
@@ -22,6 +22,8 @@ describe('uninstalling a copy', () => {
     await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Tarea' })
     const page = await client.post(`/api/projects/${projectId}/pages`, { title: 'Notas', content: 'Texto' })
     expect((await client.upload(`/api/pages/${page.body.id}/attachments`, 'hola', { name: 'a.txt', type: 'text/plain' })).status).toBe(201)
+    // A deep tree of pages too: it must not depend on cascading deletes, which a Durable Object limits.
+    await createPageChain(client, projectId, 120)
     const token = (await client.post('/api/tokens', { name: 'Claude', workspaceId, scopes: ['tasks:read'], expiresInDays: 30 })).body.token as string
     const uploads = path.join(h.env.dataDir, 'uploads')
     expect(readdirSync(uploads).length).toBeGreaterThan(0)
