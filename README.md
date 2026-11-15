@@ -437,6 +437,14 @@ apps/site            the public website, orqevio.com: static pages with no cooki
 
 **The public website.** `pnpm --filter @orqevio/site build` builds `apps/site/dist` with the pages and the same fonts as the app, served from the site itself. `pnpm --filter @orqevio/site preview` serves it locally with Wrangler. It's published to `orqevio.com` with Workers Builds from `main`; the setup is in the "Web pública" section of [RELEASING.md](RELEASING.md) (in Spanish). Its tests check the links, the fonts, the security headers, and that the install guide in every language says the same as this README.
 
+## No warranty
+
+Orqevio is provided as is, without warranty of any kind, as its [license](LICENSE.md) says. You host and run your own copy, so its data is in your hands:
+
+- **Make backups.** With Docker, copy the volume or make a live backup of the database (see [With Docker](#with-docker-recommended-for-production)). On Cloudflare, the app can't export your data yet, apart from the vault.
+- **Export your vault** from time to time, encrypted with your master password.
+- **Keep your access key and your vault's recovery key safe.** No one can open your vault without its master password or its recovery key, not even us.
+
 ## License
 
 Orqevio is released under the [Functional Source License 1.1, ALv2 Future License](LICENSE.md) (`FSL-1.1-ALv2`). You can use it, change it and host your copy, at work too. The only thing it doesn't allow is offering it as a commercial product or service that competes with Orqevio. Each version becomes Apache 2.0 two years after its release.
