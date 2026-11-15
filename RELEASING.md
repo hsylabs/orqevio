@@ -2,7 +2,7 @@
 
 Una versión se publica al subir su etiqueta (`v0.2.0`) a `main`. El flujo `.github/workflows/release.yml` comprueba la versión y pasa las pruebas, y después publica:
 
-1. la imagen Docker `ghcr.io/hsylabs/orqevio` (amd64 y arm64);
+1. la imagen Docker `ghcr.io/hsylabs/orqevio` (amd64 y arm64, cada una construida en una máquina de su arquitectura, sin emulación);
 2. los paquetes npm `orqevio` y, por último, `create-orqevio`, con procedencia verificable;
 3. la release de GitHub, con las notas de `CHANGELOG.md`.
 
@@ -80,6 +80,7 @@ Para versiones de prueba, usa por ejemplo `0.2.0-rc.1`:
 
 ## Si la publicación falla
 
+- **Un fallo puntual de GitHub**, sin cambios en el código (una máquina que se cuelga o no responde): pulsa «Re-run failed jobs» en la misma publicación. Cada construcción de la imagen se corta a los 20 minutos; lo normal es que tarde unos 4.
 - **Antes de npm** (verificación o Docker): corrige en un PR y publica el siguiente número, por ejemplo `0.2.0-rc.2`. No muevas una etiqueta ya subida.
 - **En npm**: un número publicado en npm no se puede volver a publicar, ni siquiera después de retirarlo. Corrige y publica el siguiente.
 - La etiqueta que falló se puede borrar después con `git push origin :refs/tags/v0.2.0-rc.1`, y su imagen de Docker desde la página del paquete `orqevio` en GitHub (Packages).
