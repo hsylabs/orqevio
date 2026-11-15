@@ -89,7 +89,7 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "copyPassword": "Copy password",
-    "passwordCopied": "Password copied · the clipboard clears in 30 s",
+    "passwordCopied": "Password copied · cleared from the clipboard after 30 s, or you’ll be reminded",
     "website": "Website",
     "openWebsite": "Open website",
     "copyUrl": "Copy URL",
@@ -98,12 +98,12 @@
     "notes": "Notes",
     "copyNotes": "Copy notes",
     "notesCopied": "Copied",
-    "clipboardClears": "When you copy something, the clipboard clears itself after 30 seconds."
+    "clipboardClears": "When you copy a password, a note or a code, the clipboard is cleared after 30 seconds. If the browser doesn’t allow it, for example because you were in another tab, you can clear it with one click when you come back."
   },
   "totp": {
     "label": "Verification code",
     "copy": "Copy code",
-    "copied": "Code copied · the clipboard clears in 30 s",
+    "copied": "Code copied · cleared from the clipboard after 30 s, or you’ll be reminded",
     "current": "Current verification code",
     "changesIn_one": "Changes in {{count}} second",
     "changesIn_other": "Changes in {{count}} seconds",
@@ -154,7 +154,7 @@
   },
   "generator": {
     "regenerate": "Generate another",
-    "copied": "Copied · the clipboard clears in 30 s",
+    "copied": "Copied · cleared from the clipboard after 30 s, or you’ll be reminded",
     "entropy": "≈ {{bits}} bits of entropy",
     "length": "Length",
     "sets": {

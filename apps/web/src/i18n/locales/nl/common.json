@@ -16,6 +16,12 @@
     "details": "Details"
   },
   "copyFailed": "Kopiëren naar het klembord is mislukt",
+  "clipboard": {
+    "stillThere": "Wat je uit de kluis hebt gekopieerd, staat misschien nog op het klembord.",
+    "clear": "Wissen",
+    "cleared": "Klembord gewist",
+    "clearFailed": "Het klembord kon niet worden gewist"
+  },
   "notFound": {
     "title": "Hier is niets te vinden",
     "body": "De pagina bestaat niet of je hebt er geen toegang toe."
