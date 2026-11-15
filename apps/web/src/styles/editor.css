@@ -39,6 +39,25 @@
   font-size: 1.18em;
   margin-top: 1.2em;
 }
+/* Levels 4 to 6 come from Markdown written elsewhere: smaller, in the body font. */
+.orq-prose h4,
+.orq-prose h5,
+.orq-prose h6 {
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--ink);
+  margin-top: 1.1em;
+}
+.orq-prose h4 {
+  font-size: 1.05em;
+}
+.orq-prose h5 {
+  font-size: 0.95em;
+}
+.orq-prose h6 {
+  font-size: 0.88em;
+  color: var(--ink-2);
+}
 .orq-prose--compact h1 {
   font-size: 1.4em;
   margin-top: 1em;
@@ -257,6 +276,14 @@
   box-shadow: 0 0 0 1px var(--line);
   margin: 1.2em 0;
 }
+.orq-prose a img {
+  /* Linked images, such as badges, stay in the line. */
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 0.15em;
+  border-radius: 4px;
+  box-shadow: none;
+}
 .orq-prose img.ProseMirror-selectednode {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -274,4 +301,24 @@
 }
 .ProseMirror-dropcursor {
   background: var(--accent) !important;
+}
+
+/* HTML the editor can't show, kept as written: its source, never run. */
+.orq-prose pre.orq-raw-html {
+  white-space: pre-wrap;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+  border: 1px dashed var(--line-strong);
+}
+.orq-prose code.orq-raw-html-inline {
+  color: var(--ink-3);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.orq-prose .orq-raw-html.ProseMirror-selectednode,
+.orq-prose .orq-raw-html-inline.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

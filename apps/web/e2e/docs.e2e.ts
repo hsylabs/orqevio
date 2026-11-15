@@ -36,3 +36,38 @@ test('write a document that references a task', async ({ page }) => {
   await expect(page.getByLabel('Título de la tarjeta')).toHaveValue('Investigar a la competencia')
   await expect(page.getByRole('link', { name: 'Plan de producto' })).toBeVisible()
 })
+
+// Agents write Markdown the editor can't show. Editing the page must keep it as it was.
+test('editing a page keeps the Markdown the editor cannot show', async ({ page }) => {
+  const workspaceId = await openNewWorkspace(page, 'Markdown E2E')
+  const boardId = await createProject(page, 'Notas')
+  const { projectId } = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { projectId: string }
+  const created = await page.request.post(`/api/projects/${projectId}/pages`, { data: { title: 'Fiel' } })
+  const pageId = ((await created.json()) as { id: string }).id
+  const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
+  const upload = await page.request.post(`/api/pages/${pageId}/attachments`, { headers: { 'Content-Type': 'image/png', 'X-File-Name': 'badge.png' }, data: pixel })
+  const badge = ((await upload.json()) as { url: string }).url
+  const markdown = [
+    '#### Detalles',
+    `[![build](${badge})](https://ci.example.com)`,
+    '<details>\n<summary>Más</summary>\n\nDentro **negrita**\n\n</details>',
+    'Pulsa <kbd>Ctrl</kbd>, AT&T y a < b',
+    '\\# no es un título',
+    'Final',
+  ].join('\n\n')
+  const saved = await page.request.patch(`/api/pages/${pageId}`, { data: { content: markdown, baseVersion: 1 } })
+  expect(saved.status(), await saved.text()).toBe(200)
+
+  await page.goto(`/w/${workspaceId}/d/${pageId}`)
+  const editor = page.getByRole('textbox', { name: 'Contenido de la página' })
+  await expect(editor.getByRole('heading', { level: 4, name: 'Detalles' })).toBeVisible()
+  // HTML shows as its source.
+  await expect(editor.locator('pre[data-raw-html]').first()).toHaveText('<details>\n<summary>Más</summary>')
+  await expect(editor.locator('code[data-raw-html]').first()).toHaveText('<kbd>')
+  await editor.getByText('Final').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' editado')
+  await expect(page.getByText('Guardado')).toBeVisible()
+  const content = async () => ((await (await page.request.get(`/api/pages/${pageId}`)).json()) as { content: string }).content
+  await expect.poll(content).toBe(`${markdown} editado`)
+})
