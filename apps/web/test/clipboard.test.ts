@@ -71,12 +71,63 @@ describe('clearing a copied secret from the clipboard', () => {
     expect(ask).not.toHaveBeenCalled()
   })
 
+  /** Selects text on the page, or in a field, and copies it the way Ctrl+C does. */
+  function copyFromPage(text: string, { field = false } = {}) {
+    document.body.innerHTML = field ? `<input value="${text}">` : `<p>${text}</p>`
+    const target = document.body.firstElementChild as HTMLElement
+    if (target instanceof HTMLInputElement) target.setSelectionRange(0, text.length)
+    else {
+      const range = document.createRange()
+      range.selectNodeContents(target)
+      document.getSelection()?.removeAllRanges()
+      document.getSelection()?.addRange(range)
+    }
+    target.dispatchEvent(new Event('copy', { bubbles: true }))
+    clipboard = text
+  }
+
   it('leaves the clipboard alone when something else was copied from the page', async () => {
     copySecret()
-    document.dispatchEvent(new Event('copy'))
-    clipboard = 'otra cosa'
+    copyFromPage('otra cosa')
     await vi.advanceTimersByTimeAsync(30_000)
     expect(clipboard).toBe('otra cosa')
+    expect(ask).not.toHaveBeenCalled()
+  })
+
+  it('still clears the secret when it is copied again from the page', async () => {
+    copySecret()
+    copyFromPage('contraseña', { field: true })
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(clipboard).toBe('')
+    expect(ask).not.toHaveBeenCalled()
+  })
+
+  it('checks or asks when it cannot tell what a copy from the page took', async () => {
+    copySecret()
+    document.getSelection()?.removeAllRanges()
+    document.dispatchEvent(new Event('copy'))
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(ask).toHaveBeenCalledTimes(1)
+    expect(clipboard).toBe('contraseña')
+  })
+
+  it('keeps tracking a secret copied while the clipboard was being cleared', async () => {
+    // The first clear's write is slow to confirm; the person copies another secret meanwhile.
+    // Writes reach the clipboard in the order they were made.
+    let release: () => void = () => {}
+    const write = navigator.clipboard.writeText as ReturnType<typeof vi.fn>
+    write.mockImplementationOnce((text: string) => {
+      clipboard = text
+      return new Promise<void>((resolve) => (release = resolve))
+    })
+    copySecret('primera')
+    await vi.advanceTimersByTimeAsync(30_000)
+    copySecret('segunda')
+    release()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(clipboard).toBe('segunda')
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(clipboard).toBe('')
     expect(ask).not.toHaveBeenCalled()
   })
 

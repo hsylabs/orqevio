@@ -29,8 +29,26 @@ let busy = false
 const onBlur = () => {
   if (pending) pending.leftPage = true
 }
-// Copying or cutting from this page replaces the secret in the clipboard.
-const onCopy = () => cancelClipboardClear()
+/**
+ * What a copy or cut from the page puts in the clipboard: the selection, inside a field or
+ * on the page. Undefined when it can't be told (a handler may put something else).
+ */
+function copiedText(target: EventTarget | null): string | undefined {
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+    const { selectionStart, selectionEnd, value } = target
+    return selectionStart === null || selectionEnd === null ? undefined : value.slice(selectionStart, selectionEnd)
+  }
+  return document.getSelection()?.toString() || undefined
+}
+
+// Copying something else from this page replaces the secret in the clipboard; copying the
+// secret itself again keeps it there; when it can't be told, check or ask once the time is up.
+const onCopy = (event: Event) => {
+  if (!pending) return
+  const copied = copiedText(event.target)
+  if (copied === undefined) pending.leftPage = true
+  else if (copied !== pending.value) cancelClipboardClear()
+}
 const onBack = () => {
   if (pending?.due) void attempt()
 }
@@ -75,16 +93,24 @@ async function attempt() {
   const current = pending
   if (!current || busy || document.visibilityState !== 'visible' || !document.hasFocus()) return
   busy = true
+  // Another secret may be copied while the clipboard is written or read: it is tracked from
+  // then on, and what happens here must not end it.
+  const done = () => {
+    if (pending === current) finish()
+  }
   try {
-    if (!current.leftPage && (await write(''))) return finish()
+    if (!current.leftPage && (await write(''))) return done()
+    if (pending !== current) return
     const held = await readWithoutAsking()
     if (pending !== current) return
-    if (held !== undefined && (held !== current.value || (await write('')))) return finish()
+    if (held !== undefined && (held !== current.value || (await write('')))) return done()
     const ask = remind
     finish()
     ask?.()
   } finally {
     busy = false
+    // A secret copied meanwhile whose time is up too.
+    if (pending && pending !== current && pending.due) void attempt()
   }
 }
 
