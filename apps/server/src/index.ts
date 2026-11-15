@@ -35,6 +35,10 @@ if (env.setupCode && isWeakSetupCode(env.setupCode)) {
     `SETUP_CODE has fewer than ${MIN_SETUP_CODE_LENGTH} letters A–Z or digits (other characters don't count): this copy can't be claimed or recovered with it. Set a longer one.`,
   )
 }
+const uninstalled = await services.accounts.uninstalled()
+if (uninstalled) {
+  console.log(`This copy of Orqevio was uninstalled (${uninstalled.at}). Remove its container and data to finish: it can't be claimed again.`)
+}
 const setup = await services.accounts.setupNotice()
 if (setup) {
   console.log(`This copy is not claimed yet. Open ${env.appUrls[0]} to set it up.`)

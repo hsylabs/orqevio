@@ -49,6 +49,14 @@ describe('uninstalling a copy', () => {
     expect((await h.app.request('/mcp', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })).status).toBe(410)
     expect((await h.app.request('/.well-known/oauth-authorization-server')).status).toBe(410)
     expect((await h.app.request('/healthz')).status).toBe(200)
+    // Encoded paths are routed like the plain ones, so they are refused too.
+    expect((await visitor.post('/%61pi/auth/claim', { setupCode: h.env.setupCode, name: 'Otra' })).status).toBe(410)
+    expect((await client.get('/ap%69/auth/me')).status).toBe(410)
+    expect((await h.app.request('/%6dcp', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })).status).toBe(410)
+    // And the account service refuses by itself, whatever route a request took to get there.
+    await expect(h.services.accounts.claim({ setupCode: h.env.setupCode, name: 'Otra' }, null)).rejects.toMatchObject({ status: 410 })
+    await expect(h.services.accounts.login({ accessKey }, null)).rejects.toMatchObject({ status: 410 })
+    expect(await h.services.accounts.setupNotice()).toBeUndefined()
 
     // Still so after a restart, which reads it again from the database.
     const restarted = createServices({ db: h.db, bus: h.bus, env: h.env, storage: new LocalStorage(uploads) })
