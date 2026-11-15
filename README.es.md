@@ -81,7 +81,7 @@ clave de la bóveda ── AES-256-GCM, datos asociados = usuario + id del eleme
 - Todo el cifrado ocurre en el navegador (WebCrypto; Argon2id en un Web Worker). El servidor solo almacena parámetros de derivación y sobres `v1.<iv>.<cifrado>`. Incluso los títulos van cifrados.
 - La clave de la bóveda vive solo en memoria como `CryptoKey` no exportable: se descarta al bloquear, por inactividad (1–60 min) o al recargar.
 - Los datos asociados de AES-GCM impiden que alguien con acceso a la base de datos intercambie elementos entre usuarios o entradas.
-- Al copiar, el portapapeles se vacía a los 30 segundos. El generador usa aleatoriedad criptográfica sin sesgo.
+- Al copiar una contraseña, una nota o un código, el portapapeles se vacía a los 30 segundos, salvo que hayas copiado otra cosa después. Los navegadores solo lo permiten con la pestaña delante (Firefox y Safari, solo justo después de un clic): si no, al volver Orqevio te ofrece vaciarlo con un clic. El generador usa aleatoriedad criptográfica sin sesgo.
 - Cambiar la contraseña maestra solo vuelve a envolver la clave: los elementos no se recifran. La clave de recuperación permite elegir una nueva contraseña maestra. Sin ninguna de las dos, los datos son irrecuperables por diseño.
 - Las rutas `/api/vault/*` rechazan cualquier petición con cabecera `Authorization` antes de leer datos, y el servidor MCP no expone ninguna herramienta de bóveda.
 
@@ -234,7 +234,7 @@ pnpm start
 ### Acceso a tu copia
 
 1. **Primera vez.** Abre la URL de la copia e introduce el código de configuración y tu nombre:
-   - Si definiste `SETUP_CODE`, es ese valor. Usa al menos 12 letras o dígitos.
+   - Si definiste `SETUP_CODE`, es ese valor. Usa al menos 12 letras de la A a la Z o dígitos: los demás caracteres (tildes, otros alfabetos, símbolos) no cuentan, y con menos la copia no se deja reclamar ni recuperar.
    - Si no, el servidor genera uno al arrancar y lo muestra en su registro (`docker compose logs app`). Sirve hasta que la copia se reclama o el servidor se reinicia.
    - En Cloudflare, te lo da el instalador.
 2. **Tu clave de acceso.** Orqevio genera una clave aleatoria de 160 bits y la muestra **una sola vez**. Guárdala en tu gestor de contraseñas: es lo único que necesitas para entrar desde cualquier dispositivo. Al escribirla dan igual las mayúsculas y los guiones.

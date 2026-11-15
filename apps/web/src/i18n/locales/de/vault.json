@@ -89,7 +89,7 @@
     "showPassword": "Passwort anzeigen",
     "hidePassword": "Passwort verbergen",
     "copyPassword": "Passwort kopieren",
-    "passwordCopied": "Passwort kopiert · Zwischenablage wird in 30 s geleert",
+    "passwordCopied": "Passwort kopiert · Zwischenablage wird nach 30 s geleert, sonst erinnern wir dich",
     "website": "Website",
     "openWebsite": "Website öffnen",
     "copyUrl": "URL kopieren",
@@ -98,12 +98,12 @@
     "notes": "Notizen",
     "copyNotes": "Notizen kopieren",
     "notesCopied": "Kopiert",
-    "clipboardClears": "Wenn du etwas kopierst, wird die Zwischenablage nach 30 Sekunden automatisch geleert."
+    "clipboardClears": "Wenn du ein Passwort, eine Notiz oder einen Code kopierst, wird die Zwischenablage nach 30 Sekunden geleert. Lässt der Browser das nicht zu, etwa weil du in einem anderen Tab warst, kannst du sie bei deiner Rückkehr mit einem Klick leeren."
   },
   "totp": {
     "label": "Bestätigungscode",
     "copy": "Code kopieren",
-    "copied": "Code kopiert · Zwischenablage wird in 30 s geleert",
+    "copied": "Code kopiert · Zwischenablage wird nach 30 s geleert, sonst erinnern wir dich",
     "current": "Aktueller Bestätigungscode",
     "changesIn_one": "Ändert sich in {{count}} Sekunde",
     "changesIn_other": "Ändert sich in {{count}} Sekunden",
@@ -154,7 +154,7 @@
   },
   "generator": {
     "regenerate": "Neu generieren",
-    "copied": "Kopiert · Zwischenablage wird in 30 s geleert",
+    "copied": "Kopiert · Zwischenablage wird nach 30 s geleert, sonst erinnern wir dich",
     "entropy": "≈ {{bits}} Bit Entropie",
     "length": "Länge",
     "sets": {

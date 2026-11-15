@@ -89,7 +89,7 @@
     "showPassword": "Wachtwoord tonen",
     "hidePassword": "Wachtwoord verbergen",
     "copyPassword": "Wachtwoord kopiëren",
-    "passwordCopied": "Wachtwoord gekopieerd · klembord wordt over 30 s gewist",
+    "passwordCopied": "Wachtwoord gekopieerd · klembord wordt na 30 s gewist, anders herinneren we je eraan",
     "website": "Website",
     "openWebsite": "Website openen",
     "copyUrl": "URL kopiëren",
@@ -98,12 +98,12 @@
     "notes": "Notities",
     "copyNotes": "Notities kopiëren",
     "notesCopied": "Gekopieerd",
-    "clipboardClears": "Als je iets kopieert, wordt het klembord na 30 seconden automatisch gewist."
+    "clipboardClears": "Als je een wachtwoord, notitie of code kopieert, wordt het klembord na 30 seconden gewist. Staat de browser dat niet toe, bijvoorbeeld omdat je in een ander tabblad was, dan kun je het bij terugkomst met één klik wissen."
   },
   "totp": {
     "label": "Verificatiecode",
     "copy": "Code kopiëren",
-    "copied": "Code gekopieerd · klembord wordt over 30 s gewist",
+    "copied": "Code gekopieerd · klembord wordt na 30 s gewist, anders herinneren we je eraan",
     "current": "Huidige verificatiecode",
     "changesIn_one": "Verandert over {{count}} seconde",
     "changesIn_other": "Verandert over {{count}} seconden",
@@ -154,7 +154,7 @@
   },
   "generator": {
     "regenerate": "Nog een genereren",
-    "copied": "Gekopieerd · klembord wordt over 30 s gewist",
+    "copied": "Gekopieerd · klembord wordt na 30 s gewist, anders herinneren we je eraan",
     "entropy": "≈ {{bits}} bits entropie",
     "length": "Lengte",
     "sets": {

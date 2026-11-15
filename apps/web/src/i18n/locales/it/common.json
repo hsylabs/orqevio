@@ -16,6 +16,12 @@
     "details": "Dettagli"
   },
   "copyFailed": "Impossibile copiare negli appunti",
+  "clipboard": {
+    "stillThere": "Quello che hai copiato dalla cassaforte potrebbe essere ancora negli appunti.",
+    "clear": "Svuota",
+    "cleared": "Appunti svuotati",
+    "clearFailed": "Impossibile svuotare gli appunti"
+  },
   "notFound": {
     "title": "Qui non c’è niente",
     "body": "La pagina non esiste o non hai accesso."
