@@ -161,7 +161,9 @@ export function AuthPage({ mode }: { mode: 'login' | 'setup' }) {
   const next = params.get('next') ?? '/'
 
   async function enter() {
-    await queryClient.invalidateQueries({ queryKey: keys.me })
+    // Forget the ended session's answer, not just mark it stale: the app would act on it
+    // (send this tab back here) before asking again, and here the new session sends it back.
+    queryClient.removeQueries({ queryKey: keys.me })
     await queryClient.invalidateQueries({ queryKey: keys.access })
     navigate(next, { replace: true })
   }
