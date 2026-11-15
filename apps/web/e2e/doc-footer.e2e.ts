@@ -38,7 +38,7 @@ test("a page's subpages and attachments can be clicked", async ({ page }) => {
       const target = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
       return target && el.contains(target) ? 'itself' : (target?.className.toString() ?? 'nothing')
     })
-    expect(hit, await control.textContent()).toBe('itself')
+    expect(hit, `what a click on "${(await control.textContent())?.trim()}" lands on`).toBe('itself')
   }
 
   // And real clicks do what they say.
