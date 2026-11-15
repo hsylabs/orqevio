@@ -1,16 +1,17 @@
 import type { AccessStateDTO, MeDTO, Theme, UninstalledDTO, UserDTO } from '@orqevio/shared'
 import { DEFAULT_LOCALE, defaultWorkspaceName, isLocale } from '@orqevio/shared'
 import { claimInput, confirmAccessKeyInput, installerUninstallInput, recoverInput, rotateAccessKeyInput, unlockInput, updateAccountInput } from '@orqevio/shared'
-import { and, asc, eq, gt, isNull, ne } from 'drizzle-orm'
+import { and, asc, eq, gt, isNull, ne, sql } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
 import { generateAccessKey, generateSetupCode, randomToken, safeEqual, secretFingerprint, sha256 } from '../auth/crypto'
 import * as schema from '../db/schema'
-import { apiTokens, copyState, instance, oauthCodes, sessions, users, workspaceMembers, workspaces } from '../db/schema'
+import { apiTokens, copyState, instance, oauthCodes, pages, sessions, users, workspaceMembers, workspaces } from '../db/schema'
 import { AppError, forbidden, unauthorized } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { Deps } from './deps'
 import type { AttachmentService } from './attachments'
+import { deletePageTrees } from './pages'
 import type { WorkspaceService } from './workspaces'
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -153,7 +154,10 @@ export class AccountService {
       await this.deps.storage.deleteAll()
       this.deps.db.transaction((tx) => {
         // Every table, children first, without relying on cascades; search indexes follow by trigger.
-        for (const table of UNINSTALL_ORDER) tx.delete(table).run()
+        for (const table of UNINSTALL_ORDER) {
+          if (table === schema.pages) deletePageTrees(tx, sql`${schema.pages.parentId} IS NULL`)
+          else tx.delete(table).run()
+        }
         tx.insert(copyState).values({ key: UNINSTALLED_KEY, value: at }).run()
       })
     } catch (error) {
@@ -347,7 +351,10 @@ export class AccountService {
       .from(workspaceMembers)
       .where(and(eq(workspaceMembers.userId, actor.userId), eq(workspaceMembers.role, 'owner')))
     this.deps.db.transaction((tx) => {
-      for (const w of owned) tx.delete(workspaces).where(eq(workspaces.id, w.id)).run()
+      for (const w of owned) {
+        deletePageTrees(tx, sql`${pages.workspaceId} = ${w.id} AND ${pages.parentId} IS NULL`)
+        tx.delete(workspaces).where(eq(workspaces.id, w.id)).run()
+      }
       tx.delete(users).where(eq(users.id, actor.userId)).run()
     })
     for (const w of owned) await this.deps.storage.deleteWorkspace(w.id)

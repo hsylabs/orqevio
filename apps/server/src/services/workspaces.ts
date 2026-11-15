@@ -1,6 +1,6 @@
 import type { HomeDTO, OverviewDTO, PaletteColor, WorkspaceDTO } from '@orqevio/shared'
 import { projectCreateInput, projectUpdateInput, workspaceInput } from '@orqevio/shared'
-import { and, asc, count, desc, eq, isNotNull, isNull, lte } from 'drizzle-orm'
+import { and, asc, count, desc, eq, isNotNull, isNull, lte, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { actorRef, hasScope } from '../auth/actor'
 import { boards, cards, columns, pages, projects, workspaceMembers, workspaces } from '../db/schema'
@@ -11,6 +11,7 @@ import type { ActivityService } from './activity'
 import type { CardService } from './cards'
 import type { Deps } from './deps'
 import { positionAt } from './ordering'
+import { deletePageTrees } from './pages'
 
 const toWorkspaceDTO = (w: typeof workspaces.$inferSelect, role: 'owner' | 'editor'): WorkspaceDTO => ({
   id: w.id,
@@ -85,7 +86,10 @@ export class WorkspaceService {
       .from(workspaceMembers)
       .where(eq(workspaceMembers.userId, actor.userId))) as [{ total: number }]
     if (total <= 1) throw forbidden('You need at least one workspace', 'last_workspace')
-    await this.deps.db.delete(workspaces).where(eq(workspaces.id, workspaceId))
+    this.deps.db.transaction((tx) => {
+      deletePageTrees(tx, sql`${pages.workspaceId} = ${workspaceId} AND ${pages.parentId} IS NULL`)
+      tx.delete(workspaces).where(eq(workspaces.id, workspaceId)).run()
+    })
     await this.deps.storage.deleteWorkspace(workspaceId)
   }
 
@@ -250,7 +254,10 @@ export class WorkspaceService {
   async removeProject(actor: Actor, projectId: string) {
     this.access.requireUser(actor)
     const current = await this.getProject(actor, projectId)
-    await this.deps.db.delete(projects).where(eq(projects.id, projectId))
+    this.deps.db.transaction((tx) => {
+      deletePageTrees(tx, sql`${pages.projectId} = ${projectId} AND ${pages.parentId} IS NULL`)
+      tx.delete(projects).where(eq(projects.id, projectId)).run()
+    })
     await this.activity.record(
       actor,
       current.workspaceId,

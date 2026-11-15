@@ -11,6 +11,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
 - Deleting a column now says how many cards go with it, including the ones a filter hides and the archived ones. It used to say "The column is empty." when a filter hid its cards or all of them were archived, and then deleted them.
 - With a card open, a change to its description made elsewhere, by an agent or in another tab, now shows up in the card. If you were typing at the same time, the card asks which version to keep, as pages do, instead of overwriting the other one. Card descriptions now have a version: `get_card` returns it, and `update_card` and the REST API accept it (`base_version`, `baseVersion`) to refuse an edit made from an older one.
 - The subpages and attachments at the bottom of a page can be clicked again: the editor above them took the clicks, so only the keyboard and the sidebar reached them.
+- On Cloudflare, pages with ten or more levels of subpages can be deleted, and so can the project, the workspace or the account that holds them, and the copy can be uninstalled. Deleting them failed with an internal error and left everything in place: the database there allows only a few levels of cascading deletes, so pages are now deleted deepest first.
 
 ## [1.0.1] - 2026-11-15
 

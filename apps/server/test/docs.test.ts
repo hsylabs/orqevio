@@ -1,10 +1,10 @@
 import { randomBytes } from 'node:crypto'
 import { readdir } from 'node:fs/promises'
 import path from 'node:path'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { attachments, pages } from '../src/db/schema'
-import { type Harness, createHarness, seedBoard, signUp } from './harness'
+import { type Harness, createHarness, createPageChain, seedBoard, signUp } from './harness'
 
 let h: Harness
 beforeAll(async () => {
@@ -134,6 +134,40 @@ describe('documents', () => {
     // A full scan of the index per deleted page would take several seconds here.
     expect(Date.now() - started).toBeLessThan(1000)
     expect((await client.get(`/api/workspaces/${workspaceId}/search?q=nota&type=page`)).body).toEqual([])
+  })
+
+  it('deletes deep page trees whole, with their links, attachments and search entries', async () => {
+    const { client, workspaceId } = await signUp(h, 'Raíz')
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const card = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Enlazada' })
+    const left = (ids: string[]) => h.db.select({ id: pages.id }).from(pages).where(inArray(pages.id, ids)).all()
+
+    // A page with 119 levels under it, a card reference halfway down and a file at the bottom.
+    const tree = await createPageChain(client, projectId, 120)
+    await client.patch(`/api/pages/${tree[60]}`, { content: `Ver [Enlazada](/card/${card.body.id}), honduras`, baseVersion: 1 })
+    expect((await client.upload(`/api/pages/${tree.at(-1)}/attachments`, 'fondo', { name: 'fondo.txt', type: 'text/plain' })).status).toBe(201)
+    expect((await client.get(`/api/cards/${card.body.id}`)).body.pages).toHaveLength(1)
+    expect((await client.del(`/api/pages/${tree[0]}`)).status).toBe(204)
+    expect(left(tree)).toEqual([])
+    expect(h.db.select().from(attachments).where(inArray(attachments.pageId, tree)).all()).toEqual([])
+    expect((await client.get(`/api/cards/${card.body.id}`)).body.pages).toEqual([])
+    expect((await client.get(`/api/workspaces/${workspaceId}/search?q=honduras&type=page`)).body).toEqual([])
+
+    // Deleting a subpage leaves its parent and siblings alone.
+    const [top, middle] = await createPageChain(client, projectId, 3)
+    const sibling = await client.post(`/api/projects/${projectId}/pages`, { title: 'Hermana', parentId: top })
+    expect((await client.del(`/api/pages/${middle}`)).status).toBe(204)
+    expect(left([top!, sibling.body.id]).map((p) => p.id).sort()).toEqual([top!, sibling.body.id].sort())
+
+    // Projects and workspaces holding deep trees.
+    const inProject = await createPageChain(client, projectId, 120)
+    expect((await client.del(`/api/projects/${projectId}`)).status).toBe(204)
+    expect(left([...inProject, top!])).toEqual([])
+    const spare = await client.post('/api/workspaces', { name: 'Hondo' })
+    const project = await client.post(`/api/workspaces/${spare.body.id}/projects`, { name: 'Pozo' })
+    const inWorkspace = await createPageChain(client, project.body.id, 120)
+    expect((await client.del(`/api/workspaces/${spare.body.id}`)).status).toBe(204)
+    expect(left(inWorkspace)).toEqual([])
   })
 
   it('stores attachments, sniffs their type and protects access', async () => {
