@@ -183,10 +183,10 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
     } finally {
       savingDesc.current = false
     }
-    if (!mounted.current) return
-    // Typing during the save, or a change from elsewhere that arrived meanwhile.
+    // Typing during the save is saved next, even if the sheet closed meanwhile.
     if (pendingDesc.current !== null) void flushDescription()
-    else catchUp(queryClient.getQueryData<CardDetailDTO>(keys.card(card.id)))
+    // Or a change from elsewhere arrived during the save.
+    else if (mounted.current) catchUp(queryClient.getQueryData<CardDetailDTO>(keys.card(card.id)))
   }
 
   // Save pending description edits when the sheet closes.
