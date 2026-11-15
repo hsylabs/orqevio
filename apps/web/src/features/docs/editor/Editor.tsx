@@ -1,13 +1,8 @@
 import type { AttachmentDTO, MeDTO, SearchResultDTO } from '@orqevio/shared'
 import { cardHref, docHref } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
-import { TableKit } from '@tiptap/extension-table'
-import Image from '@tiptap/extension-image'
-import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { Placeholder } from '@tiptap/extensions'
-import { Markdown } from '@tiptap/markdown'
 import { EditorContent, useEditor } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
 import { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
@@ -17,6 +12,7 @@ import { cn } from '../../../lib/cn'
 import { keys, queryClient } from '../../../lib/queries'
 import { FormatMenu } from './FormatMenu'
 import { Mentions, SlashCommands } from './extensions'
+import { documentExtensions } from './markdown'
 import { SuggestionMenu } from './SuggestionMenu'
 import { type MenuItem, createSuggestionStore } from './suggestion-store'
 import '../../../styles/editor.css'
@@ -39,8 +35,6 @@ interface EditorProps {
   className?: string
   ariaLabel?: string
 }
-
-const SAFE_PROTOCOL = /^(https?:|mailto:|\/(?!\/))/i
 
 type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'code' | 'table' | 'hr' | 'mention' | 'image' | 'file'
 type SlashGroup = 'blocks' | 'lists' | 'insert'
@@ -168,23 +162,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
     shouldRerenderOnTransaction: false,
     autofocus: autofocus ? 'end' : false,
     extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-        underline: false,
-        link: {
-          openOnClick: false,
-          autolink: true,
-          linkOnPaste: true,
-          defaultProtocol: 'https',
-          isAllowedUri: (url, ctx) => SAFE_PROTOCOL.test(url) && ctx.defaultValidate(url),
-          HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: null },
-        },
-      }),
-      Markdown.configure({ markedOptions: { gfm: true } }),
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      TableKit.configure({ table: { resizable: false } }),
-      Image.configure({ inline: false, allowBase64: false }),
+      ...documentExtensions(),
       Placeholder.configure({
         placeholder: ({ node, pos }) =>
           node.type.name === 'heading' ? tRef.current('editor.headingPlaceholder') : pos === 0 ? (placeholderRef.current ?? tRef.current('editor.placeholder')) : '',
