@@ -92,7 +92,7 @@
     "showPassword": "Afficher le mot de passe",
     "hidePassword": "Masquer le mot de passe",
     "copyPassword": "Copier le mot de passe",
-    "passwordCopied": "Mot de passe copié · le presse-papiers sera vidé dans 30 s",
+    "passwordCopied": "Mot de passe copié · le presse-papiers sera vidé au bout de 30 s, sinon un rappel s’affichera",
     "website": "Site web",
     "openWebsite": "Ouvrir le site",
     "copyUrl": "Copier l’URL",
@@ -101,12 +101,12 @@
     "notes": "Notes",
     "copyNotes": "Copier les notes",
     "notesCopied": "Copié",
-    "clipboardClears": "Quand vous copiez quelque chose, le presse-papiers se vide automatiquement au bout de 30 secondes."
+    "clipboardClears": "Quand vous copiez un mot de passe, une note ou un code, le presse-papiers est vidé au bout de 30 secondes. Si le navigateur ne le permet pas, par exemple parce que vous étiez dans un autre onglet, vous pourrez le vider d’un clic à votre retour."
   },
   "totp": {
     "label": "Code de vérification",
     "copy": "Copier le code",
-    "copied": "Code copié · le presse-papiers sera vidé dans 30 s",
+    "copied": "Code copié · le presse-papiers sera vidé au bout de 30 s, sinon un rappel s’affichera",
     "current": "Code de vérification actuel",
     "changesIn_one": "Change dans {{count}} seconde",
     "changesIn_many": "Change dans {{count}} secondes",
@@ -158,7 +158,7 @@
   },
   "generator": {
     "regenerate": "En générer un autre",
-    "copied": "Copié · le presse-papiers sera vidé dans 30 s",
+    "copied": "Copié · le presse-papiers sera vidé au bout de 30 s, sinon un rappel s’affichera",
     "entropy": "≈ {{bits}} bits d’entropie",
     "length": "Longueur",
     "sets": {

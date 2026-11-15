@@ -81,7 +81,7 @@ vault key ── AES-256-GCM, associated data = user + item id ──► encrypt
 - All encryption happens in the browser (WebCrypto, with Argon2id in a Web Worker). The server stores only the key derivation parameters and `v1.<iv>.<ciphertext>` envelopes. Even titles are encrypted.
 - The vault key lives only in memory, as a non-extractable `CryptoKey`: it's discarded when you lock the vault, after a period of inactivity (1–60 min) or when you reload the page.
 - AES-GCM associated data keeps anyone with access to the database from swapping items between users or entries.
-- When you copy a secret, the clipboard is cleared after 30 seconds. The password generator uses unbiased cryptographic randomness.
+- When you copy a password, a note or a code, the clipboard is cleared after 30 seconds, unless you've copied something else since. Browsers only allow it while the tab is in front (Firefox and Safari, only right after a click): otherwise, when you come back, Orqevio offers to clear it with one click. The password generator uses unbiased cryptographic randomness.
 - Changing your master password only rewraps the vault key: items aren't re-encrypted. The recovery key lets you choose a new master password. Without either of them, your data can't be recovered, by design.
 - The `/api/vault/*` routes reject any request with an `Authorization` header before reading any data, and the MCP server has no vault tools.
 

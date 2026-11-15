@@ -92,7 +92,7 @@
     "showPassword": "Mostra password",
     "hidePassword": "Nascondi password",
     "copyPassword": "Copia password",
-    "passwordCopied": "Password copiata · gli appunti si svuotano tra 30 s",
+    "passwordCopied": "Password copiata · gli appunti si svuotano dopo 30 s, altrimenti te lo ricordiamo",
     "website": "Sito web",
     "openWebsite": "Apri sito",
     "copyUrl": "Copia URL",
@@ -101,12 +101,12 @@
     "notes": "Note",
     "copyNotes": "Copia note",
     "notesCopied": "Copiato",
-    "clipboardClears": "Quando copi qualcosa, gli appunti si svuotano da soli dopo 30 secondi."
+    "clipboardClears": "Quando copi una password, una nota o un codice, gli appunti si svuotano dopo 30 secondi. Se il browser non lo consente, per esempio perché eri in un’altra scheda, al ritorno puoi svuotarli con un clic."
   },
   "totp": {
     "label": "Codice di verifica",
     "copy": "Copia codice",
-    "copied": "Codice copiato · gli appunti si svuotano tra 30 s",
+    "copied": "Codice copiato · gli appunti si svuotano dopo 30 s, altrimenti te lo ricordiamo",
     "current": "Codice di verifica attuale",
     "changesIn_one": "Cambia tra {{count}} secondo",
     "changesIn_many": "Cambia tra {{count}} secondi",
@@ -158,7 +158,7 @@
   },
   "generator": {
     "regenerate": "Generane un’altra",
-    "copied": "Copiata · gli appunti si svuotano tra 30 s",
+    "copied": "Copiata · gli appunti si svuotano dopo 30 s, altrimenti te lo ricordiamo",
     "entropy": "≈ {{bits}} bit di entropia",
     "length": "Lunghezza",
     "sets": {

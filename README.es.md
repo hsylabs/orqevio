@@ -81,7 +81,7 @@ clave de la bóveda ── AES-256-GCM, datos asociados = usuario + id del eleme
 - Todo el cifrado ocurre en el navegador (WebCrypto; Argon2id en un Web Worker). El servidor solo almacena parámetros de derivación y sobres `v1.<iv>.<cifrado>`. Incluso los títulos van cifrados.
 - La clave de la bóveda vive solo en memoria como `CryptoKey` no exportable: se descarta al bloquear, por inactividad (1–60 min) o al recargar.
 - Los datos asociados de AES-GCM impiden que alguien con acceso a la base de datos intercambie elementos entre usuarios o entradas.
-- Al copiar, el portapapeles se vacía a los 30 segundos. El generador usa aleatoriedad criptográfica sin sesgo.
+- Al copiar una contraseña, una nota o un código, el portapapeles se vacía a los 30 segundos, salvo que hayas copiado otra cosa después. Los navegadores solo lo permiten con la pestaña delante (Firefox y Safari, solo justo después de un clic): si no, al volver Orqevio te ofrece vaciarlo con un clic. El generador usa aleatoriedad criptográfica sin sesgo.
 - Cambiar la contraseña maestra solo vuelve a envolver la clave: los elementos no se recifran. La clave de recuperación permite elegir una nueva contraseña maestra. Sin ninguna de las dos, los datos son irrecuperables por diseño.
 - Las rutas `/api/vault/*` rechazan cualquier petición con cabecera `Authorization` antes de leer datos, y el servidor MCP no expone ninguna herramienta de bóveda.
 

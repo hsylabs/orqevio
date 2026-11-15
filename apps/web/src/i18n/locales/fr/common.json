@@ -16,6 +16,12 @@
     "details": "Détails"
   },
   "copyFailed": "Impossible de copier dans le presse-papiers",
+  "clipboard": {
+    "stillThere": "Ce que vous avez copié depuis le coffre-fort est peut-être encore dans le presse-papiers.",
+    "clear": "Vider",
+    "cleared": "Presse-papiers vidé",
+    "clearFailed": "Impossible de vider le presse-papiers"
+  },
   "notFound": {
     "title": "Il n’y a rien ici",
     "body": "Cette page n’existe pas ou vous n’y avez pas accès."
