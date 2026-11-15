@@ -42,7 +42,8 @@ export function createApp(env: Env, services: Services, platform: Platform = {})
   app.get('/healthz', (c) => c.json({ ok: true }))
   // An uninstalled copy only tells visitors so (see AccountService.uninstall); the web app shows how to finish.
   app.use('*', async (c, next) => {
-    const path = new URL(c.req.url).pathname
+    // The path as routed, decoded: `/%61pi/auth/claim` is routed as `/api/auth/claim`.
+    const path = c.req.path
     const api = path === '/mcp' || path.startsWith('/api/') || path.startsWith('/.well-known/') || /^\/oauth\/(?:register|token|revoke)$/.test(path)
     if (!api || path === '/api/auth/session') return next()
     if (!(await services.accounts.uninstalled())) return next()

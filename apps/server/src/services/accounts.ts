@@ -6,7 +6,7 @@ import type { Actor, UserActor } from '../auth/actor'
 import { generateAccessKey, generateSetupCode, randomToken, safeEqual, secretFingerprint, sha256 } from '../auth/crypto'
 import * as schema from '../db/schema'
 import { apiTokens, copyState, instance, oauthCodes, pages, sessions, users, workspaceMembers, workspaces } from '../db/schema'
-import { AppError, forbidden, unauthorized } from '../lib/errors'
+import { AppError, forbidden, unauthorized, uninstalled as copyUninstalled } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { Deps } from './deps'
@@ -25,7 +25,8 @@ const toUserDTO = (u: typeof users.$inferSelect): UserDTO => ({
   createdAt: u.createdAt.toISOString(),
 })
 
-const UNINSTALLED_KEY = 'uninstalled'
+/** Where the mark of an uninstalled copy is kept (copy_state), with when it happened. */
+export const UNINSTALLED_KEY = 'uninstalled'
 /** Every table of the copy, each after those that point at it. */
 const UNINSTALL_ORDER = [
   schema.cardLabels,
@@ -174,13 +175,15 @@ export class AccountService {
    * null when the operator configured SETUP_CODE. Undefined once claimed.
    */
   async setupNotice(): Promise<{ generatedCode: string | null } | undefined> {
-    if (await this.instanceRow()) return undefined
+    if ((await this.uninstalled()) || (await this.instanceRow())) return undefined
     return { generatedCode: this.deps.env.setupCode ? null : this.currentSetupCode() }
   }
 
   async claim(input: unknown, userAgent: string | null) {
     // The language the claim screen was shown in becomes the owner's.
     const { setupCode, name, locale = DEFAULT_LOCALE } = parse(claimInput, input)
+    // Uninstalling is final, whatever route a request takes to get here.
+    if (await this.uninstalled()) throw copyUninstalled()
     const expected = secretFingerprint(this.currentSetupCode())
     if (!safeEqual(secretFingerprint(setupCode), expected)) throw invalidSetupCode()
     const accessKey = generateAccessKey()
@@ -211,6 +214,7 @@ export class AccountService {
 
   async login(input: unknown, userAgent: string | null) {
     const { accessKey } = parse(unlockInput, input)
+    if (await this.uninstalled()) throw copyUninstalled()
     const row = await this.instanceRow()
     if (!row) throw new AppError(409, 'not_claimed', 'This copy has not been set up yet')
     if (!safeEqual(secretFingerprint(accessKey), row.accessKeyHash)) {
@@ -228,6 +232,7 @@ export class AccountService {
    */
   async recover(input: unknown, userAgent: string | null) {
     const { setupCode, reason } = parse(recoverInput, input)
+    if (await this.uninstalled()) throw copyUninstalled()
     const row = await this.instanceRow()
     const configured = this.deps.env.setupCode
     if (!row) throw invalidSetupCode()

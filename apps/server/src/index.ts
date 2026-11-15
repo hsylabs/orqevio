@@ -33,6 +33,10 @@ const live = attachLiveUpdates(server as Server, env, services, bus)
 if (env.setupCode && normalizeSecret(env.setupCode).length < 12) {
   console.warn('SETUP_CODE has fewer than 12 letters or digits; choose a longer one.')
 }
+const uninstalled = await services.accounts.uninstalled()
+if (uninstalled) {
+  console.log(`This copy of Orqevio was uninstalled (${uninstalled.at}). Remove its container and data to finish: it can't be claimed again.`)
+}
 const setup = await services.accounts.setupNotice()
 if (setup) {
   console.log(`This copy is not claimed yet. Open ${env.appUrls[0]} to set it up.`)
