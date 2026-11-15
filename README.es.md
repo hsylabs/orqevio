@@ -437,6 +437,14 @@ apps/site            la web pública orqevio.com: páginas estáticas sin cookie
 
 **La web pública.** `pnpm --filter @orqevio/site build` genera `apps/site/dist` con las páginas y las mismas fuentes que la app, servidas desde el propio sitio. `pnpm --filter @orqevio/site preview` la sirve en local con Wrangler. Se publica en `orqevio.com` con Workers Builds desde `main`; la configuración está en «Web pública» de [RELEASING.md](RELEASING.md). Sus pruebas comprueban los enlaces, las fuentes, las cabeceras de seguridad y que la guía de instalación de cada idioma diga lo mismo que el README en inglés.
 
+## Sin garantía
+
+Orqevio se ofrece tal cual, sin garantías de ningún tipo, como dice su [licencia](LICENSE.md). Tú alojas y administras tu copia, así que sus datos quedan a tu cargo:
+
+- **Haz copias de seguridad.** Con Docker, copia el volumen o haz una copia en caliente de la base de datos (ver [Con Docker](#con-docker-recomendado-para-producción)). En Cloudflare, la app todavía no puede exportar tus datos, salvo la bóveda.
+- **Exporta tu bóveda** de vez en cuando, cifrada con tu contraseña maestra.
+- **Guarda bien tu clave de acceso y la clave de recuperación de tu bóveda.** Nadie puede abrir tu bóveda sin su contraseña maestra o su clave de recuperación, ni siquiera nosotros.
+
 ## Licencia
 
 Orqevio se publica con la [Functional Source License 1.1, con licencia futura Apache 2.0](LICENSE.md) (`FSL-1.1-ALv2`). Puedes usarlo, modificarlo y alojar tu copia, también en tu empresa. Lo único que no permite es ofrecerlo como un producto o servicio comercial que compita con Orqevio. Cada versión pasa a la licencia Apache 2.0 a los dos años de publicarse.
