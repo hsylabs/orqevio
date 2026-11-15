@@ -45,12 +45,19 @@ export function useAgentLive(): boolean {
   return Date.now() - lastAgentActivity < 6000
 }
 
-type PageListener = (event: RealtimeEvent) => void
-const pageListeners = new Set<PageListener>()
-export function onPageEvent(fn: PageListener) {
+type LiveListener = (event: RealtimeEvent) => void
+const pageListeners = new Set<LiveListener>()
+export function onPageEvent(fn: LiveListener) {
   pageListeners.add(fn)
   return () => {
     pageListeners.delete(fn)
+  }
+}
+const cardListeners = new Set<LiveListener>()
+export function onCardEvent(fn: LiveListener) {
+  cardListeners.add(fn)
+  return () => {
+    cardListeners.delete(fn)
   }
 }
 
@@ -66,7 +73,10 @@ function handle(workspaceId: string, event: RealtimeEvent, selfId: string | unde
     void queryClient.invalidateQueries({ queryKey: keys.board(event.boardId) })
     void queryClient.invalidateQueries({ queryKey: keys.archived(event.boardId) })
   }
-  if (event.cardId) void queryClient.invalidateQueries({ queryKey: keys.card(event.cardId) })
+  if (event.cardId) {
+    void queryClient.invalidateQueries({ queryKey: keys.card(event.cardId) })
+    for (const l of cardListeners) l(event)
+  }
   if (event.pageId) {
     for (const l of pageListeners) l(event)
     if (event.cardId) void queryClient.invalidateQueries({ queryKey: keys.page(event.pageId) })

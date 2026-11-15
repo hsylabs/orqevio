@@ -98,6 +98,14 @@
     "gone": "Este cartão não existe mais",
     "archived": "Arquivado",
     "agentEditing": "{{name}} está editando",
+    "agentUpdated": "{{name}} atualizou a descrição",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> alterou a descrição enquanto você editava. Suas últimas alterações não foram salvas.",
+      "byOtherSession": "<strong>Outra sessão</strong> alterou a descrição enquanto você editava. Suas últimas alterações não foram salvas.",
+      "loadTheirs": "Carregar a outra versão",
+      "keepMine": "Manter a minha",
+      "notSaved": "Suas alterações na descrição não foram salvas: outra pessoa a alterou ao mesmo tempo."
+    },
     "saving": "Salvando…",
     "saved": "Salvo",
     "actions": "Ações do cartão",

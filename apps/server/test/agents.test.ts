@@ -178,6 +178,15 @@ describe('MCP server', () => {
         arguments: { project_id: projectId, title: 'Contratos', content: `Seguimiento en [Revisar contratos](/card/${created.card_id}).` },
       }),
     )
+    // Card descriptions carry a version too: an edit from an old one is refused.
+    const fetched = data(await mcp.callTool({ name: 'get_card', arguments: { card_id: created.card_id } }))
+    expect(fetched.version).toBe(1)
+    const described = data(await mcp.callTool({ name: 'update_card', arguments: { card_id: created.card_id, description: 'Plazo: viernes', base_version: 1 } }))
+    expect(described.version).toBe(2)
+    const stale = await mcp.callTool({ name: 'update_card', arguments: { card_id: created.card_id, description: 'Pisada', base_version: 1 } })
+    expect(stale.isError).toBe(true)
+    expect(data(await mcp.callTool({ name: 'get_card', arguments: { card_id: created.card_id } }))).toMatchObject({ description: 'Plazo: viernes', version: 2 })
+
     const appended = data(await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: '## Anexo', mode: 'append' } }))
     expect(appended.version).toBe(2)
     const conflict = await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: 'x', base_version: 1 } })

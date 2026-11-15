@@ -158,6 +158,8 @@ export interface CardSummaryDTO {
   dueAt: string | null
   labelIds: string[]
   hasDescription: boolean
+  /** Version of the description: it goes up each time the description changes. */
+  version: number
   checklist: { done: number; total: number }
   linkedPages: number
   attachments: number
