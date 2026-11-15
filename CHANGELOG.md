@@ -6,6 +6,9 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+### Fixed
+- Agents can no longer delete labels, checklists, checklist items or the link between a card and a page through the REST API: as promised, agents can't delete anything. Creating, renaming and deleting labels, and removing links, now show in the activity.
+
 ## [1.0.1] - 2026-11-15
 
 ### Fixed

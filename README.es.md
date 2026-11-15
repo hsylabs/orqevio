@@ -347,7 +347,7 @@ claude mcp add --transport http orqevio https://tu-dominio/mcp --header "Authori
 | Escritura + lectura de ambas áreas | `link_card_to_page` |
 | Escritura en cualquiera de las dos áreas | `create_project` (renombrar y borrar proyectos sigue siendo cosa de personas) |
 
-El endpoint es MCP Streamable HTTP sin estado (`POST /mcp`). La misma API REST también acepta los tokens creados en la app con los mismos permisos, salvo cuenta, tokens y bóveda, que exigen sesión en el navegador. Los tokens de OAuth solo valen para `/mcp`.
+El endpoint es MCP Streamable HTTP sin estado (`POST /mcp`). La misma API REST también acepta los tokens creados en la app, con los mismos permisos. Borrar cualquier cosa, los adjuntos, la actividad, la cuenta, los tokens y la bóveda exigen sesión en el navegador. Los tokens de OAuth solo valen para `/mcp`.
 
 ## Pruebas
 
