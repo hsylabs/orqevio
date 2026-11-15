@@ -101,17 +101,85 @@ jobs:
           npm publish ./packs/orqevio-*.tgz --access public --tag "$TAG" --provenance
           npm publish ./packs/create-orqevio-*.tgz --access public --tag "$TAG" --provenance
 
+  # Each platform is built on a machine of its own architecture: emulating arm64 with QEMU
+  # was slow and once crashed mid-build, leaving the job hanging until its timeout. Each
+  # build pushes its image by digest only; the docker job below tags them as one image.
+  docker-build:
+    name: Build the Docker image (${{ matrix.platform }})
+    needs: verify
+    runs-on: ${{ matrix.runner }}
+    # A build takes about 4 minutes: a hang fails here instead of an hour later.
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          # GitHub has no "latest" label for its Arm runners.
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # The same tags as the docker job, for the version label; the tags themselves go on there.
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ needs.verify.outputs.prerelease != 'true' }}
+          labels: |
+            org.opencontainers.image.title=Orqevio
+            org.opencontainers.image.licenses=FSL-1.1-ALv2
+      - id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ghcr.io/${{ github.repository }}
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          provenance: mode=max
+          sbom: true
+      - name: Keep the digest for the docker job
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+          echo "PLATFORM_PAIR=${PLATFORM//\//-}" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
   docker:
     name: Publish the Docker image
-    needs: verify
+    needs: [verify, docker-build]
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 10
     permissions:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: docker/setup-qemu-action@v4
+      - uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
       - uses: docker/setup-buildx-action@v4
       - uses: docker/login-action@v4
         with:
@@ -126,18 +194,25 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable=${{ needs.verify.outputs.prerelease != 'true' }}
-          labels: |
-            org.opencontainers.image.title=Orqevio
-            org.opencontainers.image.licenses=FSL-1.1-ALv2
-      - uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          provenance: mode=max
-          sbom: true
+      # One image for both platforms, under the version's tags; the attestations
+      # (provenance and SBOM) of each build come along.
+      - name: Tag both platforms as one image
+        working-directory: ${{ runner.temp }}/digests
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}
+        run: |
+          mapfile -t tags < <(jq -r '.tags[] | "-t", .' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          refs=()
+          for digest in *; do refs+=("$IMAGE@sha256:$digest"); done
+          docker buildx imagetools create "${tags[@]}" "${refs[@]}"
+      - name: Check that the image has both platforms
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.version }}
+        run: |
+          docker buildx imagetools inspect "$IMAGE"
+          for platform in linux/amd64 linux/arm64; do
+            docker buildx imagetools inspect "$IMAGE" --format '{{json .Manifest}}' | jq -e --arg p "$platform" '[.manifests[] | select(.platform.os + "/" + .platform.architecture == $p)] | length == 1' > /dev/null || { echo "Missing $platform"; exit 1; }
+          done
 
   release:
     name: Publish the GitHub release
