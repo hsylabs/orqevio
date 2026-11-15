@@ -1,4 +1,4 @@
-import { LIVE_CLOSE, type LiveMessage, type RealtimeEvent } from '@orqevio/shared'
+import { LIVE_CLOSE, type LiveMessage, type MeDTO, type RealtimeEvent } from '@orqevio/shared'
 import { useEffect, useSyncExternalStore } from 'react'
 import { keys, queryClient } from './queries'
 
@@ -147,18 +147,29 @@ export function useRealtime(workspaceId: string | undefined, selfId: string | un
           pongDeadline = setTimeout(() => ws.close(), PONG_TIMEOUT_MS)
         }, PING_EVERY_MS)
       }
-      ws.onclose = (event) => {
-        stopTimers()
-        if (closed) return
-        const refused = event.code === LIVE_CLOSE.sessionEnded || event.code === LIVE_CLOSE.noAccess
-        // A refused connection, or one that never opened (the browser hides why), may mean the
-        // session or the access is gone: let the app check and react (sign-in screen or "not found").
-        if (refused || !opened) void queryClient.invalidateQueries({ queryKey: keys.me })
-        // The server said no: trying again would only fail again. The app takes over from here.
-        if (refused) return
+      const reconnect = () => {
         opened = false
         attempts++
         retry = setTimeout(open, Math.min(1000 * 2 ** attempts, 20_000))
+      }
+      ws.onclose = (event) => {
+        stopTimers()
+        if (closed) return
+        if (event.code === LIVE_CLOSE.sessionEnded || event.code === LIVE_CLOSE.noAccess) {
+          // The server refused this connection's session or access. Ask the app again: if this
+          // tab has lost them, it shows the sign-in screen or "not found" and this ends here; if
+          // they are still good (signed in again in another tab, say), connect again with them.
+          void queryClient.invalidateQueries({ queryKey: keys.me }).then(() => {
+            if (closed) return
+            const state = queryClient.getQueryState<MeDTO>(keys.me)
+            const stillHere = state?.status === 'success' && state.data?.user.id === selfId && state.data.workspaces.some((w) => w.id === workspaceId)
+            if (stillHere) reconnect()
+          })
+          return
+        }
+        // One that never opened (the browser hides why) may mean the same: let the app check.
+        if (!opened) void queryClient.invalidateQueries({ queryKey: keys.me })
+        reconnect()
       }
     }
     open()

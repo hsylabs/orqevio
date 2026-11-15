@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { ACCESS_KEY_FILE, expect, settle, test } from './helpers'
+import { ACCESS_KEY_FILE, createProject, expect, settle, test } from './helpers'
 
 // A tab whose session ended elsewhere goes to the sign-in screen. Signing in again there must
 // open the app once, not bounce between the app and the sign-in screen opening connections.
@@ -50,5 +50,43 @@ test('signing in again in a tab whose session ended opens the app once', async (
   await page.waitForTimeout(2500)
   expect(sockets).toEqual([])
   expect(errors).toEqual([])
+  await context.close()
+})
+
+// Another tab signs out and back in: a new session for the same person. This tab's live connection
+// still holds the old one, so the server closes it at the next ping; the tab must connect again
+// with the new session, not stop receiving changes.
+test('a tab keeps its live updates when another tab signs out and back in', async ({ browser, baseURL }) => {
+  test.setTimeout(90_000)
+  const accessKey = (await readFile(ACCESS_KEY_FILE, 'utf8')).trim()
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+  const page = await context.newPage()
+  await settle(page, baseURL!)
+  await page.goto('/login')
+  await page.getByLabel('Clave de acceso', { exact: true }).fill(accessKey)
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Nuevo proyecto' }).first()).toBeVisible()
+  const boardId = await createProject(page, 'En directo')
+  const board = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string }> }
+
+  const other = await context.newPage()
+  await settle(other, baseURL!)
+  const reconnected = page.waitForEvent('websocket', { timeout: 40_000 })
+  const status = await other.evaluate(async (key) => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accessKey: key }) })
+    return res.status
+  }, accessKey)
+  expect(status).toBe(200)
+  await reconnected
+
+  // Changes keep arriving live, and the tab stays where it was.
+  await other.evaluate(
+    async (columnId) =>
+      (await fetch(`/api/columns/${columnId}/cards`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'Llega en directo' }) })).status,
+    board.columns[0]!.id,
+  )
+  await expect(page.getByRole('button', { name: 'Llega en directo' })).toBeVisible({ timeout: 5000 })
+  expect(page.url()).toContain(`/b/${boardId}`)
   await context.close()
 })
