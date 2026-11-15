@@ -339,7 +339,9 @@ function DocBody({ page }: { page: PageDTO }) {
           </div>
 
           {(page.children.length > 0 || page.attachments.length > 0) && (
-            <footer className="-mt-[22vh] mb-24 flex flex-col gap-8 border-t border-line pt-8">
+            // It moves up into the space the editor keeps below its text, so it paints above
+            // the editor: otherwise the editor takes every click on it.
+            <footer className="relative z-10 -mt-[22vh] mb-24 flex flex-col gap-8 border-t border-line pt-8">
               {page.children.length > 0 && (
                 <section>
                   <h2 className="mb-3 text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('page.subpages')}</h2>
