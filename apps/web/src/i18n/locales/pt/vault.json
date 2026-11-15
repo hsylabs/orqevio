@@ -92,7 +92,7 @@
     "showPassword": "Mostrar senha",
     "hidePassword": "Ocultar senha",
     "copyPassword": "Copiar senha",
-    "passwordCopied": "Senha copiada · a área de transferência será limpa em 30 s",
+    "passwordCopied": "Senha copiada · a área de transferência será limpa após 30 s, ou você verá um lembrete",
     "website": "Site",
     "openWebsite": "Abrir site",
     "copyUrl": "Copiar URL",
@@ -101,12 +101,12 @@
     "notes": "Notas",
     "copyNotes": "Copiar notas",
     "notesCopied": "Copiado",
-    "clipboardClears": "Quando você copia algo, a área de transferência é limpa automaticamente após 30 segundos."
+    "clipboardClears": "Quando você copia uma senha, uma nota ou um código, a área de transferência é limpa após 30 segundos. Se o navegador não permitir, por exemplo porque você estava em outra aba, ao voltar você pode limpá-la com um clique."
   },
   "totp": {
     "label": "Código de verificação",
     "copy": "Copiar código",
-    "copied": "Código copiado · a área de transferência será limpa em 30 s",
+    "copied": "Código copiado · a área de transferência será limpa após 30 s, ou você verá um lembrete",
     "current": "Código de verificação atual",
     "changesIn_one": "Muda em {{count}} segundo",
     "changesIn_many": "Muda em {{count}} segundos",
@@ -158,7 +158,7 @@
   },
   "generator": {
     "regenerate": "Gerar outra",
-    "copied": "Copiada · a área de transferência será limpa em 30 s",
+    "copied": "Copiada · a área de transferência será limpa após 30 s, ou você verá um lembrete",
     "entropy": "≈ {{bits}} bits de entropia",
     "length": "Comprimento",
     "sets": {

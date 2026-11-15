@@ -14,7 +14,7 @@ function authenticatorCodes(secret: string) {
   })
 }
 
-test('end-to-end encrypted vault', async ({ page }) => {
+test('end-to-end encrypted vault', async ({ page, browserName }) => {
   test.setTimeout(90_000)
   await openNewWorkspace(page, 'Bóveda E2E')
   await page.getByRole('link', { name: /^Bóveda/ }).click()
@@ -140,4 +140,44 @@ test('end-to-end encrypted vault', async ({ page }) => {
   await importDialog.getByRole('button', { name: 'Descifrar' }).click()
   await expect(importDialog.getByRole('status')).toContainText('3 elementos ya estaban en tu bóveda', { timeout: 30_000 })
   await expect(importDialog.getByRole('button', { name: 'Importar 0 elementos' })).toBeDisabled()
+  await page.keyboard.press('Escape')
+
+  // A copied password leaves the clipboard once 30 seconds are up, unless something else was
+  // copied since. Under automation every engine lets the page write to the clipboard; real
+  // Firefox and Safari need a click, which test/clipboard.test.ts covers.
+  if (browserName === 'chromium') await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+  // The test can read the clipboard in Chromium (granted above) and Firefox, not in WebKit.
+  const clipboard = () => (browserName === 'webkit' ? Promise.resolve(null) : page.evaluate(() => navigator.clipboard.readText()))
+  const reminder = page.getByText('Lo que copiaste de la bóveda puede seguir en el portapapeles.')
+  // Shown once the copy is done and the clear scheduled: the fake clock must not run before.
+  const copied = page.getByText('Contraseña copiada · a los 30 s se vaciará del portapapeles o te lo recordaremos')
+  await page.getByRole('list', { name: 'Elementos de la bóveda' }).getByText('Banco').click()
+  await page.clock.install()
+  const copy = page.getByRole('button', { name: 'Copiar contraseña' })
+  await copy.click()
+  await expect(copied).toBeVisible()
+  if (browserName !== 'webkit') expect(await clipboard()).toBe('S3cr3to-muy-largo!')
+  await page.clock.runFor(29_000)
+  if (browserName !== 'webkit') expect(await clipboard()).toBe('S3cr3to-muy-largo!')
+  await page.clock.runFor(2_000)
+  if (browserName !== 'webkit') await expect.poll(clipboard).toBe('')
+  await expect(reminder).toHaveCount(0)
+  await expect(copied).toHaveCount(0)
+
+  // Leaving the page and coming back: Chromium may read the clipboard, so it clears it only if it
+  // still holds the password; the others can't tell, so they ask, and the click clears it.
+  await copy.click()
+  await expect(copied).toBeVisible()
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+  await page.clock.runFor(31_000)
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  if (browserName === 'chromium') {
+    await expect.poll(clipboard).toBe('')
+    await expect(reminder).toHaveCount(0)
+  } else {
+    await expect(reminder).toBeVisible()
+    await page.getByRole('button', { name: 'Vaciar', exact: true }).click()
+    await expect(page.getByText('Portapapeles vaciado')).toBeVisible()
+    if (browserName === 'firefox') expect(await clipboard()).toBe('')
+  }
 })

@@ -92,7 +92,7 @@
     "showPassword": "Mostrar contraseña",
     "hidePassword": "Ocultar contraseña",
     "copyPassword": "Copiar contraseña",
-    "passwordCopied": "Contraseña copiada · se borrará del portapapeles en 30 s",
+    "passwordCopied": "Contraseña copiada · a los 30 s se vaciará del portapapeles o te lo recordaremos",
     "website": "Sitio web",
     "openWebsite": "Abrir sitio",
     "copyUrl": "Copiar dirección",
@@ -101,12 +101,12 @@
     "notes": "Notas",
     "copyNotes": "Copiar notas",
     "notesCopied": "Copiado",
-    "clipboardClears": "Al copiar, el portapapeles se vacía automáticamente a los 30 segundos."
+    "clipboardClears": "Al copiar una contraseña, una nota o un código, el portapapeles se vacía a los 30 segundos. Si el navegador no lo permite, por ejemplo porque estabas en otra pestaña, al volver puedes vaciarlo con un clic."
   },
   "totp": {
     "label": "Código de verificación",
     "copy": "Copiar código",
-    "copied": "Código copiado · se borrará del portapapeles en 30 s",
+    "copied": "Código copiado · a los 30 s se vaciará del portapapeles o te lo recordaremos",
     "current": "Código de verificación actual",
     "changesIn_one": "Cambia en {{count}} segundo",
     "changesIn_many": "Cambia en {{count}} segundos",
@@ -158,7 +158,7 @@
   },
   "generator": {
     "regenerate": "Generar otra",
-    "copied": "Copiada · se borrará del portapapeles en 30 s",
+    "copied": "Copiada · a los 30 s se vaciará del portapapeles o te lo recordaremos",
     "entropy": "≈ {{bits}} bits de entropía",
     "length": "Longitud",
     "sets": {

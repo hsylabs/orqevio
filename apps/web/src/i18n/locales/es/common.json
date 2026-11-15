@@ -16,6 +16,12 @@
     "details": "Detalle"
   },
   "copyFailed": "No se ha podido copiar al portapapeles",
+  "clipboard": {
+    "stillThere": "Lo que copiaste de la bóveda puede seguir en el portapapeles.",
+    "clear": "Vaciar",
+    "cleared": "Portapapeles vaciado",
+    "clearFailed": "No se ha podido vaciar el portapapeles"
+  },
   "notFound": {
     "title": "Aquí no hay nada",
     "body": "La página no existe o no tienes acceso a ella."
