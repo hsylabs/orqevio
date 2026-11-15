@@ -16,7 +16,7 @@ GitLab doesn't have Dependabot: update the `create-orqevio` version in `package.
 
 ## If you lose your key
 
-1. In the Cloudflare dashboard, go to **Workers & Pages → your Worker → Settings → Variables and Secrets** and give `SETUP_CODE` a new value (at least 12 letters or digits).
+1. In the Cloudflare dashboard, go to **Workers & Pages → your Worker → Settings → Variables and Secrets** and give `SETUP_CODE` a new value (at least 12 letters A–Z or digits; other characters don't count).
 2. Open your copy, click **Lost your key?** and enter that code.
 
 All sessions are signed out; your data and your vault stay as they are.

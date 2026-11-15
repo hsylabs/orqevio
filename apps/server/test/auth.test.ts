@@ -34,6 +34,24 @@ describe('access to a copy', () => {
     expect((await client.get('/api/auth/session')).body.claimed).toBe(false)
   })
 
+  it('refuses to be claimed while its setup code has too few letters A–Z or digits', async () => {
+    const client = new Client(h)
+    // In another script, or in symbols, the code comes down to nothing and would match "-".
+    for (const configured of ['セットアップのための秘密のコード', '!!!---???', 'abc-123']) {
+      h.env.setupCode = configured
+      try {
+        for (const setupCode of ['-', configured]) {
+          const res = await client.post('/api/auth/claim', { setupCode, name: 'Marta Ruiz' })
+          expect(res.status, `${configured} / ${setupCode}`).toBe(409)
+          expect(res.body.error.code).toBe('setup_code_too_short')
+        }
+      } finally {
+        h.env.setupCode = SETUP_CODE
+      }
+    }
+    expect((await client.get('/api/auth/session')).body.claimed).toBe(false)
+  })
+
   it('claims once: creates the owner, a workspace, a hardened cookie and a one-time access key', async () => {
     const client = new Client(h)
     // Case, spaces and dashes in the setup code do not matter.
@@ -109,6 +127,23 @@ describe('access to a copy', () => {
     expect((await new Client(h).post('/api/auth/login', { accessKey: oldKey })).status).toBe(401)
     expect((await new Client(h).post('/api/auth/login', { accessKey: res.body.accessKey })).status).toBe(200)
     h.owner!.accessKey = res.body.accessKey
+  })
+
+  it('refuses to recover with a setup code that has too few letters A–Z or digits', async () => {
+    const { client } = await signInOwner(h)
+    // A code in Japanese comes down to nothing: it would match any symbol.
+    h.env.setupCode = 'セットアップのための秘密のコード'
+    try {
+      for (const setupCode of ['?', 'セットアップのための秘密のコード']) {
+        const res = await new Client(h).post('/api/auth/recover', { setupCode, reason: 'compromised' })
+        expect(res.status, setupCode).toBe(409)
+        expect(res.body.error.code).toBe('setup_code_too_short')
+      }
+      // Nothing changed: the session still works.
+      expect((await client.get('/api/auth/me')).status).toBe(200)
+    } finally {
+      h.env.setupCode = SETUP_CODE
+    }
   })
 
   it('recovers access only after the setup code is changed', async () => {

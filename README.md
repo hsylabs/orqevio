@@ -234,7 +234,7 @@ pnpm start
 ### Accessing your copy
 
 1. **The first time.** Open your copy's URL and enter the setup code and your name:
-   - If you set `SETUP_CODE`, it's that value. Use at least 12 letters or digits.
+   - If you set `SETUP_CODE`, it's that value. Use at least 12 letters A–Z or digits: other characters (accents, other alphabets, symbols) don't count, and with fewer the copy refuses to be claimed or recovered.
    - If you didn't, the server generates one on startup and prints it in its log (`docker compose logs app`). It works until the copy is claimed or the server restarts.
    - On Cloudflare, the installer gives it to you.
 2. **Your access key.** Orqevio generates a random 160-bit key and shows it **only once**. Save it in your password manager: it's all you need to sign in from any device. When you type it, case and hyphens don't matter.

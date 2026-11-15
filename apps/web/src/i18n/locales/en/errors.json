@@ -2,6 +2,7 @@
   "codes": {
     "invalid_access_key": "The access key isn’t correct.",
     "invalid_setup_code": "The setup code isn’t correct.",
+    "setup_code_too_short": "This copy’s setup code has fewer than 12 letters A–Z or digits, so it can’t be used. Set a longer one (other characters, such as accents or other alphabets, don’t count) and try again.",
     "recovery_not_ready": "Your copy doesn’t have a new setup code yet. If you just changed it, wait a moment (sometimes a few minutes) and try again.",
     "already_claimed": "This copy is already set up. Sign in with your access key.",
     "not_claimed": "This copy isn’t set up yet.",
