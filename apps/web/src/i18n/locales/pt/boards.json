@@ -72,6 +72,9 @@
       "withCards_one": "O cartão desta coluna também será excluído. Para mantê-lo, mova-o antes para outra coluna.",
       "withCards_many": "Os {{count}} cartões desta coluna também serão excluídos. Para mantê-los, mova-os antes para outra coluna.",
       "withCards_other": "Os {{count}} cartões desta coluna também serão excluídos. Para mantê-los, mova-os antes para outra coluna.",
+      "withArchived_one": "O cartão arquivado desta coluna também será excluído. Para mantê-lo, restaure-o antes em “Arquivados”.",
+      "withArchived_many": "Os {{count}} cartões arquivados desta coluna também serão excluídos. Para mantê-los, restaure-os antes em “Arquivados”.",
+      "withArchived_other": "Os {{count}} cartões arquivados desta coluna também serão excluídos. Para mantê-los, restaure-os antes em “Arquivados”.",
       "empty": "A coluna está vazia."
     }
   },

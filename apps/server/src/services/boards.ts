@@ -81,7 +81,7 @@ export class BoardService {
   async get(actor: Actor, boardId: string): Promise<BoardDTO> {
     const board = await this.load(actor, boardId)
     const db = this.deps.db
-    const [[project], columnRows, cardRows, labelRows] = await Promise.all([
+    const [[project], columnRows, cardRows, labelRows, archivedRows] = await Promise.all([
       db.select({ id: projects.id, name: projects.name, color: projects.color }).from(projects).where(eq(projects.id, board.projectId)),
       db.select().from(columns).where(eq(columns.boardId, boardId)).orderBy(asc(columns.position), asc(columns.id)),
       db
@@ -90,14 +90,21 @@ export class BoardService {
         .where(and(eq(cards.boardId, boardId), isNull(cards.archivedAt)))
         .orderBy(asc(cards.position), asc(cards.id)),
       db.select().from(labels).where(eq(labels.boardId, boardId)).orderBy(asc(labels.createdAt), asc(labels.id)),
+      // Archived cards are deleted with their column: the app says how many before deleting one.
+      db
+        .select({ columnId: cards.columnId, total: count() })
+        .from(cards)
+        .where(and(eq(cards.boardId, boardId), isNotNull(cards.archivedAt)))
+        .groupBy(cards.columnId),
     ])
+    const archived = new Map(archivedRows.map((r) => [r.columnId, r.total]))
     return {
       id: board.id,
       projectId: board.projectId,
       workspaceId: board.workspaceId,
       name: board.name,
       project: { id: project!.id, name: project!.name, color: project!.color as PaletteColor },
-      columns: columnRows.map(toColumnDTO),
+      columns: columnRows.map((c) => ({ ...toColumnDTO(c), archivedCards: archived.get(c.id) ?? 0 })),
       cards: await this.cards.summarize(cardRows),
       labels: labelRows.map(toLabelDTO),
     }

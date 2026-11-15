@@ -71,6 +71,8 @@
       "title": "Spalte „{{name}}“ löschen?",
       "withCards_one": "Die Karte in dieser Spalte wird ebenfalls gelöscht. Wenn du sie behalten willst, verschiebe sie vorher in eine andere Spalte.",
       "withCards_other": "Die {{count}} Karten in dieser Spalte werden ebenfalls gelöscht. Wenn du sie behalten willst, verschiebe sie vorher in eine andere Spalte.",
+      "withArchived_one": "Die archivierte Karte in dieser Spalte wird ebenfalls gelöscht. Wenn du sie behalten willst, stelle sie vorher unter „Archiv“ wieder her.",
+      "withArchived_other": "Die {{count}} archivierten Karten in dieser Spalte werden ebenfalls gelöscht. Wenn du sie behalten willst, stelle sie vorher unter „Archiv“ wieder her.",
       "empty": "Die Spalte ist leer."
     }
   },
