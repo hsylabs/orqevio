@@ -98,6 +98,14 @@
     "gone": "Questa scheda non esiste più",
     "archived": "Archiviata",
     "agentEditing": "{{name}} sta modificando",
+    "agentUpdated": "{{name}} ha aggiornato la descrizione",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> ha cambiato la descrizione mentre la stavi modificando. Le tue ultime modifiche non sono state salvate.",
+      "byOtherSession": "<strong>Un’altra sessione</strong> ha cambiato la descrizione mentre la stavi modificando. Le tue ultime modifiche non sono state salvate.",
+      "loadTheirs": "Carica l’altra versione",
+      "keepMine": "Mantieni la mia",
+      "notSaved": "Le tue modifiche alla descrizione non sono state salvate: qualcun altro l’ha cambiata nello stesso momento."
+    },
     "saving": "Salvataggio…",
     "saved": "Salvato",
     "actions": "Azioni della scheda",

@@ -239,6 +239,8 @@ export const cards = sqliteTable(
       .references(() => columns.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     description: text('description').notNull().default(''),
+    /** Goes up each time the description changes, so two edits of it can't overwrite each other unnoticed. */
+    version: integer('version').notNull().default(1),
     position: position('position').notNull(),
     dueAt: timestamp('due_at'),
     archivedAt: timestamp('archived_at'),

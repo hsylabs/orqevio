@@ -68,6 +68,8 @@ export const cardCreateInput = z.object({
 export const cardUpdateInput = z.object({
   title: name(300).optional(),
   description: z.string().max(MAX_MARKDOWN).optional(),
+  /** Optional with `description`: the version it was edited from. Without it, the last write wins. */
+  baseVersion: z.number().int().min(1).optional(),
   dueAt: isoDate.nullable().optional(),
   labelIds: z.array(id).max(20).optional(),
 })
