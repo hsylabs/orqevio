@@ -63,6 +63,23 @@ describe('boards and cards', () => {
     expect((await client.get(`/api/boards/${boardId}`)).body.cards).toHaveLength(1)
   })
 
+  it('tells, column by column, how many archived cards would be deleted with it', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { boardId, columns } = await seedBoard(client, workspaceId)
+    const archive = async (columnId: string, title: string) => {
+      const card = await client.post(`/api/columns/${columnId}/cards`, { title })
+      await client.post(`/api/cards/${card.body.id}/archive`)
+    }
+    await archive(columns[2]!.id, 'Hecha 1')
+    await archive(columns[2]!.id, 'Hecha 2')
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Abierta' })
+    const board = await client.get(`/api/boards/${boardId}`)
+    expect(board.body.columns.map((c: { archivedCards: number }) => c.archivedCards)).toEqual([0, 0, 2])
+    // Deleting the column deletes its archived cards too.
+    expect((await client.del(`/api/columns/${columns[2]!.id}`)).status).toBe(204)
+    expect((await client.get(`/api/boards/${boardId}/archived`)).body).toHaveLength(0)
+  })
+
   it('counts the open cards of each board in the overview', async () => {
     const { client, workspaceId } = await signUp(h)
     const first = await seedBoard(client, workspaceId)

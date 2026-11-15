@@ -8,6 +8,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ### Fixed
 - Agents can no longer delete labels, checklists, checklist items or the link between a card and a page through the REST API: as promised, agents can't delete anything. Creating, renaming and deleting labels, and removing links, now show in the activity.
+- Deleting a column now says how many cards go with it, including the ones a filter hides and the archived ones. It used to say "The column is empty." when a filter hid its cards or all of them were archived, and then deleted them.
 
 ## [1.0.1] - 2026-11-15
 

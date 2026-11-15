@@ -72,6 +72,9 @@
       "withCards_one": "Sa carte sera également supprimée. Pour la conserver, déplacez-la d’abord vers une autre colonne.",
       "withCards_many": "Ses {{count}} cartes seront également supprimées. Pour les conserver, déplacez-les d’abord vers une autre colonne.",
       "withCards_other": "Ses {{count}} cartes seront également supprimées. Pour les conserver, déplacez-les d’abord vers une autre colonne.",
+      "withArchived_one": "Sa carte archivée sera également supprimée. Pour la conserver, restaurez-la d’abord depuis « Archivées ».",
+      "withArchived_many": "Ses {{count}} cartes archivées seront également supprimées. Pour les conserver, restaurez-les d’abord depuis « Archivées ».",
+      "withArchived_other": "Ses {{count}} cartes archivées seront également supprimées. Pour les conserver, restaurez-les d’abord depuis « Archivées ».",
       "empty": "La colonne est vide."
     }
   },

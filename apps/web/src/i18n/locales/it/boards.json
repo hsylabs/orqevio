@@ -72,6 +72,9 @@
       "withCards_one": "Verrà eliminata anche la sua scheda. Per conservarla, spostala prima in un’altra colonna.",
       "withCards_many": "Verranno eliminate anche le sue {{count}} schede. Per conservarle, spostale prima in un’altra colonna.",
       "withCards_other": "Verranno eliminate anche le sue {{count}} schede. Per conservarle, spostale prima in un’altra colonna.",
+      "withArchived_one": "Verrà eliminata anche la sua scheda archiviata. Per conservarla, ripristinala prima da «Archiviate».",
+      "withArchived_many": "Verranno eliminate anche le sue {{count}} schede archiviate. Per conservarle, ripristinale prima da «Archiviate».",
+      "withArchived_other": "Verranno eliminate anche le sue {{count}} schede archiviate. Per conservarle, ripristinale prima da «Archiviate».",
       "empty": "La colonna è vuota."
     }
   },

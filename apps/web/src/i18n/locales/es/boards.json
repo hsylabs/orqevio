@@ -72,6 +72,9 @@
       "withCards_one": "Se eliminará también su tarjeta. Si prefieres conservarla, muévela antes a otra columna.",
       "withCards_many": "Se eliminarán también sus {{count}} tarjetas. Si prefieres conservarlas, muévelas antes a otra columna.",
       "withCards_other": "Se eliminarán también sus {{count}} tarjetas. Si prefieres conservarlas, muévelas antes a otra columna.",
+      "withArchived_one": "También se eliminará su tarjeta archivada. Si prefieres conservarla, restáurala antes desde «Archivadas».",
+      "withArchived_many": "También se eliminarán sus {{count}} tarjetas archivadas. Si prefieres conservarlas, restáuralas antes desde «Archivadas».",
+      "withArchived_other": "También se eliminarán sus {{count}} tarjetas archivadas. Si prefieres conservarlas, restáuralas antes desde «Archivadas».",
       "empty": "La columna está vacía."
     }
   },

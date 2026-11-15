@@ -321,10 +321,17 @@ export function BoardPage() {
     }
   }
 
-  async function deleteColumn(column: ColumnDTO, count: number) {
+  /**
+   * Says how many cards go with the column: every open card, whatever the filter shows,
+   * and its archived cards, which are not on the board but are deleted too.
+   */
+  async function deleteColumn(column: ColumnDTO) {
+    const open = (items[column.id] ?? []).length
+    const archived = columnsById.get(column.id)?.archivedCards ?? 0
+    const parts = [open ? t('column.deleteConfirm.withCards', { count: open }) : '', archived ? t('column.deleteConfirm.withArchived', { count: archived }) : '']
     const ok = await confirm({
       title: t('column.deleteConfirm.title', { name: column.name }),
-      description: count ? t('column.deleteConfirm.withCards', { count }) : t('column.deleteConfirm.empty'),
+      description: open || archived ? parts.filter(Boolean).join(' ') : t('column.deleteConfirm.empty'),
       confirmLabel: t('column.delete'),
       danger: true,
     })
