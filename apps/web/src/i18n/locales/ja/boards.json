@@ -94,6 +94,14 @@
     "gone": "このカードは存在しません",
     "archived": "アーカイブ済み",
     "agentEditing": "{{name}}が編集中",
+    "agentUpdated": "{{name}}が説明を更新しました",
+    "conflict": {
+      "byName": "編集中に<strong>{{name}}</strong>が説明を変更しました。最新の変更は保存されていません。",
+      "byOtherSession": "編集中に<strong>別のセッション</strong>が説明を変更しました。最新の変更は保存されていません。",
+      "loadTheirs": "相手のバージョンを読み込む",
+      "keepMine": "自分のバージョンを残す",
+      "notSaved": "説明の変更は保存されていません。同時に他の人が変更しました。"
+    },
     "saving": "保存中…",
     "saved": "保存しました",
     "actions": "カードの操作",

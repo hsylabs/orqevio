@@ -23,7 +23,7 @@ The key design decision: **the vault is walled off from agents.** No token can r
 
 - **Tasks and documents, linked both ways.** Type `@` in a document to link a task, and the link shows up on both sides. You can also link documents from the card.
 - **Watch your agents work.** When an agent creates or moves a card, you see it appear with a blue halo and the agent's name, and you get a notification. The dot in the logo turns blue while they work.
-- **No stepping on each other's toes.** Documents use optimistic versioning: if an agent edits a page while you're writing, Orqevio lets you know and you choose which version to keep.
+- **No stepping on each other's toes.** Documents and card descriptions use optimistic versioning: if an agent edits a page or a card while you're writing, Orqevio lets you know and you choose which version to keep.
 - **Keyboard first.** `⌘K`/`Ctrl K` opens the command palette to search and jump anywhere; `⌘\` hides the sidebar; and you can rearrange the whole Kanban board from the keyboard (space to pick up, arrow keys to move, space to drop), with screen reader announcements.
 - **A look of its own.** Warm paper, ink and two signal colors: khaki for you, ultramarine for your agents. Editorial type (Fraunces) over a restrained interface (Instrument Sans). Light and dark themes, with text colors tuned to WCAG AA contrast.
 - **In your language.** The app and the installer speak English, Spanish, French, Portuguese, Italian, German, Dutch and Japanese. Your copy takes your browser's language when you claim it, and you can change it anytime in **Settings**.
@@ -341,7 +341,7 @@ claude mcp add --transport http orqevio https://your-domain/mcp --header "Author
 | --- | --- |
 | Any read permission | `list_projects`, `search` |
 | Tasks · read | `get_board`, `get_card` |
-| Tasks · write | `create_card`, `update_card`, `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
+| Tasks · write | `create_card`, `update_card` (with `base_version` when it changes the description), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
 | Docs · read | `list_pages`, `read_page` |
 | Docs · write | `create_page`, `update_page` (replace with `base_version`, or append to the end) |
 | Read and write on both areas | `link_card_to_page` |

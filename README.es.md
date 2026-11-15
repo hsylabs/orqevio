@@ -23,7 +23,7 @@ La decisión central: **la bóveda está aislada de los agentes**. Ningún token
 
 - **Relación directa entre tareas y documentos.** Escribe `@` en un documento para enlazar una tarea: el vínculo aparece en ambos lados. También puedes vincular documentos desde la tarjeta.
 - **Tus agentes, en directo.** Cuando un agente crea o mueve una tarjeta, la ves aparecer con un halo azul y su nombre, y recibes un aviso. El punto del logotipo se vuelve azul mientras trabajan.
-- **Sin pisarse.** Los documentos usan control de versiones optimista: si un agente edita mientras escribes, Orqevio te avisa y eliges qué versión conservar.
+- **Sin pisarse.** Los documentos y las descripciones de las tarjetas usan control de versiones optimista: si un agente edita una página o una tarjeta mientras escribes, Orqevio te avisa y eliges qué versión conservar.
 - **Teclado primero.** `⌘K`/`Ctrl K` abre la paleta para buscar y saltar a cualquier sitio; `⌘\` oculta la barra lateral; el Kanban se puede reorganizar entero con teclado (espacio para coger, flechas, espacio para soltar), con anuncios para lector de pantalla.
 - **Identidad propia.** Papel cálido, tinta y dos señales de color: caqui para ti, ultramar para los agentes. Tipografía editorial (Fraunces) sobre una interfaz sobria (Instrument Sans). Tema claro y oscuro, con los tonos de texto ajustados a contraste WCAG AA.
 - **En tu idioma.** La app y el instalador hablan inglés, español, francés, portugués, italiano, alemán, neerlandés y japonés. Tu copia toma el idioma del navegador al reclamarla y puedes cambiarlo cuando quieras en **Ajustes**.
@@ -341,7 +341,7 @@ claude mcp add --transport http orqevio https://tu-dominio/mcp --header "Authori
 | --- | --- |
 | Cualquier lectura | `list_projects`, `search` |
 | Tareas · lectura | `get_board`, `get_card` |
-| Tareas · escritura | `create_card`, `update_card`, `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
+| Tareas · escritura | `create_card`, `update_card` (con `base_version` si cambia la descripción), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
 | Documentos · lectura | `list_pages`, `read_page` |
 | Documentos · escritura | `create_page`, `update_page` (reemplazar con `base_version`, o añadir al final) |
 | Escritura + lectura de ambas áreas | `link_card_to_page` |

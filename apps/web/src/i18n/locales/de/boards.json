@@ -96,6 +96,14 @@
     "gone": "Diese Karte existiert nicht mehr",
     "archived": "Archiviert",
     "agentEditing": "{{name}} bearbeitet gerade",
+    "agentUpdated": "{{name}} hat die Beschreibung aktualisiert",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> hat die Beschreibung geändert, während du sie bearbeitet hast. Deine letzten Änderungen wurden nicht gespeichert.",
+      "byOtherSession": "<strong>Eine andere Sitzung</strong> hat die Beschreibung geändert, während du sie bearbeitet hast. Deine letzten Änderungen wurden nicht gespeichert.",
+      "loadTheirs": "Andere Version laden",
+      "keepMine": "Meine behalten",
+      "notSaved": "Deine Änderungen an der Beschreibung wurden nicht gespeichert: Jemand anderes hat sie gleichzeitig geändert."
+    },
     "saving": "Wird gespeichert…",
     "saved": "Gespeichert",
     "actions": "Kartenaktionen",

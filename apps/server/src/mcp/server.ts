@@ -20,6 +20,7 @@ How to work with it:
 - Card descriptions and page contents are GitHub-flavoured Markdown.
 - To reference a card inside a document write a Markdown link: [Card title](/card/<card_id>). To reference a page: [Page title](/doc/<page_id>). Card references inside a page automatically link that card to the page.
 - update_page with mode "replace" should include base_version (from read_page) to avoid overwriting someone else's edits. Use mode "append" to add content safely.
+- Likewise, update_card with a description should include base_version (the version from get_card).
 - Agents cannot delete anything. Use archive_card to remove a card from a board (it can be restored by a person).
 - The user's password vault is end-to-end encrypted and is never accessible through this server. Do not ask for passwords or secrets.`
 
@@ -195,7 +196,8 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       'get_card',
       {
         title: 'Get card',
-        description: 'Returns a card in full: Markdown description, labels, due date, checklists (with item ids), linked pages and recent activity.',
+        description:
+          'Returns a card in full: Markdown description and its version, labels, due date, checklists (with item ids), linked pages and recent activity.',
         inputSchema: { card_id: uuid },
         annotations: READ,
       },
@@ -211,6 +213,7 @@ export function createMcpServer(services: Services, actor: AgentActor) {
             due: card.dueAt,
             labels: card.labels.map((l) => ({ id: l.id, name: l.name, color: l.color })),
             description: card.description,
+            version: card.version,
             checklists: card.checklists.map((cl) => ({
               id: cl.id,
               title: cl.title,
@@ -257,11 +260,13 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       'update_card',
       {
         title: 'Update card',
-        description: 'Updates a card. Only the fields you send change. label_ids replaces the full label set.',
+        description:
+          'Updates a card. Only the fields you send change. label_ids replaces the full label set. With a description, send base_version (the version from get_card) to avoid overwriting newer edits.',
         inputSchema: {
           card_id: uuid,
           title: z.string().min(1).max(300).optional(),
           description: z.string().max(50_000).optional(),
+          base_version: z.number().int().min(1).optional(),
           due_date: dueDate.nullable().optional(),
           label_ids: z.array(uuid).max(20).optional(),
         },
@@ -272,10 +277,11 @@ export function createMcpServer(services: Services, actor: AgentActor) {
           const card = await services.cards.update(actor, args.card_id, {
             title: args.title,
             description: args.description,
+            baseVersion: args.base_version,
             dueAt: normaliseDue(args.due_date),
             labelIds: args.label_ids,
           })
-          return { updated: true, card_id: card.id }
+          return { updated: true, card_id: card.id, version: card.version }
         }),
     )
 
