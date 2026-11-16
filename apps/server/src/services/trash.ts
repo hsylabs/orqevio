@@ -334,12 +334,13 @@ export class TrashService {
       if (!root) throw notFound('Trash entry')
       const placed = this.place(tx, entry.workspaceId, entry.kind, root.data, rows)
       const reinsert = new Reinsert(tx)
-      const mentions = new Map<string, Set<string>>()
       for (const row of rows) {
-        if (row.table === 'card_page_links' && row.data.source === 'mention' && !mentionedIn(tx, mentions, row.data)) continue
+        // Mentions come from what pages say now: they are rebuilt below, not put back as they were.
+        if (row.table === 'card_page_links' && row.data.source === 'mention') continue
         // Without the item itself nothing comes back: the transaction rolls back and the entry stays.
         if (!reinsert.insert(row) && row === root) throw restoreError('restore_place_gone', 'It no longer fits anywhere it could go back to.')
       }
+      rebuildMentions(tx, entry.workspaceId, reinsert.cards, reinsert.pages)
       tx.delete(schema.trash).where(eq(schema.trash.id, trashId)).run()
       return placed
     })
@@ -524,18 +525,30 @@ export class TrashService {
 }
 
 /**
- * Whether a page still mentions a card: a mention link comes back only if it does. The page
- * may have been edited while the card was in the trash; pages being restored are in by now.
+ * Rebuilds the mention links of restored cards and pages from what pages say now, as saving a
+ * page does: a page edited while a card was in the trash may mention it, or no longer.
  */
-function mentionedIn(tx: DbOrTx, cache: Map<string, Set<string>>, link: Row) {
-  const pageId = String(link.page_id)
-  let cards = cache.get(pageId)
-  if (!cards) {
-    const page = tx.get<{ content: string }>(sql`SELECT content FROM pages WHERE id = ${pageId}`)
-    cards = new Set(page ? extractReferences(page.content).cards : [])
-    cache.set(pageId, cards)
+function rebuildMentions(tx: DbOrTx, workspaceId: string, cards: Set<string>, pages: Set<string>) {
+  if (cards.size === 0 && pages.size === 0) return
+  const exists = new Map<string, boolean>()
+  const isCard = (id: string) => {
+    let found = exists.get(id)
+    if (found === undefined) {
+      found = Boolean(tx.get(sql`SELECT 1 AS found FROM cards WHERE id = ${id} AND workspace_id = ${workspaceId}`))
+      exists.set(id, found)
+    }
+    return found
   }
-  return cards.has(String(link.card_id))
+  const mentioning = tx.all<{ id: string; content: string }>(sql`SELECT id, content FROM pages WHERE workspace_id = ${workspaceId} AND content LIKE '%/card/%'`)
+  for (const page of mentioning) {
+    if (cards.size === 0 && !pages.has(page.id)) continue
+    // As many as saving the page links.
+    for (const cardId of extractReferences(page.content).cards.slice(0, 200)) {
+      if (!pages.has(page.id) && !cards.has(cardId)) continue
+      if (!isCard(cardId)) continue
+      tx.run(sql`INSERT OR IGNORE INTO card_page_links (card_id, page_id, workspace_id, source, created_at) VALUES (${cardId}, ${page.id}, ${workspaceId}, 'mention', ${Date.now()})`)
+    }
+  }
 }
 
 /** References that only say who made something: they are cleared when that person or token is gone. */
@@ -561,6 +574,9 @@ const SHAPES = new Map(
  */
 class Reinsert {
   private readonly known = new Map<string, boolean>()
+  /** The cards and pages put back, for rebuilding their mentions. */
+  readonly cards = new Set<string>()
+  readonly pages = new Set<string>()
 
   constructor(private readonly tx: DbOrTx) {}
 
@@ -598,6 +614,8 @@ class Reinsert {
       )})`,
     )
     if (data.id != null) this.known.set(`${table} id ${String(data.id)}`, true)
+    if (table === 'cards') this.cards.add(String(data.id))
+    if (table === 'pages') this.pages.add(String(data.id))
     return true
   }
 }

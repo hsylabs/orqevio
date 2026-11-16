@@ -247,7 +247,7 @@ describe('the trash', () => {
     expect(tree.sort()).toEqual([`${parent}<null`, `${child}<${parent}`].sort())
   })
 
-  it('brings a mention back only if the page still mentions the card', async () => {
+  it('rebuilds mentions from what pages say now', async () => {
     const { client, workspaceId } = await signUp(h, 'Menciones')
     const { projectId, columns } = await seedBoard(client, workspaceId)
     const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Citada' })).body
@@ -263,6 +263,14 @@ describe('the trash', () => {
     expect((await client.post(`/api/trash/${trashId}/restore`)).status).toBe(200)
     expect((await client.get(`/api/cards/${card.id}`)).body.pages.map((p: { id: string }) => p.id)).toEqual([kept.id])
     expect((await client.get(`/api/pages/${edited.id}`)).body.cards).toEqual([])
+
+    // A page that starts mentioning it while it is in the trash links it once it's back.
+    const again = (await client.del(`/api/cards/${card.id}`)).body.trashId
+    const fresh = (await client.post(`/api/projects/${projectId}/pages`, { title: 'La cita después' })).body
+    await client.patch(`/api/pages/${fresh.id}`, { content: mention, baseVersion: 1 })
+    expect((await client.get(`/api/pages/${fresh.id}`)).body.cards).toEqual([])
+    expect((await client.post(`/api/trash/${again}/restore`)).status).toBe(200)
+    expect((await client.get(`/api/cards/${card.id}`)).body.pages.map((p: { id: string }) => p.id).sort()).toEqual([kept.id, fresh.id].sort())
   })
 
   it('deletes for good on request or after the time is up, files included', async () => {
