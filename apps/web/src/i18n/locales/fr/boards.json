@@ -72,6 +72,9 @@
       "withCards_one": "Sa carte sera également supprimée. Pour la conserver, déplacez-la d’abord vers une autre colonne.",
       "withCards_many": "Ses {{count}} cartes seront également supprimées. Pour les conserver, déplacez-les d’abord vers une autre colonne.",
       "withCards_other": "Ses {{count}} cartes seront également supprimées. Pour les conserver, déplacez-les d’abord vers une autre colonne.",
+      "withArchived_one": "Sa carte archivée sera également supprimée. Pour la conserver, restaurez-la d’abord depuis « Archivées ».",
+      "withArchived_many": "Ses {{count}} cartes archivées seront également supprimées. Pour les conserver, restaurez-les d’abord depuis « Archivées ».",
+      "withArchived_other": "Ses {{count}} cartes archivées seront également supprimées. Pour les conserver, restaurez-les d’abord depuis « Archivées ».",
       "empty": "La colonne est vide."
     }
   },
@@ -95,6 +98,14 @@
     "gone": "Cette carte n’existe plus",
     "archived": "Archivée",
     "agentEditing": "{{name}} modifie la carte",
+    "agentUpdated": "{{name}} a mis à jour la description",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> a modifié la description pendant que vous l’éditiez. Vos dernières modifications n’ont pas été enregistrées.",
+      "byOtherSession": "<strong>Une autre session</strong> a modifié la description pendant que vous l’éditiez. Vos dernières modifications n’ont pas été enregistrées.",
+      "loadTheirs": "Charger l’autre version",
+      "keepMine": "Garder la mienne",
+      "notSaved": "Vos modifications de la description n’ont pas été enregistrées : quelqu’un d’autre l’a modifiée en même temps."
+    },
     "saving": "Enregistrement…",
     "saved": "Enregistré",
     "actions": "Actions de la carte",

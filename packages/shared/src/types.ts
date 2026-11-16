@@ -144,6 +144,11 @@ export interface ColumnDTO {
   position: string
 }
 
+/** A column within a board: also how many archived cards it holds, which are deleted with it. */
+export interface BoardColumnDTO extends ColumnDTO {
+  archivedCards: number
+}
+
 export interface CardSummaryDTO {
   id: string
   boardId: string
@@ -153,6 +158,8 @@ export interface CardSummaryDTO {
   dueAt: string | null
   labelIds: string[]
   hasDescription: boolean
+  /** Version of the description: it goes up each time the description changes. */
+  version: number
   checklist: { done: number; total: number }
   linkedPages: number
   attachments: number
@@ -167,7 +174,7 @@ export interface BoardDTO {
   workspaceId: string
   name: string
   project: { id: string; name: string; color: PaletteColor }
-  columns: ColumnDTO[]
+  columns: BoardColumnDTO[]
   cards: CardSummaryDTO[]
   labels: LabelDTO[]
 }

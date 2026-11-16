@@ -3,7 +3,7 @@ import type { Server } from 'node:http'
 import path from 'node:path'
 import { serve } from '@hono/node-server'
 import { createApp } from './app'
-import { normalizeSecret } from './auth/crypto'
+import { MIN_SETUP_CODE_LENGTH, isWeakSetupCode } from './auth/crypto'
 import { openDatabase, runMigrations } from './db/client'
 import { loadEnv } from './env'
 import { RealtimeBus } from './lib/realtime'
@@ -30,8 +30,14 @@ const server = serve({ fetch: app.fetch, port: env.port, hostname: env.host }, (
 })
 const live = attachLiveUpdates(server as Server, env, services, bus)
 
-if (env.setupCode && normalizeSecret(env.setupCode).length < 12) {
-  console.warn('SETUP_CODE has fewer than 12 letters or digits; choose a longer one.')
+if (env.setupCode && isWeakSetupCode(env.setupCode)) {
+  console.error(
+    `SETUP_CODE has fewer than ${MIN_SETUP_CODE_LENGTH} letters A–Z or digits (other characters don't count): this copy can't be claimed or recovered with it. Set a longer one.`,
+  )
+}
+const uninstalled = await services.accounts.uninstalled()
+if (uninstalled) {
+  console.log(`This copy of Orqevio was uninstalled (${uninstalled.at}). Remove its container and data to finish: it can't be claimed again.`)
 }
 const setup = await services.accounts.setupNotice()
 if (setup) {

@@ -45,4 +45,11 @@ export const generateSetupCode = () => grouped(crockford(randomBytes(10)))
 export const normalizeSecret = (value: string) =>
   value.toUpperCase().replace(/[^0-9A-Z]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1')
 
+/**
+ * A setup code needs at least this many letters A–Z or digits. The rest is ignored, so a code
+ * written in another script, or in symbols, would come down to nothing and match any symbol.
+ */
+export const MIN_SETUP_CODE_LENGTH = 12
+export const isWeakSetupCode = (value: string) => normalizeSecret(value).length < MIN_SETUP_CODE_LENGTH
+
 export const secretFingerprint = (value: string) => sha256(normalizeSecret(value))

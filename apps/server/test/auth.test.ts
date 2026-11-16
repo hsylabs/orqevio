@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { sha256 } from '../src/auth/crypto'
-import { apiTokens, instance, oauthCodes } from '../src/db/schema'
-import { Client, type Harness, SETUP_CODE, createHarness, signInOwner, signUp } from './harness'
+import { apiTokens, instance, oauthCodes, pages } from '../src/db/schema'
+import { Client, type Harness, SETUP_CODE, createHarness, createPageChain, seedBoard, signInOwner, signUp } from './harness'
 
 const KEY_FORMAT = /^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){7}$/
 
@@ -31,6 +31,24 @@ describe('access to a copy', () => {
     expect(wrong.status).toBe(403)
     expect(wrong.body.error.code).toBe('invalid_setup_code')
     expect((await client.post('/api/auth/claim', { setupCode: SETUP_CODE, name: '' })).status).toBe(400)
+    expect((await client.get('/api/auth/session')).body.claimed).toBe(false)
+  })
+
+  it('refuses to be claimed while its setup code has too few letters A–Z or digits', async () => {
+    const client = new Client(h)
+    // In another script, or in symbols, the code comes down to nothing and would match "-".
+    for (const configured of ['セットアップのための秘密のコード', '!!!---???', 'abc-123']) {
+      h.env.setupCode = configured
+      try {
+        for (const setupCode of ['-', configured]) {
+          const res = await client.post('/api/auth/claim', { setupCode, name: 'Marta Ruiz' })
+          expect(res.status, `${configured} / ${setupCode}`).toBe(409)
+          expect(res.body.error.code).toBe('setup_code_too_short')
+        }
+      } finally {
+        h.env.setupCode = SETUP_CODE
+      }
+    }
     expect((await client.get('/api/auth/session')).body.claimed).toBe(false)
   })
 
@@ -109,6 +127,23 @@ describe('access to a copy', () => {
     expect((await new Client(h).post('/api/auth/login', { accessKey: oldKey })).status).toBe(401)
     expect((await new Client(h).post('/api/auth/login', { accessKey: res.body.accessKey })).status).toBe(200)
     h.owner!.accessKey = res.body.accessKey
+  })
+
+  it('refuses to recover with a setup code that has too few letters A–Z or digits', async () => {
+    const { client } = await signInOwner(h)
+    // A code in Japanese comes down to nothing: it would match any symbol.
+    h.env.setupCode = 'セットアップのための秘密のコード'
+    try {
+      for (const setupCode of ['?', 'セットアップのための秘密のコード']) {
+        const res = await new Client(h).post('/api/auth/recover', { setupCode, reason: 'compromised' })
+        expect(res.status, setupCode).toBe(409)
+        expect(res.body.error.code).toBe('setup_code_too_short')
+      }
+      // Nothing changed: the session still works.
+      expect((await client.get('/api/auth/me')).status).toBe(200)
+    } finally {
+      h.env.setupCode = SETUP_CODE
+    }
   })
 
   it('recovers access only after the setup code is changed', async () => {
@@ -221,9 +256,13 @@ describe('access to a copy', () => {
   })
 
   it('deleting the copy needs the access key and leaves it ready to be claimed again', async () => {
-    const { client, accessKey } = await signInOwner(h)
+    const { client, accessKey, workspaceId: owned } = await signInOwner(h)
+    // Its workspaces go with every page, also a deep tree of them.
+    const { projectId } = await seedBoard(client, owned)
+    const tree = await createPageChain(client, projectId, 120)
     expect((await client.post('/api/account/delete', { accessKey: 'ZZZZ-ZZZZ' })).status).toBe(403)
     expect((await client.post('/api/account/delete', { accessKey })).status).toBe(204)
+    expect(h.db.select({ id: pages.id }).from(pages).where(eq(pages.id, tree.at(-1)!)).all()).toEqual([])
     expect((await new Client(h).get('/api/auth/session')).body).toMatchObject({ user: null, claimed: false })
     h.owner = null
     const { workspaceId } = await signUp(h, 'Nueva Dueña')

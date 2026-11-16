@@ -72,6 +72,9 @@
       "withCards_one": "O cartão desta coluna também será excluído. Para mantê-lo, mova-o antes para outra coluna.",
       "withCards_many": "Os {{count}} cartões desta coluna também serão excluídos. Para mantê-los, mova-os antes para outra coluna.",
       "withCards_other": "Os {{count}} cartões desta coluna também serão excluídos. Para mantê-los, mova-os antes para outra coluna.",
+      "withArchived_one": "O cartão arquivado desta coluna também será excluído. Para mantê-lo, restaure-o antes em “Arquivados”.",
+      "withArchived_many": "Os {{count}} cartões arquivados desta coluna também serão excluídos. Para mantê-los, restaure-os antes em “Arquivados”.",
+      "withArchived_other": "Os {{count}} cartões arquivados desta coluna também serão excluídos. Para mantê-los, restaure-os antes em “Arquivados”.",
       "empty": "A coluna está vazia."
     }
   },
@@ -95,6 +98,14 @@
     "gone": "Este cartão não existe mais",
     "archived": "Arquivado",
     "agentEditing": "{{name}} está editando",
+    "agentUpdated": "{{name}} atualizou a descrição",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> alterou a descrição enquanto você editava. Suas últimas alterações não foram salvas.",
+      "byOtherSession": "<strong>Outra sessão</strong> alterou a descrição enquanto você editava. Suas últimas alterações não foram salvas.",
+      "loadTheirs": "Carregar a outra versão",
+      "keepMine": "Manter a minha",
+      "notSaved": "Suas alterações na descrição não foram salvas: outra pessoa a alterou ao mesmo tempo."
+    },
     "saving": "Salvando…",
     "saved": "Salvo",
     "actions": "Ações do cartão",

@@ -27,7 +27,7 @@ import {
   pages,
   users,
 } from '../db/schema'
-import { badRequest, notFound } from '../lib/errors'
+import { badRequest, conflict, notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { ActivityService } from './activity'
@@ -99,6 +99,7 @@ export class CardService {
         dueAt: card.dueAt?.toISOString() ?? null,
         labelIds: labelRows.filter((l) => l.cardId === card.id).map((l) => l.labelId),
         hasDescription: card.description.trim().length > 0,
+        version: card.version,
         checklist: { done: progress?.done ?? 0, total: progress?.total ?? 0 },
         linkedPages: linkRows.find((l) => l.cardId === card.id)?.total ?? 0,
         attachments: attachmentRows.find((a) => a.cardId === card.id)?.total ?? 0,
@@ -250,11 +251,24 @@ export class CardService {
     const data = parse(cardUpdateInput, input)
     const card = await this.load(actor, cardId, 'tasks:write')
     const updated = this.deps.db.transaction((tx) => {
-      const patch: Partial<CardRow> = { updatedAt: new Date() }
+      // `version` tracks the description only, as with pages: renaming a card or
+      // changing its labels never conflicts with someone editing its description.
+      const patch: Record<string, unknown> = { updatedAt: new Date() }
       if (data.title !== undefined) patch.title = data.title
-      if (data.description !== undefined) patch.description = data.description
+      if (data.description !== undefined) {
+        patch.description = data.description
+        patch.version = sql`${cards.version} + 1`
+      }
       if (data.dueAt !== undefined) patch.dueAt = data.dueAt ? new Date(data.dueAt) : null
-      const row = tx.update(cards).set(patch).where(eq(cards.id, cardId)).returning().get()!
+      const guard =
+        data.description !== undefined && data.baseVersion !== undefined
+          ? and(eq(cards.id, cardId), eq(cards.version, data.baseVersion))
+          : eq(cards.id, cardId)
+      const row = tx.update(cards).set(patch).where(guard).returning().get()
+      if (!row) {
+        const latest = tx.select({ version: cards.version }).from(cards).where(eq(cards.id, cardId)).get()
+        throw conflict('This card was modified since you loaded it', { currentVersion: latest?.version ?? null })
+      }
       if (data.labelIds) {
         const labelIds = this.validLabelIds(tx, card.boardId, data.labelIds)
         tx.delete(cardLabels).where(eq(cardLabels.cardId, cardId)).run()
@@ -262,7 +276,7 @@ export class CardService {
       }
       return row
     })
-    const changed = Object.keys(data).filter((k) => data[k as keyof typeof data] !== undefined)
+    const changed = Object.keys(data).filter((k) => k !== 'baseVersion' && data[k as keyof typeof data] !== undefined)
     await this.activity.record(
       actor,
       card.workspaceId,
@@ -274,7 +288,8 @@ export class CardService {
         meta: { fields: changed.join(',') },
         coalesce: true,
       },
-      { boardId: card.boardId, cardId },
+      // Only changes to the description carry a version, so an open card refreshes its text only for those.
+      { boardId: card.boardId, cardId, ...(data.description !== undefined ? { version: updated.version } : {}) },
     )
     const [summary] = await this.summarize([updated])
     return summary!
@@ -371,7 +386,9 @@ export class CardService {
     await this.touch(actor, card, title)
   }
 
+  /** Only people delete checklists and their items: agents can't delete anything. */
   async removeChecklist(actor: Actor, checklistId: string) {
+    this.access.requireUser(actor)
     const { list, card } = await this.loadChecklist(actor, checklistId)
     await this.deps.db.delete(checklists).where(eq(checklists.id, checklistId))
     await this.touch(actor, card, list.title)
@@ -411,6 +428,7 @@ export class CardService {
   }
 
   async removeItem(actor: Actor, itemId: string) {
+    this.access.requireUser(actor)
     const { item, card } = await this.loadItem(actor, itemId)
     await this.deps.db.delete(checklistItems).where(eq(checklistItems.id, itemId))
     await this.touch(actor, card, item.text)
@@ -436,18 +454,21 @@ export class CardService {
     )
   }
 
+  /** Only people remove links: agents can link a page to a card but can't delete anything. */
   async unlinkPage(actor: Actor, cardId: string, pageId: string) {
-    this.access.requireAnyScope(actor, ['tasks:write', 'docs:write'])
+    this.access.requireUser(actor)
     const card = await this.load(actor, cardId, 'tasks:read')
-    await this.deps.db
+    const removed = await this.deps.db
       .delete(cardPageLinks)
       .where(and(eq(cardPageLinks.cardId, cardId), eq(cardPageLinks.pageId, pageId), eq(cardPageLinks.source, 'manual')))
-    await this.activity.emit(card.workspaceId, {
-      action: 'card.unlinked',
-      actor: actorRef(actor),
-      boardId: card.boardId,
-      cardId,
-      pageId,
-    })
+      .returning({ pageId: cardPageLinks.pageId })
+    if (removed.length === 0) return
+    const [page] = await this.deps.db.select({ title: pages.title }).from(pages).where(eq(pages.id, pageId))
+    await this.activity.record(
+      actor,
+      card.workspaceId,
+      { action: 'card.unlinked', entityType: 'card', entityId: cardId, summary: card.title, meta: { page: page?.title ?? '' } },
+      { boardId: card.boardId, cardId, pageId },
+    )
   }
 }

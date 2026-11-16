@@ -70,6 +70,7 @@
     "deleteConfirm": {
       "title": "列「{{name}}」を削除しますか？",
       "withCards_other": "列内の{{count}}枚のカードも削除されます。残したい場合は、先に別の列へ移動してください。",
+      "withArchived_other": "列内のアーカイブ済みカード{{count}}枚も削除されます。残したい場合は、先に「アーカイブ済み」から復元してください。",
       "empty": "この列は空です。"
     }
   },
@@ -93,6 +94,14 @@
     "gone": "このカードは存在しません",
     "archived": "アーカイブ済み",
     "agentEditing": "{{name}}が編集中",
+    "agentUpdated": "{{name}}が説明を更新しました",
+    "conflict": {
+      "byName": "編集中に<strong>{{name}}</strong>が説明を変更しました。最新の変更は保存されていません。",
+      "byOtherSession": "編集中に<strong>別のセッション</strong>が説明を変更しました。最新の変更は保存されていません。",
+      "loadTheirs": "相手のバージョンを読み込む",
+      "keepMine": "自分のバージョンを残す",
+      "notSaved": "説明の変更は保存されていません。同時に他の人が変更しました。"
+    },
     "saving": "保存中…",
     "saved": "保存しました",
     "actions": "カードの操作",

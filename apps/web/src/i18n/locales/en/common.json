@@ -16,6 +16,12 @@
     "details": "Details"
   },
   "copyFailed": "Couldn’t copy to the clipboard",
+  "clipboard": {
+    "stillThere": "What you copied from the vault may still be in the clipboard.",
+    "clear": "Clear it",
+    "cleared": "Clipboard cleared",
+    "clearFailed": "Couldn’t clear the clipboard"
+  },
   "notFound": {
     "title": "Nothing here",
     "body": "The page doesn’t exist or you don’t have access to it."

@@ -1,10 +1,13 @@
 import { readFile } from 'node:fs/promises'
-import { ACCESS_KEY_FILE, expect, openNewWorkspace, test } from './helpers'
+import { ACCESS_KEY_FILE, createPageChain, expect, openNewWorkspace, test } from './helpers'
 
 // Runs last, in a project of its own (see playwright.config.ts): it deletes the whole copy.
 test('uninstall the copy from Settings: everything goes, and only the way to remove the copy is left', async ({ page }) => {
   const accessKey = (await readFile(ACCESS_KEY_FILE, 'utf8')).trim()
-  await openNewWorkspace(page, 'Desinstalar E2E')
+  const workspaceId = await openNewWorkspace(page, 'Desinstalar E2E')
+  // A deep tree of pages goes too: on Cloudflare, SQLite allows only a few levels of cascading deletes.
+  const project = await page.request.post(`/api/workspaces/${workspaceId}/projects`, { data: { name: 'Hondo' } })
+  await createPageChain(page.request, ((await project.json()) as { id: string }).id, 50)
   await page.getByRole('button', { name: /Lucía Martín/ }).click()
   await page.getByRole('menuitem', { name: 'Ajustes' }).click()
   await page.getByRole('button', { name: 'Desinstalar Orqevio…' }).click()

@@ -3,6 +3,7 @@ import { DurableObject } from 'cloudflare:workers'
 import { drizzle } from 'drizzle-orm/durable-sqlite'
 import { migrate } from 'drizzle-orm/durable-sqlite/migrator'
 import { createApp } from '../app'
+import { MIN_SETUP_CODE_LENGTH, isWeakSetupCode } from '../auth/crypto'
 import type { Database } from '../db/client'
 import * as schema from '../db/schema'
 import type { Env } from '../env'
@@ -56,6 +57,8 @@ export class OrqevioCopy extends DurableObject<Bindings> {
       const notice = await this.services.accounts.setupNotice()
       if (notice && !this.config.setupCode) {
         console.warn('This copy has no SETUP_CODE secret. Set one with `wrangler secret put SETUP_CODE` to claim it.')
+      } else if (this.config.setupCode && isWeakSetupCode(this.config.setupCode)) {
+        console.error(`SETUP_CODE has fewer than ${MIN_SETUP_CODE_LENGTH} letters A–Z or digits: this copy can't be claimed or recovered with it. Set a longer one.`)
       }
     })
   }

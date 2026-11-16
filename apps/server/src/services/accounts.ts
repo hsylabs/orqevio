@@ -1,16 +1,17 @@
 import type { AccessStateDTO, MeDTO, Theme, UninstalledDTO, UserDTO } from '@orqevio/shared'
 import { DEFAULT_LOCALE, defaultWorkspaceName, isLocale } from '@orqevio/shared'
 import { claimInput, confirmAccessKeyInput, installerUninstallInput, recoverInput, rotateAccessKeyInput, unlockInput, updateAccountInput } from '@orqevio/shared'
-import { and, asc, eq, gt, isNull, ne } from 'drizzle-orm'
+import { and, asc, eq, gt, isNull, ne, sql } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
-import { generateAccessKey, generateSetupCode, randomToken, safeEqual, secretFingerprint, sha256 } from '../auth/crypto'
+import { MIN_SETUP_CODE_LENGTH, generateAccessKey, generateSetupCode, isWeakSetupCode, randomToken, safeEqual, secretFingerprint, sha256 } from '../auth/crypto'
 import * as schema from '../db/schema'
-import { apiTokens, copyState, instance, oauthCodes, sessions, users, workspaceMembers, workspaces } from '../db/schema'
-import { AppError, forbidden, unauthorized } from '../lib/errors'
+import { apiTokens, copyState, instance, oauthCodes, pages, sessions, users, workspaceMembers, workspaces } from '../db/schema'
+import { AppError, forbidden, unauthorized, uninstalled as copyUninstalled } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { Deps } from './deps'
 import type { AttachmentService } from './attachments'
+import { deletePageTrees } from './pages'
 import type { WorkspaceService } from './workspaces'
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -24,7 +25,8 @@ const toUserDTO = (u: typeof users.$inferSelect): UserDTO => ({
   createdAt: u.createdAt.toISOString(),
 })
 
-const UNINSTALLED_KEY = 'uninstalled'
+/** Where the mark of an uninstalled copy is kept (copy_state), with when it happened. */
+export const UNINSTALLED_KEY = 'uninstalled'
 /** Every table of the copy, each after those that point at it. */
 const UNINSTALL_ORDER = [
   schema.cardLabels,
@@ -57,6 +59,8 @@ const invalidSetupCode = () => forbidden('The setup code is not valid', 'invalid
  * The copy still has the setup code that claimed it, or last recovered it: a new one is not set,
  * or has not reached the copy yet (Cloudflare can take a moment to deploy a new secret).
  */
+const weakSetupCode = () =>
+  new AppError(409, 'setup_code_too_short', `The setup code set for this copy has fewer than ${MIN_SETUP_CODE_LENGTH} letters A–Z or digits: set a longer one`)
 const recoveryNotReady = () => new AppError(409, 'recovery_not_ready', 'This copy has no new setup code yet: set one, or wait for it to arrive')
 const invalidAccessKey = () => forbidden('The access key is not valid', 'invalid_access_key')
 
@@ -153,7 +157,10 @@ export class AccountService {
       await this.deps.storage.deleteAll()
       this.deps.db.transaction((tx) => {
         // Every table, children first, without relying on cascades; search indexes follow by trigger.
-        for (const table of UNINSTALL_ORDER) tx.delete(table).run()
+        for (const table of UNINSTALL_ORDER) {
+          if (table === schema.pages) deletePageTrees(tx, sql`${schema.pages.parentId} IS NULL`)
+          else tx.delete(table).run()
+        }
         tx.insert(copyState).values({ key: UNINSTALLED_KEY, value: at }).run()
       })
     } catch (error) {
@@ -170,13 +177,16 @@ export class AccountService {
    * null when the operator configured SETUP_CODE. Undefined once claimed.
    */
   async setupNotice(): Promise<{ generatedCode: string | null } | undefined> {
-    if (await this.instanceRow()) return undefined
+    if ((await this.uninstalled()) || (await this.instanceRow())) return undefined
     return { generatedCode: this.deps.env.setupCode ? null : this.currentSetupCode() }
   }
 
   async claim(input: unknown, userAgent: string | null) {
     // The language the claim screen was shown in becomes the owner's.
     const { setupCode, name, locale = DEFAULT_LOCALE } = parse(claimInput, input)
+    // Uninstalling is final, whatever route a request takes to get here.
+    if (await this.uninstalled()) throw copyUninstalled()
+    if (isWeakSetupCode(this.currentSetupCode())) throw weakSetupCode()
     const expected = secretFingerprint(this.currentSetupCode())
     if (!safeEqual(secretFingerprint(setupCode), expected)) throw invalidSetupCode()
     const accessKey = generateAccessKey()
@@ -207,6 +217,7 @@ export class AccountService {
 
   async login(input: unknown, userAgent: string | null) {
     const { accessKey } = parse(unlockInput, input)
+    if (await this.uninstalled()) throw copyUninstalled()
     const row = await this.instanceRow()
     if (!row) throw new AppError(409, 'not_claimed', 'This copy has not been set up yet')
     if (!safeEqual(secretFingerprint(accessKey), row.accessKeyHash)) {
@@ -224,10 +235,12 @@ export class AccountService {
    */
   async recover(input: unknown, userAgent: string | null) {
     const { setupCode, reason } = parse(recoverInput, input)
+    if (await this.uninstalled()) throw copyUninstalled()
     const row = await this.instanceRow()
     const configured = this.deps.env.setupCode
     if (!row) throw invalidSetupCode()
     if (!configured || !this.isRecoverable(row)) throw recoveryNotReady()
+    if (isWeakSetupCode(configured)) throw weakSetupCode()
     if (!safeEqual(secretFingerprint(setupCode), secretFingerprint(configured))) throw invalidSetupCode()
     const accessKey = generateAccessKey()
     // The new setup code is consumed atomically: of two concurrent recoveries, only the first one wins.
@@ -347,7 +360,10 @@ export class AccountService {
       .from(workspaceMembers)
       .where(and(eq(workspaceMembers.userId, actor.userId), eq(workspaceMembers.role, 'owner')))
     this.deps.db.transaction((tx) => {
-      for (const w of owned) tx.delete(workspaces).where(eq(workspaces.id, w.id)).run()
+      for (const w of owned) {
+        deletePageTrees(tx, sql`${pages.workspaceId} = ${w.id} AND ${pages.parentId} IS NULL`)
+        tx.delete(workspaces).where(eq(workspaces.id, w.id)).run()
+      }
       tx.delete(users).where(eq(users.id, actor.userId)).run()
     })
     for (const w of owned) await this.deps.storage.deleteWorkspace(w.id)

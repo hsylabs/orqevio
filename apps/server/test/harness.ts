@@ -42,6 +42,17 @@ export async function createHarness(overrides: Partial<Env> = {}) {
 
 export type Harness = Awaited<ReturnType<typeof createHarness>>
 
+/** Creates a chain of nested pages, each inside the previous one, and returns their ids from the top. */
+export async function createPageChain(client: Client, projectId: string, levels: number) {
+  const ids: string[] = []
+  for (let i = 0; i < levels; i++) {
+    const res = await client.post(`/api/projects/${projectId}/pages`, { title: `Nivel ${i + 1}`, parentId: ids.at(-1) ?? null })
+    if (res.status !== 201) throw new Error(`page not created: ${JSON.stringify(res.body)}`)
+    ids.push(res.body.id as string)
+  }
+  return ids
+}
+
 /** Minimal HTTP client that keeps the session cookie like a browser would. */
 export class Client {
   cookie = ''

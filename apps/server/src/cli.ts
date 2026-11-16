@@ -11,9 +11,9 @@
 import { eq } from 'drizzle-orm'
 import { generateAccessKey, secretFingerprint } from './auth/crypto'
 import { openDatabase } from './db/client'
-import { instance, sessions, users } from './db/schema'
+import { copyState, instance, sessions, users } from './db/schema'
 import { loadEnv } from './env'
-import { revokeAgents } from './services/accounts'
+import { UNINSTALLED_KEY, revokeAgents } from './services/accounts'
 
 const [command, ...flags] = process.argv.slice(2)
 const withAgents = flags.includes('--revoke-agents')
@@ -25,7 +25,12 @@ try {
     .select({ ownerId: instance.ownerId, name: users.name, claimedAt: instance.claimedAt, keyChangedAt: instance.keyChangedAt })
     .from(instance)
     .innerJoin(users, eq(users.id, instance.ownerId))
-  if (command === 'status') {
+  const [uninstalled] = await db.select({ at: copyState.value }).from(copyState).where(eq(copyState.key, UNINSTALLED_KEY))
+  if (uninstalled && (command === 'status' || command === 'reset-access')) {
+    // Uninstalling is final: there is nothing to claim or reset, only the container and its data to remove.
+    console.log(`This copy was uninstalled (${uninstalled.at}). Remove its container and data to finish.`)
+    if (command === 'reset-access') process.exitCode = 1
+  } else if (command === 'status') {
     if (!row) console.log('This copy is not claimed yet. Open it in a browser and enter the setup code.')
     else {
       console.log(`Owner: ${row.name}`)

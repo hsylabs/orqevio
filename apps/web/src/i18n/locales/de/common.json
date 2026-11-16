@@ -16,6 +16,12 @@
     "details": "Details"
   },
   "copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen",
+  "clipboard": {
+    "stillThere": "Was du aus dem Tresor kopiert hast, ist vielleicht noch in der Zwischenablage.",
+    "clear": "Leeren",
+    "cleared": "Zwischenablage geleert",
+    "clearFailed": "Zwischenablage konnte nicht geleert werden"
+  },
   "notFound": {
     "title": "Hier ist nichts",
     "body": "Die Seite existiert nicht oder du hast keinen Zugriff darauf."

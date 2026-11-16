@@ -1,6 +1,6 @@
 import type { ActorRef, LinkedCardDTO, PageDTO, PageNodeDTO, PaletteColor } from '@orqevio/shared'
 import { extractReferences, pageCreateInput, pageMoveInput, pageUpdateInput } from '@orqevio/shared'
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { type SQL, and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
 import type { DbOrTx } from '../db/client'
@@ -12,6 +12,28 @@ import type { ActivityService } from './activity'
 import { toAttachmentDTO } from './attachments'
 import type { Deps } from './deps'
 import { positionAt } from './ordering'
+
+/** Far deeper than any real tree; only there so a corrupted, circular tree cannot loop forever. */
+const MAX_TREE_DEPTH = 100_000
+
+/**
+ * Deletes the pages matching `roots` with everything under them, deepest pages first.
+ * Deleting a page with subpages leaves them to ON DELETE CASCADE, one nested trigger per
+ * level, and the SQLite of a Cloudflare Durable Object allows only a few: a tree ten
+ * levels deep could not be deleted there. Leaves first, no page delete cascades to another.
+ * Run it inside a transaction, so a tree is deleted whole or not at all.
+ */
+export function deletePageTrees(db: DbOrTx, roots: SQL) {
+  const tree = sql`WITH RECURSIVE tree(id, depth) AS (
+      SELECT id, 0 FROM pages WHERE ${roots}
+      UNION ALL SELECT p.id, t.depth + 1 FROM pages p JOIN tree t ON p.parent_id = t.id WHERE t.depth < ${MAX_TREE_DEPTH}
+    )`
+  const deepest = db.get<{ depth: number | null }>(sql`${tree} SELECT max(depth) AS depth FROM tree`)?.depth ?? null
+  if (deepest === null) return
+  for (let depth = deepest; depth >= 0; depth--) {
+    db.run(sql`${tree} DELETE FROM pages WHERE id IN (SELECT id FROM tree WHERE depth = ${depth})`)
+  }
+}
 
 type PageRow = typeof pages.$inferSelect
 
@@ -261,7 +283,7 @@ export class PageService {
   async remove(actor: Actor, pageId: string) {
     this.access.requireUser(actor)
     const page = await this.load(actor, pageId, 'docs:write')
-    await this.deps.db.delete(pages).where(eq(pages.id, pageId))
+    this.deps.db.transaction((tx) => deletePageTrees(tx, sql`${pages.id} = ${pageId}`))
     await this.activity.record(
       actor,
       page.workspaceId,

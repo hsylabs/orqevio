@@ -63,6 +63,56 @@ describe('boards and cards', () => {
     expect((await client.get(`/api/boards/${boardId}`)).body.cards).toHaveLength(1)
   })
 
+  it('tells, column by column, how many archived cards would be deleted with it', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { boardId, columns } = await seedBoard(client, workspaceId)
+    const archive = async (columnId: string, title: string) => {
+      const card = await client.post(`/api/columns/${columnId}/cards`, { title })
+      await client.post(`/api/cards/${card.body.id}/archive`)
+    }
+    await archive(columns[2]!.id, 'Hecha 1')
+    await archive(columns[2]!.id, 'Hecha 2')
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Abierta' })
+    const board = await client.get(`/api/boards/${boardId}`)
+    expect(board.body.columns.map((c: { archivedCards: number }) => c.archivedCards)).toEqual([0, 0, 2])
+    // Deleting the column deletes its archived cards too.
+    expect((await client.del(`/api/columns/${columns[2]!.id}`)).status).toBe(204)
+    expect((await client.get(`/api/boards/${boardId}/archived`)).body).toHaveLength(0)
+  })
+
+  it('refuses a description edited from an old version, and never conflicts over other fields', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { boardId, columns } = await seedBoard(client, workspaceId)
+    const card = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Con versión', description: 'Primera' })
+    expect(card.body.version).toBe(1)
+    const events: Array<{ action: string; version?: number }> = []
+    const stop = h.bus.subscribe(workspaceId, (e) => events.push(e))
+
+    const saved = await client.patch(`/api/cards/${card.body.id}`, { description: 'Segunda', baseVersion: 1 })
+    expect(saved.status).toBe(200)
+    expect(saved.body.version).toBe(2)
+    // The live update says which version the description reached, so an open card can refresh it.
+    expect(events.at(-1)).toMatchObject({ action: 'card.updated', cardId: card.body.id, version: 2 })
+
+    const stale = await client.patch(`/api/cards/${card.body.id}`, { description: 'Pisada', baseVersion: 1 })
+    expect(stale.status).toBe(409)
+    expect(stale.body.error).toMatchObject({ code: 'conflict', details: { currentVersion: 2 } })
+    expect((await client.get(`/api/cards/${card.body.id}`)).body).toMatchObject({ description: 'Segunda', version: 2 })
+
+    // Only the description carries a version: renaming or relabelling never conflicts and leaves it alone.
+    const renamed = await client.patch(`/api/cards/${card.body.id}`, { title: 'Renombrada', baseVersion: 1 })
+    expect(renamed.status).toBe(200)
+    expect(renamed.body.version).toBe(2)
+    expect(events.at(-1)).not.toHaveProperty('version')
+
+    // Without a base version the last write wins, as before.
+    const blind = await client.patch(`/api/cards/${card.body.id}`, { description: 'Tercera' })
+    expect(blind.body.version).toBe(3)
+    const board = await client.get(`/api/boards/${boardId}`)
+    expect(board.body.cards.find((c: { id: string }) => c.id === card.body.id).version).toBe(3)
+    stop()
+  })
+
   it('counts the open cards of each board in the overview', async () => {
     const { client, workspaceId } = await signUp(h)
     const first = await seedBoard(client, workspaceId)

@@ -71,6 +71,8 @@
       "title": "Delete the column “{{name}}”?",
       "withCards_one": "Its card will be deleted too. To keep it, move it to another column first.",
       "withCards_other": "Its {{count}} cards will be deleted too. To keep them, move them to another column first.",
+      "withArchived_one": "Its archived card will be deleted too. To keep it, restore it first from “Archived”.",
+      "withArchived_other": "Its {{count}} archived cards will be deleted too. To keep them, restore them first from “Archived”.",
       "empty": "The column is empty."
     }
   },
@@ -94,6 +96,14 @@
     "gone": "This card no longer exists",
     "archived": "Archived",
     "agentEditing": "{{name}} is editing",
+    "agentUpdated": "{{name}} updated the description",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> changed the description while you were editing. Your latest changes weren’t saved.",
+      "byOtherSession": "<strong>Another session</strong> changed the description while you were editing. Your latest changes weren’t saved.",
+      "loadTheirs": "Load their version",
+      "keepMine": "Keep mine",
+      "notSaved": "Your changes to the description weren’t saved: someone else changed it at the same time."
+    },
     "saving": "Saving…",
     "saved": "Saved",
     "actions": "Card actions",

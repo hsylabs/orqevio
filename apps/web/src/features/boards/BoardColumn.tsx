@@ -17,7 +17,7 @@ interface ColumnProps {
   onOpenCard: (id: string) => void
   onAddCard: (columnId: string, title: string) => Promise<void>
   onRename: (columnId: string, name: string) => Promise<void>
-  onDelete: (column: ColumnDTO, count: number) => Promise<void>
+  onDelete: (column: ColumnDTO) => Promise<void>
 }
 
 export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onOpenCard, onAddCard, onRename, onDelete }: ColumnProps) {
@@ -97,7 +97,7 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
               {t('column.addCard')}
             </MenuItem>
             <MenuSeparator />
-            <MenuItem icon={<Trash />} danger onSelect={() => void onDelete(column, cards.length)}>
+            <MenuItem icon={<Trash />} danger onSelect={() => void onDelete(column)}>
               {t('column.delete')}
             </MenuItem>
           </MenuContent>

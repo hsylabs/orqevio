@@ -55,6 +55,51 @@ describe('agent tokens', () => {
     expect((await reader.get('/api/auth/me')).status).toBe(403)
   })
 
+  it("can't delete labels, checklists, their items or card links, which people can, and logs it", async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { projectId, boardId, columns } = await seedBoard(client, workspaceId)
+    const agent = new Client(h, (await createToken(client, workspaceId, ['tasks:write', 'docs:write'])).token)
+    const card = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Con todo' })
+    const label = await agent.post(`/api/boards/${boardId}/labels`, { name: 'Urgente', color: 'tomato' })
+    expect(label.status).toBe(201)
+    expect((await agent.patch(`/api/labels/${label.body.id}`, { name: 'Muy urgente' })).status).toBe(200)
+    const checklist = await agent.post(`/api/cards/${card.body.id}/checklists`, { title: 'Pasos' })
+    const item = await agent.post(`/api/checklists/${checklist.body.id}/items`, { text: 'Primero' })
+    const page = await client.post(`/api/projects/${projectId}/pages`, { title: 'Notas' })
+    expect((await agent.post(`/api/cards/${card.body.id}/pages`, { pageId: page.body.id })).status).toBe(204)
+
+    for (const url of [
+      `/api/labels/${label.body.id}`,
+      `/api/checklists/${checklist.body.id}`,
+      `/api/checklist-items/${item.body.id}`,
+      `/api/cards/${card.body.id}/pages/${page.body.id}`,
+    ]) {
+      const denied = await agent.del(url)
+      expect(denied.status, url).toBe(403)
+      expect(denied.body.error.code, url).toBe('session_required')
+    }
+    const kept = await client.get(`/api/cards/${card.body.id}`)
+    expect(kept.body.checklists[0].items).toHaveLength(1)
+    expect(kept.body.pages.map((p: { id: string }) => p.id)).toEqual([page.body.id])
+    expect((await client.get(`/api/boards/${boardId}`)).body.labels).toHaveLength(1)
+
+    // People still can, and every change to labels and links shows in the activity.
+    expect((await client.del(`/api/cards/${card.body.id}/pages/${page.body.id}`)).status).toBe(204)
+    expect((await client.del(`/api/checklist-items/${item.body.id}`)).status).toBe(204)
+    expect((await client.del(`/api/checklists/${checklist.body.id}`)).status).toBe(204)
+    expect((await client.del(`/api/labels/${label.body.id}`)).status).toBe(204)
+    const activity = (await client.get(`/api/workspaces/${workspaceId}/activity`)).body as Array<{ action: string; summary: string; actor: { kind: string } }>
+    const entry = (action: string) => activity.find((a) => a.action === action)
+    expect(entry('label.created')).toMatchObject({ summary: 'Urgente', actor: { kind: 'agent' } })
+    expect(entry('label.updated')).toMatchObject({ summary: 'Muy urgente', actor: { kind: 'agent' } })
+    expect(entry('label.deleted')).toMatchObject({ summary: 'Muy urgente', actor: { kind: 'user' } })
+    expect(entry('card.unlinked')).toMatchObject({ summary: 'Con todo', meta: { page: 'Notas' } })
+    // Removing a link that is no longer there changes nothing and logs nothing.
+    expect((await client.del(`/api/cards/${card.body.id}/pages/${page.body.id}`)).status).toBe(204)
+    const again = (await client.get(`/api/workspaces/${workspaceId}/activity`)).body as Array<{ action: string }>
+    expect(again.filter((a) => a.action === 'card.unlinked')).toHaveLength(1)
+  })
+
   it('binds tokens to one workspace and honours revocation', async () => {
     const a = await signUp(h)
     const extra = await a.client.post('/api/workspaces', { name: 'Otro espacio' })
@@ -133,6 +178,15 @@ describe('MCP server', () => {
         arguments: { project_id: projectId, title: 'Contratos', content: `Seguimiento en [Revisar contratos](/card/${created.card_id}).` },
       }),
     )
+    // Card descriptions carry a version too: an edit from an old one is refused.
+    const fetched = data(await mcp.callTool({ name: 'get_card', arguments: { card_id: created.card_id } }))
+    expect(fetched.version).toBe(1)
+    const described = data(await mcp.callTool({ name: 'update_card', arguments: { card_id: created.card_id, description: 'Plazo: viernes', base_version: 1 } }))
+    expect(described.version).toBe(2)
+    const stale = await mcp.callTool({ name: 'update_card', arguments: { card_id: created.card_id, description: 'Pisada', base_version: 1 } })
+    expect(stale.isError).toBe(true)
+    expect(data(await mcp.callTool({ name: 'get_card', arguments: { card_id: created.card_id } }))).toMatchObject({ description: 'Plazo: viernes', version: 2 })
+
     const appended = data(await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: '## Anexo', mode: 'append' } }))
     expect(appended.version).toBe(2)
     const conflict = await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: 'x', base_version: 1 } })

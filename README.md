@@ -23,7 +23,7 @@ The key design decision: **the vault is walled off from agents.** No token can r
 
 - **Tasks and documents, linked both ways.** Type `@` in a document to link a task, and the link shows up on both sides. You can also link documents from the card.
 - **Watch your agents work.** When an agent creates or moves a card, you see it appear with a blue halo and the agent's name, and you get a notification. The dot in the logo turns blue while they work.
-- **No stepping on each other's toes.** Documents use optimistic versioning: if an agent edits a page while you're writing, Orqevio lets you know and you choose which version to keep.
+- **No stepping on each other's toes.** Documents and card descriptions use optimistic versioning: if an agent edits a page or a card while you're writing, Orqevio lets you know and you choose which version to keep.
 - **Keyboard first.** `⌘K`/`Ctrl K` opens the command palette to search and jump anywhere; `⌘\` hides the sidebar; and you can rearrange the whole Kanban board from the keyboard (space to pick up, arrow keys to move, space to drop), with screen reader announcements.
 - **A look of its own.** Warm paper, ink and two signal colors: khaki for you, ultramarine for your agents. Editorial type (Fraunces) over a restrained interface (Instrument Sans). Light and dark themes, with text colors tuned to WCAG AA contrast.
 - **In your language.** The app and the installer speak English, Spanish, French, Portuguese, Italian, German, Dutch and Japanese. Your copy takes your browser's language when you claim it, and you can change it anytime in **Settings**.
@@ -50,7 +50,7 @@ packages/shared zod schemas, permissions and types shared by the API, MCP and cl
 ```
 
 - **One domain layer.** The app's REST API and the MCP tools call exactly the same services. Every operation checks access to the workspace and the specific permission (`tasks:read`, `tasks:write`, `docs:read`, `docs:write`), so the rules are enforced in one place.
-- **Markdown as the canonical format.** Documents and descriptions are stored as Markdown (GFM). It's portable, readable and what LLMs understand best. Internal references are ordinary links: `[Title](/card/<id>)` and `[Title](/doc/<id>)`.
+- **Markdown as the canonical format.** Documents and descriptions are stored as Markdown (GFM). It's portable, readable and what LLMs understand best. Internal references are ordinary links: `[Title](/card/<id>)` and `[Title](/doc/<id>)`. What the editor can't show, such as HTML, stays in the document as it was written: it shows its source, and editing the rest of the page doesn't change it.
 - **One copy, one database.** Each copy belongs to one person and keeps everything in SQLite, with synchronous transactions. The same code runs in two places:
   - **Your own server (Docker or Node):** a single file (`DATA_DIR/orqevio.db`) plus the attachments folder.
   - **Cloudflare:** a Worker serves the web app and sends `/api` and `/mcp` to a single Durable Object, which keeps the data in its own SQLite database; attachments go to R2.
@@ -81,7 +81,7 @@ vault key ── AES-256-GCM, associated data = user + item id ──► encrypt
 - All encryption happens in the browser (WebCrypto, with Argon2id in a Web Worker). The server stores only the key derivation parameters and `v1.<iv>.<ciphertext>` envelopes. Even titles are encrypted.
 - The vault key lives only in memory, as a non-extractable `CryptoKey`: it's discarded when you lock the vault, after a period of inactivity (1–60 min) or when you reload the page.
 - AES-GCM associated data keeps anyone with access to the database from swapping items between users or entries.
-- When you copy a secret, the clipboard is cleared after 30 seconds. The password generator uses unbiased cryptographic randomness.
+- When you copy a password, a note or a code, the clipboard is cleared after 30 seconds, unless you've copied something else since. Browsers only allow it while the tab is in front (Firefox and Safari, only right after a click): otherwise, when you come back, Orqevio offers to clear it with one click. The password generator uses unbiased cryptographic randomness.
 - Changing your master password only rewraps the vault key: items aren't re-encrypted. The recovery key lets you choose a new master password. Without either of them, your data can't be recovered, by design.
 - The `/api/vault/*` routes reject any request with an `Authorization` header before reading any data, and the MCP server has no vault tools.
 
@@ -234,7 +234,7 @@ pnpm start
 ### Accessing your copy
 
 1. **The first time.** Open your copy's URL and enter the setup code and your name:
-   - If you set `SETUP_CODE`, it's that value. Use at least 12 letters or digits.
+   - If you set `SETUP_CODE`, it's that value. Use at least 12 letters A–Z or digits: other characters (accents, other alphabets, symbols) don't count, and with fewer the copy refuses to be claimed or recovered.
    - If you didn't, the server generates one on startup and prints it in its log (`docker compose logs app`). It works until the copy is claimed or the server restarts.
    - On Cloudflare, the installer gives it to you.
 2. **Your access key.** Orqevio generates a random 160-bit key and shows it **only once**. Save it in your password manager: it's all you need to sign in from any device. When you type it, case and hyphens don't matter.
@@ -341,13 +341,13 @@ claude mcp add --transport http orqevio https://your-domain/mcp --header "Author
 | --- | --- |
 | Any read permission | `list_projects`, `search` |
 | Tasks · read | `get_board`, `get_card` |
-| Tasks · write | `create_card`, `update_card`, `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
+| Tasks · write | `create_card`, `update_card` (with `base_version` when it changes the description), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
 | Docs · read | `list_pages`, `read_page` |
 | Docs · write | `create_page`, `update_page` (replace with `base_version`, or append to the end) |
 | Read and write on both areas | `link_card_to_page` |
 | Write on either area | `create_project` (people still rename and delete projects) |
 
-The endpoint is stateless MCP Streamable HTTP (`POST /mcp`). The REST API also accepts tokens created in the app, with the same permissions, except for the account, tokens and the vault, which require a browser session. OAuth tokens are only valid for `/mcp`.
+The endpoint is stateless MCP Streamable HTTP (`POST /mcp`). The REST API also accepts tokens created in the app, with the same permissions. Deleting anything, attachments, the activity feed, the account, tokens and the vault require a browser session. OAuth tokens are only valid for `/mcp`.
 
 ## Testing
 

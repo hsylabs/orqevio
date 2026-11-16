@@ -23,7 +23,7 @@ La decisión central: **la bóveda está aislada de los agentes**. Ningún token
 
 - **Relación directa entre tareas y documentos.** Escribe `@` en un documento para enlazar una tarea: el vínculo aparece en ambos lados. También puedes vincular documentos desde la tarjeta.
 - **Tus agentes, en directo.** Cuando un agente crea o mueve una tarjeta, la ves aparecer con un halo azul y su nombre, y recibes un aviso. El punto del logotipo se vuelve azul mientras trabajan.
-- **Sin pisarse.** Los documentos usan control de versiones optimista: si un agente edita mientras escribes, Orqevio te avisa y eliges qué versión conservar.
+- **Sin pisarse.** Los documentos y las descripciones de las tarjetas usan control de versiones optimista: si un agente edita una página o una tarjeta mientras escribes, Orqevio te avisa y eliges qué versión conservar.
 - **Teclado primero.** `⌘K`/`Ctrl K` abre la paleta para buscar y saltar a cualquier sitio; `⌘\` oculta la barra lateral; el Kanban se puede reorganizar entero con teclado (espacio para coger, flechas, espacio para soltar), con anuncios para lector de pantalla.
 - **Identidad propia.** Papel cálido, tinta y dos señales de color: caqui para ti, ultramar para los agentes. Tipografía editorial (Fraunces) sobre una interfaz sobria (Instrument Sans). Tema claro y oscuro, con los tonos de texto ajustados a contraste WCAG AA.
 - **En tu idioma.** La app y el instalador hablan inglés, español, francés, portugués, italiano, alemán, neerlandés y japonés. Tu copia toma el idioma del navegador al reclamarla y puedes cambiarlo cuando quieras en **Ajustes**.
@@ -50,7 +50,7 @@ packages/shared Esquemas zod, permisos y tipos compartidos por API, MCP y client
 ```
 
 - **Una sola capa de dominio.** La API REST de la aplicación y las herramientas MCP llaman exactamente a los mismos servicios. Cada operación comprueba el acceso al espacio y el permiso concreto (`tasks:read`, `tasks:write`, `docs:read`, `docs:write`), así que las reglas se aplican una única vez.
-- **Markdown como formato canónico.** Documentos y descripciones se guardan en Markdown (GFM). Es portable, legible y lo que mejor entienden los LLM. Las referencias internas son enlaces normales: `[Título](/card/<id>)` y `[Título](/doc/<id>)`.
+- **Markdown como formato canónico.** Documentos y descripciones se guardan en Markdown (GFM). Es portable, legible y lo que mejor entienden los LLM. Las referencias internas son enlaces normales: `[Título](/card/<id>)` y `[Título](/doc/<id>)`. Lo que el editor no sabe mostrar, como el HTML, se queda en el documento tal y como se escribió: el editor muestra su código, y editar el resto de la página no lo cambia.
 - **Una copia, una base de datos.** Cada copia es de una persona y guarda todo en SQLite, con transacciones síncronas. El mismo código corre en dos sitios:
   - **Servidor propio (Docker o Node):** un único archivo (`DATA_DIR/orqevio.db`) más la carpeta de adjuntos.
   - **Cloudflare:** un Worker sirve la web y envía `/api` y `/mcp` a un único Durable Object, que guarda los datos en su propio SQLite; los adjuntos van a R2.
@@ -81,7 +81,7 @@ clave de la bóveda ── AES-256-GCM, datos asociados = usuario + id del eleme
 - Todo el cifrado ocurre en el navegador (WebCrypto; Argon2id en un Web Worker). El servidor solo almacena parámetros de derivación y sobres `v1.<iv>.<cifrado>`. Incluso los títulos van cifrados.
 - La clave de la bóveda vive solo en memoria como `CryptoKey` no exportable: se descarta al bloquear, por inactividad (1–60 min) o al recargar.
 - Los datos asociados de AES-GCM impiden que alguien con acceso a la base de datos intercambie elementos entre usuarios o entradas.
-- Al copiar, el portapapeles se vacía a los 30 segundos. El generador usa aleatoriedad criptográfica sin sesgo.
+- Al copiar una contraseña, una nota o un código, el portapapeles se vacía a los 30 segundos, salvo que hayas copiado otra cosa después. Los navegadores solo lo permiten con la pestaña delante (Firefox y Safari, solo justo después de un clic): si no, al volver Orqevio te ofrece vaciarlo con un clic. El generador usa aleatoriedad criptográfica sin sesgo.
 - Cambiar la contraseña maestra solo vuelve a envolver la clave: los elementos no se recifran. La clave de recuperación permite elegir una nueva contraseña maestra. Sin ninguna de las dos, los datos son irrecuperables por diseño.
 - Las rutas `/api/vault/*` rechazan cualquier petición con cabecera `Authorization` antes de leer datos, y el servidor MCP no expone ninguna herramienta de bóveda.
 
@@ -234,7 +234,7 @@ pnpm start
 ### Acceso a tu copia
 
 1. **Primera vez.** Abre la URL de la copia e introduce el código de configuración y tu nombre:
-   - Si definiste `SETUP_CODE`, es ese valor. Usa al menos 12 letras o dígitos.
+   - Si definiste `SETUP_CODE`, es ese valor. Usa al menos 12 letras de la A a la Z o dígitos: los demás caracteres (tildes, otros alfabetos, símbolos) no cuentan, y con menos la copia no se deja reclamar ni recuperar.
    - Si no, el servidor genera uno al arrancar y lo muestra en su registro (`docker compose logs app`). Sirve hasta que la copia se reclama o el servidor se reinicia.
    - En Cloudflare, te lo da el instalador.
 2. **Tu clave de acceso.** Orqevio genera una clave aleatoria de 160 bits y la muestra **una sola vez**. Guárdala en tu gestor de contraseñas: es lo único que necesitas para entrar desde cualquier dispositivo. Al escribirla dan igual las mayúsculas y los guiones.
@@ -341,13 +341,13 @@ claude mcp add --transport http orqevio https://tu-dominio/mcp --header "Authori
 | --- | --- |
 | Cualquier lectura | `list_projects`, `search` |
 | Tareas · lectura | `get_board`, `get_card` |
-| Tareas · escritura | `create_card`, `update_card`, `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
+| Tareas · escritura | `create_card`, `update_card` (con `base_version` si cambia la descripción), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
 | Documentos · lectura | `list_pages`, `read_page` |
 | Documentos · escritura | `create_page`, `update_page` (reemplazar con `base_version`, o añadir al final) |
 | Escritura + lectura de ambas áreas | `link_card_to_page` |
 | Escritura en cualquiera de las dos áreas | `create_project` (renombrar y borrar proyectos sigue siendo cosa de personas) |
 
-El endpoint es MCP Streamable HTTP sin estado (`POST /mcp`). La misma API REST también acepta los tokens creados en la app con los mismos permisos, salvo cuenta, tokens y bóveda, que exigen sesión en el navegador. Los tokens de OAuth solo valen para `/mcp`.
+El endpoint es MCP Streamable HTTP sin estado (`POST /mcp`). La misma API REST también acepta los tokens creados en la app, con los mismos permisos. Borrar cualquier cosa, los adjuntos, la actividad, la cuenta, los tokens y la bóveda exigen sesión en el navegador. Los tokens de OAuth solo valen para `/mcp`.
 
 ## Pruebas
 

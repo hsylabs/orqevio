@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createServices } from '../src/services'
 import { LocalStorage } from '../src/lib/storage-local'
-import { Client, type Harness, createHarness, seedBoard, signUp } from './harness'
+import { Client, type Harness, createHarness, createPageChain, seedBoard, signUp } from './harness'
 
 // Uninstalling is final, so it gets a copy of its own.
 let h: Harness
@@ -22,6 +22,8 @@ describe('uninstalling a copy', () => {
     await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Tarea' })
     const page = await client.post(`/api/projects/${projectId}/pages`, { title: 'Notas', content: 'Texto' })
     expect((await client.upload(`/api/pages/${page.body.id}/attachments`, 'hola', { name: 'a.txt', type: 'text/plain' })).status).toBe(201)
+    // A deep tree of pages too: it must not depend on cascading deletes, which a Durable Object limits.
+    await createPageChain(client, projectId, 120)
     const token = (await client.post('/api/tokens', { name: 'Claude', workspaceId, scopes: ['tasks:read'], expiresInDays: 30 })).body.token as string
     const uploads = path.join(h.env.dataDir, 'uploads')
     expect(readdirSync(uploads).length).toBeGreaterThan(0)
@@ -47,6 +49,14 @@ describe('uninstalling a copy', () => {
     expect((await h.app.request('/mcp', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })).status).toBe(410)
     expect((await h.app.request('/.well-known/oauth-authorization-server')).status).toBe(410)
     expect((await h.app.request('/healthz')).status).toBe(200)
+    // Encoded paths are routed like the plain ones, so they are refused too.
+    expect((await visitor.post('/%61pi/auth/claim', { setupCode: h.env.setupCode, name: 'Otra' })).status).toBe(410)
+    expect((await client.get('/ap%69/auth/me')).status).toBe(410)
+    expect((await h.app.request('/%6dcp', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })).status).toBe(410)
+    // And the account service refuses by itself, whatever route a request took to get there.
+    await expect(h.services.accounts.claim({ setupCode: h.env.setupCode, name: 'Otra' }, null)).rejects.toMatchObject({ status: 410 })
+    await expect(h.services.accounts.login({ accessKey }, null)).rejects.toMatchObject({ status: 410 })
+    expect(await h.services.accounts.setupNotice()).toBeUndefined()
 
     // Still so after a restart, which reads it again from the database.
     const restarted = createServices({ db: h.db, bus: h.bus, env: h.env, storage: new LocalStorage(uploads) })

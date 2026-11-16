@@ -12,7 +12,6 @@ import {
 } from '@orqevio/shared'
 import { and, asc, count, desc, eq, isNotNull, isNull } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
-import { actorRef } from '../auth/actor'
 import { boards, cards, columns, labels, projects, users } from '../db/schema'
 import { notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
@@ -82,7 +81,7 @@ export class BoardService {
   async get(actor: Actor, boardId: string): Promise<BoardDTO> {
     const board = await this.load(actor, boardId)
     const db = this.deps.db
-    const [[project], columnRows, cardRows, labelRows] = await Promise.all([
+    const [[project], columnRows, cardRows, labelRows, archivedRows] = await Promise.all([
       db.select({ id: projects.id, name: projects.name, color: projects.color }).from(projects).where(eq(projects.id, board.projectId)),
       db.select().from(columns).where(eq(columns.boardId, boardId)).orderBy(asc(columns.position), asc(columns.id)),
       db
@@ -91,14 +90,21 @@ export class BoardService {
         .where(and(eq(cards.boardId, boardId), isNull(cards.archivedAt)))
         .orderBy(asc(cards.position), asc(cards.id)),
       db.select().from(labels).where(eq(labels.boardId, boardId)).orderBy(asc(labels.createdAt), asc(labels.id)),
+      // Archived cards are deleted with their column: the app says how many before deleting one.
+      db
+        .select({ columnId: cards.columnId, total: count() })
+        .from(cards)
+        .where(and(eq(cards.boardId, boardId), isNotNull(cards.archivedAt)))
+        .groupBy(cards.columnId),
     ])
+    const archived = new Map(archivedRows.map((r) => [r.columnId, r.total]))
     return {
       id: board.id,
       projectId: board.projectId,
       workspaceId: board.workspaceId,
       name: board.name,
       project: { id: project!.id, name: project!.name, color: project!.color as PaletteColor },
-      columns: columnRows.map(toColumnDTO),
+      columns: columnRows.map((c) => ({ ...toColumnDTO(c), archivedCards: archived.get(c.id) ?? 0 })),
       cards: await this.cards.summarize(cardRows),
       labels: labelRows.map(toLabelDTO),
     }
@@ -210,7 +216,12 @@ export class BoardService {
       .insert(labels)
       .values({ workspaceId: board.workspaceId, boardId, name: data.name, color: data.color })
       .returning()
-    await this.activity.emit(board.workspaceId, { action: 'label.created', actor: actorRef(actor), boardId })
+    await this.activity.record(
+      actor,
+      board.workspaceId,
+      { action: 'label.created', entityType: 'label', entityId: label!.id, summary: label!.name },
+      { boardId },
+    )
     return toLabelDTO(label!)
   }
 
@@ -226,13 +237,25 @@ export class BoardService {
     const data = parse(labelUpdateInput, input)
     const label = await this.loadLabel(actor, labelId)
     const [row] = await this.deps.db.update(labels).set(data).where(eq(labels.id, labelId)).returning()
-    await this.activity.emit(label.workspaceId, { action: 'label.updated', actor: actorRef(actor), boardId: label.boardId })
+    await this.activity.record(
+      actor,
+      label.workspaceId,
+      { action: 'label.updated', entityType: 'label', entityId: labelId, summary: row!.name, coalesce: true },
+      { boardId: label.boardId },
+    )
     return toLabelDTO(row!)
   }
 
+  /** Only people delete labels: agents can't delete anything (see README, "Connecting agents"). */
   async removeLabel(actor: Actor, labelId: string) {
+    this.access.requireUser(actor)
     const label = await this.loadLabel(actor, labelId)
     await this.deps.db.delete(labels).where(eq(labels.id, labelId))
-    await this.activity.emit(label.workspaceId, { action: 'label.deleted', actor: actorRef(actor), boardId: label.boardId })
+    await this.activity.record(
+      actor,
+      label.workspaceId,
+      { action: 'label.deleted', entityType: 'label', entityId: labelId, summary: label.name },
+      { boardId: label.boardId },
+    )
   }
 }

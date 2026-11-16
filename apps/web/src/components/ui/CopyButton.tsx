@@ -3,8 +3,10 @@ import { t } from 'i18next'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { cancelClipboardClear, clearClipboardLater, clearClipboardNow } from '../../lib/clipboard'
 import { cn } from '../../lib/cn'
 
+/** Copies `value`; with `clearAfterMs`, it is a secret, cleared from the clipboard once the time is up. */
 export async function copyText(value: string, opts: { clearAfterMs?: number; message?: string } = {}) {
   try {
     await navigator.clipboard.writeText(value)
@@ -12,13 +14,24 @@ export async function copyText(value: string, opts: { clearAfterMs?: number; mes
     toast.error(t('copyFailed'))
     return false
   }
-  if (opts.clearAfterMs) {
-    setTimeout(() => {
-      navigator.clipboard.writeText('').catch(() => {})
-    }, opts.clearAfterMs)
-  }
+  if (opts.clearAfterMs) clearClipboardLater(value, opts.clearAfterMs, remindToClear)
+  else cancelClipboardClear()
   if (opts.message) toast.success(opts.message)
   return true
+}
+
+/** The browser didn't let the page clear the clipboard by itself: a click on the reminder does. */
+function remindToClear() {
+  toast(t('clipboard.stillThere'), {
+    duration: 60_000,
+    action: {
+      label: t('clipboard.clear'),
+      onClick: async () => {
+        if (await clearClipboardNow()) toast.success(t('clipboard.cleared'))
+        else toast.error(t('clipboard.clearFailed'))
+      },
+    },
+  })
 }
 
 export function CopyButton({ value, label: customLabel, className, clearAfterMs, message }: { value: string; label?: string; className?: string; clearAfterMs?: number; message?: string }) {

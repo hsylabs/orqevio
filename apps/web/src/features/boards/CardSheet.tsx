@@ -1,7 +1,8 @@
-import type { BoardDTO, CardDetailDTO, CardSummaryDTO } from '@orqevio/shared'
-import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, ListChecks, Tag, Trash, X } from 'lucide-react'
+import type { ActorRef, BoardDTO, CardDetailDTO, CardSummaryDTO } from '@orqevio/shared'
+import type { Editor as TiptapEditor } from '@tiptap/core'
+import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ActivityList } from '../../components/ActivityList'
 import { Avatar } from '../../components/ui/Avatar'
@@ -9,11 +10,11 @@ import { Button } from '../../components/ui/Button'
 import { useConfirm } from '../../components/ui/confirm'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from '../../components/ui/Menu'
 import { Sheet, SheetClose } from '../../components/ui/Sheet'
-import { del, errorMessage, patch, post } from '../../lib/api'
+import { ApiError, del, errorMessage, get, patch, post } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { relativeTime } from '../../lib/format'
 import { keys, queryClient, useCard } from '../../lib/queries'
-import { useAgentHighlight } from '../../lib/realtime'
+import { onCardEvent, useAgentHighlight } from '../../lib/realtime'
 import { Editor } from '../docs/editor/Editor'
 import { useWorkspace } from '../shell/workspace'
 import { Attachments } from './Attachments'
@@ -78,14 +79,26 @@ function Section({ title, icon, children, action }: { title: string; icon?: Reac
 
 function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardDTO; onClose: () => void }) {
   const { t } = useTranslation(['boards', 'common'])
-  const { workspaceId } = useWorkspace()
+  const { workspaceId, me } = useWorkspace()
   const confirm = useConfirm()
   const agent = useAgentHighlight(card.id)
   const [title, setTitle] = useState(card.title)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const descTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  /** Description typed but not saved yet. */
   const pendingDesc = useRef<string | null>(null)
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const editorRef = useRef<TiptapEditor | null>(null)
+  /** Version of the description the editor started from: saves are refused if it changed meanwhile. */
+  const version = useRef(card.version)
+  const savingDesc = useRef(false)
+  /** Who last changed the description elsewhere, as live updates tell it. */
+  const lastEditor = useRef<ActorRef | null>(null)
+  /** Who changed the description under the editor; `by: null` is another session of this user. */
+  const [conflict, setConflict] = useState<{ by: string | null } | null>(null)
+  const conflictRef = useRef(false)
+  conflictRef.current = conflict !== null
+  const mounted = useRef(true)
 
   useEffect(() => setTitle(card.title), [card.title])
   useEffect(() => {
@@ -102,11 +115,20 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
       queryClient.invalidateQueries({ queryKey: keys.board(card.boardId) }),
     ])
 
+  /** Puts a saved card in the caches. The description and its version only ever change together. */
+  function applySummary(summary: CardSummaryDTO, description?: string) {
+    queryClient.setQueryData<BoardDTO>(keys.board(card.boardId), (prev) => (prev ? { ...prev, cards: prev.cards.map((c) => (c.id === summary.id ? summary : c)) } : prev))
+    queryClient.setQueryData<CardDetailDTO>(keys.card(card.id), (prev) => {
+      if (!prev) return prev
+      // A refetch may already hold a newer description than this answer: keep it.
+      const text = description !== undefined && summary.version > prev.version ? { description, version: summary.version } : { description: prev.description, version: prev.version }
+      return { ...prev, ...summary, ...text }
+    })
+  }
+
   async function update(body: Record<string, unknown>) {
     try {
-      const summary = await patch<CardSummaryDTO>(`/cards/${card.id}`, body)
-      queryClient.setQueryData<BoardDTO>(keys.board(card.boardId), (prev) => (prev ? { ...prev, cards: prev.cards.map((c) => (c.id === summary.id ? summary : c)) } : prev))
-      queryClient.setQueryData<CardDetailDTO>(keys.card(card.id), (prev) => (prev ? { ...prev, ...summary, description: (body.description as string | undefined) ?? prev.description } : prev))
+      applySummary(await patch<CardSummaryDTO>(`/cards/${card.id}`, body))
       return true
     } catch (error) {
       toast.error(errorMessage(error))
@@ -114,18 +136,100 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
     }
   }
 
+  /** The name to show for who changed the description; null for another session of this user. */
+  const actorName = (actor: ActorRef | null) => (actor && !(actor.kind === 'user' && actor.id === me.user.id) ? actor.name : null)
+
+  function showDescription(latest: Pick<CardDetailDTO, 'version' | 'description'>) {
+    version.current = latest.version
+    pendingDesc.current = null
+    clearTimeout(descTimer.current)
+    editorRef.current?.commands.setContent(latest.description, { contentType: 'markdown', emitUpdate: false })
+  }
+
+  /** Shows a newer description from elsewhere, or flags a conflict if there are edits it would discard. */
+  function catchUp(latest: Pick<CardDetailDTO, 'version' | 'description'> | undefined) {
+    if (!latest || latest.version <= version.current || savingDesc.current) return
+    if (pendingDesc.current !== null) {
+      setConflict((c) => c ?? { by: actorName(lastEditor.current) })
+      return
+    }
+    showDescription(latest)
+    const by = lastEditor.current
+    lastEditor.current = null
+    if (by?.kind === 'agent') toast(t('sheet.agentUpdated', { name: by.name }), { icon: <Bot className="size-4 text-agent" />, duration: 2500 })
+  }
+
   const flushDescription = async () => {
     clearTimeout(descTimer.current)
-    if (pendingDesc.current === null) return
+    if (pendingDesc.current === null || savingDesc.current || conflictRef.current) return
     const description = pendingDesc.current
     pendingDesc.current = null
+    savingDesc.current = true
     setSaving('saving')
-    if (await update({ description })) setSaving('saved')
-    else setSaving('idle')
+    try {
+      const summary = await patch<CardSummaryDTO>(`/cards/${card.id}`, { description, baseVersion: version.current })
+      version.current = summary.version
+      applySummary(summary, description)
+      setSaving(pendingDesc.current === null ? 'saved' : 'idle')
+    } catch (error) {
+      // Keep the text so it can still be saved, unless newer typing replaced it.
+      pendingDesc.current ??= description
+      setSaving('idle')
+      if (error instanceof ApiError && error.status === 409) {
+        if (mounted.current) setConflict((c) => c ?? { by: actorName(lastEditor.current) })
+        else toast.error(t('sheet.conflict.notSaved'))
+      } else toast.error(errorMessage(error))
+      return
+    } finally {
+      savingDesc.current = false
+    }
+    // Typing during the save is saved next, even if the sheet closed meanwhile.
+    if (pendingDesc.current !== null) void flushDescription()
+    // Or a change from elsewhere arrived during the save.
+    else if (mounted.current) catchUp(queryClient.getQueryData<CardDetailDTO>(keys.card(card.id)))
   }
 
   // Save pending description edits when the sheet closes.
-  useEffect(() => () => void flushDescription(), []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      if (conflictRef.current) toast.error(t('sheet.conflict.notSaved'))
+      else void flushDescription()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // A newer description reaches the card through live updates (which refetch it) or any other refetch.
+  useEffect(() => catchUp(card), [card.version]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(
+    () =>
+      onCardEvent((event) => {
+        if (event.cardId !== card.id || event.version === undefined || event.version <= version.current) return
+        lastEditor.current = event.actor
+        // The refusal of a save can arrive before the news of who changed the text.
+        if (conflictRef.current) setConflict({ by: actorName(event.actor) })
+      }),
+    [card.id, me.user.id], // eslint-disable-line react-hooks/exhaustive-deps
+  )
+
+  const fetchCard = () => queryClient.fetchQuery({ queryKey: keys.card(card.id), queryFn: () => get<CardDetailDTO>(`/cards/${card.id}`), staleTime: 0 })
+
+  async function loadTheirs() {
+    showDescription(await fetchCard())
+    lastEditor.current = null
+    setConflict(null)
+    setSaving('idle')
+  }
+
+  async function keepMine() {
+    const fresh = await fetchCard()
+    version.current = fresh.version
+    pendingDesc.current = editorRef.current?.getMarkdown() ?? pendingDesc.current
+    lastEditor.current = null
+    setConflict(null)
+    conflictRef.current = false
+    await flushDescription()
+  }
 
   const labels = board.labels.filter((l) => card.labelIds.includes(l.id))
 
@@ -293,12 +397,31 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
         </div>
 
         <Section title={t('sheet.description')}>
+          {conflict && (
+            <div role="alert" className="animate-pop mb-3 flex flex-wrap items-center gap-3 rounded-[12px] border border-warn/40 bg-[color-mix(in_oklab,var(--warn)_10%,var(--sheet))] px-4 py-3 text-[13px]">
+              <TriangleAlert className="size-4 shrink-0 text-warn" />
+              <span className="min-w-0 flex-1">
+                {conflict.by ? (
+                  <Trans t={t} i18nKey="sheet.conflict.byName" values={{ name: conflict.by }} components={{ strong: <strong className="font-semibold" /> }} />
+                ) : (
+                  <Trans t={t} i18nKey="sheet.conflict.byOtherSession" components={{ strong: <strong className="font-semibold" /> }} />
+                )}
+              </span>
+              <Button size="sm" variant="secondary" disabled={saving === 'saving'} onClick={() => void loadTheirs().catch((e) => toast.error(errorMessage(e)))}>
+                {t('sheet.conflict.loadTheirs')}
+              </Button>
+              <Button size="sm" variant="primary" disabled={saving === 'saving'} onClick={() => void keepMine().catch((e) => toast.error(errorMessage(e)))}>
+                {t('sheet.conflict.keepMine')}
+              </Button>
+            </div>
+          )}
           <Editor
             content={card.description}
             workspaceId={workspaceId}
             compact
             upload={{ type: 'card', id: card.id }}
             onUploaded={() => void refresh()}
+            onReady={(editor) => (editorRef.current = editor)}
             placeholder={t('sheet.descriptionPlaceholder')}
             ariaLabel={t('sheet.descriptionLabel')}
             onChange={(md) => {

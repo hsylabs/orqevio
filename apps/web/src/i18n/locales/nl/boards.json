@@ -71,6 +71,8 @@
       "title": "Kolom ‘{{name}}’ verwijderen?",
       "withCards_one": "De kaart erin wordt ook verwijderd. Wil je hem houden, verplaats hem dan eerst naar een andere kolom.",
       "withCards_other": "De {{count}} kaarten erin worden ook verwijderd. Wil je ze houden, verplaats ze dan eerst naar een andere kolom.",
+      "withArchived_one": "De gearchiveerde kaart erin wordt ook verwijderd. Wil je hem houden, zet hem dan eerst terug via ‘Gearchiveerd’.",
+      "withArchived_other": "De {{count}} gearchiveerde kaarten erin worden ook verwijderd. Wil je ze houden, zet ze dan eerst terug via ‘Gearchiveerd’.",
       "empty": "De kolom is leeg."
     }
   },
@@ -94,6 +96,14 @@
     "gone": "Deze kaart bestaat niet meer",
     "archived": "Gearchiveerd",
     "agentEditing": "{{name}} is aan het bewerken",
+    "agentUpdated": "{{name}} heeft de beschrijving bijgewerkt",
+    "conflict": {
+      "byName": "<strong>{{name}}</strong> heeft de beschrijving gewijzigd terwijl jij aan het bewerken was. Je laatste wijzigingen zijn niet opgeslagen.",
+      "byOtherSession": "<strong>Een andere sessie</strong> heeft de beschrijving gewijzigd terwijl jij aan het bewerken was. Je laatste wijzigingen zijn niet opgeslagen.",
+      "loadTheirs": "Hun versie laden",
+      "keepMine": "Mijn versie houden",
+      "notSaved": "Je wijzigingen in de beschrijving zijn niet opgeslagen: iemand anders heeft die tegelijk gewijzigd."
+    },
     "saving": "Opslaan…",
     "saved": "Opgeslagen",
     "actions": "Kaartacties",
