@@ -4,6 +4,7 @@ import {
   type RestoredDTO,
   TRASH_DAYS,
   type TrashContents,
+  extractReferences,
   type TrashEntryDTO,
   type TrashKind,
 } from '@orqevio/shared'
@@ -333,7 +334,11 @@ export class TrashService {
       if (!root) throw notFound('Trash entry')
       const placed = this.place(tx, entry.workspaceId, entry.kind, root.data, rows)
       const reinsert = new Reinsert(tx)
-      for (const row of rows) reinsert.insert(row)
+      const mentions = new Map<string, Set<string>>()
+      for (const row of rows) {
+        if (row.table === 'card_page_links' && row.data.source === 'mention' && !mentionedIn(tx, mentions, row.data)) continue
+        reinsert.insert(row)
+      }
       tx.delete(schema.trash).where(eq(schema.trash.id, trashId)).run()
       return placed
     })
@@ -495,6 +500,21 @@ export class TrashService {
     const [row] = await this.deps.db.select({ id: schema.trashRows.id }).from(schema.trashRows).where(eq(schema.trashRows.storageKey, storageKey)).limit(1)
     return Boolean(row)
   }
+}
+
+/**
+ * Whether a page still mentions a card: a mention link comes back only if it does. The page
+ * may have been edited while the card was in the trash; pages being restored are in by now.
+ */
+function mentionedIn(tx: DbOrTx, cache: Map<string, Set<string>>, link: Row) {
+  const pageId = String(link.page_id)
+  let cards = cache.get(pageId)
+  if (!cards) {
+    const page = tx.get<{ content: string }>(sql`SELECT content FROM pages WHERE id = ${pageId}`)
+    cards = new Set(page ? extractReferences(page.content).cards : [])
+    cache.set(pageId, cards)
+  }
+  return cards.has(String(link.card_id))
 }
 
 /** References that only say who made something: they are cleared when that person or token is gone. */

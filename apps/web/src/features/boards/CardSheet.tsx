@@ -1,7 +1,7 @@
 import type { ActorRef, BoardDTO, CardDetailDTO, CardSummaryDTO, TrashedDTO } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useReducer, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ActivityList } from '../../components/ActivityList'
@@ -27,15 +27,24 @@ import { toastTrashed, trashNote } from '../../lib/trash'
 
 /** Cards this tab is deleting: their sheet just closes, without saying they are gone. */
 const deletingHere = new Set<string>()
+/** When each card was deleted elsewhere. Live updates don't fetch a deleted card: its sheet says it is gone instead. */
+const deletedAt = new Map<string, number>()
+onCardEvent((e) => {
+  if (!e.cardId) return
+  if (e.action === 'card.deleted' && !deletingHere.has(e.cardId)) deletedAt.set(e.cardId, Date.now())
+  // Back from the trash: deleting it again later, here or elsewhere, counts as usual.
+  if (e.action === 'trash.restored') deletingHere.delete(e.cardId)
+})
 
 export function CardSheet({ cardId, board, onClose }: { cardId: string | null; board: BoardDTO; onClose: () => void }) {
   const { t } = useTranslation(['boards', 'common'])
   const card = useCard(cardId)
   const open = Boolean(cardId)
-  // Deleted elsewhere while open: say so rather than fetch a card that is no longer there.
-  const [goneId, setGoneId] = useState<string | null>(null)
-  useEffect(() => onCardEvent((e) => e.action === 'card.deleted' && e.cardId === cardId && !deletingHere.has(e.cardId) && setGoneId(e.cardId)), [cardId])
-  const gone = card.isError || (goneId !== null && goneId === cardId)
+  const [, update] = useReducer((n: number) => n + 1, 0)
+  useEffect(() => onCardEvent((e) => e.cardId === cardId && update()), [cardId])
+  // Gone once deleted elsewhere, until the card is fetched again since then (restoring it refetches it).
+  const deleted = cardId ? deletedAt.get(cardId) : undefined
+  const gone = card.isError || (deleted !== undefined && card.dataUpdatedAt <= deleted)
   // While the sheet slides away it keeps showing the card it had, also one just deleted.
   const last = useRef(card.data)
   if (card.data) last.current = card.data

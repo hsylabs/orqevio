@@ -193,6 +193,24 @@ describe('the trash', () => {
     expect(back.attachmentList.map((a: { id: string }) => a.id)).toEqual([c.attachmentId])
   })
 
+  it('brings a mention back only if the page still mentions the card', async () => {
+    const { client, workspaceId } = await signUp(h, 'Menciones')
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Citada' })).body
+    const mention = `Ver [Citada](/card/${card.id})`
+    const kept = (await client.post(`/api/projects/${projectId}/pages`, { title: 'La sigue citando' })).body
+    const edited = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Ya no la cita' })).body
+    await client.patch(`/api/pages/${kept.id}`, { content: mention, baseVersion: 1 })
+    await client.patch(`/api/pages/${edited.id}`, { content: mention, baseVersion: 1 })
+    expect((await client.get(`/api/cards/${card.id}`)).body.pages).toHaveLength(2)
+
+    const trashId = (await client.del(`/api/cards/${card.id}`)).body.trashId
+    await client.patch(`/api/pages/${edited.id}`, { content: 'Sin la tarjeta', baseVersion: 2 })
+    expect((await client.post(`/api/trash/${trashId}/restore`)).status).toBe(200)
+    expect((await client.get(`/api/cards/${card.id}`)).body.pages.map((p: { id: string }) => p.id)).toEqual([kept.id])
+    expect((await client.get(`/api/pages/${edited.id}`)).body.cards).toEqual([])
+  })
+
   it('deletes for good on request or after the time is up, files included', async () => {
     const { client, workspaceId } = await signUp(h, 'Vaciar')
     const c = await fullCard(client, workspaceId)

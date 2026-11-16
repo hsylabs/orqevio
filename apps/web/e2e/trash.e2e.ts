@@ -1,8 +1,8 @@
-import { addCard, createProject, expect, openNewWorkspace, test } from './helpers'
+import { addCard, createProject, expect, openNewWorkspace, settle, test } from './helpers'
 
 // What people delete goes to the trash: they can undo it at once, bring it back later from
 // the trash, wherever it still fits, or delete it for good.
-test('deleted things wait in the trash, to undo, restore or delete for good', async ({ page, consoleErrors }) => {
+test('deleted things wait in the trash, to undo, restore or delete for good', async ({ page, baseURL, consoleErrors }) => {
   const workspaceId = await openNewWorkspace(page, 'Papelera E2E')
   const boardId = await createProject(page, 'Mudanza')
   await addCard(page, 'Por hacer', 'Contratar camión')
@@ -20,11 +20,23 @@ test('deleted things wait in the trash, to undo, restore or delete for good', as
     await dialog.getByRole('button', { name: 'Eliminar' }).click()
     await expect(column.getByRole('button', { name: title })).toHaveCount(0)
   }
+  // Another tab has the card open: it says the card is gone, then shows it again once it's back.
+  const cards = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { cards: Array<{ id: string; title: string }> }
+  const truckId = cards.cards.find((c) => c.title === 'Contratar camión')!.id
+  const other = await page.context().newPage()
+  await settle(other, baseURL!)
+  await other.goto(`/w/${workspaceId}/b/${boardId}?card=${truckId}`)
+  await expect(other.getByRole('button', { name: 'Acciones de la tarjeta' })).toBeVisible()
+
   await deleteCard('Contratar camión')
+  await expect(other.getByText('Esta tarjeta ya no existe')).toBeVisible()
   const toast = page.locator('[data-sonner-toast]').filter({ hasText: 'Tarjeta movida a la papelera' })
   await expect(toast).toContainText('Está en la papelera, por si cambias de idea.')
   await toast.getByRole('button', { name: 'Deshacer' }).click()
   await expect(column.getByRole('button', { name: 'Contratar camión' })).toBeVisible()
+  await expect(other.getByRole('button', { name: 'Acciones de la tarjeta' })).toBeVisible()
+  await expect(other.getByText('Esta tarjeta ya no existe')).toHaveCount(0)
+  await other.close()
 
   // In the trash: what it is, where it was and who deleted it.
   await deleteCard('Contratar camión')
