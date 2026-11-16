@@ -18,7 +18,9 @@ test('deep page trees are deleted with their page, project or workspace', async 
 
   // A page with 49 levels under it, deleted in the app.
   const pages = await chain(page.request, projectId)
-  await page.goto(`/w/${workspaceId}/d/${pages[0]}`)
+  // Opened from the sidebar, as a person would: loading the page anew here would cut short the
+  // refetches the fifty new pages set off, and WebKit reports a request cut short as an error.
+  await page.getByRole('navigation').getByRole('link').filter({ hasText: /^Nivel 1$/ }).click()
   await expect(page.getByLabel('Título de la página')).toHaveValue('Nivel 1')
   await page.getByRole('button', { name: 'Acciones de la página' }).click()
   await page.getByRole('menuitem', { name: 'Eliminar página' }).click()
