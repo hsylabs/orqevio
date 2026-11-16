@@ -18,6 +18,7 @@ import {
   SquareKanban,
   Sun,
   Trash,
+  Trash2,
   Pencil,
 } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
@@ -70,6 +71,9 @@ export function Sidebar() {
         </NavItem>
         <NavItem to={`${base}/agents`} icon={<Bot />} trailing={agentLive ? <span className="live-dot mr-1" aria-label={t('nav.agentLive')} /> : null}>
           {t('nav.agents')}
+        </NavItem>
+        <NavItem to={`${base}/trash`} icon={<Trash2 />}>
+          {t('nav.trash')}
         </NavItem>
       </div>
 

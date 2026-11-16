@@ -1,0 +1,50 @@
+{
+  "title": "ゴミ箱",
+  "intro_other": "削除したものは、中身も含めて{{count}}日間ここに保管されます。いつでも復元でき、期間を過ぎると完全に削除されます。",
+  "empty": {
+    "title": "ゴミ箱は空です",
+    "body_other": "何かを削除すると、気が変わったときのために{{count}}日間ここに保管されます。"
+  },
+  "note_other": "{{count}}日間はゴミ箱から復元できます。",
+  "kind": {
+    "project": "プロジェクト",
+    "board": "ボード",
+    "column": "列",
+    "card": "カード",
+    "page": "ページ",
+    "attachment": "添付ファイル",
+    "label": "ラベル",
+    "checklist": "チェックリスト",
+    "checklist_item": "チェックリストの項目",
+    "link": "ページへのリンク"
+  },
+  "contents": {
+    "boards_other": "ボード{{count}}件",
+    "columns_other": "列{{count}}件",
+    "cards_other": "カード{{count}}枚",
+    "pages_other": "ページ{{count}}件",
+    "checklists_other": "チェックリスト{{count}}件",
+    "items_other": "チェックリスト項目{{count}}件",
+    "labels_other": "ラベル{{count}}件",
+    "attachments_other": "添付ファイル{{count}}件"
+  },
+  "deletedBy": "{{name}}が削除（{{when}}）",
+  "expires": "{{when}}に完全に削除",
+  "restore": "復元",
+  "open": "開く",
+  "restored": "「{{name}}」を復元しました",
+  "restoredElsewhere": "元の場所がなくなったため、{{place}}に移しました。",
+  "restoreFirst": "先に「{{name}}」を復元してください。これが属している場所もゴミ箱にあります。",
+  "purge": {
+    "action": "完全に削除",
+    "named": "「{{name}}」を完全に削除",
+    "title": "「{{name}}」を完全に削除しますか？",
+    "body": "削除すると元に戻せません。",
+    "confirm": "完全に削除",
+    "done": "「{{name}}」を完全に削除しました"
+  },
+  "toast": {
+    "description": "ゴミ箱に移動しました。気が変わったら元に戻せます。",
+    "undo": "元に戻す"
+  }
+}

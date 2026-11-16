@@ -37,7 +37,7 @@
     "saved": "Espaço atualizado",
     "delete": "Excluir espaço",
     "deleteTitle": "Excluir o espaço “{{name}}”?",
-    "deleteDescription": "Todos os projetos, quadros, documentos, anexos e tokens deste espaço serão excluídos. Esta ação não pode ser desfeita.",
+    "deleteDescription": "Todos os projetos, quadros, documentos, anexos, a lixeira e os tokens deste espaço serão excluídos. Esta ação não pode ser desfeita.",
     "deleted": "Espaço excluído"
   },
   "copy": {

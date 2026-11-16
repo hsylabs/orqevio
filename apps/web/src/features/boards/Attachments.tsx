@@ -1,4 +1,4 @@
-import type { AttachmentDTO } from '@orqevio/shared'
+import type { AttachmentDTO, TrashedDTO } from '@orqevio/shared'
 import { Download, File as FileIcon, Paperclip, Trash } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +8,7 @@ import { useConfirm } from '../../components/ui/confirm'
 import { del, errorMessage } from '../../lib/api'
 import { bytes } from '../../lib/format'
 import { type UploadTarget, uploadFile } from '../docs/editor/Editor'
+import { toastTrashed, trashNote } from '../../lib/trash'
 
 export function Attachments({ items, target, onChanged }: { items: AttachmentDTO[]; target: UploadTarget; onChanged: () => void }) {
   const { t } = useTranslation('boards')
@@ -28,10 +29,11 @@ export function Attachments({ items, target, onChanged }: { items: AttachmentDTO
   }
 
   async function remove(a: AttachmentDTO) {
-    if (!(await confirm({ title: t('attachments.deleteConfirm', { name: a.filename }), confirmLabel: t('actions.delete'), danger: true }))) return
+    if (!(await confirm({ title: t('attachments.deleteConfirm', { name: a.filename }), description: trashNote(), confirmLabel: t('actions.delete'), danger: true }))) return
     try {
-      await del(`/attachments/${a.id}`)
+      const trashed = await del<TrashedDTO>(`/attachments/${a.id}`)
       onChanged()
+      toastTrashed(t('attachments.deleted', { name: a.filename }), trashed)
     } catch (error) {
       toast.error(errorMessage(error))
     }

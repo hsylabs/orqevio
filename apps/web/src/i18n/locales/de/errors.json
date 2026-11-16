@@ -10,7 +10,9 @@
     "network": "Keine Verbindung zum Server.",
     "file_too_large": "Die Datei ist größer als erlaubt.",
     "upload_incomplete": "Der Upload wurde unterbrochen. Versuch es noch einmal.",
-    "last_workspace": "Du musst mindestens einen Arbeitsbereich behalten."
+    "last_workspace": "Du musst mindestens einen Arbeitsbereich behalten.",
+    "restore_place_in_trash": "Stell zuerst wieder her, wozu es gehört: Das liegt auch im Papierkorb.",
+    "restore_place_gone": "Der Platz, zu dem es gehörte, existiert nicht mehr, und es gibt keinen anderen, wohin es könnte."
   },
   "notFound": "Das Element wurde nicht gefunden.",
   "server": "Auf dem Server ist etwas schiefgelaufen. Versuch es noch einmal.",

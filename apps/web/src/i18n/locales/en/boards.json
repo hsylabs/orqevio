@@ -69,12 +69,13 @@
     "dropHere": "Drop cards here",
     "deleteConfirm": {
       "title": "Delete the column “{{name}}”?",
-      "withCards_one": "Its card will be deleted too. To keep it, move it to another column first.",
-      "withCards_other": "Its {{count}} cards will be deleted too. To keep them, move them to another column first.",
-      "withArchived_one": "Its archived card will be deleted too. To keep it, restore it first from “Archived”.",
-      "withArchived_other": "Its {{count}} archived cards will be deleted too. To keep them, restore them first from “Archived”.",
-      "empty": "The column is empty."
-    }
+      "empty": "The column is empty.",
+      "withCards_one": "Its card goes to the trash with it.",
+      "withCards_other": "Its {{count}} cards go to the trash with it.",
+      "withArchived_one": "Its archived card goes to the trash with it.",
+      "withArchived_other": "Its {{count}} archived cards go to the trash with it."
+    },
+    "deleted": "Column “{{name}}” moved to the trash"
   },
   "composer": {
     "placeholder": "What needs to be done?",
@@ -110,7 +111,7 @@
     "archivedToast": "Card archived",
     "deleteConfirm": {
       "title": "Delete this card?",
-      "description": "It’ll be deleted along with its checklists and attachments. To just hide it, archive it instead."
+      "description": "It goes to the trash with its checklists and attachments. To just hide it, archive it instead."
     },
     "labels": "Labels",
     "addLabels": "Add labels",
@@ -127,7 +128,8 @@
     "checklistsEmpty": "Break the task into steps you can check off.",
     "linkedDocs": "Linked documents",
     "attachments": "Attachments",
-    "activity": "Activity"
+    "activity": "Activity",
+    "deleted": "Card moved to the trash"
   },
   "checklist": {
     "titleLabel": "Checklist title",
@@ -138,7 +140,9 @@
     "deleteItem": "Delete “{{text}}”",
     "addItem": "Add item",
     "newItemPlaceholder": "New item, then Enter",
-    "newItem": "New item"
+    "newItem": "New item",
+    "deleted": "Checklist “{{name}}” moved to the trash",
+    "itemDeleted": "“{{text}}” moved to the trash"
   },
   "due": {
     "today": "Today",
@@ -157,7 +161,8 @@
     "unnamed": "Unnamed",
     "editNamed": "Edit {{name}}",
     "editUnnamed": "Edit label",
-    "create": "Create label"
+    "create": "Create label",
+    "deleted": "Label “{{name}}” moved to the trash"
   },
   "linked": {
     "mentioned": "mentioned",
@@ -167,20 +172,22 @@
     "search": "Search pages…",
     "searchLabel": "Search pages",
     "noResults": "No results.",
-    "hint": "Type to search the whole workspace."
+    "hint": "Type to search the whole workspace.",
+    "unlinked": "Link moved to the trash"
   },
   "archived": {
     "sheetTitle": "Archived cards",
     "heading": "Archived",
     "emptyTitle": "Nothing archived",
     "emptyBody": "Cards that you or your agents archive show up here, and you can restore them.",
-    "deleteConfirm": "Delete “{{title}}” permanently?"
+    "deleteConfirm": "Move “{{title}}” to the trash?"
   },
   "attachments": {
     "deleteConfirm": "Delete “{{name}}”?",
     "download": "Download {{name}}",
     "deleteNamed": "Delete {{name}}",
     "uploading": "Uploading…",
-    "attach": "Attach file"
+    "attach": "Attach file",
+    "deleted": "“{{name}}” moved to the trash"
   }
 }

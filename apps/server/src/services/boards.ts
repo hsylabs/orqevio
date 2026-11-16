@@ -20,6 +20,7 @@ import type { ActivityService } from './activity'
 import type { CardService } from './cards'
 import { toLabelDTO } from './cards'
 import type { Deps } from './deps'
+import type { TrashService } from './trash'
 import { evenlySpacedKeys } from '../lib/positions'
 import { positionAt } from './ordering'
 
@@ -37,6 +38,7 @@ export class BoardService {
     private readonly access: Access,
     private readonly activity: ActivityService,
     private readonly cards: CardService,
+    private readonly trash: TrashService,
   ) {}
 
   async load(actor: Actor, boardId: string, scope: 'tasks:read' | 'tasks:write' = 'tasks:read') {
@@ -136,13 +138,14 @@ export class BoardService {
   async remove(actor: Actor, boardId: string) {
     this.access.requireUser(actor)
     const board = await this.load(actor, boardId, 'tasks:write')
-    await this.deps.db.delete(boards).where(eq(boards.id, boardId))
+    const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, board.workspaceId, { kind: 'board', id: boardId }))
     await this.activity.record(
       actor,
       board.workspaceId,
       { action: 'board.deleted', entityType: 'board', entityId: boardId, summary: board.name },
       { boardId, projectId: board.projectId, structure: true },
     )
+    return trashId
   }
 
   // ── Columns ───────────────────────────────────────────────────
@@ -199,13 +202,14 @@ export class BoardService {
     this.access.requireUser(actor)
     const column = await this.loadColumn(actor, columnId, 'tasks:write')
     const [{ total }] = (await this.deps.db.select({ total: count() }).from(cards).where(eq(cards.columnId, columnId))) as [{ total: number }]
-    await this.deps.db.delete(columns).where(eq(columns.id, columnId))
+    const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, column.workspaceId, { kind: 'column', id: columnId }))
     await this.activity.record(
       actor,
       column.workspaceId,
       { action: 'column.deleted', entityType: 'column', entityId: columnId, summary: column.name, meta: { cards: total } },
       { boardId: column.boardId, structure: total > 0 },
     )
+    return trashId
   }
 
   // ── Labels ────────────────────────────────────────────────────
@@ -250,12 +254,13 @@ export class BoardService {
   async removeLabel(actor: Actor, labelId: string) {
     this.access.requireUser(actor)
     const label = await this.loadLabel(actor, labelId)
-    await this.deps.db.delete(labels).where(eq(labels.id, labelId))
+    const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, label.workspaceId, { kind: 'label', id: labelId }))
     await this.activity.record(
       actor,
       label.workspaceId,
       { action: 'label.deleted', entityType: 'label', entityId: labelId, summary: label.name },
       { boardId: label.boardId },
     )
+    return trashId
   }
 }

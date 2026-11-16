@@ -13,7 +13,8 @@
       "body": "Group boards and documents in one place."
     },
     "vaultLocked": "Locked",
-    "vaultUnlocked": "Unlocked"
+    "vaultUnlocked": "Unlocked",
+    "trash": "Trash"
   },
   "workspace": {
     "fallback": "Workspace",
@@ -86,21 +87,21 @@
     },
     "deleteBoard": {
       "title": "Delete “{{name}}”?",
-      "body": "Its columns and cards will be deleted. This can’t be undone.",
+      "body": "Its columns and cards go to the trash with it.",
       "confirm": "Delete board",
-      "done": "Board deleted"
+      "done": "Board moved to the trash"
     },
     "deletePage": {
       "title": "Delete “{{name}}”?",
-      "body": "Its subpages and attachments will be deleted too. This can’t be undone.",
+      "body": "Its subpages and attachments go to the trash with it.",
       "confirm": "Delete page",
-      "done": "Page deleted"
+      "done": "Page moved to the trash"
     },
     "deleteProject": {
       "title": "Delete the project “{{name}}”?",
-      "body": "All its boards, cards, pages and attachments will be deleted. This can’t be undone.",
+      "body": "All its boards, cards, pages and attachments go to the trash with it.",
       "confirm": "Delete project",
-      "done": "Project deleted"
+      "done": "Project moved to the trash"
     }
   },
   "palette": {
@@ -131,7 +132,8 @@
       "page": "page",
       "newProject": "New project create",
       "theme": "Change theme light dark appearance",
-      "lockVault": "Lock vault"
+      "lockVault": "Lock vault",
+      "trash": "trash bin deleted restore"
     }
   }
 }

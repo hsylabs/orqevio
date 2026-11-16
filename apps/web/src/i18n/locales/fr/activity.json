@@ -49,6 +49,10 @@
       "updated": "<actor>{{actor}}</actor> a modifié une étiquette",
       "deleted": "<actor>{{actor}}</actor> a supprimé une étiquette"
     },
+    "trash": {
+      "restored": "<actor>{{actor}}</actor> a restauré <target>« {{target}} »</target> depuis la corbeille",
+      "purged": "<actor>{{actor}}</actor> a supprimé définitivement <target>« {{target}} »</target>"
+    },
     "other": "<actor>{{actor}}</actor> a effectué une modification"
   },
   "detail": {

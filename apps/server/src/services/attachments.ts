@@ -8,6 +8,7 @@ import { LengthMismatchError, exactLength, peek } from '../lib/upload-stream'
 import type { Access } from './access'
 import type { ActivityService } from './activity'
 import type { Deps } from './deps'
+import type { TrashService } from './trash'
 
 /** Raster images are rendered inline; everything else (SVG included) is served as a download. */
 const INLINE_IMAGES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif'])
@@ -58,6 +59,7 @@ export class AttachmentService {
     private readonly deps: Deps,
     private readonly access: Access,
     private readonly activity: ActivityService,
+    private readonly trash: TrashService,
   ) {}
 
   /**
@@ -157,20 +159,22 @@ export class AttachmentService {
     const [row] = await this.deps.db.select().from(attachments).where(eq(attachments.id, attachmentId))
     if (!row) throw notFound('Attachment')
     await this.access.workspace(actor, row.workspaceId)
-    await this.deps.db.delete(attachments).where(eq(attachments.id, attachmentId))
-    await this.deps.storage.delete(row.storageKey)
+    // The file stays until the attachment leaves the trash.
+    const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, row.workspaceId, { kind: 'attachment', id: attachmentId }))
     await this.activity.emit(row.workspaceId, {
       action: 'attachment.deleted',
       actor: { kind: 'user', id: actor.userId, name: actor.name },
       ...(row.pageId ? { pageId: row.pageId } : {}),
       ...(row.cardId ? { cardId: row.cardId } : {}),
     })
+    return trashId
   }
 
+  /** Removes stored files that neither an attachment nor one in the trash still uses. */
   async sweepOrphans() {
     return this.deps.storage.sweep(async (key) => {
       const [row] = await this.deps.db.select({ id: attachments.id }).from(attachments).where(eq(attachments.storageKey, key)).limit(1)
-      return Boolean(row)
+      return Boolean(row) || (await this.trash.holdsFile(key))
     })
   }
 }

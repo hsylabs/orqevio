@@ -1,4 +1,4 @@
-import type { BoardRefDTO, PageNodeDTO } from '@orqevio/shared'
+import type { BoardRefDTO, PageNodeDTO, TrashedDTO } from '@orqevio/shared'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -6,6 +6,7 @@ import { useConfirm } from '../../components/ui/confirm'
 import { usePrompt } from '../../components/ui/prompt'
 import { del, errorMessage, post } from '../../lib/api'
 import { keys, queryClient } from '../../lib/queries'
+import { toastTrashed, trashNote } from '../../lib/trash'
 
 /** Shared creation/deletion flows used by the sidebar, project page and palette. */
 export function useStructureActions(workspaceId: string) {
@@ -39,41 +40,41 @@ export function useStructureActions(workspaceId: string) {
     async deleteBoard(board: { id: string; name: string }) {
       const ok = await confirm({
         title: t('actions.deleteBoard.title', { name: board.name }),
-        description: t('actions.deleteBoard.body'),
+        description: `${t('actions.deleteBoard.body')} ${trashNote()}`,
         confirmLabel: t('actions.deleteBoard.confirm'),
         danger: true,
       })
       if (!ok) return false
-      await del(`/boards/${board.id}`)
+      const trashed = await del<TrashedDTO>(`/boards/${board.id}`)
       await refresh()
-      toast.success(t('actions.deleteBoard.done'))
+      toastTrashed(t('actions.deleteBoard.done'), trashed)
       return true
     },
     async deletePage(page: { id: string; title: string }) {
       const ok = await confirm({
         title: t('actions.deletePage.title', { name: page.title || t('common:untitled') }),
-        description: t('actions.deletePage.body'),
+        description: `${t('actions.deletePage.body')} ${trashNote()}`,
         confirmLabel: t('actions.deletePage.confirm'),
         danger: true,
       })
       if (!ok) return false
-      await del(`/pages/${page.id}`)
+      const trashed = await del<TrashedDTO>(`/pages/${page.id}`)
       await refresh()
-      toast.success(t('actions.deletePage.done'))
+      toastTrashed(t('actions.deletePage.done'), trashed)
       return true
     },
     async deleteProject(project: { id: string; name: string }) {
       const ok = await confirm({
         title: t('actions.deleteProject.title', { name: project.name }),
-        description: t('actions.deleteProject.body'),
+        description: `${t('actions.deleteProject.body')} ${trashNote()}`,
         confirmLabel: t('actions.deleteProject.confirm'),
         danger: true,
       })
       if (!ok) return false
-      await del(`/projects/${project.id}`)
+      const trashed = await del<TrashedDTO>(`/projects/${project.id}`)
       await refresh()
       navigate(`/w/${workspaceId}`)
-      toast.success(t('actions.deleteProject.done'))
+      toastTrashed(t('actions.deleteProject.done'), trashed)
       return true
     },
   }

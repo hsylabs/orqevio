@@ -33,6 +33,7 @@ import type { Access } from './access'
 import type { ActivityService } from './activity'
 import { toAttachmentDTO } from './attachments'
 import type { Deps } from './deps'
+import type { TrashService } from './trash'
 import { positionAt } from './ordering'
 
 type CardRow = typeof cards.$inferSelect
@@ -49,6 +50,7 @@ export class CardService {
     private readonly deps: Deps,
     private readonly access: Access,
     private readonly activity: ActivityService,
+    private readonly trash: TrashService,
   ) {}
 
   /** Loads a card, enforcing workspace access and the given scope. */
@@ -241,7 +243,7 @@ export class CardService {
       actor,
       card.workspaceId,
       { action: 'card.created', entityType: 'card', entityId: card.id, summary: card.title, meta: { column: column.name } },
-      { boardId: card.boardId, cardId: card.id },
+      { boardId: card.boardId, cardId: card.id, structure: true },
     )
     const [summary] = await this.summarize([card])
     return summary!
@@ -336,20 +338,22 @@ export class CardService {
       actor,
       card.workspaceId,
       { action: archived ? 'card.archived' : 'card.restored', entityType: 'card', entityId: cardId, summary: card.title },
-      { boardId: card.boardId, cardId },
+      { boardId: card.boardId, cardId, structure: true },
     )
   }
 
+  /** Moves the card to the trash, with its checklists, labels, links and attachments. */
   async remove(actor: Actor, cardId: string) {
     this.access.requireUser(actor)
     const card = await this.load(actor, cardId, 'tasks:write')
-    await this.deps.db.delete(cards).where(eq(cards.id, cardId))
+    const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, card.workspaceId, { kind: 'card', id: cardId }))
     await this.activity.record(
       actor,
       card.workspaceId,
       { action: 'card.deleted', entityType: 'card', entityId: cardId, summary: card.title },
-      { boardId: card.boardId, cardId },
+      { boardId: card.boardId, cardId, structure: true },
     )
+    return trashId
   }
 
   // ── Checklists ────────────────────────────────────────────────
@@ -390,8 +394,9 @@ export class CardService {
   async removeChecklist(actor: Actor, checklistId: string) {
     this.access.requireUser(actor)
     const { list, card } = await this.loadChecklist(actor, checklistId)
-    await this.deps.db.delete(checklists).where(eq(checklists.id, checklistId))
+    const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, card.workspaceId, { kind: 'checklist', id: checklistId }))
     await this.touch(actor, card, list.title)
+    return trashId
   }
 
   async addItem(actor: Actor, checklistId: string, input: unknown) {
@@ -430,8 +435,9 @@ export class CardService {
   async removeItem(actor: Actor, itemId: string) {
     this.access.requireUser(actor)
     const { item, card } = await this.loadItem(actor, itemId)
-    await this.deps.db.delete(checklistItems).where(eq(checklistItems.id, itemId))
+    const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, card.workspaceId, { kind: 'checklist_item', id: itemId }))
     await this.touch(actor, card, item.text)
+    return trashId
   }
 
   // ── Card ↔ page links ─────────────────────────────────────────
@@ -458,11 +464,8 @@ export class CardService {
   async unlinkPage(actor: Actor, cardId: string, pageId: string) {
     this.access.requireUser(actor)
     const card = await this.load(actor, cardId, 'tasks:read')
-    const removed = await this.deps.db
-      .delete(cardPageLinks)
-      .where(and(eq(cardPageLinks.cardId, cardId), eq(cardPageLinks.pageId, pageId), eq(cardPageLinks.source, 'manual')))
-      .returning({ pageId: cardPageLinks.pageId })
-    if (removed.length === 0) return
+    const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, card.workspaceId, { kind: 'link', cardId, pageId }))
+    if (!trashId) return null
     const [page] = await this.deps.db.select({ title: pages.title }).from(pages).where(eq(pages.id, pageId))
     await this.activity.record(
       actor,
@@ -470,5 +473,6 @@ export class CardService {
       { action: 'card.unlinked', entityType: 'card', entityId: cardId, summary: card.title, meta: { page: page?.title ?? '' } },
       { boardId: card.boardId, cardId, pageId },
     )
+    return trashId
   }
 }

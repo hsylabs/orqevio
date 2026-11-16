@@ -50,6 +50,13 @@ export default {
         "when": 1794775030557,
         "tag": "0006_card_version",
         "breakpoints": true
+      },
+      {
+        "idx": 7,
+        "version": "6",
+        "when": 1794869113841,
+        "tag": "0007_trash",
+        "breakpoints": true
       }
     ]
   },
@@ -60,6 +67,7 @@ export default {
     "m0003": "CREATE TABLE `oauth_codes` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`user_id` text NOT NULL,\n\t`workspace_id` text NOT NULL,\n\t`client_id` text NOT NULL,\n\t`client_name` text NOT NULL,\n\t`redirect_uri` text NOT NULL,\n\t`code_challenge` text NOT NULL,\n\t`scopes` text NOT NULL,\n\t`expires_at` integer NOT NULL,\n\t`used_at` integer,\n\t`token_id` text,\n\tFOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`token_id`) REFERENCES `api_tokens`(`id`) ON UPDATE no action ON DELETE set null\n);\n--> statement-breakpoint\nCREATE INDEX `oauth_codes_expires_idx` ON `oauth_codes` (`expires_at`);--> statement-breakpoint\nCREATE TABLE `oauth_tokens` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`token_id` text NOT NULL,\n\t`kind` text NOT NULL,\n\t`expires_at` integer NOT NULL,\n\t`rotated_at` integer,\n\t`created_at` integer NOT NULL,\n\tFOREIGN KEY (`token_id`) REFERENCES `api_tokens`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE INDEX `oauth_tokens_grant_idx` ON `oauth_tokens` (`token_id`);--> statement-breakpoint\nALTER TABLE `api_tokens` ADD `oauth_client_id` text;--> statement-breakpoint\nALTER TABLE `api_tokens` ADD `oauth_redirect_uri` text;",
     "m0004": "ALTER TABLE `users` ADD `locale` text DEFAULT 'en' NOT NULL;",
     "m0005": "ALTER TABLE `oauth_codes` ADD `replace_previous` integer DEFAULT false NOT NULL;",
-    "m0006": "ALTER TABLE `cards` ADD `version` integer DEFAULT 1 NOT NULL;"
+    "m0006": "ALTER TABLE `cards` ADD `version` integer DEFAULT 1 NOT NULL;",
+    "m0007": "CREATE TABLE `trash` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`workspace_id` text NOT NULL,\n\t`kind` text NOT NULL,\n\t`entity_id` text NOT NULL,\n\t`title` text NOT NULL,\n\t`location` text DEFAULT '' NOT NULL,\n\t`contents` text NOT NULL,\n\t`bytes` integer DEFAULT 0 NOT NULL,\n\t`actor_kind` text NOT NULL,\n\t`actor_user_id` text,\n\t`actor_token_id` text,\n\t`actor_name` text NOT NULL,\n\t`deleted_at` integer NOT NULL,\n\t`expires_at` integer NOT NULL,\n\tFOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`actor_user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE set null,\n\tFOREIGN KEY (`actor_token_id`) REFERENCES `api_tokens`(`id`) ON UPDATE no action ON DELETE set null\n);\n--> statement-breakpoint\nCREATE INDEX `trash_workspace_idx` ON `trash` (`workspace_id`,`deleted_at`);--> statement-breakpoint\nCREATE INDEX `trash_expires_idx` ON `trash` (`expires_at`);--> statement-breakpoint\nCREATE TABLE `trash_rows` (\n\t`id` integer PRIMARY KEY NOT NULL,\n\t`trash_id` text NOT NULL,\n\t`table_name` text NOT NULL,\n\t`data` text NOT NULL,\n\t`storage_key` text,\n\tFOREIGN KEY (`trash_id`) REFERENCES `trash`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE INDEX `trash_rows_trash_idx` ON `trash_rows` (`trash_id`,`id`);--> statement-breakpoint\nCREATE INDEX `trash_rows_storage_idx` ON `trash_rows` (`storage_key`);"
   }
 }

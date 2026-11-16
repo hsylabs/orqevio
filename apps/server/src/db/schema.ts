@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { type AnySQLiteColumn, check, index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { TRASH_KINDS, type TrashContents } from '@orqevio/shared'
 
 /**
  * SQLite schema. The same schema runs on a local file (Node/Docker) and in a
@@ -416,6 +417,56 @@ export const activity = sqliteTable(
     index('activity_entity_idx').on(t.entityId, t.createdAt),
     index('activity_token_idx').on(t.actorTokenId, t.createdAt),
   ],
+)
+
+// ── Trash ────────────────────────────────────────────────────────
+/**
+ * What was deleted, kept for TRASH_DAYS. Deleting copies every row of the item and
+ * of what it holds into trash_rows, then deletes them as before: what is in the
+ * trash is gone from every table, search and live update, and restoring inserts
+ * those rows again.
+ */
+export const trash = sqliteTable(
+  'trash',
+  {
+    id: id(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: TRASH_KINDS }).notNull(),
+    /** The id the item had (for a link, `<cardId>:<pageId>`). */
+    entityId: text('entity_id').notNull(),
+    title: text('title').notNull(),
+    /** Where it was, for people: "Project › Board › Column". */
+    location: text('location').notNull().default(''),
+    contents: text('contents', { mode: 'json' }).$type<TrashContents>().notNull().$defaultFn(() => ({})),
+    /** Size of the attachments it holds. */
+    bytes: integer('bytes').notNull().default(0),
+    actorKind: text('actor_kind', { enum: ['user', 'agent'] }).notNull(),
+    actorUserId: text('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    actorTokenId: text('actor_token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
+    actorName: text('actor_name').notNull(),
+    deletedAt: timestamp('deleted_at').notNull().$defaultFn(() => new Date()),
+    expiresAt: timestamp('expires_at').notNull(),
+  },
+  (t) => [index('trash_workspace_idx').on(t.workspaceId, t.deletedAt), index('trash_expires_idx').on(t.expiresAt)],
+)
+
+export const trashRows = sqliteTable(
+  'trash_rows',
+  {
+    /** Also the order in which the rows are inserted back: what holds something comes before it. */
+    id: integer('id').primaryKey(),
+    trashId: text('trash_id')
+      .notNull()
+      .references(() => trash.id, { onDelete: 'cascade' }),
+    tableName: text('table_name').notNull(),
+    /** The row exactly as stored, column by column. */
+    data: text('data', { mode: 'json' }).$type<Record<string, unknown>>().notNull(),
+    /** For attachments: their file stays in storage until the entry leaves the trash. */
+    storageKey: text('storage_key'),
+  },
+  (t) => [index('trash_rows_trash_idx').on(t.trashId, t.id), index('trash_rows_storage_idx').on(t.storageKey)],
 )
 
 // ── Vault (ciphertext only; keys never reach the server) ─────────

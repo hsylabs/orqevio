@@ -130,10 +130,17 @@ describe('documents', () => {
     })
     expect((await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent('nota 7999')}&type=page`)).body).toHaveLength(1)
     const started = Date.now()
-    expect((await client.del(`/api/projects/${projectId}`)).status).toBe(204)
+    expect((await client.del(`/api/projects/${projectId}`)).status).toBe(200)
     // A full scan of the index per deleted page would take several seconds here.
     expect(Date.now() - started).toBeLessThan(1000)
     expect((await client.get(`/api/workspaces/${workspaceId}/search?q=nota&type=page`)).body).toEqual([])
+    // Restoring it from the trash puts the 8000 pages back, and in search. Indexing them takes
+    // about a second by itself; a lookup per page that scanned a table would take far longer.
+    const [entry] = (await client.get(`/api/workspaces/${workspaceId}/trash`)).body
+    const restoring = Date.now()
+    expect((await client.post(`/api/trash/${entry.id}/restore`)).status).toBe(200)
+    expect(Date.now() - restoring).toBeLessThan(5000)
+    expect((await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent('nota 7999')}&type=page`)).body).toHaveLength(1)
   })
 
   it('deletes deep page trees whole, with their links, attachments and search entries', async () => {
@@ -147,7 +154,7 @@ describe('documents', () => {
     await client.patch(`/api/pages/${tree[60]}`, { content: `Ver [Enlazada](/card/${card.body.id}), honduras`, baseVersion: 1 })
     expect((await client.upload(`/api/pages/${tree.at(-1)}/attachments`, 'fondo', { name: 'fondo.txt', type: 'text/plain' })).status).toBe(201)
     expect((await client.get(`/api/cards/${card.body.id}`)).body.pages).toHaveLength(1)
-    expect((await client.del(`/api/pages/${tree[0]}`)).status).toBe(204)
+    expect((await client.del(`/api/pages/${tree[0]}`)).status).toBe(200)
     expect(left(tree)).toEqual([])
     expect(h.db.select().from(attachments).where(inArray(attachments.pageId, tree)).all()).toEqual([])
     expect((await client.get(`/api/cards/${card.body.id}`)).body.pages).toEqual([])
@@ -156,12 +163,12 @@ describe('documents', () => {
     // Deleting a subpage leaves its parent and siblings alone.
     const [top, middle] = await createPageChain(client, projectId, 3)
     const sibling = await client.post(`/api/projects/${projectId}/pages`, { title: 'Hermana', parentId: top })
-    expect((await client.del(`/api/pages/${middle}`)).status).toBe(204)
+    expect((await client.del(`/api/pages/${middle}`)).status).toBe(200)
     expect(left([top!, sibling.body.id]).map((p) => p.id).sort()).toEqual([top!, sibling.body.id].sort())
 
     // Projects and workspaces holding deep trees.
     const inProject = await createPageChain(client, projectId, 120)
-    expect((await client.del(`/api/projects/${projectId}`)).status).toBe(204)
+    expect((await client.del(`/api/projects/${projectId}`)).status).toBe(200)
     expect(left([...inProject, top!])).toEqual([])
     const spare = await client.post('/api/workspaces', { name: 'Hondo' })
     const project = await client.post(`/api/workspaces/${spare.body.id}/projects`, { name: 'Pozo' })

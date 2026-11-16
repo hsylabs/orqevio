@@ -69,14 +69,15 @@
     "dropHere": "Suelta tarjetas aquí",
     "deleteConfirm": {
       "title": "¿Eliminar la columna «{{name}}»?",
-      "withCards_one": "Se eliminará también su tarjeta. Si prefieres conservarla, muévela antes a otra columna.",
-      "withCards_many": "Se eliminarán también sus {{count}} tarjetas. Si prefieres conservarlas, muévelas antes a otra columna.",
-      "withCards_other": "Se eliminarán también sus {{count}} tarjetas. Si prefieres conservarlas, muévelas antes a otra columna.",
-      "withArchived_one": "También se eliminará su tarjeta archivada. Si prefieres conservarla, restáurala antes desde «Archivadas».",
-      "withArchived_many": "También se eliminarán sus {{count}} tarjetas archivadas. Si prefieres conservarlas, restáuralas antes desde «Archivadas».",
-      "withArchived_other": "También se eliminarán sus {{count}} tarjetas archivadas. Si prefieres conservarlas, restáuralas antes desde «Archivadas».",
-      "empty": "La columna está vacía."
-    }
+      "empty": "La columna está vacía.",
+      "withCards_one": "Su tarjeta irá con ella a la papelera.",
+      "withCards_many": "Sus {{count}} tarjetas irán con ella a la papelera.",
+      "withCards_other": "Sus {{count}} tarjetas irán con ella a la papelera.",
+      "withArchived_one": "Su tarjeta archivada irá con ella a la papelera.",
+      "withArchived_many": "Sus {{count}} tarjetas archivadas irán con ella a la papelera.",
+      "withArchived_other": "Sus {{count}} tarjetas archivadas irán con ella a la papelera."
+    },
+    "deleted": "Columna «{{name}}» movida a la papelera"
   },
   "composer": {
     "placeholder": "¿Qué hay que hacer?",
@@ -112,7 +113,7 @@
     "archivedToast": "Tarjeta archivada",
     "deleteConfirm": {
       "title": "¿Eliminar esta tarjeta?",
-      "description": "Se eliminará con su checklist y adjuntos. Si solo quieres ocultarla, archívala."
+      "description": "Irá a la papelera con su checklist y adjuntos. Si solo quieres ocultarla, archívala."
     },
     "labels": "Etiquetas",
     "addLabels": "Añadir etiquetas",
@@ -129,7 +130,8 @@
     "checklistsEmpty": "Divide la tarea en pasos que puedas marcar.",
     "linkedDocs": "Documentos vinculados",
     "attachments": "Adjuntos",
-    "activity": "Actividad"
+    "activity": "Actividad",
+    "deleted": "Tarjeta movida a la papelera"
   },
   "checklist": {
     "titleLabel": "Título de la checklist",
@@ -140,7 +142,9 @@
     "deleteItem": "Eliminar «{{text}}»",
     "addItem": "Añadir elemento",
     "newItemPlaceholder": "Nuevo elemento y Enter",
-    "newItem": "Nuevo elemento"
+    "newItem": "Nuevo elemento",
+    "deleted": "Checklist «{{name}}» movida a la papelera",
+    "itemDeleted": "Se movió «{{text}}» a la papelera"
   },
   "due": {
     "today": "Hoy",
@@ -159,7 +163,8 @@
     "unnamed": "Sin nombre",
     "editNamed": "Editar {{name}}",
     "editUnnamed": "Editar etiqueta",
-    "create": "Crear etiqueta"
+    "create": "Crear etiqueta",
+    "deleted": "Etiqueta «{{name}}» movida a la papelera"
   },
   "linked": {
     "mentioned": "mencionada",
@@ -169,20 +174,22 @@
     "search": "Buscar páginas…",
     "searchLabel": "Buscar páginas",
     "noResults": "Sin resultados.",
-    "hint": "Escribe para buscar en todo el espacio."
+    "hint": "Escribe para buscar en todo el espacio.",
+    "unlinked": "Enlace movido a la papelera"
   },
   "archived": {
     "sheetTitle": "Tarjetas archivadas",
     "heading": "Archivadas",
     "emptyTitle": "Nada archivado",
     "emptyBody": "Las tarjetas que archives (tú o tus agentes) aparecerán aquí y podrás restaurarlas.",
-    "deleteConfirm": "¿Eliminar «{{title}}» definitivamente?"
+    "deleteConfirm": "¿Mover «{{title}}» a la papelera?"
   },
   "attachments": {
     "deleteConfirm": "¿Eliminar «{{name}}»?",
     "download": "Descargar {{name}}",
     "deleteNamed": "Eliminar {{name}}",
     "uploading": "Subiendo…",
-    "attach": "Adjuntar archivo"
+    "attach": "Adjuntar archivo",
+    "deleted": "Se movió «{{name}}» a la papelera"
   }
 }

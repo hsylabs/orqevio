@@ -9,6 +9,7 @@ import { OAuthService } from './oauth'
 import { PageService } from './pages'
 import { SearchService } from './search'
 import { TokenService } from './tokens'
+import { TrashService } from './trash'
 import { UpdateService } from './updates'
 import { VaultService } from './vault'
 import { WorkspaceService } from './workspaces'
@@ -20,17 +21,19 @@ import { WorkspaceService } from './workspaces'
 export function createServices(deps: Deps) {
   const access = new Access(deps)
   const activity = new ActivityService(deps)
-  const cards = new CardService(deps, access, activity)
-  const workspaces = new WorkspaceService(deps, access, activity, cards)
+  const trash = new TrashService(deps, access, activity)
+  const cards = new CardService(deps, access, activity, trash)
+  const workspaces = new WorkspaceService(deps, access, activity, cards, trash)
   const tokens = new TokenService(deps, access)
-  const attachments = new AttachmentService(deps, access, activity)
+  const attachments = new AttachmentService(deps, access, activity, trash)
   return {
     access,
     activity,
+    trash,
     cards,
     workspaces,
-    boards: new BoardService(deps, access, activity, cards),
-    pages: new PageService(deps, access, activity),
+    boards: new BoardService(deps, access, activity, cards, trash),
+    pages: new PageService(deps, access, activity, trash),
     search: new SearchService(deps, access),
     attachments,
     tokens,

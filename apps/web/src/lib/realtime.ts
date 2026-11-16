@@ -74,7 +74,8 @@ function handle(workspaceId: string, event: RealtimeEvent, selfId: string | unde
     void queryClient.invalidateQueries({ queryKey: keys.archived(event.boardId) })
   }
   if (event.cardId) {
-    void queryClient.invalidateQueries({ queryKey: keys.card(event.cardId) })
+    // A deleted card can't be fetched again; an open one says it is gone (see CardSheet).
+    if (event.action !== 'card.deleted') void queryClient.invalidateQueries({ queryKey: keys.card(event.cardId) })
     for (const l of cardListeners) l(event)
   }
   if (event.pageId) {
@@ -84,6 +85,8 @@ function handle(workspaceId: string, event: RealtimeEvent, selfId: string | unde
   if (event.structure) void queryClient.invalidateQueries({ queryKey: keys.overview(workspaceId) })
   void queryClient.invalidateQueries({ queryKey: keys.home(workspaceId) })
   void queryClient.invalidateQueries({ queryKey: ['activity', workspaceId] })
+  // Any change may put something in the trash or take it out; only an open trash refetches.
+  void queryClient.invalidateQueries({ queryKey: keys.trash(workspaceId) })
   if (event.actor.kind === 'agent') {
     if (event.cardId) highlight(event.cardId, event.actor.name)
     if (event.pageId) highlight(event.pageId, event.actor.name)

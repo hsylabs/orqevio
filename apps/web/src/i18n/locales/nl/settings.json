@@ -37,7 +37,7 @@
     "saved": "Werkruimte bijgewerkt",
     "delete": "Werkruimte verwijderen",
     "deleteTitle": "Werkruimte ‘{{name}}’ verwijderen?",
-    "deleteDescription": "De projecten, borden, documenten, bijlagen en tokens ervan worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "deleteDescription": "De projecten, borden, documenten, bijlagen, prullenbak en tokens ervan worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
     "deleted": "Werkruimte verwijderd"
   },
   "copy": {

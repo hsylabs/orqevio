@@ -13,7 +13,8 @@
       "body": "Agrupe quadros e documentos em um só lugar."
     },
     "vaultLocked": "Bloqueado",
-    "vaultUnlocked": "Desbloqueado"
+    "vaultUnlocked": "Desbloqueado",
+    "trash": "Lixeira"
   },
   "workspace": {
     "fallback": "Espaço",
@@ -86,21 +87,21 @@
     },
     "deleteBoard": {
       "title": "Excluir “{{name}}”?",
-      "body": "As colunas e os cartões deste quadro serão excluídos. Esta ação não pode ser desfeita.",
+      "body": "As colunas e os cartões deste quadro irão com ele para a lixeira.",
       "confirm": "Excluir quadro",
-      "done": "Quadro excluído"
+      "done": "Quadro movido para a lixeira"
     },
     "deletePage": {
       "title": "Excluir “{{name}}”?",
-      "body": "As subpáginas e os anexos desta página também serão excluídos. Esta ação não pode ser desfeita.",
+      "body": "As subpáginas e os anexos desta página irão com ela para a lixeira.",
       "confirm": "Excluir página",
-      "done": "Página excluída"
+      "done": "Página movida para a lixeira"
     },
     "deleteProject": {
       "title": "Excluir o projeto “{{name}}”?",
-      "body": "Todos os quadros, cartões, páginas e anexos deste projeto serão excluídos. Esta ação não pode ser desfeita.",
+      "body": "Todos os quadros, cartões, páginas e anexos deste projeto irão com ele para a lixeira.",
       "confirm": "Excluir projeto",
-      "done": "Projeto excluído"
+      "done": "Projeto movido para a lixeira"
     }
   },
   "palette": {
@@ -131,7 +132,8 @@
       "page": "página pagina",
       "newProject": "Novo projeto criar",
       "theme": "Mudar tema claro escuro aparência aparencia",
-      "lockVault": "Bloquear cofre"
+      "lockVault": "Bloquear cofre",
+      "trash": "lixeira excluído recuperar restaurar"
     }
   }
 }

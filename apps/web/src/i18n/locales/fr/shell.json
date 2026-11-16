@@ -13,7 +13,8 @@
       "body": "Regroupez tableaux et documents au même endroit."
     },
     "vaultLocked": "Verrouillé",
-    "vaultUnlocked": "Déverrouillé"
+    "vaultUnlocked": "Déverrouillé",
+    "trash": "Corbeille"
   },
   "workspace": {
     "fallback": "Espace",
@@ -86,21 +87,21 @@
     },
     "deleteBoard": {
       "title": "Supprimer « {{name}} » ?",
-      "body": "Ses colonnes et ses cartes seront supprimées. Cette action est irréversible.",
+      "body": "Ses colonnes et ses cartes iront avec lui dans la corbeille.",
       "confirm": "Supprimer le tableau",
-      "done": "Tableau supprimé"
+      "done": "Tableau placé dans la corbeille"
     },
     "deletePage": {
       "title": "Supprimer « {{name}} » ?",
-      "body": "Ses sous-pages et ses pièces jointes seront également supprimées. Cette action est irréversible.",
+      "body": "Ses sous-pages et ses pièces jointes iront avec elle dans la corbeille.",
       "confirm": "Supprimer la page",
-      "done": "Page supprimée"
+      "done": "Page placée dans la corbeille"
     },
     "deleteProject": {
       "title": "Supprimer le projet « {{name}} » ?",
-      "body": "Tous ses tableaux, cartes, pages et pièces jointes seront supprimés. Cette action est irréversible.",
+      "body": "Tous ses tableaux, cartes, pages et pièces jointes iront avec lui dans la corbeille.",
       "confirm": "Supprimer le projet",
-      "done": "Projet supprimé"
+      "done": "Projet placé dans la corbeille"
     }
   },
   "palette": {
@@ -131,7 +132,8 @@
       "page": "page",
       "newProject": "Nouveau projet créer creer",
       "theme": "Changer thème theme clair sombre apparence",
-      "lockVault": "Verrouiller coffre-fort"
+      "lockVault": "Verrouiller coffre-fort",
+      "trash": "corbeille supprimé récupérer restaurer"
     }
   }
 }

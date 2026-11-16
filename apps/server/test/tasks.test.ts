@@ -76,7 +76,7 @@ describe('boards and cards', () => {
     const board = await client.get(`/api/boards/${boardId}`)
     expect(board.body.columns.map((c: { archivedCards: number }) => c.archivedCards)).toEqual([0, 0, 2])
     // Deleting the column deletes its archived cards too.
-    expect((await client.del(`/api/columns/${columns[2]!.id}`)).status).toBe(204)
+    expect((await client.del(`/api/columns/${columns[2]!.id}`)).status).toBe(200)
     expect((await client.get(`/api/boards/${boardId}/archived`)).body).toHaveLength(0)
   })
 

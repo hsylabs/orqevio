@@ -115,9 +115,10 @@ export class OrqevioCopy extends DurableObject<Bindings> {
     )
   }
 
-  /** Hourly: removes attachments left in R2 without a database row. */
+  /** Hourly: deletes for good what has been in the trash for 30 days, then files in R2 that nothing uses. */
   override async alarm() {
     try {
+      await this.services.trash.purgeExpired().catch((error) => console.error('[trash] purge failed', error))
       await this.services.attachments.sweepOrphans()
     } finally {
       await this.ctx.storage.setAlarm(Date.now() + SWEEP_EVERY_MS)

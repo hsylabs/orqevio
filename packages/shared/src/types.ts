@@ -377,3 +377,53 @@ export type OAuthRequestDTO =
 export interface OAuthDecisionDTO {
   redirect: string
 }
+
+// ── Trash ────────────────────────────────────────────────────────
+/** What can be in the trash. Each entry holds one of these, with everything that was inside it. */
+export const TRASH_KINDS = ['project', 'board', 'column', 'card', 'page', 'attachment', 'label', 'checklist', 'checklist_item', 'link'] as const
+export type TrashKind = (typeof TRASH_KINDS)[number]
+
+/** Days a deleted item stays in the trash before it is deleted for good. */
+export const TRASH_DAYS = 30
+
+/** What went to the trash along with the item itself, counted when it was deleted. */
+export interface TrashContents {
+  boards?: number
+  columns?: number
+  cards?: number
+  pages?: number
+  attachments?: number
+  checklists?: number
+  items?: number
+  labels?: number
+}
+
+export interface TrashEntryDTO {
+  id: string
+  kind: TrashKind
+  /** The id the item had, and gets back when restored. */
+  entityId: string
+  title: string
+  /** Where it was, for people: "Project › Board › Column". */
+  location: string
+  contents: TrashContents
+  /** Size of the attachments it holds. */
+  bytes: number
+  deletedBy: ActorRef
+  deletedAt: string
+  expiresAt: string
+}
+
+/** The answer to deleting something that goes to the trash. Null when there was nothing to delete. */
+export interface TrashedDTO {
+  trashId: string | null
+}
+
+export interface RestoredDTO {
+  kind: TrashKind
+  entityId: string
+  /** The original place no longer exists, so it was put in the first one available. */
+  movedTo: string | null
+  /** Where to open it in the app, relative to the workspace (`b/<id>`, `d/<id>`, `p/<id>`). */
+  path: string | null
+}

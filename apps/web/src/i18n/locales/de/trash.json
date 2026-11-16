@@ -1,0 +1,61 @@
+{
+  "title": "Papierkorb",
+  "intro_one": "Was du löschst, bleibt hier {{count}} Tag lang, mit allem, was es enthielt. Stell es wieder her, wann du willst; danach wird es endgültig gelöscht.",
+  "intro_other": "Was du löschst, bleibt hier {{count}} Tage lang, mit allem, was es enthielt. Stell es wieder her, wann du willst; danach wird es endgültig gelöscht.",
+  "empty": {
+    "title": "Der Papierkorb ist leer",
+    "body_one": "Wenn du etwas löschst, wartet es hier {{count}} Tag lang, falls du es dir anders überlegst.",
+    "body_other": "Wenn du etwas löschst, wartet es hier {{count}} Tage lang, falls du es dir anders überlegst."
+  },
+  "note_one": "Du kannst alles {{count}} Tag lang aus dem Papierkorb wiederherstellen.",
+  "note_other": "Du kannst alles {{count}} Tage lang aus dem Papierkorb wiederherstellen.",
+  "kind": {
+    "project": "Projekt",
+    "board": "Board",
+    "column": "Spalte",
+    "card": "Karte",
+    "page": "Seite",
+    "attachment": "Anhang",
+    "label": "Label",
+    "checklist": "Checkliste",
+    "checklist_item": "Checklistenpunkt",
+    "link": "Verknüpfung mit einer Seite"
+  },
+  "contents": {
+    "boards_one": "{{count}} Board",
+    "boards_other": "{{count}} Boards",
+    "columns_one": "{{count}} Spalte",
+    "columns_other": "{{count}} Spalten",
+    "cards_one": "{{count}} Karte",
+    "cards_other": "{{count}} Karten",
+    "pages_one": "{{count}} Seite",
+    "pages_other": "{{count}} Seiten",
+    "checklists_one": "{{count}} Checkliste",
+    "checklists_other": "{{count}} Checklisten",
+    "items_one": "{{count}} Checklistenpunkt",
+    "items_other": "{{count}} Checklistenpunkte",
+    "labels_one": "{{count}} Label",
+    "labels_other": "{{count}} Labels",
+    "attachments_one": "{{count}} Anhang",
+    "attachments_other": "{{count}} Anhänge"
+  },
+  "deletedBy": "Gelöscht von {{name}} {{when}}",
+  "expires": "Endgültig gelöscht {{when}}",
+  "restore": "Wiederherstellen",
+  "open": "Öffnen",
+  "restored": "„{{name}}“ ist wieder da",
+  "restoredElsewhere": "Sein ursprünglicher Platz existiert nicht mehr, deshalb ist es jetzt in {{place}}.",
+  "restoreFirst": "Stell zuerst „{{name}}“ wieder her: Das, wozu es gehört, liegt auch im Papierkorb.",
+  "purge": {
+    "action": "Endgültig löschen",
+    "named": "„{{name}}“ endgültig löschen",
+    "title": "„{{name}}“ endgültig löschen?",
+    "body": "Danach lässt es sich nicht mehr wiederherstellen.",
+    "confirm": "Endgültig löschen",
+    "done": "„{{name}}“ wurde endgültig gelöscht"
+  },
+  "toast": {
+    "description": "Es liegt im Papierkorb, falls du es dir anders überlegst.",
+    "undo": "Rückgängig"
+  }
+}

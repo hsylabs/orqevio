@@ -46,8 +46,13 @@ if (setup) {
   else console.log('Use the setup code configured in SETUP_CODE.')
 }
 
+// Hourly: what has been in the trash for 30 days goes for good, then files nothing uses.
 const sweep = setInterval(() => {
-  services.attachments.sweepOrphans().catch((error) => console.error('[storage] sweep failed', error))
+  services.trash
+    .purgeExpired()
+    .catch((error) => console.error('[trash] purge failed', error))
+    .then(() => services.attachments.sweepOrphans())
+    .catch((error) => console.error('[storage] sweep failed', error))
 }, 60 * 60 * 1000)
 sweep.unref()
 

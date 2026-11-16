@@ -1,6 +1,6 @@
 import { Command, defaultFilter } from 'cmdk'
 import { Dialog as D } from 'radix-ui'
-import { Bot, FileText, FolderOpen, House, LockKeyhole, Moon, Plus, Search, Settings, SquareKanban, Sun } from 'lucide-react'
+import { Bot, FileText, FolderOpen, House, LockKeyhole, Moon, Plus, Search, Settings, SquareKanban, Sun, Trash2 } from 'lucide-react'
 import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
@@ -99,6 +99,9 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                 </Item>
                 <Item value={t('palette.keywords.agents')} icon={<Bot />} onSelect={() => go(`${base}/agents`)}>
                   {t('nav.agents')}
+                </Item>
+                <Item value={t('palette.keywords.trash')} icon={<Trash2 />} onSelect={() => go(`${base}/trash`)}>
+                  {t('nav.trash')}
                 </Item>
                 <Item value={t('palette.keywords.settings')} icon={<Settings />} onSelect={() => go(`${base}/settings`)}>
                   {t('user.settings')}

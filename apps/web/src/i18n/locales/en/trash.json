@@ -1,0 +1,61 @@
+{
+  "title": "Trash",
+  "intro_one": "What you delete waits here for {{count}} day, with everything it held. Restore it whenever you like; after that, it’s deleted for good.",
+  "intro_other": "What you delete waits here for {{count}} days, with everything it held. Restore it whenever you like; after that, it’s deleted for good.",
+  "empty": {
+    "title": "The trash is empty",
+    "body_one": "When you delete something, it waits here for {{count}} day in case you change your mind.",
+    "body_other": "When you delete something, it waits here for {{count}} days in case you change your mind."
+  },
+  "note_one": "You can bring it back from the trash for {{count}} day.",
+  "note_other": "You can bring it back from the trash for {{count}} days.",
+  "kind": {
+    "project": "Project",
+    "board": "Board",
+    "column": "Column",
+    "card": "Card",
+    "page": "Page",
+    "attachment": "Attachment",
+    "label": "Label",
+    "checklist": "Checklist",
+    "checklist_item": "Checklist item",
+    "link": "Link to a page"
+  },
+  "contents": {
+    "boards_one": "{{count}} board",
+    "boards_other": "{{count}} boards",
+    "columns_one": "{{count}} column",
+    "columns_other": "{{count}} columns",
+    "cards_one": "{{count}} card",
+    "cards_other": "{{count}} cards",
+    "pages_one": "{{count}} page",
+    "pages_other": "{{count}} pages",
+    "checklists_one": "{{count}} checklist",
+    "checklists_other": "{{count}} checklists",
+    "items_one": "{{count}} checklist item",
+    "items_other": "{{count}} checklist items",
+    "labels_one": "{{count}} label",
+    "labels_other": "{{count}} labels",
+    "attachments_one": "{{count}} attachment",
+    "attachments_other": "{{count}} attachments"
+  },
+  "deletedBy": "Deleted by {{name}} {{when}}",
+  "expires": "Deleted for good {{when}}",
+  "restore": "Restore",
+  "open": "Open",
+  "restored": "“{{name}}” is back",
+  "restoredElsewhere": "Its place no longer exists, so it’s now in {{place}}.",
+  "restoreFirst": "Restore “{{name}}” first: what this belongs to is in the trash too.",
+  "purge": {
+    "action": "Delete for good",
+    "named": "Delete “{{name}}” for good",
+    "title": "Delete “{{name}}” for good?",
+    "body": "It can’t be brought back afterwards.",
+    "confirm": "Delete for good",
+    "done": "“{{name}}” deleted for good"
+  },
+  "toast": {
+    "description": "It’s in the trash, in case you change your mind.",
+    "undo": "Undo"
+  }
+}

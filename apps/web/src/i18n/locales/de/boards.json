@@ -69,12 +69,13 @@
     "dropHere": "Karten hier ablegen",
     "deleteConfirm": {
       "title": "Spalte „{{name}}“ löschen?",
-      "withCards_one": "Die Karte in dieser Spalte wird ebenfalls gelöscht. Wenn du sie behalten willst, verschiebe sie vorher in eine andere Spalte.",
-      "withCards_other": "Die {{count}} Karten in dieser Spalte werden ebenfalls gelöscht. Wenn du sie behalten willst, verschiebe sie vorher in eine andere Spalte.",
-      "withArchived_one": "Die archivierte Karte in dieser Spalte wird ebenfalls gelöscht. Wenn du sie behalten willst, stelle sie vorher unter „Archiv“ wieder her.",
-      "withArchived_other": "Die {{count}} archivierten Karten in dieser Spalte werden ebenfalls gelöscht. Wenn du sie behalten willst, stelle sie vorher unter „Archiv“ wieder her.",
-      "empty": "Die Spalte ist leer."
-    }
+      "empty": "Die Spalte ist leer.",
+      "withCards_one": "Die Karte in dieser Spalte kommt mit in den Papierkorb.",
+      "withCards_other": "Die {{count}} Karten in dieser Spalte kommen mit in den Papierkorb.",
+      "withArchived_one": "Die archivierte Karte in dieser Spalte kommt mit in den Papierkorb.",
+      "withArchived_other": "Die {{count}} archivierten Karten in dieser Spalte kommen mit in den Papierkorb."
+    },
+    "deleted": "Spalte „{{name}}“ in den Papierkorb verschoben"
   },
   "composer": {
     "placeholder": "Was ist zu tun?",
@@ -110,7 +111,7 @@
     "archivedToast": "Karte archiviert",
     "deleteConfirm": {
       "title": "Diese Karte löschen?",
-      "description": "Die Karte wird mitsamt ihren Checklisten und Anhängen gelöscht. Wenn du sie nur ausblenden willst, archiviere sie stattdessen."
+      "description": "Die Karte kommt mitsamt ihren Checklisten und Anhängen in den Papierkorb. Wenn du sie nur ausblenden willst, archiviere sie stattdessen."
     },
     "labels": "Labels",
     "addLabels": "Labels hinzufügen",
@@ -127,7 +128,8 @@
     "checklistsEmpty": "Teile die Aufgabe in Schritte auf, die du abhaken kannst.",
     "linkedDocs": "Verknüpfte Dokumente",
     "attachments": "Anhänge",
-    "activity": "Aktivität"
+    "activity": "Aktivität",
+    "deleted": "Karte in den Papierkorb verschoben"
   },
   "checklist": {
     "titleLabel": "Titel der Checkliste",
@@ -138,7 +140,9 @@
     "deleteItem": "„{{text}}“ löschen",
     "addItem": "Punkt hinzufügen",
     "newItemPlaceholder": "Neuer Punkt, dann Enter",
-    "newItem": "Neuer Punkt"
+    "newItem": "Neuer Punkt",
+    "deleted": "Checkliste „{{name}}“ in den Papierkorb verschoben",
+    "itemDeleted": "„{{text}}“ in den Papierkorb verschoben"
   },
   "due": {
     "today": "Heute",
@@ -157,7 +161,8 @@
     "unnamed": "Ohne Namen",
     "editNamed": "{{name}} bearbeiten",
     "editUnnamed": "Label bearbeiten",
-    "create": "Label erstellen"
+    "create": "Label erstellen",
+    "deleted": "Label „{{name}}“ in den Papierkorb verschoben"
   },
   "linked": {
     "mentioned": "erwähnt",
@@ -167,20 +172,22 @@
     "search": "Seiten suchen…",
     "searchLabel": "Seiten suchen",
     "noResults": "Keine Ergebnisse.",
-    "hint": "Tippe, um den ganzen Arbeitsbereich zu durchsuchen."
+    "hint": "Tippe, um den ganzen Arbeitsbereich zu durchsuchen.",
+    "unlinked": "Verknüpfung in den Papierkorb verschoben"
   },
   "archived": {
     "sheetTitle": "Archivierte Karten",
     "heading": "Archiviert",
     "emptyTitle": "Nichts archiviert",
     "emptyBody": "Karten, die du oder deine Agenten archivieren, erscheinen hier, und du kannst sie wiederherstellen.",
-    "deleteConfirm": "„{{title}}“ endgültig löschen?"
+    "deleteConfirm": "„{{title}}“ in den Papierkorb verschieben?"
   },
   "attachments": {
     "deleteConfirm": "„{{name}}“ löschen?",
     "download": "{{name}} herunterladen",
     "deleteNamed": "{{name}} löschen",
     "uploading": "Wird hochgeladen…",
-    "attach": "Datei anhängen"
+    "attach": "Datei anhängen",
+    "deleted": "„{{name}}“ in den Papierkorb verschoben"
   }
 }

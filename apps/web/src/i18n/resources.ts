@@ -10,13 +10,14 @@ import oauth from './locales/en/oauth.json'
 import projects from './locales/en/projects.json'
 import settings from './locales/en/settings.json'
 import shell from './locales/en/shell.json'
+import trash from './locales/en/trash.json'
 import vault from './locales/en/vault.json'
 
 /**
  * The English catalogs: always bundled, the fallback for any missing text and
  * the reference that types every key and that each translation is checked against.
  */
-export const en = { activity, agents, auth, boards, common, docs, errors, home, oauth, projects, settings, shell, vault }
+export const en = { activity, agents, auth, boards, common, docs, errors, home, oauth, projects, settings, shell, trash, vault }
 
 export type Namespace = keyof typeof en
 export const NAMESPACES = Object.keys(en) as Namespace[]

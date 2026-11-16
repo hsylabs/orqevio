@@ -37,7 +37,7 @@
     "saved": "Espace mis à jour",
     "delete": "Supprimer l’espace",
     "deleteTitle": "Supprimer l’espace « {{name}} » ?",
-    "deleteDescription": "Ses projets, tableaux, documents, pièces jointes et jetons seront supprimés. Cette action est irréversible.",
+    "deleteDescription": "Ses projets, tableaux, documents, pièces jointes, sa corbeille et ses jetons seront supprimés. Cette action est irréversible.",
     "deleted": "Espace supprimé"
   },
   "copy": {

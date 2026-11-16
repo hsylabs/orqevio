@@ -6,6 +6,14 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+### Added
+- A trash. Deleting a project, a board, a column, a card, a page, an attachment, a label, a checklist, a checklist item or the link between a card and a page no longer deletes it for good: it goes to the trash with everything it held (a page with its subpages and files, a column with its cards) and stays there for 30 days. **Trash**, in the sidebar, shows what each item is, where it was, who deleted it and when it goes for good, with **Restore** and **Delete for good**. Right after deleting, **Undo** in the notice brings it back at once.
+- Restoring puts everything back as it was, with the same ids, links and files. If its place no longer exists, a card goes to the first column, a column or board to the first board or project, and a page to the top of its project; the app says where. What can only live in its place (a checklist item, a label, a file) asks to restore that first when it's in the trash too.
+- The trash empties itself hourly of what has been there for 30 days, and only then are the files of its attachments deleted. Only people see the trash; agents still can't delete anything.
+
+### Changed
+- Deleting something through the REST API answers `200` with the id of its trash entry (`{ "trashId": "…" }`) instead of `204`. New endpoints: `GET /api/workspaces/:id/trash`, `POST /api/trash/:id/restore` and `DELETE /api/trash/:id`, for people only. Deleting a workspace or your account, and uninstalling, are still for good.
+
 ## [1.0.2] - 2026-11-16
 
 ### Fixed

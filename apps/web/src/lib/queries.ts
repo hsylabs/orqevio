@@ -10,6 +10,7 @@ import type {
   PageDTO,
   SearchResultDTO,
   TokenDTO,
+  TrashEntryDTO,
   UpdateStatusDTO,
 } from '@orqevio/shared'
 import { QueryClient, keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -41,6 +42,7 @@ export const keys = {
   activity: (wid: string, filter: string) => ['activity', wid, filter] as const,
   vault: ['vault'] as const,
   vaultItems: ['vault-items'] as const,
+  trash: (wid: string) => ['trash', wid] as const,
 }
 
 export const useMe = () =>
@@ -97,6 +99,9 @@ export const useSearch = (wid: string, q: string, type?: 'card' | 'page') =>
     placeholderData: keepPreviousData,
     staleTime: 10_000,
   })
+
+export const useTrash = (wid: string) =>
+  useQuery({ queryKey: keys.trash(wid), queryFn: ({ signal }) => get<TrashEntryDTO[]>(`/workspaces/${wid}/trash`, signal) })
 
 export const useTokens = () => useQuery({ queryKey: keys.tokens, queryFn: ({ signal }) => get<TokenDTO[]>('/tokens', signal) })
 

@@ -1,4 +1,4 @@
-import type { CardDetailDTO } from '@orqevio/shared'
+import type { CardDetailDTO, TrashedDTO } from '@orqevio/shared'
 import { FileText, Link2, Search, X } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +8,7 @@ import { Popover } from '../../components/ui/Popover'
 import { del, errorMessage, post } from '../../lib/api'
 import { keys, queryClient, useSearch } from '../../lib/queries'
 import { useWorkspace } from '../shell/workspace'
+import { toastTrashed } from '../../lib/trash'
 
 export function LinkedPages({ card }: { card: CardDetailDTO }) {
   const { t } = useTranslation(['boards', 'docs'])
@@ -42,8 +43,9 @@ export function LinkedPages({ card }: { card: CardDetailDTO }) {
 
   async function unlink(pageId: string) {
     try {
-      await del(`/cards/${card.id}/pages/${pageId}`)
+      const trashed = await del<TrashedDTO>(`/cards/${card.id}/pages/${pageId}`)
       await refresh()
+      if (trashed?.trashId) toastTrashed(t('linked.unlinked'), trashed)
     } catch (error) {
       toast.error(errorMessage(error))
     }

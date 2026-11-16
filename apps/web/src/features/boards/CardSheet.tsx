@@ -1,4 +1,4 @@
-import type { ActorRef, BoardDTO, CardDetailDTO, CardSummaryDTO } from '@orqevio/shared'
+import type { ActorRef, BoardDTO, CardDetailDTO, CardSummaryDTO, TrashedDTO } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
@@ -23,16 +23,28 @@ import { Checklists } from './Checklists'
 import { DuePicker } from './DuePicker'
 import { LabelPicker } from './LabelPicker'
 import { LinkedPages } from './LinkedPages'
+import { toastTrashed, trashNote } from '../../lib/trash'
+
+/** Cards this tab is deleting: their sheet just closes, without saying they are gone. */
+const deletingHere = new Set<string>()
 
 export function CardSheet({ cardId, board, onClose }: { cardId: string | null; board: BoardDTO; onClose: () => void }) {
   const { t } = useTranslation(['boards', 'common'])
   const card = useCard(cardId)
   const open = Boolean(cardId)
+  // Deleted elsewhere while open: say so rather than fetch a card that is no longer there.
+  const [goneId, setGoneId] = useState<string | null>(null)
+  useEffect(() => onCardEvent((e) => e.action === 'card.deleted' && e.cardId === cardId && !deletingHere.has(e.cardId) && setGoneId(e.cardId)), [cardId])
+  const gone = card.isError || (goneId !== null && goneId === cardId)
+  // While the sheet slides away it keeps showing the card it had, also one just deleted.
+  const last = useRef(card.data)
+  if (card.data) last.current = card.data
+  const data = open ? card.data : last.current
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={card.data?.title ?? t('sheet.fallbackTitle')} label={t('sheet.label')}>
-      {card.data ? (
-        <CardBody key={card.data.id} card={card.data} board={board} onClose={onClose} />
-      ) : card.isError ? (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={data?.title ?? t('sheet.fallbackTitle')} label={t('sheet.label')}>
+      {data && !(open && gone) ? (
+        <CardBody key={data.id} card={data} board={board} onClose={onClose} />
+      ) : gone ? (
         <div className="grid flex-1 place-items-center p-8 text-center text-ink-2">
           <div>
             <p className="font-display text-[20px]">{t('sheet.gone')}</p>
@@ -314,11 +326,13 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
               icon={<Trash />}
               danger
               onSelect={async () => {
-                if (!(await confirm({ title: t('sheet.deleteConfirm.title'), description: t('sheet.deleteConfirm.description'), confirmLabel: t('actions.delete'), danger: true }))) return
+                if (!(await confirm({ title: t('sheet.deleteConfirm.title'), description: `${t('sheet.deleteConfirm.description')} ${trashNote()}`, confirmLabel: t('actions.delete'), danger: true }))) return
+                deletingHere.add(card.id)
+                onClose()
                 try {
-                  await del(`/cards/${card.id}`)
-                  onClose()
+                  const trashed = await del<TrashedDTO>(`/cards/${card.id}`)
                   await queryClient.invalidateQueries({ queryKey: keys.board(card.boardId) })
+                  toastTrashed(t('sheet.deleted'), trashed)
                 } catch (error) {
                   toast.error(errorMessage(error))
                 }

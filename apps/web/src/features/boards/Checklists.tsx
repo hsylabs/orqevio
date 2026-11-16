@@ -1,4 +1,4 @@
-import type { CardDetailDTO, ChecklistDTO } from '@orqevio/shared'
+import type { CardDetailDTO, ChecklistDTO, TrashedDTO } from '@orqevio/shared'
 import { Ellipsis, ListChecks, Plus, Trash, X } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +7,7 @@ import { Checkbox } from '../../components/ui/Checkbox'
 import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from '../../components/ui/Menu'
 import { del, errorMessage, patch, post } from '../../lib/api'
 import { keys, queryClient } from '../../lib/queries'
+import { toastTrashed } from '../../lib/trash'
 
 export function Checklists({ card }: { card: CardDetailDTO }) {
   const { t } = useTranslation('boards')
@@ -69,7 +70,7 @@ export function Checklists({ card }: { card: CardDetailDTO }) {
                   </button>
                 </MenuTrigger>
                 <MenuContent>
-                  <MenuItem icon={<Trash />} danger onSelect={() => void run(() => del(`/checklists/${cl.id}`))}>
+                  <MenuItem icon={<Trash />} danger onSelect={() => void run(async () => toastTrashed(t('checklist.deleted', { name: cl.title }), await del<TrashedDTO>(`/checklists/${cl.id}`)))}>
                     {t('checklist.delete')}
                   </MenuItem>
                 </MenuContent>
@@ -100,7 +101,7 @@ export function Checklists({ card }: { card: CardDetailDTO }) {
                     type="button"
                     onClick={() => {
                       patchItemLocally(item.id, () => null)
-                      void run(() => del(`/checklist-items/${item.id}`))
+                      void run(async () => toastTrashed(t('checklist.itemDeleted', { text: item.text }), await del<TrashedDTO>(`/checklist-items/${item.id}`)))
                     }}
                     aria-label={t('checklist.deleteItem', { text: item.text })}
                     className="ml-auto grid size-6 shrink-0 place-items-center rounded-[6px] text-ink-3 opacity-0 group-hover:opacity-100 hover:bg-press hover:text-ink focus-visible:opacity-100"
