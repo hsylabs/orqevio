@@ -6,7 +6,7 @@
     "deploy": "create-orqevio deploy-repo"
   },
   "dependencies": {
-    "create-orqevio": "1.0.1"
+    "create-orqevio": "1.0.2"
   },
   "engines": {
     "node": ">=22.12"
