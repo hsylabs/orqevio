@@ -193,6 +193,48 @@ describe('the trash', () => {
     expect(back.attachmentList.map((a: { id: string }) => a.id)).toEqual([c.attachmentId])
   })
 
+  it('puts a card in its column wherever that went back to, with only that board’s labels', async () => {
+    const { client, workspaceId } = await signUp(h, 'Orden')
+    const first = await seedBoard(client, workspaceId)
+    const second = (await client.post(`/api/projects/${first.projectId}/boards`, { name: 'Destino' })).body.id as string
+    const column = first.columns[1]!.id
+    const label = (await client.post(`/api/boards/${first.boardId}/labels`, { name: 'Roja', color: 'tomato' })).body.id
+    const card = (await client.post(`/api/columns/${column}/cards`, { title: 'Viajera' })).body.id
+    await client.patch(`/api/cards/${card}`, { labelIds: [label] })
+    const cardTrash = (await client.del(`/api/cards/${card}`)).body.trashId
+    const columnTrash = (await client.del(`/api/columns/${column}`)).body.trashId
+    const boardTrash = (await client.del(`/api/boards/${first.boardId}`)).body.trashId
+
+    // The column goes to the other board; the board comes back with its label; the card follows its column.
+    expect((await client.post(`/api/trash/${columnTrash}/restore`)).body.movedTo).toBe('Lanzamiento › Destino')
+    expect((await client.post(`/api/trash/${boardTrash}/restore`)).status).toBe(200)
+    const back = await client.post(`/api/trash/${cardTrash}/restore`)
+    expect(back.body).toMatchObject({ movedTo: 'Lanzamiento › Destino › In progress', path: `b/${second}` })
+    const detail = (await client.get(`/api/cards/${card}`)).body
+    expect([detail.board.id, detail.column.id, detail.labelIds]).toEqual([second, column, []])
+    expect((await client.get(`/api/boards/${second}`)).body.cards.map((c: { id: string }) => c.id)).toEqual([card])
+  })
+
+  it('puts a subpage under its parent wherever that went back to', async () => {
+    const { client, workspaceId } = await signUp(h, 'Ramas')
+    const { projectId } = await seedBoard(client, workspaceId)
+    const [parent, child] = await createPageChain(client, projectId, 2)
+    const childTrash = (await client.del(`/api/pages/${child}`)).body.trashId
+    const parentTrash = (await client.del(`/api/pages/${parent}`)).body.trashId
+    await client.del(`/api/projects/${projectId}`)
+    const other = (await client.post(`/api/workspaces/${workspaceId}/projects`, { name: 'Refugio' })).body.id
+
+    expect((await client.post(`/api/trash/${parentTrash}/restore`)).body.movedTo).toBe('Refugio')
+    expect((await client.post(`/api/trash/${childTrash}/restore`)).body.movedTo).toBe('Refugio')
+    const page = (await client.get(`/api/pages/${child}`)).body
+    expect([page.projectId, page.parentId]).toEqual([other, parent])
+    const tree = (await client.get(`/api/projects/${other}/pages`)).body.map((p: { id: string; parentId: string | null }) => [p.id, p.parentId])
+    expect(tree).toEqual([
+      [parent, null],
+      [child, parent],
+    ])
+  })
+
   it('brings a mention back only if the page still mentions the card', async () => {
     const { client, workspaceId } = await signUp(h, 'Menciones')
     const { projectId, columns } = await seedBoard(client, workspaceId)

@@ -337,7 +337,8 @@ export class TrashService {
       const mentions = new Map<string, Set<string>>()
       for (const row of rows) {
         if (row.table === 'card_page_links' && row.data.source === 'mention' && !mentionedIn(tx, mentions, row.data)) continue
-        reinsert.insert(row)
+        // Without the item itself nothing comes back: the transaction rolls back and the entry stays.
+        if (!reinsert.insert(row) && row === root) throw restoreError('restore_place_gone', 'It no longer fits anywhere it could go back to.')
       }
       tx.delete(schema.trash).where(eq(schema.trash.id, trashId)).run()
       return placed
@@ -409,7 +410,14 @@ export class TrashService {
         return { entityType: 'column' as EntityType, entityId: String(root.id), movedTo, path: `b/${root.board_id}`, event: event({ boardId: String(root.board_id), structure: true }) }
       }
       case 'card': {
-        if (!exists('board_columns', root.column_id)) {
+        const column = tx.get<{ board_id: string; name: string }>(sql`SELECT board_id, name FROM board_columns WHERE id = ${root.column_id}`)
+        if (column && column.board_id !== root.board_id) {
+          // Its column went back to another board meanwhile: the card follows it there.
+          const board = boardName(column.board_id)!
+          root.board_id = column.board_id
+          root.position = atEnd('cards', sql`column_id = ${root.column_id}`)
+          movedTo = [board.project, board.name, column.name].join(SEPARATOR)
+        } else if (!column) {
           const board = exists('boards', root.board_id) ? { id: String(root.board_id), ...boardName(root.board_id)! } : firstBoard()
           const column = board && tx.get<{ id: string; name: string }>(sql`SELECT id, name FROM board_columns WHERE board_id = ${board.id} ORDER BY position, id LIMIT 1`)
           if (!board || !column) throw missing('board_columns', root.column_id, 'column')
@@ -421,17 +429,26 @@ export class TrashService {
         return { entityType: 'card' as EntityType, entityId: String(root.id), movedTo, path: `b/${root.board_id}`, event: event({ boardId: String(root.board_id), cardId: String(root.id), structure: true }) }
       }
       case 'page': {
-        if (!exists('projects', root.project_id)) {
+        const parent = root.parent_id != null ? tx.get<{ project_id: string }>(sql`SELECT project_id FROM pages WHERE id = ${root.parent_id}`) : undefined
+        const projectName = (id: unknown) => tx.get<{ name: string }>(sql`SELECT name FROM projects WHERE id = ${id}`)?.name ?? null
+        if (parent) {
+          // Under its parent, in whatever project the parent is now: the pages follow it there.
+          if (parent.project_id !== root.project_id) {
+            for (const page of ofTable('pages')) page.project_id = parent.project_id
+            root.position = atEnd('pages', sql`parent_id = ${root.parent_id}`)
+            movedTo = projectName(parent.project_id)
+          }
+        } else if (!exists('projects', root.project_id)) {
           const target = firstProject()
           if (!target) throw missing('projects', root.project_id, 'project')
           for (const page of ofTable('pages')) page.project_id = target.id
           root.parent_id = null
           root.position = atEnd('pages', sql`project_id = ${target.id} AND parent_id IS NULL`)
           movedTo = target.name
-        } else if (root.parent_id != null && !exists('pages', root.parent_id)) {
+        } else if (root.parent_id != null) {
           root.parent_id = null
           root.position = atEnd('pages', sql`project_id = ${root.project_id} AND parent_id IS NULL`)
-          movedTo = tx.get<{ name: string }>(sql`SELECT name FROM projects WHERE id = ${root.project_id}`)?.name ?? null
+          movedTo = projectName(root.project_id)
         }
         return { entityType: 'page' as EntityType, entityId: String(root.id), movedTo, path: `d/${root.id}`, event: event({ pageId: String(root.id), projectId: String(root.project_id), structure: true }) }
       }
@@ -553,13 +570,18 @@ class Reinsert {
     return found
   }
 
+  /** Returns whether the row went back in. */
   insert({ table, data }: Captured) {
     const shape = SHAPES.get(table)!
     for (const reference of shape.references) {
       const value = data[reference.column]
       if (value == null || this.exists(reference.table, reference.target, value)) continue
-      if (!AUTHORS.has(reference.table)) return
+      if (!AUTHORS.has(reference.table)) return false
       data[reference.column] = null
+    }
+    // A card that went back to another board keeps only that board's labels.
+    if (table === 'card_labels' && !this.tx.get(sql`SELECT 1 AS found FROM labels l JOIN cards c ON c.board_id = l.board_id WHERE l.id = ${data.label_id} AND c.id = ${data.card_id}`)) {
+      return false
     }
     const names = shape.columns.filter((name) => name in data)
     this.tx.run(
@@ -572,6 +594,7 @@ class Reinsert {
       )})`,
     )
     if (data.id != null) this.known.set(`${table} id ${String(data.id)}`, true)
+    return true
   }
 }
 
