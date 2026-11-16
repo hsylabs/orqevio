@@ -418,13 +418,17 @@ export class TrashService {
           root.position = atEnd('cards', sql`column_id = ${root.column_id}`)
           movedTo = [board.project, board.name, column.name].join(SEPARATOR)
         } else if (!column) {
-          const board = exists('boards', root.board_id) ? { id: String(root.board_id), ...boardName(root.board_id)! } : firstBoard()
-          const column = board && tx.get<{ id: string; name: string }>(sql`SELECT id, name FROM board_columns WHERE board_id = ${board.id} ORDER BY position, id LIMIT 1`)
-          if (!board || !column) throw missing('board_columns', root.column_id, 'column')
-          root.board_id = board.id
-          root.column_id = column.id
-          root.position = atEnd('cards', sql`column_id = ${column.id}`)
-          movedTo = [board.project, board.name, column.name].join(SEPARATOR)
+          // The first column of its board, or else of the first board that has one.
+          const first = (scope: SQL) =>
+            tx.get<{ id: string; name: string; board_id: string; board: string; project: string }>(
+              sql`SELECT c.id, c.name, b.id AS board_id, b.name AS board, p.name AS project FROM board_columns c JOIN boards b ON b.id = c.board_id JOIN projects p ON p.id = b.project_id WHERE ${scope} ORDER BY p.position, p.id, b.position, b.id, c.position, c.id LIMIT 1`,
+            )
+          const target = first(sql`c.board_id = ${root.board_id}`) ?? first(sql`c.workspace_id = ${workspaceId}`)
+          if (!target) throw missing('board_columns', root.column_id, 'column')
+          root.board_id = target.board_id
+          root.column_id = target.id
+          root.position = atEnd('cards', sql`column_id = ${target.id}`)
+          movedTo = [target.project, target.board, target.name].join(SEPARATOR)
         }
         return { entityType: 'card' as EntityType, entityId: String(root.id), movedTo, path: `b/${root.board_id}`, event: event({ boardId: String(root.board_id), cardId: String(root.id), structure: true }) }
       }

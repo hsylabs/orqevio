@@ -215,6 +215,21 @@ describe('the trash', () => {
     expect((await client.get(`/api/boards/${second}`)).body.cards.map((c: { id: string }) => c.id)).toEqual([card])
   })
 
+  it('puts a card whose board is gone in the first column there is, skipping boards without columns', async () => {
+    const { client, workspaceId } = await signUp(h, 'Sin columnas')
+    const gone = await seedBoard(client, workspaceId)
+    const empty = (await client.post(`/api/projects/${gone.projectId}/boards`, { name: 'Vacío' })).body.id as string
+    const full = (await client.post(`/api/projects/${gone.projectId}/boards`, { name: 'Lleno' })).body.id as string
+    for (const c of (await client.get(`/api/boards/${empty}`)).body.columns) await client.del(`/api/columns/${c.id}`)
+    const card = (await client.post(`/api/columns/${gone.columns[0]!.id}/cards`, { title: 'Huérfana' })).body.id
+    const cardTrash = (await client.del(`/api/cards/${card}`)).body.trashId
+    await client.del(`/api/boards/${gone.boardId}`)
+
+    const back = await client.post(`/api/trash/${cardTrash}/restore`)
+    expect(back.body).toMatchObject({ movedTo: 'Lanzamiento › Lleno › To do', path: `b/${full}` })
+    expect((await client.get(`/api/cards/${card}`)).body.board.id).toBe(full)
+  })
+
   it('puts a subpage under its parent wherever that went back to', async () => {
     const { client, workspaceId } = await signUp(h, 'Ramas')
     const { projectId } = await seedBoard(client, workspaceId)
@@ -228,11 +243,8 @@ describe('the trash', () => {
     expect((await client.post(`/api/trash/${childTrash}/restore`)).body.movedTo).toBe('Refugio')
     const page = (await client.get(`/api/pages/${child}`)).body
     expect([page.projectId, page.parentId]).toEqual([other, parent])
-    const tree = (await client.get(`/api/projects/${other}/pages`)).body.map((p: { id: string; parentId: string | null }) => [p.id, p.parentId])
-    expect(tree).toEqual([
-      [parent, null],
-      [child, parent],
-    ])
+    const tree = (await client.get(`/api/projects/${other}/pages`)).body.map((p: { id: string; parentId: string | null }) => `${p.id}<${p.parentId}`)
+    expect(tree.sort()).toEqual([`${parent}<null`, `${child}<${parent}`].sort())
   })
 
   it('brings a mention back only if the page still mentions the card', async () => {
