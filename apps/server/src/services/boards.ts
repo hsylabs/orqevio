@@ -136,7 +136,7 @@ export class BoardService {
   }
 
   async remove(actor: Actor, boardId: string) {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, 'organize')
     const board = await this.load(actor, boardId, 'tasks:write')
     const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, board.workspaceId, { kind: 'board', id: boardId }))
     await this.activity.record(
@@ -199,7 +199,7 @@ export class BoardService {
   }
 
   async removeColumn(actor: Actor, columnId: string) {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, 'organize')
     const column = await this.loadColumn(actor, columnId, 'tasks:write')
     const [{ total }] = (await this.deps.db.select({ total: count() }).from(cards).where(eq(cards.columnId, columnId))) as [{ total: number }]
     const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, column.workspaceId, { kind: 'column', id: columnId }))
@@ -250,9 +250,9 @@ export class BoardService {
     return toLabelDTO(row!)
   }
 
-  /** Only people delete labels: agents can't delete anything (see README, "Connecting agents"). */
+  /** To the trash, taking it off its cards. Agents need to be allowed to delete and move. */
   async removeLabel(actor: Actor, labelId: string) {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, 'organize')
     const label = await this.loadLabel(actor, labelId)
     const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, label.workspaceId, { kind: 'label', id: labelId }))
     await this.activity.record(

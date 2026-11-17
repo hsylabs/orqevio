@@ -48,9 +48,12 @@ test('a client that only speaks OAuth connects once the owner approves it, and s
     } else {
       await expect(page.getByText(/ya tiene acceso/)).toHaveCount(0)
     }
-    // It asked for everything; the owner gives it read access to tasks only.
+    // It asked for everything; the owner gives it read access to tasks only, so it can't delete or move either.
+    const organize = page.getByRole('checkbox', { name: 'Puede borrar y mover' })
+    await expect(organize).toBeChecked()
     await page.getByRole('radiogroup', { name: 'Acceso a Tareas' }).getByRole('radio', { name: 'Leer', exact: true }).click()
     await page.getByRole('radiogroup', { name: 'Acceso a Documentos' }).getByRole('radio', { name: 'Sin acceso' }).click()
+    await expect(organize).toBeDisabled()
     await page.getByRole('button', { name: 'Permitir acceso' }).click()
     await page.waitForURL(/^https:\/\/claude\.ai\//)
     const back = new URL(page.url())

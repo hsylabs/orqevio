@@ -1,5 +1,6 @@
 import {
   type ActorRef,
+  type AttachmentPlace,
   type CardPlace,
   HISTORY_BODY_KINDS,
   type HistoryKind,
@@ -12,7 +13,7 @@ import {
 } from '@orqevio/shared'
 import { type SQL, and, desc, eq, getTableColumns, gt, inArray, or, sql } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
-import { attachments, cardLabels, cardPageLinks, cards, checklistItems, checklists, columns, history, labels, pages, trash } from '../db/schema'
+import { attachments, cardLabels, cardPageLinks, cards, checklistItems, checklists, columns, history, labels, pages, trash, trashRows } from '../db/schema'
 import { AppError, badRequest, notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
@@ -47,6 +48,8 @@ interface Check {
   status: UndoStatus
   reason?: UndoPlanItemDTO['reason']
   current?: HistoryValue
+  /** For a conflict found on something else than the change itself: who made the newer change. */
+  by?: ActorRef | null
   /** For a change that brings something back or takes it away: what it is about exists afterwards. */
   exists?: boolean
 }
@@ -60,12 +63,16 @@ class State {
   readonly exists = new Map<string, boolean>()
   /** For long texts: the change whose text before will be the text by then (compared in SQLite, never loaded). */
   readonly bodies = new Map<string, string>()
+  /** Trash entries the newer changes bring back, with everything they hold. */
+  readonly restoring = new Set<string>()
 }
 
 const fieldKey = (row: HistoryRow) => `${row.entityId}|${row.kind}|${row.subjectId ?? ''}`
 const sameSet = (a: HistoryValue, b: HistoryValue) =>
   Array.isArray(a) && Array.isArray(b) ? a.length === b.length && [...a].sort().every((v, i) => v === [...b].sort()[i]) : a === b
 const columnOf = (value: HistoryValue) => (value && typeof value === 'object' && !Array.isArray(value) && 'columnId' in value ? (value as CardPlace).columnId : null)
+const fileAt = (value: HistoryValue) =>
+  value && typeof value === 'object' && !Array.isArray(value) && 'pageId' in value ? `${(value as AttachmentPlace).cardId ?? ''}|${(value as AttachmentPlace).pageId ?? ''}` : null
 const parentOf = (value: HistoryValue) => (value && typeof value === 'object' && !Array.isArray(value) && 'projectId' in value ? (value as PagePlace).parentId : undefined)
 
 /**
@@ -89,7 +96,7 @@ export class UndoService {
 
     // The plan, before anything changes.
     const state = new State()
-    const plan = rows.map((row) => this.planItem(row, this.check(row, undoing, state), undoing))
+    const plan = rows.map((row) => this.planItem(row, this.check(row, undoing, state), undoing, state))
     if (data.dryRun || (data.conflicts === 'ask' && plan.some((p) => p.status === 'conflict'))) return { applied: false, plan, undone: 0, skipped: 0, failed: 0 }
 
     // Newest first, each checked again against what is true by then.
@@ -167,9 +174,13 @@ export class UndoService {
     return rows
   }
 
-  private planItem(row: Row, check: Check, undoing: Set<string>): UndoPlanItemDTO {
+  private planItem(row: Row, check: Check, undoing: Set<string>, state?: State): UndoPlanItemDTO {
     const table = row.entityType === 'page' ? pages : cards
-    const title = this.deps.db.select({ title: table.title }).from(table).where(eq(table.id, row.entityId)).get()?.title
+    // In the trash, its title is where it was kept.
+    const trashed = typeof row.meta.trashId === 'string' ? [row.meta.trashId, ...(state?.restoring ?? [])] : [...(state?.restoring ?? [])]
+    const title =
+      this.deps.db.select({ title: table.title }).from(table).where(eq(table.id, row.entityId)).get()?.title ??
+      trashed.map((trashId) => this.kept(trashId, row.entityId)?.title).find((t) => typeof t === 'string')
     return {
       entryId: row.id,
       kind: row.kind,
@@ -178,7 +189,7 @@ export class UndoService {
       entityTitle: title ?? (typeof row.meta.title === 'string' ? row.meta.title : ''),
       status: check.status,
       ...(check.reason ? { reason: check.reason } : {}),
-      ...(check.status === 'conflict' ? { changedBy: this.changedSince(row, check.exists === undefined, undoing), current: check.current ?? null } : {}),
+      ...(check.status === 'conflict' ? { changedBy: check.by !== undefined ? check.by : this.changedSince(row, check.exists === undefined, undoing), current: check.current ?? null } : {}),
     }
   }
 
@@ -196,6 +207,8 @@ export class UndoService {
       return or(sql`${history.entityId} IN (${tree})`, sql`${history.subjectId} IN (${tree})`)
     }
     if (!row.subjectId) return eq(history.entityId, row.entityId)
+    // A file can change places: what happened to it anywhere counts.
+    if (row.kind.startsWith('attachment.')) return eq(history.subjectId, row.subjectId)
     if (!row.kind.startsWith('checklist.')) return and(eq(history.entityId, row.entityId), eq(history.subjectId, row.subjectId))
     // A checklist goes with all its items, however many.
     return and(
@@ -229,6 +242,16 @@ export class UndoService {
     return later ? { kind: later.kind, id: (later.kind === 'agent' ? later.tokenId : later.userId) ?? '', name: later.name } : null
   }
 
+  /** What a trash entry keeps of one thing it holds, if it holds it. */
+  private kept(trashId: string, id: string) {
+    const found = this.deps.db
+      .select({ data: trashRows.data })
+      .from(trashRows)
+      .where(and(eq(trashRows.trashId, trashId), sql`json_extract(${trashRows.data}, '$.id') = ${id}`))
+      .get()
+    return found?.data as { title?: string } | undefined
+  }
+
   private trashed(row: HistoryRow) {
     const id = typeof row.meta.trashId === 'string' ? row.meta.trashId : null
     return id !== null && Boolean(this.deps.db.select({ id: trash.id }).from(trash).where(eq(trash.id, id)).get())
@@ -243,6 +266,10 @@ export class UndoService {
     const subject = row.subjectId ?? ''
     const one = <T>(query: { get: () => T | undefined }) => query.get()
     const has = (key: string, real: () => boolean) => state.exists.get(key) ?? real()
+    // Not there now, but undoing a newer change brings it back from the trash: what it was then is
+    // known once it is back, when each change is checked again before it is undone.
+    const returning = (id: string) => [...state.restoring].some((trashId) => this.kept(trashId, id) !== undefined)
+    const later: Check = { status: 'ready' }
     const entityKey = `${row.entityType}:${row.entityId}`
     const entityExists = has(entityKey, () =>
       Boolean(row.entityType === 'page' ? one(db.select({ id: pages.id }).from(pages).where(eq(pages.id, row.entityId))) : one(db.select({ id: cards.id }).from(cards).where(eq(cards.id, row.entityId)))),
@@ -253,6 +280,7 @@ export class UndoService {
       if (has(key, real)) return { status: 'unchanged' }
       if (!this.trashed(row)) return { status: 'impossible', reason: 'trash_gone' }
       state.exists.set(key, true)
+      state.restoring.add(String(row.meta.trashId))
       return { status: 'ready', exists: true }
     }
     const takeAway = (key: string, real: () => boolean): Check => {
@@ -262,8 +290,7 @@ export class UndoService {
       return { status, exists: false }
     }
     // A value set back to what it was before.
-    const value = (current: HistoryValue, same: (a: HistoryValue, b: HistoryValue) => boolean = (a, b) => a === b, place?: () => boolean): Check => {
-      const key = fieldKey(row)
+    const value = (current: HistoryValue, same: (a: HistoryValue, b: HistoryValue) => boolean = (a, b) => a === b, place?: () => boolean, key = fieldKey(row)): Check => {
       const now = state.values.has(key) ? state.values.get(key)! : current
       if (same(now, before)) return { status: 'unchanged' }
       if (place && !place()) return { status: 'impossible', reason: 'place_gone' }
@@ -300,9 +327,38 @@ export class UndoService {
     }
     if (!entityExists) return { status: 'impossible', reason: 'gone' }
 
+    // Files, on a page or a card: what matters is the file.
+    const file = () => Boolean(one(db.select({ id: attachments.id }).from(attachments).where(eq(attachments.id, subject))))
+    switch (kind) {
+      case 'attachment.created':
+      case 'attachment.restored':
+        return takeAway(`attachment:${subject}`, () => file() || returning(subject))
+      case 'attachment.deleted':
+        return bringBack(`attachment:${subject}`, file)
+      case 'attachment.moved': {
+        const at = one(db.select({ cardId: attachments.cardId, pageId: attachments.pageId, workspaceId: attachments.workspaceId }).from(attachments).where(eq(attachments.id, subject)))
+        if (!at && !returning(subject)) return { status: 'impossible', reason: 'gone' }
+        const key = `attachment-place:${subject}`
+        if (!at) {
+          // Back from the trash first; one move in two histories is undone once.
+          if (state.values.has(key)) return { status: 'unchanged' }
+          state.values.set(key, before)
+          return later
+        }
+        const back = before as AttachmentPlace | null
+        const there = () => {
+          const table = back?.pageId ? pages : cards
+          const id = back?.pageId ?? back?.cardId ?? ''
+          return Boolean(one(db.select({ id: table.id }).from(table).where(and(eq(table.id, id), eq(table.workspaceId, at.workspaceId)))))
+        }
+        // One move, in the history of both places: keyed by the file, so undoing both entries moves it once.
+        return value({ cardId: at.cardId, pageId: at.pageId }, (a, b) => fileAt(a) === fileAt(b), there, key)
+      }
+    }
+
     if (row.entityType === 'page') {
       const page = one(db.select({ title: pages.title, icon: pages.icon, content: pages.content, parentId: pages.parentId, projectId: pages.projectId }).from(pages).where(eq(pages.id, row.entityId)))
-      if (!page) return { status: 'impossible', reason: 'gone' }
+      if (!page) return returning(row.entityId) ? later : { status: 'impossible', reason: 'gone' }
       switch (kind) {
         case 'page.title':
           return value(page.title)
@@ -321,7 +377,7 @@ export class UndoService {
       }
     } else {
       const card = one(db.select().from(cards).where(eq(cards.id, row.entityId)))
-      if (!card) return { status: 'impossible', reason: 'gone' }
+      if (!card) return returning(row.entityId) ? later : { status: 'impossible', reason: 'gone' }
       switch (kind) {
         case 'card.title':
           return value(card.title)
@@ -336,11 +392,24 @@ export class UndoService {
           )
         case 'card.moved': {
           const target = columnOf(before)
-          return value(
+          const key = fieldKey(row)
+          const had = state.values.get(key)
+          const place = (state.values.has(key) ? had : { boardId: card.boardId, columnId: card.columnId }) as CardPlace
+          const check = value(
             { boardId: card.boardId, columnId: card.columnId },
             (a, b) => columnOf(a) === columnOf(b),
-            () => Boolean(one(db.select({ id: columns.id }).from(columns).where(and(eq(columns.id, target ?? ''), eq(columns.boardId, card.boardId))))),
+            // Its old column, on its board or another one of the same workspace.
+            () => Boolean(one(db.select({ id: columns.id }).from(columns).where(and(eq(columns.id, target ?? ''), eq(columns.workspaceId, card.workspaceId))))),
           )
+          // Back to another board, it leaves the labels it has on this one: newer labels are a conflict.
+          const labelKey = `${card.id}|card.labels|`
+          const labelsNow = state.values.has(labelKey) ? state.values.get(labelKey) : db.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, card.id)).all().map((l) => l.id)
+          const toOtherBoard = (before as CardPlace | null)?.boardId !== undefined && (before as CardPlace).boardId !== place.boardId
+          if (check.status !== 'ready' || !toOtherBoard || !Array.isArray(labelsNow) || labelsNow.length === 0) return check
+          if (had === undefined) state.values.delete(key)
+          else state.values.set(key, had)
+          const [who] = this.laterChanges({ ...row, kind: 'card.labels', subjectId: null }, true, undoing)
+          return { status: 'conflict', current: labelsNow, by: who ? { kind: who.kind, id: (who.kind === 'agent' ? who.tokenId : who.userId) ?? '', name: who.name } : null }
         }
         case 'card.archived':
           return value(card.archivedAt !== null)
@@ -355,32 +424,24 @@ export class UndoService {
       switch (kind) {
         case 'checklist.created':
         case 'checklist.restored':
-          return takeAway(`checklist:${subject}`, () => Boolean(checklist()))
+          return takeAway(`checklist:${subject}`, () => Boolean(checklist()) || returning(subject))
         case 'checklist.deleted':
           return bringBack(`checklist:${subject}`, () => Boolean(checklist()))
         case 'checklist.title': {
           const list = checklist()
-          return list ? value(list.title) : { status: 'impossible', reason: 'gone' }
+          return list ? value(list.title) : returning(subject) ? later : { status: 'impossible', reason: 'gone' }
         }
         case 'item.created':
         case 'item.restored':
-          return takeAway(`item:${subject}`, () => Boolean(item()))
+          return takeAway(`item:${subject}`, () => Boolean(item()) || returning(subject))
         case 'item.deleted':
           return bringBack(`item:${subject}`, () => Boolean(item()))
         case 'item.text':
         case 'item.done': {
           const it = item()
-          return it ? value(kind === 'item.text' ? it.text : it.done) : { status: 'impossible', reason: 'gone' }
+          return it ? value(kind === 'item.text' ? it.text : it.done) : returning(subject) ? later : { status: 'impossible', reason: 'gone' }
         }
       }
-    }
-    const file = () => Boolean(one(db.select({ id: attachments.id }).from(attachments).where(eq(attachments.id, subject))))
-    switch (kind) {
-      case 'attachment.created':
-      case 'attachment.restored':
-        return takeAway(`attachment:${subject}`, file)
-      case 'attachment.deleted':
-        return bringBack(`attachment:${subject}`, file)
     }
     return { status: 'impossible', reason: 'refused' }
   }
@@ -424,8 +485,17 @@ export class UndoService {
         const existing = wanted.length && card ? db.select({ id: labels.id }).from(labels).where(and(eq(labels.boardId, card.boardId), inArray(labels.id, wanted))).all().map((l) => l.id) : []
         return cardService.update(actor, row.entityId, { labelIds: wanted.filter((id) => existing.includes(id)) })
       }
-      case 'card.moved':
-        return cardService.move(actor, row.entityId, { columnId: columnOf(before), index: AT_END })
+      case 'card.moved': {
+        await cardService.move(actor, row.entityId, { columnId: columnOf(before), index: AT_END })
+        // Back on the board it came from, the labels it lost on the way go back on, those still there.
+        const lost = Array.isArray(row.meta.labelIds) ? row.meta.labelIds : []
+        const card = lost.length ? db.select({ boardId: cards.boardId }).from(cards).where(eq(cards.id, row.entityId)).get() : undefined
+        if (!card) return
+        const back = db.select({ id: labels.id }).from(labels).where(and(eq(labels.boardId, card.boardId), inArray(labels.id, lost))).all().map((l) => l.id)
+        const has = db.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, row.entityId)).all().map((l) => l.id)
+        if (back.some((id) => !has.includes(id))) await cardService.update(actor, row.entityId, { labelIds: [...new Set([...has, ...back])] })
+        return
+      }
       case 'card.archived':
         return cardService.setArchived(actor, row.entityId, before === true)
       case 'card.created':
@@ -448,6 +518,10 @@ export class UndoService {
       case 'attachment.created':
       case 'attachment.restored':
         return attachmentService.remove(actor, subject)
+      case 'attachment.moved': {
+        const back = before as AttachmentPlace | null
+        return attachmentService.move(actor, subject, back?.pageId ? { pageId: back.pageId } : { cardId: back?.cardId ?? '' })
+      }
       case 'page.deleted':
       case 'card.deleted':
       case 'card.unlinked':

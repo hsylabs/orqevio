@@ -89,7 +89,8 @@ clave de la bóveda ── AES-256-GCM, datos asociados = usuario + id del eleme
 
 **Agentes**
 - Cada token pertenece a un único espacio y tiene permisos por área: tareas y documentos (sin acceso, lectura, o lectura y escritura). Se muestra una sola vez y se guarda su hash.
-- Cada agente solo ve las herramientas que permite su token. Los agentes **no pueden borrar**: solo archivar tarjetas, que puedes restaurar.
+- Cada agente solo ve las herramientas que permite su token. Con **Puede borrar y mover**, que activas o quitas en cada token y conexión, un agente borra lo que puede escribir y mueve tarjetas a otro tablero y archivos a otra tarjeta o página. Lo que borra va a la **papelera**, que solo las personas ven, restauran o vacían, y cualquier cambio suyo se puede deshacer desde el historial.
+- Ningún agente puede vaciar la papelera, borrar nada para siempre, borrar un espacio o la cuenta, ni tocar los tokens, los ajustes o la bóveda.
 - Toda acción queda registrada con su autor (persona o agente) y es visible en la app. Los tokens se pueden revocar al instante y caducar a los 30, 90 o 365 días.
 - Las aplicaciones conectadas con OAuth reciben los permisos que eliges en la pantalla de consentimiento. Esa pantalla indica a qué dirección volverás y si la identidad de la aplicación está publicada o es autodeclarada. Nunca se envía nada a una dirección que la aplicación no haya registrado.
 
@@ -341,15 +342,20 @@ claude mcp add --transport http orqevio https://tu-dominio/mcp --header "Authori
 
 | Permiso | Herramientas |
 | --- | --- |
-| Cualquier lectura | `list_projects`, `search` |
+| Cualquier lectura | `list_projects`, `search`, `read_attachment` (texto como texto, imágenes como imágenes) |
 | Tareas · lectura | `get_board`, `get_card` |
 | Tareas · escritura | `create_card`, `update_card` (con `base_version` si cambia la descripción), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
 | Documentos · lectura | `list_pages`, `read_page` |
-| Documentos · escritura | `create_page`, `update_page` (reemplazar con `base_version`, o añadir al final) |
+| Documentos · escritura | `create_page`, `update_page` (título, icono y contenido: reemplazar con `base_version`, o añadir al final), `move_page` (dentro de su proyecto) |
 | Escritura + lectura de ambas áreas | `link_card_to_page` |
-| Escritura en cualquiera de las dos áreas | `create_project` (renombrar y borrar proyectos sigue siendo cosa de personas) |
+| Escritura en cualquiera de las dos áreas | `create_project` (renombrar proyectos sigue en la app), `upload_attachment` (texto o base64, hasta 5 MB) |
+| **Puede borrar y mover**, con escritura en tareas | `delete_card`, `delete_board`, `delete_column`, `delete_label`, `delete_checklist`, `delete_checklist_item`, y `move_card` a otro tablero (la tarjeta pierde las etiquetas del tablero anterior) |
+| **Puede borrar y mover**, con escritura en documentos | `delete_page` |
+| **Puede borrar y mover**, con escritura en cualquiera de las dos | `delete_attachment`, `move_attachment`; `unlink_card_from_page` con lectura de ambas áreas; `delete_project` con escritura en ambas |
 
-El endpoint es MCP Streamable HTTP sin estado (`POST /mcp`). La misma API REST también acepta los tokens creados en la app, con los mismos permisos. Borrar cualquier cosa, los adjuntos, la actividad, la cuenta, los tokens y la bóveda exigen sesión en el navegador. Los tokens de OAuth solo valen para `/mcp`.
+Las herramientas que borran van marcadas como destructivas, para que clientes como Claude puedan preguntarte antes. Los tokens y conexiones creados antes de la 1.1.0 no tienen **Puede borrar y mover** hasta que lo actives en **Agentes**.
+
+El endpoint es MCP Streamable HTTP sin estado (`POST /mcp`). La misma API REST también acepta los tokens creados en la app, con los mismos permisos. La papelera, deshacer desde el historial, la actividad, la cuenta, los tokens y la bóveda exigen sesión en el navegador. Los tokens de OAuth solo valen para `/mcp`.
 
 ## Pruebas
 
@@ -385,7 +391,7 @@ pnpm --filter @orqevio/web exec playwright install firefox
 E2E_BROWSER=firefox SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, pegar una imagen en un documento y adjuntar archivos a una tarjeta, el ciclo completo de la bóveda (con recuperación), un agente MCP trabajando en directo sobre el tablero y un cliente que se conecta con OAuth tras la pantalla de consentimiento. Fallan si aparece cualquier error en la consola del navegador.
+Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, pegar una imagen en un documento y adjuntar archivos a una tarjeta, el ciclo completo de la bóveda (con recuperación), un agente MCP trabajando en directo sobre el tablero, un agente que reorganiza un proyecto y la persona que luego lo deshace, y un cliente que se conecta con OAuth tras la pantalla de consentimiento. Fallan si aparece cualquier error en la consola del navegador.
 
 ## Configuración
 

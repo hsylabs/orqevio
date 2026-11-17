@@ -89,7 +89,8 @@ vault key ── AES-256-GCM, associated data = user + item id ──► encrypt
 
 **Agents**
 - Each token belongs to a single workspace and has permissions per area, for tasks and for docs: no access, read, or read and write. It's shown only once, and only its hash is stored.
-- Each agent sees only the tools its token allows. Agents **can't delete anything**: they can only archive cards, and you can restore them.
+- Each agent sees only the tools its token allows. With **Can delete and move**, which you can turn on or off for each token and connection, an agent deletes what it can write and moves cards to another board and files to another card or page. What it deletes goes to the **trash**, which only people see, restore or empty, and you can undo any of its changes from the history.
+- No agent can empty the trash, delete anything for good, delete a workspace or the account, or touch the tokens, the settings or the vault.
 - Every action is logged with its author (a person or an agent) and shows up in the app. You can revoke a token instantly, and make tokens expire after 30, 90 or 365 days.
 - Apps connected with OAuth get the permissions you choose on the consent screen. That screen shows where you'll be sent back to and whether the app's identity is published or self-declared. Nothing is ever sent to an address the app hasn't registered.
 
@@ -341,15 +342,20 @@ claude mcp add --transport http orqevio https://your-domain/mcp --header "Author
 
 | Permission | Tools |
 | --- | --- |
-| Any read permission | `list_projects`, `search` |
+| Any read permission | `list_projects`, `search`, `read_attachment` (text files as text, images as images) |
 | Tasks · read | `get_board`, `get_card` |
 | Tasks · write | `create_card`, `update_card` (with `base_version` when it changes the description), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
 | Docs · read | `list_pages`, `read_page` |
-| Docs · write | `create_page`, `update_page` (replace with `base_version`, or append to the end) |
+| Docs · write | `create_page`, `update_page` (title, icon and content: replace with `base_version`, or append to the end), `move_page` (within its project) |
 | Read and write on both areas | `link_card_to_page` |
-| Write on either area | `create_project` (people still rename and delete projects) |
+| Write on either area | `create_project` (renaming projects stays in the app), `upload_attachment` (text or base64, up to 5 MB) |
+| **Can delete and move**, with write on tasks | `delete_card`, `delete_board`, `delete_column`, `delete_label`, `delete_checklist`, `delete_checklist_item`, and `move_card` to another board (the card loses the old board's labels) |
+| **Can delete and move**, with write on docs | `delete_page` |
+| **Can delete and move**, with write on either area | `delete_attachment`, `move_attachment`; `unlink_card_from_page` with read on both areas; `delete_project` with write on both |
 
-The endpoint is stateless MCP Streamable HTTP (`POST /mcp`). The REST API also accepts tokens created in the app, with the same permissions. Deleting anything, attachments, the activity feed, the account, tokens and the vault require a browser session. OAuth tokens are only valid for `/mcp`.
+The tools that delete are marked as destructive, so clients such as Claude can ask you first. Tokens and connections created before 1.1.0 don't have **Can delete and move** until you turn it on in **Agents**.
+
+The endpoint is stateless MCP Streamable HTTP (`POST /mcp`). The REST API also accepts tokens created in the app, with the same permissions. The trash, undoing from the history, the activity feed, the account, tokens and the vault require a browser session. OAuth tokens are only valid for `/mcp`.
 
 ## Testing
 
@@ -385,7 +391,7 @@ pnpm --filter @orqevio/web exec playwright install firefox
 E2E_BROWSER=firefox SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-The tests first claim the copy through the interface and try the access key. Then they cover changing the key in Settings, the board (including dragging with the mouse and with the keyboard), documents that reference tasks, pasting an image into a document and attaching files to a card, the full vault lifecycle (including recovery), an MCP agent working live on the board, and a client that connects with OAuth through the consent screen. They fail if any error shows up in the browser console.
+The tests first claim the copy through the interface and try the access key. Then they cover changing the key in Settings, the board (including dragging with the mouse and with the keyboard), documents that reference tasks, pasting an image into a document and attaching files to a card, the full vault lifecycle (including recovery), an MCP agent working live on the board, an agent reorganising a project that the person then undoes, and a client that connects with OAuth through the consent screen. They fail if any error shows up in the browser console.
 
 ## Configuration
 

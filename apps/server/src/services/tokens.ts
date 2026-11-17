@@ -1,15 +1,24 @@
 import type { CreatedTokenDTO, Scope, TokenDTO } from '@orqevio/shared'
-import { SCOPES, tokenCreateInput } from '@orqevio/shared'
+import { SCOPES, tokenCreateInput, tokenUpdateInput } from '@orqevio/shared'
 import { and, desc, eq, gt, isNull, or } from 'drizzle-orm'
 import type { Actor, AgentActor } from '../auth/actor'
 import { randomToken, sha256 } from '../auth/crypto'
 import { apiTokens, workspaceMembers, workspaces } from '../db/schema'
-import { notFound } from '../lib/errors'
+import { badRequest, notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { Deps } from './deps'
 
 export const TOKEN_PREFIX = 'orq_'
+
+/** Write access implies read access on the same area; deleting and moving need write access somewhere. */
+export function consistentScopes(requested: Iterable<Scope>): Scope[] {
+  const set = new Set(requested)
+  if (set.has('tasks:write')) set.add('tasks:read')
+  if (set.has('docs:write')) set.add('docs:read')
+  if (!set.has('tasks:write') && !set.has('docs:write')) set.delete('organize')
+  return SCOPES.filter((s) => set.has(s))
+}
 
 const toTokenDTO = (t: typeof apiTokens.$inferSelect, workspaceName: string): TokenDTO => ({
   id: t.id,
@@ -49,10 +58,7 @@ export class TokenService {
     const data = parse(tokenCreateInput, input)
     await this.access.workspace(actor, data.workspaceId)
     const token = `${TOKEN_PREFIX}${randomToken(32)}`
-    const scopes = [...new Set(data.scopes)]
-    // Write access implies read access on the same area.
-    if (scopes.includes('tasks:write') && !scopes.includes('tasks:read')) scopes.push('tasks:read')
-    if (scopes.includes('docs:write') && !scopes.includes('docs:read')) scopes.push('docs:read')
+    const scopes = consistentScopes(data.scopes)
     const [row] = await this.deps.db
       .insert(apiTokens)
       .values({
@@ -67,6 +73,26 @@ export class TokenService {
       .returning()
     const [w] = await this.deps.db.select({ name: workspaces.name }).from(workspaces).where(eq(workspaces.id, data.workspaceId))
     return { ...toTokenDTO(row!, w!.name), token }
+  }
+
+  /**
+   * Lets a token or an OAuth connection delete and move things, or stops it. Tokens made before
+   * this permission existed don't have it until their owner turns it on.
+   */
+  async update(actor: Actor, tokenId: string, input: unknown): Promise<TokenDTO> {
+    this.access.requireUser(actor)
+    const { organize } = parse(tokenUpdateInput, input)
+    const [current] = await this.deps.db
+      .select({ token: apiTokens, workspaceName: workspaces.name })
+      .from(apiTokens)
+      .innerJoin(workspaces, eq(workspaces.id, apiTokens.workspaceId))
+      .where(and(eq(apiTokens.id, tokenId), eq(apiTokens.userId, actor.userId), isNull(apiTokens.revokedAt)))
+    if (!current) throw notFound('Token')
+    const known = current.token.scopes.filter((s): s is Scope => (SCOPES as readonly string[]).includes(s))
+    if (organize && !known.includes('tasks:write') && !known.includes('docs:write')) throw badRequest('Only a token that can make changes can also delete and move')
+    const scopes = consistentScopes(organize ? [...known, 'organize'] : known.filter((s) => s !== 'organize'))
+    const [row] = await this.deps.db.update(apiTokens).set({ scopes }).where(eq(apiTokens.id, tokenId)).returning()
+    return toTokenDTO(row!, current.workspaceName)
   }
 
   async revoke(actor: Actor, tokenId: string) {

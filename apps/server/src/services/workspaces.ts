@@ -253,8 +253,11 @@ export class WorkspaceService {
     return toProjectDTO(p!)
   }
 
+  /** To the trash, with its boards and pages: agents need write access to both, and to be allowed to delete and move. */
   async removeProject(actor: Actor, projectId: string) {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, 'organize')
+    this.access.requireScope(actor, 'tasks:write')
+    this.access.requireScope(actor, 'docs:write')
     const current = await this.getProject(actor, projectId)
     const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, current.workspaceId, { kind: 'project', id: projectId }))
     await this.activity.record(

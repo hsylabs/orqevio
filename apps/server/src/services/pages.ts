@@ -312,7 +312,7 @@ export class PageService {
   }
 
   async remove(actor: Actor, pageId: string) {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, 'organize')
     const page = await this.load(actor, pageId, 'docs:write')
     const trashId = this.deps.db.transaction((tx) => {
       const trashId = this.trash.move(tx, actor, page.workspaceId, { kind: 'page', id: pageId })

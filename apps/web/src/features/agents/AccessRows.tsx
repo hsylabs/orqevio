@@ -1,18 +1,42 @@
 import type { AccessLevel } from '@orqevio/shared'
 import { ShieldAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Checkbox } from '../../components/ui/Checkbox'
 import { Segmented } from '../../components/ui/Segmented'
 
 const LEVELS: AccessLevel[] = ['none', 'read', 'write']
 
 /** What an agent may do in each area, as chosen when creating a token or approving an application. */
-export function AccessRows({ tasks, docs, onTasks, onDocs }: { tasks: AccessLevel; docs: AccessLevel; onTasks: (v: AccessLevel) => void; onDocs: (v: AccessLevel) => void }) {
+export function AccessRows({
+  tasks,
+  docs,
+  organize,
+  onTasks,
+  onDocs,
+  onOrganize,
+}: {
+  tasks: AccessLevel
+  docs: AccessLevel
+  organize: boolean
+  onTasks: (v: AccessLevel) => void
+  onDocs: (v: AccessLevel) => void
+  onOrganize: (v: boolean) => void
+}) {
   const { t } = useTranslation('agents')
+  const writes = tasks === 'write' || docs === 'write'
   return (
     <div className="flex flex-col gap-3 rounded-[14px] border border-line bg-surface p-4">
       <AccessRow area="tasks" value={tasks} onChange={onTasks} />
       <div className="h-px bg-line" />
       <AccessRow area="docs" value={docs} onChange={onDocs} />
+      <div className="h-px bg-line" />
+      <div className="flex items-center justify-between gap-3">
+        <span>
+          <span className="block text-[13.5px] font-medium">{t('access.organize.label')}</span>
+          <span className="block text-[12px] text-ink-3">{writes ? t('access.organize.hint') : t('access.organize.needsWrite')}</span>
+        </span>
+        <Checkbox checked={writes && organize} onChange={onOrganize} label={t('access.organize.label')} disabled={!writes} />
+      </div>
       <div className="h-px bg-line" />
       <div className="flex items-center justify-between gap-3">
         <span>

@@ -286,6 +286,7 @@ export function createApi(env: Env) {
     })
   })
   api.delete('/attachments/:id', async (c) => c.json({ trashId: await c.get('services').attachments.remove(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
+  api.post('/attachments/:id/move', async (c) => c.json(await c.get('services').attachments.move(requireActor(c), c.req.param('id'), await json(c))))
 
   // ── OAuth consent (session only) ────────────────────────────────
   api.post('/oauth/request', async (c) => c.json(await c.get('services').oauth.request(requireActor(c), await json(c), endpointFor(c.get('config'), c.req.url))))
@@ -294,6 +295,7 @@ export function createApi(env: Env) {
   // ── Agent tokens (session only) ─────────────────────────────────
   api.get('/tokens', async (c) => c.json(await c.get('services').tokens.list(requireActor(c))))
   api.post('/tokens', async (c) => c.json(await c.get('services').tokens.create(requireActor(c), await json(c)), 201))
+  api.patch('/tokens/:id', async (c) => c.json(await c.get('services').tokens.update(requireActor(c), c.req.param('id'), await json(c))))
   api.delete('/tokens/:id', async (c) => {
     await c.get('services').tokens.revoke(requireActor(c), c.req.param('id'))
     return c.body(null, 204)

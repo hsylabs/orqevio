@@ -228,6 +228,12 @@ function describe(entry: HistoryEntryDTO): { key: KindKey; values: Record<string
       if (added.length && removed.length) return { key: 'kinds.card.labelsChanged', values: { added: quoted(added), removed: quoted(removed) } }
       return added.length ? { key: 'kinds.card.labelsAdded', values: { added: quoted(added), count: added.length } } : { key: 'kinds.card.labelsRemoved', values: { removed: quoted(removed), count: removed.length } }
     }
+    case 'card.moved': {
+      // To another board, it loses the labels of the old one.
+      const lost = names(meta.labels)
+      if (lost.length) return { key: 'kinds.card.movedWithoutLabels', values: { from: text(meta.from), to: text(meta.to), removed: quoted(lost), count: lost.length } }
+      return { key: 'kinds.card.moved', values: { from: text(meta.from), to: text(meta.to) } }
+    }
     case 'card.archived':
       return { key: after ? 'kinds.card.archived' : 'kinds.card.unarchived', values: {} }
     case 'item.done':

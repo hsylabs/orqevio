@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import type { AttachmentDTO } from '@orqevio/shared'
+import { type AttachmentDTO, attachmentMoveInput } from '@orqevio/shared'
 import { eq, sql } from 'drizzle-orm'
-import type { Actor } from '../auth/actor'
+import { type Actor, actorRef } from '../auth/actor'
 import { attachments, cards, pages } from '../db/schema'
 import { AppError, badRequest, notFound, uninstalled } from '../lib/errors'
 import { LengthMismatchError, exactLength, peek } from '../lib/upload-stream'
+import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { ActivityService } from './activity'
 import type { Deps } from './deps'
@@ -101,7 +102,7 @@ export class AttachmentService {
   }
 
   private async store(actor: Actor, target: { pageId?: string; cardId?: string }, file: IncomingFile): Promise<AttachmentDTO> {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, target.pageId ? 'docs:write' : 'tasks:write')
     if (/^multipart\/form-data/i.test(file.type)) {
       throw new AppError(415, 'raw_upload_required', 'Send the file itself as the request body, with its name in the X-File-Name header')
     }
@@ -151,24 +152,26 @@ export class AttachmentService {
       this.history.record(tx, actor, workspaceId, { ...ownerOf(row), kind: 'attachment.created', subjectId: row.id, meta: { name: row.filename } })
       return row
     })
-    await this.activity.emit(workspaceId, { action: 'attachment.created', actor: { kind: 'user', id: actor.userId, name: actor.name }, ...event })
+    await this.activity.emit(workspaceId, { action: 'attachment.created', actor: actorRef(actor), ...event })
     return toAttachmentDTO(row)
   }
 
   async open(actor: Actor, attachmentId: string) {
-    this.access.requireUser(actor)
     const [row] = await this.deps.db.select().from(attachments).where(eq(attachments.id, attachmentId))
     if (!row) throw notFound('Attachment')
+    this.access.requireScope(actor, row.pageId ? 'docs:read' : 'tasks:read')
     await this.access.workspace(actor, row.workspaceId)
     const body = await this.deps.storage.stream(row.storageKey)
     if (!body) throw notFound('Attachment')
     return { meta: row, inline: INLINE_IMAGES.has(row.mimeType), body }
   }
 
+  /** To the trash. Agents need write access to where it is, and to be allowed to delete and move. */
   async remove(actor: Actor, attachmentId: string) {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, 'organize')
     const [row] = await this.deps.db.select().from(attachments).where(eq(attachments.id, attachmentId))
     if (!row) throw notFound('Attachment')
+    this.access.requireScope(actor, row.pageId ? 'docs:write' : 'tasks:write')
     await this.access.workspace(actor, row.workspaceId)
     // The file stays until the attachment leaves the trash.
     const trashId = this.deps.db.transaction((tx) => {
@@ -178,11 +181,49 @@ export class AttachmentService {
     })
     await this.activity.emit(row.workspaceId, {
       action: 'attachment.deleted',
-      actor: { kind: 'user', id: actor.userId, name: actor.name },
+      actor: actorRef(actor),
       ...(row.pageId ? { pageId: row.pageId } : {}),
       ...(row.cardId ? { cardId: row.cardId } : {}),
     })
     return trashId
+  }
+
+  /**
+   * Moves an attachment to another card or page of the same workspace. Agents need write access
+   * to both places, and to be allowed to delete and move.
+   */
+  async move(actor: Actor, attachmentId: string, input: unknown) {
+    this.access.requireScope(actor, 'organize')
+    const target = parse(attachmentMoveInput, input)
+    const [row] = await this.deps.db.select().from(attachments).where(eq(attachments.id, attachmentId))
+    if (!row) throw notFound('Attachment')
+    this.access.requireScope(actor, row.pageId ? 'docs:write' : 'tasks:write')
+    this.access.requireScope(actor, target.pageId ? 'docs:write' : 'tasks:write')
+    await this.access.workspace(actor, row.workspaceId)
+    const to = target.pageId
+      ? this.deps.db.select({ id: pages.id, title: pages.title, workspaceId: pages.workspaceId, projectId: pages.projectId }).from(pages).where(eq(pages.id, target.pageId)).get()
+      : this.deps.db.select({ id: cards.id, title: cards.title, workspaceId: cards.workspaceId, boardId: cards.boardId }).from(cards).where(eq(cards.id, target.cardId!)).get()
+    if (!to || to.workspaceId !== row.workspaceId) throw notFound(target.pageId ? 'Page' : 'Card')
+    const before = { cardId: row.cardId, pageId: row.pageId }
+    const after = { cardId: target.cardId ?? null, pageId: target.pageId ?? null }
+    if (before.cardId === after.cardId && before.pageId === after.pageId) return toAttachmentDTO(row)
+    const title = (place: typeof before) =>
+      place.pageId
+        ? (this.deps.db.select({ title: pages.title }).from(pages).where(eq(pages.id, place.pageId)).get()?.title ?? '')
+        : (this.deps.db.select({ title: cards.title }).from(cards).where(eq(cards.id, place.cardId ?? '')).get()?.title ?? '')
+    const moved = this.deps.db.transaction((tx) => {
+      const moved = tx.update(attachments).set(after).where(eq(attachments.id, attachmentId)).returning().get()!
+      // In the history of the place it left and of the one it went to.
+      const change = { kind: 'attachment.moved' as const, subjectId: attachmentId, before, after, meta: { name: row.filename, from: title(before), to: title(after) } }
+      this.history.record(tx, actor, row.workspaceId, { ...ownerOf(row), ...change })
+      this.history.record(tx, actor, row.workspaceId, { ...ownerOf(after), ...change })
+      return moved
+    })
+    for (const place of [row, after]) {
+      const event = place.pageId ? { pageId: place.pageId } : { cardId: place.cardId! }
+      await this.activity.emit(row.workspaceId, { action: 'attachment.moved', actor: actorRef(actor), ...event })
+    }
+    return toAttachmentDTO(moved)
   }
 
   /**

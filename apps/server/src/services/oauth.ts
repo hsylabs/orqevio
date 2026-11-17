@@ -10,7 +10,7 @@ import { AppError, badRequest } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { Deps } from './deps'
-import type { TokenService } from './tokens'
+import { type TokenService, consistentScopes } from './tokens'
 
 /**
  * OAuth 2.1 authorization server for the MCP endpoint (MCP authorization,
@@ -146,12 +146,7 @@ function hostOf(uri: string) {
 }
 
 /** Requested scopes this copy knows about; write access implies read access. */
-function withReads(scopes: Iterable<string>): Scope[] {
-  const set = new Set([...scopes].filter((s): s is Scope => (SCOPES as readonly string[]).includes(s)))
-  if (set.has('tasks:write')) set.add('tasks:read')
-  if (set.has('docs:write')) set.add('docs:read')
-  return SCOPES.filter((s) => set.has(s))
-}
+const withReads = (scopes: Iterable<string>): Scope[] => consistentScopes([...scopes].filter((s): s is Scope => (SCOPES as readonly string[]).includes(s)))
 
 function withParams(uri: string, values: Record<string, string | undefined>) {
   const url = new URL(uri)
