@@ -245,6 +245,42 @@ describe('the history', () => {
     expect((await stranger.client.get(`/api/history/${entry!.id}`)).status).toBe(404)
   })
 
+  it('leaves out the titles of what a token can’t read', async () => {
+    const { client, workspaceId } = await signUp(h, 'Títulos')
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Plan secreto' })).body.id as string
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Tarea visible' })).body.id as string
+    expect((await client.post(`/api/cards/${card}/pages`, { pageId: page })).status).toBeLessThan(300)
+    const file = (await client.upload(`/api/cards/${card}/attachments`, 'x', { name: 'x.txt', type: 'text/plain' })).body.id as string
+    expect((await client.post(`/api/attachments/${file}/move`, { pageId: page })).status).toBe(200)
+    expect((await client.del(`/api/cards/${card}/pages/${page}`)).status).toBe(200)
+    const tasks = (await agent(client, workspaceId, ['tasks:read'])).client
+    const docs = (await agent(client, workspaceId, ['docs:read'])).client
+    const both = (await agent(client, workspaceId, ['tasks:read', 'docs:read'])).client
+
+    // A token for tasks only sees no page title: not in the card's history, one of its changes or its activity.
+    const cardHistory = await list(tasks, 'cards', card)
+    expect(kinds(cardHistory)).toEqual(expect.arrayContaining(['card.linked', 'card.unlinked', 'attachment.moved']))
+    for (const entry of cardHistory) {
+      expect(JSON.stringify(entry)).not.toContain('Plan secreto')
+      expect(JSON.stringify((await tasks.get(`/api/history/${entry.id}`)).body)).not.toContain('Plan secreto')
+    }
+    expect(cardHistory.find((e) => e.kind === 'attachment.moved')!.meta).toEqual({ name: 'x.txt', from: 'Tarea visible' })
+    const detail = (await tasks.get(`/api/cards/${card}`)).body
+    expect(detail.activity.map((a: { action: string }) => a.action)).toEqual(expect.arrayContaining(['card.linked', 'card.unlinked']))
+    expect(JSON.stringify(detail)).not.toContain('Plan secreto')
+
+    // A token for docs only sees no card title in the page's history.
+    const pageHistory = await list(docs, 'pages', page)
+    expect(JSON.stringify(pageHistory)).not.toContain('Tarea visible')
+    expect(pageHistory.find((e) => e.kind === 'attachment.moved')!.meta).toEqual({ name: 'x.txt', to: 'Plan secreto' })
+
+    // With both, and for people, everything is there.
+    expect(JSON.stringify(await list(both, 'cards', card))).toContain('Plan secreto')
+    expect(JSON.stringify(await list(client, 'pages', page))).toContain('Tarea visible')
+    expect(JSON.stringify((await client.get(`/api/cards/${card}`)).body.activity)).toContain('Plan secreto')
+  })
+
   it('forgets each change after 30 days, and everything about what is deleted for good', async () => {
     const { client, workspaceId } = await signUp(h, 'Olvido')
     const { columns } = await seedBoard(client, workspaceId)

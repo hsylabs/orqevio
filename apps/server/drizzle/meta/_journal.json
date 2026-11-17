@@ -64,6 +64,13 @@
       "when": 1794875822892,
       "tag": "0008_history",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1794951959656,
+      "tag": "0009_oauth_token_scopes",
+      "breakpoints": true
     }
   ]
 }

@@ -54,7 +54,11 @@
     <p>Bearbeite die <code>.env</code>: Trage unter <code>APP_URL</code> die öffentliche Adresse deiner Instanz ein (zum Beispiel <code>https://orqevio.deine-domain.de</code>) und, wenn du möchtest, einen eigenen <code>SETUP_CODE</code> mit mindestens 12 Buchstaben oder Ziffern. Dann:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
     <p>Die Instanz lauscht auf Port 3000. Betreibe sie hinter einem Reverse Proxy mit HTTPS (Caddy, Nginx oder Traefik) und ergänze <code>TRUST_PROXY=true</code> in der <code>.env</code>.</p>
-    <p><strong>Backups:</strong> Kopiere das Volume <code>orqevio-data</code>, während die Instanz gestoppt ist, oder erstelle mit <code>sqlite3</code> ein Live-Backup der Datenbank und sichere zusätzlich den Ordner <code>uploads</code>.</p>
+    <p><strong>Backups:</strong> Erstelle bei laufender Instanz ein Live-Backup der Datenbank und kopiere es zusammen mit den Anhängen im Ordner <code>uploads</code> aus dem Container:</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose exec app node dist/cli.js backup /data/backup.db</code></pre></div>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backup.db ./orqevio-backup.db</code></pre></div>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/uploads ./orqevio-uploads</code></pre></div>
+    <p>Zum Wiederherstellen stoppe die Instanz und folge den Schritten in der <a href="https://github.com/hsylabs/orqevio#with-docker-recommended-for-production" target="_blank" rel="noopener">README<span class="visually-hidden"> (öffnet sich in einem neuen Tab)</span></a> (auf Englisch). Du kannst auch das ganze Volume <code>orqevio-data</code> kopieren, während die Instanz gestoppt ist.</p>
 
     <h2 id="access">Erste Anmeldung</h2>
     <ol>

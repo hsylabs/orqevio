@@ -190,7 +190,8 @@ export class CardService {
       checklists: checklistData,
       pages: [...linked.values()],
       attachmentList: files.map(toAttachmentDTO),
-      activity: history,
+      // Without docs:read, not even the titles of the pages it was linked to.
+      activity: hasScope(actor, 'docs:read') ? history : history.map((entry) => ({ ...entry, meta: Object.fromEntries(Object.entries(entry.meta).filter(([key]) => key !== 'page')) })),
     }
   }
 

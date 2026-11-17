@@ -6,6 +6,20 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-17
+
+### Added
+- Backups with Docker and Node, with a command that works: `node dist/cli.js backup <file>` copies the database while the app runs, whole, checked and in one file, and `node dist/cli.js restore <file>`, with the app stopped, checks a backup and puts it in place of the database, keeping the one it replaces next to it as `orqevio.db.before-restore`. The README and the install guide show the whole procedure, attachments included. They used to tell Docker users to back up with `sqlite3`, which the image doesn't have.
+
+### Fixed
+- A token or OAuth connection without access to docs no longer sees the titles of the pages a card links to, in the card's activity and history, nor which page a file moved from or to. One without access to tasks no longer sees card titles in a page's history.
+- An OAuth access token refreshed with fewer permissions than its connection has only those, as OAuth asks (RFC 6749, section 6). It used to get all of them. The refresh token keeps them all, so the next refresh can ask for all of them again.
+- Signing in from a link whose `next` leads out of the app opens the home screen. It used to open an error screen.
+- The MCP server tells clients the version of the copy. It used to say 1.0.0.
+- Undoing many changes at once now says beforehand what it will do in a few rare cases. It used to ask about the wrong thing, or not ask and then skip part of the undo:
+  - what is under a page counts as the newer changes undone with it leave it: a page that a newer undone move takes out of it, or that a newer undone change takes away, no longer counts, and one moved under it does;
+  - what a newer undone change brings back from the trash to another place, because its own is gone (a page to the top of its project, a card to the first column), is checked from there, its labels included.
+
 ## [1.1.0] - 2026-11-17
 
 ### Added

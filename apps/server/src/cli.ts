@@ -4,12 +4,17 @@
  *   node dist/cli.js reset-access   Issues a new access key and signs out every session.
  *     --revoke-agents               Also disconnects every agent (tokens and OAuth), for a key
  *                                   that may be in someone else's hands.
+ *   node dist/cli.js backup <file>  Copies the database to <file> while the app runs, whole and
+ *                                   consistent. The attachments are the files in DATA_DIR/uploads.
+ *   node dist/cli.js restore <file> Puts a backup in place of the database, with the app stopped.
  * From a checkout, `pnpm cli <command>` runs it from apps/server with the repository's .env,
  * the folder and configuration `pnpm start` and `pnpm dev` use.
  * The vault is unaffected: its master password is never known to the server.
  */
+import path from 'node:path'
 import { eq } from 'drizzle-orm'
 import { generateAccessKey, secretFingerprint } from './auth/crypto'
+import { backupDatabase, restoreDatabase } from './backup'
 import { openDatabase } from './db/client'
 import { copyState, instance, sessions, users } from './db/schema'
 import { loadEnv } from './env'
@@ -18,48 +23,78 @@ import { UNINSTALLED_KEY, revokeAgents } from './services/accounts'
 const [command, ...flags] = process.argv.slice(2)
 const withAgents = flags.includes('--revoke-agents')
 const env = loadEnv()
-const { db, close } = openDatabase(env.databasePath)
+const USAGE = 'Usage:\n  node dist/cli.js status\n  node dist/cli.js reset-access [--revoke-agents]\n  node dist/cli.js backup <file>\n  node dist/cli.js restore <file>'
 
-try {
-  const [row] = await db
-    .select({ ownerId: instance.ownerId, name: users.name, claimedAt: instance.claimedAt, keyChangedAt: instance.keyChangedAt })
-    .from(instance)
-    .innerJoin(users, eq(users.id, instance.ownerId))
-  const [uninstalled] = await db.select({ at: copyState.value }).from(copyState).where(eq(copyState.key, UNINSTALLED_KEY))
-  if (uninstalled && (command === 'status' || command === 'reset-access')) {
-    // Uninstalling is final: there is nothing to claim or reset, only the container and its data to remove.
-    console.log(`This copy was uninstalled (${uninstalled.at}). Remove its container and data to finish.`)
-    if (command === 'reset-access') process.exitCode = 1
-  } else if (command === 'status') {
-    if (!row) console.log('This copy is not claimed yet. Open it in a browser and enter the setup code.')
-    else {
-      console.log(`Owner: ${row.name}`)
-      console.log(`Claimed: ${row.claimedAt.toISOString()}`)
-      console.log(`Access key last changed: ${row.keyChangedAt.toISOString()}`)
-    }
-  } else if (command === 'reset-access') {
-    if (!row) {
-      console.error('This copy is not claimed yet: there is no access key to reset.')
-      process.exitCode = 1
-    } else {
-      const accessKey = generateAccessKey()
-      db.transaction((tx) => {
-        tx.update(instance).set({ accessKeyHash: secretFingerprint(accessKey), keyChangedAt: new Date() }).where(eq(instance.id, 1)).run()
-        tx.delete(sessions).where(eq(sessions.userId, row.ownerId)).run()
-        if (withAgents) revokeAgents(tx, row.ownerId)
-      })
-      console.log(`New access key: ${accessKey}`)
-      console.log('Every session was signed out. Save the key in a password manager; it is not shown again.')
-      console.log(
-        withAgents
-          ? 'Every agent was disconnected too: reconnect the ones you trust from Agents.'
-          : 'Agents keep their access. If someone else may have had the key, run it again with --revoke-agents to disconnect them all.',
-      )
-    }
+// Backups work on the database file itself: they don't open it the way the commands below do.
+if (command === 'backup' || command === 'restore') {
+  const file = flags[0]
+  if (!file) {
+    console.error(USAGE)
+    process.exitCode = 1
   } else {
-    console.log('Usage:\n  node dist/cli.js status\n  node dist/cli.js reset-access [--revoke-agents]')
-    process.exitCode = command ? 1 : 0
+    try {
+      if (command === 'backup') {
+        const done = await backupDatabase(env.databasePath, file)
+        console.log(`Backup written to ${done.path} (${(done.bytes / 1024 / 1024).toFixed(1)} MB), checked whole.`)
+        console.log(`Keep it somewhere else together with the attachments, the folder ${path.join(env.dataDir, 'uploads')}.`)
+      } else {
+        const done = await restoreDatabase(file, env.databasePath, path.join(env.dataDir, 'uploads'))
+        console.log(`Restored ${file} as ${done.path}.`)
+        if (done.kept) console.log(`The database it replaced is kept as ${done.kept}: delete it once the restored copy works.`)
+        console.log('Start the app again.')
+      }
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error))
+      process.exitCode = 1
+    }
   }
-} finally {
-  close()
+} else {
+  await admin()
+}
+
+async function admin() {
+  const { db, close } = openDatabase(env.databasePath)
+  try {
+    const [row] = await db
+      .select({ ownerId: instance.ownerId, name: users.name, claimedAt: instance.claimedAt, keyChangedAt: instance.keyChangedAt })
+      .from(instance)
+      .innerJoin(users, eq(users.id, instance.ownerId))
+    const [uninstalled] = await db.select({ at: copyState.value }).from(copyState).where(eq(copyState.key, UNINSTALLED_KEY))
+    if (uninstalled && (command === 'status' || command === 'reset-access')) {
+      // Uninstalling is final: there is nothing to claim or reset, only the container and its data to remove.
+      console.log(`This copy was uninstalled (${uninstalled.at}). Remove its container and data to finish.`)
+      if (command === 'reset-access') process.exitCode = 1
+    } else if (command === 'status') {
+      if (!row) console.log('This copy is not claimed yet. Open it in a browser and enter the setup code.')
+      else {
+        console.log(`Owner: ${row.name}`)
+        console.log(`Claimed: ${row.claimedAt.toISOString()}`)
+        console.log(`Access key last changed: ${row.keyChangedAt.toISOString()}`)
+      }
+    } else if (command === 'reset-access') {
+      if (!row) {
+        console.error('This copy is not claimed yet: there is no access key to reset.')
+        process.exitCode = 1
+      } else {
+        const accessKey = generateAccessKey()
+        db.transaction((tx) => {
+          tx.update(instance).set({ accessKeyHash: secretFingerprint(accessKey), keyChangedAt: new Date() }).where(eq(instance.id, 1)).run()
+          tx.delete(sessions).where(eq(sessions.userId, row.ownerId)).run()
+          if (withAgents) revokeAgents(tx, row.ownerId)
+        })
+        console.log(`New access key: ${accessKey}`)
+        console.log('Every session was signed out. Save the key in a password manager; it is not shown again.')
+        console.log(
+          withAgents
+            ? 'Every agent was disconnected too: reconnect the ones you trust from Agents.'
+            : 'Agents keep their access. If someone else may have had the key, run it again with --revoke-agents to disconnect them all.',
+        )
+      }
+    } else {
+      console.log(USAGE)
+      process.exitCode = command ? 1 : 0
+    }
+  } finally {
+    close()
+  }
 }

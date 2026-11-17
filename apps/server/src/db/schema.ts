@@ -167,6 +167,8 @@ export const oauthTokens = sqliteTable(
     expiresAt: timestamp('expires_at').notNull(),
     /** Refresh tokens are single use: set when exchanged; presenting it again revokes the grant. */
     rotatedAt: timestamp('rotated_at'),
+    /** For an access token refreshed with fewer scopes than its grant: those. Otherwise the grant's. */
+    scopes: text('scopes', { mode: 'json' }).$type<string[]>(),
     createdAt: createdAt(),
   },
   (t) => [index('oauth_tokens_grant_idx').on(t.tokenId)],
