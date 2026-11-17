@@ -672,4 +672,51 @@ describe('undo', () => {
     expect(back.board.id).toBe(boardId)
     expect(back.labels.map((l: { id: string }) => l.id)).toEqual([old])
   })
+
+  it('asks about the labels a card coming back from the trash has, before undoing its move', async () => {
+    const { client, workspaceId } = await signUp(h, 'Etiquetas en la papelera')
+    const { columns } = await seedBoard(client, workspaceId)
+    const other = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId, ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'])
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'De viaje' })).body.id as string
+    await bot.post(`/api/cards/${card}/move`, { columnId: other.columns[0]!.id, index: 0 })
+    const moved = await latest(client, 'cards', card, 'card.moved')
+    // A person labels it on its new board, then the agent deletes it.
+    const label = (await client.post(`/api/boards/${other.boardId}/labels`, { name: 'Allí', color: 'jade' })).body.id as string
+    await client.patch(`/api/cards/${card}`, { labelIds: [label] })
+    await bot.del(`/api/cards/${card}`)
+    const plan = (await undo(client, { since: moved.id, dryRun: true })).plan
+    expect(plan.map((p) => [p.kind, p.status, p.status === 'conflict' ? p.current : undefined])).toEqual([
+      ['card.deleted', 'ready', undefined],
+      ['card.moved', 'conflict', [label]],
+    ])
+    // Asked first: nothing changes.
+    expect(await undo(client, { since: moved.id })).toMatchObject({ applied: false, undone: 0 })
+    expect((await client.get(`/api/cards/${card}`)).status).toBe(404)
+  })
+
+  it('leaves out of a page what older undone changes in the same batch take away first', async () => {
+    const { client, workspaceId } = await signUp(h, 'Árbol sin ella')
+    const { projectId } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId, ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'])
+    const folder = (await bot.post(`/api/projects/${projectId}/pages`, { title: 'Carpeta del agente' })).body.id as string
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Nota', parentId: folder })).body.id as string
+    await client.patch(`/api/pages/${page}`, { title: 'Nota, revisada' })
+    await bot.post(`/api/pages/${page}/move`, { parentId: null, index: 0 })
+    const ids = [
+      (await latest(client, 'pages', page, 'page.moved')).id,
+      (await latest(client, 'pages', page, 'page.created')).id,
+      (await latest(client, 'pages', folder, 'page.created')).id,
+    ]
+    // Undoing its creation takes the person's page away, with their own edit, before the agent's page goes.
+    const plan = (await undo(client, { ids, dryRun: true })).plan
+    expect(plan.map((p) => [p.kind, p.entityId, p.status])).toEqual([
+      ['page.moved', page, 'ready'],
+      ['page.created', page, 'ready'],
+      ['page.created', folder, 'ready'],
+    ])
+    expect(await undo(client, { ids })).toMatchObject({ applied: true, undone: 3, skipped: 0, failed: 0 })
+    expect((await client.get(`/api/pages/${page}`)).status).toBe(404)
+    expect((await client.get(`/api/pages/${folder}`)).status).toBe(404)
+  })
 })

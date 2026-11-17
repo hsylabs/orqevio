@@ -214,12 +214,15 @@ export class UndoService {
         if (match && parent !== undefined) moved[match[1]!] = parent
       }
       const elsewhere = sql`(SELECT key FROM json_each(${JSON.stringify(moved)}))`
+      // Pages that newer undone changes take away are gone by then, with what is under them.
+      const absent = [...(state?.exists ?? [])].filter(([key, there]) => !there && key.startsWith('page:')).map(([key]) => key.slice('page:'.length))
+      const gone = sql`(SELECT value FROM json_each(${JSON.stringify(absent)}))`
       const tree = sql`WITH RECURSIVE tree(id, depth) AS (
         SELECT ${row.entityId}, 0
-        UNION ALL SELECT p.id, t.depth + 1 FROM pages p JOIN tree t ON p.parent_id = t.id WHERE t.depth < ${MAX_TREE_DEPTH} AND p.id NOT IN ${elsewhere}
-        UNION ALL SELECT m.key, t.depth + 1 FROM json_each(${JSON.stringify(moved)}) m JOIN tree t ON m.value = t.id WHERE t.depth < ${MAX_TREE_DEPTH}
+        UNION ALL SELECT p.id, t.depth + 1 FROM pages p JOIN tree t ON p.parent_id = t.id WHERE t.depth < ${MAX_TREE_DEPTH} AND p.id NOT IN ${elsewhere} AND p.id NOT IN ${gone}
+        UNION ALL SELECT m.key, t.depth + 1 FROM json_each(${JSON.stringify(moved)}) m JOIN tree t ON m.value = t.id WHERE t.depth < ${MAX_TREE_DEPTH} AND m.key NOT IN ${gone}
         UNION ALL SELECT json_extract(k.data, '$.id'), t.depth + 1 FROM (${kept('pages')}) k JOIN tree t ON json_extract(k.data, '$.parent_id') = t.id
-          WHERE t.depth < ${MAX_TREE_DEPTH} AND json_extract(k.data, '$.id') NOT IN ${elsewhere}
+          WHERE t.depth < ${MAX_TREE_DEPTH} AND json_extract(k.data, '$.id') NOT IN ${elsewhere} AND json_extract(k.data, '$.id') NOT IN ${gone}
       ) SELECT id FROM tree`
       return or(sql`${history.entityId} IN (${tree})`, sql`${history.subjectId} IN (${tree})`)
     }
@@ -532,6 +535,9 @@ export class UndoService {
           const key = fieldKey(row)
           const had = state.values.get(key)
           const place = (state.values.has(key) ? had : { boardId: card.boardId, columnId: card.columnId }) as CardPlace
+          // Its labels by then, on the board it is on before this move is undone.
+          const labelKey = `${card.id}|card.labels|`
+          const labelsNow = state.values.has(labelKey) ? state.values.get(labelKey) : labelIds()
           const check = value(
             { boardId: card.boardId, columnId: card.columnId },
             (a, b) => columnOf(a) === columnOf(b),
@@ -539,8 +545,6 @@ export class UndoService {
             () => Boolean(one(db.select({ id: columns.id }).from(columns).where(and(eq(columns.id, target ?? ''), eq(columns.workspaceId, card.workspaceId))))),
           )
           // Back to another board, it leaves the labels it has on this one: newer labels are a conflict.
-          const labelKey = `${card.id}|card.labels|`
-          const labelsNow = state.values.has(labelKey) ? state.values.get(labelKey) : labelIds()
           const toOtherBoard = (before as CardPlace | null)?.boardId !== undefined && (before as CardPlace).boardId !== place.boardId
           if (check.status !== 'ready' || !toOtherBoard) return check
           if (!Array.isArray(labelsNow) || labelsNow.length === 0) {
