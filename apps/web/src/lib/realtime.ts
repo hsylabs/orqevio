@@ -53,6 +53,10 @@ export function onPageEvent(fn: LiveListener) {
     pageListeners.delete(fn)
   }
 }
+/** Tells the open page about a change made from this tab, as a live update would: it may not come. */
+export function announcePage(event: RealtimeEvent) {
+  for (const l of pageListeners) l(event)
+}
 const cardListeners = new Set<LiveListener>()
 export function onCardEvent(fn: LiveListener) {
   cardListeners.add(fn)

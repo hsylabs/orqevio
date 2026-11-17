@@ -219,6 +219,14 @@ describe('undo', () => {
     expect(await undo(client, { ids: [created.id], conflicts: 'skip' })).toMatchObject({ undone: 0, skipped: 1 })
     expect((await client.get(`/api/pages/${child}`)).status).toBe(200)
 
+    // A card someone linked to a page the agent made: deleting the page would take the link.
+    const linkedTo = (await bot.post(`/api/projects/${projectId}/pages`, { title: 'Enlazada' })).body.id as string
+    const sub = (await bot.post(`/api/projects/${projectId}/pages`, { title: 'Subpágina', parentId: linkedTo })).body.id as string
+    const linkedCreated = await latest(client, 'pages', linkedTo, 'page.created')
+    const someCard = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Con enlace' })).body.id as string
+    await client.post(`/api/cards/${someCard}/pages`, { pageId: sub })
+    expect((await undo(client, { ids: [linkedCreated.id] })).plan[0]).toMatchObject({ status: 'conflict', changedBy: { kind: 'user' } })
+
     // A checklist the agent made, with someone's change to its 95th item.
     const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Larga' })).body.id as string
     const list = (await bot.post(`/api/cards/${card}/checklists`, { title: 'Muchos pasos' })).body.id as string

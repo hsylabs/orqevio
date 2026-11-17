@@ -189,8 +189,12 @@ export class UndoService {
    */
   private sameThing(row: HistoryRow, isValue: boolean) {
     if (isValue) return and(eq(history.entityId, row.entityId), eq(history.kind, row.kind), row.subjectId ? eq(history.subjectId, row.subjectId) : undefined)
-    // A page goes to the trash with its subpages: what happened under it counts too.
-    if (row.entityType === 'page' && !row.subjectId) return sql`${history.entityId} IN (${pageTree(sql`id = ${row.entityId}`)} SELECT id FROM tree)`
+    // A page goes to the trash with its subpages and the links of cards to them: what happened
+    // under it counts too, and so does linking a card to it (recorded on the card).
+    if (row.entityType === 'page' && !row.subjectId) {
+      const tree = sql`${pageTree(sql`id = ${row.entityId}`)} SELECT id FROM tree`
+      return or(sql`${history.entityId} IN (${tree})`, sql`${history.subjectId} IN (${tree})`)
+    }
     if (!row.subjectId) return eq(history.entityId, row.entityId)
     if (!row.kind.startsWith('checklist.')) return and(eq(history.entityId, row.entityId), eq(history.subjectId, row.subjectId))
     // A checklist goes with all its items, however many.

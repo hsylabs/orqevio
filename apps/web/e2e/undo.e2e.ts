@@ -78,3 +78,38 @@ test('undo an agent’s changes from the history, and put back an earlier versio
   await expect(page.locator('.orq-prose')).toHaveText('Uno')
   expect((await pageNow()).content).toBe('Uno')
 })
+
+// Live updates can be down for a moment: restoring a version still shows it in the open page.
+test('a restored version shows in the open page even when live updates are down', async ({ page, request, baseURL }) => {
+  // Live updates never connect: the page only has what it asks for.
+  await page.routeWebSocket(/\/live$/, () => {})
+  const workspaceId = await openNewWorkspace(page, 'Sin directo E2E')
+  await createProject(page, 'Diario')
+  const created = await page.request.post('/api/tokens', { data: { name: 'Claude', workspaceId, scopes: ['docs:read', 'docs:write'], expiresInDays: null } })
+  const { token } = (await created.json()) as { token: string }
+
+  await page.getByRole('button', { name: 'Nueva página en Diario' }).click({ force: true })
+  await page.waitForURL(/\/d\//)
+  const pageId = page.url().split('/d/')[1]!
+  await page.getByLabel('Título de la página').fill('Semana')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Lunes')
+  await expect(page.getByText('Guardado')).toBeVisible()
+  // The agent writes twice; with no live updates, the open page doesn't know.
+  for (const content of ['Lunes\n\nMartes', 'Lunes\n\nMiércoles']) {
+    const { version } = (await (await page.request.get(`/api/pages/${pageId}`)).json()) as { version: number }
+    const res = await request.patch(`${baseURL}/api/pages/${pageId}`, { headers: { Authorization: `Bearer ${token}` }, data: { content, baseVersion: version } })
+    expect(res.status(), await res.text()).toBe(200)
+  }
+  await expect(page.locator('.orq-prose')).toHaveText('Lunes')
+
+  await page.getByRole('button', { name: 'Acciones de la página' }).click()
+  await page.getByRole('menuitem', { name: 'Historial' }).click()
+  const martes = page.getByRole('dialog', { name: 'Historial de «Semana»' }).getByRole('listitem').filter({ hasText: 'Claude editó el contenido' }).last()
+  await martes.getByRole('button', { name: 'Ver qué cambió' }).click()
+  await martes.getByRole('button', { name: 'Restaurar esta versión' }).click()
+  await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'Versión restaurada' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.orq-prose')).toContainText('Martes')
+  await expect(page.locator('.orq-prose')).not.toContainText('Miércoles')
+})

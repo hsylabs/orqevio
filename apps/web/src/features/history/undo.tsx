@@ -1,11 +1,13 @@
-import type { HistoryEntryDTO, UndoPlanItemDTO, UndoResultDTO } from '@orqevio/shared'
+import type { ActorRef, HistoryEntryDTO, PageDTO, UndoPlanItemDTO, UndoResultDTO } from '@orqevio/shared'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
 import { Dialog } from '../../components/ui/Dialog'
-import { errorMessage, post } from '../../lib/api'
+import { errorMessage, get, post } from '../../lib/api'
 import { queryClient } from '../../lib/queries'
+import { announcePage } from '../../lib/realtime'
+import { useWorkspace } from '../shell/workspace'
 
 type Target = { ids: string[] }
 type Asking = { target: Target; plan: UndoPlanItemDTO[]; bulk: boolean; name: string }
@@ -13,6 +15,17 @@ type Asking = { target: Target; plan: UndoPlanItemDTO[]; bulk: boolean; name: st
 /** What undoing touches: refetch whatever of it is on screen. */
 function refresh() {
   for (const key of ['history', 'history-entry', 'card', 'page', 'board', 'archived', 'overview', 'trash']) void queryClient.invalidateQueries({ queryKey: [key] })
+}
+
+/**
+ * An open page shows its new text through a live update, which may not come (offline for a moment,
+ * reconnecting): tell it directly, with its version now. A card's sheet follows its refetched data.
+ */
+async function syncPages(ids: Iterable<string>, me: ActorRef) {
+  for (const pageId of new Set(ids)) {
+    const page = await get<PageDTO>(`/pages/${pageId}`).catch(() => null)
+    if (page) announcePage({ action: 'page.updated', pageId, version: page.version, actor: me })
+  }
 }
 
 /** A text value, short enough to quote in a sentence. */
@@ -28,11 +41,14 @@ const quote = (value: unknown) => {
  */
 export function useUndo() {
   const { t } = useTranslation('history')
+  const { me } = useWorkspace()
+  const self: ActorRef = { kind: 'user', id: me.user.id, name: me.user.name }
   const [asking, setAsking] = useState<Asking | null>(null)
   const [busy, setBusy] = useState(false)
 
   function report(result: UndoResultDTO) {
     refresh()
+    if (result.applied) void syncPages(result.plan.filter((p) => p.status === 'ready' && p.entityType === 'page').map((p) => p.entityId), self)
     const notes = [
       result.skipped ? t('undo.skipped', { count: result.skipped }) : '',
       result.failed ? t('undo.failed', { count: result.failed }) : '',
@@ -77,10 +93,11 @@ export function useUndo() {
     }
   }
 
-  async function restoreVersion(entry: Pick<HistoryEntryDTO, 'id'>) {
+  async function restoreVersion(entry: Pick<HistoryEntryDTO, 'id' | 'entityType' | 'entityId'>) {
     try {
       await post(`/history/${entry.id}/restore`)
       refresh()
+      if (entry.entityType === 'page') await syncPages([entry.entityId], self)
       toast.success(t('undo.versionRestored'))
     } catch (error) {
       toast.error(errorMessage(error))
