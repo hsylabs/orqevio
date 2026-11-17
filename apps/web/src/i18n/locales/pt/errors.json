@@ -10,7 +10,9 @@
     "network": "Sem conexão com o servidor.",
     "file_too_large": "O arquivo excede o tamanho máximo permitido.",
     "upload_incomplete": "O envio foi interrompido. Tente novamente.",
-    "last_workspace": "Você precisa manter pelo menos um espaço."
+    "last_workspace": "Você precisa manter pelo menos um espaço.",
+    "restore_place_in_trash": "Restaure primeiro aquilo a que isto pertence: também está na lixeira.",
+    "restore_place_gone": "O lugar a que pertencia não existe mais, e não há outro onde colocá-lo."
   },
   "notFound": "O item não foi encontrado.",
   "server": "Algo deu errado no servidor. Tente novamente.",

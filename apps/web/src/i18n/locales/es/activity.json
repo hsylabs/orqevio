@@ -49,6 +49,10 @@
       "updated": "<actor>{{actor}}</actor> editó una etiqueta",
       "deleted": "<actor>{{actor}}</actor> eliminó una etiqueta"
     },
+    "trash": {
+      "restored": "<actor>{{actor}}</actor> recuperó <target>«{{target}}»</target> de la papelera",
+      "purged": "<actor>{{actor}}</actor> borró para siempre <target>«{{target}}»</target>"
+    },
     "other": "<actor>{{actor}}</actor> hizo un cambio"
   },
   "detail": {

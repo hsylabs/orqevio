@@ -49,6 +49,10 @@
       "updated": "<actor>{{actor}}</actor> heeft een label bewerkt",
       "deleted": "<actor>{{actor}}</actor> heeft een label verwijderd"
     },
+    "trash": {
+      "restored": "<actor>{{actor}}</actor> heeft <target>‘{{target}}’</target> uit de prullenbak teruggezet",
+      "purged": "<actor>{{actor}}</actor> heeft <target>‘{{target}}’</target> definitief verwijderd"
+    },
     "other": "<actor>{{actor}}</actor> heeft iets gewijzigd"
   },
   "detail": {

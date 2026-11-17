@@ -1,0 +1,72 @@
+{
+  "title": "Cestino",
+  "intro_one": "Ciò che elimini resta qui per {{count}} giorno, con tutto ciò che conteneva. Ripristinalo quando vuoi; dopo viene eliminato definitivamente.",
+  "intro_many": "Ciò che elimini resta qui per {{count}} giorni, con tutto ciò che conteneva. Ripristinalo quando vuoi; dopo viene eliminato definitivamente.",
+  "intro_other": "Ciò che elimini resta qui per {{count}} giorni, con tutto ciò che conteneva. Ripristinalo quando vuoi; dopo viene eliminato definitivamente.",
+  "empty": {
+    "title": "Il cestino è vuoto",
+    "body_one": "Quando elimini qualcosa, resta qui per {{count}} giorno nel caso cambiassi idea.",
+    "body_many": "Quando elimini qualcosa, resta qui per {{count}} giorni nel caso cambiassi idea.",
+    "body_other": "Quando elimini qualcosa, resta qui per {{count}} giorni nel caso cambiassi idea."
+  },
+  "note_one": "Potrai recuperare tutto dal cestino per {{count}} giorno.",
+  "note_many": "Potrai recuperare tutto dal cestino per {{count}} giorni.",
+  "note_other": "Potrai recuperare tutto dal cestino per {{count}} giorni.",
+  "kind": {
+    "project": "Progetto",
+    "board": "Bacheca",
+    "column": "Colonna",
+    "card": "Scheda",
+    "page": "Pagina",
+    "attachment": "Allegato",
+    "label": "Etichetta",
+    "checklist": "Checklist",
+    "checklist_item": "Elemento di checklist",
+    "link": "Collegamento a una pagina"
+  },
+  "contents": {
+    "boards_one": "{{count}} bacheca",
+    "boards_many": "{{count}} bacheche",
+    "boards_other": "{{count}} bacheche",
+    "columns_one": "{{count}} colonna",
+    "columns_many": "{{count}} colonne",
+    "columns_other": "{{count}} colonne",
+    "cards_one": "{{count}} scheda",
+    "cards_many": "{{count}} schede",
+    "cards_other": "{{count}} schede",
+    "pages_one": "{{count}} pagina",
+    "pages_many": "{{count}} pagine",
+    "pages_other": "{{count}} pagine",
+    "checklists_one": "{{count}} checklist",
+    "checklists_many": "{{count}} checklist",
+    "checklists_other": "{{count}} checklist",
+    "items_one": "{{count}} elemento di checklist",
+    "items_many": "{{count}} elementi di checklist",
+    "items_other": "{{count}} elementi di checklist",
+    "labels_one": "{{count}} etichetta",
+    "labels_many": "{{count}} etichette",
+    "labels_other": "{{count}} etichette",
+    "attachments_one": "{{count}} allegato",
+    "attachments_many": "{{count}} allegati",
+    "attachments_other": "{{count}} allegati"
+  },
+  "deletedBy": "Eliminato da {{name}} {{when}}",
+  "expires": "Eliminato definitivamente {{when}}",
+  "restore": "Ripristina",
+  "open": "Apri",
+  "restored": "«{{name}}» è stato ripristinato",
+  "restoredElsewhere": "Il suo posto non esiste più, quindi ora si trova in {{place}}.",
+  "restoreFirst": "Ripristina prima «{{name}}»: anche ciò a cui appartiene è nel cestino.",
+  "purge": {
+    "action": "Elimina definitivamente",
+    "named": "Elimina definitivamente «{{name}}»",
+    "title": "Eliminare definitivamente «{{name}}»?",
+    "body": "Dopo non sarà più possibile recuperarlo.",
+    "confirm": "Elimina definitivamente",
+    "done": "«{{name}}» eliminato definitivamente"
+  },
+  "toast": {
+    "description": "È nel cestino, nel caso cambiassi idea.",
+    "undo": "Annulla"
+  }
+}

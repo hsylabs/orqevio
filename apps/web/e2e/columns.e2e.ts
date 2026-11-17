@@ -1,7 +1,7 @@
 import { addCard, createProject, expect, openNewWorkspace, test } from './helpers'
 
-// Deleting a column deletes its cards: the confirmation must count all of them, also the
-// ones a filter hides and the archived ones, which are not on the board.
+// Deleting a column takes its cards to the trash: the confirmation must count all of them,
+// also the ones a filter hides and the archived ones, which are not on the board.
 test('deleting a column says how many cards go with it, hidden or archived', async ({ page }) => {
   await openNewWorkspace(page, 'Columnas E2E')
   await createProject(page, 'Limpieza')
@@ -17,7 +17,8 @@ test('deleting a column says how many cards go with it, hidden or archived', asy
   await page.getByRole('button', { name: 'Acciones de Por hacer' }).click()
   await page.getByRole('menuitem', { name: 'Eliminar columna' }).click()
   const dialog = page.getByRole('dialog', { name: /Eliminar la columna/ })
-  await expect(dialog).toContainText('Se eliminarán también sus 2 tarjetas')
+  await expect(dialog).toContainText('Sus 2 tarjetas irán con ella a la papelera.')
+  await expect(dialog).toContainText('Podrás recuperarlo todo desde la papelera durante 30 días.')
   await expect(dialog).not.toContainText('La columna está vacía')
   await dialog.getByRole('button', { name: 'Cancelar' }).click()
   await page.getByRole('button', { name: 'Quitar filtro' }).click()
@@ -32,7 +33,7 @@ test('deleting a column says how many cards go with it, hidden or archived', asy
   await expect(done.getByRole('button', { name: 'Tarea terminada' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Acciones de Hecho' }).click()
   await page.getByRole('menuitem', { name: 'Eliminar columna' }).click()
-  await expect(dialog).toContainText('También se eliminará su tarjeta archivada')
+  await expect(dialog).toContainText('Su tarjeta archivada irá con ella a la papelera.')
   await expect(dialog).not.toContainText('La columna está vacía')
   await dialog.getByRole('button', { name: 'Eliminar columna' }).click()
   await expect(done).toHaveCount(0)

@@ -67,6 +67,7 @@ export const router = createBrowserRouter([
       { path: 'vault', lazy: async () => ({ Component: (await import('./features/vault/VaultPage')).VaultPage }) },
       { path: 'agents', lazy: async () => ({ Component: (await import('./features/agents/AgentsPage')).AgentsPage }) },
       { path: 'settings', lazy: async () => ({ Component: (await import('./features/settings/SettingsPage')).SettingsPage }) },
+      { path: 'trash', lazy: async () => ({ Component: (await import('./features/trash/TrashPage')).TrashPage }) },
       { path: '*', element: <NotFound /> },
     ],
   },

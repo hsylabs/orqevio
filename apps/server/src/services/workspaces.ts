@@ -10,6 +10,7 @@ import type { Access } from './access'
 import type { ActivityService } from './activity'
 import type { CardService } from './cards'
 import type { Deps } from './deps'
+import type { TrashService } from './trash'
 import { positionAt } from './ordering'
 import { deletePageTrees } from './pages'
 
@@ -37,6 +38,7 @@ export class WorkspaceService {
     private readonly access: Access,
     private readonly activity: ActivityService,
     private readonly cards: CardService,
+    private readonly trash: TrashService,
   ) {}
 
   async list(actor: Actor): Promise<WorkspaceDTO[]> {
@@ -254,15 +256,13 @@ export class WorkspaceService {
   async removeProject(actor: Actor, projectId: string) {
     this.access.requireUser(actor)
     const current = await this.getProject(actor, projectId)
-    this.deps.db.transaction((tx) => {
-      deletePageTrees(tx, sql`${pages.projectId} = ${projectId} AND ${pages.parentId} IS NULL`)
-      tx.delete(projects).where(eq(projects.id, projectId)).run()
-    })
+    const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, current.workspaceId, { kind: 'project', id: projectId }))
     await this.activity.record(
       actor,
       current.workspaceId,
       { action: 'project.deleted', entityType: 'project', entityId: projectId, summary: current.name },
       { projectId, structure: true },
     )
+    return trashId
   }
 }

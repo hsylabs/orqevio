@@ -1,4 +1,4 @@
-import type { BoardDTO, CardSummaryDTO, ColumnDTO, LabelDTO } from '@orqevio/shared'
+import type { BoardDTO, CardSummaryDTO, ColumnDTO, LabelDTO, TrashedDTO } from '@orqevio/shared'
 import {
   type Announcements,
   type CollisionDetection,
@@ -43,6 +43,7 @@ import { BoardColumn } from './BoardColumn'
 import { CardView } from './CardItem'
 import { CardSheet } from './CardSheet'
 import { withNewCard } from './board-cache'
+import { toastTrashed, trashNote } from '../../lib/trash'
 
 type DueFilter = 'all' | 'overdue' | 'week' | 'none'
 interface Filter {
@@ -331,14 +332,15 @@ export function BoardPage() {
     const parts = [open ? t('column.deleteConfirm.withCards', { count: open }) : '', archived ? t('column.deleteConfirm.withArchived', { count: archived }) : '']
     const ok = await confirm({
       title: t('column.deleteConfirm.title', { name: column.name }),
-      description: open || archived ? parts.filter(Boolean).join(' ') : t('column.deleteConfirm.empty'),
+      description: [...(open || archived ? parts.filter(Boolean) : [t('column.deleteConfirm.empty')]), trashNote()].join(' '),
       confirmLabel: t('column.delete'),
       danger: true,
     })
     if (!ok) return
     try {
-      await del(`/columns/${column.id}`)
+      const trashed = await del<TrashedDTO>(`/columns/${column.id}`)
       await queryClient.invalidateQueries({ queryKey: keys.board(boardId) })
+      toastTrashed(t('column.deleted', { name: column.name }), trashed)
     } catch (error) {
       toast.error(errorMessage(error))
     }

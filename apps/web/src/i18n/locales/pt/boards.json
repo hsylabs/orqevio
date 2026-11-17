@@ -69,14 +69,15 @@
     "dropHere": "Solte cartões aqui",
     "deleteConfirm": {
       "title": "Excluir a coluna “{{name}}”?",
-      "withCards_one": "O cartão desta coluna também será excluído. Para mantê-lo, mova-o antes para outra coluna.",
-      "withCards_many": "Os {{count}} cartões desta coluna também serão excluídos. Para mantê-los, mova-os antes para outra coluna.",
-      "withCards_other": "Os {{count}} cartões desta coluna também serão excluídos. Para mantê-los, mova-os antes para outra coluna.",
-      "withArchived_one": "O cartão arquivado desta coluna também será excluído. Para mantê-lo, restaure-o antes em “Arquivados”.",
-      "withArchived_many": "Os {{count}} cartões arquivados desta coluna também serão excluídos. Para mantê-los, restaure-os antes em “Arquivados”.",
-      "withArchived_other": "Os {{count}} cartões arquivados desta coluna também serão excluídos. Para mantê-los, restaure-os antes em “Arquivados”.",
-      "empty": "A coluna está vazia."
-    }
+      "empty": "A coluna está vazia.",
+      "withCards_one": "O cartão desta coluna irá com ela para a lixeira.",
+      "withCards_many": "Os {{count}} cartões desta coluna irão com ela para a lixeira.",
+      "withCards_other": "Os {{count}} cartões desta coluna irão com ela para a lixeira.",
+      "withArchived_one": "O cartão arquivado desta coluna irá com ela para a lixeira.",
+      "withArchived_many": "Os {{count}} cartões arquivados desta coluna irão com ela para a lixeira.",
+      "withArchived_other": "Os {{count}} cartões arquivados desta coluna irão com ela para a lixeira."
+    },
+    "deleted": "Coluna “{{name}}” movida para a lixeira"
   },
   "composer": {
     "placeholder": "O que precisa ser feito?",
@@ -112,7 +113,7 @@
     "archivedToast": "Cartão arquivado",
     "deleteConfirm": {
       "title": "Excluir este cartão?",
-      "description": "Ele será excluído com as checklists e os anexos. Se quiser apenas ocultá-lo, arquive-o."
+      "description": "Ele irá para a lixeira com as checklists e os anexos. Para só ocultá-lo, arquive-o."
     },
     "labels": "Etiquetas",
     "addLabels": "Adicionar etiquetas",
@@ -129,7 +130,8 @@
     "checklistsEmpty": "Divida a tarefa em etapas que você pode marcar.",
     "linkedDocs": "Documentos vinculados",
     "attachments": "Anexos",
-    "activity": "Atividade"
+    "activity": "Atividade",
+    "deleted": "Cartão movido para a lixeira"
   },
   "checklist": {
     "titleLabel": "Título da checklist",
@@ -140,7 +142,9 @@
     "deleteItem": "Excluir “{{text}}”",
     "addItem": "Adicionar item",
     "newItemPlaceholder": "Novo item e Enter",
-    "newItem": "Novo item"
+    "newItem": "Novo item",
+    "deleted": "Checklist “{{name}}” movida para a lixeira",
+    "itemDeleted": "“{{text}}” foi para a lixeira"
   },
   "due": {
     "today": "Hoje",
@@ -159,7 +163,8 @@
     "unnamed": "Sem nome",
     "editNamed": "Editar {{name}}",
     "editUnnamed": "Editar etiqueta",
-    "create": "Criar etiqueta"
+    "create": "Criar etiqueta",
+    "deleted": "Etiqueta “{{name}}” movida para a lixeira"
   },
   "linked": {
     "mentioned": "mencionada",
@@ -169,20 +174,22 @@
     "search": "Buscar páginas…",
     "searchLabel": "Buscar páginas",
     "noResults": "Nenhum resultado.",
-    "hint": "Digite para buscar em todo o espaço."
+    "hint": "Digite para buscar em todo o espaço.",
+    "unlinked": "Vínculo movido para a lixeira"
   },
   "archived": {
     "sheetTitle": "Cartões arquivados",
     "heading": "Arquivados",
     "emptyTitle": "Nada arquivado",
     "emptyBody": "Os cartões que você ou seus agentes arquivarem aparecem aqui, e você pode restaurá-los.",
-    "deleteConfirm": "Excluir “{{title}}” permanentemente?"
+    "deleteConfirm": "Mover “{{title}}” para a lixeira?"
   },
   "attachments": {
     "deleteConfirm": "Excluir “{{name}}”?",
     "download": "Baixar {{name}}",
     "deleteNamed": "Excluir {{name}}",
     "uploading": "Enviando…",
-    "attach": "Anexar arquivo"
+    "attach": "Anexar arquivo",
+    "deleted": "“{{name}}” foi para a lixeira"
   }
 }

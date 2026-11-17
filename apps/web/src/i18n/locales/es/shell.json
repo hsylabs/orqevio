@@ -13,7 +13,8 @@
       "body": "Agrupa tableros y documentos en un mismo lugar."
     },
     "vaultLocked": "Bloqueada",
-    "vaultUnlocked": "Desbloqueada"
+    "vaultUnlocked": "Desbloqueada",
+    "trash": "Papelera"
   },
   "workspace": {
     "fallback": "Espacio",
@@ -86,21 +87,21 @@
     },
     "deleteBoard": {
       "title": "¿Eliminar «{{name}}»?",
-      "body": "Se eliminarán sus columnas y tarjetas. Esta acción no se puede deshacer.",
+      "body": "Sus columnas y tarjetas irán con él a la papelera.",
       "confirm": "Eliminar tablero",
-      "done": "Tablero eliminado"
+      "done": "Tablero movido a la papelera"
     },
     "deletePage": {
       "title": "¿Eliminar «{{name}}»?",
-      "body": "También se eliminarán sus subpáginas y adjuntos. Esta acción no se puede deshacer.",
+      "body": "Sus subpáginas y adjuntos irán con ella a la papelera.",
       "confirm": "Eliminar página",
-      "done": "Página eliminada"
+      "done": "Página movida a la papelera"
     },
     "deleteProject": {
       "title": "¿Eliminar el proyecto «{{name}}»?",
-      "body": "Se eliminarán todos sus tableros, tarjetas, páginas y adjuntos. Esta acción no se puede deshacer.",
+      "body": "Todos sus tableros, tarjetas, páginas y adjuntos irán con él a la papelera.",
       "confirm": "Eliminar proyecto",
-      "done": "Proyecto eliminado"
+      "done": "Proyecto movido a la papelera"
     }
   },
   "palette": {
@@ -131,7 +132,8 @@
       "page": "página",
       "newProject": "Nuevo proyecto crear",
       "theme": "Cambiar tema claro oscuro apariencia",
-      "lockVault": "Bloquear bóveda"
+      "lockVault": "Bloquear bóveda",
+      "trash": "papelera borrado recuperar restaurar"
     }
   }
 }

@@ -11,10 +11,17 @@ import type { Access } from './access'
 import type { ActivityService } from './activity'
 import { toAttachmentDTO } from './attachments'
 import type { Deps } from './deps'
+import type { TrashService } from './trash'
 import { positionAt } from './ordering'
 
 /** Far deeper than any real tree; only there so a corrupted, circular tree cannot loop forever. */
 const MAX_TREE_DEPTH = 100_000
+
+/** `WITH RECURSIVE tree(id, depth)`: the pages matching `roots` (depth 0) and every page under them. */
+export const pageTree = (roots: SQL) => sql`WITH RECURSIVE tree(id, depth) AS (
+    SELECT id, 0 FROM pages WHERE ${roots}
+    UNION ALL SELECT p.id, t.depth + 1 FROM pages p JOIN tree t ON p.parent_id = t.id WHERE t.depth < ${MAX_TREE_DEPTH}
+  )`
 
 /**
  * Deletes the pages matching `roots` with everything under them, deepest pages first.
@@ -24,10 +31,7 @@ const MAX_TREE_DEPTH = 100_000
  * Run it inside a transaction, so a tree is deleted whole or not at all.
  */
 export function deletePageTrees(db: DbOrTx, roots: SQL) {
-  const tree = sql`WITH RECURSIVE tree(id, depth) AS (
-      SELECT id, 0 FROM pages WHERE ${roots}
-      UNION ALL SELECT p.id, t.depth + 1 FROM pages p JOIN tree t ON p.parent_id = t.id WHERE t.depth < ${MAX_TREE_DEPTH}
-    )`
+  const tree = pageTree(roots)
   const deepest = db.get<{ depth: number | null }>(sql`${tree} SELECT max(depth) AS depth FROM tree`)?.depth ?? null
   if (deepest === null) return
   for (let depth = deepest; depth >= 0; depth--) {
@@ -55,6 +59,7 @@ export class PageService {
     private readonly deps: Deps,
     private readonly access: Access,
     private readonly activity: ActivityService,
+    private readonly trash: TrashService,
   ) {}
 
   async load(actor: Actor, pageId: string, scope: 'docs:read' | 'docs:write' = 'docs:read', db: DbOrTx = this.deps.db) {
@@ -283,13 +288,14 @@ export class PageService {
   async remove(actor: Actor, pageId: string) {
     this.access.requireUser(actor)
     const page = await this.load(actor, pageId, 'docs:write')
-    this.deps.db.transaction((tx) => deletePageTrees(tx, sql`${pages.id} = ${pageId}`))
+    const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, page.workspaceId, { kind: 'page', id: pageId }))
     await this.activity.record(
       actor,
       page.workspaceId,
       { action: 'page.deleted', entityType: 'page', entityId: pageId, summary: page.title },
       { pageId, projectId: page.projectId, structure: true },
     )
+    return trashId
   }
 
   /** Keeps `mention` links in sync with the card references found in the page body. Runs inside the save transaction. */

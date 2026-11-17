@@ -10,7 +10,9 @@
     "network": "Er is geen verbinding met de server.",
     "file_too_large": "Het bestand is groter dan de maximaal toegestane grootte.",
     "upload_incomplete": "Het uploaden is onderbroken. Probeer het opnieuw.",
-    "last_workspace": "Je moet minstens één werkruimte houden."
+    "last_workspace": "Je moet minstens één werkruimte houden.",
+    "restore_place_in_trash": "Zet eerst terug waar dit bij hoort: dat staat ook in de prullenbak.",
+    "restore_place_gone": "De plek waar het bij hoorde, bestaat niet meer, en er is geen andere plek om het terug te zetten."
   },
   "notFound": "Het item is niet gevonden.",
   "server": "Er ging iets mis op de server. Probeer het opnieuw.",

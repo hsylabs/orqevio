@@ -1,0 +1,72 @@
+{
+  "title": "Papelera",
+  "intro_one": "Lo que borras se guarda aquí {{count}} día, con todo lo que contenía. Restáuralo cuando quieras; pasado ese tiempo, se borra para siempre.",
+  "intro_many": "Lo que borras se guarda aquí {{count}} días, con todo lo que contenía. Restáuralo cuando quieras; pasado ese tiempo, se borra para siempre.",
+  "intro_other": "Lo que borras se guarda aquí {{count}} días, con todo lo que contenía. Restáuralo cuando quieras; pasado ese tiempo, se borra para siempre.",
+  "empty": {
+    "title": "La papelera está vacía",
+    "body_one": "Cuando borres algo, te esperará aquí {{count}} día por si cambias de idea.",
+    "body_many": "Cuando borres algo, te esperará aquí {{count}} días por si cambias de idea.",
+    "body_other": "Cuando borres algo, te esperará aquí {{count}} días por si cambias de idea."
+  },
+  "note_one": "Podrás recuperarlo todo desde la papelera durante {{count}} día.",
+  "note_many": "Podrás recuperarlo todo desde la papelera durante {{count}} días.",
+  "note_other": "Podrás recuperarlo todo desde la papelera durante {{count}} días.",
+  "kind": {
+    "project": "Proyecto",
+    "board": "Tablero",
+    "column": "Columna",
+    "card": "Tarjeta",
+    "page": "Página",
+    "attachment": "Adjunto",
+    "label": "Etiqueta",
+    "checklist": "Checklist",
+    "checklist_item": "Punto de checklist",
+    "link": "Enlace con una página"
+  },
+  "contents": {
+    "boards_one": "{{count}} tablero",
+    "boards_many": "{{count}} tableros",
+    "boards_other": "{{count}} tableros",
+    "columns_one": "{{count}} columna",
+    "columns_many": "{{count}} columnas",
+    "columns_other": "{{count}} columnas",
+    "cards_one": "{{count}} tarjeta",
+    "cards_many": "{{count}} tarjetas",
+    "cards_other": "{{count}} tarjetas",
+    "pages_one": "{{count}} página",
+    "pages_many": "{{count}} páginas",
+    "pages_other": "{{count}} páginas",
+    "checklists_one": "{{count}} checklist",
+    "checklists_many": "{{count}} checklists",
+    "checklists_other": "{{count}} checklists",
+    "items_one": "{{count}} punto de checklist",
+    "items_many": "{{count}} puntos de checklist",
+    "items_other": "{{count}} puntos de checklist",
+    "labels_one": "{{count}} etiqueta",
+    "labels_many": "{{count}} etiquetas",
+    "labels_other": "{{count}} etiquetas",
+    "attachments_one": "{{count}} adjunto",
+    "attachments_many": "{{count}} adjuntos",
+    "attachments_other": "{{count}} adjuntos"
+  },
+  "deletedBy": "Borrado por {{name}} {{when}}",
+  "expires": "Se borrará para siempre {{when}}",
+  "restore": "Restaurar",
+  "open": "Abrir",
+  "restored": "Se ha restaurado «{{name}}»",
+  "restoredElsewhere": "Su sitio ya no existe, así que ahora está en {{place}}.",
+  "restoreFirst": "Restaura antes «{{name}}»: aquello a lo que pertenece también está en la papelera.",
+  "purge": {
+    "action": "Borrar para siempre",
+    "named": "Borrar «{{name}}» para siempre",
+    "title": "¿Borrar «{{name}}» para siempre?",
+    "body": "Después no se podrá recuperar.",
+    "confirm": "Borrar para siempre",
+    "done": "Se ha borrado «{{name}}» para siempre"
+  },
+  "toast": {
+    "description": "Está en la papelera, por si cambias de idea.",
+    "undo": "Deshacer"
+  }
+}

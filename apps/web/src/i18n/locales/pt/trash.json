@@ -1,0 +1,72 @@
+{
+  "title": "Lixeira",
+  "intro_one": "O que você exclui fica aqui por {{count}} dia, com tudo o que continha. Restaure quando quiser; depois disso, é excluído de vez.",
+  "intro_many": "O que você exclui fica aqui por {{count}} dias, com tudo o que continha. Restaure quando quiser; depois disso, é excluído de vez.",
+  "intro_other": "O que você exclui fica aqui por {{count}} dias, com tudo o que continha. Restaure quando quiser; depois disso, é excluído de vez.",
+  "empty": {
+    "title": "A lixeira está vazia",
+    "body_one": "Quando você excluir algo, ele fica aqui por {{count}} dia caso você mude de ideia.",
+    "body_many": "Quando você excluir algo, ele fica aqui por {{count}} dias caso você mude de ideia.",
+    "body_other": "Quando você excluir algo, ele fica aqui por {{count}} dias caso você mude de ideia."
+  },
+  "note_one": "Você poderá recuperar tudo na lixeira por {{count}} dia.",
+  "note_many": "Você poderá recuperar tudo na lixeira por {{count}} dias.",
+  "note_other": "Você poderá recuperar tudo na lixeira por {{count}} dias.",
+  "kind": {
+    "project": "Projeto",
+    "board": "Quadro",
+    "column": "Coluna",
+    "card": "Cartão",
+    "page": "Página",
+    "attachment": "Anexo",
+    "label": "Etiqueta",
+    "checklist": "Checklist",
+    "checklist_item": "Item de checklist",
+    "link": "Link para uma página"
+  },
+  "contents": {
+    "boards_one": "{{count}} quadro",
+    "boards_many": "{{count}} quadros",
+    "boards_other": "{{count}} quadros",
+    "columns_one": "{{count}} coluna",
+    "columns_many": "{{count}} colunas",
+    "columns_other": "{{count}} colunas",
+    "cards_one": "{{count}} cartão",
+    "cards_many": "{{count}} cartões",
+    "cards_other": "{{count}} cartões",
+    "pages_one": "{{count}} página",
+    "pages_many": "{{count}} páginas",
+    "pages_other": "{{count}} páginas",
+    "checklists_one": "{{count}} checklist",
+    "checklists_many": "{{count}} checklists",
+    "checklists_other": "{{count}} checklists",
+    "items_one": "{{count}} item de checklist",
+    "items_many": "{{count}} itens de checklist",
+    "items_other": "{{count}} itens de checklist",
+    "labels_one": "{{count}} etiqueta",
+    "labels_many": "{{count}} etiquetas",
+    "labels_other": "{{count}} etiquetas",
+    "attachments_one": "{{count}} anexo",
+    "attachments_many": "{{count}} anexos",
+    "attachments_other": "{{count}} anexos"
+  },
+  "deletedBy": "Excluído por {{name}} {{when}}",
+  "expires": "Excluído de vez {{when}}",
+  "restore": "Restaurar",
+  "open": "Abrir",
+  "restored": "“{{name}}” foi restaurado",
+  "restoredElsewhere": "O lugar dele não existe mais, então agora está em {{place}}.",
+  "restoreFirst": "Restaure “{{name}}” primeiro: aquilo a que isto pertence também está na lixeira.",
+  "purge": {
+    "action": "Excluir de vez",
+    "named": "Excluir “{{name}}” de vez",
+    "title": "Excluir “{{name}}” de vez?",
+    "body": "Depois não será possível recuperá-lo.",
+    "confirm": "Excluir de vez",
+    "done": "“{{name}}” foi excluído de vez"
+  },
+  "toast": {
+    "description": "Está na lixeira, caso você mude de ideia.",
+    "undo": "Desfazer"
+  }
+}

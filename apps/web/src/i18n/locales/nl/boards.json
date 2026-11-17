@@ -69,12 +69,13 @@
     "dropHere": "Zet kaarten hier neer",
     "deleteConfirm": {
       "title": "Kolom ‘{{name}}’ verwijderen?",
-      "withCards_one": "De kaart erin wordt ook verwijderd. Wil je hem houden, verplaats hem dan eerst naar een andere kolom.",
-      "withCards_other": "De {{count}} kaarten erin worden ook verwijderd. Wil je ze houden, verplaats ze dan eerst naar een andere kolom.",
-      "withArchived_one": "De gearchiveerde kaart erin wordt ook verwijderd. Wil je hem houden, zet hem dan eerst terug via ‘Gearchiveerd’.",
-      "withArchived_other": "De {{count}} gearchiveerde kaarten erin worden ook verwijderd. Wil je ze houden, zet ze dan eerst terug via ‘Gearchiveerd’.",
-      "empty": "De kolom is leeg."
-    }
+      "empty": "De kolom is leeg.",
+      "withCards_one": "De kaart in deze kolom gaat mee naar de prullenbak.",
+      "withCards_other": "De {{count}} kaarten in deze kolom gaan mee naar de prullenbak.",
+      "withArchived_one": "De gearchiveerde kaart in deze kolom gaat mee naar de prullenbak.",
+      "withArchived_other": "De {{count}} gearchiveerde kaarten in deze kolom gaan mee naar de prullenbak."
+    },
+    "deleted": "Kolom ‘{{name}}’ naar de prullenbak verplaatst"
   },
   "composer": {
     "placeholder": "Wat moet er gebeuren?",
@@ -110,7 +111,7 @@
     "archivedToast": "Kaart gearchiveerd",
     "deleteConfirm": {
       "title": "Deze kaart verwijderen?",
-      "description": "De kaart wordt verwijderd, samen met de checklists en bijlagen. Wil je hem alleen verbergen, archiveer hem dan."
+      "description": "De kaart gaat met haar checklists en bijlagen naar de prullenbak. Wil je haar alleen verbergen, archiveer haar dan."
     },
     "labels": "Labels",
     "addLabels": "Labels toevoegen",
@@ -127,7 +128,8 @@
     "checklistsEmpty": "Verdeel de taak in stappen die je kunt afvinken.",
     "linkedDocs": "Gekoppelde documenten",
     "attachments": "Bijlagen",
-    "activity": "Activiteit"
+    "activity": "Activiteit",
+    "deleted": "Kaart naar de prullenbak verplaatst"
   },
   "checklist": {
     "titleLabel": "Titel van de checklist",
@@ -138,7 +140,9 @@
     "deleteItem": "‘{{text}}’ verwijderen",
     "addItem": "Item toevoegen",
     "newItemPlaceholder": "Nieuw item, dan Enter",
-    "newItem": "Nieuw item"
+    "newItem": "Nieuw item",
+    "deleted": "Checklist ‘{{name}}’ naar de prullenbak verplaatst",
+    "itemDeleted": "‘{{text}}’ naar de prullenbak verplaatst"
   },
   "due": {
     "today": "Vandaag",
@@ -157,7 +161,8 @@
     "unnamed": "Zonder naam",
     "editNamed": "{{name}} bewerken",
     "editUnnamed": "Label bewerken",
-    "create": "Label maken"
+    "create": "Label maken",
+    "deleted": "Label ‘{{name}}’ naar de prullenbak verplaatst"
   },
   "linked": {
     "mentioned": "vermeld",
@@ -167,20 +172,22 @@
     "search": "Pagina’s zoeken…",
     "searchLabel": "Pagina’s zoeken",
     "noResults": "Geen resultaten.",
-    "hint": "Typ om in de hele werkruimte te zoeken."
+    "hint": "Typ om in de hele werkruimte te zoeken.",
+    "unlinked": "Koppeling naar de prullenbak verplaatst"
   },
   "archived": {
     "sheetTitle": "Gearchiveerde kaarten",
     "heading": "Gearchiveerd",
     "emptyTitle": "Niets gearchiveerd",
     "emptyBody": "Kaarten die jij of je agents archiveren, verschijnen hier. Je kunt ze herstellen.",
-    "deleteConfirm": "‘{{title}}’ definitief verwijderen?"
+    "deleteConfirm": "‘{{title}}’ naar de prullenbak verplaatsen?"
   },
   "attachments": {
     "deleteConfirm": "‘{{name}}’ verwijderen?",
     "download": "{{name}} downloaden",
     "deleteNamed": "{{name}} verwijderen",
     "uploading": "Uploaden…",
-    "attach": "Bestand bijvoegen"
+    "attach": "Bestand bijvoegen",
+    "deleted": "‘{{name}}’ naar de prullenbak verplaatst"
   }
 }

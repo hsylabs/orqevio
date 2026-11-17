@@ -84,18 +84,18 @@ describe('agent tokens', () => {
     expect((await client.get(`/api/boards/${boardId}`)).body.labels).toHaveLength(1)
 
     // People still can, and every change to labels and links shows in the activity.
-    expect((await client.del(`/api/cards/${card.body.id}/pages/${page.body.id}`)).status).toBe(204)
-    expect((await client.del(`/api/checklist-items/${item.body.id}`)).status).toBe(204)
-    expect((await client.del(`/api/checklists/${checklist.body.id}`)).status).toBe(204)
-    expect((await client.del(`/api/labels/${label.body.id}`)).status).toBe(204)
+    expect((await client.del(`/api/cards/${card.body.id}/pages/${page.body.id}`)).status).toBe(200)
+    expect((await client.del(`/api/checklist-items/${item.body.id}`)).status).toBe(200)
+    expect((await client.del(`/api/checklists/${checklist.body.id}`)).status).toBe(200)
+    expect((await client.del(`/api/labels/${label.body.id}`)).status).toBe(200)
     const activity = (await client.get(`/api/workspaces/${workspaceId}/activity`)).body as Array<{ action: string; summary: string; actor: { kind: string } }>
     const entry = (action: string) => activity.find((a) => a.action === action)
     expect(entry('label.created')).toMatchObject({ summary: 'Urgente', actor: { kind: 'agent' } })
     expect(entry('label.updated')).toMatchObject({ summary: 'Muy urgente', actor: { kind: 'agent' } })
     expect(entry('label.deleted')).toMatchObject({ summary: 'Muy urgente', actor: { kind: 'user' } })
     expect(entry('card.unlinked')).toMatchObject({ summary: 'Con todo', meta: { page: 'Notas' } })
-    // Removing a link that is no longer there changes nothing and logs nothing.
-    expect((await client.del(`/api/cards/${card.body.id}/pages/${page.body.id}`)).status).toBe(204)
+    // Removing a link that is no longer there changes nothing, puts nothing in the trash and logs nothing.
+    expect((await client.del(`/api/cards/${card.body.id}/pages/${page.body.id}`)).body).toEqual({ trashId: null })
     const again = (await client.get(`/api/workspaces/${workspaceId}/activity`)).body as Array<{ action: string }>
     expect(again.filter((a) => a.action === 'card.unlinked')).toHaveLength(1)
   })

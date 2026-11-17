@@ -37,7 +37,7 @@
     "saved": "Spazio aggiornato",
     "delete": "Elimina spazio",
     "deleteTitle": "Eliminare lo spazio «{{name}}»?",
-    "deleteDescription": "Verranno eliminati i suoi progetti, bacheche, documenti, allegati e token. L’operazione è irreversibile.",
+    "deleteDescription": "Verranno eliminati i suoi progetti, bacheche, documenti, allegati, il cestino e i token. L’operazione è irreversibile.",
     "deleted": "Spazio eliminato"
   },
   "copy": {

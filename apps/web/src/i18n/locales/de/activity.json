@@ -49,6 +49,10 @@
       "updated": "<actor>{{actor}}</actor> hat ein Label bearbeitet",
       "deleted": "<actor>{{actor}}</actor> hat ein Label gelöscht"
     },
+    "trash": {
+      "restored": "<actor>{{actor}}</actor> hat <target>„{{target}}“</target> aus dem Papierkorb wiederhergestellt",
+      "purged": "<actor>{{actor}}</actor> hat <target>„{{target}}“</target> endgültig gelöscht"
+    },
     "other": "<actor>{{actor}}</actor> hat etwas geändert"
   },
   "detail": {

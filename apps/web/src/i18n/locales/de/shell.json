@@ -13,7 +13,8 @@
       "body": "Fasse Boards und Dokumente an einem Ort zusammen."
     },
     "vaultLocked": "Gesperrt",
-    "vaultUnlocked": "Entsperrt"
+    "vaultUnlocked": "Entsperrt",
+    "trash": "Papierkorb"
   },
   "workspace": {
     "fallback": "Arbeitsbereich",
@@ -86,21 +87,21 @@
     },
     "deleteBoard": {
       "title": "„{{name}}“ löschen?",
-      "body": "Alle Spalten und Karten des Boards werden gelöscht. Das lässt sich nicht rückgängig machen.",
+      "body": "Seine Spalten und Karten kommen mit in den Papierkorb.",
       "confirm": "Board löschen",
-      "done": "Board gelöscht"
+      "done": "Board in den Papierkorb verschoben"
     },
     "deletePage": {
       "title": "„{{name}}“ löschen?",
-      "body": "Auch die Unterseiten und Anhänge der Seite werden gelöscht. Das lässt sich nicht rückgängig machen.",
+      "body": "Ihre Unterseiten und Anhänge kommen mit in den Papierkorb.",
       "confirm": "Seite löschen",
-      "done": "Seite gelöscht"
+      "done": "Seite in den Papierkorb verschoben"
     },
     "deleteProject": {
       "title": "Projekt „{{name}}“ löschen?",
-      "body": "Alle Boards, Karten, Seiten und Anhänge des Projekts werden gelöscht. Das lässt sich nicht rückgängig machen.",
+      "body": "Alle Boards, Karten, Seiten und Anhänge des Projekts kommen mit in den Papierkorb.",
       "confirm": "Projekt löschen",
-      "done": "Projekt gelöscht"
+      "done": "Projekt in den Papierkorb verschoben"
     }
   },
   "palette": {
@@ -131,7 +132,8 @@
       "page": "Seite",
       "newProject": "Neues Projekt erstellen anlegen",
       "theme": "Design ändern hell dunkel Darstellung Theme",
-      "lockVault": "Tresor sperren"
+      "lockVault": "Tresor sperren",
+      "trash": "papierkorb gelöscht wiederherstellen"
     }
   }
 }

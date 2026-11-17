@@ -49,6 +49,10 @@
       "updated": "<actor>{{actor}}</actor> ha modificato un’etichetta",
       "deleted": "<actor>{{actor}}</actor> ha eliminato un’etichetta"
     },
+    "trash": {
+      "restored": "<actor>{{actor}}</actor> ha ripristinato <target>«{{target}}»</target> dal cestino",
+      "purged": "<actor>{{actor}}</actor> ha eliminato definitivamente <target>«{{target}}»</target>"
+    },
     "other": "<actor>{{actor}}</actor> ha apportato una modifica"
   },
   "detail": {

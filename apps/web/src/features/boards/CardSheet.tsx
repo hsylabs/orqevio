@@ -1,7 +1,7 @@
-import type { ActorRef, BoardDTO, CardDetailDTO, CardSummaryDTO } from '@orqevio/shared'
+import type { ActorRef, BoardDTO, CardDetailDTO, CardSummaryDTO, TrashedDTO } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useReducer, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ActivityList } from '../../components/ActivityList'
@@ -23,16 +23,37 @@ import { Checklists } from './Checklists'
 import { DuePicker } from './DuePicker'
 import { LabelPicker } from './LabelPicker'
 import { LinkedPages } from './LinkedPages'
+import { toastTrashed, trashNote } from '../../lib/trash'
+
+/** Cards this tab is deleting: their sheet just closes, without saying they are gone. */
+const deletingHere = new Set<string>()
+/** When each card was deleted elsewhere. Live updates don't fetch a deleted card: its sheet says it is gone instead. */
+const deletedAt = new Map<string, number>()
+onCardEvent((e) => {
+  if (!e.cardId) return
+  if (e.action === 'card.deleted' && !deletingHere.has(e.cardId)) deletedAt.set(e.cardId, Date.now())
+  // Back from the trash: deleting it again later, here or elsewhere, counts as usual.
+  if (e.action === 'trash.restored') deletingHere.delete(e.cardId)
+})
 
 export function CardSheet({ cardId, board, onClose }: { cardId: string | null; board: BoardDTO; onClose: () => void }) {
   const { t } = useTranslation(['boards', 'common'])
   const card = useCard(cardId)
   const open = Boolean(cardId)
+  const [, update] = useReducer((n: number) => n + 1, 0)
+  useEffect(() => onCardEvent((e) => e.cardId === cardId && update()), [cardId])
+  // Gone once deleted elsewhere, until the card is fetched again since then (restoring it refetches it).
+  const deleted = cardId ? deletedAt.get(cardId) : undefined
+  const gone = card.isError || (deleted !== undefined && card.dataUpdatedAt <= deleted)
+  // While the sheet slides away it keeps showing the card it had, also one just deleted.
+  const last = useRef(card.data)
+  if (card.data) last.current = card.data
+  const data = open ? card.data : last.current
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={card.data?.title ?? t('sheet.fallbackTitle')} label={t('sheet.label')}>
-      {card.data ? (
-        <CardBody key={card.data.id} card={card.data} board={board} onClose={onClose} />
-      ) : card.isError ? (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={data?.title ?? t('sheet.fallbackTitle')} label={t('sheet.label')}>
+      {data && !(open && gone) ? (
+        <CardBody key={data.id} card={data} board={board} onClose={onClose} />
+      ) : gone ? (
         <div className="grid flex-1 place-items-center p-8 text-center text-ink-2">
           <div>
             <p className="font-display text-[20px]">{t('sheet.gone')}</p>
@@ -314,12 +335,16 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
               icon={<Trash />}
               danger
               onSelect={async () => {
-                if (!(await confirm({ title: t('sheet.deleteConfirm.title'), description: t('sheet.deleteConfirm.description'), confirmLabel: t('actions.delete'), danger: true }))) return
+                if (!(await confirm({ title: t('sheet.deleteConfirm.title'), description: `${t('sheet.deleteConfirm.description')} ${trashNote()}`, confirmLabel: t('actions.delete'), danger: true }))) return
+                deletingHere.add(card.id)
+                onClose()
                 try {
-                  await del(`/cards/${card.id}`)
-                  onClose()
+                  const trashed = await del<TrashedDTO>(`/cards/${card.id}`)
                   await queryClient.invalidateQueries({ queryKey: keys.board(card.boardId) })
+                  toastTrashed(t('sheet.deleted'), trashed)
                 } catch (error) {
+                  // Still there: deleting it later, here or elsewhere, counts as usual.
+                  deletingHere.delete(card.id)
                   toast.error(errorMessage(error))
                 }
               }}

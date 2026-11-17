@@ -49,6 +49,10 @@
       "updated": "<actor>{{actor}}</actor> edited a label",
       "deleted": "<actor>{{actor}}</actor> deleted a label"
     },
+    "trash": {
+      "restored": "<actor>{{actor}}</actor> restored <target>“{{target}}”</target> from the trash",
+      "purged": "<actor>{{actor}}</actor> deleted <target>“{{target}}”</target> for good"
+    },
     "other": "<actor>{{actor}}</actor> made a change"
   },
   "detail": {
