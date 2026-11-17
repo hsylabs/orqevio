@@ -1,6 +1,6 @@
 import type { HistoryEntryDTO, Scope, UndoResultDTO } from '@orqevio/shared'
 import { and, eq } from 'drizzle-orm'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { history } from '../src/db/schema'
 import { Client, type Harness, createHarness, seedBoard, signUp } from './harness'
 
@@ -249,6 +249,47 @@ describe('undo', () => {
       ['A', 'B'],
     ])
     expect(titles[1]!.id).toBe(undid.id)
+  })
+
+  it('counts a change made in the same millisecond as the one undone as made after it', async () => {
+    const { client, workspaceId } = await signUp(h, 'Mismo instante')
+    const { columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(Date.now() + 60_000)
+      const card = (await bot.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Al instante' })).body.id as string
+      await client.patch(`/api/cards/${card}`, { title: 'Al instante, revisada' })
+      vi.useRealTimers()
+      const created = await latest(client, 'cards', card, 'card.created')
+      const edited = await latest(client, 'cards', card, 'card.title')
+      expect(edited.updatedAt).toBe(created.updatedAt)
+      expect((await undo(client, { ids: [created.id] })).plan[0]).toMatchObject({ status: 'conflict', changedBy: { kind: 'user' } })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('takes several versions of a long text back to the first, comparing them where they are stored', async () => {
+    const { client, workspaceId } = await signUp(h, 'Versiones largas')
+    const { projectId } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    const long = (word: string) => `${word} `.repeat(20_000)
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Larga', content: long('uno') })).body.id as string
+    let version = (await client.get(`/api/pages/${page}`)).body.version as number
+    for (const word of ['dos', 'tres', 'cuatro']) version = (await bot.patch(`/api/pages/${page}`, { content: long(word), baseVersion: version })).body.version
+    const first = (await historyOf(client, 'pages', page)).filter((e) => e.kind === 'page.content' && e.actor.kind === 'agent').at(-1)!
+    const planned = await undo(client, { since: first.id, dryRun: true })
+    expect(planned.plan.map((p) => p.status)).toEqual(['ready', 'ready', 'ready'])
+    expect(await undo(client, { since: first.id })).toMatchObject({ applied: true, undone: 3 })
+    expect((await client.get(`/api/pages/${page}`)).body.content).toBe(long('uno'))
+    // Someone's edit on top makes the newest a conflict, showing the start of the text as it is now.
+    await bot.patch(`/api/pages/${page}`, { content: long('cinco'), baseVersion: (await client.get(`/api/pages/${page}`)).body.version })
+    const fifth = (await historyOf(client, 'pages', page))[0]!
+    await client.patch(`/api/pages/${page}`, { content: long('seis'), baseVersion: (await client.get(`/api/pages/${page}`)).body.version })
+    const conflict = (await undo(client, { ids: [fifth.id] })).plan[0]!
+    expect(conflict.status).toBe('conflict')
+    expect(String(conflict.current)).toBe(long('seis').slice(0, 200))
   })
 
   it('says what can no longer be undone, and why', async () => {

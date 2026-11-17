@@ -32,7 +32,16 @@ const CHUNK = 90
 
 type Row = HistoryRow & { seq: number }
 
-const historyColumns = getTableColumns(history)
+/** An entry without its long texts: a bulk undo never holds hundreds of them in memory at once. */
+const LIGHT_COLUMNS = (() => {
+  const body = inArray(history.kind, [...HISTORY_BODY_KINDS])
+  return {
+    ...getTableColumns(history),
+    before: sql<string | null>`CASE WHEN ${body} THEN NULL ELSE ${history.before} END`,
+    after: sql<string | null>`CASE WHEN ${body} THEN NULL ELSE ${history.after} END`,
+    seq: sql<number>`rowid`,
+  }
+})()
 
 interface Check {
   status: UndoStatus
@@ -49,6 +58,8 @@ interface Check {
 class State {
   readonly values = new Map<string, HistoryValue>()
   readonly exists = new Map<string, boolean>()
+  /** For long texts: the change whose text before will be the text by then (compared in SQLite, never loaded). */
+  readonly bodies = new Map<string, string>()
 }
 
 const fieldKey = (row: HistoryRow) => `${row.entityId}|${row.kind}|${row.subjectId ?? ''}`
@@ -113,11 +124,11 @@ export class UndoService {
   /** Puts a page's content or a card's description back as it was after a change, as a new change. */
   async restoreVersion(actor: Actor, entryId: string) {
     this.access.requireUser(actor)
-    const [row] = await this.rows(eq(history.id, entryId))
+    const [row] = await this.deps.db.select().from(history).where(eq(history.id, entryId))
     if (!row) throw notFound('History entry')
     await this.access.workspace(actor, row.workspaceId)
     if (!HISTORY_BODY_KINDS.has(row.kind)) throw badRequest('Only versions of a content or a description can be restored')
-    const text = String(decode(row.kind, row.after) ?? '')
+    const text = row.after ?? ''
     const by: UserActor = { ...actor, note: { restoredFrom: row.id } }
     if (row.kind === 'page.content') {
       const page = this.deps.db.select({ version: pages.version }).from(pages).where(eq(pages.id, row.entityId)).get()
@@ -132,7 +143,7 @@ export class UndoService {
 
   private rows(where: SQL | undefined) {
     return this.deps.db
-      .select({ ...historyColumns, seq: sql<number>`rowid` })
+      .select(LIGHT_COLUMNS)
       .from(history)
       .where(where)
       .orderBy(desc(history.updatedAt), desc(sql`rowid`))
@@ -156,7 +167,7 @@ export class UndoService {
     return rows
   }
 
-  private planItem(row: HistoryRow, check: Check, undoing: Set<string>): UndoPlanItemDTO {
+  private planItem(row: Row, check: Check, undoing: Set<string>): UndoPlanItemDTO {
     const table = row.entityType === 'page' ? pages : cards
     const title = this.deps.db.select({ title: table.title }).from(table).where(eq(table.id, row.entityId)).get()?.title
     return {
@@ -194,21 +205,22 @@ export class UndoService {
    * it. For something made or brought back, only someone else's count: its author's own later
    * changes go with it.
    */
-  private laterChanges(row: HistoryRow, isValue: boolean, undoing: Set<string>) {
+  private laterChanges(row: Row, isValue: boolean, undoing: Set<string>) {
     const author = (r: { kind: string; userId: string | null; tokenId: string | null }) => (r.kind === 'agent' ? `agent:${r.tokenId}` : `user:${r.userId}`)
     const own = author({ kind: row.actorKind, userId: row.actorUserId, tokenId: row.actorTokenId })
     return this.deps.db
       .select({ id: history.id, kind: history.actorKind, userId: history.actorUserId, tokenId: history.actorTokenId, name: history.actorName, meta: history.meta })
       .from(history)
-      .where(and(this.sameThing(row, isValue), gt(history.updatedAt, row.updatedAt)))
-      .orderBy(desc(history.updatedAt))
+      // After it: later, or in the same millisecond but recorded after it.
+      .where(and(this.sameThing(row, isValue), or(gt(history.updatedAt, row.updatedAt), and(eq(history.updatedAt, row.updatedAt), sql`rowid > ${row.seq}`))))
+      .orderBy(desc(history.updatedAt), desc(sql`rowid`))
       .all()
       // Undoing the newer changes of the same batch records changes too: they don't count either.
       .filter((r) => !undoing.has(r.id) && !undoing.has(String(r.meta.undoOf)) && (isValue || author(r) !== own))
   }
 
   /** Who changed it after this change, besides the changes being undone with it. */
-  private changedSince(row: HistoryRow, isValue: boolean, undoing: Set<string>): ActorRef | null {
+  private changedSince(row: Row, isValue: boolean, undoing: Set<string>): ActorRef | null {
     const [later] = this.laterChanges(row, isValue, undoing)
     return later ? { kind: later.kind, id: (later.kind === 'agent' ? later.tokenId : later.userId) ?? '', name: later.name } : null
   }
@@ -219,7 +231,7 @@ export class UndoService {
   }
 
   /** How undoing this change stands, against `state`: now, and after the newer changes being undone. */
-  private check(row: HistoryRow, undoing: Set<string>, state: State): Check {
+  private check(row: Row, undoing: Set<string>, state: State): Check {
     const db = this.deps.db
     const kind = row.kind
     const before = decode(kind, row.before)
@@ -256,6 +268,21 @@ export class UndoService {
       return { status, current: now }
     }
 
+    // A long text, compared in SQLite with the change's texts, which stay out of memory.
+    const body = (table: 'pages' | 'cards', column: 'content' | 'description'): Check => {
+      const key = fieldKey(row)
+      const ref = state.bodies.get(key)
+      const now = ref ? sql`(SELECT "before" FROM history WHERE id = ${ref})` : sql`(SELECT ${sql.identifier(column)} FROM ${sql.identifier(table)} WHERE id = ${row.entityId})`
+      const found = db.get<{ isBefore: number; isAfter: number; current: string | null }>(
+        sql`SELECT ${now} IS h."before" AS isBefore, ${now} IS h."after" AS isAfter, substr(${now}, 1, 200) AS current FROM history h WHERE h.id = ${row.id}`,
+      )
+      if (!found) return { status: 'impossible', reason: 'gone' }
+      if (found.isBefore) return { status: 'unchanged' }
+      if (!found.isAfter) return { status: 'conflict', current: found.current }
+      state.bodies.set(key, row.id)
+      return { status: 'ready' }
+    }
+
     switch (kind) {
       case 'page.deleted':
         return bringBack(entityKey, () => entityExists)
@@ -278,7 +305,7 @@ export class UndoService {
         case 'page.icon':
           return value(page.icon)
         case 'page.content':
-          return value(page.content)
+          return body('pages', 'content')
         case 'page.moved': {
           const target = parentOf(before)
           return value(
@@ -295,7 +322,7 @@ export class UndoService {
         case 'card.title':
           return value(card.title)
         case 'card.description':
-          return value(card.description)
+          return body('cards', 'description')
         case 'card.due':
           return value(card.dueAt?.toISOString() ?? null)
         case 'card.labels':
@@ -358,7 +385,9 @@ export class UndoService {
   private async apply(row: HistoryRow, actor: UserActor) {
     const { cards: cardService, pages: pageService, attachments: attachmentService, trash: trashService } = this.services
     const kind: HistoryKind = row.kind
-    const before = decode(kind, row.before)
+    // Long texts are read one at a time, as each is undone.
+    const raw = HISTORY_BODY_KINDS.has(kind) ? (this.deps.db.get<{ text: string | null }>(sql`SELECT "before" AS text FROM history WHERE id = ${row.id}`)?.text ?? null) : row.before
+    const before = decode(kind, raw)
     const subject = row.subjectId ?? ''
     const trashId = typeof row.meta.trashId === 'string' ? row.meta.trashId : ''
     const db = this.deps.db
