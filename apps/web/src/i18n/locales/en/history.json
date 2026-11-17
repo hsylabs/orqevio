@@ -48,7 +48,9 @@
       "deleted": "<actor>{{actor}}</actor> moved it to the trash",
       "restored": "<actor>{{actor}}</actor> brought it back from the trash",
       "linked": "<actor>{{actor}}</actor> linked it to the page “{{page}}”",
-      "unlinked": "<actor>{{actor}}</actor> removed its link to the page “{{page}}”"
+      "unlinked": "<actor>{{actor}}</actor> removed its link to the page “{{page}}”",
+      "movedWithoutLabels_one": "<actor>{{actor}}</actor> moved it from “{{from}}” to “{{to}}” and took off the label {{removed}}, which belonged to the other board",
+      "movedWithoutLabels_other": "<actor>{{actor}}</actor> moved it from “{{from}}” to “{{to}}” and took off the labels {{removed}}, which belonged to the other board"
     },
     "checklist": {
       "created": "<actor>{{actor}}</actor> added the checklist “{{title}}”",

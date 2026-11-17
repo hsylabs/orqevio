@@ -87,7 +87,13 @@
     "expiresUnused": "Läuft ungenutzt ab",
     "never": "Nie",
     "idle": "Seit {{days}} Tagen nicht benutzt",
-    "showActivity": "Aktivität ansehen"
+    "showActivity": "Aktivität ansehen",
+    "organize": {
+      "pill": "Löschen und verschieben",
+      "hint": "In den Papierkorb; du entscheidest, ob es zurückkommt.",
+      "on": "{{name}} darf jetzt löschen und verschieben",
+      "off": "{{name}} darf nicht mehr löschen oder verschieben"
+    }
   },
   "access": {
     "levels": {
@@ -110,7 +116,12 @@
       "hint": "Für Agenten nie zugänglich",
       "blocked": "Gesperrt"
     },
-    "atLeastOne": "Gib mindestens einem Bereich Lesezugriff."
+    "atLeastOne": "Gib mindestens einem Bereich Lesezugriff.",
+    "organize": {
+      "label": "Darf löschen und verschieben",
+      "hint": "Was er löscht, landet im Papierkorb, aus dem du es zurückholen kannst. Verschieben umfasst Karten auf ein anderes Board und Anhänge zu einer anderen Karte oder Seite.",
+      "needsWrite": "Braucht Lese- und Schreibzugriff auf einen Bereich."
+    }
   },
   "kit": {
     "clients": "MCP-Client",

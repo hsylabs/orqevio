@@ -439,8 +439,17 @@ export class UndoService {
         const existing = wanted.length && card ? db.select({ id: labels.id }).from(labels).where(and(eq(labels.boardId, card.boardId), inArray(labels.id, wanted))).all().map((l) => l.id) : []
         return cardService.update(actor, row.entityId, { labelIds: wanted.filter((id) => existing.includes(id)) })
       }
-      case 'card.moved':
-        return cardService.move(actor, row.entityId, { columnId: columnOf(before), index: AT_END })
+      case 'card.moved': {
+        await cardService.move(actor, row.entityId, { columnId: columnOf(before), index: AT_END })
+        // Back on the board it came from, the labels it lost on the way go back on, those still there.
+        const lost = Array.isArray(row.meta.labelIds) ? row.meta.labelIds : []
+        const card = lost.length ? db.select({ boardId: cards.boardId }).from(cards).where(eq(cards.id, row.entityId)).get() : undefined
+        if (!card) return
+        const back = db.select({ id: labels.id }).from(labels).where(and(eq(labels.boardId, card.boardId), inArray(labels.id, lost))).all().map((l) => l.id)
+        const has = db.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, row.entityId)).all().map((l) => l.id)
+        if (back.some((id) => !has.includes(id))) await cardService.update(actor, row.entityId, { labelIds: [...new Set([...has, ...back])] })
+        return
+      }
       case 'card.archived':
         return cardService.setArchived(actor, row.entityId, before === true)
       case 'card.created':

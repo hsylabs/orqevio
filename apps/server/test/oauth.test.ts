@@ -91,14 +91,14 @@ describe('OAuth discovery', () => {
     expect(res.status).toBe(401)
     const challenge = res.headers.get('www-authenticate')!
     expect(challenge).toContain(`resource_metadata="${ORIGIN}/.well-known/oauth-protected-resource/mcp"`)
-    expect(challenge).toContain('scope="tasks:read tasks:write docs:read docs:write"')
+    expect(challenge).toContain('scope="tasks:read tasks:write docs:read docs:write organize"')
     expect(challenge).not.toContain('error=')
     const invalid = await h.app.request('/mcp', { method: 'POST', headers: { Authorization: 'Bearer orqat_nope', 'Content-Type': 'application/json' }, body: '{}' })
     expect(invalid.headers.get('www-authenticate')).toContain('error="invalid_token"')
 
     for (const path of ['/.well-known/oauth-protected-resource/mcp', '/.well-known/oauth-protected-resource']) {
       const prm = await call(path)
-      expect(prm.body).toMatchObject({ resource: RESOURCE, authorization_servers: [ORIGIN], scopes_supported: ['tasks:read', 'tasks:write', 'docs:read', 'docs:write'] })
+      expect(prm.body).toMatchObject({ resource: RESOURCE, authorization_servers: [ORIGIN], scopes_supported: ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'] })
       expect(prm.headers.get('access-control-allow-origin')).toBe('*')
     }
     const as = await call('/.well-known/oauth-authorization-server')

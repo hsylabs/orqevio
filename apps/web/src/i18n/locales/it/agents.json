@@ -88,7 +88,13 @@
     "expiresUnused": "Scade se inutilizzato",
     "never": "Mai",
     "idle": "Inutilizzato da {{days}} giorni",
-    "showActivity": "Vedi la sua attività"
+    "showActivity": "Vedi la sua attività",
+    "organize": {
+      "pill": "Eliminare e spostare",
+      "hint": "Nel cestino; decidi tu se torna.",
+      "on": "{{name}} ora può eliminare e spostare",
+      "off": "{{name}} non può più eliminare né spostare"
+    }
   },
   "access": {
     "levels": {
@@ -111,7 +117,12 @@
       "hint": "Mai accessibile agli agenti",
       "blocked": "Bloccata"
     },
-    "atLeastOne": "Concedi l’accesso in lettura ad almeno un’area."
+    "atLeastOne": "Concedi l’accesso in lettura ad almeno un’area.",
+    "organize": {
+      "label": "Può eliminare e spostare",
+      "hint": "Ciò che elimina va nel cestino, da dove puoi recuperarlo. Spostare include portare schede in un’altra bacheca e allegati in un’altra scheda o pagina.",
+      "needsWrite": "Richiede lettura e scrittura in almeno un’area."
+    }
   },
   "kit": {
     "clients": "Client MCP",

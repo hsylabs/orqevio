@@ -3,10 +3,12 @@ import { levelFromScopes } from '@orqevio/shared'
 import { Clock, LockKeyhole, Trash as TrashIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { useState } from 'react'
 import { Avatar } from '../../components/ui/Avatar'
 import { Button } from '../../components/ui/Button'
+import { Checkbox } from '../../components/ui/Checkbox'
 import { useConfirm } from '../../components/ui/confirm'
-import { del, errorMessage } from '../../lib/api'
+import { del, errorMessage, patch } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { relativeTime, shortDate } from '../../lib/format'
 import { keys, queryClient } from '../../lib/queries'
@@ -34,11 +36,40 @@ export function useRevokeToken() {
   }
 }
 
+/** Lets an agent delete and move things, or stops it: tokens from before 1.1.0 don't have it. */
+function OrganizeToggle({ token }: { token: TokenDTO }) {
+  const { t } = useTranslation('agents')
+  const [busy, setBusy] = useState(false)
+  const on = token.scopes.includes('organize')
+  async function toggle(next: boolean) {
+    setBusy(true)
+    try {
+      await patch(`/tokens/${token.id}`, { organize: next })
+      await queryClient.invalidateQueries({ queryKey: keys.tokens })
+      toast.success(next ? t('token.organize.on', { name: token.name }) : t('token.organize.off', { name: token.name }))
+    } catch (error) {
+      toast.error(errorMessage(error))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="mt-3 flex items-center justify-between gap-3 rounded-[12px] bg-sunken px-3 py-2">
+      <span>
+        <span className="block text-[12.5px] font-medium text-ink-2">{t('access.organize.label')}</span>
+        <span className="block text-[11.5px] text-ink-3">{t('token.organize.hint')}</span>
+      </span>
+      <Checkbox checked={on} onChange={(next) => void toggle(next)} label={t('access.organize.label')} disabled={busy} />
+    </div>
+  )
+}
+
 /** An agent's access: its name, permissions and dates, with optional actions. */
-export function TokenCard({ token, onRevoke, onShowActivity, inactive }: { token: TokenDTO; onRevoke?: () => void; onShowActivity?: () => void; inactive?: boolean }) {
+export function TokenCard({ token, onRevoke, onShowActivity, inactive, editable }: { token: TokenDTO; onRevoke?: () => void; onShowActivity?: () => void; inactive?: boolean; editable?: boolean }) {
   const { t } = useTranslation('agents')
   const tasks = levelFromScopes(token.scopes, 'tasks')
   const docs = levelFromScopes(token.scopes, 'docs')
+  const writes = tasks === 'write' || docs === 'write'
   const back = token.oauth ? destination(token.oauth.redirectUri) : null
   const idle = token.revokedAt ? null : idleDays(token.lastUsedAt ?? token.createdAt)
   return (
@@ -62,6 +93,7 @@ export function TokenCard({ token, onRevoke, onShowActivity, inactive }: { token
       <div className="mt-3 flex flex-wrap gap-1.5">
         <ScopePill area="tasks" level={tasks} />
         <ScopePill area="docs" level={docs} />
+        {token.scopes.includes('organize') && <span className="inline-flex h-6 items-center rounded-full bg-agent px-2 text-[11.5px] font-medium text-agent-ink">{t('token.organize.pill')}</span>}
         <span className="inline-flex h-6 items-center gap-1 rounded-full bg-sunken px-2 text-[11.5px] text-ink-3">
           <LockKeyhole className="size-3" /> {t('token.vaultNever')}
         </span>
@@ -71,6 +103,7 @@ export function TokenCard({ token, onRevoke, onShowActivity, inactive }: { token
           </span>
         )}
       </div>
+      {editable && writes && !token.revokedAt && <OrganizeToggle token={token} />}
       <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3 text-[11.5px]">
         <div>
           <dt className="text-ink-3">{t('token.lastUsed')}</dt>

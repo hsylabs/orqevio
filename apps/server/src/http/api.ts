@@ -295,6 +295,7 @@ export function createApi(env: Env) {
   // ── Agent tokens (session only) ─────────────────────────────────
   api.get('/tokens', async (c) => c.json(await c.get('services').tokens.list(requireActor(c))))
   api.post('/tokens', async (c) => c.json(await c.get('services').tokens.create(requireActor(c), await json(c)), 201))
+  api.patch('/tokens/:id', async (c) => c.json(await c.get('services').tokens.update(requireActor(c), c.req.param('id'), await json(c))))
   api.delete('/tokens/:id', async (c) => {
     await c.get('services').tokens.revoke(requireActor(c), c.req.param('id'))
     return c.body(null, 204)

@@ -316,4 +316,37 @@ describe('undo', () => {
     // Deleting for good forgets the card's history: there is nothing left to undo.
     expect((await client.post('/api/history/undo', { ids: [deleted?.id ?? moved.id] })).status).toBe(404)
   })
+
+  it('takes a card back to its old board with the labels it lost, and a file back where it was', async () => {
+    const { client, workspaceId } = await signUp(h, 'Entre tableros')
+    const { projectId, boardId, columns } = await seedBoard(client, workspaceId)
+    const other = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId, ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'])
+    const label = (await client.post(`/api/boards/${boardId}/labels`, { name: 'Bug', color: 'tomato' })).body.id as string
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Viaje', labelIds: [label] })).body.id as string
+    expect((await bot.post(`/api/cards/${card}/move`, { columnId: other.columns[0]!.id, index: 0 })).status).toBe(200)
+    const moved = await latest(client, 'cards', card, 'card.moved')
+    expect(moved.meta).toMatchObject({ labels: ['Bug'] })
+    expect((await undo(client, { ids: [moved.id] })).undone).toBe(1)
+    const back = (await client.get(`/api/cards/${card}`)).body
+    expect(back).toMatchObject({ board: { id: boardId }, column: { id: columns[0]!.id } })
+    expect(back.labels.map((l: { id: string }) => l.id)).toEqual([label])
+
+    // A file the agent moved, and a person moved again since: undoing asks first.
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Destino' })).body.id as string
+    const elsewhere = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Otro sitio' })).body.id as string
+    const file = (await client.upload(`/api/cards/${card}/attachments`, 'x', { name: 'x.txt', type: 'text/plain' })).body.id as string
+    expect((await bot.post(`/api/attachments/${file}/move`, { pageId: page })).status).toBe(200)
+    const fileMoved = await latest(client, 'pages', page, 'attachment.moved')
+    expect((await client.post(`/api/attachments/${file}/move`, { pageId: elsewhere })).status).toBe(200)
+    expect((await undo(client, { ids: [fileMoved.id] })).plan[0]).toMatchObject({ status: 'conflict', current: { cardId: null, pageId: elsewhere } })
+    expect((await undo(client, { ids: [fileMoved.id], conflicts: 'force' })).undone).toBe(1)
+    expect((await client.get(`/api/cards/${card}`)).body.attachmentList.map((a: { id: string }) => a.id)).toEqual([file])
+    // Undoing both entries of one move moves it once.
+    expect((await bot.post(`/api/attachments/${file}/move`, { pageId: page })).status).toBe(200)
+    const both = [await latest(client, 'pages', page, 'attachment.moved'), await latest(client, 'cards', card, 'attachment.moved')]
+    const result = await undo(client, { ids: both.map((e) => e.id) })
+    expect(result).toMatchObject({ undone: 1, failed: 0 })
+    expect((await client.get(`/api/cards/${card}`)).body.attachmentList).toHaveLength(1)
+  })
 })

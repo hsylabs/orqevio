@@ -88,7 +88,13 @@
     "expiresUnused": "Caduca si no se usa",
     "never": "Nunca",
     "idle": "Sin uso desde hace {{days}} días",
-    "showActivity": "Ver su actividad"
+    "showActivity": "Ver su actividad",
+    "organize": {
+      "pill": "Borrar y mover",
+      "hint": "A la papelera; tú decides si vuelve.",
+      "on": "{{name}} ya puede borrar y mover",
+      "off": "{{name}} ya no puede borrar ni mover"
+    }
   },
   "access": {
     "levels": {
@@ -111,7 +117,12 @@
       "hint": "Nunca accesible para agentes",
       "blocked": "Bloqueada"
     },
-    "atLeastOne": "Concede acceso de lectura al menos a un área."
+    "atLeastOne": "Concede acceso de lectura al menos a un área.",
+    "organize": {
+      "label": "Puede borrar y mover",
+      "hint": "Lo borrado va a la papelera, de donde puedes recuperarlo. Mover incluye llevar tarjetas a otro tablero y adjuntos a otra tarjeta o página.",
+      "needsWrite": "Necesita leer y escribir en algún área."
+    }
   },
   "kit": {
     "clients": "Cliente MCP",

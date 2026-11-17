@@ -88,7 +88,13 @@
     "expiresUnused": "Expira se não for usado",
     "never": "Nunca",
     "idle": "Sem uso há {{days}} dias",
-    "showActivity": "Ver a atividade dele"
+    "showActivity": "Ver a atividade dele",
+    "organize": {
+      "pill": "Excluir e mover",
+      "hint": "Para a lixeira; você decide se volta.",
+      "on": "{{name}} agora pode excluir e mover",
+      "off": "{{name}} não pode mais excluir nem mover"
+    }
   },
   "access": {
     "levels": {
@@ -111,7 +117,12 @@
       "hint": "Nunca acessível aos agentes",
       "blocked": "Bloqueado"
     },
-    "atLeastOne": "Dê acesso de leitura a pelo menos uma área."
+    "atLeastOne": "Dê acesso de leitura a pelo menos uma área.",
+    "organize": {
+      "label": "Pode excluir e mover",
+      "hint": "O que ele excluir vai para a lixeira, de onde você pode trazê-lo de volta. Mover inclui levar cartões a outro quadro e anexos a outro cartão ou página.",
+      "needsWrite": "Precisa de leitura e escrita em alguma área."
+    }
   },
   "kit": {
     "clients": "Cliente MCP",

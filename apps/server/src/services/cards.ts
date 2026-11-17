@@ -339,37 +339,33 @@ export class CardService {
     const otherBoard = target.boardId !== card.boardId
     if (otherBoard) this.access.requireScope(actor, 'organize')
     const boardName = (id: string) => (otherBoard ? this.deps.db.select({ name: boards.name }).from(boards).where(eq(boards.id, id)).get()?.name : undefined)
+    // Between boards, where each column is says which board too.
+    const place = (board: string | undefined, column: string | null | undefined) => (board ? `${board} › ${column ?? ''}` : (column ?? null))
+    const fromColumn = this.deps.db.select({ name: columns.name }).from(columns).where(eq(columns.id, card.columnId)).get()?.name ?? null
+    const from = place(boardName(card.boardId), fromColumn)
+    const to = place(boardName(target.boardId), target.name)
     const moved = this.deps.db.transaction((tx) => {
       const prev = tx.select({ columnId: cards.columnId, boardId: cards.boardId }).from(cards).where(eq(cards.id, cardId)).get()
       const position = positionAt(tx, cards, and(eq(cards.columnId, columnId), isNull(cards.archivedAt)), index, cardId)
       const row = tx.update(cards).set({ columnId, boardId: target.boardId, position, updatedAt: new Date() }).where(eq(cards.id, cardId)).returning().get()!
+      // Labels belong to a board: those of the old one come off, and undoing the move puts them back.
+      const lost = otherBoard ? tx.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, cardId)).all().map((l) => l.id).sort() : []
+      if (lost.length) tx.delete(cardLabels).where(eq(cardLabels.cardId, cardId)).run()
       if (prev && prev.columnId !== columnId) {
-        const from = tx.select({ name: columns.name }).from(columns).where(eq(columns.id, prev.columnId)).get()
-        // Between boards, where each column is says which board too.
-        const place = (board: string | undefined, column: string | null | undefined) => (board ? `${board} › ${column ?? ''}` : (column ?? null))
         this.change(tx, actor, row, {
           kind: 'card.moved',
           before: { boardId: prev.boardId, columnId: prev.columnId },
           after: { boardId: row.boardId, columnId },
-          meta: { from: place(boardName(prev.boardId), from?.name), to: place(boardName(target.boardId), target.name) },
+          meta: { from, to, ...(lost.length ? { labelIds: lost, labels: this.labelNames(tx, lost) } : {}) },
         })
-      }
-      if (otherBoard) {
-        // Labels belong to a board: those of the old one come off, as the history says.
-        const was = tx.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, cardId)).all().map((l) => l.id)
-        if (was.length) {
-          tx.delete(cardLabels).where(eq(cardLabels.cardId, cardId)).run()
-          this.change(tx, actor, row, { kind: 'card.labels', before: [...was].sort(), after: [], meta: { added: [], removed: this.labelNames(tx, was) } })
-        }
       }
       return row
     })
     if (card.columnId !== columnId) {
-      const [from] = await this.deps.db.select({ name: columns.name }).from(columns).where(eq(columns.id, card.columnId))
       await this.activity.record(
         actor,
         card.workspaceId,
-        { action: 'card.moved', entityType: 'card', entityId: cardId, summary: card.title, meta: { from: from?.name ?? null, to: target.name } },
+        { action: 'card.moved', entityType: 'card', entityId: cardId, summary: card.title, meta: { from, to } },
         { boardId: card.boardId, cardId, ...(otherBoard ? { structure: true } : {}) },
       )
       // The board it went to hears of it too.

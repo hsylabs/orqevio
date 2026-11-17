@@ -48,7 +48,9 @@
       "deleted": "<actor>{{actor}}</actor> hat sie in den Papierkorb gelegt",
       "restored": "<actor>{{actor}}</actor> hat sie aus dem Papierkorb zurückgeholt",
       "linked": "<actor>{{actor}}</actor> hat sie mit der Seite „{{page}}“ verknüpft",
-      "unlinked": "<actor>{{actor}}</actor> hat ihre Verknüpfung mit der Seite „{{page}}“ entfernt"
+      "unlinked": "<actor>{{actor}}</actor> hat ihre Verknüpfung mit der Seite „{{page}}“ entfernt",
+      "movedWithoutLabels_one": "<actor>{{actor}}</actor> hat sie von „{{from}}“ nach „{{to}}“ verschoben und das Label {{removed}} des anderen Boards entfernt",
+      "movedWithoutLabels_other": "<actor>{{actor}}</actor> hat sie von „{{from}}“ nach „{{to}}“ verschoben und die Labels {{removed}} des anderen Boards entfernt"
     },
     "checklist": {
       "created": "<actor>{{actor}}</actor> hat die Checkliste „{{title}}“ hinzugefügt",

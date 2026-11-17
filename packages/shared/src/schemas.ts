@@ -111,6 +111,8 @@ export const tokenCreateInput = z.object({
   scopes: z.array(z.enum(SCOPES)).min(1, 'Select at least one permission'),
   expiresInDays: z.union([z.literal(30), z.literal(90), z.literal(365)]).nullable(),
 })
+/** What a person can change in a token or an OAuth connection afterwards: whether it can delete and move. */
+export const tokenUpdateInput = z.object({ organize: z.boolean() })
 
 // ── Vault (opaque, client-encrypted payloads) ───────────────────
 const b64 = z.string().regex(/^[A-Za-z0-9+/=_-]+$/).max(4096)

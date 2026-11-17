@@ -11,7 +11,7 @@ const SCOPE_LABEL: Record<Scope, string> = {
   'tasks:write': 'modify tasks',
   'docs:read': 'read documents',
   'docs:write': 'modify documents',
-  organize: 'delete or move things (to the trash, from where a person can bring them back)',
+  organize: 'delete things (to the trash, from where a person can bring them back) or move them to another board, card or page',
 }
 
 /** Central authorisation checks used by every service. */

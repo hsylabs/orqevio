@@ -276,7 +276,6 @@ export class PageService {
   async move(actor: Actor, pageId: string, input: unknown) {
     const { parentId, index } = parse(pageMoveInput, input)
     const page = await this.load(actor, pageId, 'docs:write')
-    this.access.requireScope(actor, 'organize')
     if (parentId) {
       const parent = await this.load(actor, parentId)
       if (parent.projectId !== page.projectId) throw badRequest('Pages can only be moved within their project')

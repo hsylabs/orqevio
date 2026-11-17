@@ -43,7 +43,8 @@
       "deleted": "<actor>{{actor}}</actor>がゴミ箱に移動しました",
       "restored": "<actor>{{actor}}</actor>がゴミ箱から復元しました",
       "linked": "<actor>{{actor}}</actor>がページ「{{page}}」とリンクしました",
-      "unlinked": "<actor>{{actor}}</actor>がページ「{{page}}」とのリンクを外しました"
+      "unlinked": "<actor>{{actor}}</actor>がページ「{{page}}」とのリンクを外しました",
+      "movedWithoutLabels_other": "<actor>{{actor}}</actor>が「{{from}}」から「{{to}}」に移動し、元のボードのラベル{{removed}}を外しました"
     },
     "checklist": {
       "created": "<actor>{{actor}}</actor>がチェックリスト「{{title}}」を追加しました",

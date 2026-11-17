@@ -7,8 +7,8 @@ export const SCOPES = ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', '
 export type Scope = (typeof SCOPES)[number]
 
 /**
- * `organize`: delete (always to the trash) and move what the token can write, such as pages in
- * the tree, cards to another board and attachments. Tokens made before it don't have it.
+ * `organize`: delete what the token can write (always to the trash), and move cards to another
+ * board and attachments to another card or page. Tokens made before it don't have it.
  */
 export const ORGANIZE: Scope = 'organize'
 

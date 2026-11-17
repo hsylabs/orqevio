@@ -88,7 +88,13 @@
     "expiresUnused": "Expire si inutilisé",
     "never": "Jamais",
     "idle": "Inutilisé depuis {{days}} jours",
-    "showActivity": "Voir son activité"
+    "showActivity": "Voir son activité",
+    "organize": {
+      "pill": "Supprimer et déplacer",
+      "hint": "À la corbeille ; c’est vous qui décidez s’il revient.",
+      "on": "{{name}} peut maintenant supprimer et déplacer",
+      "off": "{{name}} ne peut plus supprimer ni déplacer"
+    }
   },
   "access": {
     "levels": {
@@ -111,7 +117,12 @@
       "hint": "Jamais accessible aux agents",
       "blocked": "Bloqué"
     },
-    "atLeastOne": "Accordez l’accès en lecture à au moins un domaine."
+    "atLeastOne": "Accordez l’accès en lecture à au moins un domaine.",
+    "organize": {
+      "label": "Peut supprimer et déplacer",
+      "hint": "Ce qu’il supprime va à la corbeille, d’où vous pouvez le récupérer. Déplacer comprend les cartes vers un autre tableau et les pièces jointes vers une autre carte ou page.",
+      "needsWrite": "Nécessite la lecture et l’écriture dans un domaine."
+    }
   },
   "kit": {
     "clients": "Client MCP",
