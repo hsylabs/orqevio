@@ -62,7 +62,8 @@
     "attachment": {
       "created": "<actor>{{actor}}</actor>が「{{name}}」を添付しました",
       "deleted": "<actor>{{actor}}</actor>がファイル「{{name}}」をゴミ箱に移動しました",
-      "restored": "<actor>{{actor}}</actor>がファイル「{{name}}」を復元しました"
+      "restored": "<actor>{{actor}}</actor>がファイル「{{name}}」を復元しました",
+      "moved": "<actor>{{actor}}</actor>がファイル「{{name}}」を「{{from}}」から「{{to}}」に移動しました"
     }
   },
   "actions": {

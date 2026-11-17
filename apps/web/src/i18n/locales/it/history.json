@@ -72,7 +72,8 @@
     "attachment": {
       "created": "<actor>{{actor}}</actor> ha allegato «{{name}}»",
       "deleted": "<actor>{{actor}}</actor> ha spostato il file «{{name}}» nel cestino",
-      "restored": "<actor>{{actor}}</actor> ha recuperato il file «{{name}}»"
+      "restored": "<actor>{{actor}}</actor> ha recuperato il file «{{name}}»",
+      "moved": "<actor>{{actor}}</actor> ha spostato il file «{{name}}» da «{{from}}» a «{{to}}»"
     }
   },
   "actions": {

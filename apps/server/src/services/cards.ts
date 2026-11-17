@@ -334,19 +334,33 @@ export class CardService {
     const { columnId, index } = parse(cardMoveInput, input)
     const card = await this.load(actor, cardId, 'tasks:write')
     const [target] = await this.deps.db.select().from(columns).where(eq(columns.id, columnId))
-    if (!target || target.boardId !== card.boardId) throw badRequest('The column must belong to the same board')
+    if (!target || target.workspaceId !== card.workspaceId) throw badRequest('The column must belong to the same workspace')
+    // Another board is a move between boards: agents need to be allowed to delete and move.
+    const otherBoard = target.boardId !== card.boardId
+    if (otherBoard) this.access.requireScope(actor, 'organize')
+    const boardName = (id: string) => (otherBoard ? this.deps.db.select({ name: boards.name }).from(boards).where(eq(boards.id, id)).get()?.name : undefined)
     const moved = this.deps.db.transaction((tx) => {
-      const prev = tx.select({ columnId: cards.columnId }).from(cards).where(eq(cards.id, cardId)).get()
+      const prev = tx.select({ columnId: cards.columnId, boardId: cards.boardId }).from(cards).where(eq(cards.id, cardId)).get()
       const position = positionAt(tx, cards, and(eq(cards.columnId, columnId), isNull(cards.archivedAt)), index, cardId)
-      const row = tx.update(cards).set({ columnId, position, updatedAt: new Date() }).where(eq(cards.id, cardId)).returning().get()!
+      const row = tx.update(cards).set({ columnId, boardId: target.boardId, position, updatedAt: new Date() }).where(eq(cards.id, cardId)).returning().get()!
       if (prev && prev.columnId !== columnId) {
         const from = tx.select({ name: columns.name }).from(columns).where(eq(columns.id, prev.columnId)).get()
+        // Between boards, where each column is says which board too.
+        const place = (board: string | undefined, column: string | null | undefined) => (board ? `${board} › ${column ?? ''}` : (column ?? null))
         this.change(tx, actor, row, {
           kind: 'card.moved',
-          before: { boardId: card.boardId, columnId: prev.columnId },
+          before: { boardId: prev.boardId, columnId: prev.columnId },
           after: { boardId: row.boardId, columnId },
-          meta: { from: from?.name ?? null, to: target.name },
+          meta: { from: place(boardName(prev.boardId), from?.name), to: place(boardName(target.boardId), target.name) },
         })
+      }
+      if (otherBoard) {
+        // Labels belong to a board: those of the old one come off, as the history says.
+        const was = tx.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, cardId)).all().map((l) => l.id)
+        if (was.length) {
+          tx.delete(cardLabels).where(eq(cardLabels.cardId, cardId)).run()
+          this.change(tx, actor, row, { kind: 'card.labels', before: [...was].sort(), after: [], meta: { added: [], removed: this.labelNames(tx, was) } })
+        }
       }
       return row
     })
@@ -356,8 +370,10 @@ export class CardService {
         actor,
         card.workspaceId,
         { action: 'card.moved', entityType: 'card', entityId: cardId, summary: card.title, meta: { from: from?.name ?? null, to: target.name } },
-        { boardId: card.boardId, cardId },
+        { boardId: card.boardId, cardId, ...(otherBoard ? { structure: true } : {}) },
       )
+      // The board it went to hears of it too.
+      if (otherBoard) await this.activity.emit(card.workspaceId, { action: 'card.moved', actor: actorRef(actor), boardId: target.boardId, cardId, structure: true })
     } else {
       await this.activity.emit(card.workspaceId, {
         action: 'card.reordered',
@@ -392,7 +408,7 @@ export class CardService {
 
   /** Moves the card to the trash, with its checklists, labels, links and attachments. */
   async remove(actor: Actor, cardId: string) {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, 'organize')
     const card = await this.load(actor, cardId, 'tasks:write')
     const trashId = this.deps.db.transaction((tx) => {
       const trashId = this.trash.move(tx, actor, card.workspaceId, { kind: 'card', id: cardId })
@@ -450,9 +466,9 @@ export class CardService {
     await this.touch(actor, card, title)
   }
 
-  /** Only people delete checklists and their items: agents can't delete anything. */
+  /** To the trash, with its items. Agents need to be allowed to delete and move. */
   async removeChecklist(actor: Actor, checklistId: string) {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, 'organize')
     const { list, card } = await this.loadChecklist(actor, checklistId)
     const trashId = this.deps.db.transaction((tx) => {
       const trashId = this.trash.move(tx, actor, card.workspaceId, { kind: 'checklist', id: checklistId })
@@ -503,7 +519,7 @@ export class CardService {
   }
 
   async removeItem(actor: Actor, itemId: string) {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, 'organize')
     const { item, card } = await this.loadItem(actor, itemId)
     const trashId = this.deps.db.transaction((tx) => {
       const trashId = this.trash.move(tx, actor, card.workspaceId, { kind: 'checklist_item', id: itemId })
@@ -539,9 +555,10 @@ export class CardService {
     )
   }
 
-  /** Only people remove links: agents can link a page to a card but can't delete anything. */
+  /** To the trash. Agents need write access to tasks or documents, and to be allowed to delete and move. */
   async unlinkPage(actor: Actor, cardId: string, pageId: string) {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, 'organize')
+    this.access.requireAnyScope(actor, ['tasks:write', 'docs:write'])
     const card = await this.load(actor, cardId, 'tasks:read')
     const [page] = await this.deps.db.select({ title: pages.title }).from(pages).where(eq(pages.id, pageId))
     const trashId = this.deps.db.transaction((tx) => {

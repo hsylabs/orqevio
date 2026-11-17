@@ -286,6 +286,7 @@ export function createApi(env: Env) {
     })
   })
   api.delete('/attachments/:id', async (c) => c.json({ trashId: await c.get('services').attachments.remove(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
+  api.post('/attachments/:id/move', async (c) => c.json(await c.get('services').attachments.move(requireActor(c), c.req.param('id'), await json(c))))
 
   // ── OAuth consent (session only) ────────────────────────────────
   api.post('/oauth/request', async (c) => c.json(await c.get('services').oauth.request(requireActor(c), await json(c), endpointFor(c.get('config'), c.req.url))))

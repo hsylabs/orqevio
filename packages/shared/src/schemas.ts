@@ -99,6 +99,10 @@ export const pageUpdateInput = z.object({
   baseVersion: z.number().int().min(1).optional(),
 })
 export const pageMoveInput = z.object({ parentId: id.nullable(), index })
+/** Where an attachment goes: a card or a page. */
+export const attachmentMoveInput = z
+  .object({ cardId: id.optional(), pageId: id.optional() })
+  .refine((v) => (v.cardId === undefined) !== (v.pageId === undefined), { message: 'Send either cardId or pageId' })
 
 // ── Agent tokens ────────────────────────────────────────────────
 export const tokenCreateInput = z.object({

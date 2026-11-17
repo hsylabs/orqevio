@@ -276,6 +276,7 @@ export class PageService {
   async move(actor: Actor, pageId: string, input: unknown) {
     const { parentId, index } = parse(pageMoveInput, input)
     const page = await this.load(actor, pageId, 'docs:write')
+    this.access.requireScope(actor, 'organize')
     if (parentId) {
       const parent = await this.load(actor, parentId)
       if (parent.projectId !== page.projectId) throw badRequest('Pages can only be moved within their project')
@@ -312,7 +313,7 @@ export class PageService {
   }
 
   async remove(actor: Actor, pageId: string) {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, 'organize')
     const page = await this.load(actor, pageId, 'docs:write')
     const trashId = this.deps.db.transaction((tx) => {
       const trashId = this.trash.move(tx, actor, page.workspaceId, { kind: 'page', id: pageId })

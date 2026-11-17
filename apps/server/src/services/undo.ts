@@ -1,5 +1,6 @@
 import {
   type ActorRef,
+  type AttachmentPlace,
   type CardPlace,
   HISTORY_BODY_KINDS,
   type HistoryKind,
@@ -66,6 +67,8 @@ const fieldKey = (row: HistoryRow) => `${row.entityId}|${row.kind}|${row.subject
 const sameSet = (a: HistoryValue, b: HistoryValue) =>
   Array.isArray(a) && Array.isArray(b) ? a.length === b.length && [...a].sort().every((v, i) => v === [...b].sort()[i]) : a === b
 const columnOf = (value: HistoryValue) => (value && typeof value === 'object' && !Array.isArray(value) && 'columnId' in value ? (value as CardPlace).columnId : null)
+const fileAt = (value: HistoryValue) =>
+  value && typeof value === 'object' && !Array.isArray(value) && 'pageId' in value ? `${(value as AttachmentPlace).cardId ?? ''}|${(value as AttachmentPlace).pageId ?? ''}` : null
 const parentOf = (value: HistoryValue) => (value && typeof value === 'object' && !Array.isArray(value) && 'projectId' in value ? (value as PagePlace).parentId : undefined)
 
 /**
@@ -262,8 +265,7 @@ export class UndoService {
       return { status, exists: false }
     }
     // A value set back to what it was before.
-    const value = (current: HistoryValue, same: (a: HistoryValue, b: HistoryValue) => boolean = (a, b) => a === b, place?: () => boolean): Check => {
-      const key = fieldKey(row)
+    const value = (current: HistoryValue, same: (a: HistoryValue, b: HistoryValue) => boolean = (a, b) => a === b, place?: () => boolean, key = fieldKey(row)): Check => {
       const now = state.values.has(key) ? state.values.get(key)! : current
       if (same(now, before)) return { status: 'unchanged' }
       if (place && !place()) return { status: 'impossible', reason: 'place_gone' }
@@ -339,7 +341,8 @@ export class UndoService {
           return value(
             { boardId: card.boardId, columnId: card.columnId },
             (a, b) => columnOf(a) === columnOf(b),
-            () => Boolean(one(db.select({ id: columns.id }).from(columns).where(and(eq(columns.id, target ?? ''), eq(columns.boardId, card.boardId))))),
+            // Its old column, on its board or another one of the same workspace.
+            () => Boolean(one(db.select({ id: columns.id }).from(columns).where(and(eq(columns.id, target ?? ''), eq(columns.workspaceId, card.workspaceId))))),
           )
         }
         case 'card.archived':
@@ -381,6 +384,18 @@ export class UndoService {
         return takeAway(`attachment:${subject}`, file)
       case 'attachment.deleted':
         return bringBack(`attachment:${subject}`, file)
+      case 'attachment.moved': {
+        const at = one(db.select({ cardId: attachments.cardId, pageId: attachments.pageId, workspaceId: attachments.workspaceId }).from(attachments).where(eq(attachments.id, subject)))
+        if (!at) return { status: 'impossible', reason: 'gone' }
+        const back = before as AttachmentPlace | null
+        const there = () => {
+          const table = back?.pageId ? pages : cards
+          const id = back?.pageId ?? back?.cardId ?? ''
+          return Boolean(one(db.select({ id: table.id }).from(table).where(and(eq(table.id, id), eq(table.workspaceId, at.workspaceId)))))
+        }
+        // One move, in the history of both places: keyed by the file, so undoing both entries moves it once.
+        return value({ cardId: at.cardId, pageId: at.pageId }, (a, b) => fileAt(a) === fileAt(b), there, `attachment-place:${subject}`)
+      }
     }
     return { status: 'impossible', reason: 'refused' }
   }
@@ -448,6 +463,10 @@ export class UndoService {
       case 'attachment.created':
       case 'attachment.restored':
         return attachmentService.remove(actor, subject)
+      case 'attachment.moved': {
+        const back = before as AttachmentPlace | null
+        return attachmentService.move(actor, subject, back?.pageId ? { pageId: back.pageId } : { cardId: back?.cardId ?? '' })
+      }
       case 'page.deleted':
       case 'card.deleted':
       case 'card.unlinked':

@@ -67,7 +67,8 @@
     "attachment": {
       "created": "<actor>{{actor}}</actor> heeft ‘{{name}}’ bijgevoegd",
       "deleted": "<actor>{{actor}}</actor> heeft het bestand ‘{{name}}’ naar de prullenbak verplaatst",
-      "restored": "<actor>{{actor}}</actor> heeft het bestand ‘{{name}}’ teruggezet"
+      "restored": "<actor>{{actor}}</actor> heeft het bestand ‘{{name}}’ teruggezet",
+      "moved": "<actor>{{actor}}</actor> heeft het bestand ‘{{name}}’ verplaatst van ‘{{from}}’ naar ‘{{to}}’"
     }
   },
   "actions": {

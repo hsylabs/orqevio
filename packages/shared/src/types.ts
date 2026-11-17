@@ -464,6 +464,7 @@ export const HISTORY_KINDS = [
   'attachment.created',
   'attachment.deleted',
   'attachment.restored',
+  'attachment.moved',
 ] as const
 export type HistoryKind = (typeof HISTORY_KINDS)[number]
 
@@ -497,7 +498,13 @@ export interface PagePlace {
   parentId: string | null
 }
 
-export type HistoryValue = string | boolean | string[] | CardPlace | PagePlace | null
+/** Where an attachment is: on a card or on a page. */
+export interface AttachmentPlace {
+  cardId: string | null
+  pageId: string | null
+}
+
+export type HistoryValue = string | boolean | string[] | CardPlace | PagePlace | AttachmentPlace | null
 
 export type HistoryMeta = Record<string, string | number | boolean | null | string[]>
 
