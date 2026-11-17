@@ -54,7 +54,11 @@
     <p><code>.env</code>を編集し、<code>APP_URL</code>にOrqevioの公開アドレス（例：<code>https://orqevio.example.jp</code>）を設定します。必要なら、英字または数字12文字以上で独自の<code>SETUP_CODE</code>も設定できます。その後：</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
     <p>Orqevioはポート3000で待ち受けます。HTTPS対応のリバースプロキシ（Caddy、Nginx、Traefik）の背後に置き、<code>.env</code>に<code>TRUST_PROXY=true</code>を追加してください。</p>
-    <p><strong>バックアップ：</strong>Orqevioを停止した状態で<code>orqevio-data</code>ボリュームをコピーするか、<code>sqlite3</code>で稼働中のデータベースをバックアップし、<code>uploads</code>フォルダーも保存してください。</p>
+    <p><strong>バックアップ：</strong>Orqevioの稼働中にデータベースのライブバックアップを作成し、<code>uploads</code>フォルダーの添付ファイルと一緒にコンテナーの外へコピーしてください。</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose exec app node dist/cli.js backup /data/backup.db</code></pre></div>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backup.db ./orqevio-backup.db</code></pre></div>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/uploads ./orqevio-uploads</code></pre></div>
+    <p>復元するには、Orqevioを停止して<a href="https://github.com/hsylabs/orqevio#with-docker-recommended-for-production" target="_blank" rel="noopener">README<span class="visually-hidden"> （新しいタブで開きます）</span></a>（英語）の手順に従ってください。停止中に<code>orqevio-data</code>ボリューム全体をコピーすることもできます。</p>
 
     <h2 id="access">初回ログイン</h2>
     <ol>

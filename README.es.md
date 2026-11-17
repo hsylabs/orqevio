@@ -135,7 +135,25 @@ docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 
 La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx, Traefik) y, en ese caso, añade `TRUST_PROXY=true`. La base de datos SQLite y los adjuntos se guardan en el volumen `orqevio-data`.
 
-**Copias de seguridad.** Basta con copiar el volumen con la app parada, o hacer una copia en caliente con `sqlite3 /data/orqevio.db ".backup '/data/copia.db'"` y guardar también la carpeta `uploads`.
+**Copias de seguridad.** Con la app en marcha, haz una copia en caliente de la base de datos y sácala del contenedor junto con los adjuntos, que están en la carpeta `uploads`:
+
+```bash
+docker compose exec app node dist/cli.js backup /data/backup.db
+docker compose cp app:/data/backup.db ./orqevio-copia.db
+docker compose cp app:/data/uploads ./orqevio-adjuntos
+```
+
+Para restaurarla, para la app, vuelve a meter las dos cosas y deja que Orqevio coloque la base de datos. Guarda la que sustituye como `orqevio.db.before-restore` y devuelve los archivos al usuario de la app:
+
+```bash
+docker compose stop app
+docker compose cp ./orqevio-copia.db app:/data/restore.db
+docker compose cp ./orqevio-adjuntos/. app:/data/uploads
+docker compose run --rm --user root app node dist/cli.js restore /data/restore.db
+docker compose start app
+```
+
+En un servidor nuevo, ejecuta antes una vez `docker compose up -d`, para que existan el contenedor y su volumen. También puedes copiar el volumen `orqevio-data` entero con la app parada. Sin Docker, `pnpm cli backup <archivo>` hace la misma copia y, con el servidor parado, `pnpm cli restore <archivo>` la devuelve a su sitio; los adjuntos están en la carpeta `uploads` de `DATA_DIR`.
 
 ### En Cloudflare (con un comando)
 

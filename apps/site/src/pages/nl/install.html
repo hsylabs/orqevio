@@ -54,7 +54,11 @@
     <p>Bewerk <code>.env</code>: zet in <code>APP_URL</code> het openbare adres van je installatie (bijvoorbeeld <code>https://orqevio.jouw-domein.nl</code>) en, als je wilt, een eigen <code>SETUP_CODE</code> van minstens 12 letters of cijfers. Daarna:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
     <p>De installatie luistert op poort 3000. Zet hem achter een reverse proxy met HTTPS (Caddy, Nginx of Traefik) en voeg <code>TRUST_PROXY=true</code> toe aan <code>.env</code>.</p>
-    <p><strong>Back-ups:</strong> kopieer het volume <code>orqevio-data</code> terwijl de installatie is gestopt, of maak een live back-up van de database met <code>sqlite3</code> en bewaar ook de map <code>uploads</code>.</p>
+    <p><strong>Back-ups:</strong> maak terwijl de installatie draait een live back-up van de database en kopieer die uit de container, samen met de bijlagen in de map <code>uploads</code>:</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose exec app node dist/cli.js backup /data/backup.db</code></pre></div>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backup.db ./orqevio-backup.db</code></pre></div>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/uploads ./orqevio-uploads</code></pre></div>
+    <p>Om de back-up terug te zetten, stop je de installatie en volg je de stappen in de <a href="https://github.com/hsylabs/orqevio#with-docker-recommended-for-production" target="_blank" rel="noopener">README<span class="visually-hidden"> (opent in een nieuw tabblad)</span></a> (in het Engels). Je kunt ook het hele volume <code>orqevio-data</code> kopiëren terwijl de installatie is gestopt.</p>
 
     <h2 id="access">Eerste keer inloggen</h2>
     <ol>

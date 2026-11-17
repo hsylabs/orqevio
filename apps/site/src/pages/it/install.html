@@ -54,7 +54,11 @@
     <p>Modifica <code>.env</code>: imposta in <code>APP_URL</code> l’indirizzo pubblico della tua copia (per esempio <code>https://orqevio.tuo-dominio.com</code>) e, se vuoi, un <code>SETUP_CODE</code> scelto da te di almeno 12 lettere o cifre. Poi:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
     <p>La copia è in ascolto sulla porta 3000. Mettila dietro un reverse proxy con HTTPS (Caddy, Nginx o Traefik) e aggiungi <code>TRUST_PROXY=true</code> a <code>.env</code>.</p>
-    <p><strong>Backup:</strong> copia il volume <code>orqevio-data</code> a copia ferma, oppure fai un backup a caldo del database con <code>sqlite3</code> e conserva anche la cartella <code>uploads</code>.</p>
+    <p><strong>Backup:</strong> con la copia in esecuzione, fai un backup a caldo del database e copialo fuori dal container insieme agli allegati della cartella <code>uploads</code>:</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose exec app node dist/cli.js backup /data/backup.db</code></pre></div>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backup.db ./orqevio-backup.db</code></pre></div>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/uploads ./orqevio-uploads</code></pre></div>
+    <p>Per ripristinarlo, ferma la copia e segui i passaggi del <a href="https://github.com/hsylabs/orqevio#with-docker-recommended-for-production" target="_blank" rel="noopener">README<span class="visually-hidden"> (si apre in una nuova scheda)</span></a> (in inglese). Puoi anche copiare tutto il volume <code>orqevio-data</code> a copia ferma.</p>
 
     <h2 id="access">Primo accesso</h2>
     <ol>
