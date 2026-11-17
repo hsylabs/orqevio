@@ -99,10 +99,21 @@ describe('the public website', () => {
     const install = read(fileOf(lang, 'install'))
     const button = /\((https:\/\/deploy\.workers\.cloudflare\.com\/\?url=[^)]+)\)/.exec(readme)[1]
     expect(install).toContain(`href="${button}"`)
-    for (const command of ['npx create-orqevio', 'npx create-orqevio@latest update', 'npx create-orqevio@latest recover', 'docker compose exec app node dist/cli.js reset-access', '--lang']) {
+    for (const command of [
+      'npx create-orqevio',
+      'npx create-orqevio@latest update',
+      'npx create-orqevio@latest recover',
+      'docker compose exec app node dist/cli.js reset-access',
+      'docker compose exec app node dist/cli.js backup /data/backup.db',
+      'docker compose cp app:/data/uploads',
+      '--lang',
+    ]) {
       expect(readme).toContain(command)
       expect(install).toContain(command)
     }
+    // The image has no sqlite3 program: backups go through Orqevio's own command, restoring too.
+    expect(readme).toContain('docker compose run --rm --user root app node dist/cli.js restore')
+    for (const text of [readme, install]) expect(text).not.toMatch(/[>`\s]sqlite3[\s<`]/)
     // Every guide asks to turn R2 on before the first install in Cloudflare.
     for (const text of [readme, install]) expect(text).toContain('https://dash.cloudflare.com/?to=/:account/r2/overview')
     // The files the Docker guide downloads are in the repository.
