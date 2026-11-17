@@ -530,12 +530,6 @@ export class TrashService {
     for (const { key } of files) await this.deps.storage.delete(key!).catch(() => {})
     return true
   }
-
-  /** Whether a stored file belongs to an attachment in the trash, so the sweep keeps it. */
-  async holdsFile(storageKey: string) {
-    const [row] = await this.deps.db.select({ id: schema.trashRows.id }).from(schema.trashRows).where(eq(schema.trashRows.storageKey, storageKey)).limit(1)
-    return Boolean(row)
-  }
 }
 
 /**

@@ -4,7 +4,9 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { attachments, pages, trash, trashRows } from '../src/db/schema'
+import type { AttachmentStorage } from '../src/lib/storage'
 import { LocalStorage } from '../src/lib/storage-local'
+import { createServices } from '../src/services'
 import { Client, type Harness, createHarness, createPageChain, seedBoard, signUp } from './harness'
 
 let h: Harness
@@ -50,8 +52,8 @@ describe('the trash', () => {
     expect((await client.get(`/api/workspaces/${workspaceId}/search?q=penalización`)).body).toEqual([])
     // …but the file stays, and the sweep keeps it.
     expect(existsSync(storedFile(key))).toBe(true)
-    expect(await h.services.trash.holdsFile(key)).toBe(true)
-    expect(await new LocalStorage(path.join(h.env.dataDir, 'uploads')).sweep((k) => h.services.trash.holdsFile(k), 0)).toBe(0)
+    expect(h.services.attachments.usesFile(key)).toBe(true)
+    expect(await new LocalStorage(path.join(h.env.dataDir, 'uploads')).sweep(async (k) => h.services.attachments.usesFile(k), 0)).toBe(0)
 
     const [entry] = await listTrash(client, workspaceId)
     expect(entry).toMatchObject({
@@ -288,6 +290,31 @@ describe('the trash', () => {
     expect(await h.services.trash.purgeExpired(new Date(Date.now() + TRASH_DAYS * 86_400_000 + 1000))).toBeGreaterThanOrEqual(1)
     expect(h.db.select().from(trash).where(eq(trash.id, page)).all()).toEqual([])
     expect(h.db.select().from(trashRows).where(eq(trashRows.trashId, page)).all()).toEqual([])
+  })
+
+  it('keeps a file the hourly sweep checks while it is being restored', async () => {
+    const { client, user, workspaceId } = await signUp(h, 'Barrido')
+    const actor = { kind: 'user' as const, userId: user.id as string, name: user.name as string, sessionId: 'test' }
+    const { columns } = await seedBoard(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Barrido' })).body.id
+    const file = (await client.upload(`/api/cards/${card}/attachments`, 'contenido', { name: 'a.txt', type: 'text/plain' })).body.id
+    const key = keyOf(file)
+    // A sweep that looks only at this file and deletes nothing, so every run takes the same steps.
+    const orphans: string[] = []
+    const storage = { sweep: async (isKnown: (key: string) => Promise<boolean>) => ((await isKnown(key)) ? 0 : orphans.push(key)) } as unknown as AttachmentStorage
+    const sweeper = createServices({ db: h.db, bus: h.bus, env: h.env, storage }).attachments
+    const ticks = async (n: number) => {
+      for (let i = 0; i < n; i++) await null
+    }
+    // The restore lands at every step of the sweep's check, before and after it.
+    for (let lead = -40; lead <= 40; lead++) {
+      const trashId = await h.services.attachments.remove(actor, file)
+      await Promise.all([
+        ticks(Math.max(0, lead)).then(() => h.services.trash.restore(actor, trashId!)),
+        ticks(Math.max(0, -lead)).then(() => sweeper.sweepOrphans()),
+      ])
+      expect({ lead, orphans }).toEqual({ lead, orphans: [] })
+    }
   })
 
   it('either restores or deletes for good when both happen at once, never half of each', async () => {

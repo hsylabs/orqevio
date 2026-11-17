@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { AttachmentDTO } from '@orqevio/shared'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { attachments, cards, pages } from '../db/schema'
 import { AppError, badRequest, notFound, uninstalled } from '../lib/errors'
@@ -170,11 +170,20 @@ export class AttachmentService {
     return trashId
   }
 
+  /**
+   * Whether an attachment or one in the trash uses a stored file. Both are checked in one
+   * statement: a restore moves the file's reference from the trash back to the attachments, and
+   * a check in two steps could miss it in both.
+   */
+  usesFile(storageKey: string) {
+    return Boolean(
+      this.deps.db.get(sql`SELECT 1 AS used WHERE EXISTS (SELECT 1 FROM attachments WHERE storage_key = ${storageKey})
+        OR EXISTS (SELECT 1 FROM trash_rows WHERE storage_key = ${storageKey})`),
+    )
+  }
+
   /** Removes stored files that neither an attachment nor one in the trash still uses. */
   async sweepOrphans() {
-    return this.deps.storage.sweep(async (key) => {
-      const [row] = await this.deps.db.select({ id: attachments.id }).from(attachments).where(eq(attachments.storageKey, key)).limit(1)
-      return Boolean(row) || (await this.trash.holdsFile(key))
-    })
+    return this.deps.storage.sweep(async (key) => this.usesFile(key))
   }
 }
