@@ -75,6 +75,9 @@ test('deleted things wait in the trash, to undo, restore or delete for good', as
   const todo = board.columns.find((c) => c.name === 'Por hacer')!
   expect(board.cards.find((c) => c.title === 'Contratar camión')?.columnId).toBe(todo.id)
   expect((await page.request.delete(`/api/columns/${todo.id}`)).status()).toBe(200)
+  // The column shows up at the top of the list a moment later, moving the rest down: wait for it,
+  // as people do, so the click doesn't land on its button instead.
+  await expect(list.getByRole('listitem', { name: 'Por hacer' })).toBeVisible()
   await list.getByRole('listitem', { name: 'Embalar libros' }).getByRole('button', { name: 'Restaurar' }).click()
   await expect(page.getByText('Su sitio ya no existe, así que ahora está en Mudanza › Tareas › En curso.')).toBeVisible()
 
@@ -86,6 +89,7 @@ test('deleted things wait in the trash, to undo, restore or delete for good', as
   expect((await page.request.delete(`/api/checklist-items/${item.id}`)).status()).toBe(200)
   expect((await page.request.delete(`/api/checklists/${checklist.id}`)).status()).toBe(200)
   const contar = list.getByRole('listitem', { name: 'Contar cajas' })
+  await expect(list.getByRole('listitem', { name: 'Pasos' })).toBeVisible()
   await contar.getByRole('button', { name: 'Restaurar' }).click()
   await expect(page.getByText('Restaura antes «Pasos»: aquello a lo que pertenece también está en la papelera.')).toBeVisible()
   await expect(contar).toBeVisible()
