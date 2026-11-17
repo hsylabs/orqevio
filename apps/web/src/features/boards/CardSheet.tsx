@@ -3,6 +3,7 @@ import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, History, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
 import { type ReactNode, useEffect, useReducer, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { ActivityList } from '../../components/ActivityList'
 import { Avatar } from '../../components/ui/Avatar'
@@ -50,9 +51,16 @@ export function CardSheet({ cardId, board, onClose }: { cardId: string | null; b
   const last = useRef(card.data)
   if (card.data) last.current = card.data
   const data = open ? card.data : last.current
+  // Moved to another board while open (by an agent, say): follow it there, where its columns and labels are.
+  const navigate = useNavigate()
+  const { workspaceId } = useWorkspace()
+  const elsewhere = open && card.data && card.data.boardId !== board.id ? card.data.boardId : null
+  useEffect(() => {
+    if (elsewhere && cardId) navigate(`/w/${workspaceId}/b/${elsewhere}?card=${cardId}`, { replace: true })
+  }, [elsewhere, cardId, workspaceId, navigate])
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={data?.title ?? t('sheet.fallbackTitle')} label={t('sheet.label')}>
-      {data && !(open && gone) ? (
+      {elsewhere ? null : data && !(open && gone) ? (
         <CardBody key={data.id} card={data} board={board} onClose={onClose} />
       ) : gone ? (
         <div className="grid flex-1 place-items-center p-8 text-center text-ink-2">
@@ -105,6 +113,12 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
   const confirm = useConfirm()
   const agent = useAgentHighlight(card.id)
   const [title, setTitle] = useState(card.title)
+  // For saving a title still being typed when the sheet goes away (the card moved to another board, say).
+  const titleDraft = useRef(title)
+  titleDraft.current = title
+  const cardTitle = useRef(card.title)
+  cardTitle.current = card.title
+  const sentTitle = useRef<string | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const descTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -219,6 +233,9 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
       mounted.current = false
       if (conflictRef.current) toast.error(t('sheet.conflict.notSaved'))
       else void flushDescription()
+      // Removing the title field doesn't blur it: save what was typed, unless it is already on its way.
+      const next = titleDraft.current.trim()
+      if (next && next !== cardTitle.current && next !== sentTitle.current) void update({ title: next })
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -380,8 +397,10 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
             }}
             onBlur={() => {
               const next = title.trim()
-              if (next && next !== card.title) void update({ title: next })
-              else setTitle(card.title)
+              if (next && next !== card.title) {
+                sentTitle.current = next
+                void update({ title: next })
+              } else setTitle(card.title)
             }}
             className="block w-full resize-none overflow-hidden bg-transparent font-display text-[26px] leading-[1.18] font-medium tracking-[-0.02em] outline-none"
           />

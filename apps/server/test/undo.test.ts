@@ -407,4 +407,23 @@ describe('undo', () => {
     expect((await undo(client, { ids: [uploaded.id] })).plan[0]).toMatchObject({ status: 'conflict', changedBy: { kind: 'user', name: 'Otro sitio' } })
     expect((await client.get(`/api/pages/${later}`)).body.attachments.map((a: { id: string }) => a.id)).toEqual([file])
   })
+
+  it('counts the subpages that undoing the deletion of their page brings back', async () => {
+    const { client, workspaceId } = await signUp(h, 'Subpáginas')
+    const { projectId } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId, ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'])
+    const top = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Manual' })).body.id as string
+    const sub = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Instalar', parentId: top })).body.id as string
+    await bot.patch(`/api/pages/${sub}`, { title: 'Instalar (revisado)' })
+    await bot.del(`/api/pages/${top}`)
+    // The subpage is in the trash with its page, out of reach of its history: read it in the database.
+    const edit = h.db.select({ id: history.id }).from(history).where(and(eq(history.entityId, sub), eq(history.kind, 'page.title'))).get()!
+    const plan = (await undo(client, { since: edit.id, dryRun: true })).plan
+    expect(plan.map((p) => [p.kind, p.status])).toEqual([
+      ['page.deleted', 'ready'],
+      ['page.title', 'ready'],
+    ])
+    expect(await undo(client, { since: edit.id })).toMatchObject({ undone: 2, failed: 0 })
+    expect((await client.get(`/api/pages/${sub}`)).body).toMatchObject({ title: 'Instalar', parentId: top })
+  })
 })

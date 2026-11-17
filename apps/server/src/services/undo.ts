@@ -271,8 +271,12 @@ export class UndoService {
     const returning = (id: string) => [...state.restoring].some((trashId) => this.kept(trashId, id) !== undefined)
     const later: Check = { status: 'ready' }
     const entityKey = `${row.entityType}:${row.entityId}`
-    const entityExists = has(entityKey, () =>
-      Boolean(row.entityType === 'page' ? one(db.select({ id: pages.id }).from(pages).where(eq(pages.id, row.entityId))) : one(db.select({ id: cards.id }).from(cards).where(eq(cards.id, row.entityId)))),
+    // There, or coming back with something a newer change being undone brings back (a subpage with its page).
+    const entityExists = has(
+      entityKey,
+      () =>
+        Boolean(row.entityType === 'page' ? one(db.select({ id: pages.id }).from(pages).where(eq(pages.id, row.entityId))) : one(db.select({ id: cards.id }).from(cards).where(eq(cards.id, row.entityId)))) ||
+        returning(row.entityId),
     )
 
     // Something taken away (to the trash) comes back; something added goes.

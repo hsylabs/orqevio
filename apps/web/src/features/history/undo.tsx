@@ -46,9 +46,11 @@ export function useUndo() {
   const [asking, setAsking] = useState<Asking | null>(null)
   const [busy, setBusy] = useState(false)
 
-  function report(result: UndoResultDTO) {
+  /** `forced`: changes someone changed since were undone too, and still read as conflicts in the plan. */
+  function report(result: UndoResultDTO, forced = false) {
     refresh()
-    if (result.applied) void syncPages(result.plan.filter((p) => p.status === 'ready' && p.entityType === 'page').map((p) => p.entityId), self)
+    const undone = (p: UndoPlanItemDTO) => p.status === 'ready' || (forced && p.status === 'conflict')
+    if (result.applied) void syncPages(result.plan.filter((p) => undone(p) && p.entityType === 'page').map((p) => p.entityId), self)
     const notes = [
       result.skipped ? t('undo.skipped', { count: result.skipped }) : '',
       result.failed ? t('undo.failed', { count: result.failed }) : '',
@@ -65,7 +67,7 @@ export function useUndo() {
     try {
       const result = await post<UndoResultDTO>('/history/undo', { ...target, conflicts })
       setAsking(null)
-      report(result)
+      report(result, conflicts === 'force')
     } catch (error) {
       toast.error(errorMessage(error))
     } finally {

@@ -23,7 +23,8 @@ test('an agent reorganises a project with permission to delete and move, and the
   await page.getByRole('button', { name: 'Crear token' }).click()
   const token = (await page.getByRole('dialog').locator('code').first().innerText()).trim()
   await page.getByRole('button', { name: 'Hecho' }).click()
-  const card = page.locator('article').filter({ hasText: 'Claude' })
+  // This token's card, by the start of the token it shows.
+  const card = page.locator('article').filter({ hasText: token.slice(0, 12) })
   await expect(card.getByText('Borrar y mover', { exact: true })).toBeVisible()
 
   let id = 1
@@ -41,7 +42,16 @@ test('an agent reorganises a project with permission to delete and move, and the
     return ((await res.json()).result.tools as Array<{ name: string }>).map((t) => t.name)
   }
 
-  // The agent attaches a list, files it in the inventory, takes the card to the archive and deletes the page.
+  // With the card open on its board, the agent attaches a list, files it in the inventory, takes the
+  // card to the archive and deletes the page.
+  await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: /^Tareas/ }).click()
+  await page.waitForURL(`**/b/${boardId}`)
+  await page.getByRole('region', { name: 'Columna Por hacer' }).getByRole('button', { name: 'Cajas de la cocina' }).click()
+  await expect(page.getByLabel('Título de la tarjeta')).toHaveValue('Cajas de la cocina')
+  // The person is renaming it when the agent moves it: what they typed isn't lost.
+  await page.getByLabel('Título de la tarjeta').click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' (frágil)')
   const uploaded = await call('upload_attachment', { card_id: cardId, filename: 'lista.txt', content: 'Platos\nVasos' })
   const read = await request.post(`${baseURL}/mcp`, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json, text/event-stream' },
@@ -52,10 +62,12 @@ test('an agent reorganises a project with permission to delete and move, and the
   await call('move_card', { card_id: cardId, column_id: archiveBoard.columns.find((c) => c.name === 'Hecho')!.id })
   expect((await call('delete_page', { page_id: doc.id })).deleted).toBe(true)
 
-  // In the archive, the card's history tells what happened, and the person undoes it all.
-  await page.getByRole('navigation').getByRole('link', { name: 'Archivo' }).click()
-  await page.waitForURL(`**/b/${archive.id}`)
-  await page.getByRole('region', { name: 'Columna Hecho' }).getByRole('button', { name: 'Cajas de la cocina' }).click()
+  // The open card follows it to the archive, with that board's columns; its history tells what
+  // happened, and the person undoes it all.
+  await page.waitForURL(`**/b/${archive.id}?card=${cardId}`)
+  await expect(page.getByRole('dialog', { name: /^Cajas de la cocina/ }).getByRole('button', { name: 'Hecho' })).toBeVisible()
+  await expect(page.getByLabel('Título de la tarjeta')).toHaveValue('Cajas de la cocina (frágil)')
+  await expect.poll(async () => ((await (await page.request.get(`/api/cards/${cardId}`)).json()) as { title: string }).title).toBe('Cajas de la cocina (frágil)')
   await page.getByRole('button', { name: 'Acciones de la tarjeta' }).click()
   await page.getByRole('menuitem', { name: 'Historial' }).click()
   const history = page.getByRole('dialog', { name: /^Historial de/ })
@@ -65,8 +77,14 @@ test('an agent reorganises a project with permission to delete and move, and the
   const confirm = page.getByRole('dialog', { name: '¿Deshacer 4 cambios de Claude?' })
   await confirm.getByRole('button', { name: 'Deshacer 4 cambios' }).click()
   await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'Se han deshecho 4 cambios' })).toBeVisible()
-  await page.keyboard.press('Escape')
-  await page.keyboard.press('Escape')
+  // The card goes back to its board, and the open sheet with it.
+  await page.waitForURL(`**/b/${boardId}?card=${cardId}`)
+  await expect(page.getByRole('dialog', { name: /^Cajas de la cocina/ }).getByRole('button', { name: 'Por hacer' })).toBeVisible()
+  // Close the history and the sheet, however many are still open after the sheet moved.
+  await expect(async () => {
+    await page.keyboard.press('Escape')
+    await expect(page.getByLabel('Título de la tarjeta')).toHaveCount(0, { timeout: 1000 })
+  }).toPass()
 
   // Everything is as before: the card on its board with its label, the page back, the file in the trash.
   await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: /^Tareas/ }).click()
