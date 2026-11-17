@@ -8,7 +8,7 @@ import {
   type HistoryValue,
   lineStats,
 } from '@orqevio/shared'
-import { and, desc, eq, gt, isNull, lt, lte, or, sql } from 'drizzle-orm'
+import { and, desc, eq, getTableColumns, gt, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import type { DbOrTx } from '../db/client'
 import { cards, history, pages } from '../db/schema'
@@ -37,6 +37,16 @@ export interface Change {
 const MARK = /\.(created|deleted|restored|linked|unlinked)$/
 
 type Row = typeof history.$inferSelect
+
+/** A list's columns: long texts read as null, so listing never loads them. */
+const LIST_COLUMNS = (() => {
+  const body = inArray(history.kind, [...HISTORY_BODY_KINDS])
+  return {
+    ...getTableColumns(history),
+    before: sql<string | null>`CASE WHEN ${body} THEN NULL ELSE ${history.before} END`,
+    after: sql<string | null>`CASE WHEN ${body} THEN NULL ELSE ${history.after} END`,
+  }
+})()
 
 const encode = (kind: HistoryKind, value: HistoryValue | undefined) =>
   value === null || value === undefined ? null : HISTORY_TEXT_KINDS.has(kind) ? String(value) : JSON.stringify(value)
@@ -147,16 +157,33 @@ export class HistoryService {
     await this.access.workspace(actor, row.workspaceId)
   }
 
-  /** The changes of a page or a card, newest first. Long texts are left out; `get` has them. */
-  async list(actor: Actor, entityType: 'page' | 'card', entityId: string, opts: { before?: Date; limit?: number } = {}) {
+  /**
+   * The changes of a page or a card, newest first, after the entry `beforeId` (updated at
+   * `before`) of the previous page. Long texts are left out, not even read; `get` has them.
+   */
+  async list(actor: Actor, entityType: 'page' | 'card', entityId: string, opts: { before?: Date; beforeId?: string; limit?: number } = {}) {
     await this.entity(actor, entityType, entityId)
     const rows = await this.deps.db
-      .select()
+      .select(LIST_COLUMNS)
       .from(history)
-      .where(and(eq(history.entityId, entityId), eq(history.entityType, entityType), opts.before ? lt(history.updatedAt, opts.before) : undefined))
+      .where(and(eq(history.entityId, entityId), eq(history.entityType, entityType), this.after(opts.before, opts.beforeId)))
       .orderBy(desc(history.updatedAt), desc(sql`rowid`))
       .limit(Math.min(opts.limit ?? 50, 100))
     return rows.map((row) => toHistoryEntryDTO(row, false))
+  }
+
+  /**
+   * Where the next page starts: after the last entry of the previous one, in the list's order.
+   * Several changes can share a millisecond, so the entry itself breaks the tie. If it changed
+   * since (merged with a later edit, or gone), the time alone is the best there is.
+   */
+  private after(before: Date | undefined, beforeId: string | undefined) {
+    if (!before) return undefined
+    const anchor = beforeId
+      ? this.deps.db.get<{ seq: number }>(sql`SELECT rowid AS seq FROM history WHERE id = ${beforeId} AND updated_at = ${before.getTime()}`)
+      : undefined
+    if (!anchor) return lt(history.updatedAt, before)
+    return or(lt(history.updatedAt, before), and(eq(history.updatedAt, before), sql`rowid < ${anchor.seq}`))
   }
 
   /** One change, with its texts before and after. */

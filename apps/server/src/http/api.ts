@@ -32,11 +32,15 @@ async function json(c: { req: { json: () => Promise<unknown> } }) {
   }
 }
 
-/** `?before=<ISO date>&limit=<n>`: the page of history to list. */
+/** `?before=<ISO date>&beforeId=<id>&limit=<n>`: the page of history after the entry `beforeId`, updated at `before`. */
 function historyPage(c: { req: { query: (name: string) => string | undefined } }) {
   const before = new Date(c.req.query('before') ?? '')
   const limit = Number(c.req.query('limit'))
-  return { before: Number.isNaN(before.getTime()) ? undefined : before, limit: Number.isFinite(limit) && limit > 0 ? limit : undefined }
+  return {
+    before: Number.isNaN(before.getTime()) ? undefined : before,
+    beforeId: c.req.query('beforeId') || undefined,
+    limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
+  }
 }
 
 export function createApi(env: Env) {

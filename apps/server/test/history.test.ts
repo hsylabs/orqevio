@@ -200,6 +200,31 @@ describe('the history', () => {
     expect(new Set([v5!.batchId, v4!.batchId, entries[0]!.batchId]).size).toBe(3)
   })
 
+  it('pages through every change, also those made in the same millisecond', async () => {
+    const { client, workspaceId } = await signUp(h, 'Páginas')
+    const { columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    const card = (await bot.client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'T0' })).body.id as string
+    // The clock stands still: every change lands on the same millisecond.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(Date.now() + 60_000)
+    for (let i = 1; i <= 6; i++) await bot.client.patch(`/api/cards/${card}`, { title: `T${i}` })
+    vi.useRealTimers()
+    const all = await list(client, 'cards', card)
+    expect(all).toHaveLength(7)
+    // Two at a time, as the app does with 50: from where the last page ended.
+    const seen: HistoryEntryDTO[] = []
+    let query = ''
+    for (let guard = 0; guard < 10; guard++) {
+      const page = (await client.get(`/api/cards/${card}/history?limit=2${query}`)).body as HistoryEntryDTO[]
+      seen.push(...page)
+      if (page.length < 2) break
+      const last = page.at(-1)!
+      query = `&before=${encodeURIComponent(last.updatedAt)}&beforeId=${last.id}`
+    }
+    expect(seen.map((e) => e.id)).toEqual(all.map((e) => e.id))
+  })
+
   it('is for whoever can read the page or card', async () => {
     const { client, workspaceId } = await signUp(h, 'Lectores')
     const { projectId, columns } = await seedBoard(client, workspaceId)

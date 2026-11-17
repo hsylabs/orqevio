@@ -111,9 +111,13 @@ export const useHistory = (type: 'page' | 'card', id: string, enabled: boolean) 
   useInfiniteQuery({
     queryKey: keys.history(type, id),
     queryFn: ({ signal, pageParam }) =>
-      get<HistoryEntryDTO[]>(`/${type}s/${id}/history?limit=${HISTORY_PAGE}${pageParam ? `&before=${encodeURIComponent(pageParam)}` : ''}`, signal),
-    initialPageParam: '',
-    getNextPageParam: (last: HistoryEntryDTO[]) => (last.length < HISTORY_PAGE ? undefined : last.at(-1)!.updatedAt),
+      get<HistoryEntryDTO[]>(
+        `/${type}s/${id}/history?limit=${HISTORY_PAGE}${pageParam ? `&before=${encodeURIComponent(pageParam.updatedAt)}&beforeId=${pageParam.id}` : ''}`,
+        signal,
+      ),
+    // The next page starts after the last entry: its time, and the entry itself for changes made in the same millisecond.
+    initialPageParam: null as Pick<HistoryEntryDTO, 'id' | 'updatedAt'> | null,
+    getNextPageParam: (last: HistoryEntryDTO[]) => (last.length < HISTORY_PAGE ? undefined : { id: last.at(-1)!.id, updatedAt: last.at(-1)!.updatedAt }),
     enabled,
   })
 const HISTORY_PAGE = 50
