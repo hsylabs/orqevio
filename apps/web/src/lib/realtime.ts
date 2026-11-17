@@ -1,6 +1,10 @@
 import { LIVE_CLOSE, type LiveMessage, type MeDTO, type RealtimeEvent } from '@orqevio/shared'
 import { useEffect, useSyncExternalStore } from 'react'
+import { createLiveRefresh } from './live-refresh'
 import { keys, queryClient } from './queries'
+
+/** Live changes refetch what they touch together, a moment later, without cancelling each other. */
+const live = createLiveRefresh(queryClient)
 
 /** Ids of cards/pages recently touched by an agent, for the live "agent glow". */
 const highlights = new Map<string, { name: string; until: number }>()
@@ -74,26 +78,28 @@ export const setAgentToast = (fn: AgentToast | null) => {
 function handle(workspaceId: string, event: RealtimeEvent, selfId: string | undefined) {
   const fromSelf = event.actor.kind === 'user' && event.actor.id === selfId
   if (event.boardId) {
-    void queryClient.invalidateQueries({ queryKey: keys.board(event.boardId) })
-    void queryClient.invalidateQueries({ queryKey: keys.archived(event.boardId) })
+    live.refresh(keys.board(event.boardId))
+    live.refresh(keys.archived(event.boardId))
   }
   if (event.cardId) {
     // A deleted card can't be fetched again; an open one says it is gone (see CardSheet).
-    if (event.action !== 'card.deleted') void queryClient.invalidateQueries({ queryKey: keys.card(event.cardId) })
+    if (event.action !== 'card.deleted') live.refresh(keys.card(event.cardId))
+    else for (const key of [keys.card(event.cardId), keys.history('card', event.cardId)]) live.forget(key)
     for (const l of cardListeners) l(event)
   }
   if (event.pageId) {
     for (const l of pageListeners) l(event)
-    if (event.cardId) void queryClient.invalidateQueries({ queryKey: keys.page(event.pageId) })
+    if (event.action === 'page.deleted') live.forget(keys.history('page', event.pageId))
+    if (event.cardId) live.refresh(keys.page(event.pageId))
   }
-  if (event.structure) void queryClient.invalidateQueries({ queryKey: keys.overview(workspaceId) })
-  void queryClient.invalidateQueries({ queryKey: keys.home(workspaceId) })
-  void queryClient.invalidateQueries({ queryKey: ['activity', workspaceId] })
+  if (event.structure) live.refresh(keys.overview(workspaceId))
+  live.refresh(keys.home(workspaceId))
+  live.refresh(['activity', workspaceId])
   // Any change may put something in the trash or take it out; only an open trash refetches.
-  void queryClient.invalidateQueries({ queryKey: keys.trash(workspaceId) })
+  live.refresh(keys.trash(workspaceId))
   // Only an open history refetches; a deleted page or card has none to show.
-  if (event.cardId && event.action !== 'card.deleted') void queryClient.invalidateQueries({ queryKey: keys.history('card', event.cardId) })
-  if (event.pageId && event.action !== 'page.deleted') void queryClient.invalidateQueries({ queryKey: keys.history('page', event.pageId) })
+  if (event.cardId && event.action !== 'card.deleted') live.refresh(keys.history('card', event.cardId))
+  if (event.pageId && event.action !== 'page.deleted') live.refresh(keys.history('page', event.pageId))
   if (event.actor.kind === 'agent') {
     if (event.cardId) highlight(event.cardId, event.actor.name)
     if (event.pageId) highlight(event.pageId, event.actor.name)
