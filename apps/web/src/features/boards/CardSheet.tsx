@@ -343,6 +343,8 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
                   await queryClient.invalidateQueries({ queryKey: keys.board(card.boardId) })
                   toastTrashed(t('sheet.deleted'), trashed)
                 } catch (error) {
+                  // Still there: deleting it later, here or elsewhere, counts as usual.
+                  deletingHere.delete(card.id)
                   toast.error(errorMessage(error))
                 }
               }}

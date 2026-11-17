@@ -38,6 +38,24 @@ test('deleted things wait in the trash, to undo, restore or delete for good', as
   await expect(other.getByText('Esta tarjeta ya no existe')).toHaveCount(0)
   await other.close()
 
+  // A delete that fails leaves the card as it was: deleted later elsewhere, its open sheet says it is gone.
+  const failing = (route: import('@playwright/test').Route) =>
+    route.request().method() === 'DELETE' ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":{"code":"internal","message":"x"}}' }) : route.continue()
+  await page.route(`**/api/cards/${truckId}`, failing)
+  await column.getByRole('button', { name: 'Contratar camión' }).click()
+  await page.getByRole('button', { name: 'Acciones de la tarjeta' }).click()
+  await page.getByRole('menuitem', { name: 'Eliminar' }).click()
+  await page.getByRole('dialog', { name: '¿Eliminar esta tarjeta?' }).getByRole('button', { name: 'Eliminar' }).click()
+  await expect(page.getByText('Algo ha fallado en el servidor. Inténtalo de nuevo.')).toBeVisible()
+  await page.unroute(`**/api/cards/${truckId}`, failing)
+  await column.getByRole('button', { name: 'Contratar camión' }).click()
+  await expect(page.getByRole('button', { name: 'Acciones de la tarjeta' })).toBeVisible()
+  const elsewhere = (await (await page.request.delete(`/api/cards/${truckId}`)).json()) as { trashId: string }
+  await expect(page.getByText('Esta tarjeta ya no existe')).toBeVisible()
+  expect((await page.request.post(`/api/trash/${elsewhere.trashId}/restore`)).status()).toBe(200)
+  await page.keyboard.press('Escape')
+  await expect(column.getByRole('button', { name: 'Contratar camión' })).toBeVisible()
+
   // In the trash: what it is, where it was and who deleted it.
   await deleteCard('Contratar camión')
   await deleteCard('Embalar libros')
@@ -82,6 +100,6 @@ test('deleted things wait in the trash, to undo, restore or delete for good', as
   }
   await expect(page.getByRole('heading', { name: 'La papelera está vacía' })).toBeVisible()
 
-  // The refused restore is expected; some browsers log every 4xx answer as an error.
-  consoleErrors.splice(0, consoleErrors.length, ...consoleErrors.filter((e) => !/status of 409 \(Conflict\)/.test(e)))
+  // The refused restore and the failed delete are expected; some browsers log every 4xx and 5xx answer as an error.
+  consoleErrors.splice(0, consoleErrors.length, ...consoleErrors.filter((e) => !/status of (409 \(Conflict\)|500 \(Internal Server Error\))/.test(e)))
 })
