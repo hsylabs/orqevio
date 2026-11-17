@@ -252,6 +252,24 @@ export class UndoService {
     return found?.data as { title?: string } | undefined
   }
 
+  /**
+   * The rows of `table` that the trash entries being brought back keep, where `column` is
+   * `value`: what they will be once back. Without their long texts, compared where they are kept.
+   */
+  private keptRows(restoring: Set<string>, table: string, column: string, value: string) {
+    const ids = [...restoring]
+    const found: { trashId: string; data: Record<string, unknown> }[] = []
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const rows = this.deps.db
+        .select({ trashId: trashRows.trashId, data: sql<string>`json_remove(${trashRows.data}, '$.content', '$.description')` })
+        .from(trashRows)
+        .where(and(inArray(trashRows.trashId, ids.slice(i, i + CHUNK)), eq(trashRows.tableName, table), sql`json_extract(${trashRows.data}, ${`$.${column}`}) = ${value}`))
+        .all()
+      found.push(...rows.map((r) => ({ trashId: r.trashId, data: JSON.parse(r.data) as Record<string, unknown> })))
+    }
+    return found
+  }
+
   private trashed(row: HistoryRow) {
     const id = typeof row.meta.trashId === 'string' ? row.meta.trashId : null
     return id !== null && Boolean(this.deps.db.select({ id: trash.id }).from(trash).where(eq(trash.id, id)).get())
@@ -266,10 +284,11 @@ export class UndoService {
     const subject = row.subjectId ?? ''
     const one = <T>(query: { get: () => T | undefined }) => query.get()
     const has = (key: string, real: () => boolean) => state.exists.get(key) ?? real()
-    // Not there now, but undoing a newer change brings it back from the trash: what it was then is
-    // known once it is back, when each change is checked again before it is undone.
+    // Not there now, but undoing a newer change brings it back from the trash, as it was kept there.
     const returning = (id: string) => [...state.restoring].some((trashId) => this.kept(trashId, id) !== undefined)
-    const later: Check = { status: 'ready' }
+    const kept = (table: string, id: string, column = 'id') => this.keptRows(state.restoring, table, column, id)
+    const text = (v: unknown) => (v == null ? null : String(v))
+    const date = (v: unknown) => (v == null ? null : new Date(Number(v)))
     const entityKey = `${row.entityType}:${row.entityId}`
     // There, or coming back with something a newer change being undone brings back (a subpage with its page).
     const entityExists = has(
@@ -303,11 +322,16 @@ export class UndoService {
       return { status, current: now }
     }
 
-    // A long text, compared in SQLite with the change's texts, which stay out of memory.
-    const body = (table: 'pages' | 'cards', column: 'content' | 'description'): Check => {
+    // A long text, compared in SQLite with the change's texts, which stay out of memory. For
+    // something coming back from the trash, the text kept there.
+    const body = (table: 'pages' | 'cards', column: 'content' | 'description', trashId?: string): Check => {
       const key = fieldKey(row)
       const ref = state.bodies.get(key)
-      const now = ref ? sql`(SELECT "before" FROM history WHERE id = ${ref})` : sql`(SELECT ${sql.identifier(column)} FROM ${sql.identifier(table)} WHERE id = ${row.entityId})`
+      const now = ref
+        ? sql`(SELECT "before" FROM history WHERE id = ${ref})`
+        : trashId
+          ? sql`(SELECT json_extract(data, ${`$.${column}`}) FROM trash_rows WHERE trash_id = ${trashId} AND table_name = ${table} AND json_extract(data, '$.id') = ${row.entityId})`
+          : sql`(SELECT ${sql.identifier(column)} FROM ${sql.identifier(table)} WHERE id = ${row.entityId})`
       const found = db.get<{ isBefore: number; isAfter: number; current: string | null }>(
         sql`SELECT ${now} IS h."before" AS isBefore, ${now} IS h."after" AS isAfter, substr(${now}, 1, 200) AS current FROM history h WHERE h.id = ${row.id}`,
       )
@@ -340,20 +364,19 @@ export class UndoService {
       case 'attachment.deleted':
         return bringBack(`attachment:${subject}`, file)
       case 'attachment.moved': {
-        const at = one(db.select({ cardId: attachments.cardId, pageId: attachments.pageId, workspaceId: attachments.workspaceId }).from(attachments).where(eq(attachments.id, subject)))
-        if (!at && !returning(subject)) return { status: 'impossible', reason: 'gone' }
+        const keptFile = () => kept('attachments', subject).map(({ data }) => ({ cardId: text(data.card_id), pageId: text(data.page_id), workspaceId: String(data.workspace_id) }))[0]
+        const at = one(db.select({ cardId: attachments.cardId, pageId: attachments.pageId, workspaceId: attachments.workspaceId }).from(attachments).where(eq(attachments.id, subject))) ?? keptFile()
+        if (!at) return { status: 'impossible', reason: 'gone' }
         const key = `attachment-place:${subject}`
-        if (!at) {
-          // Back from the trash first; one move in two histories is undone once.
-          if (state.values.has(key)) return { status: 'unchanged' }
-          state.values.set(key, before)
-          return later
-        }
         const back = before as AttachmentPlace | null
+        // Its old place: there, or coming back from the trash first.
         const there = () => {
           const table = back?.pageId ? pages : cards
           const id = back?.pageId ?? back?.cardId ?? ''
-          return Boolean(one(db.select({ id: table.id }).from(table).where(and(eq(table.id, id), eq(table.workspaceId, at.workspaceId)))))
+          return (
+            Boolean(one(db.select({ id: table.id }).from(table).where(and(eq(table.id, id), eq(table.workspaceId, at.workspaceId))))) ||
+            kept(back?.pageId ? 'pages' : 'cards', id).some(({ data }) => data.workspace_id === at.workspaceId)
+          )
         }
         // One move, in the history of both places: keyed by the file, so undoing both entries moves it once.
         return value({ cardId: at.cardId, pageId: at.pageId }, (a, b) => fileAt(a) === fileAt(b), there, key)
@@ -361,39 +384,60 @@ export class UndoService {
     }
 
     if (row.entityType === 'page') {
-      const page = one(db.select({ title: pages.title, icon: pages.icon, content: pages.content, parentId: pages.parentId, projectId: pages.projectId }).from(pages).where(eq(pages.id, row.entityId)))
-      if (!page) return returning(row.entityId) ? later : { status: 'impossible', reason: 'gone' }
+      const live = one(db.select({ title: pages.title, icon: pages.icon, parentId: pages.parentId, projectId: pages.projectId }).from(pages).where(eq(pages.id, row.entityId)))
+      const [back] = live ? [] : kept('pages', row.entityId)
+      const page = live ?? (back && { title: String(back.data.title), icon: text(back.data.icon), parentId: text(back.data.parent_id), projectId: String(back.data.project_id) })
+      if (!page) return { status: 'impossible', reason: 'gone' }
       switch (kind) {
         case 'page.title':
           return value(page.title)
         case 'page.icon':
           return value(page.icon)
         case 'page.content':
-          return body('pages', 'content')
+          return body('pages', 'content', back?.trashId)
         case 'page.moved': {
           const target = parentOf(before)
           return value(
             { projectId: page.projectId, parentId: page.parentId },
             (a, b) => parentOf(a) === parentOf(b),
-            () => target === null || Boolean(one(db.select({ id: pages.id }).from(pages).where(and(eq(pages.id, target ?? ''), eq(pages.projectId, page.projectId))))),
+            // Its old parent: there, or coming back from the trash first.
+            () =>
+              target === null ||
+              Boolean(one(db.select({ id: pages.id }).from(pages).where(and(eq(pages.id, target ?? ''), eq(pages.projectId, page.projectId))))) ||
+              kept('pages', target ?? '').some(({ data }) => data.project_id === page.projectId),
           )
         }
       }
     } else {
-      const card = one(db.select().from(cards).where(eq(cards.id, row.entityId)))
-      if (!card) return returning(row.entityId) ? later : { status: 'impossible', reason: 'gone' }
+      const live = one(
+        db
+          .select({ id: cards.id, title: cards.title, boardId: cards.boardId, columnId: cards.columnId, workspaceId: cards.workspaceId, dueAt: cards.dueAt, archivedAt: cards.archivedAt })
+          .from(cards)
+          .where(eq(cards.id, row.entityId)),
+      )
+      const [back] = live ? [] : kept('cards', row.entityId)
+      const card = live ?? (back && {
+        id: row.entityId,
+        title: String(back.data.title),
+        boardId: String(back.data.board_id),
+        columnId: String(back.data.column_id),
+        workspaceId: String(back.data.workspace_id),
+        dueAt: date(back.data.due_at),
+        archivedAt: date(back.data.archived_at),
+      })
+      if (!card) return { status: 'impossible', reason: 'gone' }
+      // Its labels, links, checklists and items: there, or coming back with it.
+      const labelIds = () =>
+        live ? db.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, card.id)).all().map((l) => l.id) : kept('card_labels', card.id, 'card_id').map(({ data }) => String(data.label_id))
       switch (kind) {
         case 'card.title':
           return value(card.title)
         case 'card.description':
-          return body('cards', 'description')
+          return body('cards', 'description', back?.trashId)
         case 'card.due':
           return value(card.dueAt?.toISOString() ?? null)
         case 'card.labels':
-          return value(
-            db.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, card.id)).all().map((l) => l.id),
-            sameSet,
-          )
+          return value(labelIds(), sameSet)
         case 'card.moved': {
           const target = columnOf(before)
           const key = fieldKey(row)
@@ -407,7 +451,7 @@ export class UndoService {
           )
           // Back to another board, it leaves the labels it has on this one: newer labels are a conflict.
           const labelKey = `${card.id}|card.labels|`
-          const labelsNow = state.values.has(labelKey) ? state.values.get(labelKey) : db.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, card.id)).all().map((l) => l.id)
+          const labelsNow = state.values.has(labelKey) ? state.values.get(labelKey) : labelIds()
           const toOtherBoard = (before as CardPlace | null)?.boardId !== undefined && (before as CardPlace).boardId !== place.boardId
           if (check.status !== 'ready' || !toOtherBoard) return check
           if (!Array.isArray(labelsNow) || labelsNow.length === 0) {
@@ -427,12 +471,18 @@ export class UndoService {
           return value(card.archivedAt !== null)
         case 'card.linked':
         case 'card.unlinked': {
-          const link = () => Boolean(one(db.select({ id: cardPageLinks.pageId }).from(cardPageLinks).where(and(eq(cardPageLinks.cardId, card.id), eq(cardPageLinks.pageId, subject), eq(cardPageLinks.source, 'manual')))))
+          const link = () =>
+            Boolean(one(db.select({ id: cardPageLinks.pageId }).from(cardPageLinks).where(and(eq(cardPageLinks.cardId, card.id), eq(cardPageLinks.pageId, subject), eq(cardPageLinks.source, 'manual'))))) ||
+            kept('card_page_links', card.id, 'card_id').some(({ data }) => data.page_id === subject && data.source === 'manual')
           return kind === 'card.linked' ? takeAway(`link:${card.id}:${subject}`, link) : bringBack(`link:${card.id}:${subject}`, link)
         }
       }
-      const checklist = () => one(db.select({ title: checklists.title }).from(checklists).where(and(eq(checklists.id, subject), eq(checklists.cardId, card.id))))
-      const item = () => one(db.select({ text: checklistItems.text, done: checklistItems.done }).from(checklistItems).where(eq(checklistItems.id, subject)))
+      const checklist = () =>
+        one(db.select({ title: checklists.title }).from(checklists).where(and(eq(checklists.id, subject), eq(checklists.cardId, card.id)))) ??
+        kept('checklists', subject).filter(({ data }) => data.card_id === card.id).map(({ data }) => ({ title: String(data.title) }))[0]
+      const item = () =>
+        one(db.select({ text: checklistItems.text, done: checklistItems.done }).from(checklistItems).where(eq(checklistItems.id, subject))) ??
+        kept('checklist_items', subject).map(({ data }) => ({ text: String(data.text), done: Boolean(data.done) }))[0]
       switch (kind) {
         case 'checklist.created':
         case 'checklist.restored':
@@ -441,7 +491,7 @@ export class UndoService {
           return bringBack(`checklist:${subject}`, () => Boolean(checklist()))
         case 'checklist.title': {
           const list = checklist()
-          return list ? value(list.title) : returning(subject) ? later : { status: 'impossible', reason: 'gone' }
+          return list ? value(list.title) : { status: 'impossible', reason: 'gone' }
         }
         case 'item.created':
         case 'item.restored':
@@ -451,7 +501,7 @@ export class UndoService {
         case 'item.text':
         case 'item.done': {
           const it = item()
-          return it ? value(kind === 'item.text' ? it.text : it.done) : returning(subject) ? later : { status: 'impossible', reason: 'gone' }
+          return it ? value(kind === 'item.text' ? it.text : it.done) : { status: 'impossible', reason: 'gone' }
         }
       }
     }

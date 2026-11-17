@@ -427,6 +427,92 @@ describe('undo', () => {
     expect((await client.get(`/api/pages/${sub}`)).body).toMatchObject({ title: 'Instalar', parentId: top })
   })
 
+  it('checks what comes back from the trash against what was kept there, before undoing older changes', async () => {
+    const { client, workspaceId } = await signUp(h, 'Guardado')
+    const { projectId, boardId, columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId, ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'])
+
+    // A page the agent renamed and rewrote, that a person renamed and rewrote after, and the agent deleted.
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'A', content: 'Uno.' })).body.id as string
+    await bot.patch(`/api/pages/${page}`, { title: 'B' })
+    const renamed = await latest(client, 'pages', page, 'page.title')
+    await bot.patch(`/api/pages/${page}`, { content: 'Dos.', baseVersion: (await client.get(`/api/pages/${page}`)).body.version })
+    await client.patch(`/api/pages/${page}`, { title: 'C', content: 'Tres.', baseVersion: (await client.get(`/api/pages/${page}`)).body.version })
+    await bot.del(`/api/pages/${page}`)
+    const pagePlan = (await undo(client, { since: renamed.id, dryRun: true })).plan
+    expect(pagePlan.map((p) => [p.kind, p.status, p.status === 'conflict' ? p.current : undefined])).toEqual([
+      ['page.deleted', 'ready', undefined],
+      ['page.content', 'conflict', 'Tres.'],
+      ['page.title', 'conflict', 'C'],
+    ])
+    expect(pagePlan[2]).toMatchObject({ entityTitle: 'C', changedBy: { kind: 'user', name: 'Guardado' } })
+    // Asked first, nothing is undone: the page stays in the trash.
+    expect(await undo(client, { since: renamed.id })).toMatchObject({ applied: false, undone: 0 })
+    expect((await client.get(`/api/pages/${page}`)).status).toBe(404)
+
+    // The same for a card, its labels and the items of its checklists.
+    const old = (await client.post(`/api/boards/${boardId}/labels`, { name: 'Vieja', color: 'tomato' })).body.id as string
+    const fresh = (await client.post(`/api/boards/${boardId}/labels`, { name: 'Nueva', color: 'jade' })).body.id as string
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'A', description: 'Uno', labelIds: [old] })).body.id as string
+    const list = (await client.post(`/api/cards/${card}/checklists`, { title: 'Pasos' })).body.id as string
+    const item = (await client.post(`/api/checklists/${list}/items`, { text: 'Leer' })).body.id as string
+    await bot.patch(`/api/cards/${card}`, { title: 'B' })
+    const retitled = await latest(client, 'cards', card, 'card.title')
+    await bot.patch(`/api/cards/${card}`, { description: 'Dos' })
+    await bot.patch(`/api/checklist-items/${item}`, { text: 'Leerlo' })
+    await bot.patch(`/api/checklist-items/${item}`, { done: true })
+    await bot.patch(`/api/cards/${card}`, { labelIds: [fresh] })
+    await client.patch(`/api/cards/${card}`, { title: 'C', description: 'Tres', labelIds: [] })
+    await client.patch(`/api/checklist-items/${item}`, { text: 'Leerlo ya' })
+    await bot.del(`/api/cards/${card}`)
+    const cardPlan = (await undo(client, { since: retitled.id, dryRun: true })).plan
+    expect(cardPlan.map((p) => [p.kind, p.status])).toEqual([
+      ['card.deleted', 'ready'],
+      ['card.labels', 'conflict'],
+      ['item.done', 'ready'],
+      ['item.text', 'conflict'],
+      ['card.description', 'conflict'],
+      ['card.title', 'conflict'],
+    ])
+    expect(await undo(client, { since: retitled.id })).toMatchObject({ applied: false, undone: 0 })
+    expect((await client.get(`/api/cards/${card}`)).status).toBe(404)
+    // Skipping what someone changed since undoes the rest, as planned.
+    expect(await undo(client, { since: retitled.id, conflicts: 'skip' })).toMatchObject({ applied: true, undone: 2, skipped: 4, failed: 0 })
+    const back = (await client.get(`/api/cards/${card}`)).body
+    expect(back).toMatchObject({ title: 'C', description: 'Tres', labels: [] })
+    expect(back.checklists[0].items[0]).toMatchObject({ text: 'Leerlo ya', done: false })
+  })
+
+  it('finds the old places that undoing a newer deletion brings back from the trash', async () => {
+    const { client, workspaceId } = await signUp(h, 'Sitios de vuelta')
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId, ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'])
+    const make = async (title: string, parentId?: string) => (await client.post(`/api/projects/${projectId}/pages`, { title, ...(parentId ? { parentId } : {}) })).body.id as string
+    const top = await make('Manual')
+    const first = await make('Primera', top)
+    const second = await make('Segunda', top)
+    const inside = await make('Dentro', first)
+    const outside = await make('Fuera', first)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Destino' })).body.id as string
+    const file = (await client.upload(`/api/pages/${first}/attachments`, 'x', { name: 'x.txt', type: 'text/plain' })).body.id as string
+
+    // Moved within the page the agent then deleted, out of it, and a file taken out of it.
+    await bot.post(`/api/pages/${inside}/move`, { parentId: second, index: 0 })
+    const moved = await latest(client, 'pages', inside, 'page.moved')
+    await bot.post(`/api/pages/${outside}/move`, { parentId: null, index: 0 })
+    await bot.post(`/api/attachments/${file}/move`, { cardId: card })
+    await bot.del(`/api/pages/${top}`)
+
+    // Their old places come back with the page before the moves are undone.
+    const plan = (await undo(client, { since: moved.id, dryRun: true })).plan
+    expect(plan.map((p) => p.kind)).toEqual(['page.deleted', 'attachment.moved', 'attachment.moved', 'page.moved', 'page.moved'])
+    expect(plan.map((p) => p.status).sort()).toEqual(['ready', 'ready', 'ready', 'ready', 'unchanged'])
+    expect(await undo(client, { since: moved.id })).toMatchObject({ applied: true, undone: 4, skipped: 0, failed: 0 })
+    expect((await client.get(`/api/pages/${inside}`)).body.parentId).toBe(first)
+    expect((await client.get(`/api/pages/${outside}`)).body.parentId).toBe(first)
+    expect((await client.get(`/api/pages/${first}`)).body.attachments.map((a: { id: string }) => a.id)).toEqual([file])
+  })
+
   it('plans the labels a card gets back when undoing its move to another board', async () => {
     const { client, workspaceId } = await signUp(h, 'Etiquetas de vuelta')
     const { boardId, columns } = await seedBoard(client, workspaceId)
