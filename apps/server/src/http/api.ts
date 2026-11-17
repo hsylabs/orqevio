@@ -208,6 +208,11 @@ export function createApi(env: Env) {
   api.get('/cards/:id', async (c) => c.json(await c.get('services').cards.detail(requireActor(c), c.req.param('id'))))
   api.get('/cards/:id/history', async (c) => c.json(await c.get('services').history.list(requireActor(c), 'card', c.req.param('id'), historyPage(c))))
   api.get('/history/:id', async (c) => c.json(await c.get('services').history.get(requireActor(c), c.req.param('id'))))
+  api.post('/history/undo', async (c) => c.json(await c.get('services').undo.undo(requireActor(c), await json(c))))
+  api.post('/history/:id/restore', async (c) => {
+    await c.get('services').undo.restoreVersion(requireActor(c), c.req.param('id'))
+    return c.body(null, 204)
+  })
   api.patch('/cards/:id', async (c) => c.json(await c.get('services').cards.update(requireActor(c), c.req.param('id'), await json(c))))
   api.post('/cards/:id/move', async (c) => c.json(await c.get('services').cards.move(requireActor(c), c.req.param('id'), await json(c))))
   api.post('/cards/:id/archive', async (c) => {

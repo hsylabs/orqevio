@@ -525,3 +525,35 @@ export interface HistoryEntryDTO {
   /** Edits of the same text by the same person in one stretch of work are one change. */
   updatedAt: string
 }
+
+// ── Undo ─────────────────────────────────────────────────────────
+/**
+ * How undoing a change stands: `ready` to undo; `conflict` when someone changed the same
+ * thing since; `unchanged` when it is already as before (nothing to do); `impossible` when
+ * what it needs is gone (`reason`).
+ */
+export type UndoStatus = 'ready' | 'conflict' | 'unchanged' | 'impossible'
+
+export interface UndoPlanItemDTO {
+  entryId: string
+  kind: HistoryKind
+  entityType: 'page' | 'card'
+  entityId: string
+  /** The page or card, by name, as it is now (or was, if it is gone). */
+  entityTitle: string
+  status: UndoStatus
+  /** Why it can't be undone: the page or card is gone, its old place is, or the trash entry is. */
+  reason?: 'gone' | 'place_gone' | 'trash_gone' | 'refused'
+  /** For a conflict: who changed it since, and what it is now. */
+  changedBy?: ActorRef | null
+  current?: HistoryValue
+}
+
+export interface UndoResultDTO {
+  /** False when nothing was done because there were conflicts to decide on first. */
+  applied: boolean
+  plan: UndoPlanItemDTO[]
+  undone: number
+  skipped: number
+  failed: number
+}

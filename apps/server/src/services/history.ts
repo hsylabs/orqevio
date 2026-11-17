@@ -36,7 +36,8 @@ export interface Change {
 /** Kinds that only say something happened: they carry no value before or after. */
 const MARK = /\.(created|deleted|restored|linked|unlinked)$/
 
-type Row = typeof history.$inferSelect
+export type HistoryRow = typeof history.$inferSelect
+type Row = HistoryRow
 
 /** A list's columns: long texts read as null, so listing never loads them. */
 const LIST_COLUMNS = (() => {
@@ -50,7 +51,7 @@ const LIST_COLUMNS = (() => {
 
 const encode = (kind: HistoryKind, value: HistoryValue | undefined) =>
   value === null || value === undefined ? null : HISTORY_TEXT_KINDS.has(kind) ? String(value) : JSON.stringify(value)
-const decode = (kind: HistoryKind, raw: string | null): HistoryValue =>
+export const decode = (kind: HistoryKind, raw: string | null): HistoryValue =>
   raw === null ? null : HISTORY_TEXT_KINDS.has(kind) ? raw : (JSON.parse(raw) as HistoryValue)
 
 /** Line counts of a long text's change, for lists that leave the texts out. */
@@ -94,8 +95,11 @@ export class HistoryService {
     const after = encode(kind, change.after)
     if (!MARK.test(kind) && before === after) return
     const subject = change.subjectId ?? null
+    // Undoing a change or restoring a version is a change of its own, never merged into another.
+    const note = actor.kind === 'user' ? actor.note : undefined
+    if (note) change = { ...change, meta: { ...change.meta, ...note } }
     // A person editing a text keeps one change per stretch of work, as the editor saves while they type.
-    if (actor.kind === 'user' && HISTORY_TEXT_KINDS.has(kind)) {
+    if (actor.kind === 'user' && !note && HISTORY_TEXT_KINDS.has(kind)) {
       const last = db
         .select()
         .from(history)

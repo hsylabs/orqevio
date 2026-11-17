@@ -11,6 +11,7 @@ import { PageService } from './pages'
 import { SearchService } from './search'
 import { TokenService } from './tokens'
 import { TrashService } from './trash'
+import { UndoService } from './undo'
 import { UpdateService } from './updates'
 import { VaultService } from './vault'
 import { WorkspaceService } from './workspaces'
@@ -28,6 +29,7 @@ export function createServices(deps: Deps) {
   const workspaces = new WorkspaceService(deps, access, activity, cards, trash)
   const tokens = new TokenService(deps, access)
   const attachments = new AttachmentService(deps, access, activity, trash, history)
+  const pages = new PageService(deps, access, activity, trash, history)
   return {
     access,
     activity,
@@ -36,7 +38,8 @@ export function createServices(deps: Deps) {
     cards,
     workspaces,
     boards: new BoardService(deps, access, activity, cards, trash),
-    pages: new PageService(deps, access, activity, trash, history),
+    pages,
+    undo: new UndoService(deps, access, { cards, pages, attachments, trash }),
     search: new SearchService(deps, access),
     attachments,
     tokens,
