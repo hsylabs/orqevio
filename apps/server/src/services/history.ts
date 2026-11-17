@@ -107,7 +107,8 @@ export class HistoryService {
         .orderBy(desc(history.updatedAt), desc(sql`rowid`))
         .limit(1)
         .get()
-      if (last && last.actorKind === 'user' && last.actorUserId === actor.userId && last.updatedAt.getTime() > now.getTime() - STRETCH_MS) {
+      const annotated = Boolean(last?.meta.undoOf || last?.meta.restoredFrom)
+      if (last && !annotated && last.actorKind === 'user' && last.actorUserId === actor.userId && last.updatedAt.getTime() > now.getTime() - STRETCH_MS) {
         // Typed back to where the stretch began: nothing changed after all.
         if (last.before === after) db.delete(history).where(eq(history.id, last.id)).run()
         else

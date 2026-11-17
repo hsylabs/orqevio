@@ -20,7 +20,7 @@ import type { AttachmentService } from './attachments'
 import type { CardService } from './cards'
 import type { Deps } from './deps'
 import { type HistoryRow, decode } from './history'
-import type { PageService } from './pages'
+import { type PageService, pageTree } from './pages'
 import type { TrashService } from './trash'
 
 /** The end of a column or of a list of subpages, where something moved back goes. */
@@ -178,8 +178,15 @@ export class UndoService {
    */
   private sameThing(row: HistoryRow, isValue: boolean) {
     if (isValue) return and(eq(history.entityId, row.entityId), eq(history.kind, row.kind), row.subjectId ? eq(history.subjectId, row.subjectId) : undefined)
+    // A page goes to the trash with its subpages: what happened under it counts too.
+    if (row.entityType === 'page' && !row.subjectId) return sql`${history.entityId} IN (${pageTree(sql`id = ${row.entityId}`)} SELECT id FROM tree)`
     if (!row.subjectId) return eq(history.entityId, row.entityId)
-    return and(eq(history.entityId, row.entityId), inArray(history.subjectId, this.subjects(row)))
+    if (!row.kind.startsWith('checklist.')) return and(eq(history.entityId, row.entityId), eq(history.subjectId, row.subjectId))
+    // A checklist goes with all its items, however many.
+    return and(
+      eq(history.entityId, row.entityId),
+      or(eq(history.subjectId, row.subjectId), sql`${history.subjectId} IN (SELECT id FROM checklist_items WHERE checklist_id = ${row.subjectId})`),
+    )
   }
 
   /**
@@ -204,14 +211,6 @@ export class UndoService {
   private changedSince(row: HistoryRow, isValue: boolean, undoing: Set<string>): ActorRef | null {
     const [later] = this.laterChanges(row, isValue, undoing)
     return later ? { kind: later.kind, id: (later.kind === 'agent' ? later.tokenId : later.userId) ?? '', name: later.name } : null
-  }
-
-  /** What a change to a checklist covers: the checklist and its items. */
-  private subjects(row: HistoryRow) {
-    if (!row.subjectId) return []
-    if (!row.kind.startsWith('checklist.')) return [row.subjectId]
-    const items = this.deps.db.select({ id: checklistItems.id }).from(checklistItems).where(eq(checklistItems.checklistId, row.subjectId)).all()
-    return [row.subjectId, ...items.slice(0, CHUNK - 1).map((i) => i.id)]
   }
 
   private trashed(row: HistoryRow) {

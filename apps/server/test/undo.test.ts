@@ -205,6 +205,52 @@ describe('undo', () => {
     expect((await client.post('/api/history/undo', { ids: [entry.id], since: entry.id })).status).toBe(400)
   })
 
+  it('counts what others did under a page, or in a long checklist, as changed since', async () => {
+    const { client, workspaceId } = await signUp(h, 'Debajo')
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    // A page the agent made, with a subpage someone else made under it.
+    const parent = (await bot.post(`/api/projects/${projectId}/pages`, { title: 'Del agente' })).body.id as string
+    await bot.post(`/api/projects/${projectId}/pages`, { title: 'Suya también', parentId: parent })
+    const created = await latest(client, 'pages', parent, 'page.created')
+    expect((await undo(client, { ids: [created.id], dryRun: true })).plan[0]!.status).toBe('ready')
+    const child = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Mía', parentId: parent })).body.id as string
+    expect((await undo(client, { ids: [created.id] })).plan[0]).toMatchObject({ status: 'conflict', changedBy: { kind: 'user' } })
+    expect(await undo(client, { ids: [created.id], conflicts: 'skip' })).toMatchObject({ undone: 0, skipped: 1 })
+    expect((await client.get(`/api/pages/${child}`)).status).toBe(200)
+
+    // A checklist the agent made, with someone's change to its 95th item.
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Larga' })).body.id as string
+    const list = (await bot.post(`/api/cards/${card}/checklists`, { title: 'Muchos pasos' })).body.id as string
+    let last = ''
+    for (let i = 1; i <= 95; i++) last = (await bot.post(`/api/checklists/${list}/items`, { text: `Paso ${i}` })).body.id
+    // Past the first page of the history: looked up directly.
+    const listCreated = h.db.select({ id: history.id }).from(history).where(and(eq(history.subjectId, list), eq(history.kind, 'checklist.created'))).get()!
+    await client.patch(`/api/checklist-items/${last}`, { done: true })
+    expect((await undo(client, { ids: [listCreated.id] })).plan[0]!.status).toBe('conflict')
+  })
+
+  it('keeps undoing or restoring a text a change of its own, apart from the edits after it', async () => {
+    const { client, workspaceId } = await signUp(h, 'Aparte')
+    const { columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'A' })).body.id as string
+    await bot.patch(`/api/cards/${card}`, { title: 'B' })
+    await undo(client, { ids: [(await latest(client, 'cards', card, 'card.title')).id] })
+    const undid = await latest(client, 'cards', card, 'card.title')
+    expect(undid).toMatchObject({ before: 'B', after: 'A', meta: { undoOf: expect.any(String) } })
+    // Editing it right after is a change of its own; editing it back to B doesn't erase the undo either.
+    await client.patch(`/api/cards/${card}`, { title: 'C' })
+    await client.patch(`/api/cards/${card}`, { title: 'B' })
+    const titles = (await historyOf(client, 'cards', card)).filter((e) => e.kind === 'card.title')
+    expect(titles.map((e) => [e.before, e.after])).toEqual([
+      ['A', 'B'],
+      ['B', 'A'],
+      ['A', 'B'],
+    ])
+    expect(titles[1]!.id).toBe(undid.id)
+  })
+
   it('says what can no longer be undone, and why', async () => {
     const { client, workspaceId } = await signUp(h, 'Imposible')
     const { columns } = await seedBoard(client, workspaceId)

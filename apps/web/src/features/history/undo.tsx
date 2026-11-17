@@ -7,7 +7,7 @@ import { Dialog } from '../../components/ui/Dialog'
 import { errorMessage, post } from '../../lib/api'
 import { queryClient } from '../../lib/queries'
 
-type Target = { ids: string[] } | { since: string }
+type Target = { ids: string[] }
 type Asking = { target: Target; plan: UndoPlanItemDTO[]; bulk: boolean; name: string }
 
 /** What undoing touches: refetch whatever of it is on screen. */
@@ -70,7 +70,8 @@ export function useUndo() {
   async function undoSince(entry: HistoryEntryDTO) {
     try {
       const result = await post<UndoResultDTO>('/history/undo', { since: entry.id, dryRun: true })
-      setAsking({ target: { since: entry.id }, plan: result.plan, bulk: true, name: entry.actor.name })
+      // Confirming undoes the changes shown, not whatever the agent did since: it may still be working.
+      setAsking({ target: { ids: result.plan.map((p) => p.entryId) }, plan: result.plan, bulk: true, name: entry.actor.name })
     } catch (error) {
       toast.error(errorMessage(error))
     }

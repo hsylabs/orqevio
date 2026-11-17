@@ -35,6 +35,10 @@ test('undo an agent’s changes from the history, and put back an earlier versio
   await renamed.getByRole('button', { name: 'Deshacer todo lo que hizo Claude desde aquí' }).click()
   const confirm = page.getByRole('dialog', { name: '¿Deshacer 3 cambios de Claude?' })
   await expect(confirm.getByRole('list', { name: 'Cambiados después' })).toContainText('«Notas»: lo cambió después Lucía Martín')
+  // The agent keeps working meanwhile: what it does now isn't among the changes shown, and stays.
+  const made = await request.post(`${baseURL}/api/columns/${board.columns[0]!.id}/cards`, { headers: { Authorization: `Bearer ${token}` }, data: { title: 'Llegó después' } })
+  expect(made.status(), await made.text()).toBe(201)
+  const later = (await made.json()) as { id: string }
   await confirm.getByRole('button', { name: 'Deshacer 2 y saltar el resto' }).click()
   const toast = page.locator('[data-sonner-toast]').filter({ hasText: 'Se han deshecho 2 cambios' })
   await expect(toast).toContainText('Se ha saltado 1 cambio que se tocó después.')
@@ -45,6 +49,7 @@ test('undo an agent’s changes from the history, and put back an earlier versio
   const card = (await (await page.request.get(`/api/cards/${cardId}`)).json()) as { columnId: string }
   expect(card.columnId).toBe(board.columns.find((c) => c.name === 'Por hacer')!.id)
   expect((await pageNow()).content).toBe('Uno\n\nDos\n\nTres')
+  expect((await page.request.get(`/api/cards/${later.id}`)).status()).toBe(200)
 
   // One change someone changed since: it asks first, and cancelling leaves it.
   // Opened from the sidebar, as people do: loading the page anew while the board's requests are on
