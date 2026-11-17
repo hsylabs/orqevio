@@ -409,7 +409,15 @@ export class UndoService {
           const labelKey = `${card.id}|card.labels|`
           const labelsNow = state.values.has(labelKey) ? state.values.get(labelKey) : db.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, card.id)).all().map((l) => l.id)
           const toOtherBoard = (before as CardPlace | null)?.boardId !== undefined && (before as CardPlace).boardId !== place.boardId
-          if (check.status !== 'ready' || !toOtherBoard || !Array.isArray(labelsNow) || labelsNow.length === 0) return check
+          if (check.status !== 'ready' || !toOtherBoard) return check
+          if (!Array.isArray(labelsNow) || labelsNow.length === 0) {
+            // Back there, it gets again the labels it lost on the way, those still on that board:
+            // older label changes are checked against them, as when they are undone.
+            const lost = Array.isArray(row.meta.labelIds) ? row.meta.labelIds : []
+            const back = lost.length ? db.select({ id: labels.id }).from(labels).where(and(eq(labels.boardId, (before as CardPlace).boardId), inArray(labels.id, lost))).all().map((l) => l.id) : []
+            state.values.set(labelKey, back)
+            return check
+          }
           if (had === undefined) state.values.delete(key)
           else state.values.set(key, had)
           const [who] = this.laterChanges({ ...row, kind: 'card.labels', subjectId: null }, true, undoing)
