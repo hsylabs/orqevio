@@ -464,9 +464,8 @@ export class OAuthService {
     }
     const { grant } = row
     if (row.token.expiresAt <= now || grant.revokedAt || (grant.expiresAt && grant.expiresAt <= now)) throw invalidGrant()
-    if (form.scope && !form.scope.split(' ').filter(Boolean).every((scope) => grant.scopes.includes(scope))) {
-      throw new OAuthError('invalid_scope', 'The requested scope exceeds what was granted')
-    }
+    const requested = form.scope ? form.scope.split(' ').filter(Boolean) : []
+    if (!requested.every((scope) => grant.scopes.includes(scope))) throw new OAuthError('invalid_scope', 'The requested scope exceeds what was granted')
     if (!(await this.member(grant.userId, grant.workspaceId))) throw invalidGrant()
     const [rotated] = await db
       .update(oauthTokens)
@@ -479,10 +478,13 @@ export class OAuthService {
       throw invalidGrant('This refresh token was already used, so the access has been revoked')
     }
     await db.update(apiTokens).set({ expiresAt: new Date(now.getTime() + REFRESH_TTL_MS) }).where(eq(apiTokens.id, grant.id))
-    return this.issue(grant.id, grant.scopes)
+    // The access token gets what was asked for (RFC 6749 §6); the refresh token keeps the whole grant.
+    const scopes = requested.length ? grant.scopes.filter((scope) => requested.includes(scope)) : grant.scopes
+    return this.issue(grant.id, scopes, scopes.length < grant.scopes.length)
   }
 
-  private async issue(grantId: string, scopes: string[]): Promise<TokenResponse> {
+  /** `narrowed`: the access token has fewer scopes than its grant, and keeps them. */
+  private async issue(grantId: string, scopes: string[], narrowed = false): Promise<TokenResponse> {
     const now = Date.now()
     const access = `${ACCESS_PREFIX}${randomToken(32)}`
     const refresh = `${REFRESH_PREFIX}${randomToken(32)}`
@@ -491,7 +493,7 @@ export class OAuthService {
       .delete(oauthTokens)
       .where(and(eq(oauthTokens.tokenId, grantId), or(lt(oauthTokens.expiresAt, new Date(now)), lt(oauthTokens.rotatedAt, new Date(now - ROTATED_KEPT_MS)))))
     await db.insert(oauthTokens).values([
-      { id: sha256(access), tokenId: grantId, kind: 'access', expiresAt: new Date(now + ACCESS_TTL_MS) },
+      { id: sha256(access), tokenId: grantId, kind: 'access', expiresAt: new Date(now + ACCESS_TTL_MS), scopes: narrowed ? scopes : null },
       { id: sha256(refresh), tokenId: grantId, kind: 'refresh', expiresAt: new Date(now + REFRESH_TTL_MS) },
     ])
     return { access_token: access, token_type: 'Bearer', expires_in: ACCESS_TTL_MS / 1000, refresh_token: refresh, scope: scopes.join(' ') }
@@ -513,7 +515,7 @@ export class OAuthService {
     if (!token.startsWith(ACCESS_PREFIX) || token.length > 100) return null
     const now = new Date()
     const [row] = await this.deps.db
-      .select({ grant: apiTokens })
+      .select({ grant: apiTokens, scopes: oauthTokens.scopes })
       .from(oauthTokens)
       .innerJoin(apiTokens, eq(apiTokens.id, oauthTokens.tokenId))
       .innerJoin(workspaceMembers, and(eq(workspaceMembers.workspaceId, apiTokens.workspaceId), eq(workspaceMembers.userId, apiTokens.userId)))
@@ -527,7 +529,7 @@ export class OAuthService {
         ),
       )
       .limit(1)
-    return row ? this.tokens.actorFor(row.grant, now) : null
+    return row ? this.tokens.actorFor(row.grant, now, row.scopes) : null
   }
 
   private async revokeGrant(tokenId: string) {

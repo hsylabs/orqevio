@@ -6,9 +6,10 @@ import type { AgentActor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
 import { AppError } from '../lib/errors'
 import type { Services } from '../services'
+import { VERSION } from '../version'
 
 export const MCP_SERVER_NAME = 'orqevio'
-export const MCP_SERVER_VERSION = '1.0.0'
+export const MCP_SERVER_VERSION = VERSION
 
 /** Largest file an agent uploads through MCP, and the request that carries it (base64 adds a third). */
 export const MCP_UPLOAD_MB = 5
