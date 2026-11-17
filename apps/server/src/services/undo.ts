@@ -25,6 +25,8 @@ import type { TrashService } from './trash'
 
 /** The end of a column or of a list of subpages, where something moved back goes. */
 const AT_END = 100_000
+/** The most changes one request undoes, the newest ones. */
+const MAX_CHANGES = 500
 /** Ids per query: a Cloudflare Durable Object takes at most 100 bound values in one. */
 const CHUNK = 90
 
@@ -148,7 +150,7 @@ export class UndoService {
       if (!anchor) throw notFound('History entry')
       const author = anchor.actorKind === 'agent' ? eq(history.actorTokenId, anchor.actorTokenId ?? '') : and(eq(history.actorKind, 'user'), eq(history.actorUserId, anchor.actorUserId ?? ''))
       const from = or(gt(history.updatedAt, anchor.updatedAt), and(eq(history.updatedAt, anchor.updatedAt), sql`rowid >= ${anchor.seq}`))
-      rows = (await this.rows(and(eq(history.workspaceId, anchor.workspaceId), author, from))).slice(0, 500)
+      rows = await this.rows(and(eq(history.workspaceId, anchor.workspaceId), author, from)).limit(MAX_CHANGES)
     }
     for (const workspaceId of new Set(rows.map((r) => r.workspaceId))) await this.access.workspace(actor, workspaceId)
     return rows
