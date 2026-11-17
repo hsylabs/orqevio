@@ -323,13 +323,19 @@ export class UndoService {
       if (status === 'ready') state.exists.set(key, false)
       return { status, exists: false }
     }
-    // A value set back to what it was before.
-    const value = (current: HistoryValue, same: (a: HistoryValue, b: HistoryValue) => boolean = (a, b) => a === b, place?: () => boolean, key = fieldKey(row)): Check => {
+    // A value set back to what it was before, or to `back`: what of it undoing can still set.
+    const value = (
+      current: HistoryValue,
+      same: (a: HistoryValue, b: HistoryValue) => boolean = (a, b) => a === b,
+      place?: () => boolean,
+      key = fieldKey(row),
+      back: HistoryValue = before,
+    ): Check => {
       const now = state.values.has(key) ? state.values.get(key)! : current
-      if (same(now, before)) return { status: 'unchanged' }
+      if (same(now, back)) return { status: 'unchanged' }
       if (place && !place()) return { status: 'impossible', reason: 'place_gone' }
       const status = same(now, after) ? 'ready' : 'conflict'
-      if (status === 'ready') state.values.set(key, before)
+      if (status === 'ready') state.values.set(key, back)
       return { status, current: now }
     }
 
@@ -364,14 +370,13 @@ export class UndoService {
       case 'card.restored':
         return takeAway(entityKey, () => entityExists)
     }
+    // Files, on a page or a card: what matters is the file. One made or brought back goes from
+    // wherever it is now, even if the place it was made in is gone.
+    const file = () => Boolean(one(db.select({ id: attachments.id }).from(attachments).where(eq(attachments.id, subject))))
+    if (kind === 'attachment.created' || kind === 'attachment.restored') return takeAway(`attachment:${subject}`, () => file() || returning(subject))
     if (!entityExists) return { status: 'impossible', reason: 'gone' }
 
-    // Files, on a page or a card: what matters is the file.
-    const file = () => Boolean(one(db.select({ id: attachments.id }).from(attachments).where(eq(attachments.id, subject))))
     switch (kind) {
-      case 'attachment.created':
-      case 'attachment.restored':
-        return takeAway(`attachment:${subject}`, () => file() || returning(subject))
       case 'attachment.deleted':
         return bringBack(`attachment:${subject}`, file)
       case 'attachment.moved': {
@@ -457,8 +462,21 @@ export class UndoService {
           return body('cards', 'description', back?.trashId)
         case 'card.due':
           return value(card.dueAt?.toISOString() ?? null)
-        case 'card.labels':
-          return value(labelIds(), sameSet)
+        case 'card.labels': {
+          // Labels deleted from its board since can't go back on: undoing it sets the others.
+          const wanted = Array.isArray(before) ? before.map(String) : []
+          const place = state.values.get(`${card.id}|card.moved|`) as CardPlace | undefined
+          const board = place?.boardId ?? card.boardId
+          const still = wanted.length
+            ? db
+                .select({ id: labels.id })
+                .from(labels)
+                .where(and(eq(labels.boardId, board), sql`${labels.id} IN (SELECT value FROM json_each(${JSON.stringify(wanted)}))`))
+                .all()
+                .map((l) => l.id)
+            : []
+          return value(labelIds(), sameSet, undefined, fieldKey(row), wanted.filter((id) => still.includes(id)))
+        }
         case 'card.moved': {
           const target = columnOf(before)
           const key = fieldKey(row)
