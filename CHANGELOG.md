@@ -18,6 +18,9 @@ To update your copy, see [Updates](README.md#updates) in the README.
 - Deleting something through the REST API answers `200` with the id of its trash entry (`{ "trashId": "…" }`) instead of `204`. New endpoints: `GET /api/workspaces/:id/trash`, `POST /api/trash/:id/restore` and `DELETE /api/trash/:id`, for people only. Deleting a workspace or your account, and uninstalling, are still for good.
 - New REST endpoints for the history: `GET /api/pages/:id/history` and `GET /api/cards/:id/history` (newest first, 50 at a time, with `?before=<date>` for older ones), and `GET /api/history/:id` for one change with its texts before and after. Agents can read the history of what their token lets them read.
 
+### Fixed
+- Opening a page or a card whose text ends with a list or a table, and clicking in it or in its menus, no longer saves it as if you had edited it. The empty line the editor keeps at the end was taken for a change.
+
 ## [1.0.2] - 2026-11-16
 
 ### Fixed

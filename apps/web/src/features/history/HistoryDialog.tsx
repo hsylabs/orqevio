@@ -103,6 +103,7 @@ function Changes({ id, updatedAt }: { id: string; updatedAt: string }) {
 
 /** Lines shown around each change; longer stretches without changes fold away. */
 const CONTEXT = 2
+const MIN_FOLD = 3
 
 type Segment = { kind: 'line'; line: DiffLine } | { kind: 'fold'; count: number }
 
@@ -114,15 +115,20 @@ function fold(lines: DiffLine[]): Segment[] {
     for (let j = Math.max(0, i - CONTEXT); j <= Math.min(lines.length - 1, i + CONTEXT); j++) near[j] = true
   })
   const out: Segment[] = []
-  let hidden = 0
+  let hidden: DiffLine[] = []
+  // A fold is worth it from a few lines on; fewer are shown as they are.
+  const flush = () => {
+    if (hidden.length >= MIN_FOLD) out.push({ kind: 'fold', count: hidden.length })
+    else for (const line of hidden) out.push({ kind: 'line', line })
+    hidden = []
+  }
   lines.forEach((line, i) => {
     if (near[i]) {
-      if (hidden) out.push({ kind: 'fold', count: hidden })
-      hidden = 0
+      flush()
       out.push({ kind: 'line', line })
-    } else hidden++
+    } else hidden.push(line)
   })
-  if (hidden) out.push({ kind: 'fold', count: hidden })
+  flush()
   return out
 }
 

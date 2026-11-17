@@ -65,3 +65,38 @@ test('the history shows who changed what, and what changed line by line', async 
   await expect(cardDialog.getByRole('listitem').first()).toContainText('Claude la movió de «Por hacer» a «En curso»')
   await expect(cardDialog.getByRole('listitem').last()).toContainText('Lucía Martín creó esta tarjeta en «Por hacer»')
 })
+
+// Only people's edits are changes: opening a page or a card and using its menus saves nothing,
+// even when the editor adds its empty line after a list at the end.
+test('opening a page or a card changes nothing', async ({ page }) => {
+  const workspaceId = await openNewWorkspace(page, 'Sin cambios E2E')
+  const boardId = await createProject(page, 'Notas')
+  const projectId = ((await (await page.request.get(`/api/boards/${boardId}`)).json()) as { projectId: string }).projectId
+  const content = '# Compras\n\n- Pan\n- Leche'
+  const doc = (await (await page.request.post(`/api/projects/${projectId}/pages`, { data: { title: 'Lista', content } })).json()) as { id: string }
+  const columns = ((await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string }> }).columns
+  const card = (await (await page.request.post(`/api/columns/${columns[0]!.id}/cards`, { data: { title: 'Recados', description: '- Correos\n- Banco' } })).json()) as { id: string }
+  const writes: string[] = []
+  page.on('request', (r) => {
+    if (r.method() === 'PATCH') writes.push(r.url())
+  })
+
+  await page.goto(`/w/${workspaceId}/d/${doc.id}`)
+  await expect(page.locator('.orq-prose li')).toHaveCount(2)
+  await page.getByRole('button', { name: 'Acciones de la página' }).click()
+  await page.getByRole('menuitem', { name: 'Historial' }).click()
+  await page.keyboard.press('Escape')
+  await page.locator('.orq-prose li').last().click()
+  await page.getByRole('navigation').getByRole('link', { name: 'Tareas' }).click()
+  await page.getByRole('button', { name: 'Recados' }).click()
+  await expect(page.getByRole('textbox', { name: 'Descripción de la tarjeta' }).locator('li')).toHaveCount(2)
+  await page.getByRole('button', { name: 'Acciones de la tarjeta' }).click()
+  await page.keyboard.press('Escape')
+  await page.getByRole('textbox', { name: 'Descripción de la tarjeta' }).locator('li').last().click()
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(1500)
+
+  expect(writes).toEqual([])
+  expect(((await (await page.request.get(`/api/pages/${doc.id}`)).json()) as { content: string }).content).toBe(content)
+  expect(((await (await page.request.get(`/api/cards/${card.id}`)).json()) as { description: string }).description).toBe('- Correos\n- Banco')
+})

@@ -68,6 +68,8 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
   const mentionStore = useMemo(createSuggestionStore, [])
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
+  /** The Markdown last loaded or reported as changed. */
+  const emitted = useRef('')
   const uploadRef = useRef(upload)
   uploadRef.current = upload
   const onUploadedRef = useRef(onUploaded)
@@ -213,7 +215,20 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
         return false
       },
     },
-    onUpdate: ({ editor }) => onChangeRef.current(editor.getMarkdown()),
+    onCreate: ({ editor }) => {
+      emitted.current = editor.getMarkdown()
+    },
+    // Content set from outside (another tab, an agent) is the new starting point.
+    onTransaction: ({ editor, transaction }) => {
+      if (transaction.docChanged && transaction.getMeta('preventUpdate')) emitted.current = editor.getMarkdown()
+    },
+    onUpdate: ({ editor }) => {
+      const markdown = editor.getMarkdown()
+      // The empty line the editor keeps after a list or a table at the end is not a change.
+      if (markdown.trimEnd() === emitted.current.trimEnd()) return
+      emitted.current = markdown
+      onChangeRef.current(markdown)
+    },
   })
 
   const editorRef = useRef<TiptapEditor | null>(null)
