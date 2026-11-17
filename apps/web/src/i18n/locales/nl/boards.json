@@ -129,7 +129,8 @@
     "linkedDocs": "Gekoppelde documenten",
     "attachments": "Bijlagen",
     "activity": "Activiteit",
-    "deleted": "Kaart naar de prullenbak verplaatst"
+    "deleted": "Kaart naar de prullenbak verplaatst",
+    "history": "Geschiedenis"
   },
   "checklist": {
     "titleLabel": "Titel van de checklist",

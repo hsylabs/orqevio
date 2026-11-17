@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { type AnySQLiteColumn, check, index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
-import { TRASH_KINDS, type TrashContents } from '@orqevio/shared'
+import { HISTORY_KINDS, type HistoryMeta, TRASH_KINDS, type TrashContents } from '@orqevio/shared'
 
 /**
  * SQLite schema. The same schema runs on a local file (Node/Docker) and in a
@@ -467,6 +467,45 @@ export const trashRows = sqliteTable(
     storageKey: text('storage_key'),
   },
   (t) => [index('trash_rows_trash_idx').on(t.trashId, t.id), index('trash_rows_storage_idx').on(t.storageKey)],
+)
+
+// ── History ──────────────────────────────────────────────────────
+/**
+ * Every change to a page or a card (and its checklists, labels, links and files), with who
+ * made it and the value before and after, kept for HISTORY_DAYS. Text values are stored as
+ * they are; the others (places, label lists, true or false) as JSON. Rows don't reference
+ * the page or card: their history outlives them while they are in the trash.
+ */
+export const history = sqliteTable(
+  'history',
+  {
+    id: id(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    entityType: text('entity_type', { enum: ['page', 'card'] }).notNull(),
+    entityId: text('entity_id').notNull(),
+    kind: text('kind', { enum: HISTORY_KINDS }).notNull(),
+    subjectId: text('subject_id'),
+    before: text('before'),
+    after: text('after'),
+    meta: text('meta', { mode: 'json' }).$type<HistoryMeta>().notNull().$defaultFn(() => ({})),
+    actorKind: text('actor_kind', { enum: ['user', 'agent'] }).notNull(),
+    actorUserId: text('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    actorTokenId: text('actor_token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
+    actorName: text('actor_name').notNull(),
+    batchId: text('batch_id').notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index('history_entity_idx').on(t.entityId, t.updatedAt),
+    index('history_subject_idx').on(t.subjectId),
+    index('history_user_idx').on(t.actorUserId, t.updatedAt),
+    index('history_token_idx').on(t.actorTokenId, t.updatedAt),
+    index('history_updated_idx').on(t.updatedAt),
+    index('history_batch_idx').on(t.batchId),
+  ],
 )
 
 // ── Vault (ciphertext only; keys never reach the server) ─────────

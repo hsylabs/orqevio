@@ -1,4 +1,5 @@
 export * from './colors'
+export * from './diff'
 export * from './links'
 export * from './live'
 export * from './locales'

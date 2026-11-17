@@ -131,7 +131,8 @@
     "linkedDocs": "Documentos vinculados",
     "attachments": "Adjuntos",
     "activity": "Actividad",
-    "deleted": "Tarjeta movida a la papelera"
+    "deleted": "Tarjeta movida a la papelera",
+    "history": "Historial"
   },
   "checklist": {
     "titleLabel": "Título de la checklist",

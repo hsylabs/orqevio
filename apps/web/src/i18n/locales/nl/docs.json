@@ -23,7 +23,8 @@
     },
     "content": "Pagina-inhoud",
     "subpages": "Subpagina’s",
-    "attachments": "Bijlagen"
+    "attachments": "Bijlagen",
+    "history": "Geschiedenis"
   },
   "editor": {
     "placeholder": "Schrijf, of druk op ‘/’ om iets in te voegen…",

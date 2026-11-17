@@ -427,3 +427,101 @@ export interface RestoredDTO {
   /** Where to open it in the app, relative to the workspace (`b/<id>`, `d/<id>`, `p/<id>`). */
   path: string | null
 }
+
+// ── History ──────────────────────────────────────────────────────
+/**
+ * What the history records, on pages and cards: each change with who made it, when, and the
+ * value before and after. `*.created`, `*.deleted` and `*.restored` carry no values.
+ */
+export const HISTORY_KINDS = [
+  'page.created',
+  'page.title',
+  'page.icon',
+  'page.content',
+  'page.moved',
+  'page.deleted',
+  'page.restored',
+  'card.created',
+  'card.title',
+  'card.description',
+  'card.due',
+  'card.labels',
+  'card.moved',
+  'card.archived',
+  'card.deleted',
+  'card.restored',
+  'card.linked',
+  'card.unlinked',
+  'checklist.created',
+  'checklist.title',
+  'checklist.deleted',
+  'checklist.restored',
+  'item.created',
+  'item.text',
+  'item.done',
+  'item.deleted',
+  'item.restored',
+  'attachment.created',
+  'attachment.deleted',
+  'attachment.restored',
+] as const
+export type HistoryKind = (typeof HISTORY_KINDS)[number]
+
+/** Kinds whose values are plain text: page bodies, descriptions, titles and the like. */
+export const HISTORY_TEXT_KINDS: ReadonlySet<HistoryKind> = new Set([
+  'page.title',
+  'page.icon',
+  'page.content',
+  'card.title',
+  'card.description',
+  'card.due',
+  'checklist.title',
+  'item.text',
+])
+
+/** Kinds whose values are long texts: lists leave them out, and the entry itself has them. */
+export const HISTORY_BODY_KINDS: ReadonlySet<HistoryKind> = new Set(['page.content', 'card.description'])
+
+/** Days the history keeps each change, as the trash keeps what is deleted. */
+export const HISTORY_DAYS = 30
+
+/** A card's place: its board and column. */
+export interface CardPlace {
+  boardId: string
+  columnId: string
+}
+
+/** A page's place: its project and the page it hangs from, or none at the top. */
+export interface PagePlace {
+  projectId: string
+  parentId: string | null
+}
+
+export type HistoryValue = string | boolean | string[] | CardPlace | PagePlace | null
+
+export type HistoryMeta = Record<string, string | number | boolean | null | string[]>
+
+export interface HistoryEntryDTO {
+  id: string
+  entityType: 'page' | 'card'
+  /** The page or card whose history this is. */
+  entityId: string
+  kind: HistoryKind
+  /** The checklist, item, attachment or linked page the change is about, if not the page or card itself. */
+  subjectId: string | null
+  /** Left out (null) for long texts in lists; `GET /api/history/:id` has them. */
+  before: HistoryValue
+  after: HistoryValue
+  /**
+   * What the change looked like when it was made, for people: names of columns, labels,
+   * pages and files (`from`, `to`, `added`, `removed`, `name`), lines added and removed
+   * (`linesAdded`, `linesRemoved`), the trash entry (`trashId`).
+   */
+  meta: HistoryMeta
+  actor: ActorRef
+  /** Changes one person or agent made in one stretch of work share it. */
+  batchId: string
+  createdAt: string
+  /** Edits of the same text by the same person in one stretch of work are one change. */
+  updatedAt: string
+}

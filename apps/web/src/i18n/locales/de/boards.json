@@ -129,7 +129,8 @@
     "linkedDocs": "Verknüpfte Dokumente",
     "attachments": "Anhänge",
     "activity": "Aktivität",
-    "deleted": "Karte in den Papierkorb verschoben"
+    "deleted": "Karte in den Papierkorb verschoben",
+    "history": "Verlauf"
   },
   "checklist": {
     "titleLabel": "Titel der Checkliste",

@@ -32,6 +32,17 @@ async function json(c: { req: { json: () => Promise<unknown> } }) {
   }
 }
 
+/** `?before=<ISO date>&beforeId=<id>&limit=<n>`: the page of history after the entry `beforeId`, updated at `before`. */
+function historyPage(c: { req: { query: (name: string) => string | undefined } }) {
+  const before = new Date(c.req.query('before') ?? '')
+  const limit = Number(c.req.query('limit'))
+  return {
+    before: Number.isNaN(before.getTime()) ? undefined : before,
+    beforeId: c.req.query('beforeId') || undefined,
+    limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
+  }
+}
+
 export function createApi(env: Env) {
   const api = new Hono<AppEnv>()
   // Brute force is hopeless against a 160-bit key, but failed attempts are still slowed down;
@@ -195,6 +206,8 @@ export function createApi(env: Env) {
 
   // ── Cards ───────────────────────────────────────────────────────
   api.get('/cards/:id', async (c) => c.json(await c.get('services').cards.detail(requireActor(c), c.req.param('id'))))
+  api.get('/cards/:id/history', async (c) => c.json(await c.get('services').history.list(requireActor(c), 'card', c.req.param('id'), historyPage(c))))
+  api.get('/history/:id', async (c) => c.json(await c.get('services').history.get(requireActor(c), c.req.param('id'))))
   api.patch('/cards/:id', async (c) => c.json(await c.get('services').cards.update(requireActor(c), c.req.param('id'), await json(c))))
   api.post('/cards/:id/move', async (c) => c.json(await c.get('services').cards.move(requireActor(c), c.req.param('id'), await json(c))))
   api.post('/cards/:id/archive', async (c) => {
@@ -229,6 +242,7 @@ export function createApi(env: Env) {
 
   // ── Pages ───────────────────────────────────────────────────────
   api.get('/pages/:id', async (c) => c.json(await c.get('services').pages.get(requireActor(c), c.req.param('id'))))
+  api.get('/pages/:id/history', async (c) => c.json(await c.get('services').history.list(requireActor(c), 'page', c.req.param('id'), historyPage(c))))
   api.patch('/pages/:id', async (c) => c.json(await c.get('services').pages.update(requireActor(c), c.req.param('id'), await json(c))))
   api.post('/pages/:id/move', async (c) => {
     await c.get('services').pages.move(requireActor(c), c.req.param('id'), await json(c))

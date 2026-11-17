@@ -131,7 +131,8 @@
     "linkedDocs": "Documents liés",
     "attachments": "Pièces jointes",
     "activity": "Activité",
-    "deleted": "Carte placée dans la corbeille"
+    "deleted": "Carte placée dans la corbeille",
+    "history": "Historique"
   },
   "checklist": {
     "titleLabel": "Titre de la checklist",
