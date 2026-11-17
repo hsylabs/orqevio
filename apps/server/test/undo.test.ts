@@ -349,4 +349,30 @@ describe('undo', () => {
     expect(result).toMatchObject({ undone: 1, failed: 0 })
     expect((await client.get(`/api/cards/${card}`)).body.attachmentList).toHaveLength(1)
   })
+
+  it('counts in the plan what undoing a newer deletion brings back from the trash', async () => {
+    const { client, workspaceId } = await signUp(h, 'De vuelta')
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId, ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'])
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Origen' })).body.id as string
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Carpeta' })).body.id as string
+    const file = (await bot.upload(`/api/cards/${card}/attachments`, 'x', { name: 'x.txt', type: 'text/plain' })).body.id as string
+    await bot.patch(`/api/pages/${page}`, { title: 'Carpeta del agente' })
+    await bot.post(`/api/attachments/${file}/move`, { pageId: page })
+    await bot.del(`/api/pages/${page}`)
+    const since = (await historyOf(client, 'cards', card)).findLast((e) => e.kind === 'attachment.created')!
+    // The page and the file in it are in the trash now, but undoing the deletion first brings them back.
+    const plan = (await undo(client, { since: since.id, dryRun: true })).plan
+    expect(plan.map((p) => [p.kind, p.status, p.entityTitle])).toEqual([
+      ['page.deleted', 'ready', 'Carpeta del agente'],
+      ['attachment.moved', 'ready', 'Carpeta del agente'],
+      ['attachment.moved', 'unchanged', 'Origen'],
+      ['page.title', 'ready', 'Carpeta del agente'],
+      ['attachment.created', 'ready', 'Origen'],
+    ])
+    const done = await undo(client, { since: since.id })
+    expect(done).toMatchObject({ undone: 4, skipped: 0, failed: 0 })
+    expect((await client.get(`/api/pages/${page}`)).body).toMatchObject({ title: 'Carpeta', attachments: [] })
+    expect((await client.get(`/api/cards/${card}`)).body.attachmentList).toEqual([])
+  })
 })
