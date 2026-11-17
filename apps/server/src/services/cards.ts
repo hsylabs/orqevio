@@ -555,6 +555,8 @@ export class CardService {
   async unlinkPage(actor: Actor, cardId: string, pageId: string) {
     this.access.requireScope(actor, 'organize')
     this.access.requireAnyScope(actor, ['tasks:write', 'docs:write'])
+    // As for linking: it takes reading both the card and the page.
+    this.access.requireScope(actor, 'docs:read')
     const card = await this.load(actor, cardId, 'tasks:read')
     const [page] = await this.deps.db.select({ title: pages.title }).from(pages).where(eq(pages.id, pageId))
     const trashId = this.deps.db.transaction((tx) => {

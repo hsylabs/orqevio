@@ -48,6 +48,8 @@ interface Check {
   status: UndoStatus
   reason?: UndoPlanItemDTO['reason']
   current?: HistoryValue
+  /** For a conflict found on something else than the change itself: who made the newer change. */
+  by?: ActorRef | null
   /** For a change that brings something back or takes it away: what it is about exists afterwards. */
   exists?: boolean
 }
@@ -187,7 +189,7 @@ export class UndoService {
       entityTitle: title ?? (typeof row.meta.title === 'string' ? row.meta.title : ''),
       status: check.status,
       ...(check.reason ? { reason: check.reason } : {}),
-      ...(check.status === 'conflict' ? { changedBy: this.changedSince(row, check.exists === undefined, undoing), current: check.current ?? null } : {}),
+      ...(check.status === 'conflict' ? { changedBy: check.by !== undefined ? check.by : this.changedSince(row, check.exists === undefined, undoing), current: check.current ?? null } : {}),
     }
   }
 
@@ -205,6 +207,8 @@ export class UndoService {
       return or(sql`${history.entityId} IN (${tree})`, sql`${history.subjectId} IN (${tree})`)
     }
     if (!row.subjectId) return eq(history.entityId, row.entityId)
+    // A file can change places: what happened to it anywhere counts.
+    if (row.kind.startsWith('attachment.')) return eq(history.subjectId, row.subjectId)
     if (!row.kind.startsWith('checklist.')) return and(eq(history.entityId, row.entityId), eq(history.subjectId, row.subjectId))
     // A checklist goes with all its items, however many.
     return and(
@@ -388,12 +392,24 @@ export class UndoService {
           )
         case 'card.moved': {
           const target = columnOf(before)
-          return value(
+          const key = fieldKey(row)
+          const had = state.values.get(key)
+          const place = (state.values.has(key) ? had : { boardId: card.boardId, columnId: card.columnId }) as CardPlace
+          const check = value(
             { boardId: card.boardId, columnId: card.columnId },
             (a, b) => columnOf(a) === columnOf(b),
             // Its old column, on its board or another one of the same workspace.
             () => Boolean(one(db.select({ id: columns.id }).from(columns).where(and(eq(columns.id, target ?? ''), eq(columns.workspaceId, card.workspaceId))))),
           )
+          // Back to another board, it leaves the labels it has on this one: newer labels are a conflict.
+          const labelKey = `${card.id}|card.labels|`
+          const labelsNow = state.values.has(labelKey) ? state.values.get(labelKey) : db.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, card.id)).all().map((l) => l.id)
+          const toOtherBoard = (before as CardPlace | null)?.boardId !== undefined && (before as CardPlace).boardId !== place.boardId
+          if (check.status !== 'ready' || !toOtherBoard || !Array.isArray(labelsNow) || labelsNow.length === 0) return check
+          if (had === undefined) state.values.delete(key)
+          else state.values.set(key, had)
+          const [who] = this.laterChanges({ ...row, kind: 'card.labels', subjectId: null }, true, undoing)
+          return { status: 'conflict', current: labelsNow, by: who ? { kind: who.kind, id: (who.kind === 'agent' ? who.tokenId : who.userId) ?? '', name: who.name } : null }
         }
         case 'card.archived':
           return value(card.archivedAt !== null)

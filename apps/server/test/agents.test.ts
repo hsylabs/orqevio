@@ -153,6 +153,12 @@ describe('agent tokens', () => {
     expect((await tasksOnly.get(`/api/attachments/${file.body.id}`)).status).toBe(403)
     expect((await organizer.get(`/api/attachments/${file.body.id}`)).status).toBe(200)
 
+    // Removing a link between a card and a page takes reading both, as making one does.
+    const linked = await client.post(`/api/projects/${projectId}/pages`, { title: 'Enlazada' })
+    expect((await client.post(`/api/cards/${card.body.id}/pages`, { pageId: linked.body.id })).status).toBe(204)
+    expect((await tasksOnly.del(`/api/cards/${card.body.id}/pages/${linked.body.id}`)).status).toBe(403)
+    expect((await organizer.del(`/api/cards/${card.body.id}/pages/${linked.body.id}`)).status).toBe(200)
+
     // Deleting a project takes write access to both its tasks and its documents.
     expect((await tasksOnly.del(`/api/projects/${projectId}`)).status).toBe(403)
     expect((await organizer.del(`/api/columns/${columns[2]!.id}`)).status).toBe(200)

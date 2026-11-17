@@ -375,4 +375,36 @@ describe('undo', () => {
     expect((await client.get(`/api/pages/${page}`)).body).toMatchObject({ title: 'Carpeta', attachments: [] })
     expect((await client.get(`/api/cards/${card}`)).body.attachmentList).toEqual([])
   })
+
+  it('asks first when undoing would drop what someone did since in another place', async () => {
+    const { client, workspaceId } = await signUp(h, 'Otro sitio')
+    const { projectId, boardId, columns } = await seedBoard(client, workspaceId)
+    const other = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId, ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'])
+    const old = (await client.post(`/api/boards/${boardId}/labels`, { name: 'Antigua', color: 'tomato' })).body.id as string
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Viajera', labelIds: [old] })).body.id as string
+
+    // Labels a person put on the card on its new board would go if the move were undone.
+    await bot.post(`/api/cards/${card}/move`, { columnId: other.columns[0]!.id, index: 0 })
+    const moved = await latest(client, 'cards', card, 'card.moved')
+    const fresh = (await client.post(`/api/boards/${other.boardId}/labels`, { name: 'Nueva', color: 'jade' })).body.id as string
+    await client.patch(`/api/cards/${card}`, { labelIds: [fresh] })
+    const asked = await undo(client, { ids: [moved.id] })
+    expect(asked).toMatchObject({ applied: false, plan: [{ status: 'conflict', changedBy: { kind: 'user', name: 'Otro sitio' } }] })
+    expect((await client.get(`/api/cards/${card}`)).body.board.id).toBe(other.boardId)
+    expect((await undo(client, { ids: [moved.id], conflicts: 'force' })).undone).toBe(1)
+    const back = (await client.get(`/api/cards/${card}`)).body
+    expect(back.board.id).toBe(boardId)
+    expect(back.labels.map((l: { id: string }) => l.id)).toEqual([old])
+
+    // A file the agent attached and moved, that a person then moved elsewhere: undoing the upload asks first.
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Primero' })).body.id as string
+    const later = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Después' })).body.id as string
+    const file = (await bot.upload(`/api/cards/${card}/attachments`, 'x', { name: 'x.txt', type: 'text/plain' })).body.id as string
+    const uploaded = await latest(client, 'cards', card, 'attachment.created')
+    await bot.post(`/api/attachments/${file}/move`, { pageId: page })
+    await client.post(`/api/attachments/${file}/move`, { pageId: later })
+    expect((await undo(client, { ids: [uploaded.id] })).plan[0]).toMatchObject({ status: 'conflict', changedBy: { kind: 'user', name: 'Otro sitio' } })
+    expect((await client.get(`/api/pages/${later}`)).body.attachments.map((a: { id: string }) => a.id)).toEqual([file])
+  })
 })
