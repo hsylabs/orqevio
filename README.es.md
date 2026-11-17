@@ -11,9 +11,11 @@ Orqevio reúne cuatro piezas y solo esas cuatro:
 | **Tareas** | Espacios, proyectos, tableros Kanban, columnas, tarjetas, etiquetas, fechas, checklists, archivo y adjuntos. |
 | **Documentación** | Páginas jerárquicas con editor por bloques que guarda Markdown, tablas sencillas, imágenes y archivos, y enlaces directos con tareas. |
 | **Bóveda** | Credenciales y notas privadas cifradas de extremo a extremo, códigos de verificación en dos pasos (TOTP), importación y exportación, generador de contraseñas, clave de recuperación y bloqueo automático. |
-| **Agentes (MCP)** | Servidor MCP con permisos diferenciados por espacio para consultar documentación, crear tareas y reorganizar tableros. Se conecta con OAuth (por ejemplo, como conector de Claude) o con un token. |
+| **Agentes (MCP)** | Servidor MCP con permisos diferenciados por espacio, para que los agentes hagan casi todo lo que haces tú con tareas y documentos: consultar, escribir, reorganizar, adjuntar archivos y poner orden. Se conecta con OAuth (por ejemplo, como conector de Claude) o con un token. |
 
 La decisión central: **la bóveda está aislada de los agentes**. Ningún token puede acceder a ella, ni siquiera a su contenido cifrado, y el servidor nunca conoce los secretos.
+
+Y **nada de lo que hace un agente es definitivo.** Cualquier cambio se puede deshacer durante 30 días, y lo que borra un agente va a la papelera, que solo tú puedes vaciar. Ningún agente puede borrar nada para siempre, borrar un espacio o tu cuenta, ni tocar los tokens, los ajustes o la bóveda.
 
 **Cada copia de Orqevio es de una sola persona.** No hay registro ni correo: la primera vez se reclama con un código de configuración y, a partir de ahí, se entra con una clave de acceso.
 
@@ -29,6 +31,23 @@ La decisión central: **la bóveda está aislada de los agentes**. Ningún token
 - **Teclado primero.** `⌘K`/`Ctrl K` abre la paleta para buscar y saltar a cualquier sitio; `⌘\` oculta la barra lateral; el Kanban se puede reorganizar entero con teclado (espacio para coger, flechas, espacio para soltar), con anuncios para lector de pantalla.
 - **Identidad propia.** Papel cálido, tinta y dos señales de color: caqui para ti, ultramar para los agentes. Tipografía editorial (Fraunces) sobre una interfaz sobria (Instrument Sans). Tema claro y oscuro, con los tonos de texto ajustados a contraste WCAG AA.
 - **En tu idioma.** La app y el instalador hablan inglés, español, francés, portugués, italiano, alemán, neerlandés y japonés. Tu copia toma el idioma del navegador al reclamarla y puedes cambiarlo cuando quieras en **Ajustes**.
+
+## Deshacer y recuperar
+
+Todo lo que cambian las personas y los agentes se puede recuperar durante 30 días.
+
+**Papelera.** Al borrar un proyecto, un tablero, una columna, una tarjeta, una página, un archivo, una etiqueta, una checklist o uno de sus elementos, o el enlace entre una tarjeta y una página, va a la **Papelera**, en la barra lateral, con todo lo que contenía. Justo después de borrar, **Deshacer** en el aviso lo trae de vuelta. En la **Papelera** ves qué es cada cosa, dónde estaba, quién la borró y cuándo se borrará para siempre, con **Restaurar** y **Borrar para siempre**. Restaurar lo deja todo como estaba; si su sitio ya no existe, la app dice dónde ha ido. Pasados 30 días, la papelera se vacía sola.
+
+**Historial.** **Historial**, en el menú de una tarjeta o una página, muestra sus cambios de los últimos 30 días: qué cambió, quién lo cambió (una persona, o qué agente) y cuándo. En el contenido de una página o la descripción de una tarjeta, **Ver qué cambió** muestra las líneas añadidas y quitadas.
+
+**Deshacer.** En el historial:
+- **Deshacer** devuelve lo que cambió un cambio, sin tocar lo que cambió después. Lo que añadió va a la papelera, y lo que borró vuelve.
+- **Deshacer todo lo que hizo Claude desde aquí**, en el cambio de un agente, deshace todo lo que hizo ese agente desde ese cambio, en tarjetas y páginas, después de decir qué abarca.
+- **Restaurar esta versión** deja el contenido de una página o la descripción de una tarjeta como estaba.
+
+Si alguien cambió lo mismo después del cambio que deshaces, Orqevio dice quién y pregunta antes. Deshacer es un cambio más, así que también se puede deshacer. Solo las personas deshacen.
+
+**Qué pueden borrar y mover los agentes.** Cada token y cada conexión OAuth tiene el permiso **Puede borrar y mover**. Con él, un agente puede borrar lo que puede escribir, siempre a la papelera, y mover tarjetas a otro tablero y archivos a otra tarjeta o página. Los tokens y conexiones nuevos lo tienen salvo que lo desmarques; los creados antes de la 1.1.0 no, hasta que lo actives en **Agentes**, donde cada uno tiene su casilla. Sin él, un agente puede archivar tarjetas y mover tarjetas dentro de su tablero y páginas dentro de su proyecto.
 
 ## Arquitectura
 
