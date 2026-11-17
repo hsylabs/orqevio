@@ -69,7 +69,7 @@ test('the history shows who changed what, and what changed line by line', async 
 // Only people's edits are changes: opening a page or a card and using its menus saves nothing,
 // even when the editor adds its empty line after a list at the end.
 test('opening a page or a card changes nothing', async ({ page }) => {
-  const workspaceId = await openNewWorkspace(page, 'Sin cambios E2E')
+  await openNewWorkspace(page, 'Sin cambios E2E')
   const boardId = await createProject(page, 'Notas')
   const projectId = ((await (await page.request.get(`/api/boards/${boardId}`)).json()) as { projectId: string }).projectId
   const content = '# Compras\n\n- Pan\n- Leche'
@@ -81,7 +81,10 @@ test('opening a page or a card changes nothing', async ({ page }) => {
     if (r.method() === 'PATCH') writes.push(r.url())
   })
 
-  await page.goto(`/w/${workspaceId}/d/${doc.id}`)
+  // Opened from the sidebar, as people do: loading the page anew while the board's requests are on
+  // their way makes WebKit report them as refused.
+  await page.getByRole('navigation').getByRole('link', { name: 'Lista' }).click()
+  await page.waitForURL(`**/d/${doc.id}`)
   await expect(page.locator('.orq-prose li')).toHaveCount(2)
   await page.getByRole('button', { name: 'Acciones de la página' }).click()
   await page.getByRole('menuitem', { name: 'Historial' }).click()

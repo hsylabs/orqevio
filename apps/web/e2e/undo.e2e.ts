@@ -47,7 +47,12 @@ test('undo an agent’s changes from the history, and put back an earlier versio
   expect((await pageNow()).content).toBe('Uno\n\nDos\n\nTres')
 
   // One change someone changed since: it asks first, and cancelling leaves it.
-  await page.goto(`/w/${workspaceId}/d/${doc.id}`)
+  // Opened from the sidebar, as people do: loading the page anew while the board's requests are on
+  // their way makes WebKit report them as refused.
+  await page.keyboard.press('Escape')
+  await expect(page.getByLabel('Título de la tarjeta')).toHaveCount(0)
+  await page.getByRole('navigation').getByRole('link', { name: 'Notas' }).click()
+  await page.waitForURL(`**/d/${doc.id}`)
   await page.getByRole('button', { name: 'Acciones de la página' }).click()
   await page.getByRole('menuitem', { name: 'Historial' }).click()
   const pageHistory = page.getByRole('dialog', { name: 'Historial de «Notas»' })
