@@ -16,7 +16,7 @@ import type { TrashService } from './trash'
 import { positionAt } from './ordering'
 
 /** Far deeper than any real tree; only there so a corrupted, circular tree cannot loop forever. */
-const MAX_TREE_DEPTH = 100_000
+export const MAX_TREE_DEPTH = 100_000
 
 /** `WITH RECURSIVE tree(id, depth)`: the pages matching `roots` (depth 0) and every page under them. */
 export const pageTree = (roots: SQL) => sql`WITH RECURSIVE tree(id, depth) AS (
