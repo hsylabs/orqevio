@@ -426,4 +426,27 @@ describe('undo', () => {
     expect(await undo(client, { since: edit.id })).toMatchObject({ undone: 2, failed: 0 })
     expect((await client.get(`/api/pages/${sub}`)).body).toMatchObject({ title: 'Instalar', parentId: top })
   })
+
+  it('plans the labels a card gets back when undoing its move to another board', async () => {
+    const { client, workspaceId } = await signUp(h, 'Etiquetas de vuelta')
+    const { boardId, columns } = await seedBoard(client, workspaceId)
+    const other = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId, ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'])
+    const old = (await client.post(`/api/boards/${boardId}/labels`, { name: 'Vieja', color: 'tomato' })).body.id as string
+    const fresh = (await client.post(`/api/boards/${boardId}/labels`, { name: 'Nueva', color: 'jade' })).body.id as string
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Etiquetada', labelIds: [old] })).body.id as string
+    await bot.patch(`/api/cards/${card}`, { labelIds: [fresh] })
+    await bot.post(`/api/cards/${card}/move`, { columnId: other.columns[0]!.id, index: 0 })
+    const relabel = await latest(client, 'cards', card, 'card.labels')
+    // Undoing the move puts back the label it lost, so the label change before it is ready, not a conflict.
+    const plan = (await undo(client, { since: relabel.id, dryRun: true })).plan
+    expect(plan.map((p) => [p.kind, p.status])).toEqual([
+      ['card.moved', 'ready'],
+      ['card.labels', 'ready'],
+    ])
+    expect(await undo(client, { since: relabel.id, conflicts: 'skip' })).toMatchObject({ undone: 2, skipped: 0, failed: 0 })
+    const back = (await client.get(`/api/cards/${card}`)).body
+    expect(back.board.id).toBe(boardId)
+    expect(back.labels.map((l: { id: string }) => l.id)).toEqual([old])
+  })
 })
