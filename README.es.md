@@ -11,9 +11,11 @@ Orqevio reúne cuatro piezas y solo esas cuatro:
 | **Tareas** | Espacios, proyectos, tableros Kanban, columnas, tarjetas, etiquetas, fechas, checklists, archivo y adjuntos. |
 | **Documentación** | Páginas jerárquicas con editor por bloques que guarda Markdown, tablas sencillas, imágenes y archivos, y enlaces directos con tareas. |
 | **Bóveda** | Credenciales y notas privadas cifradas de extremo a extremo, códigos de verificación en dos pasos (TOTP), importación y exportación, generador de contraseñas, clave de recuperación y bloqueo automático. |
-| **Agentes (MCP)** | Servidor MCP con permisos diferenciados por espacio para consultar documentación, crear tareas y reorganizar tableros. Se conecta con OAuth (por ejemplo, como conector de Claude) o con un token. |
+| **Agentes (MCP)** | Servidor MCP con permisos diferenciados por espacio, para que los agentes hagan casi todo lo que haces tú con tareas y documentos: consultar, escribir, reorganizar, adjuntar archivos y poner orden. Se conecta con OAuth (por ejemplo, como conector de Claude) o con un token. |
 
 La decisión central: **la bóveda está aislada de los agentes**. Ningún token puede acceder a ella, ni siquiera a su contenido cifrado, y el servidor nunca conoce los secretos.
+
+Y **nada de lo que hace un agente es definitivo.** Cualquier cambio se puede deshacer durante 30 días, y lo que borra un agente va a la papelera, que solo tú puedes vaciar. Ningún agente puede borrar nada para siempre, borrar un espacio o tu cuenta, ni tocar los tokens, los ajustes o la bóveda.
 
 **Cada copia de Orqevio es de una sola persona.** No hay registro ni correo: la primera vez se reclama con un código de configuración y, a partir de ahí, se entra con una clave de acceso.
 
@@ -24,9 +26,28 @@ La decisión central: **la bóveda está aislada de los agentes**. Ningún token
 - **Relación directa entre tareas y documentos.** Escribe `@` en un documento para enlazar una tarea: el vínculo aparece en ambos lados. También puedes vincular documentos desde la tarjeta.
 - **Tus agentes, en directo.** Cuando un agente crea o mueve una tarjeta, la ves aparecer con un halo azul y su nombre, y recibes un aviso. El punto del logotipo se vuelve azul mientras trabajan.
 - **Sin pisarse.** Los documentos y las descripciones de las tarjetas usan control de versiones optimista: si un agente edita una página o una tarjeta mientras escribes, Orqevio te avisa y eliges qué versión conservar.
+- **Nada se pierde por error.** Lo que borras espera 30 días en la papelera con todo lo que contenía: una página con sus subpáginas y archivos, una columna con sus tarjetas. Deshazlo al momento desde el aviso o restáuralo más tarde con un clic.
+- **Cada cambio tiene su historial y se puede deshacer.** Cada página y cada tarjeta guardan 30 días de cambios, de personas y de agentes: quién cambió qué y cuándo y, en los textos, qué cambió línea a línea, como un diff. Deshaz un cambio, vuelve a una versión anterior o deshaz todo lo que hizo un agente desde un momento dado; si alguien cambió lo mismo después, Orqevio pregunta antes.
 - **Teclado primero.** `⌘K`/`Ctrl K` abre la paleta para buscar y saltar a cualquier sitio; `⌘\` oculta la barra lateral; el Kanban se puede reorganizar entero con teclado (espacio para coger, flechas, espacio para soltar), con anuncios para lector de pantalla.
 - **Identidad propia.** Papel cálido, tinta y dos señales de color: caqui para ti, ultramar para los agentes. Tipografía editorial (Fraunces) sobre una interfaz sobria (Instrument Sans). Tema claro y oscuro, con los tonos de texto ajustados a contraste WCAG AA.
 - **En tu idioma.** La app y el instalador hablan inglés, español, francés, portugués, italiano, alemán, neerlandés y japonés. Tu copia toma el idioma del navegador al reclamarla y puedes cambiarlo cuando quieras en **Ajustes**.
+
+## Deshacer y recuperar
+
+Todo lo que cambian las personas y los agentes se puede recuperar durante 30 días.
+
+**Papelera.** Al borrar un proyecto, un tablero, una columna, una tarjeta, una página, un archivo, una etiqueta, una checklist o uno de sus elementos, o el enlace entre una tarjeta y una página, va a la **Papelera**, en la barra lateral, con todo lo que contenía. Justo después de borrar, **Deshacer** en el aviso lo trae de vuelta. En la **Papelera** ves qué es cada cosa, dónde estaba, quién la borró y cuándo se borrará para siempre, con **Restaurar** y **Borrar para siempre**. Restaurar lo deja todo como estaba; si su sitio ya no existe, la app dice dónde ha ido. Pasados 30 días, la papelera se vacía sola.
+
+**Historial.** **Historial**, en el menú de una tarjeta o una página, muestra sus cambios de los últimos 30 días: qué cambió, quién lo cambió (una persona, o qué agente) y cuándo. En el contenido de una página o la descripción de una tarjeta, **Ver qué cambió** muestra las líneas añadidas y quitadas.
+
+**Deshacer.** En el historial:
+- **Deshacer** devuelve lo que cambió un cambio, sin tocar lo que cambió después. Lo que añadió va a la papelera, y lo que borró vuelve.
+- **Deshacer todo lo que hizo Claude desde aquí**, en el cambio de un agente, deshace todo lo que hizo ese agente desde ese cambio, en tarjetas y páginas, después de decir qué abarca.
+- **Restaurar esta versión** deja el contenido de una página o la descripción de una tarjeta como estaba.
+
+Si alguien cambió lo mismo después del cambio que deshaces, Orqevio dice quién y pregunta antes. Deshacer es un cambio más, así que también se puede deshacer. Solo las personas deshacen.
+
+**Qué pueden borrar y mover los agentes.** Cada token y cada conexión OAuth tiene el permiso **Puede borrar y mover**. Con él, un agente puede borrar lo que puede escribir, siempre a la papelera, y mover tarjetas a otro tablero y archivos a otra tarjeta o página. Los tokens y conexiones nuevos lo tienen salvo que lo desmarques; los creados antes de la 1.1.0 no, hasta que lo actives en **Agentes**, donde cada uno tiene su casilla. Sin él, un agente puede archivar tarjetas y mover tarjetas dentro de su tablero y páginas dentro de su proyecto.
 
 ## Arquitectura
 
@@ -87,7 +108,8 @@ clave de la bóveda ── AES-256-GCM, datos asociados = usuario + id del eleme
 
 **Agentes**
 - Cada token pertenece a un único espacio y tiene permisos por área: tareas y documentos (sin acceso, lectura, o lectura y escritura). Se muestra una sola vez y se guarda su hash.
-- Cada agente solo ve las herramientas que permite su token. Los agentes **no pueden borrar**: solo archivar tarjetas, que puedes restaurar.
+- Cada agente solo ve las herramientas que permite su token. Con **Puede borrar y mover**, que activas o quitas en cada token y conexión, un agente borra lo que puede escribir y mueve tarjetas a otro tablero y archivos a otra tarjeta o página. Lo que borra va a la **papelera**, que solo las personas ven, restauran o vacían, y cualquier cambio suyo se puede deshacer desde el historial.
+- Ningún agente puede vaciar la papelera, borrar nada para siempre, borrar un espacio o la cuenta, ni tocar los tokens, los ajustes o la bóveda.
 - Toda acción queda registrada con su autor (persona o agente) y es visible en la app. Los tokens se pueden revocar al instante y caducar a los 30, 90 o 365 días.
 - Las aplicaciones conectadas con OAuth reciben los permisos que eliges en la pantalla de consentimiento. Esa pantalla indica a qué dirección volverás y si la identidad de la aplicación está publicada o es autodeclarada. Nunca se envía nada a una dirección que la aplicación no haya registrado.
 
@@ -339,15 +361,20 @@ claude mcp add --transport http orqevio https://tu-dominio/mcp --header "Authori
 
 | Permiso | Herramientas |
 | --- | --- |
-| Cualquier lectura | `list_projects`, `search` |
+| Cualquier lectura | `list_projects`, `search`, `read_attachment` (texto como texto, imágenes como imágenes) |
 | Tareas · lectura | `get_board`, `get_card` |
 | Tareas · escritura | `create_card`, `update_card` (con `base_version` si cambia la descripción), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
 | Documentos · lectura | `list_pages`, `read_page` |
-| Documentos · escritura | `create_page`, `update_page` (reemplazar con `base_version`, o añadir al final) |
+| Documentos · escritura | `create_page`, `update_page` (título, icono y contenido: reemplazar con `base_version`, o añadir al final), `move_page` (dentro de su proyecto) |
 | Escritura + lectura de ambas áreas | `link_card_to_page` |
-| Escritura en cualquiera de las dos áreas | `create_project` (renombrar y borrar proyectos sigue siendo cosa de personas) |
+| Escritura en cualquiera de las dos áreas | `create_project` (renombrar proyectos sigue en la app), `upload_attachment` (texto o base64, hasta 5 MB) |
+| **Puede borrar y mover**, con escritura en tareas | `delete_card`, `delete_board`, `delete_column`, `delete_label`, `delete_checklist`, `delete_checklist_item`, y `move_card` a otro tablero (la tarjeta pierde las etiquetas del tablero anterior) |
+| **Puede borrar y mover**, con escritura en documentos | `delete_page` |
+| **Puede borrar y mover**, con escritura en cualquiera de las dos | `delete_attachment`, `move_attachment`; `unlink_card_from_page` con lectura de ambas áreas; `delete_project` con escritura en ambas |
 
-El endpoint es MCP Streamable HTTP sin estado (`POST /mcp`). La misma API REST también acepta los tokens creados en la app, con los mismos permisos. Borrar cualquier cosa, los adjuntos, la actividad, la cuenta, los tokens y la bóveda exigen sesión en el navegador. Los tokens de OAuth solo valen para `/mcp`.
+Las herramientas que borran van marcadas como destructivas, para que clientes como Claude puedan preguntarte antes. Los tokens y conexiones creados antes de la 1.1.0 no tienen **Puede borrar y mover** hasta que lo actives en **Agentes**.
+
+El endpoint es MCP Streamable HTTP sin estado (`POST /mcp`). La misma API REST también acepta los tokens creados en la app, con los mismos permisos. La papelera, deshacer desde el historial, la actividad, la cuenta, los tokens y la bóveda exigen sesión en el navegador. Los tokens de OAuth solo valen para `/mcp`.
 
 ## Pruebas
 
@@ -383,7 +410,7 @@ pnpm --filter @orqevio/web exec playwright install firefox
 E2E_BROWSER=firefox SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, pegar una imagen en un documento y adjuntar archivos a una tarjeta, el ciclo completo de la bóveda (con recuperación), un agente MCP trabajando en directo sobre el tablero y un cliente que se conecta con OAuth tras la pantalla de consentimiento. Fallan si aparece cualquier error en la consola del navegador.
+Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Después cubren el cambio de clave en Ajustes, el tablero (incluido arrastrar con ratón y con teclado), documentos con referencias a tareas, pegar una imagen en un documento y adjuntar archivos a una tarjeta, el ciclo completo de la bóveda (con recuperación), un agente MCP trabajando en directo sobre el tablero, un agente que reorganiza un proyecto y la persona que luego lo deshace, y un cliente que se conecta con OAuth tras la pantalla de consentimiento. Fallan si aparece cualquier error en la consola del navegador.
 
 ## Configuración
 

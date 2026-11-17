@@ -98,7 +98,7 @@ export function AgentsPage() {
             ) : (
               <div className="grid gap-3 md:grid-cols-2">
                 {active.map((token) => (
-                  <TokenCard key={token.id} token={token} onRevoke={() => void revoke(token)} onShowActivity={() => setTokenFilter(token.id)} />
+                  <TokenCard key={token.id} token={token} editable onRevoke={() => void revoke(token)} onShowActivity={() => setTokenFilter(token.id)} />
                 ))}
               </div>
             )}

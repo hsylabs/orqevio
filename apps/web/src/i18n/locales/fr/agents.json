@@ -12,7 +12,7 @@
   "vault": {
     "title": "Le coffre-fort reste hors de leur portée",
     "unreadable": "Aucun jeton ne peut lire le coffre-fort, même chiffré : le serveur rejette la requête avant de toucher la moindre donnée.",
-    "noDeletes": "Les agents ne peuvent rien supprimer. Ils peuvent seulement archiver, et vous pouvez restaurer.",
+    "noDeletes": "Ce que les agents suppriment va à la corbeille : vous seul la videz, et vous pouvez annuler toute modification depuis l’historique.",
     "logged": "Chaque action est journalisée, et vous pouvez la suivre en direct dans l’application."
   },
   "tokens": {
@@ -88,7 +88,13 @@
     "expiresUnused": "Expire si inutilisé",
     "never": "Jamais",
     "idle": "Inutilisé depuis {{days}} jours",
-    "showActivity": "Voir son activité"
+    "showActivity": "Voir son activité",
+    "organize": {
+      "pill": "Supprimer et déplacer",
+      "hint": "À la corbeille ; c’est vous qui décidez s’il revient.",
+      "on": "{{name}} peut maintenant supprimer et déplacer",
+      "off": "{{name}} ne peut plus supprimer ni déplacer"
+    }
   },
   "access": {
     "levels": {
@@ -111,7 +117,12 @@
       "hint": "Jamais accessible aux agents",
       "blocked": "Bloqué"
     },
-    "atLeastOne": "Accordez l’accès en lecture à au moins un domaine."
+    "atLeastOne": "Accordez l’accès en lecture à au moins un domaine.",
+    "organize": {
+      "label": "Peut supprimer et déplacer",
+      "hint": "Ce qu’il supprime va à la corbeille, d’où vous pouvez le récupérer. Déplacer comprend les cartes vers un autre tableau et les pièces jointes vers une autre carte ou page.",
+      "needsWrite": "Nécessite la lecture et l’écriture dans un domaine."
+    }
   },
   "kit": {
     "clients": "Client MCP",

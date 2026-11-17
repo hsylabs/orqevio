@@ -1,4 +1,4 @@
-import type { BoardDTO, LabelDTO, PaletteColor } from '@orqevio/shared'
+import type { BoardDTO, LabelDTO, PaletteColor, TrashedDTO } from '@orqevio/shared'
 import { Check, Pencil, Plus, Trash } from 'lucide-react'
 import { type FormEvent, type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -9,6 +9,7 @@ import { Popover } from '../../components/ui/Popover'
 import { del, errorMessage, patch, post } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { keys, queryClient } from '../../lib/queries'
+import { toastTrashed } from '../../lib/trash'
 
 export function LabelPicker({ board, selected, onChange, trigger }: { board: BoardDTO; selected: string[]; onChange: (ids: string[]) => void; trigger: ReactNode }) {
   const { t } = useTranslation(['boards', 'common'])
@@ -42,10 +43,11 @@ export function LabelPicker({ board, selected, onChange, trigger }: { board: Boa
 
   async function remove(label: LabelDTO) {
     try {
-      await del(`/labels/${label.id}`)
+      const trashed = await del<TrashedDTO>(`/labels/${label.id}`)
       onChange(selected.filter((id) => id !== label.id))
       await refresh()
       setEditing(null)
+      toastTrashed(t('labels.deleted', { name: label.name }), trashed)
     } catch (error) {
       toast.error(errorMessage(error))
     }

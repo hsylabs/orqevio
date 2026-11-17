@@ -1,0 +1,140 @@
+{
+  "title": "Cronologia di «{{name}}»",
+  "intro_one": "Ogni modifica dell’ultimo {{count}} giorno, con chi l’ha fatta.",
+  "intro_many": "Ogni modifica degli ultimi {{count}} giorni, con chi l’ha fatta.",
+  "intro_other": "Ogni modifica degli ultimi {{count}} giorni, con chi l’ha fatta.",
+  "empty_one": "Nessuna modifica nell’ultimo {{count}} giorno.",
+  "empty_many": "Nessuna modifica negli ultimi {{count}} giorni.",
+  "empty_other": "Nessuna modifica negli ultimi {{count}} giorni.",
+  "list": "Modifiche",
+  "entry": "{{name}}, {{when}}",
+  "older": "Mostra modifiche precedenti",
+  "showChanges": "Vedi cosa è cambiato",
+  "hideChanges": "Nascondi cosa è cambiato",
+  "lines": "Righe aggiunte: {{added}}. Righe rimosse: {{removed}}.",
+  "loadFailed": "Impossibile caricare cosa è cambiato. Riprova.",
+  "diff": "Cosa è cambiato, riga per riga",
+  "added": "Aggiunto: ",
+  "removed": "Rimosso: ",
+  "unchanged_one": "{{count}} riga invariata",
+  "unchanged_many": "{{count}} righe invariate",
+  "unchanged_other": "{{count}} righe invariate",
+  "noLineChanges": "Nessuna riga è cambiata.",
+  "movedTo": "Il suo posto non esisteva più, quindi è finita in {{place}}",
+  "quoted": "«{{name}}»",
+  "kinds": {
+    "page": {
+      "created": "<actor>{{actor}}</actor> ha creato questa pagina",
+      "title": "<actor>{{actor}}</actor> l’ha rinominata da «{{before}}» a «{{after}}»",
+      "iconSet": "<actor>{{actor}}</actor> ha cambiato l’icona in {{icon}}",
+      "iconRemoved": "<actor>{{actor}}</actor> ha rimosso l’icona",
+      "content": "<actor>{{actor}}</actor> ha modificato il contenuto",
+      "movedInto": "<actor>{{actor}}</actor> l’ha spostata dentro «{{to}}»",
+      "movedTop": "<actor>{{actor}}</actor> l’ha spostata alla radice del progetto",
+      "deleted": "<actor>{{actor}}</actor> l’ha spostata nel cestino",
+      "restored": "<actor>{{actor}}</actor> l’ha recuperata dal cestino"
+    },
+    "card": {
+      "created": "<actor>{{actor}}</actor> ha creato questa scheda in «{{column}}»",
+      "title": "<actor>{{actor}}</actor> l’ha rinominata da «{{before}}» a «{{after}}»",
+      "description": "<actor>{{actor}}</actor> ha modificato la descrizione",
+      "dueSet": "<actor>{{actor}}</actor> ha impostato la scadenza al {{date}}",
+      "dueRemoved": "<actor>{{actor}}</actor> ha rimosso la scadenza",
+      "labelsAdded_one": "<actor>{{actor}}</actor> ha aggiunto l’etichetta {{added}}",
+      "labelsAdded_many": "<actor>{{actor}}</actor> ha aggiunto le etichette {{added}}",
+      "labelsAdded_other": "<actor>{{actor}}</actor> ha aggiunto le etichette {{added}}",
+      "labelsRemoved_one": "<actor>{{actor}}</actor> ha rimosso l’etichetta {{removed}}",
+      "labelsRemoved_many": "<actor>{{actor}}</actor> ha rimosso le etichette {{removed}}",
+      "labelsRemoved_other": "<actor>{{actor}}</actor> ha rimosso le etichette {{removed}}",
+      "labelsChanged": "<actor>{{actor}}</actor> ha aggiunto {{added}} e rimosso {{removed}}",
+      "moved": "<actor>{{actor}}</actor> l’ha spostata da «{{from}}» a «{{to}}»",
+      "archived": "<actor>{{actor}}</actor> l’ha archiviata",
+      "unarchived": "<actor>{{actor}}</actor> l’ha tolta dall’archivio",
+      "deleted": "<actor>{{actor}}</actor> l’ha spostata nel cestino",
+      "restored": "<actor>{{actor}}</actor> l’ha recuperata dal cestino",
+      "linked": "<actor>{{actor}}</actor> l’ha collegata alla pagina «{{page}}»",
+      "unlinked": "<actor>{{actor}}</actor> ha rimosso il collegamento con la pagina «{{page}}»",
+      "movedWithoutLabels_one": "<actor>{{actor}}</actor> l’ha spostata da «{{from}}» a «{{to}}» e le ha tolto l’etichetta {{removed}}, che era dell’altra bacheca",
+      "movedWithoutLabels_many": "<actor>{{actor}}</actor> l’ha spostata da «{{from}}» a «{{to}}» e le ha tolto le etichette {{removed}}, che erano dell’altra bacheca",
+      "movedWithoutLabels_other": "<actor>{{actor}}</actor> l’ha spostata da «{{from}}» a «{{to}}» e le ha tolto le etichette {{removed}}, che erano dell’altra bacheca"
+    },
+    "checklist": {
+      "created": "<actor>{{actor}}</actor> ha aggiunto la checklist «{{title}}»",
+      "title": "<actor>{{actor}}</actor> ha rinominato la checklist «{{before}}» in «{{after}}»",
+      "deleted": "<actor>{{actor}}</actor> ha spostato la checklist «{{title}}» nel cestino",
+      "restored": "<actor>{{actor}}</actor> ha recuperato la checklist «{{title}}»"
+    },
+    "item": {
+      "created": "<actor>{{actor}}</actor> ha aggiunto «{{text}}» a «{{checklist}}»",
+      "text": "<actor>{{actor}}</actor> ha cambiato la voce «{{before}}» in «{{after}}»",
+      "done": "<actor>{{actor}}</actor> ha spuntato «{{text}}»",
+      "undone": "<actor>{{actor}}</actor> ha tolto la spunta a «{{text}}»",
+      "deleted": "<actor>{{actor}}</actor> ha spostato la voce «{{text}}» nel cestino",
+      "restored": "<actor>{{actor}}</actor> ha recuperato la voce «{{text}}»"
+    },
+    "attachment": {
+      "created": "<actor>{{actor}}</actor> ha allegato «{{name}}»",
+      "deleted": "<actor>{{actor}}</actor> ha spostato il file «{{name}}» nel cestino",
+      "restored": "<actor>{{actor}}</actor> ha recuperato il file «{{name}}»",
+      "moved": "<actor>{{actor}}</actor> ha spostato il file «{{name}}» da «{{from}}» a «{{to}}»"
+    }
+  },
+  "actions": {
+    "undo": "Annulla",
+    "undoSince": "Annulla tutto ciò che {{name}} ha fatto da qui",
+    "restore": "Ripristina questa versione"
+  },
+  "note": {
+    "undoOf": "annulla una modifica precedente",
+    "restoredFrom": "ripristina una versione precedente"
+  },
+  "undo": {
+    "done_one": "Modifica annullata",
+    "done_many": "{{count}} modifiche annullate",
+    "done_other": "{{count}} modifiche annullate",
+    "nothing": "Era già com’era prima.",
+    "skipped_one": "{{count}} modifica toccata in seguito è stata saltata.",
+    "skipped_many": "{{count}} modifiche toccate in seguito sono state saltate.",
+    "skipped_other": "{{count}} modifiche toccate in seguito sono state saltate.",
+    "failed_one": "{{count}} modifica non si è potuta annullare.",
+    "failed_many": "{{count}} modifiche non si sono potute annullare.",
+    "failed_other": "{{count}} modifiche non si sono potute annullare.",
+    "versionRestored": "Versione ripristinata",
+    "impossible": {
+      "gone": "«{{title}}» non esiste più.",
+      "place_gone": "Il posto in cui si trovava «{{title}}» non esiste più.",
+      "trash_gone": "«{{title}}» è stato eliminato definitivamente dal cestino.",
+      "refused": "Impossibile annullare «{{title}}»."
+    },
+    "one": {
+      "title": "Qualcuno l’ha cambiato in seguito",
+      "body": "{{name}} l’ha cambiato dopo questa modifica. Annullarla ora elimina ciò che ha fatto.",
+      "bodyUnknown": "È cambiato dopo questa modifica. Annullarla ora elimina ciò che è cambiato in seguito.",
+      "current": "Ora: «{{value}}»",
+      "confirm": "Annulla comunque"
+    },
+    "bulk": {
+      "title_one": "Annullare {{count}} modifica di {{name}}?",
+      "title_many": "Annullare {{count}} modifiche di {{name}}?",
+      "title_other": "Annullare {{count}} modifiche di {{name}}?",
+      "body": "Ogni elemento torna com’era prima della sua modifica, dalla più recente alla più vecchia. Anche l’annullamento resta nella cronologia.",
+      "nothing": "Non c’è più niente da annullare",
+      "conflicts_one": "{{count}} è stata cambiata in seguito da qualcun altro:",
+      "conflicts_many": "{{count}} sono state cambiate in seguito da qualcun altro:",
+      "conflicts_other": "{{count}} sono state cambiate in seguito da qualcun altro:",
+      "conflictsList": "Cambiate in seguito",
+      "conflict": "«{{title}}»: cambiato in seguito da {{name}}",
+      "conflictUnknown": "«{{title}}»: cambiato in seguito",
+      "impossible_one": "{{count}} non si può annullare:",
+      "impossible_many": "{{count}} non si possono annullare:",
+      "impossible_other": "{{count}} non si possono annullare:",
+      "skip_one": "Annulla {{count}} e salta il resto",
+      "skip_many": "Annulla {{count}} e salta il resto",
+      "skip_other": "Annulla {{count}} e salta il resto",
+      "force": "Annullale tutte comunque",
+      "confirm_one": "Annulla {{count}} modifica",
+      "confirm_many": "Annulla {{count}} modifiche",
+      "confirm_other": "Annulla {{count}} modifiche"
+    }
+  }
+}

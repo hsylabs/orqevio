@@ -76,7 +76,7 @@ describe('boards and cards', () => {
     const board = await client.get(`/api/boards/${boardId}`)
     expect(board.body.columns.map((c: { archivedCards: number }) => c.archivedCards)).toEqual([0, 0, 2])
     // Deleting the column deletes its archived cards too.
-    expect((await client.del(`/api/columns/${columns[2]!.id}`)).status).toBe(204)
+    expect((await client.del(`/api/columns/${columns[2]!.id}`)).status).toBe(200)
     expect((await client.get(`/api/boards/${boardId}/archived`)).body).toHaveLength(0)
   })
 
@@ -153,8 +153,14 @@ describe('boards and cards', () => {
     await client.patch(`/api/columns/${columns[2]!.id}`, { index: 0 })
     const board = await client.get(`/api/boards/${boardId}`)
     expect(board.body.columns.map((c: { name: string }) => c.name)).toEqual(['Done', 'To do', 'In progress'])
-    const other = await seedBoard(client, workspaceId)
     const card = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'X' })
-    expect((await client.post(`/api/cards/${card.body.id}/move`, { columnId: other.columns[0]!.id, index: 0 })).status).toBe(400)
+    // Another board of the workspace is fine; another workspace is not.
+    const other = await seedBoard(client, workspaceId)
+    const moved = await client.post(`/api/cards/${card.body.id}/move`, { columnId: other.columns[0]!.id, index: 0 })
+    expect(moved.status).toBe(200)
+    expect(moved.body.boardId).toBe(other.boardId)
+    const stranger = await signUp(h, 'Otra Persona')
+    const elsewhere = await seedBoard(stranger.client, stranger.workspaceId)
+    expect((await client.post(`/api/cards/${card.body.id}/move`, { columnId: elsewhere.columns[0]!.id, index: 0 })).status).toBe(400)
   })
 })

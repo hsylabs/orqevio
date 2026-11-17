@@ -1,0 +1,112 @@
+{
+  "title": "「{{name}}」の履歴",
+  "intro_other": "過去{{count}}日間のすべての変更と、変更した人を表示します。",
+  "empty_other": "過去{{count}}日間の変更はありません。",
+  "list": "変更",
+  "entry": "{{name}}、{{when}}",
+  "older": "以前の変更を表示",
+  "showChanges": "変更内容を見る",
+  "hideChanges": "変更内容を隠す",
+  "lines": "追加された行: {{added}}。削除された行: {{removed}}。",
+  "loadFailed": "変更内容を読み込めませんでした。もう一度お試しください。",
+  "diff": "行ごとの変更内容",
+  "added": "追加: ",
+  "removed": "削除: ",
+  "unchanged_other": "変更のない{{count}}行",
+  "noLineChanges": "変更された行はありません。",
+  "movedTo": "元の場所がなくなっていたため、{{place}}に移動しました",
+  "quoted": "「{{name}}」",
+  "kinds": {
+    "page": {
+      "created": "<actor>{{actor}}</actor>がこのページを作成しました",
+      "title": "<actor>{{actor}}</actor>が名前を「{{before}}」から「{{after}}」に変更しました",
+      "iconSet": "<actor>{{actor}}</actor>がアイコンを{{icon}}に変更しました",
+      "iconRemoved": "<actor>{{actor}}</actor>がアイコンを削除しました",
+      "content": "<actor>{{actor}}</actor>が内容を編集しました",
+      "movedInto": "<actor>{{actor}}</actor>が「{{to}}」の中に移動しました",
+      "movedTop": "<actor>{{actor}}</actor>がプロジェクトの最上位に移動しました",
+      "deleted": "<actor>{{actor}}</actor>がゴミ箱に移動しました",
+      "restored": "<actor>{{actor}}</actor>がゴミ箱から復元しました"
+    },
+    "card": {
+      "created": "<actor>{{actor}}</actor>が「{{column}}」にこのカードを作成しました",
+      "title": "<actor>{{actor}}</actor>が名前を「{{before}}」から「{{after}}」に変更しました",
+      "description": "<actor>{{actor}}</actor>が説明を編集しました",
+      "dueSet": "<actor>{{actor}}</actor>が期限を{{date}}に設定しました",
+      "dueRemoved": "<actor>{{actor}}</actor>が期限を削除しました",
+      "labelsAdded_other": "<actor>{{actor}}</actor>がラベル{{added}}を追加しました",
+      "labelsRemoved_other": "<actor>{{actor}}</actor>がラベル{{removed}}を外しました",
+      "labelsChanged": "<actor>{{actor}}</actor>が{{added}}を追加し、{{removed}}を外しました",
+      "moved": "<actor>{{actor}}</actor>が「{{from}}」から「{{to}}」に移動しました",
+      "archived": "<actor>{{actor}}</actor>がアーカイブしました",
+      "unarchived": "<actor>{{actor}}</actor>がアーカイブから戻しました",
+      "deleted": "<actor>{{actor}}</actor>がゴミ箱に移動しました",
+      "restored": "<actor>{{actor}}</actor>がゴミ箱から復元しました",
+      "linked": "<actor>{{actor}}</actor>がページ「{{page}}」とリンクしました",
+      "unlinked": "<actor>{{actor}}</actor>がページ「{{page}}」とのリンクを外しました",
+      "movedWithoutLabels_other": "<actor>{{actor}}</actor>が「{{from}}」から「{{to}}」に移動し、元のボードのラベル{{removed}}を外しました"
+    },
+    "checklist": {
+      "created": "<actor>{{actor}}</actor>がチェックリスト「{{title}}」を追加しました",
+      "title": "<actor>{{actor}}</actor>がチェックリスト「{{before}}」の名前を「{{after}}」に変更しました",
+      "deleted": "<actor>{{actor}}</actor>がチェックリスト「{{title}}」をゴミ箱に移動しました",
+      "restored": "<actor>{{actor}}</actor>がチェックリスト「{{title}}」を復元しました"
+    },
+    "item": {
+      "created": "<actor>{{actor}}</actor>が「{{checklist}}」に「{{text}}」を追加しました",
+      "text": "<actor>{{actor}}</actor>が項目「{{before}}」を「{{after}}」に変更しました",
+      "done": "<actor>{{actor}}</actor>が「{{text}}」を完了にしました",
+      "undone": "<actor>{{actor}}</actor>が「{{text}}」を未完了に戻しました",
+      "deleted": "<actor>{{actor}}</actor>が項目「{{text}}」をゴミ箱に移動しました",
+      "restored": "<actor>{{actor}}</actor>が項目「{{text}}」を復元しました"
+    },
+    "attachment": {
+      "created": "<actor>{{actor}}</actor>が「{{name}}」を添付しました",
+      "deleted": "<actor>{{actor}}</actor>がファイル「{{name}}」をゴミ箱に移動しました",
+      "restored": "<actor>{{actor}}</actor>がファイル「{{name}}」を復元しました",
+      "moved": "<actor>{{actor}}</actor>がファイル「{{name}}」を「{{from}}」から「{{to}}」に移動しました"
+    }
+  },
+  "actions": {
+    "undo": "元に戻す",
+    "undoSince": "ここから{{name}}が行ったことをすべて元に戻す",
+    "restore": "このバージョンに戻す"
+  },
+  "note": {
+    "undoOf": "以前の変更を元に戻しました",
+    "restoredFrom": "以前のバージョンに戻しました"
+  },
+  "undo": {
+    "done_other": "{{count}}件の変更を元に戻しました",
+    "nothing": "すでに元の状態でした。",
+    "skipped_other": "その後に変更された{{count}}件はスキップしました。",
+    "failed_other": "{{count}}件の変更は元に戻せませんでした。",
+    "versionRestored": "バージョンを戻しました",
+    "impossible": {
+      "gone": "「{{title}}」はもう存在しません。",
+      "place_gone": "「{{title}}」があった場所はもう存在しません。",
+      "trash_gone": "「{{title}}」はゴミ箱から完全に削除されました。",
+      "refused": "「{{title}}」を元に戻せませんでした。"
+    },
+    "one": {
+      "title": "その後、ほかの人が変更しています",
+      "body": "{{name}}がこの変更の後に変更しました。いま元に戻すと、その変更は失われます。",
+      "bodyUnknown": "この変更の後に変更されています。いま元に戻すと、その後の変更は失われます。",
+      "current": "現在: 「{{value}}」",
+      "confirm": "それでも元に戻す"
+    },
+    "bulk": {
+      "title_other": "{{name}}の{{count}}件の変更を元に戻しますか？",
+      "body": "新しいものから順に、それぞれ変更前の状態に戻します。元に戻した操作も履歴に残ります。",
+      "nothing": "元に戻すものはもうありません",
+      "conflicts_other": "{{count}}件はその後ほかの人やエージェントが変更しています:",
+      "conflictsList": "その後に変更されたもの",
+      "conflict": "「{{title}}」: その後{{name}}が変更",
+      "conflictUnknown": "「{{title}}」: その後に変更あり",
+      "impossible_other": "{{count}}件は元に戻せません:",
+      "skip_other": "{{count}}件を元に戻し、残りはスキップ",
+      "force": "それでもすべて元に戻す",
+      "confirm_other": "{{count}}件の変更を元に戻す"
+    }
+  }
+}

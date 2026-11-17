@@ -1,14 +1,16 @@
-import type { ActorRef, BoardDTO, CardDetailDTO, CardSummaryDTO } from '@orqevio/shared'
+import type { ActorRef, BoardDTO, CardDetailDTO, CardSummaryDTO, TrashedDTO } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
-import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, History, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
+import { type ReactNode, useEffect, useReducer, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { ActivityList } from '../../components/ActivityList'
 import { Avatar } from '../../components/ui/Avatar'
 import { Button } from '../../components/ui/Button'
 import { useConfirm } from '../../components/ui/confirm'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from '../../components/ui/Menu'
+import { HistoryDialog } from '../history/HistoryDialog'
 import { Sheet, SheetClose } from '../../components/ui/Sheet'
 import { ApiError, del, errorMessage, get, patch, post } from '../../lib/api'
 import { cn } from '../../lib/cn'
@@ -23,16 +25,44 @@ import { Checklists } from './Checklists'
 import { DuePicker } from './DuePicker'
 import { LabelPicker } from './LabelPicker'
 import { LinkedPages } from './LinkedPages'
+import { toastTrashed, trashNote } from '../../lib/trash'
+
+/** Cards this tab is deleting: their sheet just closes, without saying they are gone. */
+const deletingHere = new Set<string>()
+/** When each card was deleted elsewhere. Live updates don't fetch a deleted card: its sheet says it is gone instead. */
+const deletedAt = new Map<string, number>()
+onCardEvent((e) => {
+  if (!e.cardId) return
+  if (e.action === 'card.deleted' && !deletingHere.has(e.cardId)) deletedAt.set(e.cardId, Date.now())
+  // Back from the trash: deleting it again later, here or elsewhere, counts as usual.
+  if (e.action === 'trash.restored') deletingHere.delete(e.cardId)
+})
 
 export function CardSheet({ cardId, board, onClose }: { cardId: string | null; board: BoardDTO; onClose: () => void }) {
   const { t } = useTranslation(['boards', 'common'])
   const card = useCard(cardId)
   const open = Boolean(cardId)
+  const [, update] = useReducer((n: number) => n + 1, 0)
+  useEffect(() => onCardEvent((e) => e.cardId === cardId && update()), [cardId])
+  // Gone once deleted elsewhere, until the card is fetched again since then (restoring it refetches it).
+  const deleted = cardId ? deletedAt.get(cardId) : undefined
+  const gone = card.isError || (deleted !== undefined && card.dataUpdatedAt <= deleted)
+  // While the sheet slides away it keeps showing the card it had, also one just deleted.
+  const last = useRef(card.data)
+  if (card.data) last.current = card.data
+  const data = open ? card.data : last.current
+  // Moved to another board while open (by an agent, say): follow it there, where its columns and labels are.
+  const navigate = useNavigate()
+  const { workspaceId } = useWorkspace()
+  const elsewhere = open && card.data && card.data.boardId !== board.id ? card.data.boardId : null
+  useEffect(() => {
+    if (elsewhere && cardId) navigate(`/w/${workspaceId}/b/${elsewhere}?card=${cardId}`, { replace: true })
+  }, [elsewhere, cardId, workspaceId, navigate])
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={card.data?.title ?? t('sheet.fallbackTitle')} label={t('sheet.label')}>
-      {card.data ? (
-        <CardBody key={card.data.id} card={card.data} board={board} onClose={onClose} />
-      ) : card.isError ? (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={data?.title ?? t('sheet.fallbackTitle')} label={t('sheet.label')}>
+      {elsewhere ? null : data && !(open && gone) ? (
+        <CardBody key={data.id} card={data} board={board} onClose={onClose} />
+      ) : gone ? (
         <div className="grid flex-1 place-items-center p-8 text-center text-ink-2">
           <div>
             <p className="font-display text-[20px]">{t('sheet.gone')}</p>
@@ -83,6 +113,13 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
   const confirm = useConfirm()
   const agent = useAgentHighlight(card.id)
   const [title, setTitle] = useState(card.title)
+  // For saving a title still being typed when the sheet goes away (the card moved to another board, say).
+  const titleDraft = useRef(title)
+  titleDraft.current = title
+  const cardTitle = useRef(card.title)
+  cardTitle.current = card.title
+  const sentTitle = useRef<string | null>(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const descTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   /** Description typed but not saved yet. */
@@ -196,6 +233,9 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
       mounted.current = false
       if (conflictRef.current) toast.error(t('sheet.conflict.notSaved'))
       else void flushDescription()
+      // Removing the title field doesn't blur it: save what was typed, unless it is already on its way.
+      const next = titleDraft.current.trim()
+      if (next && next !== cardTitle.current && next !== sentTitle.current) void update({ title: next })
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -309,17 +349,24 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
                 {t('actions.archive')}
               </MenuItem>
             )}
+            <MenuItem icon={<History />} onSelect={() => setHistoryOpen(true)}>
+              {t('sheet.history')}
+            </MenuItem>
             <MenuSeparator />
             <MenuItem
               icon={<Trash />}
               danger
               onSelect={async () => {
-                if (!(await confirm({ title: t('sheet.deleteConfirm.title'), description: t('sheet.deleteConfirm.description'), confirmLabel: t('actions.delete'), danger: true }))) return
+                if (!(await confirm({ title: t('sheet.deleteConfirm.title'), description: `${t('sheet.deleteConfirm.description')} ${trashNote()}`, confirmLabel: t('actions.delete'), danger: true }))) return
+                deletingHere.add(card.id)
+                onClose()
                 try {
-                  await del(`/cards/${card.id}`)
-                  onClose()
+                  const trashed = await del<TrashedDTO>(`/cards/${card.id}`)
                   await queryClient.invalidateQueries({ queryKey: keys.board(card.boardId) })
+                  toastTrashed(t('sheet.deleted'), trashed)
                 } catch (error) {
+                  // Still there: deleting it later, here or elsewhere, counts as usual.
+                  deletingHere.delete(card.id)
                   toast.error(errorMessage(error))
                 }
               }}
@@ -350,8 +397,10 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
             }}
             onBlur={() => {
               const next = title.trim()
-              if (next && next !== card.title) void update({ title: next })
-              else setTitle(card.title)
+              if (next && next !== card.title) {
+                sentTitle.current = next
+                void update({ title: next })
+              } else setTitle(card.title)
             }}
             className="block w-full resize-none overflow-hidden bg-transparent font-display text-[26px] leading-[1.18] font-medium tracking-[-0.02em] outline-none"
           />
@@ -471,6 +520,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
           </Section>
         )}
       </div>
+      <HistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} type="card" id={card.id} name={card.title} />
     </>
   )
 }

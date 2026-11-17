@@ -377,3 +377,190 @@ export type OAuthRequestDTO =
 export interface OAuthDecisionDTO {
   redirect: string
 }
+
+// ── Trash ────────────────────────────────────────────────────────
+/** What can be in the trash. Each entry holds one of these, with everything that was inside it. */
+export const TRASH_KINDS = ['project', 'board', 'column', 'card', 'page', 'attachment', 'label', 'checklist', 'checklist_item', 'link'] as const
+export type TrashKind = (typeof TRASH_KINDS)[number]
+
+/** Days a deleted item stays in the trash before it is deleted for good. */
+export const TRASH_DAYS = 30
+
+/** What went to the trash along with the item itself, counted when it was deleted. */
+export interface TrashContents {
+  boards?: number
+  columns?: number
+  cards?: number
+  pages?: number
+  attachments?: number
+  checklists?: number
+  items?: number
+  labels?: number
+}
+
+export interface TrashEntryDTO {
+  id: string
+  kind: TrashKind
+  /** The id the item had, and gets back when restored. */
+  entityId: string
+  title: string
+  /** Where it was, for people: "Project › Board › Column". */
+  location: string
+  contents: TrashContents
+  /** Size of the attachments it holds. */
+  bytes: number
+  deletedBy: ActorRef
+  deletedAt: string
+  expiresAt: string
+}
+
+/** The answer to deleting something that goes to the trash. Null when there was nothing to delete. */
+export interface TrashedDTO {
+  trashId: string | null
+}
+
+export interface RestoredDTO {
+  kind: TrashKind
+  entityId: string
+  /** The original place no longer exists, so it was put in the first one available. */
+  movedTo: string | null
+  /** Where to open it in the app, relative to the workspace (`b/<id>`, `d/<id>`, `p/<id>`). */
+  path: string | null
+}
+
+// ── History ──────────────────────────────────────────────────────
+/**
+ * What the history records, on pages and cards: each change with who made it, when, and the
+ * value before and after. `*.created`, `*.deleted` and `*.restored` carry no values.
+ */
+export const HISTORY_KINDS = [
+  'page.created',
+  'page.title',
+  'page.icon',
+  'page.content',
+  'page.moved',
+  'page.deleted',
+  'page.restored',
+  'card.created',
+  'card.title',
+  'card.description',
+  'card.due',
+  'card.labels',
+  'card.moved',
+  'card.archived',
+  'card.deleted',
+  'card.restored',
+  'card.linked',
+  'card.unlinked',
+  'checklist.created',
+  'checklist.title',
+  'checklist.deleted',
+  'checklist.restored',
+  'item.created',
+  'item.text',
+  'item.done',
+  'item.deleted',
+  'item.restored',
+  'attachment.created',
+  'attachment.deleted',
+  'attachment.restored',
+  'attachment.moved',
+] as const
+export type HistoryKind = (typeof HISTORY_KINDS)[number]
+
+/** Kinds whose values are plain text: page bodies, descriptions, titles and the like. */
+export const HISTORY_TEXT_KINDS: ReadonlySet<HistoryKind> = new Set([
+  'page.title',
+  'page.icon',
+  'page.content',
+  'card.title',
+  'card.description',
+  'card.due',
+  'checklist.title',
+  'item.text',
+])
+
+/** Kinds whose values are long texts: lists leave them out, and the entry itself has them. */
+export const HISTORY_BODY_KINDS: ReadonlySet<HistoryKind> = new Set(['page.content', 'card.description'])
+
+/** Days the history keeps each change, as the trash keeps what is deleted. */
+export const HISTORY_DAYS = 30
+
+/** A card's place: its board and column. */
+export interface CardPlace {
+  boardId: string
+  columnId: string
+}
+
+/** A page's place: its project and the page it hangs from, or none at the top. */
+export interface PagePlace {
+  projectId: string
+  parentId: string | null
+}
+
+/** Where an attachment is: on a card or on a page. */
+export interface AttachmentPlace {
+  cardId: string | null
+  pageId: string | null
+}
+
+export type HistoryValue = string | boolean | string[] | CardPlace | PagePlace | AttachmentPlace | null
+
+export type HistoryMeta = Record<string, string | number | boolean | null | string[]>
+
+export interface HistoryEntryDTO {
+  id: string
+  entityType: 'page' | 'card'
+  /** The page or card whose history this is. */
+  entityId: string
+  kind: HistoryKind
+  /** The checklist, item, attachment or linked page the change is about, if not the page or card itself. */
+  subjectId: string | null
+  /** Left out (null) for long texts in lists; `GET /api/history/:id` has them. */
+  before: HistoryValue
+  after: HistoryValue
+  /**
+   * What the change looked like when it was made, for people: names of columns, labels,
+   * pages and files (`from`, `to`, `added`, `removed`, `name`), lines added and removed
+   * (`linesAdded`, `linesRemoved`), the trash entry (`trashId`).
+   */
+  meta: HistoryMeta
+  actor: ActorRef
+  /** Changes one person or agent made in one stretch of work share it. */
+  batchId: string
+  createdAt: string
+  /** Edits of the same text by the same person in one stretch of work are one change. */
+  updatedAt: string
+}
+
+// ── Undo ─────────────────────────────────────────────────────────
+/**
+ * How undoing a change stands: `ready` to undo; `conflict` when someone changed the same
+ * thing since; `unchanged` when it is already as before (nothing to do); `impossible` when
+ * what it needs is gone (`reason`).
+ */
+export type UndoStatus = 'ready' | 'conflict' | 'unchanged' | 'impossible'
+
+export interface UndoPlanItemDTO {
+  entryId: string
+  kind: HistoryKind
+  entityType: 'page' | 'card'
+  entityId: string
+  /** The page or card, by name, as it is now (or was, if it is gone). */
+  entityTitle: string
+  status: UndoStatus
+  /** Why it can't be undone: the page or card is gone, its old place is, or the trash entry is. */
+  reason?: 'gone' | 'place_gone' | 'trash_gone' | 'refused'
+  /** For a conflict: who changed it since, and what it is now. */
+  changedBy?: ActorRef | null
+  current?: HistoryValue
+}
+
+export interface UndoResultDTO {
+  /** False when nothing was done because there were conflicts to decide on first. */
+  applied: boolean
+  plan: UndoPlanItemDTO[]
+  undone: number
+  skipped: number
+  failed: number
+}

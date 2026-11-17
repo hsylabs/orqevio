@@ -12,7 +12,7 @@
   "vault": {
     "title": "The vault is out of their reach",
     "unreadable": "No token can read the vault, not even encrypted: the server rejects the request before it touches any data.",
-    "noDeletes": "Agents can’t delete anything. They can only archive, and you can restore.",
+    "noDeletes": "What agents delete goes to the trash: only you empty it, and you can undo any change from the history.",
     "logged": "Every action is logged, and you can watch it live in the app."
   },
   "tokens": {
@@ -87,7 +87,13 @@
     "expiresUnused": "Expires if unused",
     "never": "Never",
     "idle": "Not used for {{days}} days",
-    "showActivity": "View its activity"
+    "showActivity": "View its activity",
+    "organize": {
+      "pill": "Delete and move",
+      "hint": "To the trash; you decide whether it comes back.",
+      "on": "{{name}} can now delete and move",
+      "off": "{{name}} can no longer delete or move"
+    }
   },
   "access": {
     "levels": {
@@ -110,7 +116,12 @@
       "hint": "Never accessible to agents",
       "blocked": "Blocked"
     },
-    "atLeastOne": "Give read access to at least one area."
+    "atLeastOne": "Give read access to at least one area.",
+    "organize": {
+      "label": "Can delete and move",
+      "hint": "What it deletes goes to the trash, where you can bring it back. Moving includes cards to another board and attachments to another card or page.",
+      "needsWrite": "Needs read and write access to an area."
+    }
   },
   "kit": {
     "clients": "MCP client",

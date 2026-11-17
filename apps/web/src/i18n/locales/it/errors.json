@@ -10,7 +10,9 @@
     "network": "Nessuna connessione al server.",
     "file_too_large": "Il file supera la dimensione massima consentita.",
     "upload_incomplete": "Il caricamento si è interrotto. Riprova.",
-    "last_workspace": "Devi mantenere almeno uno spazio."
+    "last_workspace": "Devi mantenere almeno uno spazio.",
+    "restore_place_in_trash": "Ripristina prima ciò a cui appartiene: anche quello è nel cestino.",
+    "restore_place_gone": "Il posto a cui apparteneva non esiste più e non c’è nessun altro posto dove rimetterlo."
   },
   "notFound": "Elemento non trovato.",
   "server": "Si è verificato un errore sul server. Riprova.",

@@ -13,7 +13,8 @@
       "body": "Raggruppa bacheche e documenti in un unico posto."
     },
     "vaultLocked": "Bloccata",
-    "vaultUnlocked": "Sbloccata"
+    "vaultUnlocked": "Sbloccata",
+    "trash": "Cestino"
   },
   "workspace": {
     "fallback": "Spazio",
@@ -86,21 +87,21 @@
     },
     "deleteBoard": {
       "title": "Eliminare «{{name}}»?",
-      "body": "Le sue colonne e schede verranno eliminate. L’operazione è irreversibile.",
+      "body": "Le sue colonne e schede finiranno con lei nel cestino.",
       "confirm": "Elimina bacheca",
-      "done": "Bacheca eliminata"
+      "done": "Bacheca spostata nel cestino"
     },
     "deletePage": {
       "title": "Eliminare «{{name}}»?",
-      "body": "Verranno eliminati anche le sue sottopagine e i suoi allegati. L’operazione è irreversibile.",
+      "body": "Le sue sottopagine e i suoi allegati finiranno con lei nel cestino.",
       "confirm": "Elimina pagina",
-      "done": "Pagina eliminata"
+      "done": "Pagina spostata nel cestino"
     },
     "deleteProject": {
       "title": "Eliminare il progetto «{{name}}»?",
-      "body": "Verranno eliminati tutti i suoi contenuti: bacheche, schede, pagine e allegati. L’operazione è irreversibile.",
+      "body": "Tutti i suoi contenuti (bacheche, schede, pagine e allegati) finiranno con lui nel cestino.",
       "confirm": "Elimina progetto",
-      "done": "Progetto eliminato"
+      "done": "Progetto spostato nel cestino"
     }
   },
   "palette": {
@@ -131,7 +132,8 @@
       "page": "pagina",
       "newProject": "Nuovo progetto crea",
       "theme": "Cambia tema chiaro scuro aspetto",
-      "lockVault": "Blocca cassaforte"
+      "lockVault": "Blocca cassaforte",
+      "trash": "cestino eliminato recuperare ripristinare"
     }
   }
 }

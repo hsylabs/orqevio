@@ -11,10 +11,18 @@ import type { Access } from './access'
 import type { ActivityService } from './activity'
 import { toAttachmentDTO } from './attachments'
 import type { Deps } from './deps'
+import type { HistoryService } from './history'
+import type { TrashService } from './trash'
 import { positionAt } from './ordering'
 
 /** Far deeper than any real tree; only there so a corrupted, circular tree cannot loop forever. */
-const MAX_TREE_DEPTH = 100_000
+export const MAX_TREE_DEPTH = 100_000
+
+/** `WITH RECURSIVE tree(id, depth)`: the pages matching `roots` (depth 0) and every page under them. */
+export const pageTree = (roots: SQL) => sql`WITH RECURSIVE tree(id, depth) AS (
+    SELECT id, 0 FROM pages WHERE ${roots}
+    UNION ALL SELECT p.id, t.depth + 1 FROM pages p JOIN tree t ON p.parent_id = t.id WHERE t.depth < ${MAX_TREE_DEPTH}
+  )`
 
 /**
  * Deletes the pages matching `roots` with everything under them, deepest pages first.
@@ -24,10 +32,7 @@ const MAX_TREE_DEPTH = 100_000
  * Run it inside a transaction, so a tree is deleted whole or not at all.
  */
 export function deletePageTrees(db: DbOrTx, roots: SQL) {
-  const tree = sql`WITH RECURSIVE tree(id, depth) AS (
-      SELECT id, 0 FROM pages WHERE ${roots}
-      UNION ALL SELECT p.id, t.depth + 1 FROM pages p JOIN tree t ON p.parent_id = t.id WHERE t.depth < ${MAX_TREE_DEPTH}
-    )`
+  const tree = pageTree(roots)
   const deepest = db.get<{ depth: number | null }>(sql`${tree} SELECT max(depth) AS depth FROM tree`)?.depth ?? null
   if (deepest === null) return
   for (let depth = deepest; depth >= 0; depth--) {
@@ -55,6 +60,8 @@ export class PageService {
     private readonly deps: Deps,
     private readonly access: Access,
     private readonly activity: ActivityService,
+    private readonly trash: TrashService,
+    private readonly history: HistoryService,
   ) {}
 
   async load(actor: Actor, pageId: string, scope: 'docs:read' | 'docs:write' = 'docs:read', db: DbOrTx = this.deps.db) {
@@ -111,6 +118,9 @@ export class PageService {
         .returning()
         .get()
       if (data.content) this.syncMentions(tx, row)
+      this.history.record(tx, actor, row.workspaceId, { entityType: 'page', entityId: row.id, kind: 'page.created', meta: { title: row.title } })
+      // A page made with content starts its history with that version.
+      if (data.content) this.history.record(tx, actor, row.workspaceId, { entityType: 'page', entityId: row.id, kind: 'page.content', before: '', after: row.content })
       return row
     })
     await this.activity.record(
@@ -222,6 +232,8 @@ export class PageService {
       throw badRequest('baseVersion is required when updating content')
     }
     const page = this.deps.db.transaction((tx) => {
+      const prev = tx.select({ title: pages.title, icon: pages.icon, content: pages.content }).from(pages).where(eq(pages.id, pageId)).get()
+      if (!prev) throw notFound('Page')
       // `version` tracks the body only, so renaming a page never conflicts with someone editing it.
       const patch: Record<string, unknown> = {
         updatedAt: new Date(),
@@ -244,6 +256,11 @@ export class PageService {
         throw conflict('This page was modified since you loaded it', { currentVersion: latest?.version ?? null })
       }
       if (data.content !== undefined) this.syncMentions(tx, row)
+      const change = (kind: 'page.title' | 'page.icon' | 'page.content', before: string | null, after: string | null) =>
+        this.history.record(tx, actor, row.workspaceId, { entityType: 'page', entityId: pageId, kind, before, after })
+      if (data.title !== undefined) change('page.title', prev.title, row.title)
+      if (data.icon !== undefined) change('page.icon', prev.icon, row.icon)
+      if (data.content !== undefined) change('page.content', prev.content, row.content)
       return row
     })
     const structural = (data.title !== undefined && data.title !== current.title) || (data.icon !== undefined && data.icon !== current.icon)
@@ -270,8 +287,22 @@ export class PageService {
         ) SELECT id FROM sub`)
       if (descendants.some((r) => r.id === parentId)) throw badRequest('A page cannot be moved inside itself')
     }
-    const position = positionAt(this.deps.db, pages, siblingsOf(page.projectId, parentId), index, pageId)
-    await this.deps.db.update(pages).set({ parentId, position }).where(eq(pages.id, pageId))
+    this.deps.db.transaction((tx) => {
+      const prev = tx.select({ parentId: pages.parentId }).from(pages).where(eq(pages.id, pageId)).get()
+      const position = positionAt(tx, pages, siblingsOf(page.projectId, parentId), index, pageId)
+      tx.update(pages).set({ parentId, position }).where(eq(pages.id, pageId)).run()
+      if (!prev || prev.parentId === parentId) return
+      // Where it hung from, by name, as it was then: null is the top of the project.
+      const title = (id: string | null) => (id ? (tx.select({ title: pages.title }).from(pages).where(eq(pages.id, id)).get()?.title ?? '') : null)
+      this.history.record(tx, actor, page.workspaceId, {
+        entityType: 'page',
+        entityId: pageId,
+        kind: 'page.moved',
+        before: { projectId: page.projectId, parentId: prev.parentId },
+        after: { projectId: page.projectId, parentId },
+        meta: { from: title(prev.parentId), to: title(parentId) },
+      })
+    })
     await this.activity.record(
       actor,
       page.workspaceId,
@@ -281,15 +312,20 @@ export class PageService {
   }
 
   async remove(actor: Actor, pageId: string) {
-    this.access.requireUser(actor)
+    this.access.requireScope(actor, 'organize')
     const page = await this.load(actor, pageId, 'docs:write')
-    this.deps.db.transaction((tx) => deletePageTrees(tx, sql`${pages.id} = ${pageId}`))
+    const trashId = this.deps.db.transaction((tx) => {
+      const trashId = this.trash.move(tx, actor, page.workspaceId, { kind: 'page', id: pageId })
+      this.history.record(tx, actor, page.workspaceId, { entityType: 'page', entityId: pageId, kind: 'page.deleted', meta: { trashId } })
+      return trashId
+    })
     await this.activity.record(
       actor,
       page.workspaceId,
       { action: 'page.deleted', entityType: 'page', entityId: pageId, summary: page.title },
       { pageId, projectId: page.projectId, structure: true },
     )
+    return trashId
   }
 
   /** Keeps `mention` links in sync with the card references found in the page body. Runs inside the save transaction. */

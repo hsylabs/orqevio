@@ -69,10 +69,11 @@
     "dropHere": "ここにカードをドロップ",
     "deleteConfirm": {
       "title": "列「{{name}}」を削除しますか？",
-      "withCards_other": "列内の{{count}}枚のカードも削除されます。残したい場合は、先に別の列へ移動してください。",
-      "withArchived_other": "列内のアーカイブ済みカード{{count}}枚も削除されます。残したい場合は、先に「アーカイブ済み」から復元してください。",
-      "empty": "この列は空です。"
-    }
+      "empty": "この列は空です。",
+      "withCards_other": "列内の{{count}}枚のカードも一緒にゴミ箱に移動します。",
+      "withArchived_other": "列内のアーカイブ済みカード{{count}}枚も一緒にゴミ箱に移動します。"
+    },
+    "deleted": "列「{{name}}」をゴミ箱に移動しました"
   },
   "composer": {
     "placeholder": "何をしますか？",
@@ -108,7 +109,7 @@
     "archivedToast": "カードをアーカイブしました",
     "deleteConfirm": {
       "title": "このカードを削除しますか？",
-      "description": "チェックリストと添付ファイルも一緒に削除されます。非表示にするだけなら、アーカイブしてください。"
+      "description": "チェックリストと添付ファイルも一緒にゴミ箱に移動します。非表示にするだけなら、アーカイブしてください。"
     },
     "labels": "ラベル",
     "addLabels": "ラベルを追加",
@@ -125,7 +126,9 @@
     "checklistsEmpty": "タスクを、チェックできるステップに分けましょう。",
     "linkedDocs": "リンクされたドキュメント",
     "attachments": "添付ファイル",
-    "activity": "アクティビティ"
+    "activity": "アクティビティ",
+    "deleted": "カードをゴミ箱に移動しました",
+    "history": "履歴"
   },
   "checklist": {
     "titleLabel": "チェックリストのタイトル",
@@ -136,7 +139,9 @@
     "deleteItem": "「{{text}}」を削除",
     "addItem": "項目を追加",
     "newItemPlaceholder": "新しい項目を入力してEnter",
-    "newItem": "新しい項目"
+    "newItem": "新しい項目",
+    "deleted": "チェックリスト「{{name}}」をゴミ箱に移動しました",
+    "itemDeleted": "「{{text}}」をゴミ箱に移動しました"
   },
   "due": {
     "today": "今日",
@@ -155,7 +160,8 @@
     "unnamed": "名前なし",
     "editNamed": "{{name}}を編集",
     "editUnnamed": "ラベルを編集",
-    "create": "ラベルを作成"
+    "create": "ラベルを作成",
+    "deleted": "ラベル「{{name}}」をゴミ箱に移動しました"
   },
   "linked": {
     "mentioned": "メンション",
@@ -165,20 +171,22 @@
     "search": "ページを検索…",
     "searchLabel": "ページを検索",
     "noResults": "結果がありません。",
-    "hint": "入力すると、ワークスペース全体を検索します。"
+    "hint": "入力すると、ワークスペース全体を検索します。",
+    "unlinked": "リンクをゴミ箱に移動しました"
   },
   "archived": {
     "sheetTitle": "アーカイブ済みのカード",
     "heading": "アーカイブ済み",
     "emptyTitle": "アーカイブされたものはありません",
     "emptyBody": "あなたやエージェントがアーカイブしたカードはここに表示され、復元できます。",
-    "deleteConfirm": "「{{title}}」を完全に削除しますか？"
+    "deleteConfirm": "「{{title}}」をゴミ箱に移動しますか？"
   },
   "attachments": {
     "deleteConfirm": "「{{name}}」を削除しますか？",
     "download": "{{name}}をダウンロード",
     "deleteNamed": "{{name}}を削除",
     "uploading": "アップロード中…",
-    "attach": "ファイルを添付"
+    "attach": "ファイルを添付",
+    "deleted": "「{{name}}」をゴミ箱に移動しました"
   }
 }

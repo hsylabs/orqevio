@@ -1,7 +1,7 @@
 import type { PageDTO } from '@orqevio/shared'
 import { extractReferences } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
-import { Bot, CornerDownRight, Ellipsis, FileText, FilePlus, FolderInput, Paperclip, SquareKanban, Trash, TriangleAlert } from 'lucide-react'
+import { Bot, CornerDownRight, Ellipsis, FileText, FilePlus, FolderInput, History, Paperclip, SquareKanban, Trash, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
@@ -21,6 +21,7 @@ import { NotFound, PageSkeleton } from '../shell/States'
 import { useWorkspace } from '../shell/workspace'
 import { Editor } from './editor/Editor'
 import { IconPicker } from './IconPicker'
+import { HistoryDialog } from '../history/HistoryDialog'
 import { MovePageDialog } from './MovePageDialog'
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error'
@@ -47,6 +48,7 @@ function DocBody({ page }: { page: PageDTO }) {
   /** Who changed the page under the editor; `by: null` is another session of this user. */
   const [conflict, setConflict] = useState<{ by: string | null } | null>(null)
   const [moveOpen, setMoveOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   const editorRef = useRef<TiptapEditor | null>(null)
   const version = useRef(page.version)
@@ -206,6 +208,9 @@ function DocBody({ page }: { page: PageDTO }) {
                 </MenuItem>
                 <MenuItem icon={<FolderInput />} onSelect={() => setMoveOpen(true)}>
                   {t('page.move')}
+                </MenuItem>
+                <MenuItem icon={<History />} onSelect={() => setHistoryOpen(true)}>
+                  {t('page.history')}
                 </MenuItem>
                 <MenuSeparator />
                 <MenuItem
@@ -370,6 +375,7 @@ function DocBody({ page }: { page: PageDTO }) {
         </article>
       </div>
       <MovePageDialog open={moveOpen} onOpenChange={setMoveOpen} pageId={page.id} projectName={page.project.name} pages={projectPages} workspaceId={workspaceId} />
+      <HistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} type="page" id={page.id} name={title || t('untitled', { ns: 'common' })} />
     </div>
   )
 }

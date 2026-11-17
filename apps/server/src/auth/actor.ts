@@ -5,6 +5,8 @@ export interface UserActor {
   userId: string
   name: string
   sessionId: string
+  /** Set while undoing a change or restoring a version: the history says so. */
+  note?: { undoOf?: string; restoredFrom?: string }
 }
 
 export interface AgentActor {

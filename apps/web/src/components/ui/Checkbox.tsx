@@ -1,20 +1,21 @@
 import { cn } from '../../lib/cn'
 
 /** Round, animated checkbox used for checklist items. */
-export function Checkbox({ checked, onChange, label, className, size = 18 }: { checked: boolean; onChange: (checked: boolean) => void; label: string; className?: string; size?: number }) {
+export function Checkbox({ checked, onChange, label, className, size = 18, disabled }: { checked: boolean; onChange: (checked: boolean) => void; label: string; className?: string; size?: number; disabled?: boolean }) {
   return (
     <button
       type="button"
       role="checkbox"
       aria-checked={checked}
       aria-label={label}
+      disabled={disabled}
       onClick={(e) => {
         e.stopPropagation()
         onChange(!checked)
       }}
       style={{ width: size, height: size }}
       className={cn(
-        'group relative grid shrink-0 place-items-center rounded-[6px] border-[1.5px] transition-[background-color,border-color,transform] duration-200 active:scale-90',
+        'group relative grid shrink-0 place-items-center rounded-[6px] border-[1.5px] transition-[background-color,border-color,transform] duration-200 active:scale-90 disabled:pointer-events-none disabled:opacity-40',
         checked ? 'border-accent bg-accent' : 'border-line-strong bg-surface hover:border-ink-3',
         className,
       )}

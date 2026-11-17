@@ -69,14 +69,15 @@
     "dropHere": "Rilascia qui le schede",
     "deleteConfirm": {
       "title": "Eliminare la colonna «{{name}}»?",
-      "withCards_one": "Verrà eliminata anche la sua scheda. Per conservarla, spostala prima in un’altra colonna.",
-      "withCards_many": "Verranno eliminate anche le sue {{count}} schede. Per conservarle, spostale prima in un’altra colonna.",
-      "withCards_other": "Verranno eliminate anche le sue {{count}} schede. Per conservarle, spostale prima in un’altra colonna.",
-      "withArchived_one": "Verrà eliminata anche la sua scheda archiviata. Per conservarla, ripristinala prima da «Archiviate».",
-      "withArchived_many": "Verranno eliminate anche le sue {{count}} schede archiviate. Per conservarle, ripristinale prima da «Archiviate».",
-      "withArchived_other": "Verranno eliminate anche le sue {{count}} schede archiviate. Per conservarle, ripristinale prima da «Archiviate».",
-      "empty": "La colonna è vuota."
-    }
+      "empty": "La colonna è vuota.",
+      "withCards_one": "La sua scheda finirà con lei nel cestino.",
+      "withCards_many": "Le sue {{count}} schede finiranno con lei nel cestino.",
+      "withCards_other": "Le sue {{count}} schede finiranno con lei nel cestino.",
+      "withArchived_one": "La sua scheda archiviata finirà con lei nel cestino.",
+      "withArchived_many": "Le sue {{count}} schede archiviate finiranno con lei nel cestino.",
+      "withArchived_other": "Le sue {{count}} schede archiviate finiranno con lei nel cestino."
+    },
+    "deleted": "Colonna «{{name}}» spostata nel cestino"
   },
   "composer": {
     "placeholder": "Cosa c’è da fare?",
@@ -112,7 +113,7 @@
     "archivedToast": "Scheda archiviata",
     "deleteConfirm": {
       "title": "Eliminare questa scheda?",
-      "description": "Verrà eliminata insieme alle sue checklist e ai suoi allegati. Se vuoi solo nasconderla, archiviala."
+      "description": "Finirà nel cestino con le sue checklist e i suoi allegati. Se vuoi solo nasconderla, archiviala."
     },
     "labels": "Etichette",
     "addLabels": "Aggiungi etichette",
@@ -129,7 +130,9 @@
     "checklistsEmpty": "Dividi l’attività in passaggi da spuntare.",
     "linkedDocs": "Documenti collegati",
     "attachments": "Allegati",
-    "activity": "Attività"
+    "activity": "Attività",
+    "deleted": "Scheda spostata nel cestino",
+    "history": "Cronologia"
   },
   "checklist": {
     "titleLabel": "Titolo della checklist",
@@ -140,7 +143,9 @@
     "deleteItem": "Elimina «{{text}}»",
     "addItem": "Aggiungi elemento",
     "newItemPlaceholder": "Nuovo elemento, poi Invio",
-    "newItem": "Nuovo elemento"
+    "newItem": "Nuovo elemento",
+    "deleted": "Checklist «{{name}}» spostata nel cestino",
+    "itemDeleted": "«{{text}}» è nel cestino"
   },
   "due": {
     "today": "Oggi",
@@ -159,7 +164,8 @@
     "unnamed": "Senza nome",
     "editNamed": "Modifica {{name}}",
     "editUnnamed": "Modifica etichetta",
-    "create": "Crea etichetta"
+    "create": "Crea etichetta",
+    "deleted": "Etichetta «{{name}}» spostata nel cestino"
   },
   "linked": {
     "mentioned": "menzionata",
@@ -169,20 +175,22 @@
     "search": "Cerca pagine…",
     "searchLabel": "Cerca pagine",
     "noResults": "Nessun risultato.",
-    "hint": "Digita per cercare in tutto lo spazio."
+    "hint": "Digita per cercare in tutto lo spazio.",
+    "unlinked": "Collegamento spostato nel cestino"
   },
   "archived": {
     "sheetTitle": "Schede archiviate",
     "heading": "Archiviate",
     "emptyTitle": "Niente di archiviato",
     "emptyBody": "Le schede archiviate da te o dai tuoi agenti compaiono qui, e puoi ripristinarle.",
-    "deleteConfirm": "Eliminare definitivamente «{{title}}»?"
+    "deleteConfirm": "Spostare «{{title}}» nel cestino?"
   },
   "attachments": {
     "deleteConfirm": "Eliminare «{{name}}»?",
     "download": "Scarica {{name}}",
     "deleteNamed": "Elimina {{name}}",
     "uploading": "Caricamento…",
-    "attach": "Allega file"
+    "attach": "Allega file",
+    "deleted": "«{{name}}» è nel cestino"
   }
 }

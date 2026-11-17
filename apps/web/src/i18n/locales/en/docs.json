@@ -23,7 +23,8 @@
     },
     "content": "Page content",
     "subpages": "Subpages",
-    "attachments": "Attachments"
+    "attachments": "Attachments",
+    "history": "History"
   },
   "editor": {
     "placeholder": "Write, or press “/” to insert…",

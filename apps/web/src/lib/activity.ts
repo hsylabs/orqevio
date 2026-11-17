@@ -8,6 +8,7 @@ const ACTIONS = {
   page: ['created', 'updated', 'moved', 'deleted'],
   project: ['created', 'updated', 'deleted'],
   label: ['created', 'updated', 'deleted'],
+  trash: ['restored', 'purged'],
 } as const
 
 type Known = { [E in keyof typeof ACTIONS]: `actions.${E}.${(typeof ACTIONS)[E][number]}` }[keyof typeof ACTIONS]
@@ -47,7 +48,7 @@ export function eventSentence(e: RealtimeEvent) {
 
 /** Where an activity entry leads in the app. */
 export function activityHref(workspaceId: string, a: Pick<ActivityDTO, 'entityType' | 'entityId' | 'action'>) {
-  if (a.action.endsWith('.deleted')) return null
+  if (a.action.endsWith('.deleted') || a.action === 'trash.purged') return null
   if (a.entityType === 'card') return `/card/${a.entityId}`
   if (a.entityType === 'page') return `/w/${workspaceId}/d/${a.entityId}`
   if (a.entityType === 'board') return `/w/${workspaceId}/b/${a.entityId}`

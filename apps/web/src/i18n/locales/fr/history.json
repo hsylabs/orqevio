@@ -1,0 +1,140 @@
+{
+  "title": "Historique de « {{name}} »",
+  "intro_one": "Chaque modification du dernier {{count}} jour, avec son auteur.",
+  "intro_many": "Chaque modification des {{count}} derniers jours, avec son auteur.",
+  "intro_other": "Chaque modification des {{count}} derniers jours, avec son auteur.",
+  "empty_one": "Aucune modification le dernier {{count}} jour.",
+  "empty_many": "Aucune modification ces {{count}} derniers jours.",
+  "empty_other": "Aucune modification ces {{count}} derniers jours.",
+  "list": "Modifications",
+  "entry": "{{name}}, {{when}}",
+  "older": "Voir les modifications précédentes",
+  "showChanges": "Voir ce qui a changé",
+  "hideChanges": "Masquer ce qui a changé",
+  "lines": "Lignes ajoutées : {{added}}. Lignes supprimées : {{removed}}.",
+  "loadFailed": "Impossible de charger ce qui a changé. Réessayez.",
+  "diff": "Ce qui a changé, ligne par ligne",
+  "added": "Ajouté : ",
+  "removed": "Supprimé : ",
+  "unchanged_one": "{{count}} ligne inchangée",
+  "unchanged_many": "{{count}} lignes inchangées",
+  "unchanged_other": "{{count}} lignes inchangées",
+  "noLineChanges": "Aucune ligne n’a changé.",
+  "movedTo": "Son emplacement n’existait plus, elle est donc allée dans {{place}}",
+  "quoted": "« {{name}} »",
+  "kinds": {
+    "page": {
+      "created": "<actor>{{actor}}</actor> a créé cette page",
+      "title": "<actor>{{actor}}</actor> l’a renommée de « {{before}} » en « {{after}} »",
+      "iconSet": "<actor>{{actor}}</actor> a changé l’icône en {{icon}}",
+      "iconRemoved": "<actor>{{actor}}</actor> a retiré l’icône",
+      "content": "<actor>{{actor}}</actor> a modifié le contenu",
+      "movedInto": "<actor>{{actor}}</actor> l’a déplacée dans « {{to}} »",
+      "movedTop": "<actor>{{actor}}</actor> l’a déplacée à la racine du projet",
+      "deleted": "<actor>{{actor}}</actor> l’a mise à la corbeille",
+      "restored": "<actor>{{actor}}</actor> l’a récupérée de la corbeille"
+    },
+    "card": {
+      "created": "<actor>{{actor}}</actor> a créé cette carte dans « {{column}} »",
+      "title": "<actor>{{actor}}</actor> l’a renommée de « {{before}} » en « {{after}} »",
+      "description": "<actor>{{actor}}</actor> a modifié la description",
+      "dueSet": "<actor>{{actor}}</actor> a fixé l’échéance au {{date}}",
+      "dueRemoved": "<actor>{{actor}}</actor> a retiré l’échéance",
+      "labelsAdded_one": "<actor>{{actor}}</actor> a ajouté l’étiquette {{added}}",
+      "labelsAdded_many": "<actor>{{actor}}</actor> a ajouté les étiquettes {{added}}",
+      "labelsAdded_other": "<actor>{{actor}}</actor> a ajouté les étiquettes {{added}}",
+      "labelsRemoved_one": "<actor>{{actor}}</actor> a retiré l’étiquette {{removed}}",
+      "labelsRemoved_many": "<actor>{{actor}}</actor> a retiré les étiquettes {{removed}}",
+      "labelsRemoved_other": "<actor>{{actor}}</actor> a retiré les étiquettes {{removed}}",
+      "labelsChanged": "<actor>{{actor}}</actor> a ajouté {{added}} et retiré {{removed}}",
+      "moved": "<actor>{{actor}}</actor> l’a déplacée de « {{from}} » à « {{to}} »",
+      "archived": "<actor>{{actor}}</actor> l’a archivée",
+      "unarchived": "<actor>{{actor}}</actor> l’a sortie des archives",
+      "deleted": "<actor>{{actor}}</actor> l’a mise à la corbeille",
+      "restored": "<actor>{{actor}}</actor> l’a récupérée de la corbeille",
+      "linked": "<actor>{{actor}}</actor> l’a liée à la page « {{page}} »",
+      "unlinked": "<actor>{{actor}}</actor> a retiré son lien avec la page « {{page}} »",
+      "movedWithoutLabels_one": "<actor>{{actor}}</actor> l’a déplacée de « {{from}} » à « {{to}} » et lui a retiré l’étiquette {{removed}}, propre à l’autre tableau",
+      "movedWithoutLabels_many": "<actor>{{actor}}</actor> l’a déplacée de « {{from}} » à « {{to}} » et lui a retiré les étiquettes {{removed}}, propres à l’autre tableau",
+      "movedWithoutLabels_other": "<actor>{{actor}}</actor> l’a déplacée de « {{from}} » à « {{to}} » et lui a retiré les étiquettes {{removed}}, propres à l’autre tableau"
+    },
+    "checklist": {
+      "created": "<actor>{{actor}}</actor> a ajouté la checklist « {{title}} »",
+      "title": "<actor>{{actor}}</actor> a renommé la checklist « {{before}} » en « {{after}} »",
+      "deleted": "<actor>{{actor}}</actor> a mis la checklist « {{title}} » à la corbeille",
+      "restored": "<actor>{{actor}}</actor> a récupéré la checklist « {{title}} »"
+    },
+    "item": {
+      "created": "<actor>{{actor}}</actor> a ajouté « {{text}} » à « {{checklist}} »",
+      "text": "<actor>{{actor}}</actor> a changé l’élément « {{before}} » en « {{after}} »",
+      "done": "<actor>{{actor}}</actor> a coché « {{text}} »",
+      "undone": "<actor>{{actor}}</actor> a décoché « {{text}} »",
+      "deleted": "<actor>{{actor}}</actor> a mis l’élément « {{text}} » à la corbeille",
+      "restored": "<actor>{{actor}}</actor> a récupéré l’élément « {{text}} »"
+    },
+    "attachment": {
+      "created": "<actor>{{actor}}</actor> a joint « {{name}} »",
+      "deleted": "<actor>{{actor}}</actor> a mis le fichier « {{name}} » à la corbeille",
+      "restored": "<actor>{{actor}}</actor> a récupéré le fichier « {{name}} »",
+      "moved": "<actor>{{actor}}</actor> a déplacé le fichier « {{name}} » de « {{from}} » vers « {{to}} »"
+    }
+  },
+  "actions": {
+    "undo": "Annuler",
+    "undoSince": "Annuler tout ce que {{name}} a fait depuis ici",
+    "restore": "Restaurer cette version"
+  },
+  "note": {
+    "undoOf": "annule une modification antérieure",
+    "restoredFrom": "restaure une version antérieure"
+  },
+  "undo": {
+    "done_one": "Modification annulée",
+    "done_many": "{{count}} modifications annulées",
+    "done_other": "{{count}} modifications annulées",
+    "nothing": "C’était déjà comme avant.",
+    "skipped_one": "{{count}} modification touchée depuis a été ignorée.",
+    "skipped_many": "{{count}} modifications touchées depuis ont été ignorées.",
+    "skipped_other": "{{count}} modifications touchées depuis ont été ignorées.",
+    "failed_one": "{{count}} modification n’a pas pu être annulée.",
+    "failed_many": "{{count}} modifications n’ont pas pu être annulées.",
+    "failed_other": "{{count}} modifications n’ont pas pu être annulées.",
+    "versionRestored": "Version restaurée",
+    "impossible": {
+      "gone": "« {{title}} » n’existe plus.",
+      "place_gone": "L’emplacement de « {{title}} » n’existe plus.",
+      "trash_gone": "« {{title}} » a été supprimé définitivement de la corbeille.",
+      "refused": "Impossible d’annuler « {{title}} »."
+    },
+    "one": {
+      "title": "Quelqu’un l’a modifié depuis",
+      "body": "{{name}} l’a modifié après cette modification. L’annuler maintenant efface ce qu’il a fait.",
+      "bodyUnknown": "Cela a changé après cette modification. L’annuler maintenant efface ce qui a changé depuis.",
+      "current": "Maintenant : « {{value}} »",
+      "confirm": "Annuler quand même"
+    },
+    "bulk": {
+      "title_one": "Annuler {{count}} modification de {{name}} ?",
+      "title_many": "Annuler {{count}} modifications de {{name}} ?",
+      "title_other": "Annuler {{count}} modifications de {{name}} ?",
+      "body": "Chaque élément revient à son état d’avant sa modification, de la plus récente à la plus ancienne. L’annulation est aussi enregistrée dans l’historique.",
+      "nothing": "Il n’y a plus rien à annuler",
+      "conflicts_one": "{{count}} a été modifiée depuis par quelqu’un d’autre :",
+      "conflicts_many": "{{count}} ont été modifiées depuis par quelqu’un d’autre :",
+      "conflicts_other": "{{count}} ont été modifiées depuis par quelqu’un d’autre :",
+      "conflictsList": "Modifiées depuis",
+      "conflict": "« {{title}} » : modifié depuis par {{name}}",
+      "conflictUnknown": "« {{title}} » : modifié depuis",
+      "impossible_one": "{{count}} ne peut pas être annulée :",
+      "impossible_many": "{{count}} ne peuvent pas être annulées :",
+      "impossible_other": "{{count}} ne peuvent pas être annulées :",
+      "skip_one": "Annuler {{count}}, ignorer le reste",
+      "skip_many": "Annuler {{count}}, ignorer le reste",
+      "skip_other": "Annuler {{count}}, ignorer le reste",
+      "force": "Tout annuler quand même",
+      "confirm_one": "Annuler {{count}} modification",
+      "confirm_many": "Annuler {{count}} modifications",
+      "confirm_other": "Annuler {{count}} modifications"
+    }
+  }
+}

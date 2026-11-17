@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { PALETTE } from '@orqevio/shared'
+import { PALETTE, TRASH_DAYS } from '@orqevio/shared'
 import { z } from 'zod'
 import type { AgentActor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
@@ -9,6 +9,10 @@ import type { Services } from '../services'
 
 export const MCP_SERVER_NAME = 'orqevio'
 export const MCP_SERVER_VERSION = '1.0.0'
+
+/** Largest file an agent uploads through MCP, and the request that carries it (base64 adds a third). */
+export const MCP_UPLOAD_MB = 5
+export const MCP_MAX_REQUEST_BYTES = 8 * 1024 * 1024
 
 const INSTRUCTIONS = `Orqevio is a workspace that combines Kanban task boards and Markdown documents.
 Structure: workspace → projects → boards (columns → cards) and documents (nested pages).
@@ -21,10 +25,41 @@ How to work with it:
 - To reference a card inside a document write a Markdown link: [Card title](/card/<card_id>). To reference a page: [Page title](/doc/<page_id>). Card references inside a page automatically link that card to the page.
 - update_page with mode "replace" should include base_version (from read_page) to avoid overwriting someone else's edits. Use mode "append" to add content safely.
 - Likewise, update_card with a description should include base_version (the version from get_card).
-- Agents cannot delete anything. Use archive_card to remove a card from a board (it can be restored by a person).
+- Every change is recorded in the history of its card or page, and people can undo it from there.
+- When a card is done or no longer needed, prefer archive_card: it leaves the board but stays findable. Delete what was a mistake or a duplicate.
+- Tokens allowed to delete and move also have delete_* tools, move_attachment and move_card to another board. Deleting always moves things to the trash, where a person can bring them back for ${TRASH_DAYS} days. Agents can never empty the trash or delete anything for good.
+- Attachments: get_card and read_page list them. read_attachment returns text files as text and images as images. upload_attachment takes text or base64, up to ${MCP_UPLOAD_MB} MB.
 - The user's password vault is end-to-end encrypted and is never accessible through this server. Do not ask for passwords or secrets.`
 
 const uuid = z.uuid()
+/** Text files read back as text up to this size; images up to the upload size. */
+const READ_TEXT_BYTES = 1024 * 1024
+const TEXT_TYPES = /^(text\/|application\/(json|xml|yaml|x-yaml|csv|javascript|x-ndjson)\b)|\+(json|xml)$/
+const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
+
+/** Reads a stream to the end, stopping past `max` bytes. */
+async function readAll(body: ReadableStream<Uint8Array>, max: number) {
+  const chunks: Uint8Array[] = []
+  let size = 0
+  const reader = body.getReader()
+  for (let next = await reader.read(); !next.done; next = await reader.read()) {
+    size += next.value.byteLength
+    if (size > max) {
+      await reader.cancel()
+      throw new AppError(413, 'file_too_large', 'The file is too large to read here; open it in the Orqevio app.')
+    }
+    chunks.push(next.value)
+  }
+  const out = new Uint8Array(size)
+  let at = 0
+  for (const chunk of chunks) {
+    out.set(chunk, at)
+    at += chunk.byteLength
+  }
+  return out
+}
+
+const attachmentSummary = (a: { id: string; filename: string; mimeType: string; size: number }) => ({ id: a.id, name: a.filename, type: a.mimeType, size: a.size })
 const dueDate = z
   .string()
   .describe('Due date as YYYY-MM-DD or a full ISO 8601 date-time. Use null to clear it.')
@@ -61,6 +96,8 @@ async function run(fn: () => Promise<unknown>): Promise<CallToolResult> {
 
 const READ = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const
 const WRITE = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } as const
+/** Takes something away, to the trash: clients can ask the person first. */
+const DELETE = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false } as const
 
 /**
  * Builds an MCP server for one agent token. Only the tools permitted by the
@@ -73,6 +110,8 @@ export function createMcpServer(services: Services, actor: AgentActor) {
   const canWriteTasks = hasScope(actor, 'tasks:write')
   const canReadDocs = hasScope(actor, 'docs:read')
   const canWriteDocs = hasScope(actor, 'docs:write')
+  /** Delete (to the trash) and move things to another board, card or page. */
+  const canOrganize = hasScope(actor, 'organize') && (canWriteTasks || canWriteDocs)
   const ws = actor.workspaceId
 
   // ── Discovery ─────────────────────────────────────────────────
@@ -220,6 +259,7 @@ export function createMcpServer(services: Services, actor: AgentActor) {
               items: cl.items.map((i) => ({ id: i.id, text: i.text, done: i.done })),
             })),
             linked_pages: card.pages.map((p) => ({ id: p.id, title: p.title || 'Untitled' })),
+            attachments: card.attachmentList.map(attachmentSummary),
             recent_activity: card.activity.slice(0, 10).map((a) => ({ action: a.action, by: a.actor.name, at: a.createdAt })),
           }
         }),
@@ -289,7 +329,9 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       'move_card',
       {
         title: 'Move card',
-        description: 'Moves a card to a column of the same board. index 0 places it at the top; omit index to place it at the bottom.',
+        description: canOrganize
+          ? 'Moves a card to a column of its board, or of another board of the workspace (it loses the labels of its old board). index 0 places it at the top; omit index to place it at the bottom.'
+          : 'Moves a card to a column of the same board. index 0 places it at the top; omit index to place it at the bottom.',
         inputSchema: { card_id: uuid, column_id: uuid, index: z.number().int().min(0).optional() },
         annotations: { ...WRITE, idempotentHint: true },
       },
@@ -469,6 +511,7 @@ export function createMcpServer(services: Services, actor: AgentActor) {
             `updated: ${page.updatedAt}${page.updatedBy ? ` by ${page.updatedBy.name}` : ''}`,
             page.children.length ? `sub_pages: ${page.children.map((c) => `${c.title || 'Untitled'} (${c.id})`).join(', ')}` : null,
             page.cards.length ? `linked_cards: ${page.cards.map((c) => `${c.title} (${c.id}, ${c.columnName})`).join(', ')}` : null,
+            page.attachments.length ? `attachments: ${page.attachments.map((a) => `${a.filename} (${a.id}, ${a.mimeType}, ${a.size} bytes)`).join(', ')}` : null,
             '',
             '---',
             '',
@@ -504,25 +547,147 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       {
         title: 'Update page',
         description:
-          'Updates a page title and/or Markdown content. mode "replace" overwrites the content (send base_version from read_page to avoid overwriting newer edits); mode "append" adds content at the end.',
+          'Updates a page title, icon and/or Markdown content. mode "replace" overwrites the content (send base_version from read_page to avoid overwriting newer edits); mode "append" adds content at the end.',
         inputSchema: {
           page_id: uuid,
           title: z.string().max(200).optional(),
+          icon: z.string().max(16).nullable().optional().describe('An emoji for the page, or null to remove it.'),
           content: z.string().max(200_000).optional(),
           mode: z.enum(['replace', 'append']).default('replace'),
           base_version: z.number().int().min(1).optional(),
         },
         annotations: WRITE,
       },
-      ({ page_id, title, content, mode, base_version }) =>
+      ({ page_id, title, icon, content, mode, base_version }) =>
         run(async () => {
           const result = await services.pages.update(
             actor,
             page_id,
-            { title, content, baseVersion: base_version },
+            { title, icon, content, baseVersion: base_version },
             { allowBlindWrite: true, append: mode === 'append' && content !== undefined },
           )
           return { updated: true, page_id: result.id, version: result.version }
+        }),
+    )
+
+    server.registerTool(
+      'move_page',
+      {
+        title: 'Move page',
+        description: 'Moves a page, with its sub-pages, under another page of the same project, or to the top level with parent_id null. index 0 makes it the first; omit to place it last.',
+        inputSchema: { page_id: uuid, parent_id: uuid.nullable(), index: z.number().int().min(0).optional() },
+        annotations: { ...WRITE, idempotentHint: true },
+      },
+      ({ page_id, parent_id, index }) =>
+        run(async () => {
+          await services.pages.move(actor, page_id, { parentId: parent_id, index: index ?? 100_000 })
+          return { moved: true, page_id, parent_id }
+        }),
+    )
+  }
+
+  // ── Attachments ───────────────────────────────────────────────
+  if (canWriteTasks || canWriteDocs) {
+    server.registerTool(
+      'upload_attachment',
+      {
+        title: 'Upload attachment',
+        description: `Attaches a file to a card or a page (send card_id or page_id). content is the file itself: plain text, or base64 with encoding "base64". Up to ${MCP_UPLOAD_MB} MB.`,
+        inputSchema: {
+          card_id: uuid.optional(),
+          page_id: uuid.optional(),
+          filename: z.string().min(1).max(180),
+          mime_type: z.string().max(120).optional().describe('For example text/markdown or image/png. Guessed from the content when omitted.'),
+          content: z.string().min(1),
+          encoding: z.enum(['text', 'base64']).default('text'),
+        },
+        annotations: WRITE,
+      },
+      (args) =>
+        run(async () => {
+          if ((args.card_id === undefined) === (args.page_id === undefined)) throw new AppError(400, 'bad_request', 'Send either card_id or page_id')
+          const bytes = args.encoding === 'base64' ? Uint8Array.from(Buffer.from(args.content, 'base64')) : new TextEncoder().encode(args.content)
+          if (bytes.byteLength > MCP_UPLOAD_MB * 1024 * 1024) throw new AppError(413, 'file_too_large', `Files uploaded by agents are limited to ${MCP_UPLOAD_MB} MB`)
+          const type = args.mime_type ?? (args.encoding === 'text' ? 'text/plain; charset=utf-8' : 'application/octet-stream')
+          const body = new Blob([bytes]).stream()
+          const target = args.page_id ? { pageId: args.page_id } : { cardId: args.card_id! }
+          const file = await services.attachments.upload(actor, target, { body, size: bytes.byteLength, name: args.filename, type })
+          return { uploaded: true, attachment: attachmentSummary(file) }
+        }),
+    )
+  }
+
+  if (canReadTasks || canReadDocs) {
+    server.registerTool(
+      'read_attachment',
+      {
+        title: 'Read attachment',
+        description: 'Reads an attachment of a card or a page: text files (up to 1 MB) come back as text and images as images; for other files, what they are.',
+        inputSchema: { attachment_id: uuid },
+        annotations: READ,
+      },
+      async ({ attachment_id }) => {
+        try {
+          const { meta, body } = await services.attachments.open(actor, attachment_id)
+          const about = attachmentSummary(meta)
+          const type = meta.mimeType.split(';')[0]!.trim().toLowerCase()
+          if (TEXT_TYPES.test(type) && meta.size <= READ_TEXT_BYTES) {
+            const text = new TextDecoder().decode(await readAll(body, READ_TEXT_BYTES))
+            return { content: [{ type: 'text', text: JSON.stringify(about) }, { type: 'text', text }] }
+          }
+          if (IMAGE_TYPES.has(type) && meta.size <= MCP_UPLOAD_MB * 1024 * 1024) {
+            const data = Buffer.from(await readAll(body, MCP_UPLOAD_MB * 1024 * 1024)).toString('base64')
+            return { content: [{ type: 'text', text: JSON.stringify(about) }, { type: 'image', data, mimeType: type }] }
+          }
+          await body.cancel()
+          return ok({ ...about, note: 'This file cannot be read here; a person can open it in the Orqevio app.' })
+        } catch (error) {
+          return fail(error)
+        }
+      },
+    )
+  }
+
+  // ── Delete (to the trash) and move elsewhere ──────────────────
+  if (canOrganize) {
+    const remove = (name: string, title: string, description: string, input: Record<string, z.ZodType>, fn: (args: Record<string, string>) => Promise<unknown>) =>
+      server.registerTool(name, { title, description: `${description} A person can bring it back from the trash for ${TRASH_DAYS} days.`, inputSchema: input, annotations: DELETE }, (args) =>
+        run(async () => ({ deleted: true, trash_id: await fn(args as Record<string, string>) })),
+      )
+
+    if (canWriteTasks) {
+      remove('delete_card', 'Delete card', 'Moves a card to the trash, with its checklists, links and attachments.', { card_id: uuid }, (a) => services.cards.remove(actor, a.card_id!))
+      remove('delete_board', 'Delete board', 'Moves a board to the trash, with its columns and cards.', { board_id: uuid }, (a) => services.boards.remove(actor, a.board_id!))
+      remove('delete_column', 'Delete column', 'Moves a column to the trash, with all its cards.', { column_id: uuid }, (a) => services.boards.removeColumn(actor, a.column_id!))
+      remove('delete_label', 'Delete label', 'Moves a label of a board to the trash; it comes off every card that had it.', { label_id: uuid }, (a) => services.boards.removeLabel(actor, a.label_id!))
+      remove('delete_checklist', 'Delete checklist', 'Moves a checklist of a card to the trash, with its items.', { checklist_id: uuid }, (a) => services.cards.removeChecklist(actor, a.checklist_id!))
+      remove('delete_checklist_item', 'Delete checklist item', 'Moves a checklist item to the trash.', { item_id: uuid }, (a) => services.cards.removeItem(actor, a.item_id!))
+    }
+    if (canWriteDocs) {
+      remove('delete_page', 'Delete page', 'Moves a page to the trash, with its sub-pages and attachments.', { page_id: uuid }, (a) => services.pages.remove(actor, a.page_id!))
+    }
+    if (canWriteTasks && canWriteDocs) {
+      remove('delete_project', 'Delete project', 'Moves a project to the trash, with all its boards and documents.', { project_id: uuid }, (a) => services.workspaces.removeProject(actor, a.project_id!))
+    }
+    remove('delete_attachment', 'Delete attachment', 'Moves an attachment of a card or a page to the trash.', { attachment_id: uuid }, (a) => services.attachments.remove(actor, a.attachment_id!))
+    if (canReadTasks && canReadDocs) {
+      remove('unlink_card_from_page', 'Unlink card from page', 'Removes the link between a card and a page that link_card_to_page made (links from card references in the page stay while the reference is there).', { card_id: uuid, page_id: uuid }, (a) =>
+        services.cards.unlinkPage(actor, a.card_id!, a.page_id!),
+      )
+    }
+
+    server.registerTool(
+      'move_attachment',
+      {
+        title: 'Move attachment',
+        description: 'Moves an attachment to another card or page of the workspace (send card_id or page_id).',
+        inputSchema: { attachment_id: uuid, card_id: uuid.optional(), page_id: uuid.optional() },
+        annotations: { ...WRITE, idempotentHint: true },
+      },
+      ({ attachment_id, card_id, page_id }) =>
+        run(async () => {
+          const moved = await services.attachments.move(actor, attachment_id, { cardId: card_id, pageId: page_id })
+          return { moved: true, attachment: attachmentSummary(moved), card_id: card_id ?? null, page_id: page_id ?? null }
         }),
     )
   }

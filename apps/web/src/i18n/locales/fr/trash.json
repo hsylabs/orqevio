@@ -1,0 +1,72 @@
+{
+  "title": "Corbeille",
+  "intro_one": "Ce que vous supprimez reste ici {{count}} jour, avec tout ce qu’il contenait. Restaurez-le quand vous voulez ; passé ce délai, il est supprimé définitivement.",
+  "intro_many": "Ce que vous supprimez reste ici {{count}} jours, avec tout ce qu’il contenait. Restaurez-le quand vous voulez ; passé ce délai, il est supprimé définitivement.",
+  "intro_other": "Ce que vous supprimez reste ici {{count}} jours, avec tout ce qu’il contenait. Restaurez-le quand vous voulez ; passé ce délai, il est supprimé définitivement.",
+  "empty": {
+    "title": "La corbeille est vide",
+    "body_one": "Quand vous supprimez quelque chose, il attend ici {{count}} jour au cas où vous changeriez d’avis.",
+    "body_many": "Quand vous supprimez quelque chose, il attend ici {{count}} jours au cas où vous changeriez d’avis.",
+    "body_other": "Quand vous supprimez quelque chose, il attend ici {{count}} jours au cas où vous changeriez d’avis."
+  },
+  "note_one": "Vous pourrez tout récupérer depuis la corbeille pendant {{count}} jour.",
+  "note_many": "Vous pourrez tout récupérer depuis la corbeille pendant {{count}} jours.",
+  "note_other": "Vous pourrez tout récupérer depuis la corbeille pendant {{count}} jours.",
+  "kind": {
+    "project": "Projet",
+    "board": "Tableau",
+    "column": "Colonne",
+    "card": "Carte",
+    "page": "Page",
+    "attachment": "Pièce jointe",
+    "label": "Étiquette",
+    "checklist": "Checklist",
+    "checklist_item": "Élément de checklist",
+    "link": "Lien vers une page"
+  },
+  "contents": {
+    "boards_one": "{{count}} tableau",
+    "boards_many": "{{count}} tableaux",
+    "boards_other": "{{count}} tableaux",
+    "columns_one": "{{count}} colonne",
+    "columns_many": "{{count}} colonnes",
+    "columns_other": "{{count}} colonnes",
+    "cards_one": "{{count}} carte",
+    "cards_many": "{{count}} cartes",
+    "cards_other": "{{count}} cartes",
+    "pages_one": "{{count}} page",
+    "pages_many": "{{count}} pages",
+    "pages_other": "{{count}} pages",
+    "checklists_one": "{{count}} checklist",
+    "checklists_many": "{{count}} checklists",
+    "checklists_other": "{{count}} checklists",
+    "items_one": "{{count}} élément de checklist",
+    "items_many": "{{count}} éléments de checklist",
+    "items_other": "{{count}} éléments de checklist",
+    "labels_one": "{{count}} étiquette",
+    "labels_many": "{{count}} étiquettes",
+    "labels_other": "{{count}} étiquettes",
+    "attachments_one": "{{count}} pièce jointe",
+    "attachments_many": "{{count}} pièces jointes",
+    "attachments_other": "{{count}} pièces jointes"
+  },
+  "deletedBy": "Supprimé par {{name}} {{when}}",
+  "expires": "Supprimé définitivement {{when}}",
+  "restore": "Restaurer",
+  "open": "Ouvrir",
+  "restored": "« {{name}} » est de retour",
+  "restoredElsewhere": "Son emplacement n’existe plus : il se trouve maintenant dans {{place}}.",
+  "restoreFirst": "Restaurez d’abord « {{name}} » : ce à quoi il appartient est aussi dans la corbeille.",
+  "purge": {
+    "action": "Supprimer définitivement",
+    "named": "Supprimer « {{name}} » définitivement",
+    "title": "Supprimer « {{name}} » définitivement ?",
+    "body": "Il ne pourra plus être récupéré.",
+    "confirm": "Supprimer définitivement",
+    "done": "« {{name}} » a été supprimé définitivement"
+  },
+  "toast": {
+    "description": "C’est dans la corbeille, au cas où vous changeriez d’avis.",
+    "undo": "Annuler"
+  }
+}

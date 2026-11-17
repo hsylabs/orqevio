@@ -1,0 +1,61 @@
+{
+  "title": "Prullenbak",
+  "intro_one": "Wat je verwijdert, blijft hier {{count}} dag staan, met alles wat erin zat. Zet het terug wanneer je wilt; daarna wordt het definitief verwijderd.",
+  "intro_other": "Wat je verwijdert, blijft hier {{count}} dagen staan, met alles wat erin zat. Zet het terug wanneer je wilt; daarna wordt het definitief verwijderd.",
+  "empty": {
+    "title": "De prullenbak is leeg",
+    "body_one": "Als je iets verwijdert, wacht het hier {{count}} dag voor het geval je van gedachten verandert.",
+    "body_other": "Als je iets verwijdert, wacht het hier {{count}} dagen voor het geval je van gedachten verandert."
+  },
+  "note_one": "Je kunt alles {{count}} dag lang terugzetten vanuit de prullenbak.",
+  "note_other": "Je kunt alles {{count}} dagen lang terugzetten vanuit de prullenbak.",
+  "kind": {
+    "project": "Project",
+    "board": "Bord",
+    "column": "Kolom",
+    "card": "Kaart",
+    "page": "Pagina",
+    "attachment": "Bijlage",
+    "label": "Label",
+    "checklist": "Checklist",
+    "checklist_item": "Checklistitem",
+    "link": "Koppeling met een pagina"
+  },
+  "contents": {
+    "boards_one": "{{count}} bord",
+    "boards_other": "{{count}} borden",
+    "columns_one": "{{count}} kolom",
+    "columns_other": "{{count}} kolommen",
+    "cards_one": "{{count}} kaart",
+    "cards_other": "{{count}} kaarten",
+    "pages_one": "{{count}} pagina",
+    "pages_other": "{{count}} pagina’s",
+    "checklists_one": "{{count}} checklist",
+    "checklists_other": "{{count}} checklists",
+    "items_one": "{{count}} checklistitem",
+    "items_other": "{{count}} checklistitems",
+    "labels_one": "{{count}} label",
+    "labels_other": "{{count}} labels",
+    "attachments_one": "{{count}} bijlage",
+    "attachments_other": "{{count}} bijlagen"
+  },
+  "deletedBy": "Verwijderd door {{name}} {{when}}",
+  "expires": "Definitief verwijderd {{when}}",
+  "restore": "Terugzetten",
+  "open": "Openen",
+  "restored": "‘{{name}}’ is terug",
+  "restoredElsewhere": "De oorspronkelijke plek bestaat niet meer, dus het staat nu in {{place}}.",
+  "restoreFirst": "Zet eerst ‘{{name}}’ terug: waar dit bij hoort, staat ook in de prullenbak.",
+  "purge": {
+    "action": "Definitief verwijderen",
+    "named": "‘{{name}}’ definitief verwijderen",
+    "title": "‘{{name}}’ definitief verwijderen?",
+    "body": "Daarna kan het niet meer worden teruggezet.",
+    "confirm": "Definitief verwijderen",
+    "done": "‘{{name}}’ is definitief verwijderd"
+  },
+  "toast": {
+    "description": "Het staat in de prullenbak, voor het geval je van gedachten verandert.",
+    "undo": "Ongedaan maken"
+  }
+}

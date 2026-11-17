@@ -1,0 +1,140 @@
+{
+  "title": "Histórico de “{{name}}”",
+  "intro_one": "Cada mudança do último {{count}} dia, com quem a fez.",
+  "intro_many": "Cada mudança dos últimos {{count}} dias, com quem a fez.",
+  "intro_other": "Cada mudança dos últimos {{count}} dias, com quem a fez.",
+  "empty_one": "Nenhuma mudança no último {{count}} dia.",
+  "empty_many": "Nenhuma mudança nos últimos {{count}} dias.",
+  "empty_other": "Nenhuma mudança nos últimos {{count}} dias.",
+  "list": "Mudanças",
+  "entry": "{{name}}, {{when}}",
+  "older": "Ver mudanças anteriores",
+  "showChanges": "Ver o que mudou",
+  "hideChanges": "Ocultar o que mudou",
+  "lines": "Linhas adicionadas: {{added}}. Linhas removidas: {{removed}}.",
+  "loadFailed": "Não foi possível carregar o que mudou. Tente de novo.",
+  "diff": "O que mudou, linha por linha",
+  "added": "Adicionado: ",
+  "removed": "Removido: ",
+  "unchanged_one": "{{count}} linha sem mudanças",
+  "unchanged_many": "{{count}} linhas sem mudanças",
+  "unchanged_other": "{{count}} linhas sem mudanças",
+  "noLineChanges": "Nenhuma linha mudou.",
+  "movedTo": "O lugar dela não existia mais, então foi para {{place}}",
+  "quoted": "“{{name}}”",
+  "kinds": {
+    "page": {
+      "created": "<actor>{{actor}}</actor> criou esta página",
+      "title": "<actor>{{actor}}</actor> mudou o nome de “{{before}}” para “{{after}}”",
+      "iconSet": "<actor>{{actor}}</actor> mudou o ícone para {{icon}}",
+      "iconRemoved": "<actor>{{actor}}</actor> removeu o ícone",
+      "content": "<actor>{{actor}}</actor> editou o conteúdo",
+      "movedInto": "<actor>{{actor}}</actor> moveu para dentro de “{{to}}”",
+      "movedTop": "<actor>{{actor}}</actor> moveu para a raiz do projeto",
+      "deleted": "<actor>{{actor}}</actor> mandou para a lixeira",
+      "restored": "<actor>{{actor}}</actor> trouxe de volta da lixeira"
+    },
+    "card": {
+      "created": "<actor>{{actor}}</actor> criou este cartão em “{{column}}”",
+      "title": "<actor>{{actor}}</actor> mudou o nome de “{{before}}” para “{{after}}”",
+      "description": "<actor>{{actor}}</actor> editou a descrição",
+      "dueSet": "<actor>{{actor}}</actor> definiu o prazo para {{date}}",
+      "dueRemoved": "<actor>{{actor}}</actor> removeu o prazo",
+      "labelsAdded_one": "<actor>{{actor}}</actor> adicionou a etiqueta {{added}}",
+      "labelsAdded_many": "<actor>{{actor}}</actor> adicionou as etiquetas {{added}}",
+      "labelsAdded_other": "<actor>{{actor}}</actor> adicionou as etiquetas {{added}}",
+      "labelsRemoved_one": "<actor>{{actor}}</actor> removeu a etiqueta {{removed}}",
+      "labelsRemoved_many": "<actor>{{actor}}</actor> removeu as etiquetas {{removed}}",
+      "labelsRemoved_other": "<actor>{{actor}}</actor> removeu as etiquetas {{removed}}",
+      "labelsChanged": "<actor>{{actor}}</actor> adicionou {{added}} e removeu {{removed}}",
+      "moved": "<actor>{{actor}}</actor> moveu de “{{from}}” para “{{to}}”",
+      "archived": "<actor>{{actor}}</actor> arquivou",
+      "unarchived": "<actor>{{actor}}</actor> tirou do arquivo",
+      "deleted": "<actor>{{actor}}</actor> mandou para a lixeira",
+      "restored": "<actor>{{actor}}</actor> trouxe de volta da lixeira",
+      "linked": "<actor>{{actor}}</actor> vinculou à página “{{page}}”",
+      "unlinked": "<actor>{{actor}}</actor> removeu o vínculo com a página “{{page}}”",
+      "movedWithoutLabels_one": "<actor>{{actor}}</actor> moveu de “{{from}}” para “{{to}}” e tirou a etiqueta {{removed}}, que era do outro quadro",
+      "movedWithoutLabels_many": "<actor>{{actor}}</actor> moveu de “{{from}}” para “{{to}}” e tirou as etiquetas {{removed}}, que eram do outro quadro",
+      "movedWithoutLabels_other": "<actor>{{actor}}</actor> moveu de “{{from}}” para “{{to}}” e tirou as etiquetas {{removed}}, que eram do outro quadro"
+    },
+    "checklist": {
+      "created": "<actor>{{actor}}</actor> adicionou a checklist “{{title}}”",
+      "title": "<actor>{{actor}}</actor> mudou o nome da checklist “{{before}}” para “{{after}}”",
+      "deleted": "<actor>{{actor}}</actor> mandou a checklist “{{title}}” para a lixeira",
+      "restored": "<actor>{{actor}}</actor> trouxe de volta a checklist “{{title}}”"
+    },
+    "item": {
+      "created": "<actor>{{actor}}</actor> adicionou “{{text}}” a “{{checklist}}”",
+      "text": "<actor>{{actor}}</actor> mudou o item “{{before}}” para “{{after}}”",
+      "done": "<actor>{{actor}}</actor> marcou “{{text}}” como feito",
+      "undone": "<actor>{{actor}}</actor> desmarcou “{{text}}”",
+      "deleted": "<actor>{{actor}}</actor> mandou o item “{{text}}” para a lixeira",
+      "restored": "<actor>{{actor}}</actor> trouxe de volta o item “{{text}}”"
+    },
+    "attachment": {
+      "created": "<actor>{{actor}}</actor> anexou “{{name}}”",
+      "deleted": "<actor>{{actor}}</actor> mandou o arquivo “{{name}}” para a lixeira",
+      "restored": "<actor>{{actor}}</actor> trouxe de volta o arquivo “{{name}}”",
+      "moved": "<actor>{{actor}}</actor> moveu o arquivo “{{name}}” de “{{from}}” para “{{to}}”"
+    }
+  },
+  "actions": {
+    "undo": "Desfazer",
+    "undoSince": "Desfazer tudo o que {{name}} fez a partir daqui",
+    "restore": "Restaurar esta versão"
+  },
+  "note": {
+    "undoOf": "desfaz uma mudança anterior",
+    "restoredFrom": "restaura uma versão anterior"
+  },
+  "undo": {
+    "done_one": "Mudança desfeita",
+    "done_many": "{{count}} mudanças desfeitas",
+    "done_other": "{{count}} mudanças desfeitas",
+    "nothing": "Já estava como antes.",
+    "skipped_one": "{{count}} mudança alterada depois foi pulada.",
+    "skipped_many": "{{count}} mudanças alteradas depois foram puladas.",
+    "skipped_other": "{{count}} mudanças alteradas depois foram puladas.",
+    "failed_one": "{{count}} mudança não pôde ser desfeita.",
+    "failed_many": "{{count}} mudanças não puderam ser desfeitas.",
+    "failed_other": "{{count}} mudanças não puderam ser desfeitas.",
+    "versionRestored": "Versão restaurada",
+    "impossible": {
+      "gone": "“{{title}}” não existe mais.",
+      "place_gone": "O lugar onde “{{title}}” estava não existe mais.",
+      "trash_gone": "“{{title}}” foi excluído de vez da lixeira.",
+      "refused": "Não foi possível desfazer “{{title}}”."
+    },
+    "one": {
+      "title": "Alguém mudou isto depois",
+      "body": "{{name}} mudou isto depois desta mudança. Desfazer agora descarta o que foi feito.",
+      "bodyUnknown": "Isto mudou depois desta mudança. Desfazer agora descarta o que mudou depois.",
+      "current": "Agora: “{{value}}”",
+      "confirm": "Desfazer mesmo assim"
+    },
+    "bulk": {
+      "title_one": "Desfazer {{count}} mudança de {{name}}?",
+      "title_many": "Desfazer {{count}} mudanças de {{name}}?",
+      "title_other": "Desfazer {{count}} mudanças de {{name}}?",
+      "body": "Cada coisa volta a como estava antes da sua mudança, da mais recente à mais antiga. Desfazer também fica no histórico.",
+      "nothing": "Não há mais nada para desfazer",
+      "conflicts_one": "{{count}} foi alterada depois por outra pessoa ou agente:",
+      "conflicts_many": "{{count}} foram alteradas depois por outra pessoa ou agente:",
+      "conflicts_other": "{{count}} foram alteradas depois por outra pessoa ou agente:",
+      "conflictsList": "Alteradas depois",
+      "conflict": "“{{title}}”: alterado depois por {{name}}",
+      "conflictUnknown": "“{{title}}”: alterado depois",
+      "impossible_one": "{{count}} não pode ser desfeita:",
+      "impossible_many": "{{count}} não podem ser desfeitas:",
+      "impossible_other": "{{count}} não podem ser desfeitas:",
+      "skip_one": "Desfazer {{count}} e pular o resto",
+      "skip_many": "Desfazer {{count}} e pular o resto",
+      "skip_other": "Desfazer {{count}} e pular o resto",
+      "force": "Desfazer todas mesmo assim",
+      "confirm_one": "Desfazer {{count}} mudança",
+      "confirm_many": "Desfazer {{count}} mudanças",
+      "confirm_other": "Desfazer {{count}} mudanças"
+    }
+  }
+}

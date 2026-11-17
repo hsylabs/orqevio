@@ -1,4 +1,4 @@
-import type { BoardDTO } from '@orqevio/shared'
+import type { BoardDTO, TrashedDTO } from '@orqevio/shared'
 import { Archive, ArchiveX, Trash, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -9,6 +9,7 @@ import { Sheet, SheetClose } from '../../components/ui/Sheet'
 import { del, errorMessage, post } from '../../lib/api'
 import { keys, queryClient, useArchived } from '../../lib/queries'
 import { CardView } from './CardItem'
+import { toastTrashed, trashNote } from '../../lib/trash'
 
 export function ArchivedPanel({ open, onOpenChange, board, onOpenCard }: { open: boolean; onOpenChange: (o: boolean) => void; board: BoardDTO; onOpenCard: (id: string) => void }) {
   const { t } = useTranslation(['boards', 'common'])
@@ -64,10 +65,11 @@ export function ArchivedPanel({ open, onOpenChange, board, onOpenCard }: { open:
                   icon={<Trash />}
                   className="hover:text-danger"
                   onClick={async () => {
-                    if (!(await confirm({ title: t('archived.deleteConfirm', { title: card.title }), confirmLabel: t('actions.delete'), danger: true }))) return
+                    if (!(await confirm({ title: t('archived.deleteConfirm', { title: card.title }), description: trashNote(), confirmLabel: t('actions.delete'), danger: true }))) return
                     try {
-                      await del(`/cards/${card.id}`)
+                      const trashed = await del<TrashedDTO>(`/cards/${card.id}`)
                       await refresh()
+                      toastTrashed(t('sheet.deleted'), trashed)
                     } catch (error) {
                       toast.error(errorMessage(error))
                     }

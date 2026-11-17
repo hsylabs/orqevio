@@ -37,7 +37,7 @@
     "saved": "Workspace updated",
     "delete": "Delete workspace",
     "deleteTitle": "Delete the workspace “{{name}}”?",
-    "deleteDescription": "Its projects, boards, documents, attachments and tokens will be deleted. This can’t be undone.",
+    "deleteDescription": "Its projects, boards, documents, attachments, trash and tokens will be deleted. This can’t be undone.",
     "deleted": "Workspace deleted"
   },
   "copy": {

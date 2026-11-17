@@ -5,7 +5,7 @@ import { SCOPES } from '@orqevio/shared'
 import type { AppEnv } from '../http/types'
 import { bearerToken } from '../http/middleware'
 import { endpointFor, resourceMetadataUrl } from '../http/oauth'
-import { createMcpServer } from './server'
+import { MCP_MAX_REQUEST_BYTES, createMcpServer } from './server'
 
 const limiter = new RateLimiter(300, 60 * 1000)
 
@@ -36,7 +36,7 @@ export async function handleMcp(c: Context<AppEnv>) {
   if (wait > 0) return rpcError(429, -32002, `Rate limit exceeded. Retry in ${wait}s.`, { 'Retry-After': String(wait) })
 
   const server = createMcpServer(c.get('services'), actor)
-  const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true })
+  const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true, maxRequestBodySize: MCP_MAX_REQUEST_BYTES })
   await server.connect(transport)
   try {
     return await transport.handleRequest(c.req.raw)

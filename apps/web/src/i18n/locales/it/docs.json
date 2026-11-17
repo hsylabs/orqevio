@@ -23,7 +23,8 @@
     },
     "content": "Contenuto della pagina",
     "subpages": "Sottopagine",
-    "attachments": "Allegati"
+    "attachments": "Allegati",
+    "history": "Cronologia"
   },
   "editor": {
     "placeholder": "Scrivi, o premi «/» per inserire…",

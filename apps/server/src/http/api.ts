@@ -1,4 +1,4 @@
-import { UPLOAD_NAME_HEADER } from '@orqevio/shared'
+import { type TrashedDTO, UPLOAD_NAME_HEADER } from '@orqevio/shared'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { AppError, badRequest } from '../lib/errors'
@@ -29,6 +29,17 @@ async function json(c: { req: { json: () => Promise<unknown> } }) {
     return await c.req.json()
   } catch {
     throw badRequest('The request body must be valid JSON')
+  }
+}
+
+/** `?before=<ISO date>&beforeId=<id>&limit=<n>`: the page of history after the entry `beforeId`, updated at `before`. */
+function historyPage(c: { req: { query: (name: string) => string | undefined } }) {
+  const before = new Date(c.req.query('before') ?? '')
+  const limit = Number(c.req.query('limit'))
+  return {
+    before: Number.isNaN(before.getTime()) ? undefined : before,
+    beforeId: c.req.query('beforeId') || undefined,
+    limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
   }
 }
 
@@ -120,6 +131,14 @@ export function createApi(env: Env) {
     await c.get('services').workspaces.remove(requireActor(c), c.req.param('id'))
     return c.body(null, 204)
   })
+
+  // ── Trash (people only) ─────────────────────────────────────────
+  api.get('/workspaces/:id/trash', async (c) => c.json(await c.get('services').trash.list(requireActor(c), c.req.param('id'))))
+  api.post('/trash/:id/restore', async (c) => c.json(await c.get('services').trash.restore(requireActor(c), c.req.param('id'))))
+  api.delete('/trash/:id', async (c) => {
+    await c.get('services').trash.purge(requireActor(c), c.req.param('id'))
+    return c.body(null, 204)
+  })
   api.get('/workspaces/:id/overview', async (c) => c.json(await c.get('services').workspaces.overview(requireActor(c), c.req.param('id'))))
   api.get('/workspaces/:id/home', async (c) => c.json(await c.get('services').workspaces.home(requireActor(c), c.req.param('id'))))
   api.get('/workspaces/:id/search', async (c) => {
@@ -150,10 +169,7 @@ export function createApi(env: Env) {
   api.patch('/projects/:id', async (c) =>
     c.json(await c.get('services').workspaces.updateProject(requireActor(c), c.req.param('id'), await json(c))),
   )
-  api.delete('/projects/:id', async (c) => {
-    await c.get('services').workspaces.removeProject(requireActor(c), c.req.param('id'))
-    return c.body(null, 204)
-  })
+  api.delete('/projects/:id', async (c) => c.json({ trashId: await c.get('services').workspaces.removeProject(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
   api.post('/projects/:id/boards', async (c) =>
     c.json(await c.get('services').boards.create(requireActor(c), c.req.param('id'), await json(c)), 201),
   )
@@ -168,10 +184,7 @@ export function createApi(env: Env) {
     await c.get('services').boards.update(requireActor(c), c.req.param('id'), await json(c))
     return c.body(null, 204)
   })
-  api.delete('/boards/:id', async (c) => {
-    await c.get('services').boards.remove(requireActor(c), c.req.param('id'))
-    return c.body(null, 204)
-  })
+  api.delete('/boards/:id', async (c) => c.json({ trashId: await c.get('services').boards.remove(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
   api.get('/boards/:id/archived', async (c) => c.json(await c.get('services').boards.archived(requireActor(c), c.req.param('id'))))
   api.post('/boards/:id/columns', async (c) =>
     c.json(await c.get('services').boards.createColumn(requireActor(c), c.req.param('id'), await json(c)), 201),
@@ -182,23 +195,24 @@ export function createApi(env: Env) {
   api.patch('/columns/:id', async (c) =>
     c.json(await c.get('services').boards.updateColumn(requireActor(c), c.req.param('id'), await json(c))),
   )
-  api.delete('/columns/:id', async (c) => {
-    await c.get('services').boards.removeColumn(requireActor(c), c.req.param('id'))
-    return c.body(null, 204)
-  })
+  api.delete('/columns/:id', async (c) => c.json({ trashId: await c.get('services').boards.removeColumn(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
   api.post('/columns/:id/cards', async (c) =>
     c.json(await c.get('services').cards.create(requireActor(c), c.req.param('id'), await json(c)), 201),
   )
   api.patch('/labels/:id', async (c) =>
     c.json(await c.get('services').boards.updateLabel(requireActor(c), c.req.param('id'), await json(c))),
   )
-  api.delete('/labels/:id', async (c) => {
-    await c.get('services').boards.removeLabel(requireActor(c), c.req.param('id'))
-    return c.body(null, 204)
-  })
+  api.delete('/labels/:id', async (c) => c.json({ trashId: await c.get('services').boards.removeLabel(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
 
   // ── Cards ───────────────────────────────────────────────────────
   api.get('/cards/:id', async (c) => c.json(await c.get('services').cards.detail(requireActor(c), c.req.param('id'))))
+  api.get('/cards/:id/history', async (c) => c.json(await c.get('services').history.list(requireActor(c), 'card', c.req.param('id'), historyPage(c))))
+  api.get('/history/:id', async (c) => c.json(await c.get('services').history.get(requireActor(c), c.req.param('id'))))
+  api.post('/history/undo', async (c) => c.json(await c.get('services').undo.undo(requireActor(c), await json(c))))
+  api.post('/history/:id/restore', async (c) => {
+    await c.get('services').undo.restoreVersion(requireActor(c), c.req.param('id'))
+    return c.body(null, 204)
+  })
   api.patch('/cards/:id', async (c) => c.json(await c.get('services').cards.update(requireActor(c), c.req.param('id'), await json(c))))
   api.post('/cards/:id/move', async (c) => c.json(await c.get('services').cards.move(requireActor(c), c.req.param('id'), await json(c))))
   api.post('/cards/:id/archive', async (c) => {
@@ -209,10 +223,7 @@ export function createApi(env: Env) {
     await c.get('services').cards.setArchived(requireActor(c), c.req.param('id'), false)
     return c.body(null, 204)
   })
-  api.delete('/cards/:id', async (c) => {
-    await c.get('services').cards.remove(requireActor(c), c.req.param('id'))
-    return c.body(null, 204)
-  })
+  api.delete('/cards/:id', async (c) => c.json({ trashId: await c.get('services').cards.remove(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
   api.post('/cards/:id/checklists', async (c) =>
     c.json(await c.get('services').cards.createChecklist(requireActor(c), c.req.param('id'), await json(c)), 201),
   )
@@ -220,40 +231,29 @@ export function createApi(env: Env) {
     await c.get('services').cards.updateChecklist(requireActor(c), c.req.param('id'), await json(c))
     return c.body(null, 204)
   })
-  api.delete('/checklists/:id', async (c) => {
-    await c.get('services').cards.removeChecklist(requireActor(c), c.req.param('id'))
-    return c.body(null, 204)
-  })
+  api.delete('/checklists/:id', async (c) => c.json({ trashId: await c.get('services').cards.removeChecklist(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
   api.post('/checklists/:id/items', async (c) =>
     c.json(await c.get('services').cards.addItem(requireActor(c), c.req.param('id'), await json(c)), 201),
   )
   api.patch('/checklist-items/:id', async (c) =>
     c.json(await c.get('services').cards.updateItem(requireActor(c), c.req.param('id'), await json(c))),
   )
-  api.delete('/checklist-items/:id', async (c) => {
-    await c.get('services').cards.removeItem(requireActor(c), c.req.param('id'))
-    return c.body(null, 204)
-  })
+  api.delete('/checklist-items/:id', async (c) => c.json({ trashId: await c.get('services').cards.removeItem(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
   api.post('/cards/:id/pages', async (c) => {
     await c.get('services').cards.linkPage(requireActor(c), c.req.param('id'), await json(c))
     return c.body(null, 204)
   })
-  api.delete('/cards/:id/pages/:pageId', async (c) => {
-    await c.get('services').cards.unlinkPage(requireActor(c), c.req.param('id'), c.req.param('pageId'))
-    return c.body(null, 204)
-  })
+  api.delete('/cards/:id/pages/:pageId', async (c) => c.json({ trashId: await c.get('services').cards.unlinkPage(requireActor(c), c.req.param('id'), c.req.param('pageId')) } satisfies TrashedDTO))
 
   // ── Pages ───────────────────────────────────────────────────────
   api.get('/pages/:id', async (c) => c.json(await c.get('services').pages.get(requireActor(c), c.req.param('id'))))
+  api.get('/pages/:id/history', async (c) => c.json(await c.get('services').history.list(requireActor(c), 'page', c.req.param('id'), historyPage(c))))
   api.patch('/pages/:id', async (c) => c.json(await c.get('services').pages.update(requireActor(c), c.req.param('id'), await json(c))))
   api.post('/pages/:id/move', async (c) => {
     await c.get('services').pages.move(requireActor(c), c.req.param('id'), await json(c))
     return c.body(null, 204)
   })
-  api.delete('/pages/:id', async (c) => {
-    await c.get('services').pages.remove(requireActor(c), c.req.param('id'))
-    return c.body(null, 204)
-  })
+  api.delete('/pages/:id', async (c) => c.json({ trashId: await c.get('services').pages.remove(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
 
   // ── Attachments ─────────────────────────────────────────────────
   for (const [path, target] of [
@@ -285,10 +285,8 @@ export function createApi(env: Env) {
       },
     })
   })
-  api.delete('/attachments/:id', async (c) => {
-    await c.get('services').attachments.remove(requireActor(c), c.req.param('id'))
-    return c.body(null, 204)
-  })
+  api.delete('/attachments/:id', async (c) => c.json({ trashId: await c.get('services').attachments.remove(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
+  api.post('/attachments/:id/move', async (c) => c.json(await c.get('services').attachments.move(requireActor(c), c.req.param('id'), await json(c))))
 
   // ── OAuth consent (session only) ────────────────────────────────
   api.post('/oauth/request', async (c) => c.json(await c.get('services').oauth.request(requireActor(c), await json(c), endpointFor(c.get('config'), c.req.url))))
@@ -297,6 +295,7 @@ export function createApi(env: Env) {
   // ── Agent tokens (session only) ─────────────────────────────────
   api.get('/tokens', async (c) => c.json(await c.get('services').tokens.list(requireActor(c))))
   api.post('/tokens', async (c) => c.json(await c.get('services').tokens.create(requireActor(c), await json(c)), 201))
+  api.patch('/tokens/:id', async (c) => c.json(await c.get('services').tokens.update(requireActor(c), c.req.param('id'), await json(c))))
   api.delete('/tokens/:id', async (c) => {
     await c.get('services').tokens.revoke(requireActor(c), c.req.param('id'))
     return c.body(null, 204)

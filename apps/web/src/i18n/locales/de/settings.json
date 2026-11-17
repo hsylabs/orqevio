@@ -37,7 +37,7 @@
     "saved": "Arbeitsbereich aktualisiert",
     "delete": "Arbeitsbereich löschen",
     "deleteTitle": "Arbeitsbereich „{{name}}“ löschen?",
-    "deleteDescription": "Alle Projekte, Boards, Dokumente, Anhänge und Tokens des Arbeitsbereichs werden gelöscht. Das lässt sich nicht rückgängig machen.",
+    "deleteDescription": "Alle Projekte, Boards, Dokumente, Anhänge, der Papierkorb und die Tokens des Arbeitsbereichs werden gelöscht. Das lässt sich nicht rückgängig machen.",
     "deleted": "Arbeitsbereich gelöscht"
   },
   "copy": {

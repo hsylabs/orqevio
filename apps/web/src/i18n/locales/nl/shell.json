@@ -13,7 +13,8 @@
       "body": "Bundel borden en documenten op één plek."
     },
     "vaultLocked": "Vergrendeld",
-    "vaultUnlocked": "Ontgrendeld"
+    "vaultUnlocked": "Ontgrendeld",
+    "trash": "Prullenbak"
   },
   "workspace": {
     "fallback": "Werkruimte",
@@ -86,21 +87,21 @@
     },
     "deleteBoard": {
       "title": "‘{{name}}’ verwijderen?",
-      "body": "De kolommen en kaarten worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "body": "De kolommen en kaarten gaan mee naar de prullenbak.",
       "confirm": "Bord verwijderen",
-      "done": "Bord verwijderd"
+      "done": "Bord naar de prullenbak verplaatst"
     },
     "deletePage": {
       "title": "‘{{name}}’ verwijderen?",
-      "body": "De subpagina’s en bijlagen worden ook verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "body": "De subpagina’s en bijlagen gaan mee naar de prullenbak.",
       "confirm": "Pagina verwijderen",
-      "done": "Pagina verwijderd"
+      "done": "Pagina naar de prullenbak verplaatst"
     },
     "deleteProject": {
       "title": "Project ‘{{name}}’ verwijderen?",
-      "body": "Alle borden, kaarten, pagina’s en bijlagen ervan worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "body": "Alle borden, kaarten, pagina’s en bijlagen ervan gaan mee naar de prullenbak.",
       "confirm": "Project verwijderen",
-      "done": "Project verwijderd"
+      "done": "Project naar de prullenbak verplaatst"
     }
   },
   "palette": {
@@ -131,7 +132,8 @@
       "page": "pagina page",
       "newProject": "Nieuw project maken aanmaken new",
       "theme": "Thema wijzigen licht donker weergave modus theme",
-      "lockVault": "Kluis vergrendelen lock vault"
+      "lockVault": "Kluis vergrendelen lock vault",
+      "trash": "prullenbak verwijderd terugzetten herstellen"
     }
   }
 }

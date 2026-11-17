@@ -12,7 +12,7 @@
   "vault": {
     "title": "La cassaforte è fuori dalla loro portata",
     "unreadable": "Nessun token può leggere la cassaforte, nemmeno cifrata: il server rifiuta la richiesta prima di toccare qualsiasi dato.",
-    "noDeletes": "Gli agenti non possono eliminare nulla. Possono solo archiviare, e tu puoi ripristinare.",
+    "noDeletes": "Ciò che gli agenti eliminano va nel cestino: solo tu lo svuoti, e puoi annullare qualsiasi modifica dalla cronologia.",
     "logged": "Ogni azione viene registrata e puoi seguirla in tempo reale nell’app."
   },
   "tokens": {
@@ -88,7 +88,13 @@
     "expiresUnused": "Scade se inutilizzato",
     "never": "Mai",
     "idle": "Inutilizzato da {{days}} giorni",
-    "showActivity": "Vedi la sua attività"
+    "showActivity": "Vedi la sua attività",
+    "organize": {
+      "pill": "Eliminare e spostare",
+      "hint": "Nel cestino; decidi tu se torna.",
+      "on": "{{name}} ora può eliminare e spostare",
+      "off": "{{name}} non può più eliminare né spostare"
+    }
   },
   "access": {
     "levels": {
@@ -111,7 +117,12 @@
       "hint": "Mai accessibile agli agenti",
       "blocked": "Bloccata"
     },
-    "atLeastOne": "Concedi l’accesso in lettura ad almeno un’area."
+    "atLeastOne": "Concedi l’accesso in lettura ad almeno un’area.",
+    "organize": {
+      "label": "Può eliminare e spostare",
+      "hint": "Ciò che elimina va nel cestino, da dove puoi recuperarlo. Spostare include portare schede in un’altra bacheca e allegati in un’altra scheda o pagina.",
+      "needsWrite": "Richiede lettura e scrittura in almeno un’area."
+    }
   },
   "kit": {
     "clients": "Client MCP",

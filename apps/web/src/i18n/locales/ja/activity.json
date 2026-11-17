@@ -49,6 +49,10 @@
       "updated": "<actor>{{actor}}</actor>がラベルを編集しました",
       "deleted": "<actor>{{actor}}</actor>がラベルを削除しました"
     },
+    "trash": {
+      "restored": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>をゴミ箱から復元しました",
+      "purged": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>を完全に削除しました"
+    },
     "other": "<actor>{{actor}}</actor>が変更を加えました"
   },
   "detail": {

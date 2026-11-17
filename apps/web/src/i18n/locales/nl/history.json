@@ -1,0 +1,126 @@
+{
+  "title": "Geschiedenis van ‘{{name}}’",
+  "intro_one": "Elke wijziging van de afgelopen {{count}} dag, met wie hem maakte.",
+  "intro_other": "Elke wijziging van de afgelopen {{count}} dagen, met wie hem maakte.",
+  "empty_one": "Geen wijzigingen in de afgelopen {{count}} dag.",
+  "empty_other": "Geen wijzigingen in de afgelopen {{count}} dagen.",
+  "list": "Wijzigingen",
+  "entry": "{{name}}, {{when}}",
+  "older": "Oudere wijzigingen tonen",
+  "showChanges": "Bekijk wat er veranderde",
+  "hideChanges": "Verberg wat er veranderde",
+  "lines": "Regels toegevoegd: {{added}}. Regels verwijderd: {{removed}}.",
+  "loadFailed": "Wat er veranderde kon niet worden geladen. Probeer het opnieuw.",
+  "diff": "Wat er veranderde, regel voor regel",
+  "added": "Toegevoegd: ",
+  "removed": "Verwijderd: ",
+  "unchanged_one": "{{count}} regel zonder wijzigingen",
+  "unchanged_other": "{{count}} regels zonder wijzigingen",
+  "noLineChanges": "Er is geen regel veranderd.",
+  "movedTo": "Haar plek bestond niet meer, dus ging ze naar {{place}}",
+  "quoted": "‘{{name}}’",
+  "kinds": {
+    "page": {
+      "created": "<actor>{{actor}}</actor> heeft deze pagina gemaakt",
+      "title": "<actor>{{actor}}</actor> heeft haar hernoemd van ‘{{before}}’ naar ‘{{after}}’",
+      "iconSet": "<actor>{{actor}}</actor> heeft het pictogram veranderd in {{icon}}",
+      "iconRemoved": "<actor>{{actor}}</actor> heeft het pictogram verwijderd",
+      "content": "<actor>{{actor}}</actor> heeft de inhoud bewerkt",
+      "movedInto": "<actor>{{actor}}</actor> heeft haar verplaatst naar ‘{{to}}’",
+      "movedTop": "<actor>{{actor}}</actor> heeft haar naar het hoogste niveau van het project verplaatst",
+      "deleted": "<actor>{{actor}}</actor> heeft haar naar de prullenbak verplaatst",
+      "restored": "<actor>{{actor}}</actor> heeft haar uit de prullenbak teruggezet"
+    },
+    "card": {
+      "created": "<actor>{{actor}}</actor> heeft deze kaart gemaakt in ‘{{column}}’",
+      "title": "<actor>{{actor}}</actor> heeft haar hernoemd van ‘{{before}}’ naar ‘{{after}}’",
+      "description": "<actor>{{actor}}</actor> heeft de beschrijving bewerkt",
+      "dueSet": "<actor>{{actor}}</actor> heeft de deadline op {{date}} gezet",
+      "dueRemoved": "<actor>{{actor}}</actor> heeft de deadline verwijderd",
+      "labelsAdded_one": "<actor>{{actor}}</actor> heeft het label {{added}} toegevoegd",
+      "labelsAdded_other": "<actor>{{actor}}</actor> heeft de labels {{added}} toegevoegd",
+      "labelsRemoved_one": "<actor>{{actor}}</actor> heeft het label {{removed}} verwijderd",
+      "labelsRemoved_other": "<actor>{{actor}}</actor> heeft de labels {{removed}} verwijderd",
+      "labelsChanged": "<actor>{{actor}}</actor> heeft {{added}} toegevoegd en {{removed}} verwijderd",
+      "moved": "<actor>{{actor}}</actor> heeft haar verplaatst van ‘{{from}}’ naar ‘{{to}}’",
+      "archived": "<actor>{{actor}}</actor> heeft haar gearchiveerd",
+      "unarchived": "<actor>{{actor}}</actor> heeft haar uit het archief gehaald",
+      "deleted": "<actor>{{actor}}</actor> heeft haar naar de prullenbak verplaatst",
+      "restored": "<actor>{{actor}}</actor> heeft haar uit de prullenbak teruggezet",
+      "linked": "<actor>{{actor}}</actor> heeft haar gekoppeld aan de pagina ‘{{page}}’",
+      "unlinked": "<actor>{{actor}}</actor> heeft haar koppeling met de pagina ‘{{page}}’ verwijderd",
+      "movedWithoutLabels_one": "<actor>{{actor}}</actor> heeft haar verplaatst van ‘{{from}}’ naar ‘{{to}}’ en het label {{removed}} van het andere bord verwijderd",
+      "movedWithoutLabels_other": "<actor>{{actor}}</actor> heeft haar verplaatst van ‘{{from}}’ naar ‘{{to}}’ en de labels {{removed}} van het andere bord verwijderd"
+    },
+    "checklist": {
+      "created": "<actor>{{actor}}</actor> heeft de checklist ‘{{title}}’ toegevoegd",
+      "title": "<actor>{{actor}}</actor> heeft de checklist ‘{{before}}’ hernoemd naar ‘{{after}}’",
+      "deleted": "<actor>{{actor}}</actor> heeft de checklist ‘{{title}}’ naar de prullenbak verplaatst",
+      "restored": "<actor>{{actor}}</actor> heeft de checklist ‘{{title}}’ teruggezet"
+    },
+    "item": {
+      "created": "<actor>{{actor}}</actor> heeft ‘{{text}}’ aan ‘{{checklist}}’ toegevoegd",
+      "text": "<actor>{{actor}}</actor> heeft het punt ‘{{before}}’ veranderd in ‘{{after}}’",
+      "done": "<actor>{{actor}}</actor> heeft ‘{{text}}’ afgevinkt",
+      "undone": "<actor>{{actor}}</actor> heeft het vinkje bij ‘{{text}}’ weggehaald",
+      "deleted": "<actor>{{actor}}</actor> heeft het punt ‘{{text}}’ naar de prullenbak verplaatst",
+      "restored": "<actor>{{actor}}</actor> heeft het punt ‘{{text}}’ teruggezet"
+    },
+    "attachment": {
+      "created": "<actor>{{actor}}</actor> heeft ‘{{name}}’ bijgevoegd",
+      "deleted": "<actor>{{actor}}</actor> heeft het bestand ‘{{name}}’ naar de prullenbak verplaatst",
+      "restored": "<actor>{{actor}}</actor> heeft het bestand ‘{{name}}’ teruggezet",
+      "moved": "<actor>{{actor}}</actor> heeft het bestand ‘{{name}}’ verplaatst van ‘{{from}}’ naar ‘{{to}}’"
+    }
+  },
+  "actions": {
+    "undo": "Ongedaan maken",
+    "undoSince": "Alles ongedaan maken wat {{name}} vanaf hier deed",
+    "restore": "Deze versie terugzetten"
+  },
+  "note": {
+    "undoOf": "maakt een eerdere wijziging ongedaan",
+    "restoredFrom": "zet een eerdere versie terug"
+  },
+  "undo": {
+    "done_one": "Wijziging ongedaan gemaakt",
+    "done_other": "{{count}} wijzigingen ongedaan gemaakt",
+    "nothing": "Het was al zoals daarvoor.",
+    "skipped_one": "{{count}} wijziging die daarna is aangepast, is overgeslagen.",
+    "skipped_other": "{{count}} wijzigingen die daarna zijn aangepast, zijn overgeslagen.",
+    "failed_one": "{{count}} wijziging kon niet ongedaan worden gemaakt.",
+    "failed_other": "{{count}} wijzigingen konden niet ongedaan worden gemaakt.",
+    "versionRestored": "Versie teruggezet",
+    "impossible": {
+      "gone": "‘{{title}}’ bestaat niet meer.",
+      "place_gone": "De plek waar ‘{{title}}’ stond, bestaat niet meer.",
+      "trash_gone": "‘{{title}}’ is definitief uit de prullenbak verwijderd.",
+      "refused": "‘{{title}}’ kon niet ongedaan worden gemaakt."
+    },
+    "one": {
+      "title": "Iemand heeft dit daarna veranderd",
+      "body": "{{name}} heeft het na deze wijziging veranderd. Als je het nu ongedaan maakt, gaat verloren wat er gedaan is.",
+      "bodyUnknown": "Het is na deze wijziging veranderd. Als je het nu ongedaan maakt, gaat verloren wat er daarna veranderde.",
+      "current": "Nu: ‘{{value}}’",
+      "confirm": "Toch ongedaan maken"
+    },
+    "bulk": {
+      "title_one": "{{count}} wijziging van {{name}} ongedaan maken?",
+      "title_other": "{{count}} wijzigingen van {{name}} ongedaan maken?",
+      "body": "Alles gaat terug naar hoe het was vóór de wijziging, van de nieuwste naar de oudste. Ook het ongedaan maken komt in de geschiedenis.",
+      "nothing": "Er is niets meer om ongedaan te maken",
+      "conflicts_one": "{{count}} is daarna door iemand anders veranderd:",
+      "conflicts_other": "{{count}} zijn daarna door iemand anders veranderd:",
+      "conflictsList": "Daarna veranderd",
+      "conflict": "‘{{title}}’: daarna veranderd door {{name}}",
+      "conflictUnknown": "‘{{title}}’: daarna veranderd",
+      "impossible_one": "{{count}} kan niet ongedaan worden gemaakt:",
+      "impossible_other": "{{count}} kunnen niet ongedaan worden gemaakt:",
+      "skip_one": "{{count}} ongedaan maken, rest overslaan",
+      "skip_other": "{{count}} ongedaan maken, rest overslaan",
+      "force": "Toch alles ongedaan maken",
+      "confirm_one": "{{count}} wijziging ongedaan maken",
+      "confirm_other": "{{count}} wijzigingen ongedaan maken"
+    }
+  }
+}

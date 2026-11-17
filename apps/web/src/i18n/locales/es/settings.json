@@ -37,7 +37,7 @@
     "saved": "Espacio actualizado",
     "delete": "Eliminar espacio",
     "deleteTitle": "¿Eliminar el espacio «{{name}}»?",
-    "deleteDescription": "Se eliminarán sus proyectos, tableros, documentos, adjuntos y tokens. Esta acción no se puede deshacer.",
+    "deleteDescription": "Se eliminarán sus proyectos, tableros, documentos, adjuntos, papelera y tokens. Esta acción no se puede deshacer.",
     "deleted": "Espacio eliminado"
   },
   "copy": {

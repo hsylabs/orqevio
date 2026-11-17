@@ -23,11 +23,12 @@ export function CreateTokenDialog({ open, onOpenChange }: { open: boolean; onOpe
   const [name, setName] = useState('')
   const [tasks, setTasks] = useState<AccessLevel>('write')
   const [docs, setDocs] = useState<AccessLevel>('read')
+  const [organize, setOrganize] = useState(true)
   const [expiry, setExpiry] = useState<(typeof EXPIRIES)[number]>('90')
   const [busy, setBusy] = useState(false)
   const [created, setCreated] = useState<CreatedTokenDTO | null>(null)
   const workspace = me.workspaces.find((w) => w.id === workspaceId)
-  const scopes = scopesFromLevels({ tasks, docs })
+  const scopes = scopesFromLevels({ tasks, docs, organize })
 
   function close(o: boolean) {
     onOpenChange(o)
@@ -88,7 +89,7 @@ export function CreateTokenDialog({ open, onOpenChange }: { open: boolean; onOpe
     >
       <form onSubmit={submit} className="flex flex-col gap-5">
         <Field label={t('create.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('create.namePlaceholder')} autoFocus maxLength={60} />
-        <AccessRows tasks={tasks} docs={docs} onTasks={setTasks} onDocs={setDocs} />
+        <AccessRows tasks={tasks} docs={docs} organize={organize} onTasks={setTasks} onDocs={setDocs} onOrganize={setOrganize} />
         <div className="flex items-center justify-between gap-3">
           <span className="text-[13px] font-medium text-ink-2">{t('create.expiry')}</span>
           <Segmented size="sm" label={t('create.expiry')} value={expiry} onChange={setExpiry} options={EXPIRIES.map((value) => ({ value, label: t(`create.expiries.${value}`) }))} />

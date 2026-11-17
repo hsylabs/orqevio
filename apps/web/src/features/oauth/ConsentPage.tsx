@@ -92,12 +92,14 @@ function Consent({ params, request, workspaces }: { params: Record<string, strin
   const asked = request.scopes.length > 0
   const [tasks, setTasks] = useState<AccessLevel>(asked ? levelFromScopes(request.scopes, 'tasks') : 'write')
   const [docs, setDocs] = useState<AccessLevel>(asked ? levelFromScopes(request.scopes, 'docs') : 'read')
+  // On unless the application asked for some permissions and not this one.
+  const [organize, setOrganize] = useState(!asked || request.scopes.includes('organize'))
   const last = localPref<string | null>('workspace', null)
   const [workspaceId, setWorkspaceId] = useState(workspaces.find((w) => w.id === last)?.id ?? workspaces[0]?.id ?? '')
   const [busy, setBusy] = useState<'allow' | 'deny' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [leaving, setLeaving] = useState<string | null>(null)
-  const scopes = scopesFromLevels({ tasks, docs })
+  const scopes = scopesFromLevels({ tasks, docs, organize })
   const back = destination(client.redirectUri)
   // Reconnecting: the access this application already has here is replaced, unless it is another account of it.
   const [replace, setReplace] = useState(true)
@@ -170,7 +172,7 @@ function Consent({ params, request, workspaces }: { params: Record<string, strin
           </section>
         )}
 
-        <AccessRows tasks={tasks} docs={docs} onTasks={setTasks} onDocs={setDocs} />
+        <AccessRows tasks={tasks} docs={docs} organize={organize} onTasks={setTasks} onDocs={setDocs} onOrganize={setOrganize} />
         {scopes.length === 0 && <p className="text-[12.5px] text-danger">{t('agents:access.atLeastOne')}</p>}
         {error && (
           <p role="alert" className="rounded-[10px] bg-danger-soft px-3 py-2.5 text-[13px] text-danger">

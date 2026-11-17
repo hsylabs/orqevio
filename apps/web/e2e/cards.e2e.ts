@@ -1,26 +1,28 @@
 import type { Page } from '@playwright/test'
 import { addCard, createProject, expect, openNewWorkspace, test } from './helpers'
 
-/** Holds the card sheet's next save of the card until `release`, like a slow network would. */
-async function holdNextSave(page: Page, cardId: string) {
-  let release!: () => void
-  const gate = new Promise<void>((resolve) => (release = resolve))
-  let sent!: () => void
-  const saving = new Promise<void>((resolve) => (sent = resolve))
-  let held = false
+/**
+ * Lets a test hold the card sheet's next save of the card until `release`, like a slow network
+ * would. The route is set up once, before the card is open: setting one up while a request of
+ * the page is on its way can leave that request hanging, and the sheet waiting for it.
+ */
+async function holdSaves(page: Page, cardId: string) {
+  let next: { sent: () => void; gate: Promise<void> } | null = null
   await page.route(`**/api/cards/${cardId}`, async (route) => {
-    if (route.request().method() !== 'PATCH' || held) return route.fallback()
-    held = true
-    sent()
-    await gate
+    const hold = next
+    if (route.request().method() !== 'PATCH' || !hold) return route.fallback()
+    next = null
+    hold.sent()
+    await hold.gate
     await route.fallback()
   })
-  return {
-    saving,
-    release: async () => {
-      release()
-      await page.unroute(`**/api/cards/${cardId}`)
-    },
+  return function holdNextSave() {
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    let sent!: () => void
+    const saving = new Promise<void>((resolve) => (sent = resolve))
+    next = { sent, gate }
+    return { saving, release: async () => release() }
   }
 }
 
@@ -36,10 +38,12 @@ test("an open card shows an agent's description and asks before overwriting it",
   expect(created.status(), await created.text()).toBe(201)
   const { token } = (await created.json()) as { token: string }
 
+  const boardId = new URL(page.url()).pathname.split('/b/')[1]!
+  const cardId = ((await (await page.request.get(`/api/boards/${boardId}`)).json()) as { cards: Array<{ id: string; title: string }> }).cards.find((c) => c.title === 'Revisar contrato')!.id
+  const holdNextSave = await holdSaves(page, cardId)
   await page.getByRole('button', { name: 'Revisar contrato' }).click()
   const editor = page.getByRole('textbox', { name: 'Descripción de la tarjeta' })
   await expect(editor).toBeVisible()
-  const cardId = new URL(page.url()).searchParams.get('card')!
   const card = async () => (await (await page.request.get(`/api/cards/${cardId}`)).json()) as { description: string; version: number }
   const asAgent = async (description: string) => {
     const res = await request.patch(`${baseURL}/api/cards/${cardId}`, { headers: { Authorization: `Bearer ${token}` }, data: { description } })
@@ -52,7 +56,7 @@ test("an open card shows an agent's description and asks before overwriting it",
   await expect(page.getByText('Claude ha actualizado la descripción')).toBeVisible()
 
   // Typing while the agent writes: the sheet's save is refused and it asks.
-  const first = await holdNextSave(page, cardId)
+  const first = holdNextSave()
   await editor.click()
   await page.keyboard.press('ControlOrMeta+End')
   await page.keyboard.type(' y firma')
@@ -72,7 +76,7 @@ test("an open card shows an agent's description and asks before overwriting it",
   await expect(page.getByText('Guardado', { exact: true })).toBeVisible()
 
   // The same again, now loading the agent's version.
-  const second = await holdNextSave(page, cardId)
+  const second = holdNextSave()
   await editor.click()
   await page.keyboard.press('ControlOrMeta+End')
   await page.keyboard.type(' (borrador)')
@@ -94,7 +98,7 @@ test("an open card shows an agent's description and asks before overwriting it",
   expect(await card()).toEqual(final)
 
   // Typing while a save is on its way and closing the sheet: what came after is saved too.
-  const third = await holdNextSave(page, cardId)
+  const third = holdNextSave()
   await editor.click()
   await page.keyboard.press('ControlOrMeta+End')
   await page.keyboard.type(', revisada')

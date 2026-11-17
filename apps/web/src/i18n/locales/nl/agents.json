@@ -12,7 +12,7 @@
   "vault": {
     "title": "De kluis blijft buiten hun bereik",
     "unreadable": "Geen enkel token kan de kluis lezen, zelfs niet versleuteld: de server weigert het verzoek voordat er gegevens worden aangeraakt.",
-    "noDeletes": "Agents kunnen niets verwijderen. Ze kunnen alleen archiveren, en jij kunt herstellen.",
+    "noDeletes": "Wat agents verwijderen gaat naar de prullenbak: alleen jij leegt die, en je kunt elke wijziging ongedaan maken vanuit de geschiedenis.",
     "logged": "Elke actie wordt vastgelegd en je kunt alles live volgen in de app."
   },
   "tokens": {
@@ -87,7 +87,13 @@
     "expiresUnused": "Verloopt indien ongebruikt",
     "never": "Nooit",
     "idle": "{{days}} dagen niet gebruikt",
-    "showActivity": "Activiteit bekijken"
+    "showActivity": "Activiteit bekijken",
+    "organize": {
+      "pill": "Verwijderen en verplaatsen",
+      "hint": "Naar de prullenbak; jij beslist of het terugkomt.",
+      "on": "{{name}} mag nu verwijderen en verplaatsen",
+      "off": "{{name}} mag niet meer verwijderen of verplaatsen"
+    }
   },
   "access": {
     "levels": {
@@ -110,7 +116,12 @@
       "hint": "Nooit toegankelijk voor agents",
       "blocked": "Geblokkeerd"
     },
-    "atLeastOne": "Geef leestoegang tot minstens één onderdeel."
+    "atLeastOne": "Geef leestoegang tot minstens één onderdeel.",
+    "organize": {
+      "label": "Mag verwijderen en verplaatsen",
+      "hint": "Wat hij verwijdert gaat naar de prullenbak, waar je het kunt terugzetten. Verplaatsen omvat kaarten naar een ander bord en bijlagen naar een andere kaart of pagina.",
+      "needsWrite": "Vereist lees- en schrijftoegang tot een gebied."
+    }
   },
   "kit": {
     "clients": "MCP-client",

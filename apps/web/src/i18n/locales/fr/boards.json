@@ -69,14 +69,15 @@
     "dropHere": "Déposez des cartes ici",
     "deleteConfirm": {
       "title": "Supprimer la colonne « {{name}} » ?",
-      "withCards_one": "Sa carte sera également supprimée. Pour la conserver, déplacez-la d’abord vers une autre colonne.",
-      "withCards_many": "Ses {{count}} cartes seront également supprimées. Pour les conserver, déplacez-les d’abord vers une autre colonne.",
-      "withCards_other": "Ses {{count}} cartes seront également supprimées. Pour les conserver, déplacez-les d’abord vers une autre colonne.",
-      "withArchived_one": "Sa carte archivée sera également supprimée. Pour la conserver, restaurez-la d’abord depuis « Archivées ».",
-      "withArchived_many": "Ses {{count}} cartes archivées seront également supprimées. Pour les conserver, restaurez-les d’abord depuis « Archivées ».",
-      "withArchived_other": "Ses {{count}} cartes archivées seront également supprimées. Pour les conserver, restaurez-les d’abord depuis « Archivées ».",
-      "empty": "La colonne est vide."
-    }
+      "empty": "La colonne est vide.",
+      "withCards_one": "Sa carte ira avec elle dans la corbeille.",
+      "withCards_many": "Ses {{count}} cartes iront avec elle dans la corbeille.",
+      "withCards_other": "Ses {{count}} cartes iront avec elle dans la corbeille.",
+      "withArchived_one": "Sa carte archivée ira avec elle dans la corbeille.",
+      "withArchived_many": "Ses {{count}} cartes archivées iront avec elle dans la corbeille.",
+      "withArchived_other": "Ses {{count}} cartes archivées iront avec elle dans la corbeille."
+    },
+    "deleted": "Colonne « {{name}} » placée dans la corbeille"
   },
   "composer": {
     "placeholder": "Que faut-il faire ?",
@@ -112,7 +113,7 @@
     "archivedToast": "Carte archivée",
     "deleteConfirm": {
       "title": "Supprimer cette carte ?",
-      "description": "Elle sera supprimée avec ses checklists et ses pièces jointes. Pour simplement la masquer, archivez-la plutôt."
+      "description": "Elle ira dans la corbeille avec ses checklists et ses pièces jointes. Pour simplement la masquer, archivez-la plutôt."
     },
     "labels": "Étiquettes",
     "addLabels": "Ajouter des étiquettes",
@@ -129,7 +130,9 @@
     "checklistsEmpty": "Découpez la tâche en étapes à cocher.",
     "linkedDocs": "Documents liés",
     "attachments": "Pièces jointes",
-    "activity": "Activité"
+    "activity": "Activité",
+    "deleted": "Carte placée dans la corbeille",
+    "history": "Historique"
   },
   "checklist": {
     "titleLabel": "Titre de la checklist",
@@ -140,7 +143,9 @@
     "deleteItem": "Supprimer « {{text}} »",
     "addItem": "Ajouter un élément",
     "newItemPlaceholder": "Nouvel élément, puis Entrée",
-    "newItem": "Nouvel élément"
+    "newItem": "Nouvel élément",
+    "deleted": "Checklist « {{name}} » placée dans la corbeille",
+    "itemDeleted": "« {{text}} » est dans la corbeille"
   },
   "due": {
     "today": "Aujourd’hui",
@@ -159,7 +164,8 @@
     "unnamed": "Sans nom",
     "editNamed": "Modifier {{name}}",
     "editUnnamed": "Modifier l’étiquette",
-    "create": "Créer l’étiquette"
+    "create": "Créer l’étiquette",
+    "deleted": "Étiquette « {{name}} » placée dans la corbeille"
   },
   "linked": {
     "mentioned": "mentionnée",
@@ -169,20 +175,22 @@
     "search": "Rechercher des pages…",
     "searchLabel": "Rechercher des pages",
     "noResults": "Aucun résultat.",
-    "hint": "Tapez pour chercher dans tout l’espace."
+    "hint": "Tapez pour chercher dans tout l’espace.",
+    "unlinked": "Lien placé dans la corbeille"
   },
   "archived": {
     "sheetTitle": "Cartes archivées",
     "heading": "Archivées",
     "emptyTitle": "Rien d’archivé",
     "emptyBody": "Les cartes que vous ou vos agents archivez apparaissent ici, et vous pouvez les restaurer.",
-    "deleteConfirm": "Supprimer « {{title}} » définitivement ?"
+    "deleteConfirm": "Placer « {{title}} » dans la corbeille ?"
   },
   "attachments": {
     "deleteConfirm": "Supprimer « {{name}} » ?",
     "download": "Télécharger {{name}}",
     "deleteNamed": "Supprimer {{name}}",
     "uploading": "Envoi en cours…",
-    "attach": "Joindre un fichier"
+    "attach": "Joindre un fichier",
+    "deleted": "« {{name}} » est dans la corbeille"
   }
 }
