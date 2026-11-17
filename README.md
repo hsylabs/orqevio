@@ -11,9 +11,11 @@ Orqevio brings together four pieces, and only those four:
 | **Tasks** | Workspaces, projects, Kanban boards, columns, cards, labels, due dates, checklists, archive and attachments. |
 | **Docs** | Nested pages in a block editor that saves Markdown, with simple tables, images, files and direct links to tasks. |
 | **Vault** | End-to-end-encrypted credentials and private notes, two-step verification codes (TOTP), import and export, a password generator, a recovery key and auto-lock. |
-| **Agents (MCP)** | An MCP server with per-workspace permissions, so agents can look things up in your docs, create tasks and rearrange boards. It connects with OAuth (for example, as a Claude connector) or with a token. |
+| **Agents (MCP)** | An MCP server with per-workspace permissions, so agents can do nearly everything you do with tasks and docs: look things up, write, rearrange, attach files and tidy up. It connects with OAuth (for example, as a Claude connector) or with a token. |
 
 The key design decision: **the vault is walled off from agents.** No token can reach it, not even its encrypted contents, and the server never knows your secrets.
+
+And **nothing an agent does is final.** Every change can be undone for 30 days, and what an agent deletes goes to the trash, which only you can empty. No agent can delete anything for good, delete a workspace or your account, or touch the tokens, the settings or the vault.
 
 **Each copy of Orqevio belongs to one person.** There's no sign-up and no email: you claim your copy once with a setup code, and from then on you sign in with an access key.
 
@@ -29,6 +31,23 @@ The key design decision: **the vault is walled off from agents.** No token can r
 - **Keyboard first.** `⌘K`/`Ctrl K` opens the command palette to search and jump anywhere; `⌘\` hides the sidebar; and you can rearrange the whole Kanban board from the keyboard (space to pick up, arrow keys to move, space to drop), with screen reader announcements.
 - **A look of its own.** Warm paper, ink and two signal colors: khaki for you, ultramarine for your agents. Editorial type (Fraunces) over a restrained interface (Instrument Sans). Light and dark themes, with text colors tuned to WCAG AA contrast.
 - **In your language.** The app and the installer speak English, Spanish, French, Portuguese, Italian, German, Dutch and Japanese. Your copy takes your browser's language when you claim it, and you can change it anytime in **Settings**.
+
+## Undo and recover
+
+Everything people and agents change can be taken back for 30 days.
+
+**Trash.** Deleting a project, a board, a column, a card, a page, a file, a label, a checklist or one of its items, or the link between a card and a page, sends it to **Trash**, in the sidebar, with everything it held. Right after deleting, **Undo** in the notice brings it back. In **Trash** you see what each item is, where it was, who deleted it and when it goes for good, with **Restore** and **Delete for good**. Restoring puts everything back as it was; if its place is gone, the app says where it went instead. After 30 days, the trash empties itself.
+
+**History.** **History**, in the menu of a card or a page, lists its changes of the last 30 days: what changed, who changed it (a person, or which agent) and when. For a page's content or a card's description, **See what changed** shows the lines added and removed.
+
+**Undo.** In the history:
+- **Undo** puts back what one change changed, without touching what changed after it. What it added goes to the trash, and what it deleted comes back.
+- **Undo everything Claude did from here**, on an agent's change, takes back all that agent did from that change on, across cards and pages, after saying what that covers.
+- **Restore this version** puts a page's content or a card's description back as it was.
+
+If someone changed the same thing after the change you undo, Orqevio says who and asks first. Undoing is a change of its own, so it can be undone too. Only people undo.
+
+**What agents may delete and move.** Each token and OAuth connection has the permission **Can delete and move**. With it, an agent can delete what it can write, always to the trash, and move cards to another board and files to another card or page. New tokens and connections have it unless you untick it; those made before 1.1.0 don't until you turn it on in **Agents**, where each one has the switch. Without it, an agent can still archive cards, and move cards within their board and pages within their project.
 
 ## Architecture
 

@@ -6,6 +6,8 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-17
+
 ### Added
 - A trash. Deleting a project, a board, a column, a card, a page, an attachment, a label, a checklist, a checklist item or the link between a card and a page no longer deletes it for good: it goes to the trash with everything it held (a page with its subpages and files, a column with its cards) and stays there for 30 days. **Trash**, in the sidebar, shows what each item is, where it was, who deleted it and when it goes for good, with **Restore** and **Delete for good**. Right after deleting, **Undo** in the notice brings it back at once.
 - Restoring puts everything back as it was, with the same ids, links and files. If its place no longer exists, a card goes to the first column, a column or board to the first board or project, and a page to the top of its project; the app says where. What can only live in its place (a checklist item, a label, a file) asks to restore that first when it's in the trash too.
@@ -22,13 +24,14 @@ To update your copy, see [Updates](README.md#updates) in the README.
 - The history of a card and of a page says when a file moves from one to the other, and undoing it moves it back. Moving a card to another board says which labels it lost.
 
 ### Changed
+- Deleting something through the REST API answers `200` with the id of its trash entry (`{ "trashId": "…" }`) instead of `204`. New endpoints: `GET /api/workspaces/:id/trash`, `POST /api/trash/:id/restore` and `DELETE /api/trash/:id`, for people only. Deleting a workspace or your account, and uninstalling, are still for good.
+- New REST endpoints for the history: `GET /api/pages/:id/history` and `GET /api/cards/:id/history` (newest first, 50 at a time, with `?before=<date>&beforeId=<id>` for older ones), and `GET /api/history/:id` for one change with its texts before and after. Agents can read the history of what their token lets them read.
+- New REST endpoints to undo, for people only: `POST /api/history/undo` with `{ "ids": [...] }` or `{ "since": "<id>" }` and `conflicts` (`ask`, `skip` or `force`), plus `dryRun` to see what would happen; and `POST /api/history/:id/restore` for a version of a content or a description.
 - Tokens and OAuth connections have a new permission, `organize` (**Can delete and move**), in their `scopes`. People turn it on or off with `PATCH /api/tokens/:id` and `{ "organize": true }` or `false`; it needs write access to tasks or docs. Through the REST API, tokens can upload, open, move and delete attachments with the permissions of the card or page they're on, and `POST /api/attachments/:id/move` with `cardId` or `pageId` moves one, for people too. `POST /api/cards/:id/move` takes a column of another board of the workspace.
 - Without **Can delete and move**, an agent's attempt to delete answers `403` with the code `missing_scope` instead of `session_required`.
 - The MCP endpoint accepts requests of up to 8 MB, so an attachment fits.
 - When many changes arrive at once, such as an agent creating fifty pages in a second, each open tab now refetches what they touch once, a tenth of a second later, instead of once per change, each cancelling the previous request. With the home screen open, fifty new pages cost a tab 6 to 8 requests instead of 100, of which over 90 were thrown away. Live updates may show up to a tenth of a second later.
-- Deleting something through the REST API answers `200` with the id of its trash entry (`{ "trashId": "…" }`) instead of `204`. New endpoints: `GET /api/workspaces/:id/trash`, `POST /api/trash/:id/restore` and `DELETE /api/trash/:id`, for people only. Deleting a workspace or your account, and uninstalling, are still for good.
-- New REST endpoints for the history: `GET /api/pages/:id/history` and `GET /api/cards/:id/history` (newest first, 50 at a time, with `?before=<date>&beforeId=<id>` for older ones), and `GET /api/history/:id` for one change with its texts before and after. Agents can read the history of what their token lets them read.
-- New REST endpoints to undo, for people only: `POST /api/history/undo` with `{ "ids": [...] }` or `{ "since": "<id>" }` and `conflicts` (`ask`, `skip` or `force`), plus `dryRun` to see what would happen; and `POST /api/history/:id/restore` for a version of a content or a description.
+- The README explains the trash, the history, undoing and what agents may delete and move, in **Undo and recover**.
 
 ### Fixed
 - Opening a page or a card whose text ends with a list or a table, and clicking in it or in its menus, no longer saves it as if you had edited it. The empty line the editor keeps at the end was taken for a change.
