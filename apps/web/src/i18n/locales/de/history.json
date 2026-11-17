@@ -69,5 +69,55 @@
       "deleted": "<actor>{{actor}}</actor> hat die Datei „{{name}}“ in den Papierkorb gelegt",
       "restored": "<actor>{{actor}}</actor> hat die Datei „{{name}}“ zurückgeholt"
     }
+  },
+  "actions": {
+    "undo": "Rückgängig machen",
+    "undoSince": "Alles rückgängig machen, was {{name}} ab hier getan hat",
+    "restore": "Diese Version wiederherstellen"
+  },
+  "note": {
+    "undoOf": "macht eine frühere Änderung rückgängig",
+    "restoredFrom": "stellt eine frühere Version wieder her"
+  },
+  "undo": {
+    "done_one": "Änderung rückgängig gemacht",
+    "done_other": "{{count}} Änderungen rückgängig gemacht",
+    "nothing": "Es war schon wie vorher.",
+    "skipped_one": "{{count}} Änderung, die seitdem geändert wurde, wurde übersprungen.",
+    "skipped_other": "{{count}} Änderungen, die seitdem geändert wurden, wurden übersprungen.",
+    "failed_one": "{{count}} Änderung konnte nicht rückgängig gemacht werden.",
+    "failed_other": "{{count}} Änderungen konnten nicht rückgängig gemacht werden.",
+    "versionRestored": "Version wiederhergestellt",
+    "impossible": {
+      "gone": "„{{title}}“ existiert nicht mehr.",
+      "place_gone": "Der Ort, an dem „{{title}}“ war, existiert nicht mehr.",
+      "trash_gone": "„{{title}}“ wurde endgültig aus dem Papierkorb gelöscht.",
+      "refused": "„{{title}}“ konnte nicht rückgängig gemacht werden."
+    },
+    "one": {
+      "title": "Jemand hat das seitdem geändert",
+      "body": "{{name}} hat es nach dieser Änderung geändert. Wenn du sie jetzt rückgängig machst, geht verloren, was dabei getan wurde.",
+      "bodyUnknown": "Es hat sich nach dieser Änderung geändert. Wenn du sie jetzt rückgängig machst, geht verloren, was sich seitdem geändert hat.",
+      "current": "Jetzt: „{{value}}“",
+      "confirm": "Trotzdem rückgängig machen"
+    },
+    "bulk": {
+      "title_one": "{{count}} Änderung von {{name}} rückgängig machen?",
+      "title_other": "{{count}} Änderungen von {{name}} rückgängig machen?",
+      "body": "Alles kehrt zu dem Stand vor seiner Änderung zurück, von der neuesten zur ältesten. Auch das Rückgängigmachen steht im Verlauf.",
+      "nothing": "Es gibt nichts mehr rückgängig zu machen",
+      "conflicts_one": "{{count}} wurde seitdem von jemand anderem geändert:",
+      "conflicts_other": "{{count}} wurden seitdem von jemand anderem geändert:",
+      "conflictsList": "Seitdem geändert",
+      "conflict": "„{{title}}“: seitdem geändert von {{name}}",
+      "conflictUnknown": "„{{title}}“: seitdem geändert",
+      "impossible_one": "{{count}} kann nicht rückgängig gemacht werden:",
+      "impossible_other": "{{count}} können nicht rückgängig gemacht werden:",
+      "skip_one": "{{count}} rückgängig machen, Rest überspringen",
+      "skip_other": "{{count}} rückgängig machen, Rest überspringen",
+      "force": "Trotzdem alle rückgängig machen",
+      "confirm_one": "{{count}} Änderung rückgängig machen",
+      "confirm_other": "{{count}} Änderungen rückgängig machen"
+    }
   }
 }

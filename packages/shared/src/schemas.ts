@@ -152,3 +152,19 @@ export const oauthDecisionInput = oauthRequestInput.extend({
   /** Revoke this application's earlier access to the workspace once the new one is created. */
   replace: z.boolean().optional(),
 })
+
+// ── Undo ─────────────────────────────────────────────────────────
+/**
+ * What to undo: some changes (`ids`), or everything their author did from one change on
+ * (`since`). With `conflicts: 'ask'` nothing is done while any conflicts: the answer lists
+ * them; `skip` leaves those out and `force` undoes them anyway. `dryRun` only plans.
+ */
+export const undoInput = z
+  .object({
+    ids: z.array(id).min(1).max(500).optional(),
+    since: id.optional(),
+    conflicts: z.enum(['ask', 'skip', 'force']).default('ask'),
+    /** Only say what would happen: nothing is undone. */
+    dryRun: z.boolean().default(false),
+  })
+  .refine((v) => (v.ids === undefined) !== (v.since === undefined), { message: 'Send either ids or since' })

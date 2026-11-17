@@ -74,5 +74,63 @@
       "deleted": "<actor>{{actor}}</actor> mandou o arquivo “{{name}}” para a lixeira",
       "restored": "<actor>{{actor}}</actor> trouxe de volta o arquivo “{{name}}”"
     }
+  },
+  "actions": {
+    "undo": "Desfazer",
+    "undoSince": "Desfazer tudo o que {{name}} fez a partir daqui",
+    "restore": "Restaurar esta versão"
+  },
+  "note": {
+    "undoOf": "desfaz uma mudança anterior",
+    "restoredFrom": "restaura uma versão anterior"
+  },
+  "undo": {
+    "done_one": "Mudança desfeita",
+    "done_many": "{{count}} mudanças desfeitas",
+    "done_other": "{{count}} mudanças desfeitas",
+    "nothing": "Já estava como antes.",
+    "skipped_one": "{{count}} mudança alterada depois foi pulada.",
+    "skipped_many": "{{count}} mudanças alteradas depois foram puladas.",
+    "skipped_other": "{{count}} mudanças alteradas depois foram puladas.",
+    "failed_one": "{{count}} mudança não pôde ser desfeita.",
+    "failed_many": "{{count}} mudanças não puderam ser desfeitas.",
+    "failed_other": "{{count}} mudanças não puderam ser desfeitas.",
+    "versionRestored": "Versão restaurada",
+    "impossible": {
+      "gone": "“{{title}}” não existe mais.",
+      "place_gone": "O lugar onde “{{title}}” estava não existe mais.",
+      "trash_gone": "“{{title}}” foi excluído de vez da lixeira.",
+      "refused": "Não foi possível desfazer “{{title}}”."
+    },
+    "one": {
+      "title": "Alguém mudou isto depois",
+      "body": "{{name}} mudou isto depois desta mudança. Desfazer agora descarta o que foi feito.",
+      "bodyUnknown": "Isto mudou depois desta mudança. Desfazer agora descarta o que mudou depois.",
+      "current": "Agora: “{{value}}”",
+      "confirm": "Desfazer mesmo assim"
+    },
+    "bulk": {
+      "title_one": "Desfazer {{count}} mudança de {{name}}?",
+      "title_many": "Desfazer {{count}} mudanças de {{name}}?",
+      "title_other": "Desfazer {{count}} mudanças de {{name}}?",
+      "body": "Cada coisa volta a como estava antes da sua mudança, da mais recente à mais antiga. Desfazer também fica no histórico.",
+      "nothing": "Não há mais nada para desfazer",
+      "conflicts_one": "{{count}} foi alterada depois por outra pessoa ou agente:",
+      "conflicts_many": "{{count}} foram alteradas depois por outra pessoa ou agente:",
+      "conflicts_other": "{{count}} foram alteradas depois por outra pessoa ou agente:",
+      "conflictsList": "Alteradas depois",
+      "conflict": "“{{title}}”: alterado depois por {{name}}",
+      "conflictUnknown": "“{{title}}”: alterado depois",
+      "impossible_one": "{{count}} não pode ser desfeita:",
+      "impossible_many": "{{count}} não podem ser desfeitas:",
+      "impossible_other": "{{count}} não podem ser desfeitas:",
+      "skip_one": "Desfazer {{count}} e pular o resto",
+      "skip_many": "Desfazer {{count}} e pular o resto",
+      "skip_other": "Desfazer {{count}} e pular o resto",
+      "force": "Desfazer todas mesmo assim",
+      "confirm_one": "Desfazer {{count}} mudança",
+      "confirm_many": "Desfazer {{count}} mudanças",
+      "confirm_other": "Desfazer {{count}} mudanças"
+    }
   }
 }

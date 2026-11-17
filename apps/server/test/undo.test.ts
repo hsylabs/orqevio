@@ -1,0 +1,319 @@
+import type { HistoryEntryDTO, Scope, UndoResultDTO } from '@orqevio/shared'
+import { and, eq } from 'drizzle-orm'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { history } from '../src/db/schema'
+import { Client, type Harness, createHarness, seedBoard, signUp } from './harness'
+
+let h: Harness
+beforeAll(async () => {
+  h = await createHarness()
+})
+afterAll(async () => h.close())
+
+const historyOf = async (client: Client, type: 'pages' | 'cards', id: string) => (await client.get(`/api/${type}/${id}/history`)).body as HistoryEntryDTO[]
+const latest = async (client: Client, type: 'pages' | 'cards', id: string, kind: string) => (await historyOf(client, type, id)).find((e) => e.kind === kind)!
+
+async function agent(client: Client, workspaceId: string, scopes: Scope[] = ['tasks:read', 'tasks:write', 'docs:read', 'docs:write'], name = 'Asistente') {
+  const res = await client.post('/api/tokens', { name, workspaceId, scopes, expiresInDays: 30 })
+  expect(res.status).toBe(201)
+  return new Client(h, res.body.token)
+}
+
+async function undo(client: Client, body: Record<string, unknown>) {
+  const res = await client.post('/api/history/undo', body)
+  expect(res.status, JSON.stringify(res.body)).toBe(200)
+  return res.body as UndoResultDTO
+}
+
+describe('undo', () => {
+  it('takes back each change to a card, and records undoing it as a change of its own', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { projectId, boardId, columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    const urgent = (await client.post(`/api/boards/${boardId}/labels`, { name: 'Urgente', color: 'tomato' })).body.id as string
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Informe' })).body.id as string
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Contrato', description: 'Revisar' })).body.id as string
+    const list = (await client.post(`/api/cards/${card}/checklists`, { title: 'Pasos' })).body.id as string
+    const item = (await client.post(`/api/checklists/${list}/items`, { text: 'Leer' })).body.id as string
+
+    // What the agent does, one change at a time, and undoing each.
+    const steps: Array<[() => Promise<unknown>, string, () => Promise<void>]> = [
+      [() => bot.patch(`/api/cards/${card}`, { title: 'Contrato firmado' }), 'card.title', async () => expect((await client.get(`/api/cards/${card}`)).body.title).toBe('Contrato')],
+      [() => bot.patch(`/api/cards/${card}`, { description: 'Revisar y firmar' }), 'card.description', async () => expect((await client.get(`/api/cards/${card}`)).body.description).toBe('Revisar')],
+      [() => bot.patch(`/api/cards/${card}`, { dueAt: '2026-12-01T12:00:00.000Z' }), 'card.due', async () => expect((await client.get(`/api/cards/${card}`)).body.dueAt).toBeNull()],
+      [() => bot.patch(`/api/cards/${card}`, { labelIds: [urgent] }), 'card.labels', async () => expect((await client.get(`/api/cards/${card}`)).body.labelIds).toEqual([])],
+      [() => bot.post(`/api/cards/${card}/move`, { columnId: columns[1]!.id, index: 0 }), 'card.moved', async () => expect((await client.get(`/api/cards/${card}`)).body.columnId).toBe(columns[0]!.id)],
+      [() => bot.post(`/api/cards/${card}/archive`), 'card.archived', async () => expect((await client.get(`/api/cards/${card}`)).body.archivedAt).toBeNull()],
+      [() => bot.patch(`/api/checklists/${list}`, { title: 'Pasos a seguir' }), 'checklist.title', async () => expect((await client.get(`/api/cards/${card}`)).body.checklists[0].title).toBe('Pasos')],
+      [() => bot.patch(`/api/checklist-items/${item}`, { text: 'Leerlo' }), 'item.text', async () => expect((await client.get(`/api/cards/${card}`)).body.checklists[0].items[0].text).toBe('Leer')],
+      [() => bot.patch(`/api/checklist-items/${item}`, { done: true }), 'item.done', async () => expect((await client.get(`/api/cards/${card}`)).body.checklists[0].items[0].done).toBe(false)],
+      [() => bot.post(`/api/cards/${card}/pages`, { pageId: page }), 'card.linked', async () => expect((await client.get(`/api/cards/${card}`)).body.pages).toEqual([])],
+      [() => bot.post(`/api/checklists/${list}/items`, { text: 'Firmar' }), 'item.created', async () => expect((await client.get(`/api/cards/${card}`)).body.checklists[0].items).toHaveLength(1)],
+      [() => bot.post(`/api/cards/${card}/checklists`, { title: 'Extra' }), 'checklist.created', async () => expect((await client.get(`/api/cards/${card}`)).body.checklists).toHaveLength(1)],
+      // What only people delete comes back from the trash.
+      [() => client.del(`/api/checklist-items/${item}`), 'item.deleted', async () => expect((await client.get(`/api/cards/${card}`)).body.checklists[0].items).toHaveLength(1)],
+      [() => client.upload(`/api/cards/${card}/attachments`, 'pdf', { name: 'contrato.pdf', type: 'application/pdf' }), 'attachment.created', async () => expect((await client.get(`/api/cards/${card}`)).body.attachmentList).toEqual([])],
+    ]
+    for (const [change, kind, check] of steps) {
+      await change()
+      const entry = await latest(client, 'cards', card, kind)
+      const result = await undo(client, { ids: [entry.id] })
+      expect([result.applied, result.undone, result.plan[0]!.status], kind).toEqual([true, 1, 'ready'])
+      await check()
+      // Undoing it again finds nothing to do.
+      expect((await undo(client, { ids: [entry.id] })).plan[0]!.status, kind).toBe('unchanged')
+    }
+
+    // Each undo is in the history, saying which change it took back; and can be undone too.
+    const entries = await historyOf(client, 'cards', card)
+    const undoTitle = entries.find((e) => e.kind === 'card.title' && e.meta.undoOf)!
+    expect(undoTitle).toMatchObject({ before: 'Contrato firmado', after: 'Contrato', actor: { kind: 'user' } })
+    await undo(client, { ids: [undoTitle.id] })
+    expect((await client.get(`/api/cards/${card}`)).body.title).toBe('Contrato firmado')
+  })
+
+  it('takes back changes to a page: its text, name, icon and place, and making or deleting it', async () => {
+    const { client, workspaceId } = await signUp(h, 'Páginas')
+    const { projectId } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    const parent = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Guías' })).body.id as string
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Estilo', content: 'Frases cortas.' })).body.id as string
+    const version = (await client.get(`/api/pages/${page}`)).body.version as number
+    await bot.patch(`/api/pages/${page}`, { content: 'Frases cortas.\n\nSin tecnicismos.', baseVersion: version })
+    await bot.patch(`/api/pages/${page}`, { title: 'Estilo y tono', icon: '✍️' })
+    await bot.post(`/api/pages/${page}/move`, { parentId: parent, index: 0 })
+
+    for (const kind of ['page.moved', 'page.icon', 'page.title', 'page.content']) await undo(client, { ids: [(await latest(client, 'pages', page, kind)).id] })
+    expect((await client.get(`/api/pages/${page}`)).body).toMatchObject({ title: 'Estilo', icon: null, content: 'Frases cortas.', parentId: null })
+
+    // A page the agent made goes to the trash; a page someone deleted comes back from it.
+    const made = (await bot.post(`/api/projects/${projectId}/pages`, { title: 'Borrador del agente' })).body.id as string
+    await undo(client, { ids: [(await latest(client, 'pages', made, 'page.created')).id] })
+    expect((await client.get(`/api/pages/${made}`)).status).toBe(404)
+    await client.del(`/api/pages/${parent}`)
+    const deleted = h.db.select({ id: history.id }).from(history).where(and(eq(history.entityId, parent), eq(history.kind, 'page.deleted'))).get()!
+    await undo(client, { ids: [deleted.id] })
+    expect((await client.get(`/api/pages/${parent}`)).status).toBe(200)
+  })
+
+  it('asks first when someone changed the same thing since, then skips it or undoes it anyway', async () => {
+    const { client, workspaceId, user } = await signUp(h, 'Conflictos')
+    const { columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'A' })).body.id as string
+    await bot.patch(`/api/cards/${card}`, { title: 'B' })
+    const byAgent = await latest(client, 'cards', card, 'card.title')
+    await client.patch(`/api/cards/${card}`, { title: 'C' })
+
+    const asked = await undo(client, { ids: [byAgent.id] })
+    expect(asked).toMatchObject({ applied: false, undone: 0 })
+    expect(asked.plan[0]).toMatchObject({ status: 'conflict', current: 'C', changedBy: { kind: 'user', id: user.id }, entityTitle: 'C' })
+    expect((await client.get(`/api/cards/${card}`)).body.title).toBe('C')
+
+    expect(await undo(client, { ids: [byAgent.id], conflicts: 'skip' })).toMatchObject({ applied: true, undone: 0, skipped: 1 })
+    expect((await client.get(`/api/cards/${card}`)).body.title).toBe('C')
+    expect(await undo(client, { ids: [byAgent.id], conflicts: 'force' })).toMatchObject({ applied: true, undone: 1, skipped: 0 })
+    expect((await client.get(`/api/cards/${card}`)).body.title).toBe('A')
+
+    // A card the agent made and someone worked on since asks too; its own later changes don't count.
+    const made = (await bot.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Del agente', description: 'Hecha por el agente' })).body.id as string
+    await bot.patch(`/api/cards/${made}`, { title: 'Del agente, revisada' })
+    const creation = await latest(client, 'cards', made, 'card.created')
+    expect((await undo(client, { ids: [creation.id] })).plan[0]!.status).toBe('ready')
+    await client.post(`/api/trash/${(await client.get(`/api/workspaces/${workspaceId}/trash`)).body[0].id}/restore`)
+    await client.patch(`/api/cards/${made}`, { description: 'Con notas mías' })
+    expect((await undo(client, { ids: [creation.id] })).plan[0]).toMatchObject({ status: 'conflict', changedBy: { kind: 'user' } })
+  })
+
+  it('takes back everything an agent did from one change on, newest first, and nothing else', async () => {
+    const { client, workspaceId } = await signUp(h, 'Lotes')
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    const other = await agent(client, workspaceId, undefined, 'Otro agente')
+    const kept = (await bot.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'De antes' })).body.id as string
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Plan', content: 'Uno' })).body.id as string
+
+    // The reorganisation to undo.
+    const card = (await bot.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Nueva' })).body.id as string
+    const first = await latest(client, 'cards', card, 'card.created')
+    await bot.patch(`/api/cards/${card}`, { title: 'Nueva v2' })
+    await bot.patch(`/api/cards/${card}`, { title: 'Nueva v3' })
+    await bot.post(`/api/cards/${kept}/move`, { columnId: columns[1]!.id, index: 0 })
+    let version = (await client.get(`/api/pages/${page}`)).body.version as number
+    version = (await bot.patch(`/api/pages/${page}`, { content: 'Uno\nDos', baseVersion: version })).body.version
+    await bot.patch(`/api/pages/${page}`, { title: 'Plan v2' })
+    // Meanwhile: a person edits the page's text, another agent renames the card.
+    await client.patch(`/api/pages/${page}`, { content: 'Uno\nDos\nTres', baseVersion: version })
+    await other.patch(`/api/cards/${kept}`, { title: 'De antes, renombrada' })
+
+    // A dry run plans without undoing anything, conflicts or not.
+    const planned = await undo(client, { since: first.id, dryRun: true, conflicts: 'force' })
+    expect([planned.applied, planned.plan.length]).toEqual([false, 6])
+    expect((await client.get(`/api/cards/${card}`)).body.title).toBe('Nueva v3')
+    const asked = await undo(client, { since: first.id })
+    expect(asked.applied).toBe(false)
+    expect(asked.plan.map((p) => [p.kind, p.status])).toEqual([
+      ['page.title', 'ready'],
+      ['page.content', 'conflict'],
+      ['card.moved', 'ready'],
+      ['card.title', 'ready'],
+      ['card.title', 'ready'],
+      ['card.created', 'ready'],
+    ])
+    const done = await undo(client, { since: first.id, conflicts: 'skip' })
+    expect(done).toMatchObject({ applied: true, undone: 5, skipped: 1, failed: 0 })
+    expect((await client.get(`/api/cards/${card}`)).status).toBe(404)
+    expect((await client.get(`/api/cards/${kept}`)).body).toMatchObject({ title: 'De antes, renombrada', columnId: columns[0]!.id })
+    expect((await client.get(`/api/pages/${page}`)).body).toMatchObject({ title: 'Plan', content: 'Uno\nDos\nTres' })
+  })
+
+  it('puts back a version of a page or a description, as a new change', async () => {
+    const { client, workspaceId } = await signUp(h, 'Versiones')
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Acta', content: 'v1' })).body.id as string
+    let version = (await client.get(`/api/pages/${page}`)).body.version as number
+    for (const content of ['v2', 'v3']) version = (await bot.patch(`/api/pages/${page}`, { content, baseVersion: version })).body.version
+    const v2 = (await historyOf(client, 'pages', page)).filter((e) => e.kind === 'page.content')[1]!
+    expect((await client.post(`/api/history/${v2.id}/restore`)).status).toBe(204)
+    expect((await client.get(`/api/pages/${page}`)).body.content).toBe('v2')
+    const restored = await latest(client, 'pages', page, 'page.content')
+    expect(restored.meta.restoredFrom).toBe(v2.id)
+
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Ficha', description: 'd1' })).body.id as string
+    await bot.patch(`/api/cards/${card}`, { description: 'd2' })
+    const d1 = (await historyOf(client, 'cards', card)).find((e) => e.kind === 'card.description' && e.actor.kind === 'user')!
+    expect((await client.post(`/api/history/${d1.id}/restore`)).status).toBe(204)
+    expect((await client.get(`/api/cards/${card}`)).body.description).toBe('d1')
+    // Only texts have versions.
+    const created = await latest(client, 'cards', card, 'card.created')
+    expect((await client.post(`/api/history/${created.id}/restore`)).status).toBe(400)
+  })
+
+  it('is for people who can open the workspace', async () => {
+    const { client, workspaceId } = await signUp(h, 'Permisos')
+    const { columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    const card = (await bot.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Del agente', description: 'x' })).body.id as string
+    const entry = await latest(client, 'cards', card, 'card.created')
+    const text = await latest(client, 'cards', card, 'card.description')
+    expect((await bot.post('/api/history/undo', { ids: [entry.id] })).status).toBe(403)
+    expect((await bot.post(`/api/history/${text.id}/restore`)).status).toBe(403)
+    const stranger = await signUp(h, 'Ajena')
+    expect((await stranger.client.post('/api/history/undo', { ids: [entry.id] })).status).toBe(404)
+    expect((await stranger.client.post(`/api/history/${text.id}/restore`)).status).toBe(404)
+    expect((await client.post('/api/history/undo', { ids: [entry.id], since: entry.id })).status).toBe(400)
+  })
+
+  it('counts what others did under a page, or in a long checklist, as changed since', async () => {
+    const { client, workspaceId } = await signUp(h, 'Debajo')
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    // A page the agent made, with a subpage someone else made under it.
+    const parent = (await bot.post(`/api/projects/${projectId}/pages`, { title: 'Del agente' })).body.id as string
+    await bot.post(`/api/projects/${projectId}/pages`, { title: 'Suya también', parentId: parent })
+    const created = await latest(client, 'pages', parent, 'page.created')
+    expect((await undo(client, { ids: [created.id], dryRun: true })).plan[0]!.status).toBe('ready')
+    const child = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Mía', parentId: parent })).body.id as string
+    expect((await undo(client, { ids: [created.id] })).plan[0]).toMatchObject({ status: 'conflict', changedBy: { kind: 'user' } })
+    expect(await undo(client, { ids: [created.id], conflicts: 'skip' })).toMatchObject({ undone: 0, skipped: 1 })
+    expect((await client.get(`/api/pages/${child}`)).status).toBe(200)
+
+    // A card someone linked to a page the agent made: deleting the page would take the link.
+    const linkedTo = (await bot.post(`/api/projects/${projectId}/pages`, { title: 'Enlazada' })).body.id as string
+    const sub = (await bot.post(`/api/projects/${projectId}/pages`, { title: 'Subpágina', parentId: linkedTo })).body.id as string
+    const linkedCreated = await latest(client, 'pages', linkedTo, 'page.created')
+    const someCard = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Con enlace' })).body.id as string
+    await client.post(`/api/cards/${someCard}/pages`, { pageId: sub })
+    expect((await undo(client, { ids: [linkedCreated.id] })).plan[0]).toMatchObject({ status: 'conflict', changedBy: { kind: 'user' } })
+
+    // A checklist the agent made, with someone's change to its 95th item.
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Larga' })).body.id as string
+    const list = (await bot.post(`/api/cards/${card}/checklists`, { title: 'Muchos pasos' })).body.id as string
+    let last = ''
+    for (let i = 1; i <= 95; i++) last = (await bot.post(`/api/checklists/${list}/items`, { text: `Paso ${i}` })).body.id
+    // Past the first page of the history: looked up directly.
+    const listCreated = h.db.select({ id: history.id }).from(history).where(and(eq(history.subjectId, list), eq(history.kind, 'checklist.created'))).get()!
+    await client.patch(`/api/checklist-items/${last}`, { done: true })
+    expect((await undo(client, { ids: [listCreated.id] })).plan[0]!.status).toBe('conflict')
+  })
+
+  it('keeps undoing or restoring a text a change of its own, apart from the edits after it', async () => {
+    const { client, workspaceId } = await signUp(h, 'Aparte')
+    const { columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'A' })).body.id as string
+    await bot.patch(`/api/cards/${card}`, { title: 'B' })
+    await undo(client, { ids: [(await latest(client, 'cards', card, 'card.title')).id] })
+    const undid = await latest(client, 'cards', card, 'card.title')
+    expect(undid).toMatchObject({ before: 'B', after: 'A', meta: { undoOf: expect.any(String) } })
+    // Editing it right after is a change of its own; editing it back to B doesn't erase the undo either.
+    await client.patch(`/api/cards/${card}`, { title: 'C' })
+    await client.patch(`/api/cards/${card}`, { title: 'B' })
+    const titles = (await historyOf(client, 'cards', card)).filter((e) => e.kind === 'card.title')
+    expect(titles.map((e) => [e.before, e.after])).toEqual([
+      ['A', 'B'],
+      ['B', 'A'],
+      ['A', 'B'],
+    ])
+    expect(titles[1]!.id).toBe(undid.id)
+  })
+
+  it('counts a change made in the same millisecond as the one undone as made after it', async () => {
+    const { client, workspaceId } = await signUp(h, 'Mismo instante')
+    const { columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(Date.now() + 60_000)
+      const card = (await bot.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Al instante' })).body.id as string
+      await client.patch(`/api/cards/${card}`, { title: 'Al instante, revisada' })
+      vi.useRealTimers()
+      const created = await latest(client, 'cards', card, 'card.created')
+      const edited = await latest(client, 'cards', card, 'card.title')
+      expect(edited.updatedAt).toBe(created.updatedAt)
+      expect((await undo(client, { ids: [created.id] })).plan[0]).toMatchObject({ status: 'conflict', changedBy: { kind: 'user' } })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('takes several versions of a long text back to the first, comparing them where they are stored', async () => {
+    const { client, workspaceId } = await signUp(h, 'Versiones largas')
+    const { projectId } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    const long = (word: string) => `${word} `.repeat(20_000)
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Larga', content: long('uno') })).body.id as string
+    let version = (await client.get(`/api/pages/${page}`)).body.version as number
+    for (const word of ['dos', 'tres', 'cuatro']) version = (await bot.patch(`/api/pages/${page}`, { content: long(word), baseVersion: version })).body.version
+    const first = (await historyOf(client, 'pages', page)).filter((e) => e.kind === 'page.content' && e.actor.kind === 'agent').at(-1)!
+    const planned = await undo(client, { since: first.id, dryRun: true })
+    expect(planned.plan.map((p) => p.status)).toEqual(['ready', 'ready', 'ready'])
+    expect(await undo(client, { since: first.id })).toMatchObject({ applied: true, undone: 3 })
+    expect((await client.get(`/api/pages/${page}`)).body.content).toBe(long('uno'))
+    // Someone's edit on top makes the newest a conflict, showing the start of the text as it is now.
+    await bot.patch(`/api/pages/${page}`, { content: long('cinco'), baseVersion: (await client.get(`/api/pages/${page}`)).body.version })
+    const fifth = (await historyOf(client, 'pages', page))[0]!
+    await client.patch(`/api/pages/${page}`, { content: long('seis'), baseVersion: (await client.get(`/api/pages/${page}`)).body.version })
+    const conflict = (await undo(client, { ids: [fifth.id] })).plan[0]!
+    expect(conflict.status).toBe('conflict')
+    expect(String(conflict.current)).toBe(long('seis').slice(0, 200))
+  })
+
+  it('says what can no longer be undone, and why', async () => {
+    const { client, workspaceId } = await signUp(h, 'Imposible')
+    const { columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Mudanza' })).body.id as string
+    await bot.post(`/api/cards/${card}/move`, { columnId: columns[1]!.id, index: 0 })
+    const moved = await latest(client, 'cards', card, 'card.moved')
+    await client.del(`/api/columns/${columns[0]!.id}`)
+    expect((await undo(client, { ids: [moved.id] })).plan[0]).toMatchObject({ status: 'impossible', reason: 'place_gone' })
+
+    const trashId = (await client.del(`/api/cards/${card}`)).body.trashId as string
+    const deleted = h.db.select({ id: history.id }).from(history).where(and(eq(history.entityId, card), eq(history.kind, 'card.deleted'))).get()
+    expect((await client.del(`/api/trash/${trashId}`)).status).toBe(204)
+    // Deleting for good forgets the card's history: there is nothing left to undo.
+    expect((await client.post('/api/history/undo', { ids: [deleted?.id ?? moved.id] })).status).toBe(404)
+  })
+})
