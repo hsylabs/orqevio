@@ -562,6 +562,38 @@ describe('undo', () => {
     expect((await client.get(`/api/cards/${labelled}`)).status).toBe(404)
   })
 
+  it('plans only the labels undoing can set, and takes away a file from wherever it went', async () => {
+    const { client, workspaceId } = await signUp(h, 'Lo que queda')
+    const { projectId, boardId, columns } = await seedBoard(client, workspaceId)
+    const bot = await agent(client, workspaceId, ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'])
+    const label = async (name: string) => (await client.post(`/api/boards/${boardId}/labels`, { name, color: 'tomato' })).body.id as string
+    const [old, middle, fresh] = [await label('Antes'), await label('En medio'), await label('Después')]
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Etiquetas', labelIds: [old] })).body.id as string
+    await bot.patch(`/api/cards/${card}`, { labelIds: [middle] })
+    const first = await latest(client, 'cards', card, 'card.labels')
+    await bot.patch(`/api/cards/${card}`, { labelIds: [fresh] })
+    // The label in between is deleted: undoing the newer change leaves the card with none, not with it.
+    expect((await client.del(`/api/labels/${middle}`)).status).toBeLessThan(300)
+    const plan = (await undo(client, { since: first.id, dryRun: true })).plan
+    expect(plan.map((p) => [p.kind, p.status, p.status === 'conflict' ? p.current : undefined])).toEqual([
+      ['card.labels', 'ready', undefined],
+      ['card.labels', 'conflict', []],
+    ])
+    expect(await undo(client, { since: first.id })).toMatchObject({ applied: false, undone: 0 })
+    expect((await client.get(`/api/cards/${card}`)).body.labels.map((l: { id: string }) => l.id)).toEqual([fresh])
+
+    // A file the agent attached to a card and moved to a page goes, even once the card is gone.
+    const holder = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Primero aquí' })).body.id as string
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Después aquí' })).body.id as string
+    const file = (await bot.upload(`/api/cards/${holder}/attachments`, 'x', { name: 'x.txt', type: 'text/plain' })).body.id as string
+    const uploaded = await latest(client, 'cards', holder, 'attachment.created')
+    await bot.post(`/api/attachments/${file}/move`, { pageId: page })
+    await client.del(`/api/cards/${holder}`)
+    expect((await undo(client, { ids: [uploaded.id], dryRun: true })).plan[0]).toMatchObject({ status: 'ready' })
+    expect(await undo(client, { ids: [uploaded.id] })).toMatchObject({ applied: true, undone: 1, failed: 0 })
+    expect((await client.get(`/api/pages/${page}`)).body.attachments).toEqual([])
+  })
+
   it('plans the labels a card gets back when undoing its move to another board', async () => {
     const { client, workspaceId } = await signUp(h, 'Etiquetas de vuelta')
     const { boardId, columns } = await seedBoard(client, workspaceId)
