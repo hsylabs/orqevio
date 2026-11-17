@@ -369,10 +369,14 @@ export class UndoService {
         if (!at) return { status: 'impossible', reason: 'gone' }
         const key = `attachment-place:${subject}`
         const back = before as AttachmentPlace | null
+        // Its old place: there, or coming back from the trash first.
         const there = () => {
           const table = back?.pageId ? pages : cards
           const id = back?.pageId ?? back?.cardId ?? ''
-          return Boolean(one(db.select({ id: table.id }).from(table).where(and(eq(table.id, id), eq(table.workspaceId, at.workspaceId)))))
+          return (
+            Boolean(one(db.select({ id: table.id }).from(table).where(and(eq(table.id, id), eq(table.workspaceId, at.workspaceId))))) ||
+            kept(back?.pageId ? 'pages' : 'cards', id).some(({ data }) => data.workspace_id === at.workspaceId)
+          )
         }
         // One move, in the history of both places: keyed by the file, so undoing both entries moves it once.
         return value({ cardId: at.cardId, pageId: at.pageId }, (a, b) => fileAt(a) === fileAt(b), there, key)
@@ -396,7 +400,11 @@ export class UndoService {
           return value(
             { projectId: page.projectId, parentId: page.parentId },
             (a, b) => parentOf(a) === parentOf(b),
-            () => target === null || Boolean(one(db.select({ id: pages.id }).from(pages).where(and(eq(pages.id, target ?? ''), eq(pages.projectId, page.projectId))))),
+            // Its old parent: there, or coming back from the trash first.
+            () =>
+              target === null ||
+              Boolean(one(db.select({ id: pages.id }).from(pages).where(and(eq(pages.id, target ?? ''), eq(pages.projectId, page.projectId))))) ||
+              kept('pages', target ?? '').some(({ data }) => data.project_id === page.projectId),
           )
         }
       }
