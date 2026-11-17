@@ -290,6 +290,31 @@ describe('the trash', () => {
     expect(h.db.select().from(trashRows).where(eq(trashRows.trashId, page)).all()).toEqual([])
   })
 
+  it('either restores or deletes for good when both happen at once, never half of each', async () => {
+    const { client, workspaceId } = await signUp(h, 'Carrera')
+    const { columns } = await seedBoard(client, workspaceId)
+    for (let i = 0; i < 10; i++) {
+      const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: `Carrera ${i}` })).body.id
+      const file = (await client.upload(`/api/cards/${card}/attachments`, `contenido ${i}`, { name: 'a.txt', type: 'text/plain' })).body.id
+      const key = keyOf(file)
+      const trashId = (await client.del(`/api/cards/${card}`)).body.trashId
+      const [purged, restored] = await Promise.all([
+        i % 2 ? h.services.trash.purgeExpired(new Date(Date.now() + 31 * 86_400_000)) : client.del(`/api/trash/${trashId}`).then((r) => r.status),
+        client.post(`/api/trash/${trashId}/restore`).then((r) => r.status),
+      ])
+      const back = (await client.get(`/api/cards/${card}`)).status === 200
+      // Exactly one of them won; a restored file is still there to read.
+      expect([back, restored === 200]).toEqual([back, back])
+      if (back) {
+        expect(existsSync(storedFile(key))).toBe(true)
+        expect((await client.get(`/api/attachments/${file}`)).body).toBe(`contenido ${i}`)
+      } else {
+        expect(existsSync(storedFile(key))).toBe(false)
+        expect(purged === 204 || purged === 1).toBe(true)
+      }
+    }
+  })
+
   it('belongs to people: agents and other members can neither see it nor restore from it', async () => {
     const { client, workspaceId } = await signUp(h, 'Dueña')
     const c = await fullCard(client, workspaceId)

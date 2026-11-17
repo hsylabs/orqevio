@@ -490,7 +490,8 @@ export class TrashService {
   /** Deletes an entry for good, with the files of its attachments. */
   async purge(actor: Actor, trashId: string) {
     const entry = await this.load(actor, trashId)
-    await this.erase(trashId)
+    // Restored meanwhile: there is nothing left to delete.
+    if (!(await this.erase(trashId))) throw notFound('Trash entry')
     await this.activity.record(actor, entry.workspaceId, {
       action: 'trash.purged',
       entityType: purgedEntityType(entry.kind),
@@ -503,18 +504,31 @@ export class TrashService {
   /** Deletes for good what has been in the trash for TRASH_DAYS. Runs hourly. */
   async purgeExpired(now = new Date()) {
     const expired = await this.deps.db.select({ id: schema.trash.id }).from(schema.trash).where(lte(schema.trash.expiresAt, now))
-    for (const { id } of expired) await this.erase(id)
-    return expired.length
+    let erased = 0
+    for (const { id } of expired) if (await this.erase(id)) erased++
+    return erased
   }
 
+  /**
+   * Deletes an entry and then the files of its attachments. Reading the files and deleting
+   * the entry happen in one transaction, so a restore running at the same time either
+   * comes first (and nothing is erased) or finds nothing to restore. Returns whether this
+   * call erased it.
+   */
   private async erase(trashId: string) {
-    const files = await this.deps.db
-      .select({ key: schema.trashRows.storageKey })
-      .from(schema.trashRows)
-      .where(and(eq(schema.trashRows.trashId, trashId), isNotNull(schema.trashRows.storageKey)))
-    await this.deps.db.delete(schema.trash).where(eq(schema.trash.id, trashId))
+    const files = this.deps.db.transaction((tx) => {
+      const keys = tx
+        .select({ key: schema.trashRows.storageKey })
+        .from(schema.trashRows)
+        .where(and(eq(schema.trashRows.trashId, trashId), isNotNull(schema.trashRows.storageKey)))
+        .all()
+      const erased = tx.delete(schema.trash).where(eq(schema.trash.id, trashId)).returning({ id: schema.trash.id }).all()
+      return erased.length > 0 ? keys : null
+    })
+    if (!files) return false
     // A file that fails to go now is left to the hourly sweep: nothing references it any more.
     for (const { key } of files) await this.deps.storage.delete(key!).catch(() => {})
+    return true
   }
 
   /** Whether a stored file belongs to an attachment in the trash, so the sweep keeps it. */
