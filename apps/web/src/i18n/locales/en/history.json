@@ -69,5 +69,55 @@
       "deleted": "<actor>{{actor}}</actor> moved the file “{{name}}” to the trash",
       "restored": "<actor>{{actor}}</actor> brought back the file “{{name}}”"
     }
+  },
+  "actions": {
+    "undo": "Undo",
+    "undoSince": "Undo everything {{name}} did from here",
+    "restore": "Restore this version"
+  },
+  "note": {
+    "undoOf": "undoing an earlier change",
+    "restoredFrom": "restoring an earlier version"
+  },
+  "undo": {
+    "done_one": "Change undone",
+    "done_other": "{{count}} changes undone",
+    "nothing": "It was already as before.",
+    "skipped_one": "{{count}} change that was touched since was skipped.",
+    "skipped_other": "{{count}} changes that were touched since were skipped.",
+    "failed_one": "{{count}} change couldn’t be undone.",
+    "failed_other": "{{count}} changes couldn’t be undone.",
+    "versionRestored": "Version restored",
+    "impossible": {
+      "gone": "“{{title}}” no longer exists.",
+      "place_gone": "Where “{{title}}” was no longer exists.",
+      "trash_gone": "“{{title}}” was deleted for good from the trash.",
+      "refused": "“{{title}}” couldn’t be undone."
+    },
+    "one": {
+      "title": "Someone changed this since",
+      "body": "{{name}} changed it after this change. Undoing it now discards what they did.",
+      "bodyUnknown": "It changed after this change. Undoing it now discards what changed since.",
+      "current": "Now: “{{value}}”",
+      "confirm": "Undo anyway"
+    },
+    "bulk": {
+      "title_one": "Undo {{count}} change by {{name}}?",
+      "title_other": "Undo {{count}} changes by {{name}}?",
+      "body": "Each thing goes back to how it was before its change, newest first. Undoing is recorded in the history too.",
+      "nothing": "There’s nothing left to undo",
+      "conflicts_one": "{{count}} was changed since by someone else:",
+      "conflicts_other": "{{count}} were changed since by someone else:",
+      "conflictsList": "Changed since",
+      "conflict": "“{{title}}”: changed since by {{name}}",
+      "conflictUnknown": "“{{title}}”: changed since",
+      "impossible_one": "{{count}} can’t be undone:",
+      "impossible_other": "{{count}} can’t be undone:",
+      "skip_one": "Undo {{count}}, skip the rest",
+      "skip_other": "Undo {{count}}, skip the rest",
+      "force": "Undo them all anyway",
+      "confirm_one": "Undo {{count}} change",
+      "confirm_other": "Undo {{count}} changes"
+    }
   }
 }

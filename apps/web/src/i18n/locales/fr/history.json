@@ -74,5 +74,63 @@
       "deleted": "<actor>{{actor}}</actor> a mis le fichier « {{name}} » à la corbeille",
       "restored": "<actor>{{actor}}</actor> a récupéré le fichier « {{name}} »"
     }
+  },
+  "actions": {
+    "undo": "Annuler",
+    "undoSince": "Annuler tout ce que {{name}} a fait depuis ici",
+    "restore": "Restaurer cette version"
+  },
+  "note": {
+    "undoOf": "annule une modification antérieure",
+    "restoredFrom": "restaure une version antérieure"
+  },
+  "undo": {
+    "done_one": "Modification annulée",
+    "done_many": "{{count}} modifications annulées",
+    "done_other": "{{count}} modifications annulées",
+    "nothing": "C’était déjà comme avant.",
+    "skipped_one": "{{count}} modification touchée depuis a été ignorée.",
+    "skipped_many": "{{count}} modifications touchées depuis ont été ignorées.",
+    "skipped_other": "{{count}} modifications touchées depuis ont été ignorées.",
+    "failed_one": "{{count}} modification n’a pas pu être annulée.",
+    "failed_many": "{{count}} modifications n’ont pas pu être annulées.",
+    "failed_other": "{{count}} modifications n’ont pas pu être annulées.",
+    "versionRestored": "Version restaurée",
+    "impossible": {
+      "gone": "« {{title}} » n’existe plus.",
+      "place_gone": "L’emplacement de « {{title}} » n’existe plus.",
+      "trash_gone": "« {{title}} » a été supprimé définitivement de la corbeille.",
+      "refused": "Impossible d’annuler « {{title}} »."
+    },
+    "one": {
+      "title": "Quelqu’un l’a modifié depuis",
+      "body": "{{name}} l’a modifié après cette modification. L’annuler maintenant efface ce qu’il a fait.",
+      "bodyUnknown": "Cela a changé après cette modification. L’annuler maintenant efface ce qui a changé depuis.",
+      "current": "Maintenant : « {{value}} »",
+      "confirm": "Annuler quand même"
+    },
+    "bulk": {
+      "title_one": "Annuler {{count}} modification de {{name}} ?",
+      "title_many": "Annuler {{count}} modifications de {{name}} ?",
+      "title_other": "Annuler {{count}} modifications de {{name}} ?",
+      "body": "Chaque élément revient à son état d’avant sa modification, de la plus récente à la plus ancienne. L’annulation est aussi enregistrée dans l’historique.",
+      "nothing": "Il n’y a plus rien à annuler",
+      "conflicts_one": "{{count}} a été modifiée depuis par quelqu’un d’autre :",
+      "conflicts_many": "{{count}} ont été modifiées depuis par quelqu’un d’autre :",
+      "conflicts_other": "{{count}} ont été modifiées depuis par quelqu’un d’autre :",
+      "conflictsList": "Modifiées depuis",
+      "conflict": "« {{title}} » : modifié depuis par {{name}}",
+      "conflictUnknown": "« {{title}} » : modifié depuis",
+      "impossible_one": "{{count}} ne peut pas être annulée :",
+      "impossible_many": "{{count}} ne peuvent pas être annulées :",
+      "impossible_other": "{{count}} ne peuvent pas être annulées :",
+      "skip_one": "Annuler {{count}}, ignorer le reste",
+      "skip_many": "Annuler {{count}}, ignorer le reste",
+      "skip_other": "Annuler {{count}}, ignorer le reste",
+      "force": "Tout annuler quand même",
+      "confirm_one": "Annuler {{count}} modification",
+      "confirm_many": "Annuler {{count}} modifications",
+      "confirm_other": "Annuler {{count}} modifications"
+    }
   }
 }

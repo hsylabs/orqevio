@@ -74,5 +74,63 @@
       "deleted": "<actor>{{actor}}</actor> llevó el archivo «{{name}}» a la papelera",
       "restored": "<actor>{{actor}}</actor> recuperó el archivo «{{name}}»"
     }
+  },
+  "actions": {
+    "undo": "Deshacer",
+    "undoSince": "Deshacer todo lo que hizo {{name}} desde aquí",
+    "restore": "Restaurar esta versión"
+  },
+  "note": {
+    "undoOf": "deshace un cambio anterior",
+    "restoredFrom": "restaura una versión anterior"
+  },
+  "undo": {
+    "done_one": "Cambio deshecho",
+    "done_many": "Se han deshecho {{count}} cambios",
+    "done_other": "Se han deshecho {{count}} cambios",
+    "nothing": "Ya estaba como antes.",
+    "skipped_one": "Se ha saltado {{count}} cambio que se tocó después.",
+    "skipped_many": "Se han saltado {{count}} cambios que se tocaron después.",
+    "skipped_other": "Se han saltado {{count}} cambios que se tocaron después.",
+    "failed_one": "{{count}} cambio no se ha podido deshacer.",
+    "failed_many": "{{count}} cambios no se han podido deshacer.",
+    "failed_other": "{{count}} cambios no se han podido deshacer.",
+    "versionRestored": "Versión restaurada",
+    "impossible": {
+      "gone": "«{{title}}» ya no existe.",
+      "place_gone": "El sitio donde estaba «{{title}}» ya no existe.",
+      "trash_gone": "«{{title}}» se borró para siempre de la papelera.",
+      "refused": "No se ha podido deshacer «{{title}}»."
+    },
+    "one": {
+      "title": "Alguien lo cambió después",
+      "body": "{{name}} lo cambió después de este cambio. Si lo deshaces ahora, se pierde lo que hizo.",
+      "bodyUnknown": "Cambió después de este cambio. Si lo deshaces ahora, se pierde lo que cambió.",
+      "current": "Ahora: «{{value}}»",
+      "confirm": "Deshacer igualmente"
+    },
+    "bulk": {
+      "title_one": "¿Deshacer {{count}} cambio de {{name}}?",
+      "title_many": "¿Deshacer {{count}} cambios de {{name}}?",
+      "title_other": "¿Deshacer {{count}} cambios de {{name}}?",
+      "body": "Cada cosa vuelve a como estaba antes de su cambio, del más reciente al más antiguo. Deshacer también queda en el historial.",
+      "nothing": "No queda nada por deshacer",
+      "conflicts_one": "Otra persona o agente cambió después {{count}} de ellos:",
+      "conflicts_many": "Otra persona o agente cambió después {{count}} de ellos:",
+      "conflicts_other": "Otra persona o agente cambió después {{count}} de ellos:",
+      "conflictsList": "Cambiados después",
+      "conflict": "«{{title}}»: lo cambió después {{name}}",
+      "conflictUnknown": "«{{title}}»: cambió después",
+      "impossible_one": "{{count}} no se puede deshacer:",
+      "impossible_many": "{{count}} no se pueden deshacer:",
+      "impossible_other": "{{count}} no se pueden deshacer:",
+      "skip_one": "Deshacer {{count}} y saltar el resto",
+      "skip_many": "Deshacer {{count}} y saltar el resto",
+      "skip_other": "Deshacer {{count}} y saltar el resto",
+      "force": "Deshacerlos todos igualmente",
+      "confirm_one": "Deshacer {{count}} cambio",
+      "confirm_many": "Deshacer {{count}} cambios",
+      "confirm_other": "Deshacer {{count}} cambios"
+    }
   }
 }

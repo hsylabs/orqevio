@@ -1,5 +1,5 @@
 import { type DiffLine, HISTORY_BODY_KINDS, HISTORY_DAYS, type HistoryEntryDTO, diffLines } from '@orqevio/shared'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, History, RotateCcw, Undo2 } from 'lucide-react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { t } from 'i18next'
 import { Trans, useTranslation } from 'react-i18next'
@@ -11,14 +11,17 @@ import { cn } from '../../lib/cn'
 import { dueLabel, formatList, relativeTime } from '../../lib/format'
 import type historyCatalog from '../../i18n/locales/en/history.json'
 import { useHistory, useHistoryEntry } from '../../lib/queries'
+import { useUndo } from './undo'
 
 /** Every change of a page or a card from the last days, with who made it and, for texts, what changed line by line. */
 export function HistoryDialog({ open, onOpenChange, type, id, name }: { open: boolean; onOpenChange: (open: boolean) => void; type: 'page' | 'card'; id: string; name: string }) {
   const { t } = useTranslation('history')
   const history = useHistory(type, id, open)
   const entries = history.data?.pages.flat() ?? []
+  const undo = useUndo()
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title={t('title', { name })} description={t('intro', { count: HISTORY_DAYS })} width="max-w-[680px]">
+      {undo.dialog}
       {history.isPending ? (
         <div className="grid place-items-center py-10">
           <Spinner />
@@ -29,7 +32,7 @@ export function HistoryDialog({ open, onOpenChange, type, id, name }: { open: bo
         <>
           <ol className="relative flex flex-col" aria-label={t('list')}>
             {entries.map((entry, i) => (
-              <Entry key={entry.id} entry={entry} last={i === entries.length - 1} />
+              <Entry key={entry.id} entry={entry} last={i === entries.length - 1} undo={undo} />
             ))}
           </ol>
           {history.hasNextPage && (
@@ -45,12 +48,18 @@ export function HistoryDialog({ open, onOpenChange, type, id, name }: { open: bo
   )
 }
 
-function Entry({ entry, last }: { entry: HistoryEntryDTO; last: boolean }) {
+function Entry({ entry, last, undo }: { entry: HistoryEntryDTO; last: boolean; undo: ReturnType<typeof useUndo> }) {
   const { t } = useTranslation(['history', 'activity'])
   const [open, setOpen] = useState(false)
   const body = HISTORY_BODY_KINDS.has(entry.kind)
   const { key, values } = describe(entry)
-  const detail = typeof entry.meta.movedTo === 'string' && entry.meta.movedTo ? t('movedTo', { place: entry.meta.movedTo }) : null
+  const detail = [
+    typeof entry.meta.movedTo === 'string' && entry.meta.movedTo ? t('movedTo', { place: entry.meta.movedTo }) : null,
+    entry.meta.undoOf ? t('note.undoOf') : null,
+    entry.meta.restoredFrom ? t('note.restoredFrom') : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
   return (
     <li className="relative flex gap-3 pb-4 last:pb-0" aria-label={t('entry', { name: entry.actor.name, when: relativeTime(entry.updatedAt) })}>
       {!last && <span className="absolute top-7 bottom-0 left-[11px] w-px bg-line" aria-hidden="true" />}
@@ -74,31 +83,46 @@ function Entry({ entry, last }: { entry: HistoryEntryDTO; last: boolean }) {
             </span>
           )}
         </span>
-        {body && (
-          <>
-            <button
-              type="button"
-              aria-expanded={open}
-              onClick={() => setOpen((v) => !v)}
-              className="mt-1.5 inline-flex items-center gap-1 rounded-[7px] px-1.5 py-0.5 -ml-1.5 text-[12px] font-medium text-ink-2 hover:bg-hover hover:text-ink"
-            >
+        <span className="mt-1 -ml-1.5 flex flex-wrap items-center gap-x-1">
+          {body && (
+            <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className={ACTION}>
               {open ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
               {open ? t('hideChanges') : t('showChanges')}
             </button>
-            {open && <Changes id={entry.id} updatedAt={entry.updatedAt} />}
-          </>
-        )}
+          )}
+          <button type="button" onClick={() => void undo.undoOne(entry)} className={ACTION}>
+            <Undo2 className="size-3.5" />
+            {t('actions.undo')}
+          </button>
+          {entry.actor.kind === 'agent' && (
+            <button type="button" onClick={() => void undo.undoSince(entry)} className={ACTION}>
+              <History className="size-3.5" />
+              {t('actions.undoSince', { name: entry.actor.name })}
+            </button>
+          )}
+        </span>
+        {body && open && <Changes id={entry.id} updatedAt={entry.updatedAt} onRestore={() => void undo.restoreVersion(entry)} />}
       </div>
     </li>
   )
 }
 
-function Changes({ id, updatedAt }: { id: string; updatedAt: string }) {
+/** Small text buttons under a change. */
+const ACTION = 'inline-flex items-center gap-1 rounded-[7px] px-1.5 py-0.5 text-[12px] font-medium text-ink-2 hover:bg-hover hover:text-ink'
+
+function Changes({ id, updatedAt, onRestore }: { id: string; updatedAt: string; onRestore: () => void }) {
   const { t } = useTranslation('history')
   const entry = useHistoryEntry(id, updatedAt, true)
   if (entry.isPending) return <Spinner className="mt-2" />
   if (entry.isError) return <p className="mt-2 text-[12.5px] text-danger">{t('loadFailed')}</p>
-  return <DiffView before={String(entry.data.before ?? '')} after={String(entry.data.after ?? '')} />
+  return (
+    <>
+      <DiffView before={String(entry.data.before ?? '')} after={String(entry.data.after ?? '')} />
+      <Button variant="secondary" size="sm" icon={<RotateCcw />} className="mt-2" onClick={onRestore}>
+        {t('actions.restore')}
+      </Button>
+    </>
+  )
 }
 
 /** Lines shown around each change; longer stretches without changes fold away. */

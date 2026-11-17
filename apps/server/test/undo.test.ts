@@ -146,6 +146,10 @@ describe('undo', () => {
     await client.patch(`/api/pages/${page}`, { content: 'Uno\nDos\nTres', baseVersion: version })
     await other.patch(`/api/cards/${kept}`, { title: 'De antes, renombrada' })
 
+    // A dry run plans without undoing anything, conflicts or not.
+    const planned = await undo(client, { since: first.id, dryRun: true, conflicts: 'force' })
+    expect([planned.applied, planned.plan.length]).toEqual([false, 6])
+    expect((await client.get(`/api/cards/${card}`)).body.title).toBe('Nueva v3')
     const asked = await undo(client, { since: first.id })
     expect(asked.applied).toBe(false)
     expect(asked.plan.map((p) => [p.kind, p.status])).toEqual([

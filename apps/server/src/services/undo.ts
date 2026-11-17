@@ -77,7 +77,7 @@ export class UndoService {
     // The plan, before anything changes.
     const state = new State()
     const plan = rows.map((row) => this.planItem(row, this.check(row, undoing, state), undoing))
-    if (data.conflicts === 'ask' && plan.some((p) => p.status === 'conflict')) return { applied: false, plan, undone: 0, skipped: 0, failed: 0 }
+    if (data.dryRun || (data.conflicts === 'ask' && plan.some((p) => p.status === 'conflict'))) return { applied: false, plan, undone: 0, skipped: 0, failed: 0 }
 
     // Newest first, each checked again against what is true by then.
     let undone = 0

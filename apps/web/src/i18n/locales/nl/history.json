@@ -69,5 +69,55 @@
       "deleted": "<actor>{{actor}}</actor> heeft het bestand ‘{{name}}’ naar de prullenbak verplaatst",
       "restored": "<actor>{{actor}}</actor> heeft het bestand ‘{{name}}’ teruggezet"
     }
+  },
+  "actions": {
+    "undo": "Ongedaan maken",
+    "undoSince": "Alles ongedaan maken wat {{name}} vanaf hier deed",
+    "restore": "Deze versie terugzetten"
+  },
+  "note": {
+    "undoOf": "maakt een eerdere wijziging ongedaan",
+    "restoredFrom": "zet een eerdere versie terug"
+  },
+  "undo": {
+    "done_one": "Wijziging ongedaan gemaakt",
+    "done_other": "{{count}} wijzigingen ongedaan gemaakt",
+    "nothing": "Het was al zoals daarvoor.",
+    "skipped_one": "{{count}} wijziging die daarna is aangepast, is overgeslagen.",
+    "skipped_other": "{{count}} wijzigingen die daarna zijn aangepast, zijn overgeslagen.",
+    "failed_one": "{{count}} wijziging kon niet ongedaan worden gemaakt.",
+    "failed_other": "{{count}} wijzigingen konden niet ongedaan worden gemaakt.",
+    "versionRestored": "Versie teruggezet",
+    "impossible": {
+      "gone": "‘{{title}}’ bestaat niet meer.",
+      "place_gone": "De plek waar ‘{{title}}’ stond, bestaat niet meer.",
+      "trash_gone": "‘{{title}}’ is definitief uit de prullenbak verwijderd.",
+      "refused": "‘{{title}}’ kon niet ongedaan worden gemaakt."
+    },
+    "one": {
+      "title": "Iemand heeft dit daarna veranderd",
+      "body": "{{name}} heeft het na deze wijziging veranderd. Als je het nu ongedaan maakt, gaat verloren wat er gedaan is.",
+      "bodyUnknown": "Het is na deze wijziging veranderd. Als je het nu ongedaan maakt, gaat verloren wat er daarna veranderde.",
+      "current": "Nu: ‘{{value}}’",
+      "confirm": "Toch ongedaan maken"
+    },
+    "bulk": {
+      "title_one": "{{count}} wijziging van {{name}} ongedaan maken?",
+      "title_other": "{{count}} wijzigingen van {{name}} ongedaan maken?",
+      "body": "Alles gaat terug naar hoe het was vóór de wijziging, van de nieuwste naar de oudste. Ook het ongedaan maken komt in de geschiedenis.",
+      "nothing": "Er is niets meer om ongedaan te maken",
+      "conflicts_one": "{{count}} is daarna door iemand anders veranderd:",
+      "conflicts_other": "{{count}} zijn daarna door iemand anders veranderd:",
+      "conflictsList": "Daarna veranderd",
+      "conflict": "‘{{title}}’: daarna veranderd door {{name}}",
+      "conflictUnknown": "‘{{title}}’: daarna veranderd",
+      "impossible_one": "{{count}} kan niet ongedaan worden gemaakt:",
+      "impossible_other": "{{count}} kunnen niet ongedaan worden gemaakt:",
+      "skip_one": "{{count}} ongedaan maken, rest overslaan",
+      "skip_other": "{{count}} ongedaan maken, rest overslaan",
+      "force": "Toch alles ongedaan maken",
+      "confirm_one": "{{count}} wijziging ongedaan maken",
+      "confirm_other": "{{count}} wijzigingen ongedaan maken"
+    }
   }
 }
