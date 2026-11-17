@@ -53,6 +53,32 @@ test('signing in again in a tab whose session ended opens the app once', async (
   await context.close()
 })
 
+// `next` comes from the address, so anyone can write it: one that leads to another site opens the
+// home screen instead of the app's error screen, and one inside the app still leads there.
+test('signing in follows a next inside the app and ignores one that leads elsewhere', async ({ browser, baseURL }) => {
+  const accessKey = (await readFile(ACCESS_KEY_FILE, 'utf8')).trim()
+  const signInWith = async (next: string) => {
+    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+    const page = await context.newPage()
+    const errors: string[] = []
+    page.on('pageerror', (e) => errors.push(e.message))
+    await settle(page, baseURL!)
+    await page.goto(`/login?next=${encodeURIComponent(next)}`)
+    await page.getByLabel('Clave de acceso', { exact: true }).fill(accessKey)
+    await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Nuevo proyecto' }).first(), next).toBeVisible()
+    const url = new URL(page.url())
+    expect(url.origin, next).toBe(new URL(baseURL!).origin)
+    expect(errors, next).toEqual([])
+    await context.close()
+    return url.pathname
+  }
+  const home = await signInWith('https://example.com/phish')
+  expect(home).toMatch(/^\/w\/[0-9a-f-]+$/)
+  expect(await signInWith('//example.com/phish')).toBe(home)
+  expect(await signInWith(`${home}/settings`)).toBe(`${home}/settings`)
+})
+
 // Another tab signs out and back in: a new session for the same person. This tab's live connection
 // still holds the old one, so the server closes it at the next ping; the tab must connect again
 // with the new session, not stop receiving changes.

@@ -1,4 +1,5 @@
 import {
+  type AttachmentPlace,
   HISTORY_BODY_KINDS,
   HISTORY_DAYS,
   HISTORY_TEXT_KINDS,
@@ -9,7 +10,7 @@ import {
   lineStats,
 } from '@orqevio/shared'
 import { and, desc, eq, getTableColumns, gt, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm'
-import type { Actor } from '../auth/actor'
+import { type Actor, hasScope } from '../auth/actor'
 import type { DbOrTx } from '../db/client'
 import { cards, history, pages } from '../db/schema'
 import { notFound } from '../lib/errors'
@@ -77,6 +78,26 @@ export function toHistoryEntryDTO(row: Row, withBodies: boolean): HistoryEntryDT
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }
+}
+
+/**
+ * An entry without the titles of what the actor can't read: the page a card links to, and the
+ * card or page a file moved from or to. A token for tasks only sees no page titles, and one for
+ * docs only no card titles.
+ */
+export function readableEntry(actor: Actor, entry: HistoryEntryDTO): HistoryEntryDTO {
+  const docs = hasScope(actor, 'docs:read')
+  const tasks = hasScope(actor, 'tasks:read')
+  if (docs && tasks) return entry
+  const hidden: string[] = []
+  if ((entry.kind === 'card.linked' || entry.kind === 'card.unlinked') && !docs) hidden.push('page')
+  if (entry.kind === 'attachment.moved') {
+    const unreadable = (place: HistoryValue) => ((place as AttachmentPlace | null)?.pageId ? !docs : !tasks)
+    if (unreadable(entry.before)) hidden.push('from')
+    if (unreadable(entry.after)) hidden.push('to')
+  }
+  if (hidden.length === 0) return entry
+  return { ...entry, meta: Object.fromEntries(Object.entries(entry.meta).filter(([key]) => !hidden.includes(key))) }
 }
 
 export class HistoryService {
@@ -174,7 +195,7 @@ export class HistoryService {
       .where(and(eq(history.entityId, entityId), eq(history.entityType, entityType), this.after(opts.before, opts.beforeId)))
       .orderBy(desc(history.updatedAt), desc(sql`rowid`))
       .limit(Math.min(opts.limit ?? 50, 100))
-    return rows.map((row) => toHistoryEntryDTO(row, false))
+    return rows.map((row) => readableEntry(actor, toHistoryEntryDTO(row, false)))
   }
 
   /**
@@ -196,7 +217,7 @@ export class HistoryService {
     const [row] = await this.deps.db.select().from(history).where(eq(history.id, entryId))
     if (!row) throw notFound('History entry')
     await this.entity(actor, row.entityType, row.entityId)
-    return toHistoryEntryDTO(row, true)
+    return readableEntry(actor, toHistoryEntryDTO(row, true))
   }
 
   /**

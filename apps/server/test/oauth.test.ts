@@ -188,6 +188,24 @@ describe('connecting an application with OAuth', () => {
     expect((await token({ grant_type: 'refresh_token', refresh_token: next.body.refresh_token, client_id: clientId })).body.error).toBe('invalid_grant')
   })
 
+  it('gives a token refreshed with fewer scopes only those, and the next refresh the whole grant again', async () => {
+    const { clientId, tokens } = await connectApp(['tasks:read', 'tasks:write'])
+    const tools = async (accessToken: string) => (await (await mcp(accessToken)).listTools()).tools.map((t) => t.name)
+    expect(await tools(tokens.access_token)).toContain('create_card')
+
+    const narrowed = await token({ grant_type: 'refresh_token', refresh_token: tokens.refresh_token, client_id: clientId, scope: 'tasks:read' })
+    expect(narrowed.status).toBe(200)
+    expect(narrowed.body.scope).toBe('tasks:read')
+    const readOnly = await tools(narrowed.body.access_token)
+    expect(readOnly).toContain('get_board')
+    expect(readOnly).not.toContain('create_card')
+
+    // The refresh token still carries the whole grant: without a scope, the next access token has it all.
+    const whole = await token({ grant_type: 'refresh_token', refresh_token: narrowed.body.refresh_token, client_id: clientId })
+    expect(whole.body.scope).toBe('tasks:read tasks:write')
+    expect(await tools(whole.body.access_token)).toContain('create_card')
+  })
+
   it('revokes the access when the same refresh token is exchanged twice at once', async () => {
     const { clientId, tokens } = await connectApp()
     const form = { grant_type: 'refresh_token', refresh_token: tokens.refresh_token, client_id: clientId }

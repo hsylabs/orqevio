@@ -1,6 +1,7 @@
 import { Client as McpClient } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { VERSION } from '../src/version'
 import { Client, type Harness, createHarness, seedBoard, signUp } from './harness'
 
 let h: Harness
@@ -40,6 +41,12 @@ describe('agent tokens', () => {
     const list = await client.get('/api/tokens')
     expect(list.body[0]).not.toHaveProperty('token')
     expect(list.body[0].prefix).toBe(token.token.slice(0, 12))
+  })
+
+  it('tells MCP clients the version of this copy', async () => {
+    const { client, workspaceId } = await signUp(h, 'Versión')
+    const { token } = await createToken(client, workspaceId, ['tasks:read'])
+    expect((await connect(token)).getServerVersion()).toMatchObject({ name: 'orqevio', version: VERSION })
   })
 
   it('enforces scopes on the shared REST API', async () => {

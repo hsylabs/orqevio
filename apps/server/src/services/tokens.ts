@@ -127,8 +127,11 @@ export class TokenService {
     return row ? this.actorFor(row.token, now) : null
   }
 
-  /** The agent acting with a valid token (or OAuth grant); records when it was last used. */
-  async actorFor(t: typeof apiTokens.$inferSelect, now: Date): Promise<AgentActor> {
+  /**
+   * The agent acting with a valid token (or OAuth grant); records when it was last used. `only`
+   * narrows it further: an OAuth access token refreshed with fewer scopes than its grant.
+   */
+  async actorFor(t: typeof apiTokens.$inferSelect, now: Date, only?: string[] | null): Promise<AgentActor> {
     // Throttle last-used writes to one per minute per token.
     const last = this.lastTouched.get(t.id) ?? 0
     if (now.getTime() - last > 60_000) {
@@ -141,7 +144,7 @@ export class TokenService {
       tokenId: t.id,
       name: t.name,
       workspaceId: t.workspaceId,
-      scopes: new Set(t.scopes.filter((s): s is Scope => (SCOPES as readonly string[]).includes(s))),
+      scopes: new Set(t.scopes.filter((s): s is Scope => (SCOPES as readonly string[]).includes(s) && (!only || only.includes(s)))),
     }
   }
 }

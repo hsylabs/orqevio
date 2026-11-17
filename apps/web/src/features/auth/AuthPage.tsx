@@ -13,6 +13,7 @@ import { applyLocale, currentLocale } from '../../i18n'
 import { LanguageSelect } from '../../i18n/LanguageSelect'
 import { errorMessage, post } from '../../lib/api'
 import { cn } from '../../lib/cn'
+import { internalPath } from '../../lib/next'
 import { keys, useAccessState, useTokens } from '../../lib/queries'
 import { TokenCard, useRevokeToken } from '../agents/TokenCard'
 import { FullScreenLoader } from '../shell/States'
@@ -158,7 +159,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'setup' }) {
   const [params] = useSearchParams()
   const queryClient = useQueryClient()
   const [revealed, setRevealed] = useState<{ accessKey: string; kind: 'setup' | 'recovery'; reason?: RecoveryReason } | null>(null)
-  const next = params.get('next') ?? '/'
+  const next = internalPath(params.get('next'))
 
   async function enter() {
     // Forget the ended session's answer, not just mark it stale: the app would act on it
