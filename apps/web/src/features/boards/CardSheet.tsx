@@ -3,6 +3,7 @@ import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, History, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
 import { type ReactNode, useEffect, useReducer, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { ActivityList } from '../../components/ActivityList'
 import { Avatar } from '../../components/ui/Avatar'
@@ -50,9 +51,16 @@ export function CardSheet({ cardId, board, onClose }: { cardId: string | null; b
   const last = useRef(card.data)
   if (card.data) last.current = card.data
   const data = open ? card.data : last.current
+  // Moved to another board while open (by an agent, say): follow it there, where its columns and labels are.
+  const navigate = useNavigate()
+  const { workspaceId } = useWorkspace()
+  const elsewhere = open && card.data && card.data.boardId !== board.id ? card.data.boardId : null
+  useEffect(() => {
+    if (elsewhere && cardId) navigate(`/w/${workspaceId}/b/${elsewhere}?card=${cardId}`, { replace: true })
+  }, [elsewhere, cardId, workspaceId, navigate])
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={data?.title ?? t('sheet.fallbackTitle')} label={t('sheet.label')}>
-      {data && !(open && gone) ? (
+      {elsewhere ? null : data && !(open && gone) ? (
         <CardBody key={data.id} card={data} board={board} onClose={onClose} />
       ) : gone ? (
         <div className="grid flex-1 place-items-center p-8 text-center text-ink-2">

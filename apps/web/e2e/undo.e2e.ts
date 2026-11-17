@@ -113,3 +113,36 @@ test('a restored version shows in the open page even when live updates are down'
   await expect(page.locator('.orq-prose')).toContainText('Martes')
   await expect(page.locator('.orq-prose')).not.toContainText('Miércoles')
 })
+
+// Undoing a change someone changed since, anyway, also shows in the open page when live updates are down.
+test('a forced undo shows in the open page even when live updates are down', async ({ page, request, baseURL }) => {
+  await page.routeWebSocket(/\/live$/, () => {})
+  // Everything is made first, so the page opens with nothing on its way.
+  const workspace = (await (await page.request.post('/api/workspaces', { data: { name: 'Forzar sin directo E2E' } })).json()) as { id: string }
+  const project = (await (await page.request.post(`/api/workspaces/${workspace.id}/projects`, { data: { name: 'Notas' } })).json()) as { id: string }
+  const doc = (await (await page.request.post(`/api/projects/${project.id}/pages`, { data: { title: 'Plan', content: 'Uno' } })).json()) as { id: string }
+  const created = await page.request.post('/api/tokens', { data: { name: 'Claude', workspaceId: workspace.id, scopes: ['docs:read', 'docs:write'], expiresInDays: null } })
+  const { token } = (await created.json()) as { token: string }
+  const res = await request.patch(`${baseURL}/api/pages/${doc.id}`, { headers: { Authorization: `Bearer ${token}` }, data: { content: 'Uno\n\nDos', baseVersion: 1 } })
+  expect(res.status(), await res.text()).toBe(200)
+
+  // The person opens the page, with the agent's text, and writes after it.
+  await page.goto(`/w/${workspace.id}/d/${doc.id}`)
+  await expect(page.locator('.orq-prose')).toContainText('Dos')
+  await page.locator('.orq-prose p').last().click()
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Tres')
+  await expect(page.getByText('Guardado')).toBeVisible()
+
+  // Undoing the agent's change anyway takes the page back to before it, and the open page shows it.
+  await page.getByRole('button', { name: 'Acciones de la página' }).click()
+  await page.getByRole('menuitem', { name: 'Historial' }).click()
+  const history = page.getByRole('dialog', { name: 'Historial de «Plan»' })
+  await history.getByRole('listitem').filter({ hasText: 'Claude editó el contenido' }).getByRole('button', { name: 'Deshacer', exact: true }).click()
+  const asked = page.getByRole('dialog', { name: 'Alguien lo cambió después' })
+  await asked.getByRole('button', { name: 'Deshacer igualmente' }).click()
+  await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'Cambio deshecho' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.orq-prose')).toHaveText('Uno')
+})
