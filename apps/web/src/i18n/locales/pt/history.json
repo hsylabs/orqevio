@@ -1,0 +1,78 @@
+{
+  "title": "Histórico de “{{name}}”",
+  "intro_one": "Cada mudança do último {{count}} dia, com quem a fez.",
+  "intro_many": "Cada mudança dos últimos {{count}} dias, com quem a fez.",
+  "intro_other": "Cada mudança dos últimos {{count}} dias, com quem a fez.",
+  "empty_one": "Nenhuma mudança no último {{count}} dia.",
+  "empty_many": "Nenhuma mudança nos últimos {{count}} dias.",
+  "empty_other": "Nenhuma mudança nos últimos {{count}} dias.",
+  "list": "Mudanças",
+  "entry": "{{name}}, {{when}}",
+  "older": "Ver mudanças anteriores",
+  "showChanges": "Ver o que mudou",
+  "hideChanges": "Ocultar o que mudou",
+  "lines": "Linhas adicionadas: {{added}}. Linhas removidas: {{removed}}.",
+  "loadFailed": "Não foi possível carregar o que mudou. Tente de novo.",
+  "diff": "O que mudou, linha por linha",
+  "added": "Adicionado: ",
+  "removed": "Removido: ",
+  "unchanged_one": "{{count}} linha sem mudanças",
+  "unchanged_many": "{{count}} linhas sem mudanças",
+  "unchanged_other": "{{count}} linhas sem mudanças",
+  "noLineChanges": "Nenhuma linha mudou.",
+  "movedTo": "O lugar dela não existia mais, então foi para {{place}}",
+  "quoted": "“{{name}}”",
+  "kinds": {
+    "page": {
+      "created": "<actor>{{actor}}</actor> criou esta página",
+      "title": "<actor>{{actor}}</actor> mudou o nome de “{{before}}” para “{{after}}”",
+      "iconSet": "<actor>{{actor}}</actor> mudou o ícone para {{icon}}",
+      "iconRemoved": "<actor>{{actor}}</actor> removeu o ícone",
+      "content": "<actor>{{actor}}</actor> editou o conteúdo",
+      "movedInto": "<actor>{{actor}}</actor> moveu para dentro de “{{to}}”",
+      "movedTop": "<actor>{{actor}}</actor> moveu para a raiz do projeto",
+      "deleted": "<actor>{{actor}}</actor> mandou para a lixeira",
+      "restored": "<actor>{{actor}}</actor> trouxe de volta da lixeira"
+    },
+    "card": {
+      "created": "<actor>{{actor}}</actor> criou este cartão em “{{column}}”",
+      "title": "<actor>{{actor}}</actor> mudou o nome de “{{before}}” para “{{after}}”",
+      "description": "<actor>{{actor}}</actor> editou a descrição",
+      "dueSet": "<actor>{{actor}}</actor> definiu o prazo para {{date}}",
+      "dueRemoved": "<actor>{{actor}}</actor> removeu o prazo",
+      "labelsAdded_one": "<actor>{{actor}}</actor> adicionou a etiqueta {{added}}",
+      "labelsAdded_many": "<actor>{{actor}}</actor> adicionou as etiquetas {{added}}",
+      "labelsAdded_other": "<actor>{{actor}}</actor> adicionou as etiquetas {{added}}",
+      "labelsRemoved_one": "<actor>{{actor}}</actor> removeu a etiqueta {{removed}}",
+      "labelsRemoved_many": "<actor>{{actor}}</actor> removeu as etiquetas {{removed}}",
+      "labelsRemoved_other": "<actor>{{actor}}</actor> removeu as etiquetas {{removed}}",
+      "labelsChanged": "<actor>{{actor}}</actor> adicionou {{added}} e removeu {{removed}}",
+      "moved": "<actor>{{actor}}</actor> moveu de “{{from}}” para “{{to}}”",
+      "archived": "<actor>{{actor}}</actor> arquivou",
+      "unarchived": "<actor>{{actor}}</actor> tirou do arquivo",
+      "deleted": "<actor>{{actor}}</actor> mandou para a lixeira",
+      "restored": "<actor>{{actor}}</actor> trouxe de volta da lixeira",
+      "linked": "<actor>{{actor}}</actor> vinculou à página “{{page}}”",
+      "unlinked": "<actor>{{actor}}</actor> removeu o vínculo com a página “{{page}}”"
+    },
+    "checklist": {
+      "created": "<actor>{{actor}}</actor> adicionou a checklist “{{title}}”",
+      "title": "<actor>{{actor}}</actor> mudou o nome da checklist “{{before}}” para “{{after}}”",
+      "deleted": "<actor>{{actor}}</actor> mandou a checklist “{{title}}” para a lixeira",
+      "restored": "<actor>{{actor}}</actor> trouxe de volta a checklist “{{title}}”"
+    },
+    "item": {
+      "created": "<actor>{{actor}}</actor> adicionou “{{text}}” a “{{checklist}}”",
+      "text": "<actor>{{actor}}</actor> mudou o item “{{before}}” para “{{after}}”",
+      "done": "<actor>{{actor}}</actor> marcou “{{text}}” como feito",
+      "undone": "<actor>{{actor}}</actor> desmarcou “{{text}}”",
+      "deleted": "<actor>{{actor}}</actor> mandou o item “{{text}}” para a lixeira",
+      "restored": "<actor>{{actor}}</actor> trouxe de volta o item “{{text}}”"
+    },
+    "attachment": {
+      "created": "<actor>{{actor}}</actor> anexou “{{name}}”",
+      "deleted": "<actor>{{actor}}</actor> mandou o arquivo “{{name}}” para a lixeira",
+      "restored": "<actor>{{actor}}</actor> trouxe de volta o arquivo “{{name}}”"
+    }
+  }
+}

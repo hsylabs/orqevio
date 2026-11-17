@@ -23,7 +23,8 @@
     },
     "content": "ページの内容",
     "subpages": "サブページ",
-    "attachments": "添付ファイル"
+    "attachments": "添付ファイル",
+    "history": "履歴"
   },
   "editor": {
     "placeholder": "入力するか、「/」で挿入…",

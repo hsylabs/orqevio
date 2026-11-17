@@ -1,0 +1,73 @@
+{
+  "title": "Geschiedenis van ‘{{name}}’",
+  "intro_one": "Elke wijziging van de afgelopen {{count}} dag, met wie hem maakte.",
+  "intro_other": "Elke wijziging van de afgelopen {{count}} dagen, met wie hem maakte.",
+  "empty_one": "Geen wijzigingen in de afgelopen {{count}} dag.",
+  "empty_other": "Geen wijzigingen in de afgelopen {{count}} dagen.",
+  "list": "Wijzigingen",
+  "entry": "{{name}}, {{when}}",
+  "older": "Oudere wijzigingen tonen",
+  "showChanges": "Bekijk wat er veranderde",
+  "hideChanges": "Verberg wat er veranderde",
+  "lines": "Regels toegevoegd: {{added}}. Regels verwijderd: {{removed}}.",
+  "loadFailed": "Wat er veranderde kon niet worden geladen. Probeer het opnieuw.",
+  "diff": "Wat er veranderde, regel voor regel",
+  "added": "Toegevoegd: ",
+  "removed": "Verwijderd: ",
+  "unchanged_one": "{{count}} regel zonder wijzigingen",
+  "unchanged_other": "{{count}} regels zonder wijzigingen",
+  "noLineChanges": "Er is geen regel veranderd.",
+  "movedTo": "Haar plek bestond niet meer, dus ging ze naar {{place}}",
+  "quoted": "‘{{name}}’",
+  "kinds": {
+    "page": {
+      "created": "<actor>{{actor}}</actor> heeft deze pagina gemaakt",
+      "title": "<actor>{{actor}}</actor> heeft haar hernoemd van ‘{{before}}’ naar ‘{{after}}’",
+      "iconSet": "<actor>{{actor}}</actor> heeft het pictogram veranderd in {{icon}}",
+      "iconRemoved": "<actor>{{actor}}</actor> heeft het pictogram verwijderd",
+      "content": "<actor>{{actor}}</actor> heeft de inhoud bewerkt",
+      "movedInto": "<actor>{{actor}}</actor> heeft haar verplaatst naar ‘{{to}}’",
+      "movedTop": "<actor>{{actor}}</actor> heeft haar naar het hoogste niveau van het project verplaatst",
+      "deleted": "<actor>{{actor}}</actor> heeft haar naar de prullenbak verplaatst",
+      "restored": "<actor>{{actor}}</actor> heeft haar uit de prullenbak teruggezet"
+    },
+    "card": {
+      "created": "<actor>{{actor}}</actor> heeft deze kaart gemaakt in ‘{{column}}’",
+      "title": "<actor>{{actor}}</actor> heeft haar hernoemd van ‘{{before}}’ naar ‘{{after}}’",
+      "description": "<actor>{{actor}}</actor> heeft de beschrijving bewerkt",
+      "dueSet": "<actor>{{actor}}</actor> heeft de deadline op {{date}} gezet",
+      "dueRemoved": "<actor>{{actor}}</actor> heeft de deadline verwijderd",
+      "labelsAdded_one": "<actor>{{actor}}</actor> heeft het label {{added}} toegevoegd",
+      "labelsAdded_other": "<actor>{{actor}}</actor> heeft de labels {{added}} toegevoegd",
+      "labelsRemoved_one": "<actor>{{actor}}</actor> heeft het label {{removed}} verwijderd",
+      "labelsRemoved_other": "<actor>{{actor}}</actor> heeft de labels {{removed}} verwijderd",
+      "labelsChanged": "<actor>{{actor}}</actor> heeft {{added}} toegevoegd en {{removed}} verwijderd",
+      "moved": "<actor>{{actor}}</actor> heeft haar verplaatst van ‘{{from}}’ naar ‘{{to}}’",
+      "archived": "<actor>{{actor}}</actor> heeft haar gearchiveerd",
+      "unarchived": "<actor>{{actor}}</actor> heeft haar uit het archief gehaald",
+      "deleted": "<actor>{{actor}}</actor> heeft haar naar de prullenbak verplaatst",
+      "restored": "<actor>{{actor}}</actor> heeft haar uit de prullenbak teruggezet",
+      "linked": "<actor>{{actor}}</actor> heeft haar gekoppeld aan de pagina ‘{{page}}’",
+      "unlinked": "<actor>{{actor}}</actor> heeft haar koppeling met de pagina ‘{{page}}’ verwijderd"
+    },
+    "checklist": {
+      "created": "<actor>{{actor}}</actor> heeft de checklist ‘{{title}}’ toegevoegd",
+      "title": "<actor>{{actor}}</actor> heeft de checklist ‘{{before}}’ hernoemd naar ‘{{after}}’",
+      "deleted": "<actor>{{actor}}</actor> heeft de checklist ‘{{title}}’ naar de prullenbak verplaatst",
+      "restored": "<actor>{{actor}}</actor> heeft de checklist ‘{{title}}’ teruggezet"
+    },
+    "item": {
+      "created": "<actor>{{actor}}</actor> heeft ‘{{text}}’ aan ‘{{checklist}}’ toegevoegd",
+      "text": "<actor>{{actor}}</actor> heeft het punt ‘{{before}}’ veranderd in ‘{{after}}’",
+      "done": "<actor>{{actor}}</actor> heeft ‘{{text}}’ afgevinkt",
+      "undone": "<actor>{{actor}}</actor> heeft het vinkje bij ‘{{text}}’ weggehaald",
+      "deleted": "<actor>{{actor}}</actor> heeft het punt ‘{{text}}’ naar de prullenbak verplaatst",
+      "restored": "<actor>{{actor}}</actor> heeft het punt ‘{{text}}’ teruggezet"
+    },
+    "attachment": {
+      "created": "<actor>{{actor}}</actor> heeft ‘{{name}}’ bijgevoegd",
+      "deleted": "<actor>{{actor}}</actor> heeft het bestand ‘{{name}}’ naar de prullenbak verplaatst",
+      "restored": "<actor>{{actor}}</actor> heeft het bestand ‘{{name}}’ teruggezet"
+    }
+  }
+}

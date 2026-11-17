@@ -8,6 +8,7 @@ import { LengthMismatchError, exactLength, peek } from '../lib/upload-stream'
 import type { Access } from './access'
 import type { ActivityService } from './activity'
 import type { Deps } from './deps'
+import type { HistoryService } from './history'
 import type { TrashService } from './trash'
 
 /** Raster images are rendered inline; everything else (SVG included) is served as a download. */
@@ -54,12 +55,17 @@ function rethrowLength(error: unknown): never {
   throw error
 }
 
+/** The page or card whose history a file belongs to. */
+const ownerOf = (row: { pageId: string | null; cardId: string | null }) =>
+  row.pageId ? { entityType: 'page' as const, entityId: row.pageId } : { entityType: 'card' as const, entityId: row.cardId! }
+
 export class AttachmentService {
   constructor(
     private readonly deps: Deps,
     private readonly access: Access,
     private readonly activity: ActivityService,
     private readonly trash: TrashService,
+    private readonly history: HistoryService,
   ) {}
 
   /**
@@ -126,22 +132,27 @@ export class AttachmentService {
     const { head, stream } = await peek(file.body.pipeThrough(exactLength(file.size)), 12).catch(rethrowLength)
     const mimeType = sniff(head, file.type.split(';')[0]!.trim().toLowerCase())
     await this.deps.storage.put(storageKey, stream, file.size, mimeType).catch(rethrowLength)
-    const [row] = await this.deps.db
-      .insert(attachments)
-      .values({
-        id,
-        workspaceId,
-        pageId: target.pageId ?? null,
-        cardId: target.pageId ? null : (target.cardId ?? null),
-        filename: safeFilename(file.name),
-        mimeType,
-        size: file.size,
-        storageKey,
-        createdByUserId: actor.userId,
-      })
-      .returning()
+    const row = this.deps.db.transaction((tx) => {
+      const row = tx
+        .insert(attachments)
+        .values({
+          id,
+          workspaceId,
+          pageId: target.pageId ?? null,
+          cardId: target.pageId ? null : (target.cardId ?? null),
+          filename: safeFilename(file.name),
+          mimeType,
+          size: file.size,
+          storageKey,
+          createdByUserId: actor.userId,
+        })
+        .returning()
+        .get()
+      this.history.record(tx, actor, workspaceId, { ...ownerOf(row), kind: 'attachment.created', subjectId: row.id, meta: { name: row.filename } })
+      return row
+    })
     await this.activity.emit(workspaceId, { action: 'attachment.created', actor: { kind: 'user', id: actor.userId, name: actor.name }, ...event })
-    return toAttachmentDTO(row!)
+    return toAttachmentDTO(row)
   }
 
   async open(actor: Actor, attachmentId: string) {
@@ -160,7 +171,11 @@ export class AttachmentService {
     if (!row) throw notFound('Attachment')
     await this.access.workspace(actor, row.workspaceId)
     // The file stays until the attachment leaves the trash.
-    const trashId = this.deps.db.transaction((tx) => this.trash.move(tx, actor, row.workspaceId, { kind: 'attachment', id: attachmentId }))
+    const trashId = this.deps.db.transaction((tx) => {
+      const trashId = this.trash.move(tx, actor, row.workspaceId, { kind: 'attachment', id: attachmentId })
+      this.history.record(tx, actor, row.workspaceId, { ...ownerOf(row), kind: 'attachment.deleted', subjectId: attachmentId, meta: { name: row.filename, trashId } })
+      return trashId
+    })
     await this.activity.emit(row.workspaceId, {
       action: 'attachment.deleted',
       actor: { kind: 'user', id: actor.userId, name: actor.name },

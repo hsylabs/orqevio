@@ -1,0 +1,73 @@
+{
+  "title": "History of “{{name}}”",
+  "intro_one": "Every change from the last {{count}} day, with who made it.",
+  "intro_other": "Every change from the last {{count}} days, with who made it.",
+  "empty_one": "No changes in the last {{count}} day.",
+  "empty_other": "No changes in the last {{count}} days.",
+  "list": "Changes",
+  "entry": "{{name}}, {{when}}",
+  "older": "Show older changes",
+  "showChanges": "See what changed",
+  "hideChanges": "Hide what changed",
+  "lines": "Lines added: {{added}}. Lines removed: {{removed}}.",
+  "loadFailed": "What changed couldn’t be loaded. Try again.",
+  "diff": "What changed, line by line",
+  "added": "Added: ",
+  "removed": "Removed: ",
+  "unchanged_one": "{{count}} line without changes",
+  "unchanged_other": "{{count}} lines without changes",
+  "noLineChanges": "No line changed.",
+  "movedTo": "Its place was gone, so it went to {{place}}",
+  "quoted": "“{{name}}”",
+  "kinds": {
+    "page": {
+      "created": "<actor>{{actor}}</actor> created this page",
+      "title": "<actor>{{actor}}</actor> renamed it from “{{before}}” to “{{after}}”",
+      "iconSet": "<actor>{{actor}}</actor> changed the icon to {{icon}}",
+      "iconRemoved": "<actor>{{actor}}</actor> removed the icon",
+      "content": "<actor>{{actor}}</actor> edited the content",
+      "movedInto": "<actor>{{actor}}</actor> moved it into “{{to}}”",
+      "movedTop": "<actor>{{actor}}</actor> moved it to the top of the project",
+      "deleted": "<actor>{{actor}}</actor> moved it to the trash",
+      "restored": "<actor>{{actor}}</actor> brought it back from the trash"
+    },
+    "card": {
+      "created": "<actor>{{actor}}</actor> created this card in “{{column}}”",
+      "title": "<actor>{{actor}}</actor> renamed it from “{{before}}” to “{{after}}”",
+      "description": "<actor>{{actor}}</actor> edited the description",
+      "dueSet": "<actor>{{actor}}</actor> set the due date to {{date}}",
+      "dueRemoved": "<actor>{{actor}}</actor> removed the due date",
+      "labelsAdded_one": "<actor>{{actor}}</actor> added the label {{added}}",
+      "labelsAdded_other": "<actor>{{actor}}</actor> added the labels {{added}}",
+      "labelsRemoved_one": "<actor>{{actor}}</actor> removed the label {{removed}}",
+      "labelsRemoved_other": "<actor>{{actor}}</actor> removed the labels {{removed}}",
+      "labelsChanged": "<actor>{{actor}}</actor> added {{added}} and removed {{removed}}",
+      "moved": "<actor>{{actor}}</actor> moved it from “{{from}}” to “{{to}}”",
+      "archived": "<actor>{{actor}}</actor> archived it",
+      "unarchived": "<actor>{{actor}}</actor> took it out of the archive",
+      "deleted": "<actor>{{actor}}</actor> moved it to the trash",
+      "restored": "<actor>{{actor}}</actor> brought it back from the trash",
+      "linked": "<actor>{{actor}}</actor> linked it to the page “{{page}}”",
+      "unlinked": "<actor>{{actor}}</actor> removed its link to the page “{{page}}”"
+    },
+    "checklist": {
+      "created": "<actor>{{actor}}</actor> added the checklist “{{title}}”",
+      "title": "<actor>{{actor}}</actor> renamed the checklist “{{before}}” to “{{after}}”",
+      "deleted": "<actor>{{actor}}</actor> moved the checklist “{{title}}” to the trash",
+      "restored": "<actor>{{actor}}</actor> brought back the checklist “{{title}}”"
+    },
+    "item": {
+      "created": "<actor>{{actor}}</actor> added “{{text}}” to “{{checklist}}”",
+      "text": "<actor>{{actor}}</actor> changed the item “{{before}}” to “{{after}}”",
+      "done": "<actor>{{actor}}</actor> checked “{{text}}”",
+      "undone": "<actor>{{actor}}</actor> unchecked “{{text}}”",
+      "deleted": "<actor>{{actor}}</actor> moved the item “{{text}}” to the trash",
+      "restored": "<actor>{{actor}}</actor> brought back the item “{{text}}”"
+    },
+    "attachment": {
+      "created": "<actor>{{actor}}</actor> attached “{{name}}”",
+      "deleted": "<actor>{{actor}}</actor> moved the file “{{name}}” to the trash",
+      "restored": "<actor>{{actor}}</actor> brought back the file “{{name}}”"
+    }
+  }
+}

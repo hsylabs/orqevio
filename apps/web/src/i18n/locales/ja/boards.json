@@ -127,7 +127,8 @@
     "linkedDocs": "リンクされたドキュメント",
     "attachments": "添付ファイル",
     "activity": "アクティビティ",
-    "deleted": "カードをゴミ箱に移動しました"
+    "deleted": "カードをゴミ箱に移動しました",
+    "history": "履歴"
   },
   "checklist": {
     "titleLabel": "チェックリストのタイトル",

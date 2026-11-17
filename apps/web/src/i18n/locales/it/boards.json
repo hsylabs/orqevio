@@ -131,7 +131,8 @@
     "linkedDocs": "Documenti collegati",
     "attachments": "Allegati",
     "activity": "Attività",
-    "deleted": "Scheda spostata nel cestino"
+    "deleted": "Scheda spostata nel cestino",
+    "history": "Cronologia"
   },
   "checklist": {
     "titleLabel": "Titolo della checklist",

@@ -5,6 +5,7 @@ import { AttachmentService } from './attachments'
 import { BoardService } from './boards'
 import { CardService } from './cards'
 import type { Deps } from './deps'
+import { HistoryService } from './history'
 import { OAuthService } from './oauth'
 import { PageService } from './pages'
 import { SearchService } from './search'
@@ -21,19 +22,21 @@ import { WorkspaceService } from './workspaces'
 export function createServices(deps: Deps) {
   const access = new Access(deps)
   const activity = new ActivityService(deps)
-  const trash = new TrashService(deps, access, activity)
-  const cards = new CardService(deps, access, activity, trash)
+  const history = new HistoryService(deps, access)
+  const trash = new TrashService(deps, access, activity, history)
+  const cards = new CardService(deps, access, activity, trash, history)
   const workspaces = new WorkspaceService(deps, access, activity, cards, trash)
   const tokens = new TokenService(deps, access)
-  const attachments = new AttachmentService(deps, access, activity, trash)
+  const attachments = new AttachmentService(deps, access, activity, trash, history)
   return {
     access,
     activity,
+    history,
     trash,
     cards,
     workspaces,
     boards: new BoardService(deps, access, activity, cards, trash),
-    pages: new PageService(deps, access, activity, trash),
+    pages: new PageService(deps, access, activity, trash, history),
     search: new SearchService(deps, access),
     attachments,
     tokens,

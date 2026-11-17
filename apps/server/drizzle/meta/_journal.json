@@ -57,6 +57,13 @@
       "when": 1794869113841,
       "tag": "0007_trash",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1794875822892,
+      "tag": "0008_history",
+      "breakpoints": true
     }
   ]
 }

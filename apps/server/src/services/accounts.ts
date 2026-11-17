@@ -29,6 +29,7 @@ const toUserDTO = (u: typeof users.$inferSelect): UserDTO => ({
 export const UNINSTALLED_KEY = 'uninstalled'
 /** Every table of the copy, each after those that point at it. */
 const UNINSTALL_ORDER = [
+  schema.history,
   schema.trashRows,
   schema.trash,
   schema.cardLabels,

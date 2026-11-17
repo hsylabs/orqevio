@@ -4,6 +4,7 @@ import type {
   BoardDTO,
   CardDetailDTO,
   CardSummaryDTO,
+  HistoryEntryDTO,
   HomeDTO,
   MeDTO,
   OverviewDTO,
@@ -13,7 +14,7 @@ import type {
   TrashEntryDTO,
   UpdateStatusDTO,
 } from '@orqevio/shared'
-import { QueryClient, keepPreviousData, useQuery } from '@tanstack/react-query'
+import { QueryClient, keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { ApiError, get } from './api'
 
 export const queryClient = new QueryClient({
@@ -43,6 +44,8 @@ export const keys = {
   vault: ['vault'] as const,
   vaultItems: ['vault-items'] as const,
   trash: (wid: string) => ['trash', wid] as const,
+  history: (type: 'page' | 'card', id: string) => ['history', type, id] as const,
+  historyEntry: (id: string) => ['history-entry', id] as const,
 }
 
 export const useMe = () =>
@@ -102,6 +105,27 @@ export const useSearch = (wid: string, q: string, type?: 'card' | 'page') =>
 
 export const useTrash = (wid: string) =>
   useQuery({ queryKey: keys.trash(wid), queryFn: ({ signal }) => get<TrashEntryDTO[]>(`/workspaces/${wid}/trash`, signal) })
+
+/** The changes of a page or a card, newest first, 50 at a time. */
+export const useHistory = (type: 'page' | 'card', id: string, enabled: boolean) =>
+  useInfiniteQuery({
+    queryKey: keys.history(type, id),
+    queryFn: ({ signal, pageParam }) =>
+      get<HistoryEntryDTO[]>(`/${type}s/${id}/history?limit=${HISTORY_PAGE}${pageParam ? `&before=${encodeURIComponent(pageParam)}` : ''}`, signal),
+    initialPageParam: '',
+    getNextPageParam: (last: HistoryEntryDTO[]) => (last.length < HISTORY_PAGE ? undefined : last.at(-1)!.updatedAt),
+    enabled,
+  })
+const HISTORY_PAGE = 50
+
+/** One change with its texts before and after. Edits merged into it update it, so it follows `updatedAt`. */
+export const useHistoryEntry = (id: string, updatedAt: string, enabled: boolean) =>
+  useQuery({
+    queryKey: [...keys.historyEntry(id), updatedAt],
+    queryFn: ({ signal }) => get<HistoryEntryDTO>(`/history/${id}`, signal),
+    enabled,
+    staleTime: Number.POSITIVE_INFINITY,
+  })
 
 export const useTokens = () => useQuery({ queryKey: keys.tokens, queryFn: ({ signal }) => get<TokenDTO[]>('/tokens', signal) })
 

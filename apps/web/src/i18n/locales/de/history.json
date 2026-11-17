@@ -1,0 +1,73 @@
+{
+  "title": "Verlauf von „{{name}}“",
+  "intro_one": "Jede Änderung des letzten {{count}} Tages, und wer sie gemacht hat.",
+  "intro_other": "Jede Änderung der letzten {{count}} Tage, und wer sie gemacht hat.",
+  "empty_one": "Keine Änderungen am letzten {{count}} Tag.",
+  "empty_other": "Keine Änderungen in den letzten {{count}} Tagen.",
+  "list": "Änderungen",
+  "entry": "{{name}}, {{when}}",
+  "older": "Ältere Änderungen zeigen",
+  "showChanges": "Änderungen ansehen",
+  "hideChanges": "Änderungen ausblenden",
+  "lines": "Hinzugefügte Zeilen: {{added}}. Entfernte Zeilen: {{removed}}.",
+  "loadFailed": "Die Änderungen konnten nicht geladen werden. Versuch es noch einmal.",
+  "diff": "Änderungen Zeile für Zeile",
+  "added": "Hinzugefügt: ",
+  "removed": "Entfernt: ",
+  "unchanged_one": "{{count}} unveränderte Zeile",
+  "unchanged_other": "{{count}} unveränderte Zeilen",
+  "noLineChanges": "Keine Zeile hat sich geändert.",
+  "movedTo": "Ihr Platz existierte nicht mehr, deshalb kam sie nach {{place}}",
+  "quoted": "„{{name}}“",
+  "kinds": {
+    "page": {
+      "created": "<actor>{{actor}}</actor> hat diese Seite erstellt",
+      "title": "<actor>{{actor}}</actor> hat sie von „{{before}}“ in „{{after}}“ umbenannt",
+      "iconSet": "<actor>{{actor}}</actor> hat das Symbol in {{icon}} geändert",
+      "iconRemoved": "<actor>{{actor}}</actor> hat das Symbol entfernt",
+      "content": "<actor>{{actor}}</actor> hat den Inhalt bearbeitet",
+      "movedInto": "<actor>{{actor}}</actor> hat sie nach „{{to}}“ verschoben",
+      "movedTop": "<actor>{{actor}}</actor> hat sie auf die oberste Ebene des Projekts verschoben",
+      "deleted": "<actor>{{actor}}</actor> hat sie in den Papierkorb gelegt",
+      "restored": "<actor>{{actor}}</actor> hat sie aus dem Papierkorb zurückgeholt"
+    },
+    "card": {
+      "created": "<actor>{{actor}}</actor> hat diese Karte in „{{column}}“ erstellt",
+      "title": "<actor>{{actor}}</actor> hat sie von „{{before}}“ in „{{after}}“ umbenannt",
+      "description": "<actor>{{actor}}</actor> hat die Beschreibung bearbeitet",
+      "dueSet": "<actor>{{actor}}</actor> hat das Fälligkeitsdatum auf {{date}} gesetzt",
+      "dueRemoved": "<actor>{{actor}}</actor> hat das Fälligkeitsdatum entfernt",
+      "labelsAdded_one": "<actor>{{actor}}</actor> hat das Label {{added}} hinzugefügt",
+      "labelsAdded_other": "<actor>{{actor}}</actor> hat die Labels {{added}} hinzugefügt",
+      "labelsRemoved_one": "<actor>{{actor}}</actor> hat das Label {{removed}} entfernt",
+      "labelsRemoved_other": "<actor>{{actor}}</actor> hat die Labels {{removed}} entfernt",
+      "labelsChanged": "<actor>{{actor}}</actor> hat {{added}} hinzugefügt und {{removed}} entfernt",
+      "moved": "<actor>{{actor}}</actor> hat sie von „{{from}}“ nach „{{to}}“ verschoben",
+      "archived": "<actor>{{actor}}</actor> hat sie archiviert",
+      "unarchived": "<actor>{{actor}}</actor> hat sie aus dem Archiv geholt",
+      "deleted": "<actor>{{actor}}</actor> hat sie in den Papierkorb gelegt",
+      "restored": "<actor>{{actor}}</actor> hat sie aus dem Papierkorb zurückgeholt",
+      "linked": "<actor>{{actor}}</actor> hat sie mit der Seite „{{page}}“ verknüpft",
+      "unlinked": "<actor>{{actor}}</actor> hat ihre Verknüpfung mit der Seite „{{page}}“ entfernt"
+    },
+    "checklist": {
+      "created": "<actor>{{actor}}</actor> hat die Checkliste „{{title}}“ hinzugefügt",
+      "title": "<actor>{{actor}}</actor> hat die Checkliste „{{before}}“ in „{{after}}“ umbenannt",
+      "deleted": "<actor>{{actor}}</actor> hat die Checkliste „{{title}}“ in den Papierkorb gelegt",
+      "restored": "<actor>{{actor}}</actor> hat die Checkliste „{{title}}“ zurückgeholt"
+    },
+    "item": {
+      "created": "<actor>{{actor}}</actor> hat „{{text}}“ zu „{{checklist}}“ hinzugefügt",
+      "text": "<actor>{{actor}}</actor> hat den Punkt „{{before}}“ in „{{after}}“ geändert",
+      "done": "<actor>{{actor}}</actor> hat „{{text}}“ abgehakt",
+      "undone": "<actor>{{actor}}</actor> hat den Haken bei „{{text}}“ entfernt",
+      "deleted": "<actor>{{actor}}</actor> hat den Punkt „{{text}}“ in den Papierkorb gelegt",
+      "restored": "<actor>{{actor}}</actor> hat den Punkt „{{text}}“ zurückgeholt"
+    },
+    "attachment": {
+      "created": "<actor>{{actor}}</actor> hat „{{name}}“ angehängt",
+      "deleted": "<actor>{{actor}}</actor> hat die Datei „{{name}}“ in den Papierkorb gelegt",
+      "restored": "<actor>{{actor}}</actor> hat die Datei „{{name}}“ zurückgeholt"
+    }
+  }
+}

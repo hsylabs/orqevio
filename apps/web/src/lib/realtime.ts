@@ -87,6 +87,9 @@ function handle(workspaceId: string, event: RealtimeEvent, selfId: string | unde
   void queryClient.invalidateQueries({ queryKey: ['activity', workspaceId] })
   // Any change may put something in the trash or take it out; only an open trash refetches.
   void queryClient.invalidateQueries({ queryKey: keys.trash(workspaceId) })
+  // Only an open history refetches; a deleted page or card has none to show.
+  if (event.cardId && event.action !== 'card.deleted') void queryClient.invalidateQueries({ queryKey: keys.history('card', event.cardId) })
+  if (event.pageId && event.action !== 'page.deleted') void queryClient.invalidateQueries({ queryKey: keys.history('page', event.pageId) })
   if (event.actor.kind === 'agent') {
     if (event.cardId) highlight(event.cardId, event.actor.name)
     if (event.pageId) highlight(event.pageId, event.actor.name)

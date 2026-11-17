@@ -1,5 +1,6 @@
 import {
   type EntityType,
+  type HistoryMeta,
   type RealtimeEvent,
   type RestoredDTO,
   TRASH_DAYS,
@@ -18,6 +19,7 @@ import { keyAtEnd } from '../lib/positions'
 import type { Access } from './access'
 import type { ActivityService } from './activity'
 import type { Deps } from './deps'
+import type { Change, HistoryService } from './history'
 import { deletePageTrees, pageTree } from './pages'
 
 /**
@@ -137,7 +139,39 @@ export class TrashService {
     private readonly deps: Deps,
     private readonly access: Access,
     private readonly activity: ActivityService,
+    private readonly history: HistoryService,
   ) {}
+
+  /** What restoring the item says in the history of the page or card it belongs to. */
+  private restoredChange(tx: DbOrTx, kind: TrashKind, data: Row, meta: HistoryMeta): Change | null {
+    const text = (value: unknown) => (typeof value === 'string' ? value : '')
+    const id = text(data.id)
+    switch (kind) {
+      case 'card':
+        return { entityType: 'card', entityId: id, kind: 'card.restored', meta }
+      case 'page':
+        return { entityType: 'page', entityId: id, kind: 'page.restored', meta }
+      case 'checklist':
+        return { entityType: 'card', entityId: text(data.card_id), kind: 'checklist.restored', subjectId: id, meta: { ...meta, title: text(data.title) } }
+      case 'checklist_item': {
+        const list = tx.get<{ card_id: string }>(sql`SELECT card_id FROM checklists WHERE id = ${text(data.checklist_id)}`)
+        return list ? { entityType: 'card', entityId: list.card_id, kind: 'item.restored', subjectId: id, meta: { ...meta, text: text(data.text) } } : null
+      }
+      case 'attachment':
+        return {
+          ...(data.page_id ? { entityType: 'page' as const, entityId: text(data.page_id) } : { entityType: 'card' as const, entityId: text(data.card_id) }),
+          kind: 'attachment.restored',
+          subjectId: id,
+          meta: { ...meta, name: text(data.filename) },
+        }
+      case 'link': {
+        const page = tx.get<{ title: string }>(sql`SELECT title FROM pages WHERE id = ${text(data.page_id)}`)
+        return { entityType: 'card', entityId: text(data.card_id), kind: 'card.linked', subjectId: text(data.page_id), meta: { ...meta, page: page?.title ?? '' } }
+      }
+      default:
+        return null
+    }
+  }
 
   /**
    * Moves an item, with everything it holds, to the trash and deletes it. Synchronous, so
@@ -341,6 +375,8 @@ export class TrashService {
         if (!reinsert.insert(row) && row === root) throw restoreError('restore_place_gone', 'It no longer fits anywhere it could go back to.')
       }
       rebuildMentions(tx, entry.workspaceId, reinsert.cards, reinsert.pages)
+      const restored = this.restoredChange(tx, entry.kind, root.data, { trashId, movedTo: placed.movedTo })
+      if (restored) this.history.record(tx, actor, entry.workspaceId, restored)
       tx.delete(schema.trash).where(eq(schema.trash.id, trashId)).run()
       return placed
     })
@@ -522,6 +558,8 @@ export class TrashService {
         .from(schema.trashRows)
         .where(and(eq(schema.trashRows.trashId, trashId), isNotNull(schema.trashRows.storageKey)))
         .all()
+      // What it held leaves the history too: nothing of it is kept once it is deleted for good.
+      this.history.forget(tx, trashId)
       const erased = tx.delete(schema.trash).where(eq(schema.trash.id, trashId)).returning({ id: schema.trash.id }).all()
       return erased.length > 0 ? keys : null
     })

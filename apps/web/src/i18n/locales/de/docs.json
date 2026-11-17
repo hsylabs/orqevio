@@ -23,7 +23,8 @@
     },
     "content": "Seiteninhalt",
     "subpages": "Unterseiten",
-    "attachments": "Anhänge"
+    "attachments": "Anhänge",
+    "history": "Verlauf"
   },
   "editor": {
     "placeholder": "Schreib los oder drücke „/“ zum Einfügen…",

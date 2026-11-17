@@ -1,0 +1,68 @@
+{
+  "title": "「{{name}}」の履歴",
+  "intro_other": "過去{{count}}日間のすべての変更と、変更した人を表示します。",
+  "empty_other": "過去{{count}}日間の変更はありません。",
+  "list": "変更",
+  "entry": "{{name}}、{{when}}",
+  "older": "以前の変更を表示",
+  "showChanges": "変更内容を見る",
+  "hideChanges": "変更内容を隠す",
+  "lines": "追加された行: {{added}}。削除された行: {{removed}}。",
+  "loadFailed": "変更内容を読み込めませんでした。もう一度お試しください。",
+  "diff": "行ごとの変更内容",
+  "added": "追加: ",
+  "removed": "削除: ",
+  "unchanged_other": "変更のない{{count}}行",
+  "noLineChanges": "変更された行はありません。",
+  "movedTo": "元の場所がなくなっていたため、{{place}}に移動しました",
+  "quoted": "「{{name}}」",
+  "kinds": {
+    "page": {
+      "created": "<actor>{{actor}}</actor>がこのページを作成しました",
+      "title": "<actor>{{actor}}</actor>が名前を「{{before}}」から「{{after}}」に変更しました",
+      "iconSet": "<actor>{{actor}}</actor>がアイコンを{{icon}}に変更しました",
+      "iconRemoved": "<actor>{{actor}}</actor>がアイコンを削除しました",
+      "content": "<actor>{{actor}}</actor>が内容を編集しました",
+      "movedInto": "<actor>{{actor}}</actor>が「{{to}}」の中に移動しました",
+      "movedTop": "<actor>{{actor}}</actor>がプロジェクトの最上位に移動しました",
+      "deleted": "<actor>{{actor}}</actor>がゴミ箱に移動しました",
+      "restored": "<actor>{{actor}}</actor>がゴミ箱から復元しました"
+    },
+    "card": {
+      "created": "<actor>{{actor}}</actor>が「{{column}}」にこのカードを作成しました",
+      "title": "<actor>{{actor}}</actor>が名前を「{{before}}」から「{{after}}」に変更しました",
+      "description": "<actor>{{actor}}</actor>が説明を編集しました",
+      "dueSet": "<actor>{{actor}}</actor>が期限を{{date}}に設定しました",
+      "dueRemoved": "<actor>{{actor}}</actor>が期限を削除しました",
+      "labelsAdded_other": "<actor>{{actor}}</actor>がラベル{{added}}を追加しました",
+      "labelsRemoved_other": "<actor>{{actor}}</actor>がラベル{{removed}}を外しました",
+      "labelsChanged": "<actor>{{actor}}</actor>が{{added}}を追加し、{{removed}}を外しました",
+      "moved": "<actor>{{actor}}</actor>が「{{from}}」から「{{to}}」に移動しました",
+      "archived": "<actor>{{actor}}</actor>がアーカイブしました",
+      "unarchived": "<actor>{{actor}}</actor>がアーカイブから戻しました",
+      "deleted": "<actor>{{actor}}</actor>がゴミ箱に移動しました",
+      "restored": "<actor>{{actor}}</actor>がゴミ箱から復元しました",
+      "linked": "<actor>{{actor}}</actor>がページ「{{page}}」とリンクしました",
+      "unlinked": "<actor>{{actor}}</actor>がページ「{{page}}」とのリンクを外しました"
+    },
+    "checklist": {
+      "created": "<actor>{{actor}}</actor>がチェックリスト「{{title}}」を追加しました",
+      "title": "<actor>{{actor}}</actor>がチェックリスト「{{before}}」の名前を「{{after}}」に変更しました",
+      "deleted": "<actor>{{actor}}</actor>がチェックリスト「{{title}}」をゴミ箱に移動しました",
+      "restored": "<actor>{{actor}}</actor>がチェックリスト「{{title}}」を復元しました"
+    },
+    "item": {
+      "created": "<actor>{{actor}}</actor>が「{{checklist}}」に「{{text}}」を追加しました",
+      "text": "<actor>{{actor}}</actor>が項目「{{before}}」を「{{after}}」に変更しました",
+      "done": "<actor>{{actor}}</actor>が「{{text}}」を完了にしました",
+      "undone": "<actor>{{actor}}</actor>が「{{text}}」を未完了に戻しました",
+      "deleted": "<actor>{{actor}}</actor>が項目「{{text}}」をゴミ箱に移動しました",
+      "restored": "<actor>{{actor}}</actor>が項目「{{text}}」を復元しました"
+    },
+    "attachment": {
+      "created": "<actor>{{actor}}</actor>が「{{name}}」を添付しました",
+      "deleted": "<actor>{{actor}}</actor>がファイル「{{name}}」をゴミ箱に移動しました",
+      "restored": "<actor>{{actor}}</actor>がファイル「{{name}}」を復元しました"
+    }
+  }
+}

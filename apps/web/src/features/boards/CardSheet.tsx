@@ -1,6 +1,6 @@
 import type { ActorRef, BoardDTO, CardDetailDTO, CardSummaryDTO, TrashedDTO } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
-import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
+import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, History, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
 import { type ReactNode, useEffect, useReducer, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -9,6 +9,7 @@ import { Avatar } from '../../components/ui/Avatar'
 import { Button } from '../../components/ui/Button'
 import { useConfirm } from '../../components/ui/confirm'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from '../../components/ui/Menu'
+import { HistoryDialog } from '../history/HistoryDialog'
 import { Sheet, SheetClose } from '../../components/ui/Sheet'
 import { ApiError, del, errorMessage, get, patch, post } from '../../lib/api'
 import { cn } from '../../lib/cn'
@@ -104,6 +105,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
   const confirm = useConfirm()
   const agent = useAgentHighlight(card.id)
   const [title, setTitle] = useState(card.title)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const descTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   /** Description typed but not saved yet. */
@@ -330,6 +332,9 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
                 {t('actions.archive')}
               </MenuItem>
             )}
+            <MenuItem icon={<History />} onSelect={() => setHistoryOpen(true)}>
+              {t('sheet.history')}
+            </MenuItem>
             <MenuSeparator />
             <MenuItem
               icon={<Trash />}
@@ -496,6 +501,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
           </Section>
         )}
       </div>
+      <HistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} type="card" id={card.id} name={card.title} />
     </>
   )
 }

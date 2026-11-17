@@ -129,7 +129,8 @@
     "linkedDocs": "Linked documents",
     "attachments": "Attachments",
     "activity": "Activity",
-    "deleted": "Card moved to the trash"
+    "deleted": "Card moved to the trash",
+    "history": "History"
   },
   "checklist": {
     "titleLabel": "Checklist title",
