@@ -113,6 +113,12 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
   const confirm = useConfirm()
   const agent = useAgentHighlight(card.id)
   const [title, setTitle] = useState(card.title)
+  // For saving a title still being typed when the sheet goes away (the card moved to another board, say).
+  const titleDraft = useRef(title)
+  titleDraft.current = title
+  const cardTitle = useRef(card.title)
+  cardTitle.current = card.title
+  const sentTitle = useRef<string | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const descTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -227,6 +233,9 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
       mounted.current = false
       if (conflictRef.current) toast.error(t('sheet.conflict.notSaved'))
       else void flushDescription()
+      // Removing the title field doesn't blur it: save what was typed, unless it is already on its way.
+      const next = titleDraft.current.trim()
+      if (next && next !== cardTitle.current && next !== sentTitle.current) void update({ title: next })
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -388,8 +397,10 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
             }}
             onBlur={() => {
               const next = title.trim()
-              if (next && next !== card.title) void update({ title: next })
-              else setTitle(card.title)
+              if (next && next !== card.title) {
+                sentTitle.current = next
+                void update({ title: next })
+              } else setTitle(card.title)
             }}
             className="block w-full resize-none overflow-hidden bg-transparent font-display text-[26px] leading-[1.18] font-medium tracking-[-0.02em] outline-none"
           />
