@@ -12,7 +12,7 @@
   "vault": {
     "title": "La cassaforte è fuori dalla loro portata",
     "unreadable": "Nessun token può leggere la cassaforte, nemmeno cifrata: il server rifiuta la richiesta prima di toccare qualsiasi dato.",
-    "noDeletes": "Gli agenti non possono eliminare nulla. Possono solo archiviare, e tu puoi ripristinare.",
+    "noDeletes": "Ciò che gli agenti eliminano va nel cestino: solo tu lo svuoti, e puoi annullare qualsiasi modifica dalla cronologia.",
     "logged": "Ogni azione viene registrata e puoi seguirla in tempo reale nell’app."
   },
   "tokens": {

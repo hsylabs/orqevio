@@ -12,7 +12,7 @@
   "vault": {
     "title": "De kluis blijft buiten hun bereik",
     "unreadable": "Geen enkel token kan de kluis lezen, zelfs niet versleuteld: de server weigert het verzoek voordat er gegevens worden aangeraakt.",
-    "noDeletes": "Agents kunnen niets verwijderen. Ze kunnen alleen archiveren, en jij kunt herstellen.",
+    "noDeletes": "Wat agents verwijderen gaat naar de prullenbak: alleen jij leegt die, en je kunt elke wijziging ongedaan maken vanuit de geschiedenis.",
     "logged": "Elke actie wordt vastgelegd en je kunt alles live volgen in de app."
   },
   "tokens": {

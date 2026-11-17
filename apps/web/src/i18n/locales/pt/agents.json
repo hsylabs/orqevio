@@ -12,7 +12,7 @@
   "vault": {
     "title": "O cofre fica fora do alcance deles",
     "unreadable": "Nenhum token consegue ler o cofre, nem mesmo criptografado: o servidor rejeita a solicitação antes de tocar em qualquer dado.",
-    "noDeletes": "Os agentes não podem excluir nada. Eles só podem arquivar, e você pode restaurar.",
+    "noDeletes": "O que os agentes excluem vai para a lixeira: só você a esvazia, e pode desfazer qualquer alteração pelo histórico.",
     "logged": "Cada ação fica registrada, e você pode acompanhar tudo ao vivo no app."
   },
   "tokens": {

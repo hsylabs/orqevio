@@ -12,7 +12,7 @@
   "vault": {
     "title": "The vault is out of their reach",
     "unreadable": "No token can read the vault, not even encrypted: the server rejects the request before it touches any data.",
-    "noDeletes": "Agents can’t delete anything. They can only archive, and you can restore.",
+    "noDeletes": "What agents delete goes to the trash: only you empty it, and you can undo any change from the history.",
     "logged": "Every action is logged, and you can watch it live in the app."
   },
   "tokens": {

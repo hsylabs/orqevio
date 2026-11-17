@@ -12,7 +12,7 @@
   "vault": {
     "title": "Der Tresor bleibt außer ihrer Reichweite",
     "unreadable": "Kein Token kann den Tresor lesen, nicht einmal verschlüsselt: Der Server lehnt die Anfrage ab, bevor er überhaupt auf Daten zugreift.",
-    "noDeletes": "Agenten können nichts löschen, nur archivieren, und du kannst alles wiederherstellen.",
+    "noDeletes": "Was Agenten löschen, landet im Papierkorb: Nur du leerst ihn, und du kannst jede Änderung im Verlauf rückgängig machen.",
     "logged": "Jede Aktion wird protokolliert, und du kannst sie live in der App verfolgen."
   },
   "tokens": {

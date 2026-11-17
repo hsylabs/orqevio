@@ -43,6 +43,11 @@ test('an agent reorganises a project with permission to delete and move, and the
 
   // The agent attaches a list, files it in the inventory, takes the card to the archive and deletes the page.
   const uploaded = await call('upload_attachment', { card_id: cardId, filename: 'lista.txt', content: 'Platos\nVasos' })
+  const read = await request.post(`${baseURL}/mcp`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json, text/event-stream' },
+    data: { jsonrpc: '2.0', id: ++id, method: 'tools/call', params: { name: 'read_attachment', arguments: { attachment_id: uploaded.attachment.id } } },
+  })
+  expect((await read.json()).result.content[1]).toEqual({ type: 'text', text: 'Platos\nVasos' })
   await call('move_attachment', { attachment_id: uploaded.attachment.id, page_id: doc.id })
   await call('move_card', { card_id: cardId, column_id: archiveBoard.columns.find((c) => c.name === 'Hecho')!.id })
   expect((await call('delete_page', { page_id: doc.id })).deleted).toBe(true)

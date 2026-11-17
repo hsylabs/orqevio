@@ -12,7 +12,7 @@
   "vault": {
     "title": "Le coffre-fort reste hors de leur portée",
     "unreadable": "Aucun jeton ne peut lire le coffre-fort, même chiffré : le serveur rejette la requête avant de toucher la moindre donnée.",
-    "noDeletes": "Les agents ne peuvent rien supprimer. Ils peuvent seulement archiver, et vous pouvez restaurer.",
+    "noDeletes": "Ce que les agents suppriment va à la corbeille : vous seul la videz, et vous pouvez annuler toute modification depuis l’historique.",
     "logged": "Chaque action est journalisée, et vous pouvez la suivre en direct dans l’application."
   },
   "tokens": {

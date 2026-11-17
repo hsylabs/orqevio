@@ -351,7 +351,7 @@ describe('the trash', () => {
     expect((await agent.get(`/api/workspaces/${workspaceId}/trash`)).body.error.code).toBe('session_required')
     expect((await agent.post(`/api/trash/${trashId}/restore`)).status).toBe(403)
     expect((await agent.del(`/api/trash/${trashId}`)).status).toBe(403)
-    // Agents still can't delete anything.
+    // Without permission to delete and move, agents can't delete either.
     expect((await agent.del(`/api/pages/${c.pageId}`)).status).toBe(403)
 
     const { client: stranger } = await signUp(h, 'Ajena')

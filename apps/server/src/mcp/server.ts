@@ -41,10 +41,14 @@ const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp
 async function readAll(body: ReadableStream<Uint8Array>, max: number) {
   const chunks: Uint8Array[] = []
   let size = 0
-  for await (const chunk of body as unknown as AsyncIterable<Uint8Array>) {
-    size += chunk.byteLength
-    if (size > max) throw new AppError(413, 'file_too_large', 'The file is too large to read here; open it in the Orqevio app.')
-    chunks.push(chunk)
+  const reader = body.getReader()
+  for (let next = await reader.read(); !next.done; next = await reader.read()) {
+    size += next.value.byteLength
+    if (size > max) {
+      await reader.cancel()
+      throw new AppError(413, 'file_too_large', 'The file is too large to read here; open it in the Orqevio app.')
+    }
+    chunks.push(next.value)
   }
   const out = new Uint8Array(size)
   let at = 0

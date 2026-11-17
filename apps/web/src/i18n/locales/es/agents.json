@@ -12,7 +12,7 @@
   "vault": {
     "title": "La bóveda queda fuera de su alcance",
     "unreadable": "Ningún token puede leer la bóveda, ni siquiera cifrada: el servidor rechaza la petición antes de tocar los datos.",
-    "noDeletes": "Los agentes no pueden borrar: solo archivar, y tú puedes restaurar.",
+    "noDeletes": "Lo que borran los agentes va a la papelera: solo tú la vacías, y puedes deshacer cualquier cambio desde el historial.",
     "logged": "Cada acción queda registrada y la ves en directo en la app."
   },
   "tokens": {
