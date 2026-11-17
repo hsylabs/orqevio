@@ -189,27 +189,37 @@ export class UndoService {
       entityTitle: title ?? (typeof row.meta.title === 'string' ? row.meta.title : ''),
       status: check.status,
       ...(check.reason ? { reason: check.reason } : {}),
-      ...(check.status === 'conflict' ? { changedBy: check.by !== undefined ? check.by : this.changedSince(row, check.exists === undefined, undoing, state?.restoring), current: check.current ?? null } : {}),
+      ...(check.status === 'conflict' ? { changedBy: check.by !== undefined ? check.by : this.changedSince(row, check.exists === undefined, undoing, state), current: check.current ?? null } : {}),
     }
   }
 
   /**
    * What counts as changing the same thing after this change: the same value for a value; for
    * a page or a card made or brought back, anything on it; for a checklist, anything on it and
-   * its items; for an item, a file or a link, anything on that. What is under it counts whether
-   * it is there or coming back with the trash entries in `restoring`.
+   * its items; for an item, a file or a link, anything on that. What is under it counts as it will
+   * be by then (`state`): there, or coming back from the trash, and where newer undone moves put it.
    */
-  private sameThing(row: HistoryRow, isValue: boolean, restoring: ReadonlySet<string>) {
+  private sameThing(row: HistoryRow, isValue: boolean, state?: State) {
     if (isValue) return and(eq(history.entityId, row.entityId), eq(history.kind, row.kind), row.subjectId ? eq(history.subjectId, row.subjectId) : undefined)
     // Bound as one value: a Cloudflare Durable Object takes at most 100 in one query.
-    const kept = (table: string) => sql`SELECT data FROM trash_rows WHERE table_name = ${table} AND trash_id IN (SELECT value FROM json_each(${JSON.stringify([...restoring])}))`
+    const kept = (table: string) => sql`SELECT data FROM trash_rows WHERE table_name = ${table} AND trash_id IN (SELECT value FROM json_each(${JSON.stringify([...(state?.restoring ?? [])])}))`
     // A page goes to the trash with its subpages and the links of cards to them: what happened
     // under it counts too, and so does linking a card to it (recorded on the card).
     if (row.entityType === 'page' && !row.subjectId) {
+      // Pages that newer undone moves (or restoring) put under another parent are under it by then.
+      const moved: Record<string, string | null> = {}
+      for (const [key, value] of state?.values ?? []) {
+        const match = /^(.+)\|page\.moved\|$/.exec(key)
+        const parent = parentOf(value)
+        if (match && parent !== undefined) moved[match[1]!] = parent
+      }
+      const elsewhere = sql`(SELECT key FROM json_each(${JSON.stringify(moved)}))`
       const tree = sql`WITH RECURSIVE tree(id, depth) AS (
         SELECT ${row.entityId}, 0
-        UNION ALL SELECT p.id, t.depth + 1 FROM pages p JOIN tree t ON p.parent_id = t.id WHERE t.depth < ${MAX_TREE_DEPTH}
-        UNION ALL SELECT json_extract(k.data, '$.id'), t.depth + 1 FROM (${kept('pages')}) k JOIN tree t ON json_extract(k.data, '$.parent_id') = t.id WHERE t.depth < ${MAX_TREE_DEPTH}
+        UNION ALL SELECT p.id, t.depth + 1 FROM pages p JOIN tree t ON p.parent_id = t.id WHERE t.depth < ${MAX_TREE_DEPTH} AND p.id NOT IN ${elsewhere}
+        UNION ALL SELECT m.key, t.depth + 1 FROM json_each(${JSON.stringify(moved)}) m JOIN tree t ON m.value = t.id WHERE t.depth < ${MAX_TREE_DEPTH}
+        UNION ALL SELECT json_extract(k.data, '$.id'), t.depth + 1 FROM (${kept('pages')}) k JOIN tree t ON json_extract(k.data, '$.parent_id') = t.id
+          WHERE t.depth < ${MAX_TREE_DEPTH} AND json_extract(k.data, '$.id') NOT IN ${elsewhere}
       ) SELECT id FROM tree`
       return or(sql`${history.entityId} IN (${tree})`, sql`${history.subjectId} IN (${tree})`)
     }
@@ -233,14 +243,14 @@ export class UndoService {
    * it. For something made or brought back, only someone else's count: its author's own later
    * changes go with it.
    */
-  private laterChanges(row: Row, isValue: boolean, undoing: Set<string>, restoring: ReadonlySet<string> = new Set()) {
+  private laterChanges(row: Row, isValue: boolean, undoing: Set<string>, state?: State) {
     const author = (r: { kind: string; userId: string | null; tokenId: string | null }) => (r.kind === 'agent' ? `agent:${r.tokenId}` : `user:${r.userId}`)
     const own = author({ kind: row.actorKind, userId: row.actorUserId, tokenId: row.actorTokenId })
     return this.deps.db
       .select({ id: history.id, kind: history.actorKind, userId: history.actorUserId, tokenId: history.actorTokenId, name: history.actorName, meta: history.meta })
       .from(history)
       // After it: later, or in the same millisecond but recorded after it.
-      .where(and(this.sameThing(row, isValue, restoring), or(gt(history.updatedAt, row.updatedAt), and(eq(history.updatedAt, row.updatedAt), sql`rowid > ${row.seq}`))))
+      .where(and(this.sameThing(row, isValue, state), or(gt(history.updatedAt, row.updatedAt), and(eq(history.updatedAt, row.updatedAt), sql`rowid > ${row.seq}`))))
       .orderBy(desc(history.updatedAt), desc(sql`rowid`))
       .all()
       // Undoing the newer changes of the same batch records changes too: they don't count either.
@@ -248,8 +258,8 @@ export class UndoService {
   }
 
   /** Who changed it after this change, besides the changes being undone with it. */
-  private changedSince(row: Row, isValue: boolean, undoing: Set<string>, restoring?: ReadonlySet<string>): ActorRef | null {
-    const [later] = this.laterChanges(row, isValue, undoing, restoring)
+  private changedSince(row: Row, isValue: boolean, undoing: Set<string>, state?: State): ActorRef | null {
+    const [later] = this.laterChanges(row, isValue, undoing, state)
     return later ? { kind: later.kind, id: (later.kind === 'agent' ? later.tokenId : later.userId) ?? '', name: later.name } : null
   }
 
@@ -286,6 +296,39 @@ export class UndoService {
     return id !== null && Boolean(this.deps.db.select({ id: trash.id }).from(trash).where(eq(trash.id, id)).get())
   }
 
+  /**
+   * Where the page or card a deletion took away goes back, when that is not where it was:
+   * restoring puts it elsewhere if its place is gone by then (TrashService.place). By then, the
+   * newer changes being undone have brought back what they bring back (`state.restoring`).
+   * undefined: where it was; null: nowhere it fits.
+   */
+  private returnPlace(row: Row, state: State): PagePlace | CardPlace | null | undefined {
+    const db = this.deps.db
+    const trashId = typeof row.meta.trashId === 'string' ? row.meta.trashId : ''
+    const [kept] = this.keptRows(new Set([trashId]), row.entityType === 'page' ? 'pages' : 'cards', 'id', row.entityId)
+    if (!kept) return undefined
+    const data = kept.data
+    if (row.entityType === 'page') {
+      const parentId = data.parent_id == null ? null : String(data.parent_id)
+      const parentThere = parentId !== null && (Boolean(db.get(sql`SELECT 1 AS found FROM pages WHERE id = ${parentId}`)) || this.keptRows(state.restoring, 'pages', 'id', parentId).length > 0)
+      if (parentThere) return undefined
+      // Without its parent, at the top of its project, or of the first project if that one is gone.
+      const project = db.get<{ id: string }>(sql`SELECT id FROM projects WHERE id = ${data.project_id}`)?.id ??
+        db.get<{ id: string }>(sql`SELECT id FROM projects WHERE workspace_id = ${row.workspaceId} ORDER BY position, id LIMIT 1`)?.id
+      if (!project) return null
+      return parentId === null && project === data.project_id ? undefined : { projectId: project, parentId: null }
+    }
+    // Its column, wherever it is now; or else the first column of its board, or of the first board.
+    const column = db.get<{ board_id: string }>(sql`SELECT board_id FROM board_columns WHERE id = ${data.column_id}`)
+    if (column) return column.board_id === data.board_id ? undefined : { boardId: column.board_id, columnId: String(data.column_id) }
+    const first = (scope: SQL) =>
+      db.get<{ id: string; board_id: string }>(
+        sql`SELECT c.id, b.id AS board_id FROM board_columns c JOIN boards b ON b.id = c.board_id JOIN projects p ON p.id = b.project_id WHERE ${scope} ORDER BY p.position, p.id, b.position, b.id, c.position, c.id LIMIT 1`,
+      )
+    const target = first(sql`c.board_id = ${data.board_id}`) ?? first(sql`c.workspace_id = ${row.workspaceId}`)
+    return target ? { boardId: target.board_id, columnId: target.id } : null
+  }
+
   /** How undoing this change stands, against `state`: now, and after the newer changes being undone. */
   private check(row: Row, undoing: Set<string>, state: State): Check {
     const db = this.deps.db
@@ -319,7 +362,7 @@ export class UndoService {
     }
     const takeAway = (key: string, real: () => boolean): Check => {
       if (!has(key, real)) return { status: 'unchanged' }
-      const status = this.laterChanges(row, false, undoing, state.restoring).length ? 'conflict' : 'ready'
+      const status = this.laterChanges(row, false, undoing, state).length ? 'conflict' : 'ready'
       if (status === 'ready') state.exists.set(key, false)
       return { status, exists: false }
     }
@@ -361,9 +404,15 @@ export class UndoService {
 
     switch (kind) {
       case 'page.deleted':
-        return bringBack(entityKey, () => entityExists)
-      case 'card.deleted':
-        return bringBack(entityKey, () => entityExists)
+      case 'card.deleted': {
+        if (has(entityKey, () => entityExists)) return { status: 'unchanged' }
+        // Where it goes back: where it was, unless that place is gone by then.
+        const place = this.returnPlace(row, state)
+        if (place === null) return { status: 'impossible', reason: 'place_gone' }
+        const check = bringBack(entityKey, () => entityExists)
+        if (check.status === 'ready' && place) state.values.set(`${row.entityId}|${row.entityType}.moved|`, place)
+        return check
+      }
       case 'page.created':
       case 'page.restored':
       case 'card.created':
@@ -445,13 +494,14 @@ export class UndoService {
       // Its labels, links, checklists and items: there, or coming back with it.
       const labelIds = () => {
         if (live) return db.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, card.id)).all().map((l) => l.id)
-        // Back from the trash, it keeps only those of its labels still on its board.
+        // Back from the trash, it keeps only those of its labels on the board it goes back to.
         const ids = kept('card_labels', card.id, 'card_id').map(({ data }) => String(data.label_id))
         if (!ids.length) return []
+        const board = (state.values.get(`${card.id}|card.moved|`) as CardPlace | undefined)?.boardId ?? card.boardId
         return db
           .select({ id: labels.id })
           .from(labels)
-          .where(and(eq(labels.boardId, card.boardId), sql`${labels.id} IN (SELECT value FROM json_each(${JSON.stringify(ids)}))`))
+          .where(and(eq(labels.boardId, board), sql`${labels.id} IN (SELECT value FROM json_each(${JSON.stringify(ids)}))`))
           .all()
           .map((l) => l.id)
       }
