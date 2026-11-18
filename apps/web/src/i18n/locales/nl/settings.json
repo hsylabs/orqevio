@@ -89,6 +89,11 @@
     "typeName": "Typ ‘{{name}}’ om te bevestigen",
     "restoreConfirm": "Terugzetten"
   },
+  "export": {
+    "title": "Je gegevens exporteren",
+    "description": "Een ZIP om je gegevens te lezen of mee te nemen: de taken van elke werkruimte als JSON, de documenten als Markdown en de bijlagen. Zonder de kluis, die een eigen versleutelde export heeft, en zonder geschiedenis en prullenbak.",
+    "action": "ZIP downloaden"
+  },
   "erase": {
     "title": "Deze installatie wissen",
     "description": "Wist je werkruimtes, je kluis en je tokens definitief. De installatie vraagt daarna opnieuw om de installatiecode.",

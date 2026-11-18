@@ -131,6 +131,19 @@ export function createApi(env: Env) {
     return c.json({ restored })
   })
 
+  // ── Export: the person's data as a ZIP to read or take elsewhere (people only) ──
+  api.get('/export', async (c) => {
+    const { body, filename } = await c.get('services').export.export(requireActor(c))
+    return new Response(body, {
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    })
+  })
+
   // ── Workspaces ──────────────────────────────────────────────────
   api.get('/workspaces', async (c) => c.json(await c.get('services').workspaces.list(requireActor(c))))
   api.post('/workspaces', async (c) => c.json(await c.get('services').workspaces.create(requireActor(c), await json(c)), 201))

@@ -5,6 +5,7 @@ import { AttachmentService } from './attachments'
 import { BackupService } from './backups'
 import { BoardService } from './boards'
 import { CardService } from './cards'
+import { ExportService } from './export'
 import type { Deps } from './deps'
 import { HistoryService } from './history'
 import { OAuthService } from './oauth'
@@ -52,6 +53,7 @@ export function createServices(deps: Deps) {
     vault: new VaultService(deps, access),
     accounts,
     backups,
+    export: new ExportService(deps, access),
     updates: new UpdateService(deps, access),
   }
 }

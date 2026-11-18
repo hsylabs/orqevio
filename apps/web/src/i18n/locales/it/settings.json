@@ -91,6 +91,11 @@
     "typeName": "Scrivi «{{name}}» per confermare",
     "restoreConfirm": "Ripristina"
   },
+  "export": {
+    "title": "Esportare i tuoi dati",
+    "description": "Uno ZIP per leggere i tuoi dati o portarli altrove: le attività di ogni spazio in JSON, i documenti in Markdown e gli allegati. Senza la cassaforte, che ha la sua esportazione cifrata, né la cronologia né il cestino.",
+    "action": "Scarica uno ZIP"
+  },
   "erase": {
     "title": "Cancella questa copia",
     "description": "Cancella in modo definitivo i tuoi spazi, la tua cassaforte e i tuoi token. La copia chiederà di nuovo il codice di configurazione.",

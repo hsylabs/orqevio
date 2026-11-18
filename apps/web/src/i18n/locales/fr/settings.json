@@ -91,6 +91,11 @@
     "typeName": "Saisissez « {{name}} » pour confirmer",
     "restoreConfirm": "Restaurer"
   },
+  "export": {
+    "title": "Exporter vos données",
+    "description": "Un ZIP pour lire vos données ou les emporter ailleurs : les tâches de chaque espace en JSON, ses documents en Markdown et les pièces jointes. Sans le coffre-fort, qui a son propre export chiffré, ni l’historique ni la corbeille.",
+    "action": "Télécharger un ZIP"
+  },
   "erase": {
     "title": "Effacer cette copie",
     "description": "Efface définitivement vos espaces, votre coffre-fort et vos jetons. La copie vous redemandera le code de configuration.",

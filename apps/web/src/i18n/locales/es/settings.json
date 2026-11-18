@@ -91,6 +91,11 @@
     "typeName": "Escribe «{{name}}» para confirmar",
     "restoreConfirm": "Restaurar"
   },
+  "export": {
+    "title": "Exportar tus datos",
+    "description": "Un ZIP para leer tus datos o llevártelos: las tareas de cada espacio en JSON, sus documentos en Markdown y los adjuntos. Sin la bóveda, que tiene su propia exportación cifrada, ni el historial ni la papelera.",
+    "action": "Descargar un ZIP"
+  },
   "erase": {
     "title": "Borrar esta copia",
     "description": "Borra tus espacios, tu bóveda y tus tokens de forma permanente. La copia volverá a pedir el código de configuración.",
