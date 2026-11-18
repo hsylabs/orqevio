@@ -16,7 +16,8 @@
     "last_workspace": "Você precisa manter pelo menos um espaço.",
     "restore_place_in_trash": "Restaure primeiro aquilo a que isto pertence: também está na lixeira.",
     "restore_place_gone": "O lugar a que pertencia não existe mais, e não há outro onde colocá-lo.",
-    "vault_key_changed": "O cofre mudou em outra aba ou em outro dispositivo. Abra-o de novo."
+    "vault_key_changed": "O cofre mudou em outra aba ou em outro dispositivo. Abra-o de novo.",
+    "vault_full": "O cofre comporta até 5.000 itens. Exclua os que você não usa mais para adicionar outros."
   },
   "notFound": "O item não foi encontrado.",
   "server": "Algo deu errado no servidor. Tente novamente.",

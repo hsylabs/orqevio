@@ -15,7 +15,8 @@
     "last_workspace": "Je moet minstens één werkruimte houden.",
     "restore_place_in_trash": "Zet eerst terug waar dit bij hoort: dat staat ook in de prullenbak.",
     "restore_place_gone": "De plek waar het bij hoorde, bestaat niet meer, en er is geen andere plek om het terug te zetten.",
-    "vault_key_changed": "De kluis is gewijzigd in een ander tabblad of op een ander apparaat. Open hem opnieuw."
+    "vault_key_changed": "De kluis is gewijzigd in een ander tabblad of op een ander apparaat. Open hem opnieuw.",
+    "vault_full": "De kluis bevat maximaal 5.000 items. Verwijder items die je niet meer gebruikt om er meer toe te voegen."
   },
   "notFound": "Het item is niet gevonden.",
   "server": "Er ging iets mis op de server. Probeer het opnieuw.",
