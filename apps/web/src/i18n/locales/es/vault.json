@@ -242,7 +242,8 @@
       "empty": "El archivo está vacío.",
       "unknown_format": "No reconozco este archivo. Usa el CSV que exportan Chrome, Edge, Firefox o Safari, el CSV o el JSON de Bitwarden, o una copia de Orqevio.",
       "bitwarden_encrypted": "Es una exportación cifrada de Bitwarden. Expórtala de nuevo en formato «.json» o «.csv» sin cifrar e impórtala aquí.",
-      "no_items": "El archivo no contiene credenciales ni notas."
+      "no_items": "El archivo no contiene credenciales ni notas.",
+      "unclosed_quote": "Una comilla abierta en la línea {{line}} no se cierra: el archivo está incompleto o dañado. Ábrelo en una hoja de cálculo, revísalo y vuelve a guardarlo como CSV."
     },
     "encrypted_one": "Es una copia cifrada de Orqevio con {{count}} elemento. Escribe la contraseña maestra que tenías al exportarla.",
     "encrypted_many": "Es una copia cifrada de Orqevio con {{count}} elementos. Escribe la contraseña maestra que tenías al exportarla.",
@@ -269,9 +270,19 @@
     "duplicates_one": "{{count}} elemento ya estaba en tu bóveda y se omite",
     "duplicates_many": "{{count}} elementos ya estaban en tu bóveda y se omiten",
     "duplicates_other": "{{count}} elementos ya estaban en tu bóveda y se omiten",
-    "unsupported_one": "{{count}} elemento no es compatible (tarjetas o identidades) y no se importa",
-    "unsupported_many": "{{count}} elementos no son compatibles (tarjetas o identidades) y no se importan",
-    "unsupported_other": "{{count}} elementos no son compatibles (tarjetas o identidades) y no se importan",
+    "extras_one": "{{count}} elemento trae campos personalizados, más direcciones o contraseñas anteriores: se guardan en sus notas",
+    "extras_many": "{{count}} elementos traen campos personalizados, más direcciones o contraseñas anteriores: se guardan en sus notas",
+    "extras_other": "{{count}} elementos traen campos personalizados, más direcciones o contraseñas anteriores: se guardan en sus notas",
+    "passkeys_one": "{{count}} credencial tiene una llave de acceso (passkey), que no se puede importar; el resto de la credencial, sí",
+    "passkeys_many": "{{count}} credenciales tienen una llave de acceso (passkey), que no se puede importar; el resto de cada credencial, sí",
+    "passkeys_other": "{{count}} credenciales tienen una llave de acceso (passkey), que no se puede importar; el resto de cada credencial, sí",
+    "unsupported_one": "{{count}} elemento no es compatible (tarjetas, identidades o claves SSH) y no se importa",
+    "unsupported_many": "{{count}} elementos no son compatibles (tarjetas, identidades o claves SSH) y no se importan",
+    "unsupported_other": "{{count}} elementos no son compatibles (tarjetas, identidades o claves SSH) y no se importan",
+    "tooLong_one": "{{count}} elemento es más grande de lo que admite la bóveda y no se importa: {{titles}}",
+    "tooLong_many": "{{count}} elementos son más grandes de lo que admite la bóveda y no se importan: {{titles}}",
+    "tooLong_other": "{{count}} elementos son más grandes de lo que admite la bóveda y no se importan: {{titles}}",
+    "latin1": "El archivo no estaba en UTF-8 y se ha leído como Windows-1252 (Latin-1), la codificación de las hojas de cálculo antiguas. Comprueba que las tildes y los caracteres especiales se ven bien antes de importar.",
     "unencryptedWarning": "El archivo que has elegido no está cifrado: bórralo de tu ordenador cuando termines.",
     "chooseAnother": "Elegir otro",
     "progress": "Cifrando {{done}} de {{total}}…",
@@ -287,7 +298,12 @@
     "locked": "La bóveda se ha bloqueado antes de terminar la importación. Desbloquéala y vuelve a importar el archivo: lo ya importado se omitirá.",
     "untitledNote": "Nota",
     "untitledLogin": "Sin nombre",
-    "damaged": "La copia está dañada."
+    "damaged": "La copia está dañada.",
+    "extra": {
+      "fields": "Campos personalizados:",
+      "uris": "Otras direcciones:",
+      "history": "Contraseñas anteriores:"
+    }
   },
   "export": {
     "title": "Exportar la bóveda",

@@ -237,7 +237,8 @@
       "empty": "The file is empty.",
       "unknown_format": "Orqevio doesn’t recognize this file. Use the CSV that Chrome, Edge, Firefox, or Safari export, Bitwarden’s CSV or JSON, or an Orqevio export.",
       "bitwarden_encrypted": "This is an encrypted Bitwarden export. Export it again as unencrypted “.json” or “.csv” and import it here.",
-      "no_items": "The file has no logins or notes."
+      "no_items": "The file has no logins or notes.",
+      "unclosed_quote": "A quote opened on line {{line}} never closes, so the file is cut short or damaged. Open it in a spreadsheet, check it and save it again as CSV."
     },
     "encrypted_one": "This is an encrypted Orqevio export with {{count}} item. Enter the master password you had when you exported it.",
     "encrypted_other": "This is an encrypted Orqevio export with {{count}} items. Enter the master password you had when you exported it.",
@@ -260,8 +261,15 @@
     "nothingNew": "Nothing new to import",
     "duplicates_one": "{{count}} item is already in your vault and will be skipped",
     "duplicates_other": "{{count}} items are already in your vault and will be skipped",
-    "unsupported_one": "{{count}} item isn’t supported (cards or identities) and won’t be imported",
-    "unsupported_other": "{{count}} items aren’t supported (cards or identities) and won’t be imported",
+    "extras_one": "{{count}} item has custom fields, more addresses or older passwords: they go into its notes",
+    "extras_other": "{{count}} items have custom fields, more addresses or older passwords: they go into their notes",
+    "passkeys_one": "{{count}} login has a passkey, which can’t be imported; the rest of it can",
+    "passkeys_other": "{{count}} logins have a passkey, which can’t be imported; the rest of each one can",
+    "unsupported_one": "{{count}} item isn’t supported (cards, identities or SSH keys) and won’t be imported",
+    "unsupported_other": "{{count}} items aren’t supported (cards, identities or SSH keys) and won’t be imported",
+    "tooLong_one": "{{count}} item is larger than the vault can hold and won’t be imported: {{titles}}",
+    "tooLong_other": "{{count}} items are larger than the vault can hold and won’t be imported: {{titles}}",
+    "latin1": "The file wasn’t in UTF-8, so it was read as Windows-1252 (Latin-1), the encoding of older spreadsheets. Check that accents and special characters look right before importing.",
     "unencryptedWarning": "The file you chose isn’t encrypted: delete it from your computer when you’re done.",
     "chooseAnother": "Choose another",
     "progress": "Encrypting {{done}} of {{total}}…",
@@ -274,7 +282,12 @@
     "locked": "The vault locked before the import finished. Unlock it and import the file again: anything already imported will be skipped.",
     "untitledNote": "Note",
     "untitledLogin": "Untitled",
-    "damaged": "This export is damaged and can’t be read."
+    "damaged": "This export is damaged and can’t be read.",
+    "extra": {
+      "fields": "Custom fields:",
+      "uris": "Other addresses:",
+      "history": "Older passwords:"
+    }
   },
   "export": {
     "title": "Export the vault",

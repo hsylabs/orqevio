@@ -27,7 +27,7 @@ import { type VaultBlocker, vaultBlockers } from '../../lib/browser'
 import { announceVaultChange, freshVaultState, lockIfVaultChanged } from './sync'
 import { estimateMasterPassword } from './strength'
 import { groupCode, parseTotp, totp } from './totp'
-import { ITEM_LIMITS, type VaultItem, type VaultItemType, emptyItem } from './types'
+import { ITEM_LIMITS, type VaultItem, type VaultItemType, emptyItem, tidyItem } from './types'
 import { VaultSetup, VaultUnlock } from './VaultGate'
 
 const CLIPBOARD_MS = 30_000
@@ -205,7 +205,9 @@ function Unlocked() {
   async function save(item: VaultItem) {
     const s = getSession()
     if (!s.key || s.keyVersion === null || !s.userId) return false
-    const next = { ...item, title: item.title.trim() || (item.type === 'login' ? host(item.url) || t('untitled.login') : t('untitled.note')), updatedAt: new Date().toISOString() }
+    // Tidied as an import is, so that the same item exported and imported again is seen as the same.
+    const tidy = tidyItem(item)
+    const next = { ...tidy, title: tidy.title || (item.type === 'login' ? host(tidy.url) || t('untitled.login') : t('untitled.note')), updatedAt: new Date().toISOString() }
     try {
       const data = await encryptItem(s.key, s.userId, next)
       await put(`/vault/items/${next.id}`, { data, keyVersion: s.keyVersion })

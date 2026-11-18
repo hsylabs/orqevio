@@ -242,7 +242,8 @@
       "empty": "Le fichier est vide.",
       "unknown_format": "Orqevio ne reconnaît pas ce fichier. Utilisez le CSV exporté par Chrome, Edge, Firefox ou Safari, le CSV ou le JSON de Bitwarden, ou un export d’Orqevio.",
       "bitwarden_encrypted": "Il s’agit d’un export Bitwarden chiffré. Exportez-le de nouveau au format « .json » ou « .csv » non chiffré, puis importez-le ici.",
-      "no_items": "Le fichier ne contient ni identifiants ni notes."
+      "no_items": "Le fichier ne contient ni identifiants ni notes.",
+      "unclosed_quote": "Un guillemet ouvert à la ligne {{line}} n’est jamais fermé : le fichier est incomplet ou endommagé. Ouvrez-le dans un tableur, vérifiez-le et enregistrez-le de nouveau au format CSV."
     },
     "encrypted_one": "Il s’agit d’un export Orqevio chiffré contenant {{count}} élément. Saisissez le mot de passe principal que vous utilisiez au moment de l’export.",
     "encrypted_many": "Il s’agit d’un export Orqevio chiffré contenant {{count}} éléments. Saisissez le mot de passe principal que vous utilisiez au moment de l’export.",
@@ -269,9 +270,19 @@
     "duplicates_one": "{{count}} élément figure déjà dans votre coffre-fort et sera ignoré",
     "duplicates_many": "{{count}} éléments figurent déjà dans votre coffre-fort et seront ignorés",
     "duplicates_other": "{{count}} éléments figurent déjà dans votre coffre-fort et seront ignorés",
-    "unsupported_one": "{{count}} élément n’est pas pris en charge (cartes bancaires ou identités) et ne sera pas importé",
-    "unsupported_many": "{{count}} éléments ne sont pas pris en charge (cartes bancaires ou identités) et ne seront pas importés",
-    "unsupported_other": "{{count}} éléments ne sont pas pris en charge (cartes bancaires ou identités) et ne seront pas importés",
+    "extras_one": "{{count}} élément contient des champs personnalisés, d’autres adresses ou d’anciens mots de passe : ils sont ajoutés à ses notes",
+    "extras_many": "{{count}} éléments contiennent des champs personnalisés, d’autres adresses ou d’anciens mots de passe : ils sont ajoutés à leurs notes",
+    "extras_other": "{{count}} éléments contiennent des champs personnalisés, d’autres adresses ou d’anciens mots de passe : ils sont ajoutés à leurs notes",
+    "passkeys_one": "{{count}} identifiant possède une clé d’accès (passkey), qui ne peut pas être importée ; le reste de l’identifiant, si",
+    "passkeys_many": "{{count}} identifiants possèdent une clé d’accès (passkey), qui ne peut pas être importée ; le reste de chaque identifiant, si",
+    "passkeys_other": "{{count}} identifiants possèdent une clé d’accès (passkey), qui ne peut pas être importée ; le reste de chaque identifiant, si",
+    "unsupported_one": "{{count}} élément n’est pas pris en charge (cartes bancaires, identités ou clés SSH) et ne sera pas importé",
+    "unsupported_many": "{{count}} éléments ne sont pas pris en charge (cartes bancaires, identités ou clés SSH) et ne seront pas importés",
+    "unsupported_other": "{{count}} éléments ne sont pas pris en charge (cartes bancaires, identités ou clés SSH) et ne seront pas importés",
+    "tooLong_one": "{{count}} élément est plus volumineux que ce que le coffre-fort peut contenir et ne sera pas importé : {{titles}}",
+    "tooLong_many": "{{count}} éléments sont plus volumineux que ce que le coffre-fort peut contenir et ne seront pas importés : {{titles}}",
+    "tooLong_other": "{{count}} éléments sont plus volumineux que ce que le coffre-fort peut contenir et ne seront pas importés : {{titles}}",
+    "latin1": "Le fichier n’était pas en UTF-8 : il a été lu en Windows-1252 (Latin-1), l’encodage des anciens tableurs. Vérifiez que les accents et les caractères spéciaux s’affichent correctement avant d’importer.",
     "unencryptedWarning": "Le fichier choisi n’est pas chiffré : supprimez-le de votre ordinateur une fois l’import terminé.",
     "chooseAnother": "En choisir un autre",
     "progress": "Chiffrement {{done}} sur {{total}}…",
@@ -287,7 +298,12 @@
     "locked": "Le coffre-fort s’est verrouillé avant la fin de l’import. Déverrouillez-le et importez à nouveau le fichier : ce qui a déjà été importé sera ignoré.",
     "untitledNote": "Note",
     "untitledLogin": "Sans titre",
-    "damaged": "Cet export est endommagé et ne peut pas être lu."
+    "damaged": "Cet export est endommagé et ne peut pas être lu.",
+    "extra": {
+      "fields": "Champs personnalisés :",
+      "uris": "Autres adresses :",
+      "history": "Anciens mots de passe :"
+    }
   },
   "export": {
     "title": "Exporter le coffre-fort",

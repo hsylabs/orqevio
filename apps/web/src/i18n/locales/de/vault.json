@@ -237,7 +237,8 @@
       "empty": "Die Datei ist leer.",
       "unknown_format": "Orqevio erkennt diese Datei nicht. Verwende den CSV-Export von Chrome, Edge, Firefox oder Safari, CSV oder JSON von Bitwarden oder einen Orqevio-Export.",
       "bitwarden_encrypted": "Das ist ein verschlüsselter Bitwarden-Export. Exportiere ihn erneut unverschlüsselt als „.json“ oder „.csv“ und importiere ihn hier.",
-      "no_items": "Die Datei enthält keine Logins oder Notizen."
+      "no_items": "Die Datei enthält keine Logins oder Notizen.",
+      "unclosed_quote": "Ein Anführungszeichen in Zeile {{line}} wird nie geschlossen: Die Datei ist unvollständig oder beschädigt. Öffne sie in einer Tabellenkalkulation, prüfe sie und speichere sie erneut als CSV."
     },
     "encrypted_one": "Das ist ein verschlüsselter Orqevio-Export mit {{count}} Eintrag. Gib das Master-Passwort ein, das du beim Exportieren hattest.",
     "encrypted_other": "Das ist ein verschlüsselter Orqevio-Export mit {{count}} Einträgen. Gib das Master-Passwort ein, das du beim Exportieren hattest.",
@@ -260,8 +261,15 @@
     "nothingNew": "Nichts Neues zu importieren",
     "duplicates_one": "{{count}} Eintrag ist bereits in deinem Tresor und wird übersprungen",
     "duplicates_other": "{{count}} Einträge sind bereits in deinem Tresor und werden übersprungen",
-    "unsupported_one": "{{count}} Eintrag wird nicht unterstützt (Zahlungskarten oder Identitäten) und nicht importiert",
-    "unsupported_other": "{{count}} Einträge werden nicht unterstützt (Zahlungskarten oder Identitäten) und nicht importiert",
+    "extras_one": "{{count}} Eintrag hat benutzerdefinierte Felder, weitere Adressen oder frühere Passwörter: Sie kommen in seine Notizen",
+    "extras_other": "{{count}} Einträge haben benutzerdefinierte Felder, weitere Adressen oder frühere Passwörter: Sie kommen in ihre Notizen",
+    "passkeys_one": "{{count}} Login hat einen Passkey, der nicht importiert werden kann; der Rest des Logins schon",
+    "passkeys_other": "{{count}} Logins haben einen Passkey, der nicht importiert werden kann; der Rest jedes Logins schon",
+    "unsupported_one": "{{count}} Eintrag wird nicht unterstützt (Zahlungskarten, Identitäten oder SSH-Schlüssel) und nicht importiert",
+    "unsupported_other": "{{count}} Einträge werden nicht unterstützt (Zahlungskarten, Identitäten oder SSH-Schlüssel) und nicht importiert",
+    "tooLong_one": "{{count}} Eintrag ist größer, als der Tresor aufnehmen kann, und wird nicht importiert: {{titles}}",
+    "tooLong_other": "{{count}} Einträge sind größer, als der Tresor aufnehmen kann, und werden nicht importiert: {{titles}}",
+    "latin1": "Die Datei war nicht in UTF-8 und wurde als Windows-1252 (Latin-1) gelesen, die Kodierung älterer Tabellenkalkulationen. Prüfe vor dem Import, ob Umlaute und Sonderzeichen richtig aussehen.",
     "unencryptedWarning": "Die gewählte Datei ist nicht verschlüsselt: Lösche sie von deinem Computer, wenn du fertig bist.",
     "chooseAnother": "Andere wählen",
     "progress": "{{done}} von {{total}} werden verschlüsselt…",
@@ -274,7 +282,12 @@
     "locked": "Der Tresor wurde gesperrt, bevor der Import abgeschlossen war. Entsperre ihn und importiere die Datei erneut: Bereits Importiertes wird übersprungen.",
     "untitledNote": "Notiz",
     "untitledLogin": "Unbenannt",
-    "damaged": "Dieser Export ist beschädigt und kann nicht gelesen werden."
+    "damaged": "Dieser Export ist beschädigt und kann nicht gelesen werden.",
+    "extra": {
+      "fields": "Benutzerdefinierte Felder:",
+      "uris": "Weitere Adressen:",
+      "history": "Frühere Passwörter:"
+    }
   },
   "export": {
     "title": "Tresor exportieren",

@@ -35,7 +35,9 @@ test('tabs follow the vault at once, and another device can no longer save with 
   try {
     const workspaceId = await openNewWorkspace(page, 'Pestañas E2E')
     const vaultUrl = `/w/${workspaceId}/vault`
-    await page.goto(vaultUrl)
+    // From the sidebar, not a new page load: leaving a page still fetching its fonts makes Firefox
+    // log their download as failed.
+    await page.getByRole('link', { name: /^Bóveda/ }).click()
     await createVault(page, FIRST)
     await page.getByRole('button', { name: 'Nueva credencial' }).click()
     await page.getByLabel('Nombre').fill('Banco')

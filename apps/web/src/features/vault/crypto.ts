@@ -198,6 +198,14 @@ export async function recoverVault(state: VaultStateDTO, recoveryKey: string, ne
   }
 }
 
+/**
+ * How long an item's envelope will be, without encrypting it: "v1.", the 12-byte IV and a dot
+ * (20 characters), then the item's JSON in UTF-8 with the 16-byte GCM tag, in unpadded base64url.
+ */
+export function itemEnvelopeLength(item: VaultItem) {
+  return 20 + Math.ceil(((enc.encode(JSON.stringify(item)).length + 16) * 4) / 3)
+}
+
 export async function encryptItem(vaultKey: CryptoKey, userId: string, item: VaultItem): Promise<string> {
   return seal(vaultKey, enc.encode(JSON.stringify(item)), itemAad(userId, item.id))
 }

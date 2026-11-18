@@ -242,7 +242,8 @@
       "empty": "O arquivo está vazio.",
       "unknown_format": "O Orqevio não reconhece este arquivo. Use o CSV exportado pelo Chrome, Edge, Firefox ou Safari, o CSV ou JSON do Bitwarden, ou uma exportação do Orqevio.",
       "bitwarden_encrypted": "Esta é uma exportação criptografada do Bitwarden. Exporte de novo como “.json” ou “.csv” sem criptografia e importe aqui.",
-      "no_items": "O arquivo não tem logins nem notas."
+      "no_items": "O arquivo não tem logins nem notas.",
+      "unclosed_quote": "Uma aspa aberta na linha {{line}} nunca é fechada: o arquivo está incompleto ou danificado. Abra-o em uma planilha, revise-o e salve-o de novo como CSV."
     },
     "encrypted_one": "Esta é uma exportação criptografada do Orqevio com {{count}} item. Digite a senha mestra que você usava quando a exportou.",
     "encrypted_many": "Esta é uma exportação criptografada do Orqevio com {{count}} itens. Digite a senha mestra que você usava quando a exportou.",
@@ -269,9 +270,19 @@
     "duplicates_one": "{{count}} item já está no seu cofre e será ignorado",
     "duplicates_many": "{{count}} itens já estão no seu cofre e serão ignorados",
     "duplicates_other": "{{count}} itens já estão no seu cofre e serão ignorados",
-    "unsupported_one": "{{count}} item não é compatível (cartões de pagamento ou identidades) e não será importado",
-    "unsupported_many": "{{count}} itens não são compatíveis (cartões de pagamento ou identidades) e não serão importados",
-    "unsupported_other": "{{count}} itens não são compatíveis (cartões de pagamento ou identidades) e não serão importados",
+    "extras_one": "{{count}} item tem campos personalizados, outros endereços ou senhas anteriores: eles vão para as notas dele",
+    "extras_many": "{{count}} itens têm campos personalizados, outros endereços ou senhas anteriores: eles vão para as notas de cada um",
+    "extras_other": "{{count}} itens têm campos personalizados, outros endereços ou senhas anteriores: eles vão para as notas de cada um",
+    "passkeys_one": "{{count}} login tem uma chave de acesso (passkey), que não pode ser importada; o resto do login, sim",
+    "passkeys_many": "{{count}} logins têm uma chave de acesso (passkey), que não pode ser importada; o resto de cada login, sim",
+    "passkeys_other": "{{count}} logins têm uma chave de acesso (passkey), que não pode ser importada; o resto de cada login, sim",
+    "unsupported_one": "{{count}} item não é compatível (cartões de pagamento, identidades ou chaves SSH) e não será importado",
+    "unsupported_many": "{{count}} itens não são compatíveis (cartões de pagamento, identidades ou chaves SSH) e não serão importados",
+    "unsupported_other": "{{count}} itens não são compatíveis (cartões de pagamento, identidades ou chaves SSH) e não serão importados",
+    "tooLong_one": "{{count}} item é maior do que o cofre comporta e não será importado: {{titles}}",
+    "tooLong_many": "{{count}} itens são maiores do que o cofre comporta e não serão importados: {{titles}}",
+    "tooLong_other": "{{count}} itens são maiores do que o cofre comporta e não serão importados: {{titles}}",
+    "latin1": "O arquivo não estava em UTF-8 e foi lido como Windows-1252 (Latin-1), a codificação de planilhas antigas. Confira se os acentos e os caracteres especiais aparecem corretamente antes de importar.",
     "unencryptedWarning": "O arquivo que você escolheu não está criptografado: exclua-o do seu computador quando terminar.",
     "chooseAnother": "Escolher outro",
     "progress": "Criptografando {{done}} de {{total}}…",
@@ -287,7 +298,12 @@
     "locked": "O cofre foi bloqueado antes de a importação terminar. Desbloqueie-o e importe o arquivo de novo: o que já foi importado será ignorado.",
     "untitledNote": "Nota",
     "untitledLogin": "Sem título",
-    "damaged": "Esta exportação está danificada e não pode ser lida."
+    "damaged": "Esta exportação está danificada e não pode ser lida.",
+    "extra": {
+      "fields": "Campos personalizados:",
+      "uris": "Outros endereços:",
+      "history": "Senhas anteriores:"
+    }
   },
   "export": {
     "title": "Exportar o cofre",

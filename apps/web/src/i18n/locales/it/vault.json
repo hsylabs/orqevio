@@ -242,7 +242,8 @@
       "empty": "Il file è vuoto.",
       "unknown_format": "Orqevio non riconosce questo file. Usa il CSV esportato da Chrome, Edge, Firefox o Safari, il CSV o il JSON di Bitwarden, oppure un’esportazione di Orqevio.",
       "bitwarden_encrypted": "Questa è un’esportazione cifrata di Bitwarden. Esportala di nuovo in formato «.json» o «.csv» non cifrato e importala qui.",
-      "no_items": "Il file non contiene né login né note."
+      "no_items": "Il file non contiene né login né note.",
+      "unclosed_quote": "Le virgolette aperte alla riga {{line}} non vengono mai chiuse: il file è incompleto o danneggiato. Aprilo in un foglio di calcolo, controllalo e salvalo di nuovo come CSV."
     },
     "encrypted_one": "Questa è un’esportazione cifrata di Orqevio con {{count}} elemento. Inserisci la password principale che avevi quando l’hai esportata.",
     "encrypted_many": "Questa è un’esportazione cifrata di Orqevio con {{count}} elementi. Inserisci la password principale che avevi quando l’hai esportata.",
@@ -269,9 +270,19 @@
     "duplicates_one": "{{count}} elemento è già nella tua cassaforte e verrà saltato",
     "duplicates_many": "{{count}} elementi sono già nella tua cassaforte e verranno saltati",
     "duplicates_other": "{{count}} elementi sono già nella tua cassaforte e verranno saltati",
-    "unsupported_one": "{{count}} elemento non è supportato (carte di pagamento o identità) e non verrà importato",
-    "unsupported_many": "{{count}} elementi non sono supportati (carte di pagamento o identità) e non verranno importati",
-    "unsupported_other": "{{count}} elementi non sono supportati (carte di pagamento o identità) e non verranno importati",
+    "extras_one": "{{count}} elemento ha campi personalizzati, altri indirizzi o password precedenti: vengono salvati nelle sue note",
+    "extras_many": "{{count}} elementi hanno campi personalizzati, altri indirizzi o password precedenti: vengono salvati nelle loro note",
+    "extras_other": "{{count}} elementi hanno campi personalizzati, altri indirizzi o password precedenti: vengono salvati nelle loro note",
+    "passkeys_one": "{{count}} login ha una passkey, che non si può importare; il resto del login sì",
+    "passkeys_many": "{{count}} login hanno una passkey, che non si può importare; il resto di ogni login sì",
+    "passkeys_other": "{{count}} login hanno una passkey, che non si può importare; il resto di ogni login sì",
+    "unsupported_one": "{{count}} elemento non è supportato (carte di pagamento, identità o chiavi SSH) e non verrà importato",
+    "unsupported_many": "{{count}} elementi non sono supportati (carte di pagamento, identità o chiavi SSH) e non verranno importati",
+    "unsupported_other": "{{count}} elementi non sono supportati (carte di pagamento, identità o chiavi SSH) e non verranno importati",
+    "tooLong_one": "{{count}} elemento è più grande di quanto la cassaforte possa contenere e non verrà importato: {{titles}}",
+    "tooLong_many": "{{count}} elementi sono più grandi di quanto la cassaforte possa contenere e non verranno importati: {{titles}}",
+    "tooLong_other": "{{count}} elementi sono più grandi di quanto la cassaforte possa contenere e non verranno importati: {{titles}}",
+    "latin1": "Il file non era in UTF-8 ed è stato letto come Windows-1252 (Latin-1), la codifica dei fogli di calcolo più vecchi. Controlla che accenti e caratteri speciali si vedano bene prima di importare.",
     "unencryptedWarning": "Il file che hai scelto non è cifrato: eliminalo dal tuo computer quando hai finito.",
     "chooseAnother": "Scegline un altro",
     "progress": "Cifratura {{done}} di {{total}}…",
@@ -287,7 +298,12 @@
     "locked": "La cassaforte si è bloccata prima della fine dell’importazione. Sbloccala e importa di nuovo il file: ciò che è già stato importato verrà saltato.",
     "untitledNote": "Nota",
     "untitledLogin": "Senza titolo",
-    "damaged": "Questa esportazione è danneggiata e non può essere letta."
+    "damaged": "Questa esportazione è danneggiata e non può essere letta.",
+    "extra": {
+      "fields": "Campi personalizzati:",
+      "uris": "Altri indirizzi:",
+      "history": "Password precedenti:"
+    }
   },
   "export": {
     "title": "Esporta la cassaforte",
