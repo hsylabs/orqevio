@@ -34,7 +34,7 @@ export function ProjectPage() {
         actions={
           <>
             <Button variant="ghost" size="sm" icon={<Pencil />} onClick={() => setSettingsOpen(true)}>
-              <span className="max-sm:hidden">{t('edit')}</span>
+              <span className="max-sm:sr-only">{t('edit')}</span>
             </Button>
             <Button variant="ghost" size="sm" iconOnly icon={<Trash />} aria-label={t('delete')} onClick={() => void actions.deleteProject(project)} />
           </>

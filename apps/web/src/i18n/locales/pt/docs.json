@@ -156,7 +156,9 @@
       "strike": "Tachado",
       "code": "Código",
       "link": "Link"
-    }
+    },
+    "taskCheckbox": "Tarefa: {{text}}",
+    "taskCheckboxEmpty": "Tarefa sem texto"
   },
   "icon": {
     "change": "Mudar ícone",

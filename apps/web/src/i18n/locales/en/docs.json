@@ -156,7 +156,9 @@
       "strike": "Strikethrough",
       "code": "Code",
       "link": "Link"
-    }
+    },
+    "taskCheckbox": "To-do: {{text}}",
+    "taskCheckboxEmpty": "Empty to-do"
   },
   "icon": {
     "change": "Change icon",

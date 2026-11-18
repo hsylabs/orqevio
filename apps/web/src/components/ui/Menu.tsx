@@ -1,19 +1,33 @@
 import { DropdownMenu as M } from 'radix-ui'
-import type { ReactNode } from 'react'
+import { type ReactNode, useCallback, useRef } from 'react'
 import { cn } from '../../lib/cn'
 
 export const MenuRoot = M.Root
 export const MenuTrigger = M.Trigger
 
 export function MenuContent({ children, align = 'end', className, side }: { children: ReactNode; align?: 'start' | 'end' | 'center'; className?: string; side?: 'top' | 'bottom' | 'left' | 'right' }) {
+  // A field meant to take the focus (see Field) that an item brought up, a form say, couldn't take
+  // it while the menu was open: it gets it when the menu closes, instead of the menu's button.
+  const before = useRef<Set<Element>>(new Set())
+  const opened = useCallback((node: HTMLDivElement | null) => {
+    if (node) before.current = new Set(document.querySelectorAll('[data-autofocus]'))
+  }, [])
   return (
     <M.Portal>
       <M.Content
+        ref={opened}
+        onCloseAutoFocus={(e) => {
+          const field = [...document.querySelectorAll<HTMLElement>('[data-autofocus]')].find((el) => !before.current.has(el))
+          if (!field) return
+          e.preventDefault()
+          field.focus()
+        }}
         align={align}
         side={side}
         sideOffset={6}
         collisionPadding={12}
-        className={cn('z-50 min-w-[200px] rounded-[12px] border border-line bg-surface p-1 shadow-lg outline-none', className)}
+        // A long menu (many workspaces, say) scrolls within the screen instead of running off it.
+        className={cn('z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[200px] overflow-y-auto rounded-[12px] border border-line bg-surface p-1 shadow-lg outline-none', className)}
       >
         {children}
       </M.Content>

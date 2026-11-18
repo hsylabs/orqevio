@@ -22,5 +22,8 @@
   },
   "notFound": "Élément introuvable.",
   "server": "Une erreur est survenue sur le serveur. Réessayez.",
-  "unknown": "Une erreur est survenue. Réessayez."
+  "unknown": "Une erreur est survenue. Réessayez.",
+  "invalid": "Certaines données ne sont pas valides. Vérifiez-les et réessayez.",
+  "forbidden": "Vous n’avez pas l’autorisation de faire cela.",
+  "conflict": "Cela a changé entre-temps. Rechargez et réessayez."
 }

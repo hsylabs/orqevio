@@ -5,6 +5,7 @@ import Paragraph from '@tiptap/extension-paragraph'
 import { TableKit } from '@tiptap/extension-table'
 import { Markdown, MarkdownManager, assumeContentType } from '@tiptap/markdown'
 import StarterKit from '@tiptap/starter-kit'
+import { t } from 'i18next'
 
 /**
  * Documents are Markdown, often written by agents, and the editor saves the whole
@@ -229,7 +230,11 @@ export function documentExtensions(): AnyExtension[] {
     FaithfulParagraph,
     FaithfulMarkdown.configure({ markedOptions: { gfm: true } }),
     TaskList,
-    TaskItem.configure({ nested: true }),
+    // What a screen reader says for each checkbox, in the app's language.
+    TaskItem.configure({
+      nested: true,
+      a11y: { checkboxLabel: (node) => (node.textContent ? t('docs:editor.taskCheckbox', { text: node.textContent }) : t('docs:editor.taskCheckboxEmpty')) },
+    }),
     TableKit.configure({ table: { resizable: false } }),
     FaithfulImage,
     RawHtmlBlock,
