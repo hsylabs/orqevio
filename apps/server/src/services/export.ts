@@ -19,8 +19,10 @@ const UNSAFE = /[\u0000-\u001f\u007f<>:"/\\|?*]/g
 const NAME_BYTES = 150
 const utf8 = new TextEncoder()
 
-/** A name that every file system takes: no separators or reserved characters, not too long, never empty. */
-export function safeName(name: string, fallback = 'Untitled', maxBytes = NAME_BYTES) {
+/** Names Windows keeps for devices, even with an extension after them (NUL.txt, con.tar.gz). */
+const DEVICE = /^(?:con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³]|conin\$|conout\$)(?=\.|$)/i
+
+function cleanName(name: string, maxBytes: number) {
   const clean = name.replace(UNSAFE, '-').replace(/\s+/g, ' ').trim().replace(/^\.+/, '').replace(/[. ]+$/, '')
   let cut = ''
   let bytes = 0
@@ -29,21 +31,32 @@ export function safeName(name: string, fallback = 'Untitled', maxBytes = NAME_BY
     if (bytes > maxBytes) break
     cut += char
   }
-  return cut.replace(/[. ]+$/, '') || fallback
+  return cut.replace(/[. ]+$/, '')
+}
+
+/**
+ * A name that every file system takes: no separators or reserved characters, none of the names
+ * Windows keeps for devices ("CON" becomes "CON_"), not too long, never empty.
+ */
+export function safeName(name: string, fallback = 'Untitled', maxBytes = NAME_BYTES) {
+  return cleanName(name, maxBytes).replace(DEVICE, '$&_') || fallback
 }
 
 /**
  * Gives each name once within a folder: "Notes", "Notes (2)"… (compared without case, as on Windows
- * and macOS). A page's name is shared by its file, the folder of its subpages and the one of its
- * attachments ("Notes (files)"): all of them go through the same namer, so none takes another's.
+ * and macOS). A name can take several entries at once: a page takes "Notes.md" for its text and
+ * "Notes" for the folder of its subpages, and its attachments go in "Notes (files)". All of them
+ * go through the same namer, so that no file and no folder takes another's name.
  */
-function namer() {
-  const taken = new Set<string>()
-  return (name: string, extension = '') => {
-    let candidate = `${name}${extension}`
-    for (let n = 2; taken.has(candidate.toLowerCase()); n++) candidate = `${name} (${n})${extension}`
-    taken.add(candidate.toLowerCase())
-    return candidate
+function namer(reserved: string[] = []) {
+  const taken = new Set(reserved.map((name) => name.toLowerCase()))
+  const free = (stem: string, endings: string[]) => endings.every((ending) => !taken.has(`${stem}${ending}`.toLowerCase()))
+  /** The first free stem for every one of `endings` (just the name, by default), which it then takes. */
+  return (name: string, endings = ['']) => {
+    let stem = name
+    for (let n = 2; !free(stem, endings); n++) stem = `${name} (${n})`
+    for (const ending of endings) taken.add(`${stem}${ending}`.toLowerCase())
+    return stem
   }
 }
 
@@ -59,6 +72,8 @@ function linkTo(fromDir: string, target: string) {
 
 /** Links to attachments in a text, as the editor writes them (/api/attachments/<id>, or with the copy's address). */
 const ATTACHMENT_LINK = /(?:https?:\/\/[^\s()<>"']+)?\/api\/attachments\/([0-9a-f-]{36})/g
+/** References to documents, as the editor writes them: [Title](/doc/<id>) (see docHref in @orqevio/shared). */
+const DOC_LINK = /(\]\(\s*)\/doc\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?=[\s)])/gi
 
 const iso = (date: Date | null) => (date ? date.toISOString() : null)
 /** Due dates are calendar days: the day, without the hour they are stored at. */
@@ -110,13 +125,13 @@ export class ExportService {
     void (async () => {
       try {
         // An attachment whose file is gone from storage (a backup restored without it, say) is listed, never an empty file.
-        const missing: string[] = []
-        for (const file of files) if (!(await this.deps.storage.exists(file.storageKey))) missing.push(file.path.slice(root.length + 1))
-        const about = { format: EXPORT_FORMAT, version: 1, app: VERSION, exportedAt: now.toISOString(), workspaces: summary, missingAttachments: missing }
+        const missing = new Set<string>()
+        for (const file of files) if (!(await this.deps.storage.exists(file.storageKey))) missing.add(file.path)
+        const about = { format: EXPORT_FORMAT, version: 1, app: VERSION, exportedAt: now.toISOString(), workspaces: summary, missingAttachments: [...missing].map((path) => path.slice(root.length + 1)) }
         add(new ZipDeflate(`${root}/export.json`, { level: 6 }), strToU8(`${JSON.stringify(about, null, 2)}\n`))
         for (const [path, text] of texts) add(new ZipDeflate(path, { level: 6 }), strToU8(text))
         for (const file of files) {
-          const body = missing.includes(file.path.slice(root.length + 1)) ? null : await this.deps.storage.stream(file.storageKey)
+          const body = missing.has(file.path) ? null : await this.deps.storage.stream(file.storageKey)
           if (!body) continue
           const entry = new ZipPassThrough(file.path)
           zip.add(entry)
@@ -152,7 +167,8 @@ export class ExportService {
       .where(eq(workspaceMembers.userId, userId))
       .orderBy(asc(workspaces.createdAt))
       .all()
-    const workspaceNames = namer()
+    // export.json is at the root, next to the workspaces' folders.
+    const workspaceNames = namer(['export.json'])
     const summary: Array<{ name: string; folder: string }> = []
 
     for (const workspace of memberships) {
@@ -173,7 +189,11 @@ export class ExportService {
       const linkRows = db.select({ cardId: cardPageLinks.cardId, pageId: cardPageLinks.pageId }).from(cardPageLinks).innerJoin(cards, eq(cards.id, cardPageLinks.cardId)).where(eq(cards.workspaceId, workspace.id)).all()
       const group = <T, K>(rows: T[], key: (row: T) => K) => {
         const groups = new Map<K, T[]>()
-        for (const row of rows) groups.set(key(row), [...(groups.get(key(row)) ?? []), row])
+        for (const row of rows) {
+          const bucket = groups.get(key(row))
+          if (bucket) bucket.push(row)
+          else groups.set(key(row), [row])
+        }
         return (k: K) => groups.get(k) ?? []
       }
       const cardById = new Map(cardRows.map((c) => [c.id, c]))
@@ -194,11 +214,7 @@ export class ExportService {
       const pageFilesFolder = new Map<string, string>()
       const projectFolders = namer()
       const projectFolder = new Map(projectRows.map((p) => [p.id, projectFolders(safeName(p.name))]))
-      const byParent = new Map<string, typeof pageRows>()
-      for (const page of pageRows) {
-        const key = page.parentId ?? `project:${page.projectId}`
-        byParent.set(key, [...(byParent.get(key) ?? []), page])
-      }
+      const byParent = group(pageRows, (page) => page.parentId ?? `project:${page.projectId}`)
       const withFiles = new Set(fileRows.map((f) => f.pageId).filter((id): id is string => Boolean(id)))
       const folderNames = new Map<string, ReturnType<typeof namer>>()
       const namesIn = (folder: string) => {
@@ -208,7 +224,8 @@ export class ExportService {
       }
       const place = (page: (typeof pageRows)[number], folder: string) => {
         const names = namesIn(folder)
-        const stem = names(safeName(page.title))
+        // Its text and the folder of its subpages: "A.md" and "A", both free (a sibling "A.md" would take "A.md" as a folder).
+        const stem = names(safeName(page.title), ['.md', ''])
         pagePath.set(page.id, `${folder}/${stem}.md`)
         if (withFiles.has(page.id)) pageFilesFolder.set(page.id, `${folder}/${names(`${stem} (files)`)}`)
         return `${folder}/${stem}`
@@ -216,7 +233,7 @@ export class ExportService {
       const pending: Array<{ key: string; folder: string }> = projectRows.map((p) => ({ key: `project:${p.id}`, folder: `documents/${projectFolder.get(p.id)}` }))
       while (pending.length) {
         const { key, folder } = pending.pop()!
-        for (const page of byParent.get(key) ?? []) {
+        for (const page of byParent(key)) {
           if (pagePath.has(page.id)) continue
           pending.push({ key: page.id, folder: place(page, folder) })
         }
@@ -228,6 +245,7 @@ export class ExportService {
       const filePath = new Map<string, string>()
       const cardFolder = new Map<string, string>()
       const cardFolderNames = namer()
+      let orphans: string | undefined
       for (const file of fileRows) {
         let folder: string | undefined
         if (file.cardId) {
@@ -237,17 +255,22 @@ export class ExportService {
             cardFolder.set(file.cardId, folder)
           }
         } else {
-          folder = pageFilesFolder.get(file.pageId ?? '') ?? `attachments/${cardFolderNames('pages')}`
+          folder = pageFilesFolder.get(file.pageId ?? '') ?? (orphans ??= `attachments/${cardFolderNames('pages')}`)
         }
         const dot = file.filename.lastIndexOf('.')
         const stem = dot > 0 ? file.filename.slice(0, dot) : file.filename
-        const ending = dot > 0 ? safeName(file.filename.slice(dot + 1), '', 16) : ''
-        const path = `${folder}/${namesIn(folder)(safeName(stem, 'file'), ending ? `.${ending}` : '')}`
+        const ending = dot > 0 ? cleanName(file.filename.slice(dot + 1), 16) : ''
+        const extension = ending ? `.${ending}` : ''
+        const path = `${folder}/${namesIn(folder)(safeName(stem, 'file'), [extension])}${extension}`
         filePath.set(file.id, path)
         files.push({ path: `${base}/${path}`, storageKey: file.storageKey, size: file.size })
       }
-      // Links to attachments point at their files in the ZIP, relative to where the text is.
-      const relink = (text: string, fromDir: string) => text.replace(ATTACHMENT_LINK, (link, id: string) => (filePath.has(id) ? linkTo(fromDir, filePath.get(id)!) : link))
+      // Links to attachments and references to documents point at their files in the ZIP, relative
+      // to where the text is. One to anything that isn't in the export stays as it was.
+      const relink = (text: string, fromDir: string) =>
+        text
+          .replace(ATTACHMENT_LINK, (link, id: string) => (filePath.has(id) ? linkTo(fromDir, filePath.get(id)!) : link))
+          .replace(DOC_LINK, (link, open: string, id: string) => (pagePath.has(id.toLowerCase()) ? `${open}${linkTo(fromDir, pagePath.get(id.toLowerCase())!)}` : link))
       for (const page of pageRows) {
         const path = pagePath.get(page.id)
         if (path) texts.push([`${base}/${path}`, relink(page.content, path.slice(0, path.lastIndexOf('/')))])

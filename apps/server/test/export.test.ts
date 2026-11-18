@@ -85,21 +85,28 @@ describe('export', () => {
     expect(names.some((n) => /vault|history|trash/i.test(n))).toBe(false)
   })
 
-  it('keeps every entry apart, links documents to their attachments, walks any depth and lists missing files', async () => {
+  it('keeps every entry apart, links documents to their attachments and to each other, walks any depth and lists missing files', async () => {
     const { client, workspaceId } = await signUp(h, 'Árboles')
     await client.patch(`/api/workspaces/${workspaceId}`, { name: 'Árboles' })
     const { projectId, columns } = await seedBoard(client, workspaceId)
     // A page "A" with an attachment named like a subpage of its sibling "A (files)".
     const a = (await client.post(`/api/projects/${projectId}/pages`, { title: 'A' })).body.id as string
     const sibling = (await client.post(`/api/projects/${projectId}/pages`, { title: 'A (files)' })).body.id as string
-    await client.post(`/api/projects/${projectId}/pages`, { title: 'Child', parentId: sibling, content: 'subpágina' })
+    const child = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Child', parentId: sibling, content: 'subpágina' })).body.id as string
+    // A page "A.md" next to "A": its subpages' folder would be A's file.
+    const dotted = (await client.post(`/api/projects/${projectId}/pages`, { title: 'A.md' })).body.id as string
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Child', parentId: dotted, content: 'bajo A.md' })
+    // A workspace whose folder would be the export's own export.json.
+    expect((await client.post('/api/workspaces', { name: 'export.json' })).status).toBe(201)
     const image = (await client.upload(`/api/pages/${a}/attachments`, 'adjunto', { name: 'Child.md', type: 'text/markdown' })).body as { id: string }
     const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Con plano' })).body.id as string
     const plan = (await client.upload(`/api/cards/${card}/attachments`, 'plano', { name: 'plano (v2).png', type: 'image/png' })).body as { id: string }
     const version = (await client.get(`/api/pages/${a}`)).body.version as number
-    const saved = await client.patch(`/api/pages/${a}`, { content: `![](/api/attachments/${image.id})\n\n[plano](http://localhost:3000/api/attachments/${plan.id})`, baseVersion: version })
+    const elsewhere = '00000000-0000-4000-8000-000000000000'
+    const content = `![](/api/attachments/${image.id})\n\n[plano](http://localhost:3000/api/attachments/${plan.id})\n\n[Hijo](/doc/${child}) [Otro](/doc/${elsewhere})`
+    const saved = await client.patch(`/api/pages/${a}`, { content, baseVersion: version })
     expect(saved.status, JSON.stringify(saved.body)).toBe(200)
-    await client.patch(`/api/cards/${card}`, { description: `Ver ![](/api/attachments/${plan.id})` })
+    await client.patch(`/api/cards/${card}`, { description: `Ver ![](/api/attachments/${plan.id}) y [A](/doc/${a} "A")` })
     // A chain deeper than any limit a recursive walk would have.
     const deep = (await client.post(`/api/workspaces/${workspaceId}/projects`, { name: 'Hondo', color: 'jade' })).body.id as string
     let parent: string | null = null
@@ -113,16 +120,26 @@ describe('export', () => {
     const names = Object.keys(files)
     const root = names[0]!.split('/')[0]!
     const at = (p: string) => files[`${root}/Árboles/${p}`]
-    expect(new Set(names).size).toBe(names.length)
+    // No two entries share a name, even without case, and none is both a file and a folder.
+    expect(new Set(names.map((n) => n.toLowerCase())).size).toBe(names.length)
+    const lower = names.map((n) => n.toLowerCase())
+    expect(lower.filter((n) => lower.some((m) => m.startsWith(`${n}/`)))).toEqual([])
+    expect(files[`${root}/export.json (2)/tasks.json`]).toBeDefined()
     // A's attachments take "A (files)" first: the sibling page becomes "A (files) (2)".
     expect(strFromU8(at('documents/Lanzamiento/A (files)/Child.md')!)).toBe('adjunto')
     expect(strFromU8(at('documents/Lanzamiento/A (files) (2)/Child.md')!)).toBe('subpágina')
     expect(at('documents/Lanzamiento/A (files) (2).md')).toBeDefined()
-    // Links point at the files in the ZIP, relative to the document, encoded.
-    expect(strFromU8(at('documents/Lanzamiento/A.md')!)).toBe('![](A%20%28files%29/Child.md)\n\n[plano](../../attachments/Con%20plano/plano%20%28v2%29.png)')
+    // "A.md" gives way to A's file: "A.md (2).md", with its subpages in "A.md (2)/".
+    expect(strFromU8(at('documents/Lanzamiento/A.md (2)/Child.md')!)).toBe('bajo A.md')
+    expect(at('documents/Lanzamiento/A.md (2).md')).toBeDefined()
+    // Links point at the files in the ZIP, relative to the document, encoded; one to a document
+    // that isn't in the export stays as it was.
+    expect(strFromU8(at('documents/Lanzamiento/A.md')!)).toBe(
+      `![](A%20%28files%29/Child.md)\n\n[plano](../../attachments/Con%20plano/plano%20%28v2%29.png)\n\n[Hijo](A%20%28files%29%20%282%29/Child.md) [Otro](/doc/${elsewhere})`,
+    )
     expect(at('attachments/Con plano/plano (v2).png')).toBeDefined()
     const tasks = JSON.parse(strFromU8(at('tasks.json')!))
-    expect(tasks.projects[0].boards[0].columns[0].cards[0].description).toBe('Ver ![](attachments/Con%20plano/plano%20%28v2%29.png)')
+    expect(tasks.projects[0].boards[0].columns[0].cards[0].description).toBe('Ver ![](attachments/Con%20plano/plano%20%28v2%29.png) y [A](documents/Lanzamiento/A.md "A")')
     expect(names.filter((n) => n.includes('/documents/Hondo/'))).toHaveLength(230)
     expect(names.some((n) => n.endsWith('perdido.txt'))).toBe(false)
     expect(JSON.parse(strFromU8(files[`${root}/export.json`]!)).missingAttachments).toEqual(['Árboles/attachments/Con plano/perdido.txt'])
@@ -145,5 +162,8 @@ describe('export', () => {
     expect(new TextEncoder().encode(emoji).length).toBeLessThanOrEqual(150)
     expect(emoji).toBe('🍳'.repeat(37))
     expect(safeName('línea\nnueva\ttab')).toBe('línea-nueva-tab')
+    // Names Windows keeps for devices, with an extension or not, in any case.
+    expect(['CON', 'nul.txt', 'Aux', 'com1', 'LPT9.tar.gz', 'COM¹', 'conin$'].map((n) => safeName(n))).toEqual(['CON_', 'nul_.txt', 'Aux_', 'com1_', 'LPT9_.tar.gz', 'COM¹_', 'conin$_'])
+    expect(['Console', 'CON2', 'nul-file', 'Comunicación'].map((n) => safeName(n))).toEqual(['Console', 'CON2', 'nul-file', 'Comunicación'])
   })
 })
