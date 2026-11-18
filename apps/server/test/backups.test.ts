@@ -1,0 +1,242 @@
+import { randomBytes } from 'node:crypto'
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import type { BackupDTO } from '@orqevio/shared'
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
+import type { RawSql } from '../src/db/raw'
+import { Client, type Harness, createHarness, seedBoard, signInOwner, signUp } from './harness'
+
+const harnesses: Harness[] = []
+const folders: string[] = []
+async function copy(overrides: Parameters<typeof createHarness>[0] = {}) {
+  const h = await createHarness(overrides)
+  harnesses.push(h)
+  return h
+}
+afterEach(() => vi.useRealTimers())
+afterAll(async () => {
+  for (const h of harnesses) await h.close()
+  for (const dir of folders) await rm(dir, { recursive: true, force: true })
+})
+
+const keys = {
+  kdf: { algorithm: 'argon2id', salt: 'c2FsdHNhbHRzYWx0c2FsdA', memoryKiB: 65536, iterations: 3, parallelism: 1 },
+  wrappedKey: 'v1.aXZpdml2aXZpdml2.Y2lwaGVydGV4dA',
+  recoveryWrappedKey: 'v1.aXZpdml2aXZpdml2.cmVjb3Zlcnk',
+}
+
+/**
+ * Every row of every table, with its rowid, but the sessions and the access key (a restore changes
+ * those on purpose) and the inner tables of full-text search: their rows are compared, and SQLite
+ * lays out its index again as it puts them back.
+ */
+function everything(sql: RawSql) {
+  const tables: Record<string, unknown[][]> = {}
+  for (const [name] of sql.rows("SELECT name FROM sqlite_master WHERE type = 'table' AND substr(name, 1, 7) <> 'sqlite_' ORDER BY name")) {
+    if (name === 'sessions' || name === 'instance' || /_fts_(?:data|idx|content|docsize|config)$/.test(String(name))) continue
+    try {
+      tables[String(name)] = [...sql.rows(`SELECT rowid, * FROM "${name}" ORDER BY rowid`)]
+    } catch {
+      // Tables without a rowid (some of those full-text search keeps).
+      tables[String(name)] = [...sql.rows(`SELECT * FROM "${name}" ORDER BY 1`)]
+    }
+  }
+  return tables
+}
+
+const fileBytes = async (h: Harness, client: Client, id: string) => {
+  const res = await h.app.request(`/api/attachments/${id}`, { headers: { Cookie: client.cookie, Origin: 'http://localhost:3000' } })
+  return new Uint8Array(await res.arrayBuffer())
+}
+
+describe('backups', () => {
+  it('backs up the whole copy and puts it back exactly as it was, attachments, trash, history and vault included', async () => {
+    const h = await copy()
+    const { client, workspaceId, accessKey } = await signUp(h)
+    const { projectId, boardId, columns } = await seedBoard(client, workspaceId)
+    const label = (await client.post(`/api/boards/${boardId}/labels`, { name: 'Urgente', color: 'tomato' })).body.id as string
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Contratar la furgoneta', labelIds: [label] })).body.id as string
+    await client.patch(`/api/cards/${card}`, { description: 'Comparar **tres** presupuestos.' })
+    const list = (await client.post(`/api/cards/${card}/checklists`, { title: 'Pasos' })).body.id as string
+    await client.post(`/api/checklists/${list}/items`, { text: 'Pedir precios' })
+    const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Inventario', content: '# Inventario\n\n- Platos\n- Vasos' })).body.id as string
+    const pdf = randomBytes(300_000)
+    const file = (await client.upload(`/api/cards/${card}/attachments`, pdf, { name: 'presupuesto.pdf', type: 'application/pdf' })).body.id as string
+    const note = (await client.upload(`/api/pages/${page}/attachments`, 'Lista completa', { name: 'lista.txt', type: 'text/plain' })).body.id as string
+    const gone = (await client.post(`/api/columns/${columns[1]!.id}/cards`, { title: 'Dar de baja la luz' })).body.id as string
+    await client.del(`/api/cards/${gone}`)
+    await client.post('/api/vault/setup', keys)
+    await client.put('/api/vault/items/7d1d9b52-5f39-4c43-a43e-36d9c3f06a10', { data: 'v1.aXZpdml2aXZpdml2.c2VjcmV0' })
+
+    const before = everything(h.sql)
+    const made = await client.post('/api/backups')
+    expect(made.status).toBe(201)
+    expect(made.body).toMatchObject({ kind: 'manual', files: 2, missingFiles: 0, newer: false, counts: { cards: 1, pages: 1, attachments: 2, vaultItems: 1, trash: 1 } })
+
+    // Then a lot changes: texts, a deleted page with its file, a new file, another session, a new access key.
+    await client.patch(`/api/cards/${card}`, { title: 'Otra cosa', description: 'Nada que ver' })
+    await client.del(`/api/pages/${page}`)
+    await client.upload(`/api/cards/${card}/attachments`, 'nuevo', { name: 'nuevo.txt', type: 'text/plain' })
+    const other = await signInOwner(h)
+    const newKey = (await client.post('/api/account/access-key', { currentAccessKey: accessKey })).body.accessKey as string
+    expect(everything(h.sql)).not.toEqual(before)
+
+    expect((await client.post(`/api/backups/${made.body.id}/restore`, { accessKey })).status).toBe(403)
+    const restored = await client.post(`/api/backups/${made.body.id}/restore`, { accessKey: newKey })
+    expect(restored.status, JSON.stringify(restored.body)).toBe(200)
+
+    // Every table, row by row, rowids included (the history is ordered by them).
+    expect(everything(h.sql)).toEqual(before)
+    expect(Buffer.from(await fileBytes(h, client, file)).equals(pdf)).toBe(true)
+    expect(new TextDecoder().decode(await fileBytes(h, client, note))).toBe('Lista completa')
+    expect((await client.get(`/api/workspaces/${workspaceId}/search?q=furgoneta`)).body.map((r: { id: string }) => r.id)).toEqual([card])
+    expect((await client.get(`/api/cards/${card}/history`)).body.map((e: { kind: string }) => e.kind)).toContain('card.description')
+    expect((await client.get(`/api/workspaces/${workspaceId}/trash`)).body.map((t: { title: string }) => t.title)).toEqual(['Dar de baja la luz'])
+
+    // The key in use now opens it; every other session ended, and the person who restored has a new one.
+    expect((await client.get('/api/auth/me')).status).toBe(200)
+    expect((await other.client.get('/api/auth/me')).status).toBe(401)
+    expect((await new Client(h).post('/api/auth/login', { accessKey: newKey })).status).toBe(200)
+    expect((await new Client(h).post('/api/auth/login', { accessKey })).status).toBe(401)
+
+    // What was there before restoring is kept apart, in case.
+    const backups = (await client.get('/api/backups')).body.backups as BackupDTO[]
+    expect(backups.map((b) => b.kind)).toEqual(['before-restore', 'manual'])
+  })
+
+  it('makes one backup a day, keeps the 7 newest and only the attachments they list', async () => {
+    const h = await copy()
+    expect(await h.services.backups.runIfDue()).toBeNull()
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Con archivos' })).body.id as string
+    const kept = (await client.upload(`/api/cards/${card}/attachments`, 'se queda', { name: 'a.txt', type: 'text/plain' })).body
+    const dropped = (await client.upload(`/api/cards/${card}/attachments`, 'se va', { name: 'b.txt', type: 'text/plain' })).body
+
+    vi.useFakeTimers({ toFake: ['Date'] })
+    const day = 24 * 60 * 60 * 1000
+    const start = Date.parse('2026-11-01T03:00:00.000Z')
+    vi.setSystemTime(start)
+    expect(await h.services.backups.runIfDue()).not.toBeNull()
+    vi.setSystemTime(start + 2 * 60 * 60 * 1000)
+    expect(await h.services.backups.runIfDue()).toBeNull()
+
+    // The second file leaves for good: older backups still keep it until they go.
+    const trashId = (await client.del(`/api/attachments/${dropped.id}`)).body.trashId as string
+    expect((await client.del(`/api/trash/${trashId}`)).status).toBe(204)
+    const storedFiles = async () => (await h.backups!.list('files/')).length
+    for (let i = 1; i <= 8; i++) {
+      vi.setSystemTime(start + i * day)
+      expect(await h.services.backups.runIfDue(), `day ${i}`).not.toBeNull()
+      // Until the first backup goes (the 8th makes 8), the file it lists stays.
+      expect(await storedFiles(), `day ${i}`).toBe(i < 7 ? 2 : 1)
+    }
+    const backups = (await client.get('/api/backups')).body.backups as BackupDTO[]
+    expect(backups).toHaveLength(7)
+    expect(backups.every((b) => b.kind === 'daily' && b.files === 1)).toBe(true)
+    expect(backups[0]!.createdAt).toBe(new Date(start + 8 * day).toISOString())
+    expect(backups.at(-1)!.createdAt).toBe(new Date(start + 2 * day).toISOString())
+    expect((await h.backups!.list('snapshots/')).length).toBe(14)
+    expect(kept.id).toBeTruthy()
+  })
+
+  it('makes no backup of an empty copy, nor of an uninstalled one, and uninstalling asks whether the backups go too', async () => {
+    const keep = await copy()
+    expect(await keep.services.backups.runIfDue()).toBeNull()
+    const first = await signUp(keep)
+    expect((await first.client.post('/api/backups')).status).toBe(201)
+    expect((await first.client.post('/api/account/uninstall', { accessKey: first.accessKey })).status).toBe(400)
+    const kept = await first.client.post('/api/account/uninstall', { accessKey: first.accessKey, deleteBackups: false })
+    expect(kept.status).toBe(200)
+    expect(kept.body.backups).toEqual({ kind: 'folder', name: keep.env.backupDir })
+    expect(await keep.services.backups.runIfDue(Date.now() + 2 * 24 * 60 * 60 * 1000)).toBeNull()
+    expect((await keep.backups!.list('snapshots/')).length).toBe(2)
+
+    const wipe = await copy()
+    const second = await signUp(wipe)
+    expect((await second.client.post('/api/backups')).status).toBe(201)
+    const wiped = await second.client.post('/api/account/uninstall', { accessKey: second.accessKey, deleteBackups: true })
+    expect(wiped.body.backups).toBeNull()
+    expect(await wipe.backups!.list('')).toEqual([])
+    // The page shown afterwards says so too.
+    expect((await new Client(wipe).get('/api/auth/session')).body.uninstalled.backups).toBeNull()
+  })
+
+  it('restores a backup made by an earlier version into a new copy, and brings it up to date', async () => {
+    // An earlier version: the same migrations but the last one.
+    const old = await mkdtemp(path.join(tmpdir(), 'orqevio-old-migrations-'))
+    folders.push(old)
+    const current = path.join(import.meta.dirname, '../drizzle')
+    await cp(current, old, { recursive: true })
+    const journal = JSON.parse(await readFile(path.join(current, 'meta/_journal.json'), 'utf8')) as { entries: Array<{ tag: string }> }
+    const last = journal.entries.pop()!
+    await rm(path.join(old, `${last.tag}.sql`))
+    await writeFile(path.join(old, 'meta/_journal.json'), JSON.stringify(journal))
+    const shared = await mkdtemp(path.join(tmpdir(), 'orqevio-shared-backups-'))
+    folders.push(shared)
+
+    const earlier = await copy({ migrationsDir: old, backupDir: shared })
+    const before = await signUp(earlier, 'Lucía Martín')
+    const { columns } = await seedBoard(before.client, before.workspaceId)
+    const card = (await before.client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'De la versión anterior' })).body.id as string
+    expect((await before.client.post('/api/backups')).status).toBe(201)
+
+    // A new copy with the same backups folder, claimed by its owner, finds the backup and restores it.
+    const fresh = await copy({ backupDir: shared })
+    const now = await signUp(fresh, 'Otra persona')
+    const [backup] = (await now.client.get('/api/backups')).body.backups as BackupDTO[]
+    expect(backup).toMatchObject({ kind: 'manual', newer: false })
+    const restored = await now.client.post(`/api/backups/${backup!.id}/restore`, { accessKey: now.accessKey })
+    expect(restored.status, JSON.stringify(restored.body)).toBe(200)
+    expect((await now.client.get('/api/auth/me')).body.user.name).toBe('Lucía Martín')
+    expect((await now.client.get(`/api/cards/${card}`)).body.title).toBe('De la versión anterior')
+    // The migration the backup didn't have ran afterwards.
+    expect([...fresh.sql.rows('SELECT name FROM pragma_table_info(?)', 'oauth_tokens')].flat()).toContain('scopes')
+    expect([...fresh.sql.rows('SELECT count(*) FROM __drizzle_migrations')][0]![0]).toBe(journal.entries.length + 1)
+  })
+
+  it('refuses a backup made by a newer version, and a damaged one, without touching anything', async () => {
+    const h = await copy()
+    const { client, workspaceId, accessKey } = await signUp(h)
+    await seedBoard(client, workspaceId)
+    const made = (await client.post('/api/backups')).body as BackupDTO
+    const before = everything(h.sql)
+    const manifestKey = `snapshots/${made.id}/manifest.json`
+    const manifest = JSON.parse(new TextDecoder().decode((await h.backups!.read(manifestKey))!))
+
+    await h.backups!.write(manifestKey, new TextEncoder().encode(JSON.stringify({ ...manifest, migration: manifest.migration + 1 })))
+    expect(((await client.get('/api/backups')).body.backups as BackupDTO[])[0]!.newer).toBe(true)
+    const newer = await client.post(`/api/backups/${made.id}/restore`, { accessKey })
+    expect(newer.status).toBe(409)
+    expect(newer.body.error.code).toBe('backup_newer')
+
+    await h.backups!.write(manifestKey, new TextEncoder().encode(JSON.stringify(manifest)))
+    const data = (await h.backups!.read(`snapshots/${made.id}/data.ndjson.gz`))!
+    data[data.length - 10] = data[data.length - 10]! ^ 0xff
+    await h.backups!.write(`snapshots/${made.id}/data.ndjson.gz`, data)
+    const damaged = await client.post(`/api/backups/${made.id}/restore`, { accessKey })
+    expect(damaged.status).toBe(422)
+    expect(damaged.body.error.code).toBe('backup_damaged')
+
+    expect(everything(h.sql)).toEqual(before)
+    expect((await client.get('/api/auth/me')).status).toBe(200)
+    expect((await client.post('/api/backups/../../etc/restore', { accessKey })).status).toBe(404)
+  })
+
+  it('is for people only', async () => {
+    const h = await copy()
+    const { client, workspaceId } = await signUp(h)
+    const token = (await client.post('/api/tokens', { name: 'Claude', workspaceId, scopes: ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'], expiresInDays: 30 })).body.token as string
+    const agent = new Client(h, token)
+    expect((await agent.get('/api/backups')).status).toBe(403)
+    expect((await agent.post('/api/backups')).status).toBe(403)
+  })
+
+  it('says when this copy makes no backups', async () => {
+    const h = await copy({ backupDir: null })
+    const { client } = await signUp(h)
+    expect((await client.get('/api/backups')).body).toEqual({ where: null, keep: 7, backups: [] })
+    expect((await client.post('/api/backups')).status).toBe(409)
+  })
+})

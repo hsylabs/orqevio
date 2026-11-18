@@ -1,9 +1,10 @@
 import type { AccessStateDTO, MeDTO, Theme, UninstalledDTO, UserDTO } from '@orqevio/shared'
 import { DEFAULT_LOCALE, defaultWorkspaceName, isLocale } from '@orqevio/shared'
-import { claimInput, confirmAccessKeyInput, installerUninstallInput, recoverInput, rotateAccessKeyInput, unlockInput, updateAccountInput } from '@orqevio/shared'
+import { claimInput, confirmAccessKeyInput, installerUninstallInput, recoverInput, rotateAccessKeyInput, uninstallInput, unlockInput, updateAccountInput } from '@orqevio/shared'
 import { and, asc, eq, gt, isNull, ne, sql } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
 import { MIN_SETUP_CODE_LENGTH, generateAccessKey, generateSetupCode, isWeakSetupCode, randomToken, safeEqual, secretFingerprint, sha256 } from '../auth/crypto'
+import { emptyBackupStore } from '../backups/store'
 import * as schema from '../db/schema'
 import { apiTokens, copyState, instance, oauthCodes, pages, sessions, users, workspaceMembers, workspaces } from '../db/schema'
 import { AppError, forbidden, unauthorized, uninstalled as copyUninstalled } from '../lib/errors'
@@ -27,6 +28,8 @@ const toUserDTO = (u: typeof users.$inferSelect): UserDTO => ({
 
 /** Where the mark of an uninstalled copy is kept (copy_state), with when it happened. */
 export const UNINSTALLED_KEY = 'uninstalled'
+/** Whether the backups were kept when the copy was uninstalled ("kept" or "deleted"). */
+const UNINSTALLED_BACKUPS_KEY = 'uninstalled_backups'
 /** Every table of the copy, each after those that point at it. */
 const UNINSTALL_ORDER = [
   schema.history,
@@ -112,20 +115,22 @@ export class AccountService {
   async uninstalled(): Promise<UninstalledDTO | null> {
     if (this.uninstalledState !== undefined && this.uninstalledState !== null) return this.uninstalledState
     const [row] = await this.deps.db.select({ value: copyState.value }).from(copyState).where(eq(copyState.key, UNINSTALLED_KEY))
-    this.uninstalledState = row ? this.uninstalledDetails(row.value) : null
+    const [backups] = row ? await this.deps.db.select({ value: copyState.value }).from(copyState).where(eq(copyState.key, UNINSTALLED_BACKUPS_KEY)) : []
+    this.uninstalledState = row ? this.uninstalledDetails(row.value, backups?.value !== 'deleted') : null
     return this.uninstalledState
   }
 
-  private uninstalledDetails(at: string): UninstalledDTO {
-    return { at, install: this.deps.env.install, copyName: this.deps.env.copyName, bucket: this.deps.env.copyBucket }
+  private uninstalledDetails(at: string, backupsKept: boolean): UninstalledDTO {
+    const { install, copyName, copyBucket } = this.deps.env
+    return { at, install, copyName, bucket: copyBucket, backups: backupsKept ? (this.deps.backups?.where ?? null) : null }
   }
 
   /** Uninstalling from Settings, confirmed with the access key. */
   async uninstall(actor: Actor, input: unknown): Promise<UninstalledDTO> {
     this.access.requireUser(actor)
-    const { accessKey } = parse(confirmAccessKeyInput, input)
+    const { accessKey, deleteBackups } = parse(uninstallInput, input)
     await this.verifyAccessKey(actor.userId, accessKey)
-    return this.wipe()
+    return this.wipe(deleteBackups)
   }
 
   /**
@@ -135,13 +140,13 @@ export class AccountService {
    * typed by mistake cannot erase it. The token expires on its own, should the uninstall stop.
    */
   async uninstallFromInstaller(input: unknown): Promise<UninstalledDTO> {
-    const { token } = parse(installerUninstallInput, input)
+    const { token, deleteBackups } = parse(installerUninstallInput, input)
     const expected = this.deps.env.uninstallToken
     const expiresAt = Number(expected?.split('.')[0])
     if (!expected || !(expiresAt > Date.now()) || !safeEqual(sha256(token), sha256(expected))) {
       throw forbidden('The installer has not authorized this uninstall', 'uninstall_not_authorized')
     }
-    return this.wipe()
+    return this.wipe(deleteBackups)
   }
 
   /**
@@ -151,12 +156,14 @@ export class AccountService {
    * copy itself (the Worker and its bucket, or the container) is left to whoever
    * installed it, as the page shown afterwards explains.
    */
-  private async wipe(): Promise<UninstalledDTO> {
+  private async wipe(deleteBackups: boolean): Promise<UninstalledDTO> {
     // Attachments first, once no upload is still writing one: if this stops half-way,
     // the data is still there, uploads open again and it can be retried.
     await this.attachments.close()
     const at = new Date().toISOString()
     try {
+      // Kept apart from the data, the backups go only when the person says so.
+      if (deleteBackups && this.deps.backups) await emptyBackupStore(this.deps.backups)
       await this.deps.storage.deleteAll()
       this.deps.db.transaction((tx) => {
         // Every table, children first, without relying on cascades; search indexes follow by trigger.
@@ -165,12 +172,13 @@ export class AccountService {
           else tx.delete(table).run()
         }
         tx.insert(copyState).values({ key: UNINSTALLED_KEY, value: at }).run()
+        tx.insert(copyState).values({ key: UNINSTALLED_BACKUPS_KEY, value: deleteBackups ? 'deleted' : 'kept' }).run()
       })
     } catch (error) {
       this.attachments.reopen()
       throw error
     }
-    this.uninstalledState = this.uninstalledDetails(at)
+    this.uninstalledState = this.uninstalledDetails(at, !deleteBackups)
     this.generatedSetupCode = null
     return this.uninstalledState
   }
@@ -296,6 +304,17 @@ export class AccountService {
     const [user] = await this.deps.db.select().from(users).where(eq(users.id, ownerId))
     if (!user) throw unauthorized()
     return user
+  }
+
+  /** Forgets what it read of the copy, after a restore replaced the database under it. */
+  forget() {
+    this.uninstalledState = undefined
+    this.generatedSetupCode = null
+  }
+
+  /** A new session for the owner, for whoever just restored a backup (which ended every other one). */
+  startSession(userId: string, userAgent: string | null) {
+    return this.createSession(userId, userAgent)
   }
 
   private async createSession(userId: string, userAgent: string | null) {

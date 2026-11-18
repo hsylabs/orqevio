@@ -10,13 +10,15 @@ import type { Env } from '../env'
 import { LIVE_PATH, authorizeLive, isAllowedOrigin, readCookie } from '../http/live-session'
 import { sessionCookieName } from '../http/middleware'
 import { type Services, createServices } from '../services'
+import { durableSql } from './durable-sql'
 import { type Bindings, workerEnv } from './env'
 import migrations from './migrations.gen'
+import { R2BackupStore } from './r2-backups'
 import { R2Storage } from './r2-storage'
 
 const SWEEP_EVERY_MS = 60 * 60 * 1000
-/** Requests after which every live connection is checked again (sign-out, new key, recovery, deletion). */
-const CHANGES_ACCESS = /^\/api\/(?:auth|account)\//
+/** Requests after which every live connection is checked again (sign-out, new key, recovery, deletion, restoring a backup). */
+const CHANGES_ACCESS = /^\/api\/(?:auth\/|account\/|backups\/[^/]+\/restore$)/
 
 interface LiveAttachment {
   token: string
@@ -48,6 +50,10 @@ export class OrqevioCopy extends DurableObject<Bindings> {
       bus: { publish: (workspaceId, event) => ctx.waitUntil(this.deliver(ctx.getWebSockets(workspaceId), { type: 'change', event })) },
       env: this.config,
       storage: new R2Storage(env.UPLOADS),
+      sql: durableSql(ctx.storage),
+      // Copies deployed before 1.2.0 get the bucket with their next update.
+      backups: env.BACKUPS ? new R2BackupStore(env.BACKUPS, this.config.backupBucket ?? `${this.config.copyName ?? 'orqevio'}-backups`) : null,
+      migrate: () => migrate(db, migrations),
     })
     this.app = createApp(this.config, this.services, { clientIp: (c) => c.req.header('cf-connecting-ip') ?? 'unknown' })
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'))
@@ -115,12 +121,16 @@ export class OrqevioCopy extends DurableObject<Bindings> {
     )
   }
 
-  /** Hourly: deletes for good what has been in the trash or the history for 30 days, then files in R2 that nothing uses. */
+  /**
+   * Hourly: deletes for good what has been in the trash or the history for 30 days, then files in
+   * R2 that nothing uses; and once a day, a backup to the BACKUPS bucket.
+   */
   override async alarm() {
     try {
       await this.services.trash.purgeExpired().catch((error) => console.error('[trash] purge failed', error))
       await this.services.history.purgeExpired().catch((error) => console.error('[history] purge failed', error))
-      await this.services.attachments.sweepOrphans()
+      await this.services.attachments.sweepOrphans().catch((error) => console.error('[storage] sweep failed', error))
+      await this.services.backups.runIfDue().catch((error) => console.error('[backups] backup failed', error))
     } finally {
       await this.ctx.storage.setAlarm(Date.now() + SWEEP_EVERY_MS)
     }

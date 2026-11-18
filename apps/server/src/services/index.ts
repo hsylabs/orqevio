@@ -2,6 +2,7 @@ import { Access } from './access'
 import { AccountService } from './accounts'
 import { ActivityService } from './activity'
 import { AttachmentService } from './attachments'
+import { BackupService } from './backups'
 import { BoardService } from './boards'
 import { CardService } from './cards'
 import type { Deps } from './deps'
@@ -30,6 +31,8 @@ export function createServices(deps: Deps) {
   const tokens = new TokenService(deps, access)
   const attachments = new AttachmentService(deps, access, activity, trash, history)
   const pages = new PageService(deps, access, activity, trash, history)
+  const oauth = new OAuthService(deps, access, tokens)
+  const accounts = new AccountService(deps, access, workspaces, attachments)
   return {
     access,
     activity,
@@ -43,9 +46,10 @@ export function createServices(deps: Deps) {
     search: new SearchService(deps, access),
     attachments,
     tokens,
-    oauth: new OAuthService(deps, access, tokens),
+    oauth,
     vault: new VaultService(deps, access),
-    accounts: new AccountService(deps, access, workspaces, attachments),
+    accounts,
+    backups: new BackupService(deps, access, accounts, attachments, oauth),
     updates: new UpdateService(deps, access),
   }
 }

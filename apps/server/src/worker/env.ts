@@ -6,6 +6,8 @@ import type { OrqevioCopy } from './copy'
 export interface Bindings {
   COPY: DurableObjectNamespace<OrqevioCopy>
   UPLOADS: R2Bucket
+  /** The daily backups, apart from the attachments (missing in copies deployed before 1.2.0). */
+  BACKUPS?: R2Bucket
   ASSETS: Fetcher
   /** Secret: claims the copy the first time and recovers access when it changes. */
   SETUP_CODE?: string
@@ -16,6 +18,7 @@ export interface Bindings {
   ORQEVIO_INSTALL?: string
   ORQEVIO_COPY_NAME?: string
   ORQEVIO_BUCKET?: string
+  ORQEVIO_BACKUP_BUCKET?: string
   /** Secret: set by `npx create-orqevio uninstall` to have the copy delete its data. */
   ORQEVIO_UNINSTALL_TOKEN?: string
   /** "off" stops the copy from looking up the latest published version. */
@@ -46,5 +49,7 @@ export function workerEnv(bindings: Bindings): Env {
     copyBucket: bindings.ORQEVIO_BUCKET?.trim() || null,
     uninstallToken: bindings.ORQEVIO_UNINSTALL_TOKEN?.trim() || null,
     updateCheck: !['0', 'false', 'no', 'off'].includes((bindings.UPDATE_CHECK ?? '').toLowerCase()),
+    backupDir: null,
+    backupBucket: bindings.ORQEVIO_BACKUP_BUCKET?.trim() || null,
   }
 }
