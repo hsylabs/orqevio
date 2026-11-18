@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { BackupDTO } from '@orqevio/shared'
@@ -223,6 +223,71 @@ describe('backups', () => {
     expect(everything(h.sql)).toEqual(before)
     expect((await client.get('/api/auth/me')).status).toBe(200)
     expect((await client.post('/api/backups/../../etc/restore', { accessKey })).status).toBe(404)
+  })
+
+  it('restores the backup made before a restore, attachments only it kept included', async () => {
+    const h = await copy()
+    const { client, workspaceId, accessKey } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Con archivos' })).body.id as string
+    const first = (await client.post('/api/backups')).body as BackupDTO
+    const later = (await client.upload(`/api/cards/${card}/attachments`, 'subido después', { name: 'despues.txt', type: 'text/plain' })).body as { id: string }
+
+    // Back to the first backup: the file uploaded later is only in the backup made before restoring.
+    expect((await client.post(`/api/backups/${first.id}/restore`, { accessKey })).status).toBe(200)
+    const before = ((await client.get('/api/backups')).body.backups as BackupDTO[]).find((b) => b.kind === 'before-restore')!
+    // Unused now, its file goes from the uploads (as the hourly sweep would do).
+    await rm(path.join(h.env.dataDir, 'uploads', workspaceId), { recursive: true, force: true })
+
+    // Undoing that restore makes a new backup first: the one being restored and its file must survive it.
+    const undone = await client.post(`/api/backups/${before.id}/restore`, { accessKey })
+    expect(undone.status, JSON.stringify(undone.body)).toBe(200)
+    expect(new TextDecoder().decode(await fileBytes(h, client, later.id))).toBe('subido después')
+    // Afterwards only the newest backup made before a restore is kept.
+    const kinds = ((await client.get('/api/backups')).body.backups as BackupDTO[]).map((b) => b.kind)
+    expect(kinds).toEqual(['before-restore', 'manual'])
+  })
+
+  it('waits for a backup still being written before deleting the backups on uninstall', async () => {
+    const h = await copy()
+    const { client, accessKey } = await signUp(h)
+    let release!: () => void
+    const held = new Promise<void>((resolve) => (release = resolve))
+    const write = h.backups!.write.bind(h.backups!)
+    // The backup stops while writing its data, as a slow disk or bucket would.
+    h.backups!.write = async (key, data) => {
+      if (key.endsWith('data.ndjson.gz')) await held
+      return write(key, data)
+    }
+    const backup = client.post('/api/backups')
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    let done = false
+    const uninstall = client.post('/api/account/uninstall', { accessKey, deleteBackups: true }).finally(() => (done = true))
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(done).toBe(false)
+    release()
+    expect((await backup).status).toBe(201)
+    expect((await uninstall).status).toBe(200)
+    expect(await h.backups!.list('')).toEqual([])
+    // And none starts afterwards.
+    expect(await h.services.backups.runIfDue(Date.now() + 2 * 24 * 60 * 60 * 1000)).toBeNull()
+  })
+
+  it('keeps the backups as private as the attachments: only the server’s user reads them', async () => {
+    const h = await copy()
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Privada' })).body.id as string
+    await client.upload(`/api/cards/${card}/attachments`, 'secreto', { name: 'secreto.txt', type: 'text/plain' })
+    const made = (await client.post('/api/backups')).body as BackupDTO
+    const root = h.env.backupDir!
+    const mode = async (file: string) => (await stat(path.join(root, file))).mode & 0o777
+    const [stored] = await h.backups!.list('files/')
+    expect(await mode(stored!.key)).toBe(0o600)
+    expect(await mode(`snapshots/${made.id}/data.ndjson.gz`)).toBe(0o600)
+    expect(await mode(`snapshots/${made.id}/manifest.json`)).toBe(0o600)
+    expect(await mode(`snapshots/${made.id}`)).toBe(0o700)
+    expect(await mode(path.dirname(stored!.key))).toBe(0o700)
   })
 
   it('is for the owner only, never for agents', async () => {

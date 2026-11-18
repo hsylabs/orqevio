@@ -33,6 +33,8 @@ export function createServices(deps: Deps) {
   const pages = new PageService(deps, access, activity, trash, history)
   const oauth = new OAuthService(deps, access, tokens)
   const accounts = new AccountService(deps, access, workspaces, attachments)
+  const backups = new BackupService(deps, accounts, attachments, oauth)
+  accounts.useBackups(backups)
   return {
     access,
     activity,
@@ -49,7 +51,7 @@ export function createServices(deps: Deps) {
     oauth,
     vault: new VaultService(deps, access),
     accounts,
-    backups: new BackupService(deps, accounts, attachments, oauth),
+    backups,
     updates: new UpdateService(deps, access),
   }
 }

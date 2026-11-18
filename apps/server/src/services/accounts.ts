@@ -4,7 +4,6 @@ import { claimInput, confirmAccessKeyInput, installerUninstallInput, recoverInpu
 import { and, asc, eq, gt, isNull, ne, sql } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
 import { MIN_SETUP_CODE_LENGTH, generateAccessKey, generateSetupCode, isWeakSetupCode, randomToken, safeEqual, secretFingerprint, sha256 } from '../auth/crypto'
-import { emptyBackupStore } from '../backups/store'
 import * as schema from '../db/schema'
 import { apiTokens, copyState, instance, oauthCodes, pages, sessions, users, workspaceMembers, workspaces } from '../db/schema'
 import { AppError, forbidden, unauthorized, uninstalled as copyUninstalled } from '../lib/errors'
@@ -78,6 +77,13 @@ const invalidAccessKey = () => forbidden('The access key is not valid', 'invalid
 export class AccountService {
   /** Generated when the operator did not set SETUP_CODE; lives only in memory. */
   private generatedSetupCode: string | null = null
+  /** The backups, which uninstalling waits for and may delete (set by createServices: they depend on this service). */
+  private backups: { close(): Promise<void>; reopen(): void; deleteAll(): Promise<void> } | null = null
+
+  useBackups(backups: { close(): Promise<void>; reopen(): void; deleteAll(): Promise<void> }) {
+    this.backups = backups
+  }
+
   /** Read once: uninstalling is final, so a copy found uninstalled stays so. */
   private uninstalledState: UninstalledDTO | null | undefined
 
@@ -161,10 +167,12 @@ export class AccountService {
     // Attachments first, once no upload is still writing one: if this stops half-way,
     // the data is still there, uploads open again and it can be retried.
     await this.attachments.close()
+    // No backup starts now, and the one running finishes before anything is deleted.
+    await this.backups?.close()
     const at = new Date().toISOString()
     try {
       // Kept apart from the data, the backups go only when the person says so.
-      if (deleteBackups && this.deps.backups) await emptyBackupStore(this.deps.backups)
+      if (deleteBackups) await this.backups?.deleteAll()
       await this.deps.storage.deleteAll()
       this.deps.db.transaction((tx) => {
         // Every table, children first, without relying on cascades; search indexes follow by trigger.
@@ -177,6 +185,7 @@ export class AccountService {
       })
     } catch (error) {
       this.attachments.reopen()
+      this.backups?.reopen()
       throw error
     }
     this.uninstalledState = this.uninstalledDetails(at, !deleteBackups)

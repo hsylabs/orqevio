@@ -1,7 +1,8 @@
 import { type BackupDTO, type BackupKind, type BackupsDTO, restoreBackupInput } from '@orqevio/shared'
 import type { Actor } from '../auth/actor'
 import { DUMP_FORMAT, DUMP_VERSION, DumpError, currentMigration, readHeader, restoreDump, writeDump } from '../backups/dump'
-import { AppError, notFound } from '../lib/errors'
+import { emptyBackupStore } from '../backups/store'
+import { AppError, notFound, uninstalled } from '../lib/errors'
 import { parse } from '../lib/validate'
 import { VERSION } from '../version'
 import type { AccountService } from './accounts'
@@ -50,6 +51,8 @@ async function sha256(data: Uint8Array) {
 export class BackupService {
   /** A backup or a restore running: they never overlap. */
   private running: Promise<unknown> | null = null
+  /** Set while the copy is being uninstalled: no backup starts, and none is left writing. */
+  private closed = false
 
   constructor(
     private readonly deps: Deps,
@@ -80,7 +83,7 @@ export class BackupService {
 
   /** Hourly: makes the daily backup once the last one is a day old, for a copy that is claimed and in use. */
   async runIfDue(now = Date.now()) {
-    if (!this.enabled || this.running || !(await this.inUse())) return null
+    if (!this.enabled || this.closed || this.running || !(await this.inUse())) return null
     const latest = (await this.manifests()).find((m) => m.kind !== 'before-restore')
     if (latest && now - Date.parse(latest.createdAt) < DUE_AFTER_MS) return null
     return this.exclusive(() => this.create('daily'))
@@ -93,6 +96,7 @@ export class BackupService {
   }
 
   private async exclusive<T>(work: () => Promise<T>): Promise<T> {
+    if (this.closed) throw uninstalled()
     if (this.running) throw new AppError(409, 'backup_running', 'A backup or a restore is already running')
     const run = work()
     this.running = run
@@ -141,7 +145,7 @@ export class BackupService {
    * where requests interleave at every await), then the attachments it lists that the store
    * doesn't have yet, and last its manifest: a backup without one is unfinished and never listed.
    */
-  private async create(kind: BackupKind): Promise<Manifest> {
+  private async create(kind: BackupKind, { prune = true } = {}): Promise<Manifest> {
     const store = this.deps.backups!
     const sql = this.deps.sql!
     const now = new Date()
@@ -201,7 +205,7 @@ export class BackupService {
       missingFiles,
     }
     await store.write(manifestKey(id), new TextEncoder().encode(JSON.stringify(manifest)))
-    await this.prune(now.getTime())
+    if (prune) await this.prune(now.getTime())
     return manifest
   }
 
@@ -264,7 +268,9 @@ export class BackupService {
         throw this.dumpError(error)
       }
 
-      await this.create('before-restore')
+      // Not pruned yet: the backup being restored (an older one made before a restore, say) and the
+      // attachments only it lists must stay until it is back.
+      await this.create('before-restore', { prune: false })
       let ownerId = ''
       await this.attachments.close()
       try {
@@ -291,12 +297,31 @@ export class BackupService {
         await this.deps.migrate?.()
       } finally {
         this.attachments.reopen()
+        await this.prune(Date.now()).catch((error) => console.error('[backups] prune failed', error))
       }
       this.accounts.forget()
       this.oauth.forget()
       const session = await this.accounts.startSession(ownerId, userAgent)
       return { session, restored: this.toDTO(manifest, currentMigration(sql)) }
     })
+  }
+
+  /**
+   * Uninstalling: no backup starts any more, and the one running (if any) finishes first, so
+   * deleting the backups afterwards leaves none half-written behind. reopen() undoes it.
+   */
+  async close() {
+    this.closed = true
+    await this.running?.catch(() => {})
+  }
+
+  reopen() {
+    this.closed = false
+  }
+
+  /** Every backup and every attachment kept for them (uninstalling with "delete the backups too"). */
+  async deleteAll() {
+    if (this.enabled) await emptyBackupStore(this.deps.backups!)
   }
 
   private dumpError(error: unknown) {

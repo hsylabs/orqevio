@@ -29,6 +29,10 @@ function checked(key: string) {
   return key
 }
 
+// Backups hold everything the copy holds: like the attachments, only the server's user reads them.
+const PRIVATE_DIR = 0o700
+const PRIVATE_FILE = 0o600
+
 /** Backups in a folder (BACKUP_DIR), written next to their final name and then renamed into place. */
 export class FolderBackupStore implements BackupStore {
   readonly where: BackupStore['where']
@@ -71,9 +75,9 @@ export class FolderBackupStore implements BackupStore {
 
   async write(key: string, data: Uint8Array) {
     const file = this.file(key)
-    await mkdir(path.dirname(file), { recursive: true })
+    await mkdir(path.dirname(file), { recursive: true, mode: PRIVATE_DIR })
     const partial = `${file}.partial`
-    await writeFile(partial, data)
+    await writeFile(partial, data, { mode: PRIVATE_FILE })
     await rename(partial, file)
   }
 
@@ -89,7 +93,7 @@ export class FolderBackupStore implements BackupStore {
 
   async writeStream(key: string, body: ReadableStream<Uint8Array>, size: number) {
     const file = this.file(key)
-    await mkdir(path.dirname(file), { recursive: true })
+    await mkdir(path.dirname(file), { recursive: true, mode: PRIVATE_DIR })
     const partial = `${file}.partial`
     let written = 0
     const counter = new TransformStream<Uint8Array, Uint8Array>({
@@ -99,7 +103,7 @@ export class FolderBackupStore implements BackupStore {
       },
     })
     try {
-      await body.pipeThrough(counter).pipeTo(Writable.toWeb(createWriteStream(partial)))
+      await body.pipeThrough(counter).pipeTo(Writable.toWeb(createWriteStream(partial, { mode: PRIVATE_FILE })))
       if (written !== size) throw new Error(`Expected ${size} bytes, got ${written}`)
       await rename(partial, file)
     } catch (error) {
