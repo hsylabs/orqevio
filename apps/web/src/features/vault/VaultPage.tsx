@@ -22,9 +22,9 @@ import { useWorkspace } from '../shell/workspace'
 import { WrongSecretError, changeMasterPassword, encryptItem } from './crypto'
 import { ExportDialog, ImportDialog } from './TransferDialogs'
 import { Generator, PasswordText } from './Generator'
-import { getSession, lockVault, setAutoLock, updateSessionItems, useAutoLockRemaining, useVaultSession } from './session'
+import { getSession, lockVault, sessionItemChanges, setAutoLock, useAutoLockRemaining, useVaultSession } from './session'
 import { type VaultBlocker, vaultBlockers } from '../../lib/browser'
-import { announceVaultChange, announceVaultItemsChange, freshVaultState, lockIfVaultChanged, reloadVaultItems } from './sync'
+import { announceVaultChange, announceVaultItemsChange, applyItemsChange, freshVaultState, lockIfVaultChanged, reloadVaultItems } from './sync'
 import { estimateMasterPassword } from './strength'
 import { groupCode, parseTotp, totp } from './totp'
 import { ITEM_LIMITS, type VaultItem, type VaultItemType, emptyItem, tidyItem } from './types'
@@ -223,11 +223,12 @@ function Unlocked() {
     // Tidied as an import is, so that the same item exported and imported again is seen as the same.
     const tidy = tidyItem(item)
     const next = { ...tidy, title: tidy.title || (item.type === 'login' ? host(tidy.url) || t('untitled.login') : t('untitled.note')), updatedAt: new Date().toISOString() }
+    const before = sessionItemChanges()
     try {
       const data = await encryptItem(s.key, s.userId, next)
       const record = await put<VaultItemRecordDTO>(`/vault/items/${next.id}`, { data, keyVersion: s.keyVersion, baseUpdatedAt: base })
       const saved = (items: VaultItem[]) => (items.some((i) => i.id === next.id) ? items.map((i) => (i.id === next.id ? next : i)) : [...items, next])
-      updateSessionItems(s.key, saved, { [next.id]: record.updatedAt })
+      applyItemsChange(s.key, before, saved, { [next.id]: record.updatedAt })
       announceVaultItemsChange()
       setSelectedId(next.id)
       return true
@@ -250,8 +251,9 @@ function Unlocked() {
     if (!(await confirm({ title: t('delete.title', { title: item.title }), description: t('delete.description'), confirmLabel: t('delete.confirm'), danger: true }))) return
     const { key } = getSession()
     if (!key) return
+    const before = sessionItemChanges()
     const gone = () => {
-      updateSessionItems(key, (items) => items.filter((i) => i.id !== item.id), { [item.id]: null })
+      applyItemsChange(key, before, (items) => items.filter((i) => i.id !== item.id), { [item.id]: null })
       announceVaultItemsChange()
       setSelectedId(null)
     }

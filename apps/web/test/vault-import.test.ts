@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { encryptItem } from '../src/features/vault/crypto'
 import { getSession, lockVault, replaceSessionItems, unlockSession } from '../src/features/vault/session'
 import { type VaultItem, emptyItem } from '../src/features/vault/types'
 import { VaultLockedError, importItems } from '../src/features/vault/upload'
@@ -94,6 +95,9 @@ describe('importing into the vault', () => {
     unlockSession(key, 1, 'user-1', [], 15)
     const items = several(6)
     const stored: VaultItem[] = []
+    // The server has what was stored; a read once the import ends finds it all.
+    const records = () => Promise.all(stored.map(async (i) => ({ id: i.id, data: await encryptItem(key, 'user-1', i), createdAt: '2026-11-18T10:00:00.000Z', updatedAt: '2026-11-18T10:00:05.000Z' })))
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(await records()), { headers: { 'Content-Type': 'application/json' } })))
     await importItems(items, () => {}, async (id) => {
       stored.push(items.find((i) => i.id === id)!)
       // Another tab saved something: this tab reads the items again, with what is imported so far.
@@ -104,5 +108,29 @@ describe('importing into the vault', () => {
     expect(ids).toHaveLength(6)
     expect(new Set(ids).size).toBe(6)
     expect(Object.keys(getSession().revisions)).toHaveLength(6)
+    // Read again at the end, since a read came in during the import: still each item once.
+    await vi.waitFor(() => expect(Object.values(getSession().revisions)).toEqual(Array(6).fill('2026-11-18T10:00:05.000Z')))
+    expect(new Set(getSession().items.map((i) => i.id)).size).toBe(6)
+    expect(getSession().items).toHaveLength(6)
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('reads the items again at the end when they were read during the import', async () => {
+    const key = await vaultKey()
+    unlockSession(key, 1, 'user-1', [], 15)
+    const items = several(4)
+    // On the server, another tab already deleted the first imported item again.
+    const kept = await Promise.all(
+      items.slice(1).map(async (i) => ({ id: i.id, data: await encryptItem(key, 'user-1', i), createdAt: '2026-11-18T10:00:00.000Z', updatedAt: '2026-11-18T10:00:00.000Z' })),
+    )
+    const fetch = vi.fn(async () => new Response(JSON.stringify(kept), { headers: { 'Content-Type': 'application/json' } }))
+    vi.stubGlobal('fetch', fetch)
+    let calls = 0
+    await importItems(items, () => {}, async (id) => {
+      if (++calls === 2) replaceSessionItems(key, [], {})
+      return { id, updatedAt: '2026-11-18T10:00:00.000Z' }
+    })
+    await vi.waitFor(() => expect(getSession().items.map((i) => i.id).sort()).toEqual(items.slice(1).map((i) => i.id).sort()))
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 })

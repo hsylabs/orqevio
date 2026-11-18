@@ -1,8 +1,8 @@
 import type { VaultItemRecordDTO } from '@orqevio/shared'
 import { ApiError, put } from '../../lib/api'
 import { encryptItem } from './crypto'
-import { getSession, lockVault, updateSessionItems } from './session'
-import { announceVaultItemsChange } from './sync'
+import { getSession, lockVault, sessionItemChanges } from './session'
+import { announceVaultItemsChange, applyItemsChange } from './sync'
 import type { VaultItem } from './types'
 
 /** The vault was locked before the import could finish. The message is for developers: the import dialog explains it to people. */
@@ -27,6 +27,7 @@ export async function importItems(items: VaultItem[], onProgress: (done: number)
   const { key, keyVersion, userId } = getSession()
   if (!key || keyVersion === null || !userId) throw new VaultLockedError()
   const unlocked = () => getSession().key === key
+  const before = sessionItemChanges()
   const saved: VaultItem[] = []
   const revisions: Record<string, string> = {}
   let failed = 0
@@ -52,7 +53,7 @@ export async function importItems(items: VaultItem[], onProgress: (done: number)
   await Promise.all(Array.from({ length: 4 }, worker))
   // By id: the items may be read again meanwhile (another tab saved one), with some of these already in.
   const ids = new Set(saved.map((i) => i.id))
-  if (!updateSessionItems(key, (current) => [...current.filter((i) => !ids.has(i.id)), ...saved], revisions)) throw new VaultLockedError()
+  if (!applyItemsChange(key, before, (current) => [...current.filter((i) => !ids.has(i.id)), ...saved], revisions)) throw new VaultLockedError()
   if (saved.length) announceVaultItemsChange()
   return { saved: saved.length, failed }
 }

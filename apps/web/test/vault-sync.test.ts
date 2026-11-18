@@ -1,8 +1,8 @@
 import type { VaultStateDTO } from '@orqevio/shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { encryptItem } from '../src/features/vault/crypto'
-import { getSession, lockVault, unlockSession, updateSessionItems } from '../src/features/vault/session'
-import { freshVaultState, lockIfVaultChanged, reloadVaultItems } from '../src/features/vault/sync'
+import { getSession, lockVault, replaceSessionItems, sessionItemChanges, unlockSession, updateSessionItems } from '../src/features/vault/session'
+import { applyItemsChange, freshVaultState, lockIfVaultChanged, reloadVaultItems } from '../src/features/vault/sync'
 import { type VaultItem, emptyItem } from '../src/features/vault/types'
 import { ApiError } from '../src/lib/api'
 import { keys, queryClient } from '../src/lib/queries'
@@ -158,5 +158,57 @@ describe('keeping the vault session in step with the vault', () => {
     await reload
     expect(getSession()).toMatchObject({ key: null, items: [] })
     expect(fetch).toHaveBeenCalledTimes(1)
+  })
+  it('puts what a save got back in the session, and reads nothing more when nothing changed meanwhile', async () => {
+    const key = await vaultKey()
+    unlockSession(key, 1, 'user-1', [login('correo', 'Antigua-1111')], 15)
+    const fetch = vi.fn(async () => reply([]))
+    vi.stubGlobal('fetch', fetch)
+    const before = sessionItemChanges()
+    expect(applyItemsChange(key, before, (items) => items.map((i) => ({ ...i, password: 'Nueva-2222' })), { correo: '2026-11-18T10:00:01.000Z' })).toBe(true)
+    expect(passwords()).toEqual(['correo:Nueva-2222'])
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('reads the items again when a save is answered after they were read again', async () => {
+    const key = await vaultKey()
+    unlockSession(key, 1, 'user-1', [login('correo', 'Antigua-1111')], 15)
+    // The save is on its way; meanwhile another tab deleted the item, and this tab read the items again.
+    const before = sessionItemChanges()
+    replaceSessionItems(key, [], {})
+    const fetch = vi.fn(async () => reply([]))
+    vi.stubGlobal('fetch', fetch)
+    // The save's answer, older than that read, comes last.
+    applyItemsChange(key, before, (items) => [...items, login('correo', 'Nueva-2222')], { correo: '2026-11-18T10:00:01.000Z' })
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(getSession().items).toEqual([]))
+    expect(getSession().revisions).toEqual({})
+  })
+  it('keeps a read asked by a vault opened again while an older read was on its way', async () => {
+    const old = await vaultKey()
+    unlockSession(old, 1, 'user-1', [], 15)
+    const current = await vaultKey()
+    const forOld = await records(old, [login('banco', 'Uno-1111')], '2026-11-18T10:00:01.000Z')
+    const forCurrent = await records(current, [login('banco', 'Dos-2222')], '2026-11-18T10:00:02.000Z')
+    let release!: () => void
+    const held = new Promise<void>((resolve) => (release = resolve))
+    const fetch = vi.fn(async () => {
+      if (fetch.mock.calls.length === 1) {
+        await held
+        return reply(forOld)
+      }
+      return reply(forCurrent)
+    })
+    vi.stubGlobal('fetch', fetch)
+    const first = reloadVaultItems()
+    // Locked and opened again while that read is on its way; the vault opened now asks for a read.
+    lockVault()
+    unlockSession(current, 1, 'user-1', [], 15)
+    const second = reloadVaultItems()
+    release()
+    await Promise.all([first, second])
+    expect(passwords()).toEqual(['banco:Dos-2222'])
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 })
