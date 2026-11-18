@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { ApiError, get } from '../../lib/api'
 import { keys, queryClient } from '../../lib/queries'
 import { decryptItem } from './crypto'
-import { getSession, lockVault, replaceSessionItems, setAutoLock } from './session'
+import { getSession, lockVault, replaceSessionItems, sessionItemChanges, setAutoLock } from './session'
 import type { VaultItem } from './types'
 
 /**
@@ -45,13 +45,38 @@ export function announceVaultItemsChange() {
   channel?.postMessage('items')
 }
 
+let reloading: Promise<void> | null = null
+let readAgain = false
+
 /**
  * Reads the items again, as the server has them now, into the open session: after another tab
  * saved or deleted some, or when the server refused a save because another device changed the item.
+ *
+ * One read at a time, so an older one never lands after a newer one. Asked while one is on its
+ * way, it reads once more after it, and resolves then.
  */
-export async function reloadVaultItems() {
+export function reloadVaultItems(): Promise<void> {
+  if (reloading) {
+    readAgain = true
+    return reloading
+  }
+  reloading = (async () => {
+    try {
+      do {
+        readAgain = false
+        await readItems()
+      } while (readAgain)
+    } finally {
+      reloading = null
+    }
+  })()
+  return reloading
+}
+
+async function readItems() {
   const { key, userId } = getSession()
   if (!key || !userId) return
+  const before = sessionItemChanges()
   const records = await get<VaultItemRecordDTO[]>('/vault/items')
   const items: VaultItem[] = []
   const revisions: Record<string, string> = {}
@@ -63,7 +88,9 @@ export async function reloadVaultItems() {
       // Unlocking already said that some items could not be decrypted.
     }
   }
-  replaceSessionItems(key, items, revisions)
+  // Saved or deleted here meanwhile: what was read may come from before that, so read again.
+  if (sessionItemChanges() !== before) readAgain = getSession().key === key
+  else replaceSessionItems(key, items, revisions)
 }
 
 if (channel) channel.onmessage = (event: MessageEvent) => void (event.data === 'items' ? reloadVaultItems() : freshVaultState()).catch(() => {})

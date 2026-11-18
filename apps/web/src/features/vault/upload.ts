@@ -50,7 +50,9 @@ export async function importItems(items: VaultItem[], onProgress: (done: number)
     }
   }
   await Promise.all(Array.from({ length: 4 }, worker))
-  if (!updateSessionItems(key, (current) => [...current, ...saved], revisions)) throw new VaultLockedError()
+  // By id: the items may be read again meanwhile (another tab saved one), with some of these already in.
+  const ids = new Set(saved.map((i) => i.id))
+  if (!updateSessionItems(key, (current) => [...current.filter((i) => !ids.has(i.id)), ...saved], revisions)) throw new VaultLockedError()
   if (saved.length) announceVaultItemsChange()
   return { saved: saved.length, failed }
 }

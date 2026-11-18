@@ -23,6 +23,8 @@ interface VaultSession {
 let session: VaultSession = { key: null, keyVersion: null, userId: null, items: [], revisions: {}, autoLockMinutes: 15, lastActivity: Date.now() }
 const listeners = new Set<() => void>()
 let timer: ReturnType<typeof setInterval> | null = null
+/** Counts every change of the session's items: a read of the items started before a change is out of date. */
+let changes = 0
 
 function emit() {
   for (const l of listeners) l()
@@ -39,6 +41,7 @@ const touch = () => {
 
 export function unlockSession(key: CryptoKey, keyVersion: number, userId: string, items: VaultItem[], autoLockMinutes: number, revisions: Record<string, string> = {}) {
   session = { key, keyVersion, userId, items, revisions, autoLockMinutes, lastActivity: Date.now() }
+  changes++
   window.addEventListener('pointerdown', touch, { passive: true })
   window.addEventListener('keydown', touch, { passive: true })
   timer ??= setInterval(() => {
@@ -50,6 +53,7 @@ export function unlockSession(key: CryptoKey, keyVersion: number, userId: string
 
 export function lockVault() {
   session = { key: null, keyVersion: null, userId: null, items: [], revisions: {}, autoLockMinutes: session.autoLockMinutes, lastActivity: Date.now() }
+  changes++
   window.removeEventListener('pointerdown', touch)
   window.removeEventListener('keydown', touch)
   if (timer) clearInterval(timer)
@@ -70,6 +74,7 @@ export function updateSessionItems(key: CryptoKey, change: (items: VaultItem[]) 
     else next[id] = updatedAt
   }
   session = { ...session, items: change(session.items), revisions: next }
+  changes++
   emit()
   return true
 }
@@ -78,6 +83,7 @@ export function updateSessionItems(key: CryptoKey, change: (items: VaultItem[]) 
 export function replaceSessionItems(key: CryptoKey, items: VaultItem[], revisions: Record<string, string>) {
   if (session.key !== key) return false
   session = { ...session, items, revisions }
+  changes++
   emit()
   return true
 }
@@ -88,6 +94,9 @@ export function setAutoLock(minutes: number) {
 }
 
 export const getSession = () => session
+
+/** How many times the session's items changed so far (see `changes`). */
+export const sessionItemChanges = () => changes
 
 export function useVaultSession() {
   return useSyncExternalStore(subscribe, () => session)

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getSession, lockVault, unlockSession } from '../src/features/vault/session'
+import { getSession, lockVault, replaceSessionItems, unlockSession } from '../src/features/vault/session'
 import { type VaultItem, emptyItem } from '../src/features/vault/types'
 import { VaultLockedError, importItems } from '../src/features/vault/upload'
 import { ApiError } from '../src/lib/api'
@@ -88,5 +88,21 @@ describe('importing into the vault', () => {
     await expect(run).rejects.toBeInstanceOf(VaultLockedError)
     expect(getSession().key).toBe(fresh)
     expect(getSession().items).toEqual([])
+  })
+  it('keeps each item once when the items are read again during the import', async () => {
+    const key = await vaultKey()
+    unlockSession(key, 1, 'user-1', [], 15)
+    const items = several(6)
+    const stored: VaultItem[] = []
+    await importItems(items, () => {}, async (id) => {
+      stored.push(items.find((i) => i.id === id)!)
+      // Another tab saved something: this tab reads the items again, with what is imported so far.
+      if (stored.length === 3) replaceSessionItems(key, [...stored], {})
+      return { id, updatedAt: '2026-11-18T10:00:00.000Z' }
+    })
+    const ids = getSession().items.map((i) => i.id)
+    expect(ids).toHaveLength(6)
+    expect(new Set(ids).size).toBe(6)
+    expect(Object.keys(getSession().revisions)).toHaveLength(6)
   })
 })
