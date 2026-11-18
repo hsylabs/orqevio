@@ -1,0 +1,213 @@
+import { randomBytes } from 'node:crypto'
+import { rm } from 'node:fs/promises'
+import path from 'node:path'
+import { strFromU8, unzipSync } from 'fflate'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { outsideCode, safeName } from '../src/services/export'
+import { Client, type Harness, ORIGIN, createHarness, seedBoard, signUp } from './harness'
+
+let h: Harness
+beforeAll(async () => {
+  h = await createHarness()
+})
+afterAll(async () => h.close())
+
+async function download(client: Client) {
+  const res = await h.app.request('/api/export', { headers: { Cookie: client.cookie, Origin: ORIGIN } })
+  return { res, files: res.ok ? unzipSync(new Uint8Array(await res.arrayBuffer())) : {} }
+}
+
+describe('export', () => {
+  it('gives the person’s data as a ZIP to read: tasks in JSON, documents in Markdown, attachments as files', async () => {
+    const { client, workspaceId } = await signUp(h, 'Lucía Martín')
+    await client.patch(`/api/workspaces/${workspaceId}`, { name: 'Casa' })
+    const { projectId, boardId, columns } = await seedBoard(client, workspaceId)
+    const label = (await client.post(`/api/boards/${boardId}/labels`, { name: 'Urgente', color: 'tomato' })).body.id as string
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Contratar la furgoneta', labelIds: [label], dueAt: '2026-12-01T12:00:00.000Z' })).body.id as string
+    await client.patch(`/api/cards/${card}`, { description: 'Comparar **tres** presupuestos.' })
+    const list = (await client.post(`/api/cards/${card}/checklists`, { title: 'Pasos' })).body.id as string
+    const step = (await client.post(`/api/checklists/${list}/items`, { text: 'Pedir precios' })).body.id as string
+    await client.patch(`/api/checklist-items/${step}`, { done: true })
+    const archived = (await client.post(`/api/columns/${columns[1]!.id}/cards`, { title: 'Idea descartada' })).body.id as string
+    await client.post(`/api/cards/${archived}/archive`)
+    const inventory = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Inventario', content: '# Inventario\n\n- Platos' })).body.id as string
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Cocina', parentId: inventory, content: 'Sartenes' })
+    // Same title twice, and characters no file system takes.
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Inventario', content: 'Otro' })
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Facturas 2026/11: «luz»?', content: 'Luz' })
+    await client.post(`/api/cards/${card}/pages`, { pageId: inventory })
+    const pdf = randomBytes(200_000)
+    await client.upload(`/api/cards/${card}/attachments`, pdf, { name: 'presupuesto.pdf', type: 'application/pdf' })
+    await client.upload(`/api/pages/${inventory}/attachments`, 'Lista completa', { name: 'lista.txt', type: 'text/plain' })
+    // Not exported: the trash, the history and the vault.
+    const gone = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Borrada' })).body.id as string
+    await client.del(`/api/cards/${gone}`)
+    // Someone else's workspace is theirs alone.
+    const other = await signUp(h, 'Otra persona')
+    await seedBoard(other.client, other.workspaceId)
+
+    const { res, files } = await download(client)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toBe('application/zip')
+    expect(res.headers.get('content-disposition')).toMatch(/^attachment; filename="orqevio-\d{4}-\d{2}-\d{2}\.zip"$/)
+    const names = Object.keys(files)
+    const root = names[0]!.split('/')[0]!
+    const at = (path: string) => files[`${root}/${path}`]
+    expect(JSON.parse(strFromU8(at('export.json')!))).toMatchObject({ format: 'orqevio-export', version: 1, workspaces: [{ name: 'Casa', folder: 'Casa' }] })
+    expect(names.filter((n) => n.includes('/Espacio de Otra') || n.includes('Otra persona'))).toEqual([])
+
+    // Documents, with their tree as folders and names every system takes.
+    expect(strFromU8(at('Casa/documents/Lanzamiento/Inventario.md')!)).toBe('# Inventario\n\n- Platos')
+    expect(strFromU8(at('Casa/documents/Lanzamiento/Inventario/Cocina.md')!)).toBe('Sartenes')
+    expect(strFromU8(at('Casa/documents/Lanzamiento/Inventario (2).md')!)).toBe('Otro')
+    expect(strFromU8(at('Casa/documents/Lanzamiento/Facturas 2026-11- «luz»-.md')!)).toBe('Luz')
+    // Attachments, byte for byte: a page's next to it, a card's under attachments/.
+    expect(strFromU8(at('Casa/documents/Lanzamiento/Inventario (files)/lista.txt')!)).toBe('Lista completa')
+    expect(Buffer.from(at('Casa/attachments/Contratar la furgoneta/presupuesto.pdf')!).equals(pdf)).toBe(true)
+
+    // Tasks, in JSON.
+    const tasks = JSON.parse(strFromU8(at('Casa/tasks.json')!))
+    const board = tasks.projects[0].boards[0]
+    expect(board).toMatchObject({ name: 'Producto', labels: [{ name: 'Urgente', color: 'tomato' }] })
+    expect(board.columns[0].cards[0]).toMatchObject({
+      title: 'Contratar la furgoneta',
+      description: 'Comparar **tres** presupuestos.',
+      labels: ['Urgente'],
+      due: '2026-12-01',
+      archived: false,
+      checklists: [{ title: 'Pasos', items: [{ text: 'Pedir precios', done: true }] }],
+      documents: ['documents/Lanzamiento/Inventario.md'],
+      attachments: ['attachments/Contratar la furgoneta/presupuesto.pdf'],
+    })
+    expect(board.columns[1].cards.map((c: { title: string; archived: boolean }) => [c.title, c.archived])).toEqual([['Idea descartada', true]])
+    const everything = names.map((n) => strFromU8(files[n]!)).join('\n')
+    expect(everything).not.toContain('Borrada')
+    expect(names.some((n) => /vault|history|trash/i.test(n))).toBe(false)
+  })
+
+  it('keeps every entry apart, links documents to their attachments, to each other and to tasks, walks any depth and lists missing files', async () => {
+    const { client, workspaceId } = await signUp(h, 'Árboles')
+    await client.patch(`/api/workspaces/${workspaceId}`, { name: 'Árboles' })
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    // A page "A" with an attachment named like a subpage of its sibling "A (files)".
+    const a = (await client.post(`/api/projects/${projectId}/pages`, { title: 'A' })).body.id as string
+    const sibling = (await client.post(`/api/projects/${projectId}/pages`, { title: 'A (files)' })).body.id as string
+    const child = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Child', parentId: sibling, content: 'subpágina' })).body.id as string
+    // A page "A.md" next to "A": its subpages' folder would be A's file.
+    const dotted = (await client.post(`/api/projects/${projectId}/pages`, { title: 'A.md' })).body.id as string
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Child', parentId: dotted, content: 'bajo A.md' })
+    // A workspace whose folder would be the export's own export.json.
+    expect((await client.post('/api/workspaces', { name: 'export.json' })).status).toBe(201)
+    const image = (await client.upload(`/api/pages/${a}/attachments`, 'adjunto', { name: 'Child.md', type: 'text/markdown' })).body as { id: string }
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Con plano' })).body.id as string
+    const plan = (await client.upload(`/api/cards/${card}/attachments`, 'plano', { name: 'plano (v2).png', type: 'image/png' })).body as { id: string }
+    const version = (await client.get(`/api/pages/${a}`)).body.version as number
+    const elsewhere = '00000000-0000-4000-8000-000000000000'
+    const content = `![](/api/attachments/${image.id})\n\n[plano](http://localhost:3000/api/attachments/${plan.id})\n\n[Hijo](/doc/${child}) [Otro](/doc/${elsewhere}) [Con plano](/card/${card}) [Otra](/card/${elsewhere})`
+    const saved = await client.patch(`/api/pages/${a}`, { content, baseVersion: version })
+    expect(saved.status, JSON.stringify(saved.body)).toBe(200)
+    await client.patch(`/api/cards/${card}`, { description: `Ver ![](/api/attachments/${plan.id}) y [A](/doc/${a} "A"), como [esta](/card/${card}), no \`[esta](/card/${card})\`` })
+    // Code is kept as written: a link in an example is part of the example, and so is a URL in the text.
+    const examples = [
+      `Ejemplo: \`curl /api/attachments/${image.id}\` y \`\`[A](/doc/${a})\`\`, pero [A](/doc/${a}).`,
+      '',
+      '```sh',
+      `curl http://localhost:3000/api/attachments/${image.id}`,
+      `echo "[A](/doc/${a})"`,
+      '```',
+      '',
+      '> ~~~',
+      `> ![](/api/attachments/${image.id})`,
+      '> ~~~',
+      '',
+      `La dirección /api/attachments/${image.id} en el texto, y \\\`[A](/doc/${a})\\\`.`,
+      '',
+      `[definida]: /api/attachments/${image.id}`,
+      `<img src="/api/attachments/${image.id}">`,
+    ].join('\n')
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Ejemplos', content: examples })
+    // A chain deeper than any limit a recursive walk would have.
+    const deep = (await client.post(`/api/workspaces/${workspaceId}/projects`, { name: 'Hondo', color: 'jade' })).body.id as string
+    let parent: string | null = null
+    for (let i = 0; i < 230; i++) parent = (await client.post(`/api/projects/${deep}/pages`, { title: `N${i}`, parentId: parent })).body.id as string
+    // A file gone from storage: listed, never an empty file.
+    const lost = (await client.upload(`/api/cards/${card}/attachments`, 'perdido', { name: 'perdido.txt', type: 'text/plain' })).body as { storageKey?: string; id: string }
+    const [row] = [...h.sql.rows('SELECT storage_key FROM attachments WHERE id = ?', lost.id)]
+    await rm(path.join(h.env.dataDir, 'uploads', String(row![0])))
+
+    const { files } = await download(client)
+    const names = Object.keys(files)
+    const root = names[0]!.split('/')[0]!
+    const at = (p: string) => files[`${root}/Árboles/${p}`]
+    // No two entries share a name, even without case, and none is both a file and a folder.
+    expect(new Set(names.map((n) => n.toLowerCase())).size).toBe(names.length)
+    const lower = names.map((n) => n.toLowerCase())
+    expect(lower.filter((n) => lower.some((m) => m.startsWith(`${n}/`)))).toEqual([])
+    expect(files[`${root}/export.json (2)/tasks.json`]).toBeDefined()
+    // A's attachments take "A (files)" first: the sibling page becomes "A (files) (2)".
+    expect(strFromU8(at('documents/Lanzamiento/A (files)/Child.md')!)).toBe('adjunto')
+    expect(strFromU8(at('documents/Lanzamiento/A (files) (2)/Child.md')!)).toBe('subpágina')
+    expect(at('documents/Lanzamiento/A (files) (2).md')).toBeDefined()
+    // "A.md" gives way to A's file: "A.md (2).md", with its subpages in "A.md (2)/".
+    expect(strFromU8(at('documents/Lanzamiento/A.md (2)/Child.md')!)).toBe('bajo A.md')
+    expect(at('documents/Lanzamiento/A.md (2).md')).toBeDefined()
+    // Links point at the files in the ZIP, relative to the document, encoded; references to tasks
+    // at tasks.json, with the card's id; one to anything that isn't in the export stays as it was.
+    expect(strFromU8(at('documents/Lanzamiento/A.md')!)).toBe(
+      `![](A%20%28files%29/Child.md)\n\n[plano](../../attachments/Con%20plano/plano%20%28v2%29.png)\n\n[Hijo](A%20%28files%29%20%282%29/Child.md) [Otro](/doc/${elsewhere}) [Con plano](../../tasks.json#${card}) [Otra](/card/${elsewhere})`,
+    )
+    expect(at('attachments/Con plano/plano (v2).png')).toBeDefined()
+    const tasks = JSON.parse(strFromU8(at('tasks.json')!))
+    const image2 = 'A%20%28files%29/Child.md'
+    expect(strFromU8(at('documents/Lanzamiento/Ejemplos.md')!)).toBe(
+      examples
+        .replace(`pero [A](/doc/${a})`, 'pero [A](A.md)')
+        .replace(`\\\`[A](/doc/${a})\\\``, '\\`[A](A.md)\\`')
+        .replace(`[definida]: /api/attachments/${image.id}`, `[definida]: ${image2}`)
+        .replace(`src="/api/attachments/${image.id}"`, `src="${image2}"`),
+    )
+    const exported = tasks.projects[0].boards[0].columns[0].cards[0]
+    expect(exported.id).toBe(card)
+    expect(exported.description).toBe(`Ver ![](attachments/Con%20plano/plano%20%28v2%29.png) y [A](documents/Lanzamiento/A.md "A"), como [esta](tasks.json#${card}), no \`[esta](/card/${card})\``)
+    expect(names.filter((n) => n.includes('/documents/Hondo/'))).toHaveLength(230)
+    expect(names.some((n) => n.endsWith('perdido.txt'))).toBe(false)
+    expect(JSON.parse(strFromU8(files[`${root}/export.json`]!)).missingAttachments).toEqual(['Árboles/attachments/Con plano/perdido.txt'])
+  })
+
+  it('is for people, not for agents', async () => {
+    const { client, workspaceId } = await signUp(h, 'Con agente')
+    const token = (await client.post('/api/tokens', { name: 'Claude', workspaceId, scopes: ['tasks:read', 'docs:read'], expiresInDays: 30 })).body.token as string
+    expect((await new Client(h, token).get('/api/export')).status).toBe(403)
+    expect((await new Client(h).get('/api/export')).status).toBe(401)
+  })
+
+  it('changes the text of a document but never its code', () => {
+    const upper = (markdown: string) => outsideCode(markdown, (text) => text.toUpperCase())
+    // A fence left open runs to the end, as in Markdown.
+    expect(upper('a\n```\nb\n')).toBe('A\n```\nb\n')
+    // A longer fence is closed only by one as long; one with backticks after it isn't a fence.
+    expect(upper('````\n```\nb\n````\nc')).toBe('````\n```\nb\n````\nC')
+    expect(upper('```x`\nb')).toBe('```X`\nB')
+    // A lone backtick is text; a code span ends within its paragraph.
+    expect(upper('a ` b')).toBe('A ` B')
+    expect(upper('a `b\n\nc` d')).toBe('A `B\n\nC` D')
+    expect(upper('a ``b ` c`` d `e` f')).toBe('A ``b ` c`` D `e` F')
+    // In a list item or a quote too.
+    expect(upper('- ```\n  b\n  ```\n> ~~~\n> c\n> ~~~\nd')).toBe('- ```\n  b\n  ```\n> ~~~\n> c\n> ~~~\nD')
+  })
+
+  it('names files so that every system takes them', () => {
+    expect(safeName('a/b\\c:d*e?f"g<h>i|j')).toBe('a-b-c-d-e-f-g-h-i-j')
+    expect(safeName('   ')).toBe('Untitled')
+    expect(safeName('..oculto. ')).toBe('oculto')
+    expect(safeName('x'.repeat(200))).toHaveLength(150)
+    // Cut by bytes: an emoji takes 4, and the name must stay under the 255 bytes file systems take.
+    const emoji = safeName('🍳'.repeat(80))
+    expect(new TextEncoder().encode(emoji).length).toBeLessThanOrEqual(150)
+    expect(emoji).toBe('🍳'.repeat(37))
+    expect(safeName('línea\nnueva\ttab')).toBe('línea-nueva-tab')
+    // Names Windows keeps for devices, with an extension or not, in any case.
+    expect(['CON', 'nul.txt', 'Aux', 'com1', 'LPT9.tar.gz', 'COM¹', 'conin$'].map((n) => safeName(n))).toEqual(['CON_', 'nul_.txt', 'Aux_', 'com1_', 'LPT9_.tar.gz', 'COM¹_', 'conin$_'])
+    expect(['Console', 'CON2', 'nul-file', 'Comunicación'].map((n) => safeName(n))).toEqual(['Console', 'CON2', 'nul-file', 'Comunicación'])
+  })
+})

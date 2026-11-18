@@ -89,6 +89,11 @@
     "typeName": "Gib „{{name}}“ ein, um zu bestätigen",
     "restoreConfirm": "Wiederherstellen"
   },
+  "export": {
+    "title": "Deine Daten exportieren",
+    "description": "Ein ZIP, um deine Daten zu lesen oder mitzunehmen: die Aufgaben jedes Arbeitsbereichs als JSON, die Dokumente als Markdown und die Anhänge. Ohne den Tresor, der seinen eigenen verschlüsselten Export hat, ohne Verlauf und ohne Papierkorb.",
+    "action": "ZIP herunterladen"
+  },
   "erase": {
     "title": "Diese Instanz löschen",
     "description": "Löscht deine Arbeitsbereiche, deinen Tresor und deine Tokens endgültig. Die Instanz fragt danach wieder nach dem Einrichtungscode.",

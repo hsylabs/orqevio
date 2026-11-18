@@ -39,9 +39,12 @@ test('back up the copy from Settings, then restore it: what changed since goes b
   await confirm.click()
   expect((await restored).status()).toBe(200)
 
-  // The app starts again from the restored copy, still signed in.
-  await page.waitForURL((url) => !url.pathname.endsWith('/settings'))
-  await page.goto(`/w/${workspaceId}/b/${board.id}`)
+  // The app starts again from the restored copy, still signed in, in the workspace it was in.
+  // Waiting for it to get there (and going on from the sidebar) leaves none of its requests
+  // in flight for a navigation to cut short, which Safari reports as a console error.
+  await page.waitForURL(`**/w/${workspaceId}`)
+  await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: /^Tareas/ }).click()
+  await page.waitForURL(`**/b/${board.id}`)
   await expect(page.getByRole('region', { name: 'Columna Por hacer' }).getByRole('button', { name: /Antes de la copia/ })).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('3-restaurada.png') })
 

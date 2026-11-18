@@ -91,6 +91,11 @@
     "typeName": "Digite “{{name}}” para confirmar",
     "restoreConfirm": "Restaurar"
   },
+  "export": {
+    "title": "Exportar seus dados",
+    "description": "Um ZIP para ler seus dados ou levá-los para outro lugar: as tarefas de cada espaço em JSON, os documentos em Markdown e os anexos. Sem o cofre, que tem sua própria exportação criptografada, nem o histórico nem a lixeira.",
+    "action": "Baixar um ZIP"
+  },
   "erase": {
     "title": "Apagar esta cópia",
     "description": "Apaga permanentemente seus espaços, seu cofre e seus tokens. A cópia vai pedir o código de configuração de novo.",

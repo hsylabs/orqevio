@@ -191,6 +191,13 @@ export function SettingsPage() {
             <BackupsSection />
           </Section>
 
+          <Section title={t('export.title')} description={t('export.description')}>
+            {/* The server sends it as a download: the page stays where it is. */}
+            <Button variant="secondary" onClick={() => window.location.assign('/api/export')}>
+              {t('export.action')}
+            </Button>
+          </Section>
+
           <Section title={t('erase.title')} description={t('erase.description')}>
             <Button variant="ghost" className="text-danger hover:bg-danger-soft hover:text-danger" onClick={() => setDeleteOpen(true)}>
               {t('erase.action')}

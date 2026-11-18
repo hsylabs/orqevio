@@ -89,6 +89,11 @@
     "typeName": "Type “{{name}}” to confirm",
     "restoreConfirm": "Restore"
   },
+  "export": {
+    "title": "Export your data",
+    "description": "A ZIP to read your data or take it elsewhere: the tasks of each workspace in JSON, its documents in Markdown and the attachments. Without the vault, which has its own encrypted export, nor the history or the trash.",
+    "action": "Download a ZIP"
+  },
   "erase": {
     "title": "Erase this copy",
     "description": "Permanently erases your workspaces, your vault and your tokens. The copy will ask for the setup code again.",
