@@ -17,6 +17,7 @@
     "restore_place_in_trash": "Restaurez d’abord ce à quoi il appartient : c’est aussi dans la corbeille.",
     "restore_place_gone": "L’emplacement auquel il appartenait n’existe plus, et il n’y a nulle part où le remettre.",
     "vault_key_changed": "Le coffre-fort a changé dans un autre onglet ou sur un autre appareil. Rouvrez-le.",
+    "too_many_columns": "Un tableau peut contenir jusqu’à 20 colonnes.",
     "vault_full": "Le coffre peut contenir jusqu’à 5 000 éléments. Supprimez ceux que vous n’utilisez plus pour en ajouter d’autres."
   },
   "notFound": "Élément introuvable.",

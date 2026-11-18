@@ -21,7 +21,9 @@
     "emptyBody": "Créez un jeton et collez la configuration dans Claude Code, Cursor, VS Code ou Claude Desktop.",
     "inactive_one": "{{count}} révoqué ou expiré",
     "inactive_many": "{{count}} révoqués ou expirés",
-    "inactive_other": "{{count}} révoqués ou expirés"
+    "inactive_other": "{{count}} révoqués ou expirés",
+    "elsewhere": "Vous avez aussi des accès dans d’autres espaces :",
+    "elsewhereLink": "{{name}} ({{count}})"
   },
   "activity": {
     "title": "Activité des agents",
@@ -94,7 +96,8 @@
       "hint": "À la corbeille ; c’est vous qui décidez s’il revient.",
       "on": "{{name}} peut maintenant supprimer et déplacer",
       "off": "{{name}} ne peut plus supprimer ni déplacer"
-    }
+    },
+    "expired": "A expiré le"
   },
   "access": {
     "levels": {

@@ -1,4 +1,4 @@
-import type { BoardDTO, CardSummaryDTO, ColumnDTO, LabelDTO, TrashedDTO } from '@orqevio/shared'
+import { type BoardDTO, type CardSummaryDTO, type ColumnDTO, type LabelDTO, MAX_COLUMNS, type TrashedDTO } from '@orqevio/shared'
 import {
   type Announcements,
   type CollisionDetection,
@@ -468,7 +468,7 @@ export function BoardPage() {
                   )
                 })}
               </SortableContext>
-              <AddColumn boardId={boardId} />
+              {data.columns.length < MAX_COLUMNS && <AddColumn boardId={boardId} />}
             </div>
             <DragOverlay dropAnimation={{ duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
               {activeCard ? (

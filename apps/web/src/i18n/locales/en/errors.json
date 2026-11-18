@@ -16,6 +16,7 @@
     "restore_place_in_trash": "Restore what this belongs to first: it’s in the trash too.",
     "restore_place_gone": "The place it belonged to no longer exists, and there’s nowhere else to put it.",
     "vault_key_changed": "The vault changed in another tab or on another device. Open it again.",
+    "too_many_columns": "A board holds up to 20 columns.",
     "vault_full": "The vault holds up to 5,000 items. Delete the ones you no longer use to add more."
   },
   "notFound": "The item couldn’t be found.",

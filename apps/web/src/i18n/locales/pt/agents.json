@@ -21,7 +21,9 @@
     "emptyBody": "Crie um token e cole a configuração no Claude Code, Cursor, VS Code ou Claude Desktop.",
     "inactive_one": "{{count}} revogado ou expirado",
     "inactive_many": "{{count}} revogados ou expirados",
-    "inactive_other": "{{count}} revogados ou expirados"
+    "inactive_other": "{{count}} revogados ou expirados",
+    "elsewhere": "Você também tem acessos em outros espaços:",
+    "elsewhereLink": "{{name}} ({{count}})"
   },
   "activity": {
     "title": "Atividade dos agentes",
@@ -94,7 +96,8 @@
       "hint": "Para a lixeira; você decide se volta.",
       "on": "{{name}} agora pode excluir e mover",
       "off": "{{name}} não pode mais excluir nem mover"
-    }
+    },
+    "expired": "Expirou"
   },
   "access": {
     "levels": {
