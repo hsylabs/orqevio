@@ -5,13 +5,15 @@ import path from 'node:path'
 export const DEFAULT_NAME = 'orqevio'
 
 // The name becomes a DNS label (<name>.<subdomain>.workers.dev) and prefixes the
-// R2 bucket, whose names are limited to 63 characters.
+// R2 buckets, whose names are limited to 63 characters.
 const NAME = /^[a-z0-9](?:[a-z0-9-]{0,48}[a-z0-9])?$/
 
 /** Whether `name` can name a copy (see the nameRule message). */
 export const isValidName = (name: string) => NAME.test(name)
 
 export const bucketName = (name: string) => `${name}-uploads`
+/** The second bucket, for the daily backups: apart from the attachments, it can outlive the copy. */
+export const backupBucketName = (name: string) => `${name}-backups`
 
 export interface BaseConfig {
   name: string
@@ -35,18 +37,21 @@ export function loadOrqevio(from = import.meta.url) {
 export type InstallKind = 'cli' | 'button'
 
 /**
- * Wrangler configuration for one copy: its own Worker name and bucket, pointing at the package files.
- * The copy learns both names from its variables, to say what to delete when it is uninstalled.
+ * Wrangler configuration for one copy: its own Worker name and buckets, pointing at the package files.
+ * The copy learns their names from its variables, to say where its backups are and what to delete
+ * when it is uninstalled. Deploying creates a bucket that doesn't exist yet: the backups bucket comes
+ * with the first update to 1.2.0.
  */
-export function copyConfig(base: BaseConfig, distDir: string, name: string, install: InstallKind = 'cli', bucket = bucketName(name)) {
+export function copyConfig(base: BaseConfig, distDir: string, name: string, install: InstallKind = 'cli', bucket = bucketName(name), backupBucket = backupBucketName(name)) {
+  const names: Record<string, string> = { UPLOADS: bucket, BACKUPS: backupBucket }
   return {
     ...base,
     name,
     // Other variables set in the dashboard are kept (keep_vars below).
-    vars: { ...(base.vars as Record<string, string> | undefined), ORQEVIO_INSTALL: install, ORQEVIO_COPY_NAME: name, ORQEVIO_BUCKET: bucket },
+    vars: { ...(base.vars as Record<string, string> | undefined), ORQEVIO_INSTALL: install, ORQEVIO_COPY_NAME: name, ORQEVIO_BUCKET: bucket, ORQEVIO_BACKUP_BUCKET: backupBucket },
     main: path.join(distDir, base.main),
     assets: { ...base.assets, directory: path.join(distDir, base.assets.directory) },
-    r2_buckets: base.r2_buckets.map((binding) => (binding.binding === 'UPLOADS' ? { ...binding, bucket_name: bucket } : binding)),
+    r2_buckets: base.r2_buckets.map((binding) => (names[binding.binding] ? { ...binding, bucket_name: names[binding.binding] } : binding)),
     // Variables the owner set in the Cloudflare dashboard (APP_URL, MAX_UPLOAD_MB) survive updates.
     keep_vars: true,
   }

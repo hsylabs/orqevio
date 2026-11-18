@@ -1,6 +1,6 @@
 // Generated from Orqevio's apps/server/wrangler.jsonc. On every deploy, `npm run deploy`
-// reads only "name" and the UPLOADS "bucket_name" from this file: bindings, migrations and
-// compatibility settings come from the installed package, so updating it is all it takes.
+// reads only "name" and the UPLOADS and BACKUPS "bucket_name" from this file: bindings, migrations
+// and compatibility settings come from the installed package, so updating it is all it takes.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "orqevio",
@@ -41,6 +41,10 @@
     {
       "binding": "UPLOADS",
       "bucket_name": "orqevio-uploads"
+    },
+    {
+      "binding": "BACKUPS",
+      "bucket_name": "orqevio-backups"
     }
   ],
   "secrets": {

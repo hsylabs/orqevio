@@ -377,9 +377,11 @@ async function deployRepo(orqevio: ReturnType<typeof loadOrqevio>, dryRun: boole
     io.err(`${m.badRepoName(name)} ${m.nameRule}`)
     return 1
   }
-  // The button lets each resource be renamed: the bucket is whichever the repository names.
+  // The button lets each resource be renamed: the buckets are whichever the repository names.
+  // A repository made before 1.2.0 names no backups bucket: it gets <name>-backups.
   const bucket = repo.r2_buckets?.find((b) => b.binding === 'UPLOADS')?.bucket_name
-  const config = copyConfig(orqevio.base, orqevio.dir, name, 'button', bucket || undefined)
+  const backupBucket = repo.r2_buckets?.find((b) => b.binding === 'BACKUPS')?.bucket_name
+  const config = copyConfig(orqevio.base, orqevio.dir, name, 'button', bucket || undefined, backupBucket || undefined)
   return withWorkspace(async (dir) => {
     const configFile = path.join(dir, 'wrangler.json')
     await writeFile(configFile, JSON.stringify(config, null, 2))

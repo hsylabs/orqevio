@@ -20,7 +20,11 @@
     "code_update_strategy": { "mode": "immediate" }
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["OrqevioCopy"] }],
-  "r2_buckets": [{ "binding": "UPLOADS", "bucket_name": "orqevio-uploads" }],
+  // Attachments, and apart from them the daily backups. Deploying creates a bucket that doesn't exist yet.
+  "r2_buckets": [
+    { "binding": "UPLOADS", "bucket_name": "orqevio-uploads" },
+    { "binding": "BACKUPS", "bucket_name": "orqevio-backups" }
+  ],
   // Claims the copy the first time (and recovers access when changed): deploys fail without it.
   "secrets": { "required": ["SETUP_CODE"] },
   // Variables set in the Cloudflare dashboard (APP_URL, MAX_UPLOAD_MB) survive deploys.

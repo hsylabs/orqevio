@@ -19,6 +19,9 @@
       "UPLOADS": {
         "description": "R2 bucket for the files attached to cards and documents."
       },
+      "BACKUPS": {
+        "description": "R2 bucket for the daily backups of your copy, kept apart from it: the last 7."
+      },
       "COPY": {
         "description": "Durable Object that keeps your data in its own SQLite database."
       }
