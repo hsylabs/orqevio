@@ -26,7 +26,8 @@ export function MenuContent({ children, align = 'end', className, side }: { chil
         side={side}
         sideOffset={6}
         collisionPadding={12}
-        className={cn('z-50 min-w-[200px] rounded-[12px] border border-line bg-surface p-1 shadow-lg outline-none', className)}
+        // A long menu (many workspaces, say) scrolls within the screen instead of running off it.
+        className={cn('z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[200px] overflow-y-auto rounded-[12px] border border-line bg-surface p-1 shadow-lg outline-none', className)}
       >
         {children}
       </M.Content>

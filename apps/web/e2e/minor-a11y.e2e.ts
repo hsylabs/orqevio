@@ -15,6 +15,18 @@ test('the focus goes back to the menu button after a dialog opened from it', asy
   await expect(menu).toBeFocused()
 })
 
+// With many workspaces the workspace menu is taller than the window: it scrolls, and what is at
+// its end can still be reached.
+test('a long menu scrolls, and its last items can be reached', async ({ page }) => {
+  await openNewWorkspace(page, 'Menú largo')
+  for (let i = 1; i <= 40; i++) expect((await page.request.post('/api/workspaces', { data: { name: `Espacio ${i}` } })).status()).toBe(201)
+  await page.reload()
+  await page.getByRole('button', { name: /^Menú largo/ }).click()
+  await page.getByRole('menuitem', { name: 'Nuevo espacio' }).click()
+  await expect(page.getByRole('dialog', { name: 'Nuevo espacio' })).toBeVisible()
+  await page.keyboard.press('Escape')
+})
+
 // New → Login in the vault: the cursor is in the name of the new item.
 test('a new vault item from the New menu starts with the cursor in its name', async ({ page }) => {
   const accessKey = (await readFile(ACCESS_KEY_FILE, 'utf8')).trim()
