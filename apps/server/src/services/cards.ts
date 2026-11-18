@@ -498,6 +498,41 @@ export class CardService {
     return { id: row.id, checklistId, text, done: false, position: row.position }
   }
 
+  /**
+   * Adds several items at once, to a checklist of the card or to a new one: all of them or, if
+   * one is not valid, none (nor the new checklist).
+   */
+  async addItems(actor: Actor, cardId: string, input: { checklistId?: string; checklistTitle?: string; items: string[] }) {
+    const texts = input.items.map((text) => parse(checklistItemCreateInput, { text }).text)
+    const title = input.checklistId ? undefined : parse(checklistCreateInput, { title: input.checklistTitle }).title
+    const card = await this.load(actor, cardId, 'tasks:write')
+    const result = this.deps.db.transaction((tx) => {
+      let list: { id: string; title: string }
+      if (input.checklistId) {
+        const found = tx
+          .select({ id: checklists.id, title: checklists.title })
+          .from(checklists)
+          .where(and(eq(checklists.id, input.checklistId), eq(checklists.cardId, cardId)))
+          .get()
+        if (!found) throw notFound('Checklist')
+        list = found
+      } else {
+        const position = positionAt(tx, checklists, eq(checklists.cardId, cardId), undefined)
+        list = tx.insert(checklists).values({ workspaceId: card.workspaceId, cardId, title: title!, position }).returning().get()
+        this.change(tx, actor, card, { kind: 'checklist.created', subjectId: list.id, meta: { title: list.title } })
+      }
+      const items = texts.map((text) => {
+        const position = positionAt(tx, checklistItems, eq(checklistItems.checklistId, list.id), undefined)
+        const row = tx.insert(checklistItems).values({ workspaceId: card.workspaceId, checklistId: list.id, text, position }).returning().get()
+        this.change(tx, actor, card, { kind: 'item.created', subjectId: row.id, meta: { text, checklist: list.title } })
+        return { id: row.id, text }
+      })
+      return { checklistId: list.id, items }
+    })
+    await this.touch(actor, card, texts.at(-1)!)
+    return result
+  }
+
   private async loadItem(actor: Actor, itemId: string) {
     const [item] = await this.deps.db.select().from(checklistItems).where(eq(checklistItems.id, itemId))
     if (!item) throw notFound('Checklist item')

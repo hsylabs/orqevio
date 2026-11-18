@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { type Context, Hono } from 'hono'
 import type { Env } from './env'
 import { createApi } from './http/api'
 import { createOAuthRoutes } from './http/oauth'
@@ -53,9 +53,13 @@ export function createApp(env: Env, services: Services, platform: Platform = {})
   app.route('/', createOAuthRoutes())
   app.route('/api', createApi(env))
   app.all('/mcp', handleMcp)
+  // `/.well-known/` is for the server, not the web app: an unknown address there is a 404, not
+  // the app's page with a 200 (a client probing `/.well-known/openid-configuration` would take it as one).
+  const notFound = (c: Context) => c.json({ error: { code: 'not_found', message: 'Not found' } }, 404)
+  app.all('/.well-known/*', notFound)
 
   platform.web?.(app)
 
-  app.notFound((c) => c.json({ error: { code: 'not_found', message: 'Not found' } }, 404))
+  app.notFound(notFound)
   return app
 }
