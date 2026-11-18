@@ -11,7 +11,8 @@ import {
   getFirstCollision,
   type KeyboardCoordinateGetter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCenter,
   pointerWithin,
   rectIntersection,
@@ -140,7 +141,10 @@ export function BoardPage() {
   }, [])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    // A mouse drags at once; a finger after resting a moment on the card, so that a swipe still
+    // scrolls the board (a pointer sensor loses the drag to the scroll: the browser cancels it).
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter, keyboardCodes: { start: ['Space'], cancel: ['Escape'], end: ['Space'] } }),
   )
 

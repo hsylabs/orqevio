@@ -130,7 +130,9 @@
     "attachments": "Attachments",
     "activity": "Activity",
     "deleted": "Card moved to the trash",
-    "history": "History"
+    "history": "History",
+    "moveUp": "Move up",
+    "moveDown": "Move down"
   },
   "checklist": {
     "titleLabel": "Checklist title",

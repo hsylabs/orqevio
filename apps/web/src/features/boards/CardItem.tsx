@@ -149,7 +149,8 @@ export function SortableCard({ card, labels, onOpen, disabled }: { card: CardSum
         listeners?.onKeyDown?.(e)
         if (e.key === 'Enter' && !e.defaultPrevented) onOpen(card.id)
       }}
-      className="list-none rounded-[11px] outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-sunken"
+      // Resting a finger on it starts a drag: no text selection or system menu instead.
+      className="list-none rounded-[11px] outline-none select-none [-webkit-touch-callout:none] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-sunken"
     >
       <CardView card={card} labels={labels} ghost={isDragging} />
     </li>
