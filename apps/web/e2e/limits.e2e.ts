@@ -1,7 +1,18 @@
-import { expect, openNewWorkspace, test } from './helpers'
+import { expect, test } from './helpers'
 
 // SQLite in a Cloudflare Durable Object takes at most 100 parameters a query. These cases failed
 // there while working on Node; the suite also runs against the Cloudflare package.
+//
+// Each test makes its data through the API before the browser opens anything: with the workspace
+// open, every change would refresh it live, and opening another address in the middle cuts those
+// requests short, which WebKit reports as errors («… due to access control checks»).
+
+/** A workspace of its own, not opened in the browser yet. */
+async function workspace(page: import('@playwright/test').Page, name: string) {
+  const res = await page.request.post('/api/workspaces', { data: { name } })
+  expect(res.status(), await res.text()).toBe(201)
+  return ((await res.json()) as { id: string }).id
+}
 
 async function board(page: import('@playwright/test').Page, workspaceId: string, columns?: string[]) {
   const project = (await (await page.request.post(`/api/workspaces/${workspaceId}/projects`, { data: { name: 'Sprint' } })).json()) as { id: string }
@@ -13,7 +24,7 @@ async function board(page: import('@playwright/test').Page, workspaceId: string,
 }
 
 test('a page that mentions 30 cards saves from the editor, and each card links it', async ({ page }) => {
-  const workspaceId = await openNewWorkspace(page, 'Menciones E2E')
+  const workspaceId = await workspace(page, 'Menciones E2E')
   const { projectId, columns } = await board(page, workspaceId)
   const cards: string[] = []
   for (let i = 0; i < 30; i++) {
@@ -42,7 +53,7 @@ test('a page that mentions 30 cards saves from the editor, and each card links i
 })
 
 test('a board created with its 20 columns shows them all', async ({ page }) => {
-  const workspaceId = await openNewWorkspace(page, 'Columnas E2E')
+  const workspaceId = await workspace(page, 'Columnas E2E')
   const names = Array.from({ length: 20 }, (_, i) => `Columna ${i + 1}`)
   const { boardId } = await board(page, workspaceId, names)
   await page.goto(`/w/${workspaceId}/b/${boardId}`)
@@ -51,7 +62,7 @@ test('a board created with its 20 columns shows them all', async ({ page }) => {
 })
 
 test('a card with 101 checklists opens with all of them', async ({ page }) => {
-  const workspaceId = await openNewWorkspace(page, 'Listas E2E')
+  const workspaceId = await workspace(page, 'Listas E2E')
   const { boardId, columns } = await board(page, workspaceId)
   const card = ((await (await page.request.post(`/api/columns/${columns[0]!.id}/cards`, { data: { title: 'Muchas listas' } })).json()) as { id: string }).id
   for (let i = 0; i < 101; i++) {
