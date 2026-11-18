@@ -76,7 +76,10 @@ export function errorMessage(error: unknown): string {
     if (isKnown(error.code)) return t(`errors:codes.${error.code}`)
     if (error.status === 404) return t('errors:notFound')
     if (error.status >= 500) return t('errors:server')
-    // Anything else is a validation detail from the server, which speaks English.
+    // The server speaks English: what reaches people is said in their language.
+    if (error.code === 'bad_request' && Array.isArray(error.details)) return t('errors:invalid')
+    if (error.status === 403) return t('errors:forbidden')
+    if (error.code === 'conflict') return t('errors:conflict')
     return error.message
   }
   return t('errors:unknown')

@@ -1,5 +1,5 @@
 import type { AccessStateDTO, MeDTO, Theme, UninstalledDTO, UserDTO } from '@orqevio/shared'
-import { DEFAULT_LOCALE, defaultWorkspaceName, isLocale } from '@orqevio/shared'
+import { DEFAULT_LOCALE, clip, defaultWorkspaceName, isLocale } from '@orqevio/shared'
 import { claimInput, confirmAccessKeyInput, installerUninstallInput, recoverInput, rotateAccessKeyInput, uninstallInput, unlockInput, updateAccountInput } from '@orqevio/shared'
 import { and, asc, eq, gt, isNull, ne, sql } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
@@ -220,7 +220,7 @@ export class AccountService {
       } else {
         owner = tx.insert(users).values({ name, locale }).returning().get()
         const firstName = name.split(/\s+/)[0] ?? name
-        const w = tx.insert(workspaces).values({ name: defaultWorkspaceName(locale, firstName).slice(0, 60) }).returning().get()
+        const w = tx.insert(workspaces).values({ name: clip(defaultWorkspaceName(locale, firstName), 60) }).returning().get()
         tx.insert(workspaceMembers).values({ workspaceId: w.id, userId: owner.id, role: 'owner' }).run()
       }
       const claimed = tx

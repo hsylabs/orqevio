@@ -113,7 +113,8 @@
       "bad_secret": "Der geheime Schlüssel darf nur die Buchstaben A bis Z und die Ziffern 2 bis 7 enthalten.",
       "too_short": "Der geheime Schlüssel ist zu kurz.",
       "bad_parameters": "Der otpauth://-Link enthält ungültige Parameter."
-    }
+    },
+    "seconds": "{{count}} s"
   },
   "editor": {
     "editTitle": "Eintrag bearbeiten",
@@ -150,7 +151,8 @@
     "fairHint": "Füge weitere Wörter oder mehr verschiedene Zeichen hinzu.",
     "good": "Gut",
     "veryGood": "Sehr gut",
-    "rememberHint": "Denk daran: Wenn du es vergisst, kann nur der Wiederherstellungsschlüssel den Tresor öffnen."
+    "rememberHint": "Denk daran: Wenn du es vergisst, kann nur der Wiederherstellungsschlüssel den Tresor öffnen.",
+    "labelled": "{{label}}. "
   },
   "generator": {
     "regenerate": "Neu generieren",

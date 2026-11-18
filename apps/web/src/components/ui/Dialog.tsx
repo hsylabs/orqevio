@@ -1,6 +1,6 @@
 import { Dialog as D } from 'radix-ui'
 import { X } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { type ReactNode, useLayoutEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../lib/cn'
 
@@ -17,6 +17,16 @@ interface DialogProps {
 
 export function Dialog({ open, onOpenChange, title, description, children, footer, width = 'max-w-[460px]', hideClose }: DialogProps) {
   const { t } = useTranslation()
+  // Where the focus goes back to on closing: what had it, or, when that was an item of a menu (gone
+  // by then), the menu's button.
+  const opener = useRef<{ element: Element | null; menuButton: HTMLElement | null }>({ element: null, menuButton: null })
+  useLayoutEffect(() => {
+    if (!open) return
+    const element = document.activeElement
+    const menu = element?.closest('[role="menu"]')
+    const menuButton = menu?.id ? document.querySelector<HTMLElement>(`[aria-controls="${CSS.escape(menu.id)}"]`) : null
+    opener.current = { element, menuButton }
+  }, [open])
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
@@ -24,6 +34,12 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
         <D.Content
           // A field meant to take the focus may have lost it, to a menu that was closing when the
           // dialog opened: it gets it back instead of the first button.
+          onCloseAutoFocus={(e) => {
+            const { element, menuButton } = opener.current
+            if (element?.isConnected || !menuButton?.isConnected) return
+            e.preventDefault()
+            menuButton.focus()
+          }}
           onOpenAutoFocus={(e) => {
             const field = e.currentTarget instanceof HTMLElement ? e.currentTarget.querySelector<HTMLElement>('[data-autofocus]') : null
             if (!field) return

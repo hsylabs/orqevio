@@ -109,7 +109,8 @@
       "bad_secret": "シークレットキーに使えるのは、AからZまでの英字と2から7までの数字だけです。",
       "too_short": "シークレットキーが短すぎます。",
       "bad_parameters": "otpauth://リンクのパラメーターが無効です。"
-    }
+    },
+    "seconds": "{{count}}秒"
   },
   "editor": {
     "editTitle": "項目を編集",
@@ -146,7 +147,8 @@
     "fairHint": "単語を増やすか、さまざまな種類の文字を組み合わせてください。",
     "good": "良好",
     "veryGood": "非常に良好",
-    "rememberHint": "忘れた場合、保管庫を開けるのは回復キーだけです。"
+    "rememberHint": "忘れた場合、保管庫を開けるのは回復キーだけです。",
+    "labelled": "{{label}}。"
   },
   "generator": {
     "regenerate": "再生成",

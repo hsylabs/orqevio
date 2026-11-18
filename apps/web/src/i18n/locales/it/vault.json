@@ -117,7 +117,8 @@
       "bad_secret": "La chiave segreta può contenere solo le lettere dalla A alla Z e le cifre dal 2 al 7.",
       "too_short": "La chiave segreta è troppo corta.",
       "bad_parameters": "Il link otpauth:// contiene parametri non validi."
-    }
+    },
+    "seconds": "{{count}} s"
   },
   "editor": {
     "editTitle": "Modifica elemento",
@@ -154,7 +155,8 @@
     "fairHint": "Aggiungi altre parole o caratteri più vari.",
     "good": "Buona",
     "veryGood": "Ottima",
-    "rememberHint": "Ricorda: se la dimentichi, solo la chiave di recupero potrà aprire la cassaforte."
+    "rememberHint": "Ricorda: se la dimentichi, solo la chiave di recupero potrà aprire la cassaforte.",
+    "labelled": "{{label}}. "
   },
   "generator": {
     "regenerate": "Generane un’altra",

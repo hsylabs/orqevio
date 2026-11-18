@@ -156,7 +156,9 @@
       "strike": "Barrato",
       "code": "Codice",
       "link": "Link"
-    }
+    },
+    "taskCheckbox": "Da fare: {{text}}",
+    "taskCheckboxEmpty": "Cosa da fare vuota"
   },
   "icon": {
     "change": "Cambia icona",

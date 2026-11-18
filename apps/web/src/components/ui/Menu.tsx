@@ -1,14 +1,27 @@
 import { DropdownMenu as M } from 'radix-ui'
-import type { ReactNode } from 'react'
+import { type ReactNode, useCallback, useRef } from 'react'
 import { cn } from '../../lib/cn'
 
 export const MenuRoot = M.Root
 export const MenuTrigger = M.Trigger
 
 export function MenuContent({ children, align = 'end', className, side }: { children: ReactNode; align?: 'start' | 'end' | 'center'; className?: string; side?: 'top' | 'bottom' | 'left' | 'right' }) {
+  // A field meant to take the focus (see Field) that an item brought up, a form say, couldn't take
+  // it while the menu was open: it gets it when the menu closes, instead of the menu's button.
+  const before = useRef<Set<Element>>(new Set())
+  const opened = useCallback((node: HTMLDivElement | null) => {
+    if (node) before.current = new Set(document.querySelectorAll('[data-autofocus]'))
+  }, [])
   return (
     <M.Portal>
       <M.Content
+        ref={opened}
+        onCloseAutoFocus={(e) => {
+          const field = [...document.querySelectorAll<HTMLElement>('[data-autofocus]')].find((el) => !before.current.has(el))
+          if (!field) return
+          e.preventDefault()
+          field.focus()
+        }}
         align={align}
         side={side}
         sideOffset={6}

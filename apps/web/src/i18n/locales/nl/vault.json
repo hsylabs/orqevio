@@ -113,7 +113,8 @@
       "bad_secret": "De geheime sleutel mag alleen de letters A t/m Z en de cijfers 2 t/m 7 bevatten.",
       "too_short": "De geheime sleutel is te kort.",
       "bad_parameters": "De otpauth://-link heeft ongeldige parameters."
-    }
+    },
+    "seconds": "{{count}} s"
   },
   "editor": {
     "editTitle": "Item bewerken",
@@ -150,7 +151,8 @@
     "fairHint": "Voeg meer woorden of meer soorten tekens toe.",
     "good": "Goed",
     "veryGood": "Zeer goed",
-    "rememberHint": "Let op: als je het vergeet, kan alleen de herstelsleutel de kluis nog openen."
+    "rememberHint": "Let op: als je het vergeet, kan alleen de herstelsleutel de kluis nog openen.",
+    "labelled": "{{label}}. "
   },
   "generator": {
     "regenerate": "Nog een genereren",

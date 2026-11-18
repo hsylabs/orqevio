@@ -113,7 +113,8 @@
       "bad_secret": "The secret key can only contain the letters A to Z and the digits 2 to 7.",
       "too_short": "The secret key is too short.",
       "bad_parameters": "The otpauth:// link has invalid parameters."
-    }
+    },
+    "seconds": "{{count}} s"
   },
   "editor": {
     "editTitle": "Edit item",
@@ -150,7 +151,8 @@
     "fairHint": "Add more words or a wider mix of characters.",
     "good": "Good",
     "veryGood": "Very good",
-    "rememberHint": "Remember: if you forget it, only the recovery key can open the vault."
+    "rememberHint": "Remember: if you forget it, only the recovery key can open the vault.",
+    "labelled": "{{label}}. "
   },
   "generator": {
     "regenerate": "Generate another",

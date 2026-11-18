@@ -20,5 +20,8 @@
   },
   "notFound": "Het item is niet gevonden.",
   "server": "Er ging iets mis op de server. Probeer het opnieuw.",
-  "unknown": "Er ging iets mis. Probeer het opnieuw."
+  "unknown": "Er ging iets mis. Probeer het opnieuw.",
+  "invalid": "Sommige gegevens zijn ongeldig. Controleer ze en probeer het opnieuw.",
+  "forbidden": "Je hebt geen toestemming om dit te doen.",
+  "conflict": "Dit is intussen gewijzigd. Laad opnieuw en probeer het nog eens."
 }

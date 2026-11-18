@@ -117,7 +117,8 @@
       "bad_secret": "La clé secrète ne peut contenir que les lettres A à Z et les chiffres 2 à 7.",
       "too_short": "La clé secrète est trop courte.",
       "bad_parameters": "Le lien otpauth:// contient des paramètres non valides."
-    }
+    },
+    "seconds": "{{count}} s"
   },
   "editor": {
     "editTitle": "Modifier l’élément",
@@ -154,7 +155,8 @@
     "fairHint": "Ajoutez des mots ou variez davantage les caractères.",
     "good": "Bon",
     "veryGood": "Très bon",
-    "rememberHint": "Rappel : si vous l’oubliez, seule la clé de récupération pourra ouvrir le coffre-fort."
+    "rememberHint": "Rappel : si vous l’oubliez, seule la clé de récupération pourra ouvrir le coffre-fort.",
+    "labelled": "{{label}}. "
   },
   "generator": {
     "regenerate": "En générer un autre",

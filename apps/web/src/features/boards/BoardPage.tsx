@@ -386,7 +386,7 @@ export function BoardPage() {
             <>
               <FilterPopover filter={filter} onChange={setFilter} labels={data.labels} />
               <Button variant="ghost" size="sm" icon={<Archive />} onClick={() => setArchivedOpen(true)}>
-                <span className="max-sm:hidden">{t('board.archived')}</span>
+                <span className="max-sm:sr-only">{t('board.archived')}</span>
               </Button>
               <MenuRoot>
                 <MenuTrigger asChild>
@@ -563,7 +563,7 @@ function FilterPopover({ filter, onChange, labels }: { filter: Filter; onChange:
       className="w-[300px] p-3"
       trigger={
         <Button variant={count ? 'secondary' : 'ghost'} size="sm" icon={<ListFilter />}>
-          <span className="max-sm:hidden">{t('filter.button')}</span>
+          <span className="max-sm:sr-only">{t('filter.button')}</span>
           {count > 0 && <span className="grid size-4.5 place-items-center rounded-full bg-ink font-mono text-[10px] text-sheet">{count}</span>}
         </Button>
       }

@@ -21,5 +21,8 @@
   },
   "notFound": "No se ha encontrado el elemento.",
   "server": "Algo ha fallado en el servidor. Inténtalo de nuevo.",
-  "unknown": "Algo ha fallado. Inténtalo de nuevo."
+  "unknown": "Algo ha fallado. Inténtalo de nuevo.",
+  "invalid": "Algún dato no es válido. Revísalo y vuelve a intentarlo.",
+  "forbidden": "No tienes permiso para hacer esto.",
+  "conflict": "Ha cambiado mientras tanto. Vuelve a cargarlo e inténtalo de nuevo."
 }

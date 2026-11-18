@@ -21,5 +21,8 @@
   },
   "notFound": "Elemento non trovato.",
   "server": "Si è verificato un errore sul server. Riprova.",
-  "unknown": "Si è verificato un errore. Riprova."
+  "unknown": "Si è verificato un errore. Riprova.",
+  "invalid": "Alcuni dati non sono validi. Controllali e riprova.",
+  "forbidden": "Non hai il permesso di farlo.",
+  "conflict": "È cambiato nel frattempo. Ricarica e riprova."
 }

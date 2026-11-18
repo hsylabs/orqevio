@@ -21,3 +21,15 @@ describe('too many attempts', () => {
     expect(errorMessage(new ApiError(429, 'rate_limited', ''))).toBe('Demasiados intentos. Espera unos minutos.')
   })
 })
+
+describe('messages from the server, which speaks English', () => {
+  it('are said in the app language when they are about the data, permissions or a change meanwhile', () => {
+    expect(errorMessage(new ApiError(400, 'bad_request', 'title: Required', [{ path: 'title', message: 'Required' }]))).toBe(
+      'Algún dato no es válido. Revísalo y vuelve a intentarlo.',
+    )
+    expect(errorMessage(new ApiError(403, 'forbidden', 'This token is not allowed to use this tool'))).toBe('No tienes permiso para hacer esto.')
+    expect(errorMessage(new ApiError(409, 'conflict', 'This card was modified since you loaded it'))).toBe(
+      'Ha cambiado mientras tanto. Vuelve a cargarlo e inténtalo de nuevo.',
+    )
+  })
+})

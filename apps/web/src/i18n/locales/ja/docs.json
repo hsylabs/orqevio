@@ -156,7 +156,9 @@
       "strike": "取り消し線",
       "code": "コード",
       "link": "リンク"
-    }
+    },
+    "taskCheckbox": "ToDo：{{text}}",
+    "taskCheckboxEmpty": "空のToDo"
   },
   "icon": {
     "change": "アイコンを変更",

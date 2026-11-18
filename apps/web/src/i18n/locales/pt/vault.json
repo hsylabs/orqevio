@@ -117,7 +117,8 @@
       "bad_secret": "A chave secreta só pode ter as letras de A a Z e os dígitos de 2 a 7.",
       "too_short": "A chave secreta é curta demais.",
       "bad_parameters": "O link otpauth:// tem parâmetros inválidos."
-    }
+    },
+    "seconds": "{{count}} s"
   },
   "editor": {
     "editTitle": "Editar item",
@@ -154,7 +155,8 @@
     "fairHint": "Adicione mais palavras ou uma variedade maior de caracteres.",
     "good": "Boa",
     "veryGood": "Muito boa",
-    "rememberHint": "Lembre-se: se você a esquecer, só a chave de recuperação poderá abrir o cofre."
+    "rememberHint": "Lembre-se: se você a esquecer, só a chave de recuperação poderá abrir o cofre.",
+    "labelled": "{{label}}. "
   },
   "generator": {
     "regenerate": "Gerar outra",
