@@ -134,6 +134,8 @@
       "theme": "Mudar tema claro escuro aparência aparencia",
       "lockVault": "Bloquear cofre",
       "trash": "lixeira excluído recuperar restaurar"
-    }
+    },
+    "includeArchived": "Incluir arquivados",
+    "archived": "Arquivado"
   }
 }

@@ -454,6 +454,17 @@ describe('MCP server', () => {
     expect(left.map((t) => `${t.kind}:${t.title}`).sort()).toEqual(['attachment:notas.md', 'attachment:plano.png'])
   })
 
+  it('finds archived cards only when asked to, and says they are archived', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const card = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Factura de octubre' })
+    await client.post(`/api/cards/${card.body.id}/archive`)
+    const mcp = await connect((await createToken(client, workspaceId, ['tasks:read'])).token)
+    expect(data(await mcp.callTool({ name: 'search', arguments: { query: 'factura', type: 'cards' } }))).toEqual([])
+    const found = data(await mcp.callTool({ name: 'search', arguments: { query: 'factura', type: 'cards', include_archived: true } }))
+    expect(found).toEqual([expect.objectContaining({ id: card.body.id, archived: true })])
+  })
+
   it('takes due dates as the day they name, and refuses free text instead of guessing a day', async () => {
     const { client, workspaceId } = await signUp(h)
     const { columns } = await seedBoard(client, workspaceId)

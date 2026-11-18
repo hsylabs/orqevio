@@ -134,6 +134,8 @@
       "theme": "Change theme light dark appearance",
       "lockVault": "Lock vault",
       "trash": "trash bin deleted restore"
-    }
+    },
+    "includeArchived": "Include archived",
+    "archived": "Archived"
   }
 }

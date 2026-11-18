@@ -134,6 +134,8 @@
       "theme": "Design ändern hell dunkel Darstellung Theme",
       "lockVault": "Tresor sperren",
       "trash": "papierkorb gelöscht wiederherstellen"
-    }
+    },
+    "includeArchived": "Archivierte einbeziehen",
+    "archived": "Archiviert"
   }
 }

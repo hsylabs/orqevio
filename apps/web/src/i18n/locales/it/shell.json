@@ -134,6 +134,8 @@
       "theme": "Cambia tema chiaro scuro aspetto",
       "lockVault": "Blocca cassaforte",
       "trash": "cestino eliminato recuperare ripristinare"
-    }
+    },
+    "includeArchived": "Includi archiviate",
+    "archived": "Archiviata"
   }
 }

@@ -203,7 +203,12 @@ export interface CardSummaryDTO {
   createdBy: ActorRef | null
   createdAt: string
   updatedAt: string
+  /** When it was archived; null while it is on the board. */
+  archivedAt: string | null
 }
+
+/** Archived cards come a page at a time, the most recently archived first. */
+export const ARCHIVED_PAGE = 50
 
 export interface BoardDTO {
   id: string
@@ -317,6 +322,8 @@ export interface SearchResultDTO {
   boardId: string | null
   boardName: string | null
   columnName: string | null
+  /** A card found among the archived ones (only when asked to include them). */
+  archived?: boolean
 }
 
 export interface HomeCardDTO extends CardSummaryDTO {

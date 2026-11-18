@@ -183,7 +183,9 @@
     "heading": "Archiviate",
     "emptyTitle": "Niente di archiviato",
     "emptyBody": "Le schede archiviate da te o dai tuoi agenti compaiono qui, e puoi ripristinarle.",
-    "deleteConfirm": "Spostare «{{title}}» nel cestino?"
+    "deleteConfirm": "Spostare «{{title}}» nel cestino?",
+    "loadMore": "Carica altro",
+    "showing": "{{shown}} di {{total}}"
   },
   "attachments": {
     "deleteConfirm": "Eliminare «{{name}}»?",

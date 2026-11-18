@@ -157,16 +157,17 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       inputSchema: {
         query: z.string().min(1).max(100),
         type: z.enum(['all', 'cards', 'pages']).default('all'),
+        include_archived: z.boolean().default(false).describe('Also find archived cards, marked archived: true.'),
       },
       annotations: READ,
     },
-    ({ query, type }) =>
+    ({ query, type, include_archived }) =>
       run(async () => {
         const types = type === 'cards' ? (['card'] as const) : type === 'pages' ? (['page'] as const) : undefined
-        const results = await services.search.search(actor, ws, query, { types: types ? [...types] : undefined, limit: 15 })
+        const results = await services.search.search(actor, ws, query, { types: types ? [...types] : undefined, limit: 15, archived: include_archived })
         return results.map((r) =>
           r.type === 'card'
-            ? { type: 'card', id: r.id, title: r.title, board: r.boardName, board_id: r.boardId, column: r.columnName, excerpt: r.excerpt }
+            ? { type: 'card', id: r.id, title: r.title, board: r.boardName, board_id: r.boardId, column: r.columnName, excerpt: r.excerpt, ...(r.archived ? { archived: true } : {}) }
             : { type: 'page', id: r.id, title: r.title || 'Untitled', project: r.projectName, excerpt: r.excerpt },
         )
       }),

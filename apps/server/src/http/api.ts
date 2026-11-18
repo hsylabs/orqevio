@@ -170,7 +170,8 @@ export function createApi(env: Env) {
   api.get('/workspaces/:id/search', async (c) => {
     const type = c.req.query('type')
     const types: Array<'card' | 'page'> | undefined = type === 'card' || type === 'page' ? [type] : undefined
-    return c.json(await c.get('services').search.search(requireActor(c), c.req.param('id'), c.req.query('q') ?? '', { types }))
+    const archived = c.req.query('archived') === '1'
+    return c.json(await c.get('services').search.search(requireActor(c), c.req.param('id'), c.req.query('q') ?? '', { types, archived }))
   })
   api.get('/workspaces/:id/activity', async (c) => {
     const actor = requireActor(c)
@@ -211,7 +212,8 @@ export function createApi(env: Env) {
     return c.body(null, 204)
   })
   api.delete('/boards/:id', async (c) => c.json({ trashId: await c.get('services').boards.remove(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
-  api.get('/boards/:id/archived', async (c) => c.json(await c.get('services').boards.archived(requireActor(c), c.req.param('id'))))
+  // `?before=<archivedAt>&beforeId=<id>`: the page after the last card of the one before.
+  api.get('/boards/:id/archived', async (c) => c.json(await c.get('services').boards.archived(requireActor(c), c.req.param('id'), historyPage(c))))
   api.post('/boards/:id/columns', async (c) =>
     c.json(await c.get('services').boards.createColumn(requireActor(c), c.req.param('id'), await json(c)), 201),
   )
