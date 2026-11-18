@@ -85,6 +85,7 @@
     "restoreLoses": "Alles geht zurück: Arbeitsbereiche, Dokumente, Karten, Tresor, Agenten, Papierkorb und Verlauf. Was sich seitdem geändert hat, geht verloren.",
     "restoreSafety": "Vorher wird eine Sicherung der Instanz, so wie sie jetzt ist, erstellt und getrennt aufbewahrt, damit du zu ihr zurückkehren kannst.",
     "restoreSessions": "Alle Sitzungen enden. Hier bleibst du angemeldet, und dein Zugangsschlüssel ist der, den du jetzt verwendest.",
+    "restoreAgents": "Agenten, denen du seitdem den Zugriff entzogen hast, bekommen ihn nicht zurück.",
     "accessKey": "Zugangsschlüssel",
     "typeName": "Gib „{{name}}“ ein, um zu bestätigen",
     "restoreConfirm": "Wiederherstellen"

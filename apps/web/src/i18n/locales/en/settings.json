@@ -85,6 +85,7 @@
     "restoreLoses": "Everything goes back: workspaces, documents, cards, vault, agents, trash and history. What changed since is lost.",
     "restoreSafety": "First, a backup of the copy as it is now is made and kept apart, so you can come back to it.",
     "restoreSessions": "Every session ends. You stay signed in here, and your access key is the one you use now.",
+    "restoreAgents": "Agents whose access you have taken away since then don’t get it back.",
     "accessKey": "Access key",
     "typeName": "Type “{{name}}” to confirm",
     "restoreConfirm": "Restore"

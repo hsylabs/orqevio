@@ -87,6 +87,7 @@
     "restoreLoses": "Tudo volta atrás: espaços, documentos, cartões, cofre, agentes, lixeira e histórico. O que mudou desde então se perde.",
     "restoreSafety": "Antes, é feito um backup da cópia como está agora, guardado à parte, para você poder voltar a ela.",
     "restoreSessions": "Todas as sessões são encerradas. Aqui você continua conectado, e sua chave de acesso é a que você usa agora.",
+    "restoreAgents": "Os agentes de quem você tirou o acesso desde então não o recuperam.",
     "accessKey": "Chave de acesso",
     "typeName": "Digite “{{name}}” para confirmar",
     "restoreConfirm": "Restaurar"
