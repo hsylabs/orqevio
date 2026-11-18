@@ -130,7 +130,9 @@
     "attachments": "Anhänge",
     "activity": "Aktivität",
     "deleted": "Karte in den Papierkorb verschoben",
-    "history": "Verlauf"
+    "history": "Verlauf",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten"
   },
   "checklist": {
     "titleLabel": "Titel der Checkliste",

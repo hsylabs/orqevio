@@ -132,7 +132,9 @@
     "attachments": "Allegati",
     "activity": "Attività",
     "deleted": "Scheda spostata nel cestino",
-    "history": "Cronologia"
+    "history": "Cronologia",
+    "moveUp": "Sposta su",
+    "moveDown": "Sposta giù"
   },
   "checklist": {
     "titleLabel": "Titolo della checklist",

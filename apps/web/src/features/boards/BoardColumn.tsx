@@ -74,7 +74,7 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
             onDoubleClick={() => setRenaming(true)}
             aria-roledescription={t('column.roleDescription')}
             aria-label={t('column.handle', { name: column.name })}
-            className={cn('flex min-w-0 flex-1 items-center gap-2 rounded-[7px] py-1 text-left', !dragDisabled && 'cursor-grab active:cursor-grabbing')}
+            className={cn('flex min-w-0 flex-1 items-center gap-2 rounded-[7px] py-1 text-left select-none [-webkit-touch-callout:none]', !dragDisabled && 'cursor-grab active:cursor-grabbing')}
           >
             <span className="truncate text-[13px] font-semibold text-ink">{column.name}</span>
             <span className="font-mono text-[11px] text-ink-3 tabular">{cards.length}</span>

@@ -132,7 +132,9 @@
     "attachments": "Adjuntos",
     "activity": "Actividad",
     "deleted": "Tarjeta movida a la papelera",
-    "history": "Historial"
+    "history": "Historial",
+    "moveUp": "Subir",
+    "moveDown": "Bajar"
   },
   "checklist": {
     "titleLabel": "Título de la checklist",
