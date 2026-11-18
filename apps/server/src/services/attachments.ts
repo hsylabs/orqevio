@@ -34,9 +34,14 @@ export interface IncomingFile {
   type: string
 }
 
+const MAX_FILENAME = 180
+
+/** A name safe to store and send back, at most 180 characters, keeping its extension when cut. */
 function safeFilename(name: string) {
-  const cleaned = name.replace(/[\\/\u0000-\u001f\u007f"]/g, '_').trim().slice(0, 180)
-  return cleaned || 'file'
+  const cleaned = name.replace(/[\\/\u0000-\u001f\u007f"]/g, '_').trim()
+  if (cleaned.length <= MAX_FILENAME) return cleaned || 'file'
+  const ext = /\.[^.\s]{1,16}$/.exec(cleaned)?.[0] ?? ''
+  return cleaned.slice(0, MAX_FILENAME - ext.length).trimEnd() + ext
 }
 
 /** Detects common formats from magic bytes so the stored type does not trust the browser blindly. */
@@ -46,6 +51,8 @@ function sniff(bytes: Uint8Array, declared: string): string {
   if (hex.startsWith('ffd8ff')) return 'image/jpeg'
   if (hex.startsWith('47494638')) return 'image/gif'
   if (hex.startsWith('52494646') && hex.slice(16, 24) === '57454250') return 'image/webp'
+  // ISO base media: `ftyp` at byte 4, then the brand (AVIF stills and sequences).
+  if (hex.slice(8, 16) === '66747970' && ['61766966', '61766973'].includes(hex.slice(16, 24))) return 'image/avif'
   if (hex.startsWith('25504446')) return 'application/pdf'
   if (INLINE_IMAGES.has(declared)) return 'application/octet-stream'
   return /^[\w.+-]+\/[\w.+-]+$/.test(declared) ? declared : 'application/octet-stream'
@@ -133,7 +140,33 @@ export class AttachmentService {
     const { head, stream } = await peek(file.body.pipeThrough(exactLength(file.size)), 12).catch(rethrowLength)
     const mimeType = sniff(head, file.type.split(';')[0]!.trim().toLowerCase())
     await this.deps.storage.put(storageKey, stream, file.size, mimeType).catch(rethrowLength)
-    const row = this.deps.db.transaction((tx) => {
+    let row: typeof attachments.$inferSelect
+    try {
+      row = this.insert(actor, workspaceId, id, target, file, mimeType, storageKey)
+    } catch (error) {
+      // Not kept (its page or card went to the trash while it went up, say): nor is its file.
+      await this.deps.storage.delete(storageKey).catch(() => {})
+      throw error
+    }
+    await this.activity.emit(workspaceId, { action: 'attachment.created', actor: actorRef(actor), ...event })
+    return toAttachmentDTO(row)
+  }
+
+  private insert(
+    actor: Actor,
+    workspaceId: string,
+    id: string,
+    target: { pageId?: string; cardId?: string },
+    file: IncomingFile,
+    mimeType: string,
+    storageKey: string,
+  ) {
+    return this.deps.db.transaction((tx) => {
+      // Uploading takes a while: what it goes to may be gone by now.
+      const owner = target.pageId
+        ? tx.select({ id: pages.id }).from(pages).where(eq(pages.id, target.pageId)).get()
+        : tx.select({ id: cards.id }).from(cards).where(eq(cards.id, target.cardId!)).get()
+      if (!owner) throw notFound(target.pageId ? 'Page' : 'Card')
       const row = tx
         .insert(attachments)
         .values({
@@ -152,8 +185,6 @@ export class AttachmentService {
       this.history.record(tx, actor, workspaceId, { ...ownerOf(row), kind: 'attachment.created', subjectId: row.id, meta: { name: row.filename } })
       return row
     })
-    await this.activity.emit(workspaceId, { action: 'attachment.created', actor: actorRef(actor), ...event })
-    return toAttachmentDTO(row)
   }
 
   async open(actor: Actor, attachmentId: string) {

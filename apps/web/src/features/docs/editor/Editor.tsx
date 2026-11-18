@@ -47,13 +47,19 @@ export async function uploadFile(file: File, target: UploadTarget): Promise<Atta
   return api<AttachmentDTO>('POST', `/${target.type === 'page' ? 'pages' : 'cards'}/${target.id}/attachments`, file)
 }
 
+/** Inserts the file where it was dropped (`pos`) or at the cursor, and returns the position right after it. */
 function insertAttachment(editor: TiptapEditor, attachment: AttachmentDTO, pos?: number) {
   const content = attachment.isImage
     ? { type: 'image', attrs: { src: attachment.url, alt: attachment.filename } }
     : { type: 'paragraph', content: [{ type: 'text', text: attachment.filename, marks: [{ type: 'link', attrs: { href: attachment.url } }] }] }
   const chain = editor.chain().focus()
-  if (pos !== undefined) chain.insertContentAt(pos, content).run()
-  else chain.insertContent(content).run()
+  if (pos === undefined) {
+    chain.insertContent(content).run()
+    return undefined
+  }
+  // Inserting leaves the cursor right after what it inserted.
+  chain.insertContentAt(pos, content).run()
+  return editor.state.selection.to
 }
 
 export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel }: EditorProps) {
@@ -85,7 +91,8 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       const id = toast.loading(t('editor.uploading', { name: file.name }))
       try {
         const attachment = await uploadFile(file, target)
-        insertAttachment(editor, attachment, pos)
+        // Each one after the previous, in the order they were dropped.
+        pos = insertAttachment(editor, attachment, pos)
         onUploadedRef.current?.(attachment)
         toast.success(t('editor.uploaded'), { id })
       } catch (error) {
