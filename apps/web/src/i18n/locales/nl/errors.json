@@ -18,7 +18,8 @@
     "vault_key_changed": "De kluis is gewijzigd in een ander tabblad of op een ander apparaat. Open hem opnieuw.",
     "vault_item_changed": "Dit item is gewijzigd in een ander tabblad of op een ander apparaat. Je ziet het nu zoals het is: breng je wijziging opnieuw aan als dat nog nodig is.",
     "too_many_columns": "Een bord bevat maximaal 20 kolommen.",
-    "vault_full": "De kluis bevat maximaal 5.000 items. Verwijder items die je niet meer gebruikt om er meer toe te voegen."
+    "vault_full": "De kluis bevat maximaal 5.000 items. Verwijder items die je niet meer gebruikt om er meer toe te voegen.",
+    "unauthorized": "Je sessie is beëindigd. Log opnieuw in."
   },
   "notFound": "Het item is niet gevonden.",
   "server": "Er ging iets mis op de server. Probeer het opnieuw.",

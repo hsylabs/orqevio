@@ -106,7 +106,8 @@ async function readItems() {
   else if (getSession().key === key) readAgain = true
 }
 
-if (channel) channel.onmessage = (event: MessageEvent) => void (event.data === 'items' ? reloadVaultItems() : freshVaultState()).catch(() => {})
+// 'lock' is for session.ts, which locks the vault.
+if (channel) channel.onmessage = (event: MessageEvent) => void (event.data === 'items' ? reloadVaultItems() : event.data === 'changed' ? freshVaultState() : Promise.resolve()).catch(() => {})
 
 queryClient.getQueryCache().subscribe((event) => {
   if (event.type !== 'updated' || event.action.type !== 'success' || event.query.queryKey[0] !== keys.vault[0]) return

@@ -18,7 +18,8 @@
     "vault_key_changed": "The vault changed in another tab or on another device. Open it again.",
     "vault_item_changed": "This item changed in another tab or on another device. You now see it as it is: make your change again if it is still needed.",
     "too_many_columns": "A board holds up to 20 columns.",
-    "vault_full": "The vault holds up to 5,000 items. Delete the ones you no longer use to add more."
+    "vault_full": "The vault holds up to 5,000 items. Delete the ones you no longer use to add more.",
+    "unauthorized": "Your session has ended. Sign in again."
   },
   "notFound": "The item couldn’t be found.",
   "server": "Something went wrong on the server. Try again.",

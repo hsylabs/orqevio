@@ -9,7 +9,7 @@ import { Field } from '../../components/ui/Field'
 import { errorMessage, post } from '../../lib/api'
 import { bytes, dateTime, formatNumber, relativeTime } from '../../lib/format'
 import { keys, useBackups, useUpdates } from '../../lib/queries'
-import { lockVault } from '../vault/session'
+import { lockVaultEverywhere } from '../vault/session'
 import { announceVaultChange } from '../vault/sync'
 
 const code = <code className="font-mono text-[12px] break-words text-ink" />
@@ -109,9 +109,9 @@ function RestoreDialog({ backup, onClose }: { backup: BackupDTO | null; onClose:
     try {
       await post(`/backups/${backup.id}/restore`, { accessKey })
       // Everything changed underneath: start again from the restored copy, with the new session.
-      // The other tabs of this browser share that session: they read the vault again, and lock
-      // when its key is not the one they hold.
-      lockVault()
+      // The other tabs of this browser share that session: their vault locks too, and they read
+      // it again.
+      lockVaultEverywhere()
       announceVaultChange()
       window.location.assign('/')
     } catch (error) {

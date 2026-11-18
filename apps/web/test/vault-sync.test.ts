@@ -1,10 +1,10 @@
 import type { VaultStateDTO } from '@orqevio/shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { encryptItem } from '../src/features/vault/crypto'
-import { getSession, lockVault, replaceSessionItems, sessionItemChanges, unlockSession, updateSessionItems } from '../src/features/vault/session'
+import { getSession, lockVault, lockVaultEverywhere, replaceSessionItems, sessionItemChanges, unlockSession, updateSessionItems } from '../src/features/vault/session'
 import { applyItemsChange, freshVaultState, lockIfVaultChanged, reloadVaultItems } from '../src/features/vault/sync'
 import { type VaultItem, emptyItem } from '../src/features/vault/types'
-import { ApiError } from '../src/lib/api'
+import { ApiError, sessionEnded } from '../src/lib/api'
 import { keys, queryClient } from '../src/lib/queries'
 
 const vaultKey = () => crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
@@ -210,5 +210,27 @@ describe('keeping the vault session in step with the vault', () => {
     await Promise.all([first, second])
     expect(passwords()).toEqual(['banco:Dos-2222'])
     expect(fetch).toHaveBeenCalledTimes(2)
+  })
+  it('locks when the session of this browser turns out to have ended', async () => {
+    unlockSession(await vaultKey(), 1, 'user-1', [login('correo', 'Antigua-1111')], 15)
+    sessionEnded()
+    expect(getSession()).toMatchObject({ key: null, items: [], revisions: {} })
+  })
+
+  it('locks in every tab of the browser when signing out in one', async () => {
+    // Another tab of this browser: its own channel, its own copy of the vault (here, this one).
+    const other = new BroadcastChannel('orqevio-vault')
+    const heard = new Promise<unknown>((resolve) => other.addEventListener('message', (event) => resolve((event as MessageEvent).data), { once: true }))
+    unlockSession(await vaultKey(), 1, 'user-1', [], 15)
+    lockVaultEverywhere()
+    expect(getSession().key).toBeNull()
+    expect(await heard).toBe('lock')
+
+    // And told by another tab, this one locks.
+    unlockSession(await vaultKey(), 1, 'user-1', [], 15)
+    vi.stubGlobal('fetch', vi.fn(async () => reply({ user: null, claimed: true })))
+    other.postMessage('lock')
+    await vi.waitFor(() => expect(getSession().key).toBeNull())
+    other.close()
   })
 })
