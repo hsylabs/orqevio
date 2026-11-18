@@ -17,6 +17,13 @@ export async function settle(page: Page, baseURL: string) {
 }
 
 /**
+ * Firefox logs a font whose download was cancelled (status NS_BINDING_ABORTED, 0x804B0002) as an
+ * error: when the page starts a download or goes elsewhere while a font is still loading. Nothing
+ * failed, and the font loads again when needed. Any other font error still counts.
+ */
+export const cancelledFontLoad = (text: string) => /^downloadable font: download failed .*: status=2152398850 /.test(text)
+
+/**
  * Test fixture that fails the test on any uncaught page error or console error.
  * When a test fails, it also reports the page's load state and the requests still
  * in flight, to explain pages that never finish loading.
@@ -39,7 +46,7 @@ export const test = base.extend<{ consoleErrors: string[] }>({
       const errors: string[] = []
       page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
       page.on('console', (m) => {
-        if (m.type() === 'error') errors.push(`console: ${m.text()}`)
+        if (m.type() === 'error' && !cancelledFontLoad(m.text())) errors.push(`console: ${m.text()}`)
       })
       await use(errors)
       if (testInfo.status !== testInfo.expectedStatus) {
