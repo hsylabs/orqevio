@@ -1,6 +1,6 @@
 import type { VaultItemRecordDTO, VaultSetupDTO, VaultStateDTO } from '@orqevio/shared'
 import { MAX_VAULT_ITEMS, vaultItemInput, vaultKeysInput, vaultRekeyInput, vaultSettingsInput } from '@orqevio/shared'
-import { and, asc, count, eq, isNotNull } from 'drizzle-orm'
+import { and, asc, count, eq } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { vaultItems, vaults } from '../db/schema'
 import { AppError, conflict, forbidden, notFound } from '../lib/errors'
@@ -79,9 +79,10 @@ export class VaultService {
     this.guard(actor)
     const { keyVersion, ...keys } = parse(vaultRekeyInput, input)
     this.deps.db.transaction((tx) => {
-      const vault = tx.select({ keyVersion: vaults.keyVersion }).from(vaults).where(and(eq(vaults.userId, actor.userId), isNotNull(vaults.wrappedKey))).get()
+      const vault = tx.select({ wrappedKey: vaults.wrappedKey, keyVersion: vaults.keyVersion }).from(vaults).where(eq(vaults.userId, actor.userId)).get()
       if (!vault) throw notFound('Vault')
-      if (vault.keyVersion !== keyVersion) throw keyChanged()
+      // Reset since (set up again or not): the key this tab holds is gone.
+      if (!vault.wrappedKey || vault.keyVersion !== keyVersion) throw keyChanged()
       tx.update(vaults).set({ ...keys, updatedAt: new Date() }).where(eq(vaults.userId, actor.userId)).run()
     })
   }
@@ -107,8 +108,9 @@ export class VaultService {
     const { data, keyVersion } = parse(vaultItemInput, input)
     const row = this.deps.db.transaction((tx) => {
       const vault = tx.select({ wrappedKey: vaults.wrappedKey, keyVersion: vaults.keyVersion }).from(vaults).where(eq(vaults.userId, actor.userId)).get()
-      if (!vault?.wrappedKey) throw conflict('Set up the vault first')
-      if (vault.keyVersion !== keyVersion) throw keyChanged()
+      if (!vault) throw conflict('Set up the vault first')
+      // Reset since this tab opened it, whether it was set up again or not: its key is gone.
+      if (!vault.wrappedKey || vault.keyVersion !== keyVersion) throw keyChanged()
       const owner = tx.select({ userId: vaultItems.userId }).from(vaultItems).where(eq(vaultItems.id, itemId)).get()
       if (owner && owner.userId !== actor.userId) throw notFound('Item')
       if (!owner) {

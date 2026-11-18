@@ -79,6 +79,14 @@ describe('vault', () => {
     // Another tab resets the vault and sets it up again: a new vault key, with the next version.
     expect((await client.post('/api/vault/reset', { accessKey })).status).toBe(204)
     expect((await client.get('/api/vault')).body).toMatchObject({ initialized: false, keyVersion: first })
+    // Before it is set up again, the tab that opened the old one is told the same: its key is gone.
+    for (const refused of [
+      await client.put('/api/vault/items/0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d', { data: 'v1.b2xk.a2V5', keyVersion: first }),
+      await client.put('/api/vault/keys', { ...keys, keyVersion: first }),
+    ]) {
+      expect(refused.status).toBe(409)
+      expect(refused.body.error.code).toBe('vault_key_changed')
+    }
     const fresh = { ...keys, wrappedKey: 'v1.ZnJlc2g.a2V5', recoveryWrappedKey: 'v1.ZnJlc2g.cmVj' }
     // Set up again: the next version, given back to the tab that did it, and when it locks as it was.
     expect((await client.patch('/api/vault/settings', { autoLockMinutes: 5 })).status).toBe(204)
