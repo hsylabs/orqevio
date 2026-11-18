@@ -8,9 +8,9 @@ test('the recovery form is there from the start, and says when the new code has 
     await settle(page, baseURL!)
     await page.goto('/login')
     await page.getByRole('button', { name: '¿Has perdido la clave?' }).click()
-    // The steps for this copy (run from the repository, or deployed as a copy on Cloudflare),
-    // and the form for a new code, without waiting for one.
-    await expect(page.getByText(/pnpm cli reset-access|npx create-orqevio@latest recover/)).toBeVisible()
+    // The steps for this copy (run from the repository, in Docker, or deployed as a copy on
+    // Cloudflare), and the form for a new code, without waiting for one.
+    await expect(page.getByText(/pnpm cli reset-access|docker compose exec app node dist\/cli\.js reset-access|npx create-orqevio@latest recover/)).toBeVisible()
     await page.getByLabel('Nuevo código de configuración', { exact: true }).fill('a-code-not-set-yet')
     await page.getByRole('radio', { name: /He perdido la clave/ }).check()
     await page.getByRole('button', { name: 'Recuperar el acceso' }).click()
