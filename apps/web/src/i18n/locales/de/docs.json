@@ -24,7 +24,29 @@
     "content": "Seiteninhalt",
     "subpages": "Unterseiten",
     "attachments": "Anhänge",
-    "history": "Verlauf"
+    "history": "Verlauf",
+    "gone": {
+      "byName": "<strong>{{name}}</strong> hat diese Seite gelöscht.",
+      "byYou": "Du hast diese Seite in einem anderen Tab oder einer anderen Sitzung gelöscht.",
+      "withByName": "<strong>{{name}}</strong> hat „{{title}}“ gelöscht und damit auch diese Seite.",
+      "withByYou": "Du hast „{{title}}“ in einem anderen Tab oder einer anderen Sitzung gelöscht und damit auch diese Seite.",
+      "unknown": "Diese Seite wurde gelöscht.",
+      "inTrash": "Sie liegt im Papierkorb.",
+      "unsaved": "Deine letzten Änderungen wurden nicht gespeichert: Das geschieht, sobald du sie wiederherstellst.",
+      "unsavedLost": "Deine letzten Änderungen wurden nicht gespeichert und können es nicht mehr werden: Kopiere sie, bevor du gehst.",
+      "restore": "Wiederherstellen"
+    },
+    "problem": {
+      "tooLong": "Dieses Dokument hat {{length}} Zeichen, erlaubt sind höchstens {{max}}. Kürze es, damit es gespeichert werden kann: Bis dahin werden deine Änderungen nicht gespeichert.",
+      "retrying": "Deine letzten Änderungen konnten nicht gespeichert werden. {{reason}} Es wird automatisch erneut versucht.",
+      "refused": "Deine letzten Änderungen konnten nicht gespeichert werden. {{reason}}",
+      "retry": "Erneut versuchen"
+    },
+    "leave": {
+      "title": "Ohne Speichern verlassen?",
+      "body": "Deine letzten Änderungen an dieser Seite wurden nicht gespeichert und gehen verloren.",
+      "confirm": "Ohne Speichern verlassen"
+    }
   },
   "editor": {
     "placeholder": "Schreib los oder drücke „/“ zum Einfügen…",

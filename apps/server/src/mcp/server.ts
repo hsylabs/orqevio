@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { PALETTE, TRASH_DAYS } from '@orqevio/shared'
+import { MAX_MARKDOWN, PALETTE, TRASH_DAYS } from '@orqevio/shared'
 import { z } from 'zod'
 import type { AgentActor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
@@ -531,7 +531,7 @@ export function createMcpServer(services: Services, actor: AgentActor) {
         inputSchema: {
           project_id: uuid,
           title: z.string().min(1).max(200),
-          content: z.string().max(200_000).optional(),
+          content: z.string().max(MAX_MARKDOWN).optional(),
           parent_id: uuid.optional(),
         },
         annotations: WRITE,
@@ -548,12 +548,12 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       {
         title: 'Update page',
         description:
-          'Updates a page title, icon and/or Markdown content. mode "replace" overwrites the content (send base_version from read_page to avoid overwriting newer edits); mode "append" adds content at the end.',
+          `Updates a page title, icon and/or Markdown content. mode "replace" overwrites the content (send base_version from read_page to avoid overwriting newer edits); mode "append" adds content at the end. A page holds up to ${MAX_MARKDOWN} characters, also after appending.`,
         inputSchema: {
           page_id: uuid,
           title: z.string().max(200).optional(),
           icon: z.string().max(16).nullable().optional().describe('An emoji for the page, or null to remove it.'),
-          content: z.string().max(200_000).optional(),
+          content: z.string().max(MAX_MARKDOWN).optional(),
           mode: z.enum(['replace', 'append']).default('replace'),
           base_version: z.number().int().min(1).optional(),
         },

@@ -24,7 +24,29 @@
     "content": "Pagina-inhoud",
     "subpages": "Subpagina’s",
     "attachments": "Bijlagen",
-    "history": "Geschiedenis"
+    "history": "Geschiedenis",
+    "gone": {
+      "byName": "<strong>{{name}}</strong> heeft deze pagina verwijderd.",
+      "byYou": "Je hebt deze pagina in een ander tabblad of een andere sessie verwijderd.",
+      "withByName": "<strong>{{name}}</strong> heeft ‘{{title}}’ verwijderd, en daarmee ook deze pagina.",
+      "withByYou": "Je hebt ‘{{title}}’ in een ander tabblad of een andere sessie verwijderd, en daarmee ook deze pagina.",
+      "unknown": "Deze pagina is verwijderd.",
+      "inTrash": "Hij staat in de prullenbak.",
+      "unsaved": "Je laatste wijzigingen zijn niet opgeslagen: dat gebeurt zodra je hem terugzet.",
+      "unsavedLost": "Je laatste wijzigingen zijn niet opgeslagen en dat kan ook niet meer: kopieer ze voordat je weggaat.",
+      "restore": "Terugzetten"
+    },
+    "problem": {
+      "tooLong": "Dit document heeft {{length}} tekens en het maximum is {{max}}. Maak het korter zodat het kan worden opgeslagen: tot die tijd worden je wijzigingen niet opgeslagen.",
+      "retrying": "Je laatste wijzigingen konden niet worden opgeslagen. {{reason}} Er wordt automatisch opnieuw geprobeerd.",
+      "refused": "Je laatste wijzigingen konden niet worden opgeslagen. {{reason}}",
+      "retry": "Opnieuw proberen"
+    },
+    "leave": {
+      "title": "Weggaan zonder op te slaan?",
+      "body": "Je laatste wijzigingen op deze pagina zijn niet opgeslagen en gaan verloren.",
+      "confirm": "Weggaan zonder opslaan"
+    }
   },
   "editor": {
     "placeholder": "Schrijf, of druk op ‘/’ om iets in te voegen…",

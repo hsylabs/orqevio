@@ -1,11 +1,11 @@
 import type { ActorRef, LinkedCardDTO, PageDTO, PageNodeDTO, PaletteColor } from '@orqevio/shared'
-import { extractReferences, pageCreateInput, pageMoveInput, pageUpdateInput } from '@orqevio/shared'
+import { MAX_MARKDOWN, extractReferences, pageCreateInput, pageMoveInput, pageUpdateInput } from '@orqevio/shared'
 import { type SQL, and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
 import type { DbOrTx } from '../db/client'
 import { apiTokens, attachments, boards, cardPageLinks, cards, columns, pages, projects, users } from '../db/schema'
-import { badRequest, conflict, notFound } from '../lib/errors'
+import { AppError, badRequest, conflict, notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { ActivityService } from './activity'
@@ -54,6 +54,16 @@ const toNode = (p: Pick<PageRow, 'id' | 'projectId' | 'parentId' | 'title' | 'ic
 
 const siblingsOf = (projectId: string, parentId: string | null) =>
   and(eq(pages.projectId, projectId), parentId ? eq(pages.parentId, parentId) : isNull(pages.parentId))
+
+/** Appending would make the page longer than a page can be. */
+const pageTooLong = (current: number, length: number) =>
+  new AppError(
+    413,
+    'page_too_long',
+    `Appending this would make the page ${length} characters long, over the limit of ${MAX_MARKDOWN}. ` +
+      `It has ${current} now, so at most ${Math.max(0, MAX_MARKDOWN - current - 2)} more fit: shorten what you add, or put it in a new page.`,
+    { length, max: MAX_MARKDOWN },
+  )
 
 export class PageService {
   constructor(
@@ -244,6 +254,9 @@ export class PageService {
       if (data.title !== undefined) patch.title = data.title
       if (data.icon !== undefined) patch.icon = data.icon
       if (data.content !== undefined) {
+        // Each part fits, but together they may not: a page too long to save again from the editor.
+        const length = opts.append && prev.content !== '' ? prev.content.length + 2 + data.content.length : 0
+        if (length > MAX_MARKDOWN) throw pageTooLong(prev.content.length, length)
         patch.content = opts.append
           ? sql`CASE WHEN ${pages.content} = '' THEN ${data.content} ELSE ${pages.content} || ${'\n\n'} || ${data.content} END`
           : data.content
