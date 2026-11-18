@@ -63,6 +63,25 @@ describe('boards and cards', () => {
     expect((await client.get(`/api/boards/${boardId}`)).body.cards).toHaveLength(1)
   })
 
+  it('keeps a due date on the calendar day it names, and refuses what names no day', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    // Late on the 17th in New York is already the 18th in UTC: it stays the 17th, for everyone.
+    const card = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Entregar', dueAt: '2026-11-17T23:30-05:00' })
+    expect(card.status, JSON.stringify(card.body)).toBe(201)
+    expect(card.body.dueAt).toBe('2026-11-17T12:00:00.000Z')
+    const dayOnly = await client.patch(`/api/cards/${card.body.id}`, { dueAt: '2026-12-01' })
+    expect(dayOnly.status).toBe(200)
+    expect(dayOnly.body.dueAt).toBe('2026-12-01T12:00:00.000Z')
+
+    for (const dueAt of ['12', '0000-01-01', '2026-02-30', 'mañana']) {
+      const refused = await client.patch(`/api/cards/${card.body.id}`, { dueAt })
+      expect(refused.status, dueAt).toBe(400)
+      expect(JSON.stringify(refused.body.error), dueAt).toContain('YYYY-MM-DD')
+    }
+    expect((await client.get(`/api/cards/${card.body.id}`)).body.dueAt).toBe('2026-12-01T12:00:00.000Z')
+  })
+
   it('tells, column by column, how many archived cards would be deleted with it', async () => {
     const { client, workspaceId } = await signUp(h)
     const { boardId, columns } = await seedBoard(client, workspaceId)

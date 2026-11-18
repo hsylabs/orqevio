@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { MAX_MARKDOWN, PALETTE, TRASH_DAYS } from '@orqevio/shared'
+import { DUE_DATE_HINT, MAX_MARKDOWN, PALETTE, TRASH_DAYS, dueDay } from '@orqevio/shared'
 import { z } from 'zod'
 import type { AgentActor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
@@ -63,15 +63,14 @@ async function readAll(body: ReadableStream<Uint8Array>, max: number) {
 const attachmentSummary = (a: { id: string; filename: string; mimeType: string; size: number }) => ({ id: a.id, name: a.filename, type: a.mimeType, size: a.size })
 const dueDate = z
   .string()
-  .describe('Due date as YYYY-MM-DD or a full ISO 8601 date-time. Use null to clear it.')
+  .describe('Due date: the day as YYYY-MM-DD (a full ISO 8601 date-time also works; its date is the day). Use null to clear it.')
 
+/** A due date as the day it names, stored at 12:00 UTC; anything else is refused, never guessed. */
 function normaliseDue(value: string | null | undefined): string | null | undefined {
   if (value === undefined || value === null) return value
-  const trimmed = value.trim()
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return `${trimmed}T12:00:00.000Z`
-  const date = new Date(trimmed)
-  if (Number.isNaN(date.getTime())) throw new AppError(400, 'bad_request', `Invalid due date "${value}"`)
-  return date.toISOString()
+  const day = dueDay(value)
+  if (!day) throw new AppError(400, 'bad_request', `Invalid due date "${value}": use ${DUE_DATE_HINT}.`)
+  return day
 }
 
 const ok = (data: unknown): CallToolResult => ({
