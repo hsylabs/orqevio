@@ -13,6 +13,7 @@ import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { actorRef, hasScope } from '../auth/actor'
 import type { DbOrTx } from '../db/client'
+import { inList } from '../db/in-list'
 import {
   apiTokens,
   attachments,
@@ -81,7 +82,7 @@ export class CardService {
     if (rows.length === 0) return []
     const ids = rows.map((r) => r.id)
     const [labelRows, checklistRows, linkRows, attachmentRows, creators] = await Promise.all([
-      db.select().from(cardLabels).where(inArray(cardLabels.cardId, ids)),
+      db.select().from(cardLabels).where(inList(cardLabels.cardId, ids)),
       db
         .select({
           cardId: checklists.cardId,
@@ -90,17 +91,17 @@ export class CardService {
         })
         .from(checklists)
         .leftJoin(checklistItems, eq(checklistItems.checklistId, checklists.id))
-        .where(inArray(checklists.cardId, ids))
+        .where(inList(checklists.cardId, ids))
         .groupBy(checklists.cardId),
       db
         .select({ cardId: cardPageLinks.cardId, total: sql<number>`count(distinct ${cardPageLinks.pageId})` })
         .from(cardPageLinks)
-        .where(inArray(cardPageLinks.cardId, ids))
+        .where(inList(cardPageLinks.cardId, ids))
         .groupBy(cardPageLinks.cardId),
       db
         .select({ cardId: attachments.cardId, total: sql<number>`count(*)` })
         .from(attachments)
-        .where(inArray(attachments.cardId, ids))
+        .where(inList(attachments.cardId, ids))
         .groupBy(attachments.cardId),
       this.creatorNames(rows, db),
     ])
@@ -131,9 +132,9 @@ export class CardService {
     const userIds = [...new Set(rows.flatMap((r) => (r.createdByUserId && !r.createdByTokenId ? [r.createdByUserId] : [])))]
     const tokenIds = [...new Set(rows.flatMap((r) => (r.createdByTokenId ? [r.createdByTokenId] : [])))]
     const [u, t] = await Promise.all([
-      userIds.length ? db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, userIds)) : [],
+      userIds.length ? db.select({ id: users.id, name: users.name }).from(users).where(inList(users.id, userIds)) : [],
       tokenIds.length
-        ? db.select({ id: apiTokens.id, name: apiTokens.name }).from(apiTokens).where(inArray(apiTokens.id, tokenIds))
+        ? db.select({ id: apiTokens.id, name: apiTokens.name }).from(apiTokens).where(inList(apiTokens.id, tokenIds))
         : [],
     ])
     const result = new Map<string, ActorRef>()

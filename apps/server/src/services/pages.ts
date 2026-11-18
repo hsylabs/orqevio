@@ -1,9 +1,10 @@
 import type { ActorRef, LinkedCardDTO, PageDTO, PageNodeDTO, PaletteColor } from '@orqevio/shared'
 import { MAX_MARKDOWN, extractReferences, pageCreateInput, pageMoveInput, pageUpdateInput } from '@orqevio/shared'
-import { type SQL, and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { type SQL, and, asc, eq, isNull, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
 import type { DbOrTx } from '../db/client'
+import { inList } from '../db/in-list'
 import { apiTokens, attachments, boards, cardPageLinks, cards, columns, pages, projects, users } from '../db/schema'
 import { AppError, badRequest, conflict, notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
@@ -349,7 +350,7 @@ export class PageService {
     const valid = db
       .select({ id: cards.id })
       .from(cards)
-      .where(and(inArray(cards.id, referenced.slice(0, 200)), eq(cards.workspaceId, page.workspaceId)))
+      .where(and(inList(cards.id, referenced.slice(0, 200)), eq(cards.workspaceId, page.workspaceId)))
       .all()
     if (valid.length === 0) return
     db.insert(cardPageLinks)
