@@ -58,6 +58,37 @@
     "kept": "Your data, access key and vault are preserved.",
     "releaseNotes": "See what’s new"
   },
+  "backups": {
+    "title": "Backups",
+    "description": "Every day this copy backs itself up: everything as it is, the encrypted vault, the trash, the history and the attachments included. The last 7 are kept, apart from its data.",
+    "whereFolder": "They’re in the server’s folder <code>{{name}}</code>. To keep them on another disk or volume, set BACKUP_DIR.",
+    "whereBucket": "They’re in the R2 bucket <code>{{name}}</code> of your Cloudflare account, apart from the attachments.",
+    "off": "This copy makes no backups (BACKUPS=off).",
+    "now": "Back up now",
+    "made": "Backup made",
+    "none": "No backups yet: the first one is made within the hour.",
+    "list": "Backups kept",
+    "kind": {
+      "daily": "Automatic",
+      "manual": "Made by you",
+      "before-restore": "Made before restoring"
+    },
+    "contents": "Cards: {{cards}} · Documents: {{pages}} · Attachments: {{files}}",
+    "missingFiles_one": "{{count}} attachment couldn’t be copied into it.",
+    "missingFiles_other": "{{count}} attachments couldn’t be copied into it.",
+    "newer": "Made with Orqevio {{version}}: update this copy to restore it.",
+    "restore": "Restore…",
+    "keep_one": "The last daily backup is kept, and the one made before the last restore.",
+    "keep_other": "The last {{count}} daily backups are kept, and the one made before the last restore.",
+    "restoreTitle": "Restore this backup?",
+    "restoreDescription": "This copy goes back to how it was on {{date}}.",
+    "restoreLoses": "Everything goes back: workspaces, documents, cards, vault, agents, trash and history. What changed since is lost.",
+    "restoreSafety": "First, a backup of the copy as it is now is made and kept apart, so you can come back to it.",
+    "restoreSessions": "Every session ends. You stay signed in here, and your access key is the one you use now.",
+    "accessKey": "Access key",
+    "typeName": "Type “{{name}}” to confirm",
+    "restoreConfirm": "Restore"
+  },
   "erase": {
     "title": "Erase this copy",
     "description": "Permanently erases your workspaces, your vault and your tokens. The copy will ask for the setup code again.",
@@ -82,6 +113,17 @@
     "oneCommand": "Installed it with the command? From your computer, <code>{{command}}</code> does both steps at once.",
     "accessKey": "Access key",
     "typeName": "Type “{{name}}” to confirm",
-    "confirm": "Uninstall for good"
+    "confirm": "Uninstall for good",
+    "backups": {
+      "legend": "Its backups",
+      "keep": {
+        "label": "Keep them",
+        "hint": "A copy installed again with the same name, or with the same backups folder, can restore them. Delete them by hand when you no longer need them."
+      },
+      "delete": {
+        "label": "Delete them too",
+        "hint": "Nothing of this copy can be brought back afterwards."
+      }
+    }
   }
 }

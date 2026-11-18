@@ -192,6 +192,12 @@ export class OAuthService {
     private readonly tokens: TokenService,
   ) {}
 
+  /** Forgets the signing key and client metadata it read, after a restore replaced the database. */
+  forget() {
+    this.signingKey = null
+    this.metadata.clear()
+  }
+
   // ── Clients ─────────────────────────────────────────────────────
   /** Dynamic Client Registration (RFC 7591). Nothing is stored: the client_id is signed. */
   async register(input: unknown) {

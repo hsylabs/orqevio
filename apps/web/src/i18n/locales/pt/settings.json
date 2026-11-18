@@ -58,6 +58,39 @@
     "kept": "Seus dados, sua chave de acesso e seu cofre são preservados.",
     "releaseNotes": "Veja as novidades"
   },
+  "backups": {
+    "title": "Backups",
+    "description": "Todo dia, esta cópia faz um backup de si mesma: de tudo como está, incluindo o cofre criptografado, a lixeira, o histórico e os anexos. Os 7 últimos são mantidos, separados dos dados dela.",
+    "whereFolder": "Eles ficam na pasta <code>{{name}}</code> do servidor. Para guardá-los em outro disco ou volume, defina BACKUP_DIR.",
+    "whereBucket": "Eles ficam no bucket do R2 <code>{{name}}</code> da sua conta da Cloudflare, separados dos anexos.",
+    "off": "Esta cópia não faz backups (BACKUPS=off).",
+    "now": "Fazer backup agora",
+    "made": "Backup feito",
+    "none": "Ainda não há backups: o primeiro é feito em até uma hora.",
+    "list": "Backups mantidos",
+    "kind": {
+      "daily": "Automático",
+      "manual": "Feito por você",
+      "before-restore": "Feito antes de restaurar"
+    },
+    "contents": "Cartões: {{cards}} · Documentos: {{pages}} · Anexos: {{files}}",
+    "missingFiles_one": "{{count}} anexo não pôde ser copiado nele.",
+    "missingFiles_many": "{{count}} anexos não puderam ser copiados nele.",
+    "missingFiles_other": "{{count}} anexos não puderam ser copiados nele.",
+    "newer": "Feito com o Orqevio {{version}}: atualize esta cópia para restaurá-lo.",
+    "restore": "Restaurar…",
+    "keep_one": "O último backup diário é mantido, além do feito antes da última restauração.",
+    "keep_many": "Os {{count}} últimos backups diários são mantidos, além do feito antes da última restauração.",
+    "keep_other": "Os {{count}} últimos backups diários são mantidos, além do feito antes da última restauração.",
+    "restoreTitle": "Restaurar este backup?",
+    "restoreDescription": "Esta cópia volta a ficar como estava em {{date}}.",
+    "restoreLoses": "Tudo volta atrás: espaços, documentos, cartões, cofre, agentes, lixeira e histórico. O que mudou desde então se perde.",
+    "restoreSafety": "Antes, é feito um backup da cópia como está agora, guardado à parte, para você poder voltar a ela.",
+    "restoreSessions": "Todas as sessões são encerradas. Aqui você continua conectado, e sua chave de acesso é a que você usa agora.",
+    "accessKey": "Chave de acesso",
+    "typeName": "Digite “{{name}}” para confirmar",
+    "restoreConfirm": "Restaurar"
+  },
   "erase": {
     "title": "Apagar esta cópia",
     "description": "Apaga permanentemente seus espaços, seu cofre e seus tokens. A cópia vai pedir o código de configuração de novo.",
@@ -82,6 +115,17 @@
     "oneCommand": "Instalou com o comando? No seu computador, <code>{{command}}</code> faz as duas etapas de uma vez.",
     "accessKey": "Chave de acesso",
     "typeName": "Digite “{{name}}” para confirmar",
-    "confirm": "Desinstalar para sempre"
+    "confirm": "Desinstalar para sempre",
+    "backups": {
+      "legend": "Os backups dela",
+      "keep": {
+        "label": "Mantê-los",
+        "hint": "Uma cópia instalada de novo com o mesmo nome, ou com a mesma pasta de backups, poderá restaurá-los. Apague-os à mão quando não precisar mais deles."
+      },
+      "delete": {
+        "label": "Apagá-los também",
+        "hint": "Depois, nada desta cópia poderá ser recuperado."
+      }
+    }
   }
 }

@@ -4,7 +4,9 @@ import path from 'node:path'
 import { serve } from '@hono/node-server'
 import { createApp } from './app'
 import { MIN_SETUP_CODE_LENGTH, isWeakSetupCode } from './auth/crypto'
+import { FolderBackupStore } from './backups/store'
 import { openDatabase, runMigrations } from './db/client'
+import { nodeSql } from './db/raw'
 import { loadEnv } from './env'
 import { RealtimeBus } from './lib/realtime'
 import { LocalStorage } from './lib/storage-local'
@@ -16,13 +18,14 @@ import { createServices } from './services'
 const env = loadEnv()
 await mkdir(env.dataDir, { recursive: true })
 await mkdir(path.dirname(env.databasePath), { recursive: true })
-const { db, close } = openDatabase(env.databasePath)
+const { db, sqlite, close } = openDatabase(env.databasePath)
 runMigrations(db, env.migrationsDir)
 
 const bus = new RealtimeBus()
 
 const storage = new LocalStorage(`${env.dataDir}/uploads`)
-const services = createServices({ db, bus, env, storage, publicFetch })
+const backups = env.backupDir ? new FolderBackupStore(env.backupDir) : null
+const services = createServices({ db, bus, env, storage, publicFetch, sql: nodeSql(sqlite), backups, migrate: () => runMigrations(db, env.migrationsDir) })
 const app = createApp(env, services, nodePlatform(env))
 
 const server = serve({ fetch: app.fetch, port: env.port, hostname: env.host }, (info) => {
@@ -35,6 +38,8 @@ if (env.setupCode && isWeakSetupCode(env.setupCode)) {
     `SETUP_CODE has fewer than ${MIN_SETUP_CODE_LENGTH} letters A–Z or digits (other characters don't count): this copy can't be claimed or recovered with it. Set a longer one.`,
   )
 }
+if (env.backupDir) console.log(`Daily backups go to ${env.backupDir}`)
+else console.log('Backups are off (BACKUPS=off)')
 const uninstalled = await services.accounts.uninstalled()
 if (uninstalled) {
   console.log(`This copy of Orqevio was uninstalled (${uninstalled.at}). Remove its container and data to finish: it can't be claimed again.`)
@@ -46,8 +51,9 @@ if (setup) {
   else console.log('Use the setup code configured in SETUP_CODE.')
 }
 
-// Hourly: what has been in the trash or the history for 30 days goes for good, then files nothing uses.
-const sweep = setInterval(() => {
+// Hourly: what has been in the trash or the history for 30 days goes for good, then files nothing
+// uses; and once a day, a backup.
+const hourly = () =>
   services.trash
     .purgeExpired()
     .catch((error) => console.error('[trash] purge failed', error))
@@ -55,12 +61,18 @@ const sweep = setInterval(() => {
     .catch((error) => console.error('[history] purge failed', error))
     .then(() => services.attachments.sweepOrphans())
     .catch((error) => console.error('[storage] sweep failed', error))
-}, 60 * 60 * 1000)
+    .then(() => services.backups.runIfDue())
+    .catch((error) => console.error('[backups] backup failed', error))
+const sweep = setInterval(hourly, 60 * 60 * 1000)
 sweep.unref()
+// A server restarted every day still makes its backup: the first check comes a minute after starting.
+const firstCheck = setTimeout(() => void services.backups.runIfDue().catch((error) => console.error('[backups] backup failed', error)), 60 * 1000)
+firstCheck.unref()
 
 async function shutdown(signal: string) {
   console.log(`${signal} received, shutting down`)
   clearInterval(sweep)
+  clearTimeout(firstCheck)
   for (const client of live.clients) client.close(1001, 'server_shutdown')
   server.close()
   close()

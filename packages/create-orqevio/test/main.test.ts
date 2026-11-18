@@ -50,10 +50,15 @@ const commands = () => calls().map((c) => c.args.slice(0, 2).join(' '))
 async function run(argv: string[], answers: string[] | null = null, language: Language = 'es', extra: { fetch?: typeof fetch } = {}) {
   const out: string[] = []
   const err: string[] = []
+  const asked: string[] = []
   const io: Io = { out: (t) => out.push(t), err: (t) => err.push(t) }
-  if (answers) io.ask = async () => answers.shift() ?? ''
+  if (answers)
+    io.ask = async (question) => {
+      asked.push(question)
+      return answers.shift() ?? ''
+    }
   const code = await main(argv, io, { orqevio, language, fetch: extra.fetch, uninstallWait: { fastMs: 2, slowAfterMs: 10, slowMs: 5, timeoutMs: 60 } })
-  return { code, out: out.join('\n'), err: err.join('\n') }
+  return { code, out: out.join('\n'), err: err.join('\n'), asked: asked.join('\n') }
 }
 
 /**
@@ -63,13 +68,13 @@ async function run(argv: string[], answers: string[] | null = null, language: La
  * `lagging` answers are refused as if the secret had not reached the copy yet.
  */
 function fakeCopy({ name = 'ana', account = 'acc-1', lagging = 0 } = {}) {
-  const requests: Array<{ origin: string; path: string; body: Record<string, string> | null }> = []
+  const requests: Array<{ origin: string; path: string; body: Record<string, unknown> | null }> = []
   const respond = (status: number, data: unknown) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
   let uninstalled = false
   let refused = 0
   const impl = (async (input: string | URL | Request, init: RequestInit = {}) => {
     const url = new URL(String(input))
-    const body = init.body ? (JSON.parse(String(init.body)) as Record<string, string>) : null
+    const body = init.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : null
     requests.push({ origin: url.origin, path: url.pathname, body })
     if (url.pathname === '/api/auth/session') {
       return respond(200, { user: null, workspaces: [], claimed: !uninstalled, recoverable: false, install: 'cli', copyName: name, ...(uninstalled ? { uninstalled: { install: 'cli' } } : {}) })
@@ -79,8 +84,10 @@ function fakeCopy({ name = 'ana', account = 'acc-1', lagging = 0 } = {}) {
       const secret = deployedSecrets(account, name).ORQEVIO_UNINSTALL_TOKEN
       if (!secret || body?.token !== secret || refused++ < lagging) return respond(403, { error: { code: 'uninstall_not_authorized' } })
       uninstalled = true
-      writeFileSync(state, JSON.stringify({ ...JSON.parse(readFileSync(state, 'utf8')), bucket: 'empty' }))
-      return respond(200, { at: '2026-11-14T12:00:00.000Z', install: 'cli', copyName: name, bucket: null })
+      // Like the copy: the attachments go, and its backups only when asked.
+      const current = JSON.parse(readFileSync(state, 'utf8'))
+      writeFileSync(state, JSON.stringify({ ...current, bucket: 'empty', ...(body?.deleteBackups && current.backups ? { backups: 'empty' } : {}) }))
+      return respond(200, { at: '2026-11-14T12:00:00.000Z', install: 'cli', copyName: name, bucket: null, backups: { kept: !body?.deleteBackups, where: { kind: 'bucket', name: `${name}-backups` } } })
     }
     return respond(404, {})
   }) as typeof fetch
@@ -269,6 +276,43 @@ describe('create-orqevio', () => {
     expect(deletes.every((c) => c.account === 'acc-1')).toBe(true)
     expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: false })
     expect(JSON.parse(readFileSync(state, 'utf8')).bucket).toBeUndefined()
+  })
+
+  it('asks whether the backups go too, keeps them unless the answer is yes, and says how to get them back', async () => {
+    setState({ exists: true, bucket: 'empty', backups: 'full' })
+    const kept = await run(['uninstall', '--name', 'ana'], ['', 'ana'])
+    expect(kept.code).toBe(0)
+    expect(kept.asked).toContain('¿Borrar también sus copias de seguridad? El bucket «ana-backups» guarda sus 7 últimas copias diarias')
+    expect(kept.asked).toContain('[s/N]')
+    expect(kept.out).toContain('Sus copias de seguridad siguen en el bucket «ana-backups»')
+    expect(kept.out).toContain('npx create-orqevio@latest --name ana')
+    expect(calls().filter((c) => c.args.includes('delete')).map((c) => c.args.join(' '))).toEqual(['r2 bucket delete ana-uploads', 'delete --name ana --force'])
+    expect(JSON.parse(readFileSync(state, 'utf8'))).toMatchObject({ exists: false, backups: 'full' })
+  })
+
+  it('deletes the backups too when asked, through the copy when their bucket isn’t empty', async () => {
+    setState({ exists: true, bucket: 'empty', backups: 'full' })
+    const copy = fakeCopy()
+    const result = await run(['uninstall', '--name', 'ana'], ['s', 'ana', 'ana.ana.workers.dev'], 'es', { fetch: copy.impl })
+    expect(result.code).toBe(0)
+    expect(result.out).toContain('El bucket «ana-backups» todavía guarda copias de seguridad')
+    expect(result.out).not.toContain('Sus copias de seguridad siguen')
+    expect(copy.calls.find((c) => c.path === '/api/uninstall')!.body).toMatchObject({ deleteBackups: true })
+    expect(calls().filter((c) => c.args.includes('delete')).map((c) => c.args.join(' '))).toEqual([
+      'r2 bucket delete ana-uploads',
+      'r2 bucket delete ana-backups',
+      'r2 bucket delete ana-backups',
+      'delete --name ana --force',
+    ])
+    const after = JSON.parse(readFileSync(state, 'utf8'))
+    expect(after.exists).toBe(false)
+    expect(after.backups).toBeUndefined()
+
+    // Without a copy to ask, a full backups bucket stays, and so does everything else.
+    setState({ exists: false, backups: 'full' })
+    const alone = await run(['uninstall', '--name', 'ana'], ['s', 'ana'])
+    expect(alone.code).toBe(1)
+    expect(alone.err).toContain('Vacíalo en el panel de Cloudflare (R2 → ana-backups → Settings → Empty Bucket)')
   })
 
   it('never deletes anything without the name typed, or without a terminal to type it', async () => {

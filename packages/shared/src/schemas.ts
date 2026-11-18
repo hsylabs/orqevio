@@ -25,8 +25,12 @@ export const RECOVERY_REASONS = ['lost', 'compromised'] as const
 export const recoverInput = z.object({ setupCode: secret, reason: z.enum(RECOVERY_REASONS) })
 export const rotateAccessKeyInput = z.object({ currentAccessKey: secret })
 export const confirmAccessKeyInput = z.object({ accessKey: secret })
+/** Uninstalling asks each time whether the copy's backups go too (they are kept apart from its data). */
+export const uninstallInput = z.object({ accessKey: secret, deleteBackups: z.boolean() })
 /** The installer's one-time authorization to uninstall, set as a Worker secret on the copy. */
-export const installerUninstallInput = z.object({ token: z.string().min(40).max(200) })
+export const installerUninstallInput = z.object({ token: z.string().min(40).max(200), deleteBackups: z.boolean().default(false) })
+/** Restoring a backup replaces everything: it is confirmed with the access key. */
+export const restoreBackupInput = z.object({ accessKey: secret })
 export const updateAccountInput = z.object({
   name: name(80).optional(),
   theme: z.enum(['system', 'light', 'dark']).optional(),

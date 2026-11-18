@@ -42,6 +42,13 @@ export interface Env {
   uninstallToken: string | null
   /** Whether the copy looks up the latest published version (UPDATE_CHECK, on by default). */
   updateCheck: boolean
+  /**
+   * Node: the folder for the daily backups (BACKUP_DIR, by default DATA_DIR/backups), or null when
+   * BACKUPS=off. Cloudflare keeps them in the BACKUPS bucket instead.
+   */
+  backupDir: string | null
+  /** Cloudflare: the name of the backups bucket (ORQEVIO_BACKUP_BUCKET), to say where they are. */
+  backupBucket: string | null
 }
 
 
@@ -71,6 +78,8 @@ export function loadEnv(overrides: Partial<Env> = {}): Env {
     copyBucket: process.env.ORQEVIO_BUCKET?.trim() || null,
     uninstallToken: process.env.ORQEVIO_UNINSTALL_TOKEN?.trim() || null,
     updateCheck: bool(process.env.UPDATE_CHECK, true),
+    backupDir: bool(process.env.BACKUPS, true) ? path.resolve(process.env.BACKUP_DIR || path.join(dataDir, 'backups')) : null,
+    backupBucket: null,
     ...overrides,
   }
   return env

@@ -32,6 +32,11 @@ export function shortDate(iso: string) {
   return new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'short', ...(thisYear ? {} : { year: 'numeric' }) }).format(date)
 }
 
+/** "Friday, November 13, 2026, 03:12": a moment people pick among others, such as a backup. */
+export function dateTime(iso: string) {
+  return new Intl.DateTimeFormat(currentLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
+}
+
 /** "Friday, November 13" */
 export function longDate(date = new Date()) {
   return new Intl.DateTimeFormat(currentLocale(), { weekday: 'long', day: 'numeric', month: 'long' }).format(date)
@@ -81,7 +86,8 @@ export function initials(name: string) {
 
 /** "12 B", "340 kB", "1.5 MB", with the units and separators of the language. */
 export function bytes(n: number) {
-  const [unit, value, digits] = n < 1024 ? ['byte', n, 0] : n < 1024 * 1024 ? ['kilobyte', n / 1024, 0] : ['megabyte', n / 1024 / 1024, 1]
+  const [unit, value, digits] =
+    n < 1024 ? ['byte', n, 0] : n < 1024 * 1024 ? ['kilobyte', n / 1024, 0] : n < 1024 ** 3 ? ['megabyte', n / 1024 / 1024, 1] : ['gigabyte', n / 1024 ** 3, 1]
   return new Intl.NumberFormat(currentLocale(), { style: 'unit', unit, unitDisplay: unit === 'byte' ? 'narrow' : 'short', maximumFractionDigits: digits as number }).format(
     value as number,
   )

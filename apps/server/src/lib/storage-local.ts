@@ -33,6 +33,10 @@ export class LocalStorage implements AttachmentStorage {
     return Readable.toWeb(createReadStream(file)) as ReadableStream
   }
 
+  async exists(key: string) {
+    return Boolean(await stat(this.resolve(key)).catch(() => null))
+  }
+
   async delete(key: string) {
     await unlink(this.resolve(key)).catch(() => {})
   }

@@ -20,6 +20,8 @@ Je hebt een Cloudflare-account nodig (het gratis abonnement is genoeg). De eerst
 opent je browser, zodat je kunt inloggen.`,
   no: /^n/i,
   yesNo: '[J/n]',
+  yes: /^j/i,
+  noYes: '[j/N]',
   extraArgument: (arg) => `Onverwacht argument ‘${arg}’.`,
   unknownOption: (option) => `Onbekende optie ‘${option}’.`,
   missingValue: (option) => `De optie ‘${option}’ heeft een waarde nodig.`,
@@ -115,6 +117,26 @@ opent je browser, zodat je kunt inloggen.`,
       `De bucket ‘${bucket}’ bevat nog bijlagen, en Cloudflare verwijdert alleen lege buckets.`,
       'Het installatieprogramma kan je installatie de bijlagen laten verwijderen: het geeft toestemming via je Cloudflare-account, zonder je toegangssleutel.',
       'Laat het antwoord leeg als je het liever anders doet.',
+    ].join('\n'),
+  askDeleteBackups: (bucket) =>
+    `Ook de back-ups verwijderen? De bucket ‘${bucket}’ bewaart de laatste 7 dagelijkse back-ups: als je hem houdt, kan een installatie met dezelfde naam ze terugzetten.`,
+  emptyingBackupsThroughCopy: (bucket) =>
+    [
+      '',
+      `De bucket ‘${bucket}’ bevat nog back-ups, en Cloudflare verwijdert alleen lege buckets.`,
+      'Het installatieprogramma kan je installatie vragen ze te verwijderen: het geeft daarvoor toestemming vanuit je Cloudflare-account, zonder je toegangssleutel.',
+      'Laat het antwoord leeg om het op een andere manier te doen.',
+    ].join('\n'),
+  backupsNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `De bucket ‘${bucket}’ bevat nog back-ups, en Cloudflare verwijdert alleen lege buckets. Er is niets verwijderd.`,
+      `Maak hem leeg in het Cloudflare-dashboard (R2 → ${bucket} → Settings → Empty Bucket) en voer daarna ${retryCommand} opnieuw uit.`,
+    ].join('\n'),
+  backupsKept: (bucket, installCommand) =>
+    [
+      `De back-ups blijven in de bucket ‘${bucket}’. Om ze terug te halen, installeer je Orqevio opnieuw met dezelfde naam (${installCommand}) en zet je er een terug via Instellingen → Back-ups.`,
+      `Om ze te verwijderen, maak je die bucket leeg en verwijder je hem in het Cloudflare-dashboard: R2 → ${bucket}.`,
     ].join('\n'),
   askAddress: (name) => `Adres van je installatie (bijvoorbeeld https://${name}.<je-subdomein>.workers.dev): `,
   badAddress: (address) => `‘${address}’ is geen adres: gebruik het adres dat je in de browser opent.`,

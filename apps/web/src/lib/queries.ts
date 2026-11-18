@@ -1,4 +1,5 @@
 import type {
+  BackupsDTO,
   ActivityDTO,
   AnonymousSessionDTO,
   BoardDTO,
@@ -46,6 +47,7 @@ export const keys = {
   trash: (wid: string) => ['trash', wid] as const,
   history: (type: 'page' | 'card', id: string) => ['history', type, id] as const,
   historyEntry: (id: string) => ['history-entry', id] as const,
+  backups: ['backups'] as const,
 }
 
 export const useMe = () =>
@@ -139,6 +141,9 @@ export const useTokens = () => useQuery({ queryKey: keys.tokens, queryFn: ({ sig
  * 12 hours, so this costs nothing outside.
  */
 const UPDATES_EVERY_MS = 60 * 60 * 1000
+/** The copy's backups (Settings): where they are and the ones kept. */
+export const useBackups = () => useQuery({ queryKey: keys.backups, queryFn: ({ signal }) => get<BackupsDTO>('/backups', signal) })
+
 export const useUpdates = () =>
   useQuery({
     queryKey: keys.updates,

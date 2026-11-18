@@ -72,23 +72,25 @@ if (command === 'r2' && sub === 'bucket' && args[2] === 'list') {
   process.stdout.write('[]\n')
   process.exit(0)
 }
-// The copy's bucket, if any: state.bucket is 'empty' or 'full' (it holds attachments).
+// The copy's buckets, if any: state.bucket (attachments) and state.backups (its backups),
+// each 'empty' or 'full'.
+const bucketKey = () => (String(args[3]).endsWith('-backups') ? 'backups' : 'bucket')
 const noBucket = () => {
   process.stderr.write(`✘ [ERROR] A request to the Cloudflare API (/accounts/acc-1/r2/buckets/${args[3]}) failed. The specified bucket does not exist. [code: 10006]\n`)
   process.exit(1)
 }
 if (command === 'r2' && sub === 'bucket' && args[2] === 'info') {
-  if (!state.bucket) noBucket()
-  process.stdout.write(`${JSON.stringify({ name: args[3], object_count: state.bucket === 'full' ? 3 : 0 })}\n`)
+  if (!state[bucketKey()]) noBucket()
+  process.stdout.write(`${JSON.stringify({ name: args[3], object_count: state[bucketKey()] === 'full' ? 3 : 0 })}\n`)
   process.exit(0)
 }
 if (command === 'r2' && sub === 'bucket' && args[2] === 'delete') {
-  if (!state.bucket) noBucket()
-  if (state.bucket === 'full') {
+  if (!state[bucketKey()]) noBucket()
+  if (state[bucketKey()] === 'full') {
     process.stderr.write(`✘ [ERROR] A request to the Cloudflare API (/accounts/acc-1/r2/buckets/${args[3]}) failed. The bucket you tried to delete is not empty. [code: 10008]\n`)
     process.exit(1)
   }
-  delete state.bucket
+  delete state[bucketKey()]
   save()
   process.exit(0)
 }

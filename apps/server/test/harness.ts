@@ -5,7 +5,9 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { createApp } from '../src/app'
 import { sha256 } from '../src/auth/crypto'
+import { FolderBackupStore } from '../src/backups/store'
 import { openDatabase, runMigrations } from '../src/db/client'
+import { nodeSql } from '../src/db/raw'
 import { sessions, users, workspaceMembers, workspaces } from '../src/db/schema'
 import { type Env, loadEnv } from '../src/env'
 import { RealtimeBus } from '../src/lib/realtime'
@@ -20,14 +22,19 @@ export async function createHarness(overrides: Partial<Env> = {}) {
   process.env.APP_URL = ORIGIN
   const dataDir = await mkdtemp(path.join(tmpdir(), 'orqevio-test-'))
   const env = loadEnv({ dataDir, databasePath: path.join(dataDir, 'orqevio.db'), webDist: path.join(dataDir, 'no-web'), setupCode: SETUP_CODE, updateCheck: false, ...overrides })
-  const { db, close } = openDatabase(env.databasePath)
+  const { db, sqlite, close } = openDatabase(env.databasePath)
   runMigrations(db, env.migrationsDir)
   const bus = new RealtimeBus()
-  const services = createServices({ db, bus, env, storage: new LocalStorage(path.join(dataDir, 'uploads')) })
+  const sql = nodeSql(sqlite)
+  const backups = env.backupDir ? new FolderBackupStore(env.backupDir) : null
+  const storage = new LocalStorage(path.join(dataDir, 'uploads'))
+  const services = createServices({ db, bus, env, storage, sql, backups, migrate: () => runMigrations(db, env.migrationsDir) })
   const app = createApp(env, services)
   return {
     app,
     db,
+    sql,
+    backups,
     env,
     services,
     bus,

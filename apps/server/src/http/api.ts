@@ -121,6 +121,16 @@ export function createApi(env: Env) {
     return c.body(null, 204)
   })
 
+  // ── Backups (people only: the service checks it) ────────────────
+  api.get('/backups', async (c) => c.json(await c.get('services').backups.status(requireActor(c))))
+  api.post('/backups', async (c) => c.json(await c.get('services').backups.createNow(requireActor(c)), 201))
+  api.post('/backups/:id/restore', async (c) => {
+    const { session, restored } = await c.get('services').backups.restore(requireActor(c), c.req.param('id'), await json(c), c.req.header('user-agent') ?? null)
+    // Restoring ends every session, this one too: the person who restored gets a new one.
+    setSessionCookie(c, session.token, session.expiresAt)
+    return c.json({ restored })
+  })
+
   // ── Workspaces ──────────────────────────────────────────────────
   api.get('/workspaces', async (c) => c.json(await c.get('services').workspaces.list(requireActor(c))))
   api.post('/workspaces', async (c) => c.json(await c.get('services').workspaces.create(requireActor(c), await json(c)), 201))

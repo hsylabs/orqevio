@@ -10,6 +10,7 @@ export interface AttachmentStorage {
    */
   put(key: string, body: ReadableStream<Uint8Array>, size: number, contentType: string): Promise<void>
   stream(key: string): Promise<ReadableStream | null>
+  exists(key: string): Promise<boolean>
   delete(key: string): Promise<void>
   deleteWorkspace(workspaceId: string): Promise<void>
   /** Removes every stored file (uninstalling the copy). */
