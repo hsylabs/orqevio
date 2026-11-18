@@ -128,7 +128,7 @@ function UnlockedActions() {
     <>
       <AutoLockRing />
       <Button variant="ghost" size="sm" icon={<Dices />} onClick={() => setGeneratorOpen(true)}>
-        <span className="max-sm:hidden">{t('toolbar.generator')}</span>
+        <span className="max-sm:sr-only">{t('toolbar.generator')}</span>
       </Button>
       <MenuRoot>
         <MenuTrigger asChild>
@@ -489,7 +489,7 @@ function TotpField({ value }: { value: string }) {
             {groupCode(current.code)}
           </span>
           <span className={cn('text-[12px] tabular-nums', current.remaining <= 5 ? 'text-warn' : 'text-ink-3')} aria-label={t('totp.changesIn', { count: current.remaining })}>
-            {current.remaining} s
+            {t('totp.seconds', { count: current.remaining })}
           </span>
         </span>
       ) : (

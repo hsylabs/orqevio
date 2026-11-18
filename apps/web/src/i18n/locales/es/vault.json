@@ -117,7 +117,8 @@
       "bad_secret": "La clave secreta solo puede tener letras de la A a la Z y números del 2 al 7.",
       "too_short": "La clave secreta es demasiado corta.",
       "bad_parameters": "El enlace otpauth:// tiene parámetros que no son válidos."
-    }
+    },
+    "seconds": "{{count}} s"
   },
   "editor": {
     "editTitle": "Editar",
@@ -154,7 +155,8 @@
     "fairHint": "Añade más palabras o caracteres variados.",
     "good": "Buena",
     "veryGood": "Muy buena",
-    "rememberHint": "Recuerda: si la olvidas, solo la clave de recuperación podrá abrir la bóveda."
+    "rememberHint": "Recuerda: si la olvidas, solo la clave de recuperación podrá abrir la bóveda.",
+    "labelled": "{{label}}. "
   },
   "generator": {
     "regenerate": "Generar otra",

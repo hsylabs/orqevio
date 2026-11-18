@@ -59,3 +59,17 @@ export function defaultWorkspaceName(locale: Locale, firstName: string) {
   const template = locale === 'fr' && /^[aeiouyàâäæéèêëîïôöœùûü]/i.test(firstName) ? 'Espace d’{name}' : WORKSPACE_NAMES[locale]
   return template.replace('{name}', firstName)
 }
+
+/**
+ * At most `max` UTF-16 code units (what `.length` and the schemas count), cut between characters as
+ * people see them: never inside an emoji or between a letter and its accent.
+ */
+export function clip(text: string, max: number) {
+  if (text.length <= max) return text
+  let out = ''
+  for (const { segment } of new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)) {
+    if (out.length + segment.length > max) break
+    out += segment
+  }
+  return out
+}

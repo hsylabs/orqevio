@@ -156,7 +156,9 @@
       "strike": "Durchgestrichen",
       "code": "Code",
       "link": "Link"
-    }
+    },
+    "taskCheckbox": "To-do: {{text}}",
+    "taskCheckboxEmpty": "Leeres To-do"
   },
   "icon": {
     "change": "Symbol ändern",

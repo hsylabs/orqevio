@@ -57,6 +57,7 @@ function PasswordInput({ label, value, onChange, autoFocus, autoComplete, error,
 }
 
 function StrengthMeter({ password }: { password: string }) {
+  const { t } = useTranslation('vault')
   const s = estimateMasterPassword(password)
   return (
     <div>
@@ -66,7 +67,7 @@ function StrengthMeter({ password }: { password: string }) {
         ))}
       </div>
       <p className="mt-1.5 text-[12px] text-ink-3" aria-live="polite">
-        {s.label && <span className={cn('font-medium', s.score <= 1 ? 'text-warn' : 'text-ok')}>{s.label}. </span>}
+        {s.label && <span className={cn('font-medium', s.score <= 1 ? 'text-warn' : 'text-ok')}>{t('strength.labelled', { label: s.label })}</span>}
         {s.hint}
       </p>
     </div>

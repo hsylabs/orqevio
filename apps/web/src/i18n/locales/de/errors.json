@@ -21,5 +21,8 @@
   },
   "notFound": "Das Element wurde nicht gefunden.",
   "server": "Auf dem Server ist etwas schiefgelaufen. Versuch es noch einmal.",
-  "unknown": "Etwas ist schiefgelaufen. Versuch es noch einmal."
+  "unknown": "Etwas ist schiefgelaufen. Versuch es noch einmal.",
+  "invalid": "Einige Angaben sind ungültig. Prüfe sie und versuche es erneut.",
+  "forbidden": "Dazu hast du keine Berechtigung.",
+  "conflict": "Das hat sich inzwischen geändert. Lade neu und versuche es erneut."
 }
