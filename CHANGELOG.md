@@ -6,6 +6,8 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-18
+
 ### Added
 - Daily backups. Once a day, your copy backs itself up, as it is: workspaces, documents, cards, the encrypted vault, agents, the trash, the history and the attachments. It keeps them apart from its data: with Docker and Node in `BACKUP_DIR` (by default `DATA_DIR/backups`), and on Cloudflare in a second R2 bucket, `<name>-backups`, which installing and `npx create-orqevio update` create. It keeps the 7 newest, and the one made before the last restore; attachments are stored once for all of them. A Node and a Cloudflare backup are the same file. `BACKUPS=off` turns them off.
 - **Settings → Backups** lists the backups, with what each holds, makes one on the spot with **Back up now**, and restores any of them after you type your access key and the copy's name. Before restoring, your copy backs itself up as it is. Restoring brings everything back as it was that day, and an older backup comes up to date. It ends every session: you stay signed in, and your access key is the one you use now. A backup made by a newer version, or damaged, is refused without touching anything. A copy installed again with the same name, or started with the same backups folder, finds the backups of the one before.
