@@ -9,7 +9,34 @@ const id = z.uuid()
 const name = (max = 120) => z.string().trim().min(1, 'Required').max(max)
 const color = z.enum(PALETTE)
 const index = z.number().int().min(0).max(100_000)
-const isoDate = z.iso.datetime({ offset: true })
+
+/** Due dates are calendar days, stored at 12:00 UTC so that every time zone shows the same day. */
+export const DUE_YEARS = { min: 1900, max: 2199 } as const
+const DUE_FORMAT = /^(\d{4})-(\d{2})-(\d{2})(?:T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,9})?)?(?:Z|[+-](?:[01]\d|2[0-3]):?[0-5]\d)?)?$/i
+
+/**
+ * The calendar day a due date names, as stored: `YYYY-MM-DD`, or an ISO 8601 date-time whose day
+ * is the one written in it, whatever its time and offset (`2026-11-17T23:30-05:00` is the 17th).
+ * Null when it is neither, names no real day, or falls outside `DUE_YEARS`.
+ */
+export function dueDay(value: string): string | null {
+  const match = DUE_FORMAT.exec(value.trim())
+  if (!match) return null
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])]
+  if (year < DUE_YEARS.min || year > DUE_YEARS.max) return null
+  const date = new Date(Date.UTC(year, month - 1, day, 12))
+  if (date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null
+  return date.toISOString()
+}
+
+export const DUE_DATE_HINT = `a day as YYYY-MM-DD, or an ISO 8601 date-time, between ${DUE_YEARS.min} and ${DUE_YEARS.max}`
+
+const dueAt = z.string().transform((value, ctx) => {
+  const day = dueDay(value)
+  if (day) return day
+  ctx.addIssue({ code: 'custom', message: `Due dates are ${DUE_DATE_HINT}` })
+  return z.NEVER
+})
 
 export const MAX_MARKDOWN = 200_000
 
@@ -65,7 +92,7 @@ export const labelUpdateInput = z.object({ name: z.string().trim().max(40).optio
 export const cardCreateInput = z.object({
   title: name(300),
   description: z.string().max(MAX_MARKDOWN).optional(),
-  dueAt: isoDate.nullable().optional(),
+  dueAt: dueAt.nullable().optional(),
   labelIds: z.array(id).max(20).optional(),
   index: index.optional(),
 })
@@ -74,7 +101,7 @@ export const cardUpdateInput = z.object({
   description: z.string().max(MAX_MARKDOWN).optional(),
   /** Optional with `description`: the version it was edited from. Without it, the last write wins. */
   baseVersion: z.number().int().min(1).optional(),
-  dueAt: isoDate.nullable().optional(),
+  dueAt: dueAt.nullable().optional(),
   labelIds: z.array(id).max(20).optional(),
 })
 export const cardMoveInput = z.object({ columnId: id, index })
