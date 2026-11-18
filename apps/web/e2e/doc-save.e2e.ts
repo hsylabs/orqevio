@@ -89,6 +89,10 @@ test('a page deleted in another tab says so at once, keeps what was written and 
   await expect(banner).toBeHidden()
   await expect(page.getByText('Guardado')).toBeVisible()
   expect(await content(page, doc.id)).toBe('Primera parte. Segunda parte.')
+  // Writing goes on where it was.
+  await expect(page.getByRole('textbox', { name: 'Contenido de la página' })).toBeFocused()
+  await page.keyboard.type(' Tercera.')
+  await expect.poll(() => content(page, doc.id)).toBe('Primera parte. Segunda parte. Tercera.')
   await expect(page.getByRole('navigation').getByRole('link', { name: /^Guía/ })).toBeVisible()
 })
 

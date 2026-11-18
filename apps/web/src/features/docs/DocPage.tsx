@@ -217,6 +217,8 @@ function DocBody({ page, missing }: { page: PageDTO; missing: boolean }) {
       const restored = await restoreFromTrash(entry.id)
       if (restored.movedTo) toast.message(t('restoredElsewhere', { ns: 'trash', place: restored.movedTo }))
       backAgain()
+      // The button goes away with the notice: writing goes on where it was.
+      editorRef.current?.commands.focus()
     } catch (error) {
       toast.error(errorMessage(error))
     } finally {
