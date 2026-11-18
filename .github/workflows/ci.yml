@@ -211,6 +211,8 @@ jobs:
     env:
       APP_URL: http://localhost:3000
       SETUP_CODE: e2e-setup-code-1234
+      # Only for the throwaway proxy below.
+      PROXY_PASSWORD: proxy-e2e-password
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4
@@ -244,9 +246,40 @@ jobs:
       - name: Run the end-to-end tests against the image
         if: matrix.e2e
         run: pnpm test:e2e
+      # The same image, fresh, behind a reverse proxy that asks for a password, as many put it.
+      - name: Start a fresh copy behind a proxy that asks for a password
+        if: matrix.e2e
+        run: |
+          docker network create proxied
+          docker run -d --name orqevio-proxied --network proxied --network-alias orqevio \
+            -e SETUP_CODE -e APP_URL=http://localhost:8080 -e TRUST_PROXY=true orqevio:ci
+          printf 'orqevio:{PLAIN}%s\n' "$PROXY_PASSWORD" > "$RUNNER_TEMP/htpasswd"
+          docker run -d --name proxy --network proxied -p 8080:8080 \
+            -v "$PWD/apps/web/e2e/proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro" \
+            -v "$RUNNER_TEMP/htpasswd:/etc/nginx/htpasswd:ro" nginx:1.27-alpine
+          for _ in $(seq 1 30); do
+            if curl -fsS -u "orqevio:$PROXY_PASSWORD" http://127.0.0.1:8080/healthz; then
+              # Without the password, the proxy keeps the copy to itself.
+              test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/auth/session)" = 401
+              exit
+            fi
+            sleep 1
+          done
+          docker logs orqevio-proxied
+          docker logs proxy
+          exit 1
+      - name: Run the end-to-end tests through the proxy
+        if: matrix.e2e
+        env:
+          E2E_BASE_URL: http://localhost:8080
+          E2E_BASIC_AUTH: orqevio:${{ env.PROXY_PASSWORD }}
+        run: pnpm test:e2e
       - name: Show the container log
         if: failure() && matrix.e2e
-        run: docker logs orqevio
+        run: |
+          docker logs orqevio
+          docker logs orqevio-proxied || true
+          docker logs proxy || true
       - name: Keep the results of failed tests
         if: failure() && matrix.e2e
         uses: actions/upload-artifact@v7
