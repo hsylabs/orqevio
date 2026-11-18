@@ -194,6 +194,17 @@ describe('importing', () => {
     expect(readImport('name,url,username,password,note\n')).toEqual({ kind: 'problem', problem: 'no_items' })
   })
 
+  it('keeps notes exactly as they are, spaces and line breaks at the end included', () => {
+    const vaultItems: VaultItem[] = [
+      { ...emptyItem('note'), title: 'Clave', notes: 'secreto  \n' },
+      { ...emptyItem('login'), title: 'Correo', username: 'ana', password: 'pw', notes: '\n  sangría\n\n' },
+    ]
+    const back = items(JSON.stringify(toBitwardenJson(vaultItems))).items
+    expect(back.map((i) => i.notes)).toEqual(['secreto  \n', '\n  sangría\n\n'])
+    expect(withoutDuplicates(back, vaultItems)).toEqual({ fresh: [], duplicates: 2 })
+    expect(items('name,url,username,password,note\nX,x.com,u,p,"línea  \n"\n').items[0]!.notes).toBe('línea  \n')
+  })
+
   it('sees its own export as the same items, even with spaces around an address saved before', () => {
     // Before 1.2.0 the editor only trimmed the title: an address could keep its spaces.
     const saved: VaultItem = { ...emptyItem('login'), title: 'GitHub', url: '  https://github.com  ', username: 'lucia', password: 'pw', totp: ' JBSWY3DPEHPK3PXP ' }

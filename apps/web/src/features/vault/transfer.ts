@@ -175,7 +175,9 @@ function withExtras(notes: string, extras: Extras) {
   )
     .filter(([, lines]) => lines?.length)
     .map(([kind, lines]) => `${t(`vault:import.extra.${kind}`)}\n${lines!.join('\n')}`)
-  return [notes.trimEnd(), ...sections].filter(Boolean).join('\n\n')
+  // The notes stay exactly as they were (spaces and line breaks at the end included); extras go after them.
+  if (!sections.length) return notes
+  return notes ? `${notes}\n\n${sections.join('\n\n')}` : sections.join('\n\n')
 }
 
 /** An imported entry as a vault item: null if it holds nothing at all, 'too_long' if over the editor's limits. */
