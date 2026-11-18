@@ -133,7 +133,7 @@ Usa la imagen publicada (`ghcr.io/hsylabs/orqevio`, para amd64 y arm64). Para fi
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
-La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx, Traefik) y, en ese caso, añade `TRUST_PROXY=true` (o el número de proxies que hay delante, como `2` para una CDN más Nginx). El proxy también puede pedir una contraseña (autenticación básica HTTP); los agentes envían su propia cabecera `Authorization`, así que, si conectas alguno, deja pasar sin ella `/mcp`, `/oauth/` y `/.well-known/`. La base de datos SQLite y los adjuntos se guardan en el volumen `orqevio-data`.
+La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx, Traefik) y, en ese caso, añade `TRUST_PROXY=true` (o el número de proxies que hay delante, como `2` para una CDN más Nginx). El proxy también puede pedir una contraseña (autenticación básica HTTP). Los agentes envían su propia cabecera `Authorization: Bearer`, con un token que Orqevio comprueba por su cuenta: si conectas alguno, deja pasar sin la contraseña las peticiones que lleven uno, y también `/mcp`, `/oauth/` y `/.well-known/`, a los que los clientes OAuth llegan antes de tener token. [`apps/web/e2e/proxy/nginx.conf`](apps/web/e2e/proxy/nginx.conf) lo hace con Nginx. La base de datos SQLite y los adjuntos se guardan en el volumen `orqevio-data`.
 
 **Copias de seguridad.** Con la app en marcha, haz una copia en caliente de la base de datos y sácala del contenedor junto con los adjuntos, que están en la carpeta `uploads`:
 

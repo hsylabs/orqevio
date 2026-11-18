@@ -133,7 +133,7 @@ This runs the published image (`ghcr.io/hsylabs/orqevio`, for amd64 and arm64). 
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
-The app listens on port 3000 and applies its migrations on startup. Put it behind a reverse proxy with HTTPS (Caddy, Nginx, Traefik) and, if you do, add `TRUST_PROXY=true` (or the number of proxies in front, such as `2` for a CDN plus Nginx). The proxy may also ask for a password (HTTP basic auth); agents send their own `Authorization` header, so let `/mcp`, `/oauth/` and `/.well-known/` through without it if you connect any. The SQLite database and the attachments are stored in the `orqevio-data` volume.
+The app listens on port 3000 and applies its migrations on startup. Put it behind a reverse proxy with HTTPS (Caddy, Nginx, Traefik) and, if you do, add `TRUST_PROXY=true` (or the number of proxies in front, such as `2` for a CDN plus Nginx). The proxy may also ask for a password (HTTP basic auth). Agents send their own `Authorization: Bearer` header, with a token Orqevio checks itself: if you connect any, let requests carrying one through without the password, and also `/mcp`, `/oauth/` and `/.well-known/`, which OAuth clients reach before they have a token. [`apps/web/e2e/proxy/nginx.conf`](apps/web/e2e/proxy/nginx.conf) does so with Nginx. The SQLite database and the attachments are stored in the `orqevio-data` volume.
 
 **Backups.** With the app running, make a live backup of the database, then copy it out of the container together with the attachments, in the `uploads` folder:
 
