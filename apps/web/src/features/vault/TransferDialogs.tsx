@@ -11,7 +11,7 @@ import { formatList } from '../../lib/format'
 import { type EncryptedExport, WrongSecretError, openExport, sealExport, unlockWithPassword } from './crypto'
 import { getSession } from './session'
 import { freshVaultState, lockIfVaultChanged } from './sync'
-import { type ImportSource, type ImportedItems, MAX_IMPORT_BYTES, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from './transfer'
+import { type ImportSource, type ImportedItems, MAX_IMPORT_BYTES, decodeImport, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from './transfer'
 import type { VaultItem } from './types'
 import { VaultLockedError, importItems } from './upload'
 
@@ -48,7 +48,7 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   const [error, setError] = useState<string | null>(null)
   const [encrypted, setEncrypted] = useState<EncryptedExport | null>(null)
   const [password, setPassword] = useState('')
-  const [review, setReview] = useState<(ImportedItems & { fresh: VaultItem[]; duplicates: number }) | null>(null)
+  const [review, setReview] = useState<(ImportedItems & { fresh: VaultItem[]; duplicates: number; encoding: ReturnType<typeof decodeImport>['encoding'] }) | null>(null)
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState(0)
 
@@ -60,8 +60,8 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     setProgress(0)
   }
 
-  function prepare(imported: ImportedItems) {
-    setReview({ ...imported, ...withoutDuplicates(imported.items, getSession().items) })
+  function prepare(imported: ImportedItems, encoding: ReturnType<typeof decodeImport>['encoding'] = 'utf-8') {
+    setReview({ ...imported, ...withoutDuplicates(imported.items, getSession().items), encoding })
   }
 
   async function choose(file: File) {
@@ -70,10 +70,12 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       setError(t('import.tooLarge', { size: MAX_IMPORT_MB }))
       return
     }
-    const outcome = readImport(await file.text())
-    if (outcome.kind === 'problem') setError(t(`import.problems.${outcome.problem}`))
+    // Not always UTF-8: an older spreadsheet saves CSV in Latin-1, which is then read as such and said.
+    const { text, encoding } = decodeImport(new Uint8Array(await file.arrayBuffer()))
+    const outcome = readImport(text)
+    if (outcome.kind === 'problem') setError(t(`import.problems.${outcome.problem}`, { line: outcome.line }))
     else if (outcome.kind === 'encrypted') setEncrypted(outcome.file)
-    else prepare(outcome)
+    else prepare(outcome, encoding)
   }
 
   async function decrypt(e: FormEvent) {
@@ -168,7 +170,13 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                     t('import.nothingNew')}
                 </li>
                 {review.duplicates > 0 && <li>{t('import.duplicates', { count: review.duplicates })}</li>}
+                {review.extras > 0 && <li>{t('import.extras', { count: review.extras })}</li>}
+                {review.passkeys > 0 && <li>{t('import.passkeys', { count: review.passkeys })}</li>}
                 {review.unsupported > 0 && <li>{t('import.unsupported', { count: review.unsupported })}</li>}
+                {review.tooLong.length > 0 && (
+                  <li>{t('import.tooLong', { count: review.tooLong.length, titles: formatList(review.tooLong.slice(0, 3)) + (review.tooLong.length > 3 ? ' …' : '') })}</li>
+                )}
+                {review.encoding === 'windows-1252' && <li>{t('import.latin1')}</li>}
               </ul>
             </div>
             {review.source !== 'Orqevio (cifrada)' && (
