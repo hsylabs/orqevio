@@ -3,7 +3,7 @@ import { rm } from 'node:fs/promises'
 import path from 'node:path'
 import { strFromU8, unzipSync } from 'fflate'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { safeName } from '../src/services/export'
+import { outsideCode, safeName } from '../src/services/export'
 import { Client, type Harness, ORIGIN, createHarness, seedBoard, signUp } from './harness'
 
 let h: Harness
@@ -106,7 +106,26 @@ describe('export', () => {
     const content = `![](/api/attachments/${image.id})\n\n[plano](http://localhost:3000/api/attachments/${plan.id})\n\n[Hijo](/doc/${child}) [Otro](/doc/${elsewhere}) [Con plano](/card/${card}) [Otra](/card/${elsewhere})`
     const saved = await client.patch(`/api/pages/${a}`, { content, baseVersion: version })
     expect(saved.status, JSON.stringify(saved.body)).toBe(200)
-    await client.patch(`/api/cards/${card}`, { description: `Ver ![](/api/attachments/${plan.id}) y [A](/doc/${a} "A"), como [esta](/card/${card})` })
+    await client.patch(`/api/cards/${card}`, { description: `Ver ![](/api/attachments/${plan.id}) y [A](/doc/${a} "A"), como [esta](/card/${card}), no \`[esta](/card/${card})\`` })
+    // Code is kept as written: a link in an example is part of the example, and so is a URL in the text.
+    const examples = [
+      `Ejemplo: \`curl /api/attachments/${image.id}\` y \`\`[A](/doc/${a})\`\`, pero [A](/doc/${a}).`,
+      '',
+      '```sh',
+      `curl http://localhost:3000/api/attachments/${image.id}`,
+      `echo "[A](/doc/${a})"`,
+      '```',
+      '',
+      '> ~~~',
+      `> ![](/api/attachments/${image.id})`,
+      '> ~~~',
+      '',
+      `La dirección /api/attachments/${image.id} en el texto, y \\\`[A](/doc/${a})\\\`.`,
+      '',
+      `[definida]: /api/attachments/${image.id}`,
+      `<img src="/api/attachments/${image.id}">`,
+    ].join('\n')
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Ejemplos', content: examples })
     // A chain deeper than any limit a recursive walk would have.
     const deep = (await client.post(`/api/workspaces/${workspaceId}/projects`, { name: 'Hondo', color: 'jade' })).body.id as string
     let parent: string | null = null
@@ -139,9 +158,17 @@ describe('export', () => {
     )
     expect(at('attachments/Con plano/plano (v2).png')).toBeDefined()
     const tasks = JSON.parse(strFromU8(at('tasks.json')!))
+    const image2 = 'A%20%28files%29/Child.md'
+    expect(strFromU8(at('documents/Lanzamiento/Ejemplos.md')!)).toBe(
+      examples
+        .replace(`pero [A](/doc/${a})`, 'pero [A](A.md)')
+        .replace(`\\\`[A](/doc/${a})\\\``, '\\`[A](A.md)\\`')
+        .replace(`[definida]: /api/attachments/${image.id}`, `[definida]: ${image2}`)
+        .replace(`src="/api/attachments/${image.id}"`, `src="${image2}"`),
+    )
     const exported = tasks.projects[0].boards[0].columns[0].cards[0]
     expect(exported.id).toBe(card)
-    expect(exported.description).toBe(`Ver ![](attachments/Con%20plano/plano%20%28v2%29.png) y [A](documents/Lanzamiento/A.md "A"), como [esta](tasks.json#${card})`)
+    expect(exported.description).toBe(`Ver ![](attachments/Con%20plano/plano%20%28v2%29.png) y [A](documents/Lanzamiento/A.md "A"), como [esta](tasks.json#${card}), no \`[esta](/card/${card})\``)
     expect(names.filter((n) => n.includes('/documents/Hondo/'))).toHaveLength(230)
     expect(names.some((n) => n.endsWith('perdido.txt'))).toBe(false)
     expect(JSON.parse(strFromU8(files[`${root}/export.json`]!)).missingAttachments).toEqual(['Árboles/attachments/Con plano/perdido.txt'])
@@ -152,6 +179,21 @@ describe('export', () => {
     const token = (await client.post('/api/tokens', { name: 'Claude', workspaceId, scopes: ['tasks:read', 'docs:read'], expiresInDays: 30 })).body.token as string
     expect((await new Client(h, token).get('/api/export')).status).toBe(403)
     expect((await new Client(h).get('/api/export')).status).toBe(401)
+  })
+
+  it('changes the text of a document but never its code', () => {
+    const upper = (markdown: string) => outsideCode(markdown, (text) => text.toUpperCase())
+    // A fence left open runs to the end, as in Markdown.
+    expect(upper('a\n```\nb\n')).toBe('A\n```\nb\n')
+    // A longer fence is closed only by one as long; one with backticks after it isn't a fence.
+    expect(upper('````\n```\nb\n````\nc')).toBe('````\n```\nb\n````\nC')
+    expect(upper('```x`\nb')).toBe('```X`\nB')
+    // A lone backtick is text; a code span ends within its paragraph.
+    expect(upper('a ` b')).toBe('A ` B')
+    expect(upper('a `b\n\nc` d')).toBe('A `B\n\nC` D')
+    expect(upper('a ``b ` c`` d `e` f')).toBe('A ``b ` c`` D `e` F')
+    // In a list item or a quote too.
+    expect(upper('- ```\n  b\n  ```\n> ~~~\n> c\n> ~~~\nd')).toBe('- ```\n  b\n  ```\n> ~~~\n> c\n> ~~~\nD')
   })
 
   it('names files so that every system takes them', () => {

@@ -70,10 +70,68 @@ function linkTo(fromDir: string, target: string) {
   return parts.map((part) => (part === '..' ? part : encodeURIComponent(part).replace(/\(/g, '%28').replace(/\)/g, '%29'))).join('/')
 }
 
-/** Links to attachments in a text, as the editor writes them (/api/attachments/<id>, or with the copy's address). */
-const ATTACHMENT_LINK = /(?:https?:\/\/[^\s()<>"']+)?\/api\/attachments\/([0-9a-f-]{36})/g
+/**
+ * Where a link's destination starts: after "](" in a link or image, after "[name]:" in a link
+ * definition, or in an HTML src or href attribute. A URL anywhere else is text, kept as it is.
+ */
+const DESTINATION = String.raw`(\]\(\s*<?|^[ \t]{0,3}\[[^\]\n]+\]:[ \t]*<?|\b(?:src|href)=["']?)`
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+/** Links to attachments, as the editor writes them: /api/attachments/<id>, or with the copy's address in front. */
+const ATTACHMENT_LINK = new RegExp(String.raw`${DESTINATION}(?:https?:\/\/[^\s()<>"']+)?\/api\/attachments\/(${UUID})(?=[\s)>"'])`, 'gim')
 /** References to documents and tasks, as the editor writes them: [Title](/doc/<id>), [Title](/card/<id>) (see links.ts in @orqevio/shared). */
-const REFERENCE = /(\]\(\s*)\/(doc|card)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?=[\s)])/gi
+const REFERENCE = new RegExp(String.raw`${DESTINATION}\/(doc|card)\/(${UUID})(?=[\s)>"'])`, 'gim')
+
+/** A fence that opens or closes a code block, also inside a quote or a list item. */
+const FENCE = /^[ \t]*(?:>[ \t]?)*[ \t]*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?(`{3,}|~{3,})(.*)$/
+
+/**
+ * Applies `change` to a Markdown text but not to its code, fenced blocks and inline spans, which
+ * are kept exactly as they are: a link written in an example is part of the example.
+ */
+export function outsideCode(markdown: string, change: (text: string) => string) {
+  const out: string[] = []
+  let text = ''
+  const flush = () => {
+    if (text) out.push(outsideInlineCode(text, change))
+    text = ''
+  }
+  let fence: { char: string; size: number } | null = null
+  for (const line of markdown.split(/(?<=\n)/)) {
+    const match = FENCE.exec(line.replace(/\r?\n$/, ''))
+    if (fence) {
+      out.push(line)
+      if (match && match[1]![0] === fence.char && match[1]!.length >= fence.size && !match[2]!.trim()) fence = null
+    } else if (match && !(match[1]![0] === '`' && match[2]!.includes('`'))) {
+      flush()
+      out.push(line)
+      fence = { char: match[1]![0]!, size: match[1]!.length }
+    } else {
+      text += line
+    }
+  }
+  flush()
+  return out.join('')
+}
+
+/** A run of backticks opens a code span that the next run of as many closes, within the same paragraph. */
+function outsideInlineCode(text: string, change: (text: string) => string) {
+  const parts: string[] = []
+  let last = 0
+  const runs = /`+/g
+  for (let open = runs.exec(text); open; open = runs.exec(text)) {
+    if (text[open.index - 1] === '\\') continue
+    const ticks = open[0]
+    const closing = new RegExp(`(?<!\`)${ticks}(?!\`)`, 'g')
+    closing.lastIndex = open.index + ticks.length
+    const close = closing.exec(text)
+    if (!close || /\n[ \t]*\n/.test(text.slice(open.index, close.index))) continue
+    parts.push(change(text.slice(last, open.index)), text.slice(open.index, close.index + ticks.length))
+    last = close.index + ticks.length
+    runs.lastIndex = last
+  }
+  parts.push(change(text.slice(last)))
+  return parts.join('')
+}
 
 const iso = (date: Date | null) => (date ? date.toISOString() : null)
 /** Due dates are calendar days: the day, without the hour they are stored at. */
@@ -269,14 +327,16 @@ export class ExportService {
       // to where the text is; references to tasks at tasks.json, with the card's id (it is in there)
       // after the "#". One to anything that isn't in the export stays as it was.
       const target = (type: string, id: string) => (type.toLowerCase() === 'doc' ? pagePath.get(id) : cardById.has(id) ? 'tasks.json' : undefined)
-      const relink = (text: string, fromDir: string) =>
-        text
-          .replace(ATTACHMENT_LINK, (link, id: string) => (filePath.has(id) ? linkTo(fromDir, filePath.get(id)!) : link))
-          .replace(REFERENCE, (link, open: string, type: string, id: string) => {
-            const to = target(type, id.toLowerCase())
-            if (!to) return link
-            return `${open}${linkTo(fromDir, to)}${to === 'tasks.json' ? `#${id.toLowerCase()}` : ''}`
-          })
+      const relink = (markdown: string, fromDir: string) =>
+        outsideCode(markdown, (text) =>
+          text
+            .replace(ATTACHMENT_LINK, (link, open: string, id: string) => (filePath.has(id.toLowerCase()) ? `${open}${linkTo(fromDir, filePath.get(id.toLowerCase())!)}` : link))
+            .replace(REFERENCE, (link, open: string, type: string, id: string) => {
+              const to = target(type, id.toLowerCase())
+              if (!to) return link
+              return `${open}${linkTo(fromDir, to)}${to === 'tasks.json' ? `#${id.toLowerCase()}` : ''}`
+            }),
+        )
       for (const page of pageRows) {
         const path = pagePath.get(page.id)
         if (path) texts.push([`${base}/${path}`, relink(page.content, path.slice(0, path.lastIndexOf('/')))])
