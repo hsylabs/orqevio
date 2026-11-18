@@ -30,7 +30,7 @@ test('importing from Bitwarden keeps custom fields, every address and older pass
           fields: [{ name: 'PIN', value: '1234', type: 1 }],
           passwordHistory: [{ password: 'anterior', lastUsedDate: '2025-05-01T10:00:00.000Z' }],
         },
-        { type: 2, name: 'Notas largas', notes: 'n'.repeat(20_001), secureNote: { type: 0 } },
+        { type: 2, name: 'Enorme', notes: 'n'.repeat(400_000), secureNote: { type: 0 } },
         { type: 3, name: 'Visa', card: { number: '4111' } },
       ],
     }
@@ -46,7 +46,7 @@ test('importing from Bitwarden keeps custom fields, every address and older pass
     await expect(status).toContainText('1 elemento trae campos personalizados, más direcciones o contraseñas anteriores: se guardan en sus notas')
     await expect(status).toContainText('1 credencial tiene una llave de acceso (passkey), que no se puede importar; el resto de la credencial, sí')
     await expect(status).toContainText('1 elemento no es compatible (tarjetas, identidades o claves SSH) y no se importa')
-    await expect(status).toContainText('1 elemento supera los límites del editor y no se importa: Notas largas')
+    await expect(status).toContainText('1 elemento es más grande de lo que admite la bóveda y no se importa: Enorme')
     await dialog.screenshot({ path: testInfo.outputPath('1-revision-bitwarden.png'), animations: 'disabled' })
     await dialog.getByRole('button', { name: 'Importar 1 elemento' }).click()
     await expect(dialog).toBeHidden()

@@ -129,10 +129,12 @@ export const kdfSchema = z.object({
 })
 /** Items a vault can hold. */
 export const MAX_VAULT_ITEMS = 5000
+/** Longest encrypted envelope the server keeps: a vault item, once encrypted, must fit in it. */
+export const MAX_ENVELOPE_LENGTH = 400_000
 export const envelopeSchema = z
   .string()
   .regex(/^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Invalid envelope')
-  .max(400_000)
+  .max(MAX_ENVELOPE_LENGTH)
 export const vaultKeysInput = z.object({
   kdf: kdfSchema,
   wrappedKey: envelopeSchema,

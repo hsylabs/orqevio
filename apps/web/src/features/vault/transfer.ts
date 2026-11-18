@@ -1,6 +1,7 @@
+import { MAX_ENVELOPE_LENGTH } from '@orqevio/shared'
 import { t } from 'i18next'
-import type { EncryptedExport } from './crypto'
-import { ITEM_LIMITS, type VaultItem, emptyItem, tidyItem } from './types'
+import { type EncryptedExport, itemEnvelopeLength } from './crypto'
+import { type VaultItem, emptyItem, tidyItem } from './types'
 
 /**
  * Moving credentials in and out of the vault, entirely in the browser.
@@ -32,7 +33,7 @@ export interface ImportedItems {
   extras: number
   /** Logins whose passkey cannot come along (the rest of each one does). */
   passkeys: number
-  /** Items over the editor's limits, which the vault could not take: their titles. */
+  /** Items larger than the server takes once encrypted: their titles. */
   tooLong: string[]
 }
 
@@ -180,7 +181,11 @@ function withExtras(notes: string, extras: Extras) {
   return notes ? `${notes}\n\n${sections.join('\n\n')}` : sections.join('\n\n')
 }
 
-/** An imported entry as a vault item: null if it holds nothing at all, 'too_long' if over the editor's limits. */
+/**
+ * An imported entry as a vault item: null if it holds nothing at all, 'too_long' if the server could
+ * never take it. That is its size once encrypted, not the editor's limits for typing: an item kept
+ * in the vault over those (imported before 1.2.0, say) must come back from its own backup.
+ */
 function item(
   type: VaultItem['type'],
   fields: Partial<Record<'title' | 'url' | 'username' | 'password' | 'notes' | 'totp', unknown>>,
@@ -197,11 +202,10 @@ function item(
   const tidy = tidyItem(next)
   if (!tidy.url && !tidy.username && !tidy.password && !tidy.notes && !tidy.totp && !tidy.title) return null
   tidy.title ||= host(tidy.url) || tidy.username.trim() || (type === 'note' ? t('vault:import.untitledNote') : t('vault:import.untitledLogin'))
-  if ((Object.keys(ITEM_LIMITS) as Array<keyof typeof ITEM_LIMITS>).some((field) => tidy[field].length > ITEM_LIMITS[field])) return 'too_long'
   tidy.favorite = extra.favorite ?? false
   if (extra.createdAt) tidy.createdAt = extra.createdAt
   tidy.updatedAt = extra.updatedAt ?? extra.createdAt ?? tidy.updatedAt
-  return tidy
+  return itemEnvelopeLength(tidy) > MAX_ENVELOPE_LENGTH ? 'too_long' : tidy
 }
 
 /** Sorts what item() gave into the items, the ones too long and those with extras in their notes. */

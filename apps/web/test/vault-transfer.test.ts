@@ -1,10 +1,10 @@
 import i18next from 'i18next'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { WrongSecretError, openExport, sealExport } from '../src/features/vault/crypto'
+import { WrongSecretError, encryptItem, itemEnvelopeLength, openExport, sealExport } from '../src/features/vault/crypto'
 import { MAX_IMPORT_BYTES, UnclosedQuoteError, decodeImport, parseCsv, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from '../src/features/vault/transfer'
 import { ITEM_LIMITS, type VaultItem, emptyItem, tidyItem } from '../src/features/vault/types'
 import vault from '../src/i18n/locales/es/vault.json'
-import { MAX_VAULT_ITEMS } from '@orqevio/shared'
+import { MAX_ENVELOPE_LENGTH, MAX_VAULT_ITEMS } from '@orqevio/shared'
 
 // The headings an import writes in notes are in the person's language.
 beforeAll(() => i18next.init({ lng: 'es', resources: { es: { vault } }, ns: ['vault'] }))
@@ -174,15 +174,32 @@ describe('importing', () => {
     expect(items('name,url,username,password\nX,"https://x.com/?a=1,2",u,p\n').items[0]!.url).toBe('https://x.com/?a=1,2')
   })
 
-  it("does not take items over the editor's limits, which the vault could not save, and names them", () => {
-    const long = 'a'.repeat(ITEM_LIMITS.notes + 1)
-    const result = items(`name,url,username,password,note\nLarga,a.com,u,p,${long}\nCorta,b.com,u,p,ok\n`)
+  it('does not take items larger than the vault can hold once encrypted, and names them', () => {
+    const huge = 'a'.repeat(MAX_ENVELOPE_LENGTH)
+    const result = items(`name,url,username,password,note\nEnorme,a.com,u,p,${huge}\nCorta,b.com,u,p,ok\n`)
     expect(result.items.map((i) => i.title)).toEqual(['Corta'])
-    expect(result.tooLong).toEqual(['Larga'])
-    // Notes that the extras push over the limit count too.
-    const near = 'n'.repeat(ITEM_LIMITS.notes - 5)
-    const json = { items: [{ type: 2, name: 'Casi', notes: near, fields: [{ name: 'Campo', value: 'valor', type: 0 }] }] }
+    expect(result.tooLong).toEqual(['Enorme'])
+    // Notes that the extras push over the size count too.
+    const near = 'n'.repeat(299_000)
+    expect(items(JSON.stringify({ items: [{ type: 2, name: 'Cabe', notes: near }] })).items).toHaveLength(1)
+    const json = { items: [{ type: 2, name: 'Casi', notes: near, fields: [{ name: 'Campo', value: 'v'.repeat(2_000), type: 0 }] }] }
     expect(items(JSON.stringify(json))).toMatchObject({ items: [], tooLong: ['Casi'] })
+  })
+
+  it("takes items over the editor's limits that the vault holds, so its own backups come back whole", async () => {
+    // Imported before 1.2.0, which had no limit: the vault took it and keeps it.
+    const kept: VaultItem = { ...emptyItem('note'), title: 'Larga', notes: 'n'.repeat(ITEM_LIMITS.notes + 1) }
+    const back = readDecryptedExport(JSON.stringify(toBitwardenJson([kept])))
+    expect(back).toMatchObject({ tooLong: [] })
+    expect(back!.items[0]!.notes).toBe(kept.notes)
+  })
+
+  it('knows the size of an item once encrypted without encrypting it', async () => {
+    const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
+    for (const notes of ['', 'ñandú 🍳', 'x'.repeat(1001), 'línea\n"comillas"\t\u0001']) {
+      const one = { ...emptyItem('login'), title: 'Prueba', username: 'ana', notes }
+      expect(itemEnvelopeLength(one)).toBe((await encryptItem(key, 'user-1', one)).length)
+    }
   })
 
   it('explains the files it cannot read', () => {
