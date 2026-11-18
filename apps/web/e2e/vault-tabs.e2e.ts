@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import type { BrowserContext, Page } from '@playwright/test'
-import { ACCESS_KEY_FILE, OWNER_STATE, expect, openNewWorkspace, settle, test } from './helpers'
+import { ACCESS_KEY_FILE, behindProxy, expect, openNewWorkspace, OWNER_STATE, settle, test } from './helpers'
 
 const FIRST = 'primera frase maestra larga'
 const SECOND = 'segunda frase maestra larga'
@@ -83,7 +83,7 @@ test('tabs follow the vault at once, and another device can no longer save with 
     await expect(other.getByRole('heading', { name: 'Banco' })).toBeVisible({ timeout: 30_000 })
 
     // Another device: a browser of its own, signed in as the same person, with the vault open.
-    device = await browser.newContext({ baseURL, storageState: OWNER_STATE, locale: 'es-ES', timezoneId: 'Europe/Madrid', viewport: { width: 1440, height: 900 } })
+    device = await browser.newContext({ ...behindProxy, baseURL, storageState: OWNER_STATE, locale: 'es-ES', timezoneId: 'Europe/Madrid', viewport: { width: 1440, height: 900 } })
     const far = await device.newPage()
     await settle(far, baseURL!)
     await far.goto(vaultUrl)

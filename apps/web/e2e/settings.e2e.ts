@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { ACCESS_KEY_FILE, expect, openNewWorkspace, test } from './helpers'
+import { ACCESS_KEY_FILE, behindProxy, expect, openNewWorkspace, test } from './helpers'
 
 test('replace the access key from Settings', async ({ page }) => {
   await openNewWorkspace(page, 'Ajustes E2E')
@@ -27,7 +27,7 @@ test('replace the access key from Settings', async ({ page }) => {
   // This session stays open, and only the new key signs in.
   const me = await page.request.get('/api/auth/me')
   expect(me.status()).toBe(200)
-  const fresh = await page.context().browser()!.newContext({ baseURL: new URL(page.url()).origin })
+  const fresh = await page.context().browser()!.newContext({ ...behindProxy, baseURL: new URL(page.url()).origin })
   const attempt = await fresh.request.post('/api/auth/login', { data: { accessKey: newKey } })
   expect(attempt.status()).toBe(200)
   await fresh.close()
