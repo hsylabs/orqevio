@@ -1,7 +1,7 @@
 import type { HistoryEntryDTO, Scope, UndoResultDTO } from '@orqevio/shared'
 import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { history } from '../src/db/schema'
+import { cards, history } from '../src/db/schema'
 import { Client, type Harness, createHarness, seedBoard, signUp } from './harness'
 
 let h: Harness
@@ -188,6 +188,26 @@ describe('undo', () => {
     // Only texts have versions.
     const created = await latest(client, 'cards', card, 'card.created')
     expect((await client.post(`/api/history/${created.id}/restore`)).status).toBe(400)
+  })
+
+  it('undoes due dates kept with the time they were sent, as older versions did, one after another', async () => {
+    const { client, workspaceId } = await signUp(h, 'Fechas')
+    const { columns } = await seedBoard(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Pago' })).body.id as string
+    await client.patch(`/api/cards/${card}`, { dueAt: '2026-12-01' })
+    // By someone else, or the two would be one change.
+    await (await agent(client, workspaceId)).patch(`/api/cards/${card}`, { dueAt: '2026-12-02' })
+    // As an older version kept them: the time sent, not 12:00 UTC.
+    const [second, first] = (await historyOf(client, 'cards', card)).filter((e) => e.kind === 'card.due')
+    h.db.update(history).set({ after: '2026-12-01T09:00:00.000Z' }).where(eq(history.id, first!.id)).run()
+    h.db.update(history).set({ before: '2026-12-01T09:00:00.000Z', after: '2026-12-02T09:00:00.000Z' }).where(eq(history.id, second!.id)).run()
+    h.db.update(cards).set({ dueAt: new Date('2026-12-02T09:00:00.000Z') }).where(eq(cards.id, card)).run()
+
+    // Undoing the newer one sets the 1st at 12:00 UTC: still the day the older change set.
+    const result = await undo(client, { ids: [second!.id, first!.id] })
+    expect(result.plan.map((p) => p.status)).toEqual(['ready', 'ready'])
+    expect(result).toMatchObject({ applied: true, undone: 2, skipped: 0 })
+    expect((await client.get(`/api/cards/${card}`)).body.dueAt).toBeNull()
   })
 
   it('is for people who can open the workspace', async () => {
