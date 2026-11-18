@@ -22,11 +22,17 @@ test('an open card says it is gone when its column is deleted elsewhere', async 
 
   const { columns } = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string; name: string }> }
   const todo = columns.find((c) => c.name === 'Por hacer')!
-  expect((await page.request.delete(`/api/columns/${todo.id}`)).status()).toBe(200)
+  const deleted = await page.request.delete(`/api/columns/${todo.id}`)
+  expect(deleted.status()).toBe(200)
 
-  await expect(page.getByRole('region', { name: 'Columna Por hacer' })).toHaveCount(0)
   await expect(sheet.getByText('Esta tarjeta ya no existe')).toBeVisible()
   await sheet.screenshot({ path: testInfo.outputPath('1-tarjeta-de-columna-borrada.png'), animations: 'disabled' })
+
+  // Back from the trash, with its column: the sheet shows it again.
+  const { trashId } = (await deleted.json()) as { trashId: string }
+  expect((await page.request.post(`/api/trash/${trashId}/restore`)).status()).toBe(200)
+  await expect(sheet.getByText('Esta tarjeta ya no existe')).toHaveCount(0)
+  await expect(sheet.getByRole('button', { name: /Por hacer/ })).toBeVisible()
   // Asking for it again is how the sheet learns it is gone.
   const gone = /status of 404/
   consoleErrors.splice(0, consoleErrors.length, ...consoleErrors.filter((e) => !gone.test(e)))

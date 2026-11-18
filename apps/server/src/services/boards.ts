@@ -162,13 +162,13 @@ export class BoardService {
   async createColumn(actor: Actor, boardId: string, input: unknown): Promise<ColumnDTO> {
     const data = parse(columnCreateInput, input)
     const board = await this.load(actor, boardId, 'tasks:write')
-    const [{ total }] = (await this.deps.db.select({ total: count() }).from(columns).where(eq(columns.boardId, boardId))) as [{ total: number }]
-    if (total >= MAX_COLUMNS) throw new AppError(400, 'too_many_columns', `A board holds up to ${MAX_COLUMNS} columns`)
-    const position = positionAt(this.deps.db, columns, eq(columns.boardId, boardId), data.index)
-    const [column] = await this.deps.db
-      .insert(columns)
-      .values({ workspaceId: board.workspaceId, boardId, name: data.name, position })
-      .returning()
+    // Counted and added in one go: two at once can't both take the last place.
+    const column = this.deps.db.transaction((tx) => {
+      const { total } = tx.select({ total: count() }).from(columns).where(eq(columns.boardId, boardId)).get()!
+      if (total >= MAX_COLUMNS) throw new AppError(400, 'too_many_columns', `A board holds up to ${MAX_COLUMNS} columns`)
+      const position = positionAt(tx, columns, eq(columns.boardId, boardId), data.index)
+      return tx.insert(columns).values({ workspaceId: board.workspaceId, boardId, name: data.name, position }).returning().get()
+    })
     await this.activity.record(
       actor,
       board.workspaceId,

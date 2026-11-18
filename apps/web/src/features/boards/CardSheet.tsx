@@ -58,11 +58,14 @@ export function CardSheet({ cardId, board, onClose }: { cardId: string | null; b
   useEffect(() => {
     if (elsewhere && cardId) navigate(`/w/${workspaceId}/b/${elsewhere}?card=${cardId}`, { replace: true })
   }, [elsewhere, cardId, workspaceId, navigate])
-  // Its column deleted elsewhere took it to the trash too: asked for again, it is gone.
+  // Its column deleted elsewhere took it to the trash too: asked for again, it is gone. And when the
+  // column is back from the trash, so is the card: asked for again, it is there.
   const columnGone = open && card.data?.boardId === board.id && !board.columns.some((c) => c.id === card.data!.columnId)
-  const { refetch } = card
+  const { refetch, isError } = card
   useEffect(() => {
-    if (columnGone) void refetch()
+    if (columnGone || isError) void refetch()
+    // Only when the column goes or comes back: a failed fetch is not retried on its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [columnGone, refetch])
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={data?.title ?? t('sheet.fallbackTitle')} label={t('sheet.label')}>
