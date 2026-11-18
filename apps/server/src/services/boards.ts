@@ -12,6 +12,7 @@ import {
 } from '@orqevio/shared'
 import { and, asc, count, desc, eq, isNotNull, isNull, lt, or } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
+import { inGroups } from '../db/groups'
 import { boards, cards, columns, labels, projects, users } from '../db/schema'
 import { AppError, notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
@@ -66,9 +67,8 @@ export class BoardService {
       const position = positionAt(tx, boards, eq(boards.projectId, projectId), undefined)
       const b = tx.insert(boards).values({ workspaceId: project.workspaceId, projectId, name: data.name, position }).returning().get()
       const keys = evenlySpacedKeys(columnNames.length)
-      tx.insert(columns)
-        .values(columnNames.map((name, i) => ({ workspaceId: project.workspaceId, boardId: b.id, name, position: keys[i]! })))
-        .run()
+      const rows = columnNames.map((name, i) => ({ workspaceId: project.workspaceId, boardId: b.id, name, position: keys[i]! }))
+      for (const group of inGroups(columns, rows)) tx.insert(columns).values(group).run()
       return b
     })
     await this.activity.record(

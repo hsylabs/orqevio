@@ -7,6 +7,7 @@ import { createApp } from '../src/app'
 import { sha256 } from '../src/auth/crypto'
 import { FolderBackupStore } from '../src/backups/store'
 import { openDatabase, runMigrations } from '../src/db/client'
+import { MAX_PARAMETERS } from '../src/db/groups'
 import { nodeSql } from '../src/db/raw'
 import { sessions, users, workspaceMembers, workspaces } from '../src/db/schema'
 import { type Env, loadEnv } from '../src/env'
@@ -15,6 +16,40 @@ import { LocalStorage } from '../src/lib/storage-local'
 import { createServices } from '../src/services'
 
 export const ORIGIN = 'http://localhost:3000'
+
+/** The parameters a query takes: each `?`, outside strings, quoted names and comments. */
+export function countParameters(query: string) {
+  let count = 0
+  for (let i = 0; i < query.length; i++) {
+    const ch = query[i]!
+    if (ch === "'" || ch === '"' || ch === '`') {
+      const end = query.indexOf(ch, i + 1)
+      i = end === -1 ? query.length : end
+    } else if (ch === '[') {
+      const end = query.indexOf(']', i + 1)
+      i = end === -1 ? query.length : end
+    } else if (ch === '-' && query[i + 1] === '-') {
+      const end = query.indexOf('\n', i)
+      i = end === -1 ? query.length : end
+    } else if (ch === '/' && query[i + 1] === '*') {
+      const end = query.indexOf('*/', i + 2)
+      i = end === -1 ? query.length : end + 1
+    } else if (ch === '?') count++
+  }
+  return count
+}
+
+/**
+ * The tests run on better-sqlite3, which takes many more parameters than Cloudflare does: this
+ * makes it refuse, as a Durable Object would, any query with more than MAX_PARAMETERS.
+ */
+function limitParameters(sqlite: ReturnType<typeof openDatabase>['sqlite']) {
+  const prepare = sqlite.prepare.bind(sqlite)
+  sqlite.prepare = ((source: string) => {
+    if (countParameters(source) > MAX_PARAMETERS) throw new Error(`too many SQL variables (${countParameters(source)} in a query, at most ${MAX_PARAMETERS}): ${source.slice(0, 160)}`)
+    return prepare(source)
+  }) as typeof sqlite.prepare
+}
 export const SETUP_CODE = 'test-setup-code-1234'
 
 /** Each test file gets a fresh copy: its own SQLite file and upload folder. */
@@ -23,6 +58,7 @@ export async function createHarness(overrides: Partial<Env> = {}) {
   const dataDir = await mkdtemp(path.join(tmpdir(), 'orqevio-test-'))
   const env = loadEnv({ dataDir, databasePath: path.join(dataDir, 'orqevio.db'), webDist: path.join(dataDir, 'no-web'), setupCode: SETUP_CODE, updateCheck: false, ...overrides })
   const { db, sqlite, close } = openDatabase(env.databasePath)
+  limitParameters(sqlite)
   runMigrations(db, env.migrationsDir)
   const bus = new RealtimeBus()
   const sql = nodeSql(sqlite)
