@@ -48,6 +48,25 @@ describe('importing into the vault', () => {
     expect(getSession()).toMatchObject({ key: null, keyVersion: null, items: [] })
   })
 
+  it('leaves alone a session opened since, when more refusals for the old key come in', async () => {
+    unlockSession(await vaultKey(), 1, 'user-1', [], 15)
+    let release!: () => void
+    const late = new Promise<void>((resolve) => (release = resolve))
+    let calls = 0
+    const run = importItems(several(8), () => {}, async () => {
+      // The first refusal comes at once; the other workers' come after the new vault is open.
+      if (++calls > 1) await late
+      throw new ApiError(409, 'vault_key_changed', 'The vault changed')
+    })
+    await expect(run).rejects.toMatchObject({ code: 'vault_key_changed' })
+    expect(getSession().key).toBeNull()
+    const current = await vaultKey()
+    unlockSession(current, 2, 'user-1', [], 15)
+    release()
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(getSession().key).toBe(current)
+  })
+
   it('stops when the vault locks and leaves nothing decrypted in memory', async () => {
     unlockSession(await vaultKey(), 1, 'user-1', [], 15)
     let calls = 0

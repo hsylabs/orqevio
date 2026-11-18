@@ -15,13 +15,23 @@ import { getSession, lockVault, setAutoLock } from './session'
  *
  * Whenever a tab reads the state, an open session is checked against it. When the vault no longer
  * has that session's key (it was reset, and maybe set up again), the session is locked: anything
- * it encrypted, nobody could open, and the server refuses it anyway.
+ * it encrypted, nobody could open, and the server refuses it anyway. Key versions only go up, so a
+ * state older than the session (a reply that took long to come) is no reason to lock it.
  */
 
 const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('orqevio-vault')
 
-/** The vault's state as the server has it now, also given to every view of it. */
-export const freshVaultState = () => queryClient.fetchQuery({ queryKey: keys.vault, queryFn: ({ signal }) => get<VaultStateDTO>('/vault', signal), staleTime: 0 })
+const fetchState = () => queryClient.fetchQuery({ queryKey: keys.vault, queryFn: ({ signal }) => get<VaultStateDTO>('/vault', signal), staleTime: 0 })
+
+/**
+ * The vault's state as the server has it now, also given to every view of it. A request already on
+ * its way is not enough, as it may have read the state before the change that prompts this one:
+ * it is let finish, and the state is read again.
+ */
+export async function freshVaultState() {
+  if (queryClient.isFetching({ queryKey: keys.vault })) await fetchState().catch(() => {})
+  return fetchState()
+}
 
 /** Tells the other tabs that the vault changed. */
 export function announceVaultChange() {
@@ -34,8 +44,9 @@ queryClient.getQueryCache().subscribe((event) => {
   if (event.type !== 'updated' || event.action.type !== 'success' || event.query.queryKey[0] !== keys.vault[0]) return
   const state = event.query.state.data as VaultStateDTO | undefined
   const session = getSession()
-  if (!state || !session.key) return
-  if (!state.initialized || state.keyVersion !== session.keyVersion) {
+  if (!state || !session.key || session.keyVersion === null) return
+  const replaced = state.keyVersion > session.keyVersion || (state.keyVersion === session.keyVersion && !state.initialized)
+  if (replaced) {
     lockVault()
     toast.info(t('errors:codes.vault_key_changed'))
   } else if (state.autoLockMinutes !== session.autoLockMinutes) {
@@ -43,10 +54,13 @@ queryClient.getQueryCache().subscribe((event) => {
   }
 })
 
-/** The server refused something for a vault key the vault no longer has: locks, and reads the state again. */
-export function lockIfVaultChanged(error: unknown) {
+/**
+ * The server refused something sent with `key`, a vault key the vault no longer has: locks the
+ * session that holds it, if it is still the open one (not one opened since), and reads the state again.
+ */
+export function lockIfVaultChanged(error: unknown, key: CryptoKey | null) {
   if (!(error instanceof ApiError && error.code === 'vault_key_changed')) return false
-  lockVault()
+  if (key && getSession().key === key) lockVault()
   void freshVaultState().catch(() => {})
   return true
 }

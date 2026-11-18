@@ -214,7 +214,7 @@ function Unlocked() {
       return true
     } catch (error) {
       toast.error(errorMessage(error))
-      lockIfVaultChanged(error)
+      lockIfVaultChanged(error, s.key)
       return false
     }
   }

@@ -34,7 +34,8 @@ export async function importItems(items: VaultItem[], onProgress: (done: number)
         saved.push(item)
       } catch (error) {
         if (error instanceof ApiError && error.code === 'vault_key_changed') {
-          lockVault()
+          // This session's key, unless another session was opened since (the new vault's, say).
+          if (unlocked()) lockVault()
           throw error
         }
         failed++

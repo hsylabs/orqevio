@@ -99,6 +99,7 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
   async function run() {
     if (!review) return
+    const { key } = getSession()
     setBusy(true)
     try {
       const { saved, failed } = await importItems(review.fresh, setProgress)
@@ -108,7 +109,7 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       reset()
     } catch (err) {
       toast.error(err instanceof VaultLockedError ? t('import.locked') : errorMessage(err))
-      lockIfVaultChanged(err)
+      lockIfVaultChanged(err, key)
     } finally {
       setBusy(false)
     }
