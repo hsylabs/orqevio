@@ -29,6 +29,37 @@ To update your copy, see [Updates](README.md#updates) in the README.
 - The document editor no longer retries a save forever. It waits longer each time, 1 second up to 30, only when the failure may pass (no connection, a server error), and shows one notice that stays. A document too long to save says how long it is. A page deleted in another session says so at once, keeps what you wrote and offers to restore it.
 - Agents can no longer grow a page past 200,000 characters by appending to it (`update_page` with `append`): the copy answers with how much still fits.
 - With Docker, `SECURE_COOKIES` from `.env` now reaches the app.
+- Tasks:
+  - archiving an archived card, or restoring one that isn't, changes nothing: the card keeps its place;
+  - an empty edit of a card or a label changes nothing, where the label one used to fail;
+  - the activity no longer records an archive or a page link twice, and edits folded into one entry list every field edited;
+  - `limit` in the activity and history must be a whole number from 1: `2.5` used to fail and `-1` returned every row.
+- Names can't be made only of invisible characters, and line breaks or other control characters in them become spaces.
+- A board holds up to 20 columns, also when they're added later; at 20, **Add column** goes away.
+- An open card whose column is deleted in another session says it's gone, and shows the card again if the column comes back from the trash.
+- Documents and attachments:
+  - files dropped together onto a document go in in the order they were dropped;
+  - attaching several files to a card, one that fails says so by name and the others still go up;
+  - deleting a board, page or project that fails says so.
+- AVIF images show like the other images. A file name longer than 180 characters keeps its extension, and names with quotes or brackets download with their name.
+- A file whose page or card goes to the trash while it uploads is refused, and nothing of it is kept.
+- MCP:
+  - `add_checklist_items` adds all the items or, if one isn't valid, none, instead of leaving a checklist half made;
+  - a malformed request is answered as invalid params (`-32602`), not as an internal error.
+- An OAuth client registration that isn't valid says which field is wrong.
+- Unknown addresses under `/.well-known/` answer 404, on Docker and Cloudflare, instead of the web app.
+- Vault:
+  - on a phone, unlocking shows the list instead of opening the oldest item;
+  - search ignores accents;
+  - the strength meter no longer rates common words, keyboard runs and sequences such as `Password1234` as good;
+  - **Change master password** forgets what was typed when you close it;
+  - a full vault (5,000 items) says so in your language.
+- Accessibility:
+  - buttons that show only their icon on a phone keep their names for screen readers;
+  - a dialog opened from a menu gives the focus back to the menu's button, and a form or field opened from a menu takes the focus (**New workspace**, the vault's **New**).
+- The default workspace name is never cut in the middle of an emoji.
+- Errors about the data, permissions or a change made meanwhile are shown in your language instead of the server's English. The strength meter, the two-step codes' seconds and the editor's to-do checkboxes, for screen readers, speak your language too.
+- Japanese headings break between phrases, not in the middle of a word.
 
 ## [1.1.1] - 2026-11-17
 
