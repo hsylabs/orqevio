@@ -185,7 +185,9 @@
     "heading": "Arquivados",
     "emptyTitle": "Nada arquivado",
     "emptyBody": "Os cartões que você ou seus agentes arquivarem aparecem aqui, e você pode restaurá-los.",
-    "deleteConfirm": "Mover “{{title}}” para a lixeira?"
+    "deleteConfirm": "Mover “{{title}}” para a lixeira?",
+    "loadMore": "Carregar mais",
+    "showing": "{{shown}} de {{total}}"
   },
   "attachments": {
     "deleteConfirm": "Excluir “{{name}}”?",

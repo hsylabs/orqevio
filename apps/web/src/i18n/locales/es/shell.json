@@ -134,6 +134,8 @@
       "theme": "Cambiar tema claro oscuro apariencia",
       "lockVault": "Bloquear bóveda",
       "trash": "papelera borrado recuperar restaurar"
-    }
+    },
+    "includeArchived": "Incluir archivadas",
+    "archived": "Archivada"
   }
 }

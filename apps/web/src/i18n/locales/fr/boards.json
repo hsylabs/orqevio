@@ -185,7 +185,9 @@
     "heading": "Archivées",
     "emptyTitle": "Rien d’archivé",
     "emptyBody": "Les cartes que vous ou vos agents archivez apparaissent ici, et vous pouvez les restaurer.",
-    "deleteConfirm": "Placer « {{title}} » dans la corbeille ?"
+    "deleteConfirm": "Placer « {{title}} » dans la corbeille ?",
+    "loadMore": "Charger plus",
+    "showing": "{{shown}} sur {{total}}"
   },
   "attachments": {
     "deleteConfirm": "Supprimer « {{name}} » ?",

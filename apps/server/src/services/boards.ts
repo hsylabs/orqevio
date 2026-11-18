@@ -1,4 +1,4 @@
-import type { BoardDTO, CardSummaryDTO, ColumnDTO, PaletteColor } from '@orqevio/shared'
+import { ARCHIVED_PAGE, type BoardDTO, type CardSummaryDTO, type ColumnDTO, type PaletteColor } from '@orqevio/shared'
 import {
   DEFAULT_COLUMNS,
   DEFAULT_LOCALE,
@@ -10,7 +10,7 @@ import {
   labelCreateInput,
   labelUpdateInput,
 } from '@orqevio/shared'
-import { and, asc, count, desc, eq, isNotNull, isNull } from 'drizzle-orm'
+import { and, asc, count, desc, eq, isNotNull, isNull, lt, or } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { boards, cards, columns, labels, projects, users } from '../db/schema'
 import { notFound } from '../lib/errors'
@@ -112,14 +112,24 @@ export class BoardService {
     }
   }
 
-  async archived(actor: Actor, boardId: string): Promise<CardSummaryDTO[]> {
+  /**
+   * The archived cards of a board, most recently archived first, a page at a time: after the card
+   * `beforeId`, archived at `before`, when given (the last of the page before).
+   */
+  async archived(actor: Actor, boardId: string, page: { before?: Date; beforeId?: string; limit?: number } = {}): Promise<CardSummaryDTO[]> {
     await this.load(actor, boardId)
+    const after =
+      page.before && page.beforeId
+        ? or(lt(cards.archivedAt, page.before), and(eq(cards.archivedAt, page.before), lt(cards.id, page.beforeId)))
+        : page.before
+          ? lt(cards.archivedAt, page.before)
+          : undefined
     const rows = await this.deps.db
       .select()
       .from(cards)
-      .where(and(eq(cards.boardId, boardId), isNotNull(cards.archivedAt)))
-      .orderBy(desc(cards.archivedAt))
-      .limit(200)
+      .where(and(eq(cards.boardId, boardId), isNotNull(cards.archivedAt), after))
+      .orderBy(desc(cards.archivedAt), desc(cards.id))
+      .limit(Math.min(Math.max(1, Math.floor(page.limit ?? ARCHIVED_PAGE)), ARCHIVED_PAGE))
     return this.cards.summarize(rows)
   }
 

@@ -21,7 +21,8 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   const vaultLocked = useVaultLocked()
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
-  const search = useSearch(workspaceId, debounced)
+  const [withArchived, setWithArchived] = useState(false)
+  const search = useSearch(workspaceId, debounced, undefined, withArchived)
   const base = `/w/${workspaceId}`
 
   useEffect(() => {
@@ -65,6 +66,10 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                 placeholder={t('palette.placeholder')}
                 className="h-14 flex-1 bg-transparent text-[15.5px] outline-none placeholder:text-ink-3"
               />
+              <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[12px] text-ink-3 select-none">
+                <input type="checkbox" checked={withArchived} onChange={(e) => setWithArchived(e.target.checked)} className="accent-[var(--accent)]" />
+                {t('palette.includeArchived')}
+              </label>
               <kbd className="kbd">esc</kbd>
             </div>
             <Command.List className="min-h-0 flex-1 overflow-y-auto p-2 [&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pt-2.5 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:text-ink-3 [&_[cmdk-group-heading]]:uppercase">
@@ -81,7 +86,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                       keywords={[debounced]}
                       icon={r.type === 'card' ? <SquareKanban /> : r.icon ? <span className="text-[14px]">{r.icon}</span> : <FileText />}
                       onSelect={() => go(r.type === 'card' ? `${base}/b/${r.boardId}?card=${r.id}` : `${base}/d/${r.id}`)}
-                      hint={r.type === 'card' ? `${r.boardName} · ${r.columnName}` : r.projectName}
+                      hint={r.type === 'card' ? `${r.archived ? `${t('palette.archived')} · ` : ''}${r.boardName} · ${r.columnName}` : r.projectName}
                     >
                       <span className="block truncate">{r.title || t('common:untitled')}</span>
                       {r.excerpt && <span className="block truncate text-[12px] text-ink-3">{r.excerpt}</span>}

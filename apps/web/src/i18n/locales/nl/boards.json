@@ -183,7 +183,9 @@
     "heading": "Gearchiveerd",
     "emptyTitle": "Niets gearchiveerd",
     "emptyBody": "Kaarten die jij of je agents archiveren, verschijnen hier. Je kunt ze herstellen.",
-    "deleteConfirm": "‘{{title}}’ naar de prullenbak verplaatsen?"
+    "deleteConfirm": "‘{{title}}’ naar de prullenbak verplaatsen?",
+    "loadMore": "Meer laden",
+    "showing": "{{shown}} van {{total}}"
   },
   "attachments": {
     "deleteConfirm": "‘{{name}}’ verwijderen?",

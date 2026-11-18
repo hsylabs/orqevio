@@ -134,6 +134,8 @@
       "theme": "Thema wijzigen licht donker weergave modus theme",
       "lockVault": "Kluis vergrendelen lock vault",
       "trash": "prullenbak verwijderd terugzetten herstellen"
-    }
+    },
+    "includeArchived": "Gearchiveerde meenemen",
+    "archived": "Gearchiveerd"
   }
 }
