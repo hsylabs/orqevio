@@ -20,7 +20,7 @@ import { CopyVersion } from './CopyVersion'
 import { PageHeader } from '../shell/PageHeader'
 import { UninstallSection } from './UninstallSection'
 import { useWorkspace } from '../shell/workspace'
-import { lockVault } from '../vault/session'
+import { lockVaultEverywhere } from '../vault/session'
 
 function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
@@ -228,7 +228,7 @@ export function SettingsPage() {
           onSubmit={async (e: FormEvent) => {
             e.preventDefault()
             if (await run('delete', () => post('/account/delete', { accessKey: deleteKey }), t('erase.done'))) {
-              lockVault()
+              lockVaultEverywhere()
               queryClient.clear()
               navigate('/setup', { replace: true })
             }

@@ -22,6 +22,24 @@ function retryAfter(res: Response) {
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
+const sessionEndedListeners = new Set<() => void>()
+
+/**
+ * Runs `listener` each time this browser's session turns out to have ended: signed out in another
+ * tab or browser, expired, or gone with a restored backup.
+ */
+export function onSessionEnded(listener: () => void) {
+  sessionEndedListeners.add(listener)
+  return () => {
+    sessionEndedListeners.delete(listener)
+  }
+}
+
+/** This browser's session has ended: what only a signed-in person may see goes, before anything else. */
+export function sessionEnded() {
+  for (const listener of sessionEndedListeners) listener()
+}
+
 /** Thin fetch wrapper for the Orqevio API (same-origin, cookie session). */
 export async function api<T = unknown>(method: Method, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' }
@@ -47,6 +65,9 @@ export async function api<T = unknown>(method: Method, path: string, body?: unkn
   const data = text ? safeJson(text) : null
   if (!res.ok) {
     const err = (data as ApiErrorBody | null)?.error
+    // Not a wrong access key or agent token: a request this signed-in tab made, refused because
+    // its session is gone.
+    if (res.status === 401 && err?.code === 'unauthorized') sessionEnded()
     throw new ApiError(res.status, err?.code ?? 'error', err?.message ?? res.statusText, err?.details, retryAfter(res))
   }
   return data as T
@@ -66,7 +87,7 @@ export const patch = <T>(path: string, body: unknown) => api<T>('PATCH', path, b
 export const put = <T>(path: string, body: unknown) => api<T>('PUT', path, body)
 export const del = <T>(path: string) => api<T>('DELETE', path)
 
-const KNOWN_ERRORS = ['invalid_access_key', 'invalid_setup_code', 'setup_code_too_short', 'recovery_not_ready', 'already_claimed', 'not_claimed', 'rate_limited', 'network', 'file_too_large', 'upload_incomplete', 'last_workspace', 'restore_place_in_trash', 'restore_place_gone', 'vault_key_changed', 'too_many_columns', 'vault_full', 'vault_item_changed'] as const
+const KNOWN_ERRORS = ['invalid_access_key', 'invalid_setup_code', 'setup_code_too_short', 'recovery_not_ready', 'already_claimed', 'not_claimed', 'rate_limited', 'network', 'file_too_large', 'upload_incomplete', 'last_workspace', 'restore_place_in_trash', 'restore_place_gone', 'vault_key_changed', 'too_many_columns', 'vault_full', 'vault_item_changed', 'unauthorized'] as const
 const isKnown = (code: string): code is (typeof KNOWN_ERRORS)[number] => (KNOWN_ERRORS as readonly string[]).includes(code)
 
 /** A human-friendly message for any thrown value, in the app's language. */

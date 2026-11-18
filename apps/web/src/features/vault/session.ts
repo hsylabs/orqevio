@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from 'react'
+import { onSessionEnded } from '../../lib/api'
+import { keys, queryClient } from '../../lib/queries'
 import type { VaultItem } from './types'
 
 /**
@@ -60,6 +62,28 @@ export function lockVault() {
   timer = null
   emit()
 }
+
+const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('orqevio-vault')
+
+/**
+ * Locks the vault in this tab and in the other tabs of this browser, told at once: when signing
+ * out, restoring a backup, deleting the account or uninstalling. Each drops its key and checks
+ * its session, so signing in again asks for the master password everywhere.
+ */
+export function lockVaultEverywhere() {
+  lockVault()
+  channel?.postMessage('lock')
+}
+
+channel?.addEventListener('message', (event: MessageEvent) => {
+  if (event.data !== 'lock') return
+  lockVault()
+  void queryClient.invalidateQueries({ queryKey: keys.me })
+})
+
+// A session that ended elsewhere (signed out in another browser, expired, or gone with a restored
+// backup) takes the vault key with it, before the tab goes to the sign-in screen.
+onSessionEnded(lockVault)
 
 /**
  * Changes the items of the session that holds `key`. Ignored (false) once that
