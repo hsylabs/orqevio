@@ -67,6 +67,17 @@ describe('small fixes in tasks', () => {
     expect(entriesFor(activity.body, card.body.id, 'card.linked')).toHaveLength(1)
   })
 
+  it('two edits at once keep both fields in the entry they fold into', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const card = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'A la vez' })
+    await client.patch(`/api/cards/${card.body.id}`, { title: 'A la vez, retitulada' })
+    await Promise.all([client.patch(`/api/cards/${card.body.id}`, { description: 'Texto' }), client.patch(`/api/cards/${card.body.id}`, { dueAt: '2026-12-24' })])
+    const activity = await client.get(`/api/workspaces/${workspaceId}/activity`)
+    const [edits] = entriesFor(activity.body, card.body.id, 'card.updated')
+    expect(String(edits!.meta.fields).split(',').sort()).toEqual(['description', 'dueAt', 'title'])
+  })
+
   it('a limit that is not a whole number from 1 is refused, not a server error or every row', async () => {
     const { client, workspaceId } = await signUp(h)
     const { columns } = await seedBoard(client, workspaceId)
