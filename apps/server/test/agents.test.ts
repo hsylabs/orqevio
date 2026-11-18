@@ -454,6 +454,30 @@ describe('MCP server', () => {
     expect(left.map((t) => `${t.kind}:${t.title}`).sort()).toEqual(['attachment:notas.md', 'attachment:plano.png'])
   })
 
+  it('refuses to append past what a page holds, and leaves the page as it was', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { projectId } = await seedBoard(client, workspaceId)
+    const mcp = await connect((await createToken(client, workspaceId, ['docs:write'])).token)
+    const page = data(await mcp.callTool({ name: 'create_page', arguments: { project_id: projectId, title: 'Registro', content: 'a'.repeat(150_000) } }))
+
+    // Each part fits on its own; together they would be a page nobody could save from the editor.
+    const tooMuch = await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: 'b'.repeat(60_000), mode: 'append' } })
+    expect(tooMuch.isError).toBe(true)
+    expect(text(tooMuch)).toContain('210002 characters long, over the limit of 200000')
+    expect(text(tooMuch)).toContain('at most 49998 more fit')
+    const kept = await client.get(`/api/pages/${page.page_id}`)
+    expect(kept.body).toMatchObject({ version: 1 })
+    expect(kept.body.content).toHaveLength(150_000)
+
+    // Up to the limit, exactly, still goes in.
+    const fits = data(await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: 'b'.repeat(49_998), mode: 'append' } }))
+    expect(fits.version).toBe(2)
+    expect((await client.get(`/api/pages/${page.page_id}`)).body.content).toHaveLength(200_000)
+    const full = await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: 'c', mode: 'append' } })
+    expect(full.isError).toBe(true)
+    expect(text(full)).toContain('at most 0 more fit')
+  })
+
   it('reports permission errors as tool errors', async () => {
     const { client, workspaceId } = await signUp(h)
     const { columns } = await seedBoard(client, workspaceId)

@@ -1,18 +1,20 @@
-import type { PageDTO } from '@orqevio/shared'
-import { extractReferences } from '@orqevio/shared'
+import type { ActorRef, PageDTO, RealtimeEvent, TrashEntryDTO } from '@orqevio/shared'
+import { MAX_MARKDOWN, extractReferences } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Bot, CornerDownRight, Ellipsis, FileText, FilePlus, FolderInput, History, Paperclip, SquareKanban, Trash, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
-import { Link, useLocation, useNavigate, useParams } from 'react-router'
+import { Link, useBlocker, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
+import { useConfirm } from '../../components/ui/confirm'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from '../../components/ui/Menu'
 import { ApiError, errorMessage, get, patch } from '../../lib/api'
 import { cn } from '../../lib/cn'
-import { relativeTime } from '../../lib/format'
+import { formatNumber, relativeTime } from '../../lib/format'
 import { keys, queryClient, usePage } from '../../lib/queries'
 import { onPageEvent, useAgentHighlight } from '../../lib/realtime'
+import { restoreFromTrash } from '../../lib/trash'
 import { Attachments } from '../boards/Attachments'
 import { DueChip } from '../boards/CardItem'
 import { PageHeader } from '../shell/PageHeader'
@@ -26,18 +28,38 @@ import { MovePageDialog } from './MovePageDialog'
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error'
 
+/**
+ * Why the editor is not saving what was written. Only a network failure (or a server that does
+ * not answer) is tried again, waiting longer each time; anything else the server refused would
+ * only be refused again, so it waits for the next edit or for the person to try again.
+ */
+type SaveProblem = { kind: 'too_long'; length: number } | { kind: 'retrying'; reason: string } | { kind: 'refused'; reason: string }
+
+/** The page was deleted, maybe with what holds it. `entry` is where it waits in the trash, when it can be found. */
+interface Gone {
+  by: ActorRef | null
+  entry: TrashEntryDTO | null
+}
+
+const isNotFound = (error: unknown) => error instanceof ApiError && error.status === 404
+/** Failures that may pass on their own: no connection, a server down or busy. */
+const isTransient = (error: unknown) => !(error instanceof ApiError) || error.status === 0 || error.status >= 500 || error.status === 408 || error.status === 429
+/** 1 s, 2 s, 4 s… up to 30 s between attempts. */
+const retryDelay = (failures: number) => Math.min(30_000, 1000 * 2 ** (failures - 1))
+
 export function DocPage() {
   const { pageId = '' } = useParams()
   const page = usePage(pageId)
-  if (page.isError) return page.error instanceof ApiError && page.error.status === 404 ? <NotFound /> : <NotFound />
-  if (!page.data) return <PageSkeleton />
-  return <DocBody key={page.data.id} page={page.data} />
+  if (!page.data) return page.isError ? <NotFound /> : <PageSkeleton />
+  // Already open, a page that is no longer found stays on screen, with what was written in it.
+  return <DocBody key={page.data.id} page={page.data} missing={page.isError && isNotFound(page.error)} />
 }
 
-function DocBody({ page }: { page: PageDTO }) {
+function DocBody({ page, missing }: { page: PageDTO; missing: boolean }) {
   const { t } = useTranslation('docs')
   const { workspaceId, me, overview } = useWorkspace()
   const navigate = useNavigate()
+  const confirm = useConfirm()
   const location = useLocation()
   const actions = useStructureActions(workspaceId)
   const agent = useAgentHighlight(page.id)
@@ -47,6 +69,9 @@ function DocBody({ page }: { page: PageDTO }) {
   const [status, setStatus] = useState<SaveStatus>('idle')
   /** Who changed the page under the editor; `by: null` is another session of this user. */
   const [conflict, setConflict] = useState<{ by: string | null } | null>(null)
+  const [problem, setProblem] = useState<SaveProblem | null>(null)
+  const [gone, setGone] = useState<Gone | null>(null)
+  const [restoring, setRestoring] = useState(false)
   const [moveOpen, setMoveOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
 
@@ -61,6 +86,13 @@ function DocBody({ page }: { page: PageDTO }) {
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const conflictRef = useRef(false)
   conflictRef.current = conflict !== null
+  const problemRef = useRef<SaveProblem | null>(null)
+  const goneRef = useRef(false)
+  /** Failed attempts in a row, for the wait before the next one. */
+  const failures = useRef(0)
+  /** This tab is deleting the page: it leaves it, so there is nothing to tell. */
+  const deleting = useRef(false)
+  const markGone = useRef<(by: ActorRef | null) => void>(() => {})
   const mentions = useRef(extractReferences(page.content).cards.sort().join(','))
 
   // Autosize the title.
@@ -82,15 +114,30 @@ function DocBody({ page }: { page: PageDTO }) {
     setIcon(page.icon)
   }, [page.title, page.icon])
 
+  const report = useCallback((next: SaveProblem | null) => {
+    problemRef.current = next
+    setProblem(next)
+  }, [])
+
   const save = useCallback(async () => {
-    if (saving.current || conflictRef.current || !dirty.current) return
+    if (saving.current || conflictRef.current || goneRef.current || !dirty.current) return
+    clearTimeout(timer.current)
+    const content = latest.current
+    // The server would refuse it: say so once, and try again when it is short enough.
+    if (content.length > MAX_MARKDOWN) {
+      report({ kind: 'too_long', length: content.length })
+      setStatus('error')
+      return
+    }
     saving.current = true
     setStatus('saving')
-    const content = latest.current
+    let retryIn: number | null = null
     try {
       const res = await patch<{ version: number }>(`/pages/${page.id}`, { content, baseVersion: version.current })
       version.current = res.version
       if (latest.current === content) dirty.current = false
+      failures.current = 0
+      report(null)
       setStatus(dirty.current ? 'pending' : 'saved')
       // Card mentions create links server-side; refresh the linked-task chips when they change.
       const nextMentions = extractReferences(content).cards.sort().join(',')
@@ -99,18 +146,106 @@ function DocBody({ page }: { page: PageDTO }) {
         void queryClient.invalidateQueries({ queryKey: keys.page(page.id) })
       }
     } catch (error) {
+      setStatus('error')
       if (error instanceof ApiError && error.status === 409) {
+        conflictRef.current = true
         setConflict({ by: null })
-        setStatus('error')
-      } else {
-        setStatus('error')
-        toast.error(errorMessage(error))
-      }
+      } else if (isNotFound(error)) markGone.current(null)
+      else if (isTransient(error)) {
+        failures.current += 1
+        retryIn = retryDelay(failures.current)
+        report({ kind: 'retrying', reason: errorMessage(error) })
+      } else report({ kind: 'refused', reason: errorMessage(error) })
     } finally {
       saving.current = false
-      if (dirty.current && !conflictRef.current) timer.current = setTimeout(() => void save(), 400)
+      if (dirty.current && !conflictRef.current && !goneRef.current) {
+        if (retryIn !== null) timer.current = setTimeout(() => void save(), retryIn)
+        // Written while it was saving.
+        else if (!problemRef.current) timer.current = setTimeout(() => void save(), 400)
+      }
     }
-  }, [page.id])
+  }, [page.id, report])
+
+  /** Tries again now, without waiting for the next attempt. */
+  const retryNow = useCallback(() => {
+    failures.current = 0
+    void save()
+  }, [save])
+
+  // Back online: no need to wait for the next attempt.
+  useEffect(() => {
+    const online = () => problemRef.current?.kind === 'retrying' && retryNow()
+    window.addEventListener('online', online)
+    return () => window.removeEventListener('online', online)
+  }, [retryNow])
+
+  /**
+   * The page was deleted (by `by`, when known): saving stops, and the person is told, with who
+   * deleted it and a way to bring it back from the trash. What was written stays in the editor.
+   */
+  markGone.current = (by) => {
+    if (goneRef.current || deleting.current) return
+    goneRef.current = true
+    clearTimeout(timer.current)
+    report(null)
+    setConflict(null)
+    setGone({ by, entry: null })
+    // What holds it may be what was deleted: an ancestor page, or its project.
+    const holders = [page.id, ...page.breadcrumbs.map((b) => b.id).reverse(), page.projectId]
+    get<TrashEntryDTO[]>(`/workspaces/${workspaceId}/trash`)
+      .then((entries) => {
+        const entry = holders.map((id) => entries.find((e) => e.entityId === id)).find((e) => e !== undefined)
+        if (entry && goneRef.current) setGone({ by: entry.deletedBy, entry })
+      })
+      .catch(() => {})
+  }
+
+  useEffect(() => {
+    if (missing) markGone.current(null)
+  }, [missing])
+
+  /** Back from the trash, here or elsewhere: saving goes on where it left off. */
+  const backAgain = useCallback(() => {
+    goneRef.current = false
+    setGone(null)
+    if (dirty.current) void save()
+  }, [save])
+
+  async function restore(entry: TrashEntryDTO) {
+    setRestoring(true)
+    try {
+      const restored = await restoreFromTrash(entry.id)
+      if (restored.movedTo) toast.message(t('restoredElsewhere', { ns: 'trash', place: restored.movedTo }))
+      backAgain()
+    } catch (error) {
+      toast.error(errorMessage(error))
+    } finally {
+      setRestoring(false)
+    }
+  }
+
+  /** Something was restored elsewhere: maybe this page. */
+  const recheck = useCallback(async () => {
+    try {
+      const fresh = await get<PageDTO>(`/pages/${page.id}`)
+      queryClient.setQueryData(keys.page(page.id), fresh)
+      if (goneRef.current) backAgain()
+    } catch {
+      // Still in the trash.
+    }
+  }, [page.id, backAgain])
+
+  /** Unsaved text that leaving would lose: it can't be saved now, or saving it failed. */
+  const unsaveable = () => dirty.current && (goneRef.current || conflictRef.current || problemRef.current !== null)
+
+  // Leaving within the app asks first; closing or reloading the tab is asked by the browser.
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => currentLocation.pathname !== nextLocation.pathname && unsaveable())
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return
+    void confirm({ title: t('page.leave.title'), description: t('page.leave.body'), confirmLabel: t('page.leave.confirm'), danger: true }).then((leave) =>
+      leave ? blocker.proceed() : blocker.reset(),
+    )
+  }, [blocker, confirm, t])
 
   // Flush on unmount / page change, and warn before leaving with unsaved edits.
   useEffect(() => {
@@ -121,15 +256,23 @@ function DocBody({ page }: { page: PageDTO }) {
     return () => {
       window.removeEventListener('beforeunload', beforeUnload)
       clearTimeout(timer.current)
-      if (dirty.current && !conflictRef.current) {
+      if (dirty.current && !conflictRef.current && !goneRef.current && latest.current.length <= MAX_MARKDOWN) {
         void patch(`/pages/${page.id}`, { content: latest.current, baseVersion: version.current }).catch(() => {})
       }
     }
   }, [page.id])
 
+  /** A page read again is gone, or could not be read. */
+  const lost = useCallback((error: unknown) => {
+    if (isNotFound(error)) markGone.current(null)
+    else toast.error(errorMessage(error))
+    return null
+  }, [])
+
   const reloadFromServer = useCallback(
     async (by?: string) => {
-      const fresh = await get<PageDTO>(`/pages/${page.id}`)
+      const fresh = await get<PageDTO>(`/pages/${page.id}`).catch(lost)
+      if (!fresh) return
       version.current = fresh.version
       latest.current = fresh.content
       dirty.current = false
@@ -137,17 +280,31 @@ function DocBody({ page }: { page: PageDTO }) {
       queryClient.setQueryData(keys.page(page.id), fresh)
       if (!titleFocused.current) setTitle(fresh.title)
       setConflict(null)
+      report(null)
       setStatus('idle')
       if (by) toast(t('page.agentUpdated', { name: by }), { icon: <Bot className="size-4 text-agent" />, duration: 2500 })
     },
-    [page.id, t],
+    [page.id, t, report, lost],
+  )
+
+  /** The page itself was deleted, or what holds it: a page above it, or its project. */
+  const deletesThis = useCallback(
+    (event: RealtimeEvent) =>
+      (event.action === 'page.deleted' && (event.pageId === page.id || page.breadcrumbs.some((b) => b.id === event.pageId))) ||
+      (event.action === 'project.deleted' && event.projectId === page.projectId),
+    [page.id, page.breadcrumbs, page.projectId],
   )
 
   // Live updates from agents or other sessions.
   useEffect(
     () =>
       onPageEvent((event) => {
-        if (event.pageId !== page.id || event.action === 'page.deleted') return
+        if (goneRef.current) {
+          if (event.action === 'trash.restored') void recheck()
+          return
+        }
+        if (deletesThis(event)) return markGone.current(event.actor)
+        if (event.pageId !== page.id) return
         // Only changes to the text carry a version. Attachments and links leave it
         // alone: refresh the side lists, never the editor, or a just-pasted image
         // could be wiped before it is saved.
@@ -161,11 +318,12 @@ function DocBody({ page }: { page: PageDTO }) {
         if (dirty.current) setConflict({ by: event.actor.name })
         else void reloadFromServer(event.actor.kind === 'agent' ? event.actor.name : undefined)
       }),
-    [page.id, me.user.id, reloadFromServer],
+    [page.id, me.user.id, reloadFromServer, recheck, deletesThis],
   )
 
   async function keepMine() {
-    const fresh = await get<PageDTO>(`/pages/${page.id}`)
+    const fresh = await get<PageDTO>(`/pages/${page.id}`).catch(lost)
+    if (!fresh) return
     version.current = fresh.version
     setConflict(null)
     conflictRef.current = false
@@ -179,7 +337,7 @@ function DocBody({ page }: { page: PageDTO }) {
         version.current = Math.max(version.current, res.version)
         return queryClient.invalidateQueries({ queryKey: keys.overview(workspaceId) })
       })
-      .catch((error) => toast.error(errorMessage(error)))
+      .catch(lost)
   }
 
   const projectPages = overview?.projects.find((p) => p.id === page.projectId)?.pages ?? []
@@ -217,8 +375,20 @@ function DocBody({ page }: { page: PageDTO }) {
                   icon={<Trash />}
                   danger
                   onSelect={async () => {
+                    // Deleting drops what is not saved yet; not deleting after all saves it as usual.
+                    const unsaved = dirty.current
+                    deleting.current = true
                     dirty.current = false
-                    if (await actions.deletePage({ id: page.id, title })) navigate(page.parentId ? `/w/${workspaceId}/d/${page.parentId}` : `/w/${workspaceId}/p/${page.projectId}`)
+                    let deleted = false
+                    try {
+                      deleted = await actions.deletePage({ id: page.id, title })
+                    } catch (error) {
+                      toast.error(errorMessage(error))
+                    }
+                    if (deleted) return navigate(page.parentId ? `/w/${workspaceId}/d/${page.parentId}` : `/w/${workspaceId}/p/${page.projectId}`)
+                    deleting.current = false
+                    dirty.current = unsaved
+                    if (unsaved) void save()
                   }}
                 >
                   {t('page.delete')}
@@ -306,24 +476,58 @@ function DocBody({ page }: { page: PageDTO }) {
             </div>
           )}
 
-          {conflict && (
-            <div role="alert" className="animate-pop mt-6 flex flex-wrap items-center gap-3 rounded-[12px] border border-warn/40 bg-[color-mix(in_oklab,var(--warn)_10%,var(--sheet))] px-4 py-3 text-[13px]">
-              <TriangleAlert className="size-4 shrink-0 text-warn" />
-              <span className="min-w-0 flex-1">
-                {conflict.by ? (
-                  <Trans t={t} i18nKey="page.conflict.byName" values={{ name: conflict.by }} components={{ strong: <strong className="font-semibold" /> }} />
-                ) : (
-                  <Trans t={t} i18nKey="page.conflict.byOtherSession" components={{ strong: <strong className="font-semibold" /> }} />
+          {/* Pinned while scrolling: what was written last, far down a long page, is what it is about. */}
+          <div className="sticky top-3 z-20 mt-6 empty:hidden">
+            {conflict && (
+              <div role="alert" className="animate-pop flex flex-wrap items-center gap-3 rounded-[12px] border border-warn/40 bg-[color-mix(in_oklab,var(--warn)_10%,var(--sheet))] px-4 py-3 text-[13px] shadow-md">
+                <TriangleAlert className="size-4 shrink-0 text-warn" />
+                <span className="min-w-0 flex-1">
+                  {conflict.by ? (
+                    <Trans t={t} i18nKey="page.conflict.byName" values={{ name: conflict.by }} components={{ strong: <strong className="font-semibold" /> }} />
+                  ) : (
+                    <Trans t={t} i18nKey="page.conflict.byOtherSession" components={{ strong: <strong className="font-semibold" /> }} />
+                  )}
+                </span>
+                <Button size="sm" variant="secondary" onClick={() => void reloadFromServer()}>
+                  {t('page.conflict.loadTheirs')}
+                </Button>
+                <Button size="sm" variant="primary" onClick={() => void keepMine()}>
+                  {t('page.conflict.keepMine')}
+                </Button>
+              </div>
+            )}
+
+            {gone && (
+              <div role="alert" className="animate-pop flex flex-wrap items-center gap-3 rounded-[12px] border border-danger/30 bg-danger-soft px-4 py-3 text-[13px] shadow-md">
+                <Trash className="size-4 shrink-0 text-danger" />
+                <span className="min-w-0 flex-1">
+                  <GoneMessage gone={gone} pageId={page.id} selfId={me.user.id} /> {gone.entry ? t('page.gone.inTrash') : ''}{' '}
+                  {dirty.current && <strong className="font-semibold">{t(gone.entry ? 'page.gone.unsaved' : 'page.gone.unsavedLost')}</strong>}
+                </span>
+                {gone.entry && (
+                  <Button size="sm" variant="primary" loading={restoring} onClick={() => void restore(gone.entry!)}>
+                    {t('page.gone.restore')}
+                  </Button>
                 )}
-              </span>
-              <Button size="sm" variant="secondary" onClick={() => void reloadFromServer()}>
-                {t('page.conflict.loadTheirs')}
-              </Button>
-              <Button size="sm" variant="primary" onClick={() => void keepMine()}>
-                {t('page.conflict.keepMine')}
-              </Button>
-            </div>
-          )}
+              </div>
+            )}
+
+            {problem && !gone && !conflict && (
+              <div role="alert" className="animate-pop flex flex-wrap items-center gap-3 rounded-[12px] border border-warn/40 bg-[color-mix(in_oklab,var(--warn)_10%,var(--sheet))] px-4 py-3 text-[13px] shadow-md">
+                <TriangleAlert className="size-4 shrink-0 text-warn" />
+                <span className="min-w-0 flex-1">
+                  {problem.kind === 'too_long'
+                    ? t('page.problem.tooLong', { length: formatNumber(problem.length), max: formatNumber(MAX_MARKDOWN) })
+                    : t(problem.kind === 'retrying' ? 'page.problem.retrying' : 'page.problem.refused', { reason: problem.reason })}
+                </span>
+                {problem.kind !== 'too_long' && (
+                  <Button size="sm" variant="secondary" onClick={retryNow}>
+                    {t('page.problem.retry')}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="mt-8">
             <Editor
@@ -337,6 +541,8 @@ function DocBody({ page }: { page: PageDTO }) {
                 latest.current = md
                 dirty.current = true
                 setStatus('pending')
+                // The next attempt, when it is due, takes this too.
+                if (problemRef.current?.kind === 'retrying') return
                 clearTimeout(timer.current)
                 timer.current = setTimeout(() => void save(), 700)
               }}
@@ -378,4 +584,17 @@ function DocBody({ page }: { page: PageDTO }) {
       <HistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} type="page" id={page.id} name={title || t('untitled', { ns: 'common' })} />
     </div>
   )
+}
+
+/** Who deleted the page, or what holds it. */
+function GoneMessage({ gone, pageId, selfId }: { gone: Gone; pageId: string; selfId: string }) {
+  const { t } = useTranslation('docs')
+  const strong = { strong: <strong className="font-semibold" /> }
+  const by = gone.by
+  if (!by) return <>{t('page.gone.unknown')}</>
+  const you = by.kind === 'user' && by.id === selfId
+  // Deleted with what holds it: say what that was.
+  const holder = gone.entry && gone.entry.entityId !== pageId ? gone.entry.title : null
+  if (holder !== null) return <Trans t={t} i18nKey={you ? 'page.gone.withByYou' : 'page.gone.withByName'} values={{ name: by.name, title: holder }} components={strong} />
+  return <Trans t={t} i18nKey={you ? 'page.gone.byYou' : 'page.gone.byName'} values={{ name: by.name }} components={strong} />
 }

@@ -24,7 +24,29 @@
     "content": "Page content",
     "subpages": "Subpages",
     "attachments": "Attachments",
-    "history": "History"
+    "history": "History",
+    "gone": {
+      "byName": "<strong>{{name}}</strong> deleted this page.",
+      "byYou": "You deleted this page in another tab or session.",
+      "withByName": "<strong>{{name}}</strong> deleted “{{title}}”, and this page with it.",
+      "withByYou": "You deleted “{{title}}” in another tab or session, and this page with it.",
+      "unknown": "This page was deleted.",
+      "inTrash": "It’s in the trash.",
+      "unsaved": "Your latest changes weren’t saved: they will be once you restore it.",
+      "unsavedLost": "Your latest changes weren’t saved and can no longer be: copy them before you leave.",
+      "restore": "Restore"
+    },
+    "problem": {
+      "tooLong": "This document has {{length}} characters and the limit is {{max}}. Shorten it so it can be saved: until then, your changes aren’t saved.",
+      "retrying": "Your latest changes couldn’t be saved. {{reason}} It will try again on its own.",
+      "refused": "Your latest changes couldn’t be saved. {{reason}}",
+      "retry": "Try again"
+    },
+    "leave": {
+      "title": "Leave without saving?",
+      "body": "Your latest changes to this page weren’t saved and will be lost.",
+      "confirm": "Leave without saving"
+    }
   },
   "editor": {
     "placeholder": "Write, or press “/” to insert…",
