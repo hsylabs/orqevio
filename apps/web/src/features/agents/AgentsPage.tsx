@@ -1,6 +1,7 @@
 import { Bot, LockKeyhole, Plus, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 import { ActivityList } from '../../components/ActivityList'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
@@ -34,8 +35,20 @@ export function AgentsPage() {
   const [tokenFilter, setTokenFilter] = useState<string | undefined>()
   const activity = useActivity(workspaceId, { agentsOnly: true, tokenId: tokenFilter })
 
-  const active = (tokens.data ?? []).filter((token) => !token.revokedAt && (!token.expiresAt || new Date(token.expiresAt) > new Date()))
-  const inactive = (tokens.data ?? []).filter((token) => !active.includes(token))
+  // The accesses of this workspace; those of the others are each on their own page.
+  const here = (tokens.data ?? []).filter((token) => token.workspaceId === workspaceId)
+  const elsewhere = [
+    ...(tokens.data ?? [])
+      .filter((token) => token.workspaceId !== workspaceId)
+      .reduce((spaces, token) => {
+        const space = spaces.get(token.workspaceId) ?? { id: token.workspaceId, name: token.workspaceName, count: 0 }
+        space.count += 1
+        return spaces.set(token.workspaceId, space)
+      }, new Map<string, { id: string; name: string; count: number }>())
+      .values(),
+  ]
+  const active = here.filter((token) => !token.revokedAt && (!token.expiresAt || new Date(token.expiresAt) > new Date()))
+  const inactive = here.filter((token) => !active.includes(token))
 
   const revoke = useRevokeToken()
 
@@ -101,6 +114,19 @@ export function AgentsPage() {
                   <TokenCard key={token.id} token={token} editable onRevoke={() => void revoke(token)} onShowActivity={() => setTokenFilter(token.id)} />
                 ))}
               </div>
+            )}
+            {elsewhere.length > 0 && (
+              <p className="mt-4 text-[12.5px] text-ink-3">
+                {t('tokens.elsewhere')}{' '}
+                {elsewhere.map((w, i) => (
+                  <span key={w.id}>
+                    {i > 0 && ' · '}
+                    <Link to={`/w/${w.id}/agents`} className="font-medium text-agent hover:underline">
+                      {t('tokens.elsewhereLink', { name: w.name, count: w.count })}
+                    </Link>
+                  </span>
+                ))}
+              </p>
             )}
             {inactive.length > 0 && (
               <details className="mt-4">

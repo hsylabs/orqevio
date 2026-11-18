@@ -20,7 +20,9 @@
     "emptyTitle": "You haven’t connected any agents yet",
     "emptyBody": "Create a token and paste the configuration into Claude Code, Cursor, VS Code or Claude Desktop.",
     "inactive_one": "{{count}} revoked or expired",
-    "inactive_other": "{{count}} revoked or expired"
+    "inactive_other": "{{count}} revoked or expired",
+    "elsewhere": "You also have accesses in other workspaces:",
+    "elsewhereLink": "{{name}} ({{count}})"
   },
   "activity": {
     "title": "Agent activity",
@@ -93,7 +95,8 @@
       "hint": "To the trash; you decide whether it comes back.",
       "on": "{{name}} can now delete and move",
       "off": "{{name}} can no longer delete or move"
-    }
+    },
+    "expired": "Expired"
   },
   "access": {
     "levels": {

@@ -19,7 +19,9 @@
     "active": "有効な接続",
     "emptyTitle": "まだエージェントを接続していません",
     "emptyBody": "トークンを作成し、設定をClaude Code、Cursor、VS Code、Claude Desktopに貼り付けてください。",
-    "inactive_other": "{{count}}件が取り消し済みまたは期限切れ"
+    "inactive_other": "{{count}}件が取り消し済みまたは期限切れ",
+    "elsewhere": "他のスペースにもアクセスがあります：",
+    "elsewhereLink": "{{name}}（{{count}}）"
   },
   "activity": {
     "title": "エージェントのアクティビティ",
@@ -92,7 +94,8 @@
       "hint": "ゴミ箱に入ります。戻すかどうかはあなたが決めます。",
       "on": "{{name}}が削除と移動をできるようになりました",
       "off": "{{name}}は削除と移動ができなくなりました"
-    }
+    },
+    "expired": "期限切れ"
   },
   "access": {
     "levels": {
