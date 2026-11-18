@@ -67,7 +67,7 @@ describe('backups', () => {
     const gone = (await client.post(`/api/columns/${columns[1]!.id}/cards`, { title: 'Dar de baja la luz' })).body.id as string
     await client.del(`/api/cards/${gone}`)
     await client.post('/api/vault/setup', keys)
-    await client.put('/api/vault/items/7d1d9b52-5f39-4c43-a43e-36d9c3f06a10', { data: 'v1.aXZpdml2aXZpdml2.c2VjcmV0' })
+    await client.put('/api/vault/items/7d1d9b52-5f39-4c43-a43e-36d9c3f06a10', { data: 'v1.aXZpdml2aXZpdml2.c2VjcmV0', keyVersion: 1 })
 
     const before = everything(h.sql)
     const made = await client.post('/api/backups')

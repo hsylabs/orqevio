@@ -328,10 +328,7 @@ export function createApi(env: Env) {
   const vault = new Hono<AppEnv>()
   vault.use('*', sessionOnly)
   vault.get('/', async (c) => c.json(await c.get('services').vault.state(requireActor(c))))
-  vault.post('/setup', async (c) => {
-    await c.get('services').vault.setup(requireActor(c), await json(c))
-    return c.body(null, 204)
-  })
+  vault.post('/setup', async (c) => c.json(await c.get('services').vault.setup(requireActor(c), await json(c))))
   vault.put('/keys', async (c) => {
     await c.get('services').vault.rekey(requireActor(c), await json(c))
     return c.body(null, 204)

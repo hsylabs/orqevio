@@ -12,7 +12,8 @@
     "upload_incomplete": "Der Upload wurde unterbrochen. Versuch es noch einmal.",
     "last_workspace": "Du musst mindestens einen Arbeitsbereich behalten.",
     "restore_place_in_trash": "Stell zuerst wieder her, wozu es gehört: Das liegt auch im Papierkorb.",
-    "restore_place_gone": "Der Platz, zu dem es gehörte, existiert nicht mehr, und es gibt keinen anderen, wohin es könnte."
+    "restore_place_gone": "Der Platz, zu dem es gehörte, existiert nicht mehr, und es gibt keinen anderen, wohin es könnte.",
+    "vault_key_changed": "Der Tresor wurde in einem anderen Tab oder auf einem anderen Gerät geändert. Öffne ihn erneut."
   },
   "notFound": "Das Element wurde nicht gefunden.",
   "server": "Auf dem Server ist etwas schiefgelaufen. Versuch es noch einmal.",

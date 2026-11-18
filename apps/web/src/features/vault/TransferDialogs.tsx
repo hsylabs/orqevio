@@ -6,11 +6,11 @@ import { Button } from '../../components/ui/Button'
 import { Dialog } from '../../components/ui/Dialog'
 import { Field } from '../../components/ui/Field'
 import { Segmented } from '../../components/ui/Segmented'
-import type { VaultStateDTO } from '@orqevio/shared'
 import { errorMessage } from '../../lib/api'
 import { formatList } from '../../lib/format'
 import { type EncryptedExport, WrongSecretError, openExport, sealExport, unlockWithPassword } from './crypto'
 import { getSession } from './session'
+import { freshVaultState, lockIfVaultChanged } from './sync'
 import { type ImportSource, type ImportedItems, MAX_IMPORT_BYTES, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from './transfer'
 import type { VaultItem } from './types'
 import { VaultLockedError, importItems } from './upload'
@@ -99,6 +99,7 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
   async function run() {
     if (!review) return
+    const { key } = getSession()
     setBusy(true)
     try {
       const { saved, failed } = await importItems(review.fresh, setProgress)
@@ -108,6 +109,7 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       reset()
     } catch (err) {
       toast.error(err instanceof VaultLockedError ? t('import.locked') : errorMessage(err))
+      lockIfVaultChanged(err, key)
     } finally {
       setBusy(false)
     }
@@ -197,7 +199,7 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
 type ExportKind = 'encrypted' | 'plain'
 
-export function ExportDialog({ open, onOpenChange, state }: { open: boolean; onOpenChange: (open: boolean) => void; state: VaultStateDTO }) {
+export function ExportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { t } = useTranslation(['vault', 'common'])
   const [kind, setKind] = useState<ExportKind>('encrypted')
   const [password, setPassword] = useState('')
@@ -215,12 +217,15 @@ export function ExportDialog({ open, onOpenChange, state }: { open: boolean; onO
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    const { key, userId, items } = getSession()
+    const { key, keyVersion, userId, items } = getSession()
     if (!key || !userId) return
     setBusy(true)
     setError(null)
     try {
-      // Both kinds ask for the master password: whoever exports must know it.
+      // Both kinds ask for the master password: whoever exports must know it. The one the vault has
+      // now, read again: the file says that only the current master password opens it.
+      const state = await freshVaultState()
+      if (state.keyVersion !== keyVersion) throw new VaultLockedError()
       await unlockWithPassword(state, password, userId)
       const payload = JSON.stringify(toBitwardenJson(items), null, 2)
       const text = kind === 'encrypted' ? JSON.stringify(await sealExport(payload, password, items.length), null, 2) : payload

@@ -138,7 +138,13 @@ export const vaultKeysInput = z.object({
   wrappedKey: envelopeSchema,
   recoveryWrappedKey: envelopeSchema,
 })
-export const vaultItemInput = z.object({ data: envelopeSchema })
+/**
+ * Which vault key a client holds: it goes up each time a vault is set up (again, after a reset).
+ * The server takes items and new wrappings only for the vault key it has now.
+ */
+const keyVersion = z.number().int().min(0).max(2_147_483_647)
+export const vaultRekeyInput = vaultKeysInput.extend({ keyVersion })
+export const vaultItemInput = z.object({ data: envelopeSchema, keyVersion })
 export const vaultSettingsInput = z.object({ autoLockMinutes: z.union([z.literal(1), z.literal(5), z.literal(15), z.literal(30), z.literal(60)]) })
 
 export type ClaimInput = z.infer<typeof claimInput>

@@ -1,17 +1,26 @@
-import type { VaultItemRecordDTO, VaultStateDTO } from '@orqevio/shared'
-import { MAX_VAULT_ITEMS, vaultItemInput, vaultKeysInput, vaultSettingsInput } from '@orqevio/shared'
-import { and, asc, eq, isNotNull } from 'drizzle-orm'
+import type { VaultItemRecordDTO, VaultSetupDTO, VaultStateDTO } from '@orqevio/shared'
+import { MAX_VAULT_ITEMS, vaultItemInput, vaultKeysInput, vaultRekeyInput, vaultSettingsInput } from '@orqevio/shared'
+import { and, asc, count, eq } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { vaultItems, vaults } from '../db/schema'
-import { conflict, forbidden, notFound } from '../lib/errors'
+import { AppError, conflict, forbidden, notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { Deps } from './deps'
 
 /**
+ * A tab or a device holds a vault key the vault no longer has: it was reset, and maybe set up
+ * again, since that tab opened it. What it encrypts now nobody could open, so it is refused.
+ */
+const keyChanged = () => new AppError(409, 'vault_key_changed', 'The vault changed since it was opened here: open it again')
+
+/**
  * The vault stores opaque, client-side encrypted envelopes. The server has no
  * key material and cannot decrypt anything. Every method requires a browser
  * session: agent tokens are rejected before any vault data is read.
+ *
+ * Each vault key has a version (it goes up each time the vault is set up), and items
+ * and new wrappings of the key are only taken for the version the vault has now.
  */
 export class VaultService {
   constructor(
@@ -34,33 +43,48 @@ export class VaultService {
       wrappedKey: v?.wrappedKey ?? null,
       recoveryWrappedKey: v?.recoveryWrappedKey ?? null,
       autoLockMinutes: v?.autoLockMinutes ?? 15,
+      keyVersion: v?.keyVersion ?? 0,
     }
   }
 
-  async setup(actor: Actor, input: unknown) {
+  /**
+   * A new vault key: its version is one more than the last one this person's vault had. It is
+   * given back with the write, so the tab that set it up holds the version of its own key, even
+   * if another tab resets the vault and sets it up again right after.
+   */
+  async setup(actor: Actor, input: unknown): Promise<VaultSetupDTO> {
     this.guard(actor)
     const keys = parse(vaultKeysInput, input)
-    const [existing] = await this.deps.db
-      .select({ userId: vaults.userId })
-      .from(vaults)
-      .where(and(eq(vaults.userId, actor.userId), isNotNull(vaults.wrappedKey)))
-    if (existing) throw conflict('The vault is already set up')
-    await this.deps.db
-      .insert(vaults)
-      .values({ userId: actor.userId, ...keys })
-      .onConflictDoUpdate({ target: vaults.userId, set: { ...keys, updatedAt: new Date() } })
+    return this.deps.db.transaction((tx) => {
+      const existing = tx
+        .select({ wrappedKey: vaults.wrappedKey, keyVersion: vaults.keyVersion, autoLockMinutes: vaults.autoLockMinutes })
+        .from(vaults)
+        .where(eq(vaults.userId, actor.userId))
+        .get()
+      if (existing?.wrappedKey) throw conflict('The vault is already set up')
+      const keyVersion = (existing?.keyVersion ?? 0) + 1
+      tx.insert(vaults)
+        .values({ userId: actor.userId, ...keys, keyVersion })
+        .onConflictDoUpdate({ target: vaults.userId, set: { ...keys, keyVersion, updatedAt: new Date() } })
+        .run()
+      return { keyVersion, autoLockMinutes: existing?.autoLockMinutes ?? 15 }
+    })
   }
 
-  /** Re-wraps the vault key (new master password or recovery). Item ciphertexts are untouched. */
+  /**
+   * Re-wraps the vault key (new master password or recovery). Item ciphertexts are untouched.
+   * Only for the key the vault has now: wrappings of an older one would replace it.
+   */
   async rekey(actor: Actor, input: unknown) {
     this.guard(actor)
-    const keys = parse(vaultKeysInput, input)
-    const [row] = await this.deps.db
-      .update(vaults)
-      .set({ ...keys, updatedAt: new Date() })
-      .where(and(eq(vaults.userId, actor.userId), isNotNull(vaults.wrappedKey)))
-      .returning({ userId: vaults.userId })
-    if (!row) throw notFound('Vault')
+    const { keyVersion, ...keys } = parse(vaultRekeyInput, input)
+    this.deps.db.transaction((tx) => {
+      const vault = tx.select({ wrappedKey: vaults.wrappedKey, keyVersion: vaults.keyVersion }).from(vaults).where(eq(vaults.userId, actor.userId)).get()
+      if (!vault) throw notFound('Vault')
+      // Reset since (set up again or not): the key this tab holds is gone.
+      if (!vault.wrappedKey || vault.keyVersion !== keyVersion) throw keyChanged()
+      tx.update(vaults).set({ ...keys, updatedAt: new Date() }).where(eq(vaults.userId, actor.userId)).run()
+    })
   }
 
   async updateSettings(actor: Actor, input: unknown) {
@@ -78,24 +102,29 @@ export class VaultService {
     return rows.map((r) => ({ id: r.id, data: r.data, createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString() }))
   }
 
+  /** Saves an item encrypted with the vault key the vault has now, checked and written at once. */
   async putItem(actor: Actor, itemId: string, input: unknown): Promise<VaultItemRecordDTO> {
     this.guard(actor)
-    const { data } = parse(vaultItemInput, input)
-    const state = await this.state(actor)
-    if (!state.initialized) throw conflict('Set up the vault first')
-    const [owner] = await this.deps.db.select({ userId: vaultItems.userId }).from(vaultItems).where(eq(vaultItems.id, itemId))
-    if (owner && owner.userId !== actor.userId) throw notFound('Item')
-    if (!owner) {
-      const count = await this.deps.db.$count(vaultItems, eq(vaultItems.userId, actor.userId))
-      if (count >= MAX_VAULT_ITEMS) throw conflict(`The vault is limited to ${MAX_VAULT_ITEMS} items`)
-    }
-    const now = new Date()
-    const [row] = await this.deps.db
-      .insert(vaultItems)
-      .values({ id: itemId, userId: actor.userId, data })
-      .onConflictDoUpdate({ target: vaultItems.id, set: { data, updatedAt: now }, where: eq(vaultItems.userId, actor.userId) })
-      .returning()
-    return { id: row!.id, data: row!.data, createdAt: row!.createdAt.toISOString(), updatedAt: row!.updatedAt.toISOString() }
+    const { data, keyVersion } = parse(vaultItemInput, input)
+    const row = this.deps.db.transaction((tx) => {
+      const vault = tx.select({ wrappedKey: vaults.wrappedKey, keyVersion: vaults.keyVersion }).from(vaults).where(eq(vaults.userId, actor.userId)).get()
+      if (!vault) throw conflict('Set up the vault first')
+      // Reset since this tab opened it, whether it was set up again or not: its key is gone.
+      if (!vault.wrappedKey || vault.keyVersion !== keyVersion) throw keyChanged()
+      const owner = tx.select({ userId: vaultItems.userId }).from(vaultItems).where(eq(vaultItems.id, itemId)).get()
+      if (owner && owner.userId !== actor.userId) throw notFound('Item')
+      if (!owner) {
+        const stored = tx.select({ n: count() }).from(vaultItems).where(eq(vaultItems.userId, actor.userId)).get()
+        if ((stored?.n ?? 0) >= MAX_VAULT_ITEMS) throw conflict(`The vault is limited to ${MAX_VAULT_ITEMS} items`)
+      }
+      return tx
+        .insert(vaultItems)
+        .values({ id: itemId, userId: actor.userId, data, keyVersion })
+        .onConflictDoUpdate({ target: vaultItems.id, set: { data, keyVersion, updatedAt: new Date() }, where: eq(vaultItems.userId, actor.userId) })
+        .returning()
+        .get()
+    })
+    return { id: row.id, data: row.data, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() }
   }
 
   async deleteItem(actor: Actor, itemId: string) {

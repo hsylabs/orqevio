@@ -24,6 +24,7 @@ import { ExportDialog, ImportDialog } from './TransferDialogs'
 import { Generator, PasswordText } from './Generator'
 import { getSession, lockVault, setAutoLock, updateSessionItems, useAutoLockRemaining, useVaultSession } from './session'
 import { type VaultBlocker, vaultBlockers } from '../../lib/browser'
+import { announceVaultChange, freshVaultState, lockIfVaultChanged } from './sync'
 import { estimateMasterPassword } from './strength'
 import { groupCode, parseTotp, totp } from './totp'
 import { ITEM_LIMITS, type VaultItem, type VaultItemType, emptyItem } from './types'
@@ -40,7 +41,7 @@ export function VaultPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <PageHeader crumbs={[{ label: t('title') }]} actions={session.key && state.data ? <UnlockedActions state={state.data} /> : undefined} />
+      <PageHeader crumbs={[{ label: t('title') }]} actions={session.key && state.data ? <UnlockedActions /> : undefined} />
       <div className="min-h-0 flex-1 overflow-y-auto">
         {blockers.length > 0 ? (
           <VaultUnsupported blockers={blockers} />
@@ -49,11 +50,11 @@ export function VaultPage() {
             <div className="skeleton size-24 rounded-full" />
           </div>
         ) : !state.data.initialized ? (
-          <VaultSetup userId={me.user.id} state={state.data} />
+          <VaultSetup userId={me.user.id} />
         ) : session.key && session.userId === me.user.id ? (
           <Unlocked />
         ) : (
-          <VaultUnlock userId={me.user.id} state={state.data} />
+          <VaultUnlock userId={me.user.id} />
         )}
       </div>
     </div>
@@ -103,7 +104,7 @@ function AutoLockRing() {
   )
 }
 
-function UnlockedActions({ state }: { state: VaultStateDTO }) {
+function UnlockedActions() {
   const { t } = useTranslation('vault')
   const session = useVaultSession()
   const [changeOpen, setChangeOpen] = useState(false)
@@ -116,6 +117,7 @@ function UnlockedActions({ state }: { state: VaultStateDTO }) {
     setAutoLock(minutes)
     try {
       await patch('/vault/settings', { autoLockMinutes: minutes })
+      announceVaultChange()
       await queryClient.invalidateQueries({ queryKey: keys.vault })
     } catch (error) {
       toast.error(errorMessage(error))
@@ -156,9 +158,9 @@ function UnlockedActions({ state }: { state: VaultStateDTO }) {
       <Button variant="primary" size="sm" icon={<LockKeyhole />} onClick={lockVault}>
         {t('toolbar.lock')}
       </Button>
-      <ChangeMasterDialog open={changeOpen} onOpenChange={setChangeOpen} state={state} />
+      <ChangeMasterDialog open={changeOpen} onOpenChange={setChangeOpen} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
-      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} state={state} />
+      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
       <Dialog open={generatorOpen} onOpenChange={setGeneratorOpen} title={t('toolbar.generatorTitle')} description={t('toolbar.generatorDescription')}>
         <Generator />
       </Dialog>
@@ -202,16 +204,17 @@ function Unlocked() {
 
   async function save(item: VaultItem) {
     const s = getSession()
-    if (!s.key || !s.userId) return false
+    if (!s.key || s.keyVersion === null || !s.userId) return false
     const next = { ...item, title: item.title.trim() || (item.type === 'login' ? host(item.url) || t('untitled.login') : t('untitled.note')), updatedAt: new Date().toISOString() }
     try {
       const data = await encryptItem(s.key, s.userId, next)
-      await put(`/vault/items/${next.id}`, { data })
+      await put(`/vault/items/${next.id}`, { data, keyVersion: s.keyVersion })
       updateSessionItems(s.key, (items) => (items.some((i) => i.id === next.id) ? items.map((i) => (i.id === next.id ? next : i)) : [...items, next]))
       setSelectedId(next.id)
       return true
     } catch (error) {
       toast.error(errorMessage(error))
+      lockIfVaultChanged(error, s.key)
       return false
     }
   }
@@ -614,7 +617,7 @@ function ItemEditor({ initial, onSave, onCancel }: { initial: VaultItem; onSave:
   )
 }
 
-function ChangeMasterDialog({ open, onOpenChange, state }: { open: boolean; onOpenChange: (o: boolean) => void; state: VaultStateDTO }) {
+function ChangeMasterDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { t } = useTranslation(['vault', 'common'])
   const { me } = useWorkspace()
   const [current, setCurrent] = useState('')
@@ -630,9 +633,12 @@ function ChangeMasterDialog({ open, onOpenChange, state }: { open: boolean; onOp
     setBusy(true)
     setError(null)
     try {
-      const fresh = await get<VaultStateDTO>('/vault')
+      const fresh = await freshVaultState()
+      // Reset in another tab since this one opened it: it is locked now, and says why.
+      if (fresh.keyVersion !== getSession().keyVersion) return
       const newKeys = await changeMasterPassword(fresh, current, next, me.user.id)
-      await put('/vault/keys', newKeys)
+      await put('/vault/keys', { ...newKeys, keyVersion: fresh.keyVersion })
+      announceVaultChange()
       await queryClient.invalidateQueries({ queryKey: keys.vault })
       onOpenChange(false)
       setCurrent('')

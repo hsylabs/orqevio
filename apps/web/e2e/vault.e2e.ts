@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
-import { expect, openNewWorkspace, test } from './helpers'
+import { ACCESS_KEY_FILE, expect, openNewWorkspace, test } from './helpers'
 
 /** RFC 6238 codes for the counters around now, as an authenticator app would compute them. */
 function authenticatorCodes(secret: string) {
@@ -16,6 +16,9 @@ function authenticatorCodes(secret: string) {
 
 test('end-to-end encrypted vault', async ({ page, browserName }) => {
   test.setTimeout(90_000)
+  // From no vault, whatever the other tests did with the owner's.
+  const accessKey = (await readFile(ACCESS_KEY_FILE, 'utf8')).trim()
+  expect((await page.request.post('/api/vault/reset', { data: { accessKey } })).status()).toBe(204)
   await openNewWorkspace(page, 'Bóveda E2E')
   await page.getByRole('link', { name: /^Bóveda/ }).click()
   await page.getByLabel('Contraseña maestra', { exact: true }).fill('caballo correcto pila grapa')

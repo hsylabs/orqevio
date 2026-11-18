@@ -12,7 +12,8 @@
     "upload_incomplete": "L’envoi a été interrompu. Réessayez.",
     "last_workspace": "Vous devez conserver au moins un espace.",
     "restore_place_in_trash": "Restaurez d’abord ce à quoi il appartient : c’est aussi dans la corbeille.",
-    "restore_place_gone": "L’emplacement auquel il appartenait n’existe plus, et il n’y a nulle part où le remettre."
+    "restore_place_gone": "L’emplacement auquel il appartenait n’existe plus, et il n’y a nulle part où le remettre.",
+    "vault_key_changed": "Le coffre-fort a changé dans un autre onglet ou sur un autre appareil. Rouvrez-le."
   },
   "notFound": "Élément introuvable.",
   "server": "Une erreur est survenue sur le serveur. Réessayez.",

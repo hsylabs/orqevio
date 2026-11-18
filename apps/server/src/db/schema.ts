@@ -524,6 +524,8 @@ export const vaults = sqliteTable('vaults', {
   }>(),
   wrappedKey: text('wrapped_key'),
   recoveryWrappedKey: text('recovery_wrapped_key'),
+  /** Goes up each time the vault is set up: a vault set up again after a reset has a new key. */
+  keyVersion: integer('key_version').notNull().default(0),
   autoLockMinutes: integer('auto_lock_minutes').notNull().default(15),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
@@ -538,6 +540,8 @@ export const vaultItems = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     data: text('data').notNull(),
+    /** The version of the vault key it was encrypted with (vaults.keyVersion when it was saved). */
+    keyVersion: integer('key_version').notNull().default(0),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

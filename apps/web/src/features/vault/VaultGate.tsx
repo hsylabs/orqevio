@@ -1,4 +1,4 @@
-import type { VaultItemRecordDTO, VaultStateDTO } from '@orqevio/shared'
+import type { VaultItemRecordDTO, VaultSetupDTO, VaultStateDTO } from '@orqevio/shared'
 import { t as translate } from 'i18next'
 import { Check, Copy, Download, Eye, EyeOff, KeyRound, ShieldCheck } from 'lucide-react'
 import { type FormEvent, type ReactNode, useState } from 'react'
@@ -14,10 +14,11 @@ import { keys, queryClient } from '../../lib/queries'
 import { WrongSecretError, createVault, decryptItem, recoverVault, unlockWithPassword } from './crypto'
 import { unlockSession } from './session'
 import { estimateMasterPassword } from './strength'
+import { announceVaultChange, freshVaultState } from './sync'
 import type { VaultItem } from './types'
 import { VaultLockArt } from './VaultLockArt'
 
-async function openSession(vaultKey: CryptoKey, userId: string, autoLockMinutes: number) {
+async function openSession(vaultKey: CryptoKey, userId: string, state: VaultStateDTO) {
   const records = await get<VaultItemRecordDTO[]>('/vault/items')
   const items: VaultItem[] = []
   let failed = 0
@@ -29,7 +30,7 @@ async function openSession(vaultKey: CryptoKey, userId: string, autoLockMinutes:
     }
   }
   if (failed) toast.error(translate('vault:gate.decryptFailed', { count: failed }))
-  unlockSession(vaultKey, userId, items, autoLockMinutes)
+  unlockSession(vaultKey, state.keyVersion, userId, items, state.autoLockMinutes)
 }
 
 function PasswordInput({ label, value, onChange, autoFocus, autoComplete, error, hint }: { label: string; value: string; onChange: (v: string) => void; autoFocus?: boolean; autoComplete: string; error?: string | null; hint?: string }) {
@@ -73,7 +74,7 @@ function StrengthMeter({ password }: { password: string }) {
 }
 
 // ── First-time setup ─────────────────────────────────────────────
-export function VaultSetup({ userId, state }: { userId: string; state: VaultStateDTO }) {
+export function VaultSetup({ userId }: { userId: string }) {
   const { t } = useTranslation(['vault', 'common'])
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -101,9 +102,11 @@ export function VaultSetup({ userId, state }: { userId: string; state: VaultStat
     if (!created) return
     setBusy(true)
     try {
-      await post('/vault/setup', created.keys)
+      // The version of this key, as the setup gave it: read later, it could be another tab's new vault.
+      const { keyVersion, autoLockMinutes } = await post<VaultSetupDTO>('/vault/setup', created.keys)
+      announceVaultChange()
+      unlockSession(created.vaultKey, keyVersion, userId, [], autoLockMinutes)
       await queryClient.invalidateQueries({ queryKey: keys.vault })
-      unlockSession(created.vaultKey, userId, [], state.autoLockMinutes)
       toast.success(t('gate.setup.ready'))
     } catch (err) {
       toast.error(errorMessage(err))
@@ -162,7 +165,7 @@ export function VaultSetup({ userId, state }: { userId: string; state: VaultStat
 }
 
 // ── Unlock & recovery ────────────────────────────────────────────
-export function VaultUnlock({ userId, state }: { userId: string; state: VaultStateDTO }) {
+export function VaultUnlock({ userId }: { userId: string }) {
   const { t } = useTranslation('vault')
   const [mode, setMode] = useState<'unlock' | 'recover'>('unlock')
   const [password, setPassword] = useState('')
@@ -177,9 +180,13 @@ export function VaultUnlock({ userId, state }: { userId: string; state: VaultSta
     setBusy(true)
     setError(null)
     try {
+      // The master password the vault has now, even if it was changed in another tab or on another device.
+      const state = await freshVaultState()
+      // Reset in the meantime: the page shows how to set it up again.
+      if (!state.initialized) return
       const key = await unlockWithPassword(state, password, userId)
       setOpening(true)
-      await openSession(key, userId, state.autoLockMinutes)
+      await openSession(key, userId, state)
     } catch (err) {
       setError(err instanceof WrongSecretError ? t('master.wrong') : errorMessage(err))
       setShake((n) => n + 1)
@@ -189,7 +196,7 @@ export function VaultUnlock({ userId, state }: { userId: string; state: VaultSta
     }
   }
 
-  if (mode === 'recover') return <VaultRecover userId={userId} state={state} onBack={() => setMode('unlock')} />
+  if (mode === 'recover') return <VaultRecover userId={userId} onBack={() => setMode('unlock')} />
 
   return (
     <GateLayout title={t('gate.unlock.title')} subtitle={t('gate.unlock.subtitle')} art={<VaultLockArt open={opening} busy={busy} />}>
@@ -208,7 +215,7 @@ export function VaultUnlock({ userId, state }: { userId: string; state: VaultSta
   )
 }
 
-function VaultRecover({ userId, state, onBack }: { userId: string; state: VaultStateDTO; onBack: () => void }) {
+function VaultRecover({ userId, onBack }: { userId: string; onBack: () => void }) {
   const { t } = useTranslation('vault')
   const [recovery, setRecovery] = useState('')
   const [password, setPassword] = useState('')
@@ -224,10 +231,14 @@ function VaultRecover({ userId, state, onBack }: { userId: string; state: VaultS
     setBusy(true)
     setError(null)
     try {
+      // The recovery key of the vault there is now: a stale one would put an old vault key back.
+      const state = await freshVaultState()
+      if (!state.initialized) return
       const { keys: newKeys, vaultKey } = await recoverVault(state, recovery, password, userId)
-      await put('/vault/keys', newKeys)
+      await put('/vault/keys', { ...newKeys, keyVersion: state.keyVersion })
+      announceVaultChange()
       await queryClient.invalidateQueries({ queryKey: keys.vault })
-      await openSession(vaultKey, userId, state.autoLockMinutes)
+      await openSession(vaultKey, userId, state)
       toast.success(t('gate.recover.done'))
     } catch (err) {
       setError(err instanceof WrongSecretError ? t('gate.recover.invalidKey') : errorMessage(err))
@@ -269,6 +280,7 @@ function ResetVaultDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
     setBusy(true)
     try {
       await post('/vault/reset', { accessKey })
+      announceVaultChange()
       await queryClient.invalidateQueries({ queryKey: keys.vault })
       onOpenChange(false)
       toast.success(t('gate.reset.done'))
