@@ -21,7 +21,9 @@
     "emptyBody": "Crea un token y pega la configuración en Claude Code, Cursor, VS Code o Claude Desktop.",
     "inactive_one": "{{count}} revocado o caducado",
     "inactive_many": "{{count}} revocados o caducados",
-    "inactive_other": "{{count}} revocados o caducados"
+    "inactive_other": "{{count}} revocados o caducados",
+    "elsewhere": "También tienes accesos en otros espacios:",
+    "elsewhereLink": "{{name}} ({{count}})"
   },
   "activity": {
     "title": "Actividad de los agentes",
@@ -94,7 +96,8 @@
       "hint": "A la papelera; tú decides si vuelve.",
       "on": "{{name}} ya puede borrar y mover",
       "off": "{{name}} ya no puede borrar ni mover"
-    }
+    },
+    "expired": "Caducó"
   },
   "access": {
     "levels": {

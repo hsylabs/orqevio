@@ -272,6 +272,12 @@ export class CardService {
   async update(actor: Actor, cardId: string, input: unknown): Promise<CardSummaryDTO> {
     const data = parse(cardUpdateInput, input)
     const card = await this.load(actor, cardId, 'tasks:write')
+    const changed = Object.keys(data).filter((k) => k !== 'baseVersion' && data[k as keyof typeof data] !== undefined)
+    // Nothing to change: neither a write nor an entry in the activity.
+    if (changed.length === 0) {
+      const [summary] = await this.summarize([card])
+      return summary!
+    }
     const updated = this.deps.db.transaction((tx) => {
       const prev = tx.select().from(cards).where(eq(cards.id, cardId)).get()
       if (!prev) throw notFound('Card')
@@ -314,7 +320,6 @@ export class CardService {
       }
       return row
     })
-    const changed = Object.keys(data).filter((k) => k !== 'baseVersion' && data[k as keyof typeof data] !== undefined)
     await this.activity.record(
       actor,
       card.workspaceId,
@@ -387,6 +392,8 @@ export class CardService {
 
   async setArchived(actor: Actor, cardId: string, archived: boolean) {
     const card = await this.load(actor, cardId, 'tasks:write')
+    // Already so: it keeps its place, and the activity does not say it twice.
+    if ((card.archivedAt !== null) === archived) return
     const patch: Partial<CardRow> = { archivedAt: archived ? new Date() : null, updatedAt: new Date() }
     if (!archived) {
       // Restored cards return to the end of their column.
@@ -537,7 +544,7 @@ export class CardService {
     const card = await this.load(actor, cardId, 'tasks:read')
     const [page] = await this.deps.db.select().from(pages).where(eq(pages.id, pageId))
     if (!page || page.workspaceId !== card.workspaceId) throw notFound('Page')
-    this.deps.db.transaction((tx) => {
+    const added = this.deps.db.transaction((tx) => {
       const added = tx
         .insert(cardPageLinks)
         .values({ cardId, pageId, workspaceId: card.workspaceId, source: 'manual' })
@@ -545,7 +552,10 @@ export class CardService {
         .returning({ pageId: cardPageLinks.pageId })
         .all()
       if (added.length) this.change(tx, actor, card, { kind: 'card.linked', subjectId: pageId, meta: { page: page.title } })
+      return added.length > 0
     })
+    // Already linked: nothing new to tell.
+    if (!added) return
     await this.activity.record(
       actor,
       card.workspaceId,

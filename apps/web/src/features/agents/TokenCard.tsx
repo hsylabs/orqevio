@@ -71,7 +71,9 @@ export function TokenCard({ token, onRevoke, onShowActivity, inactive, editable 
   const docs = levelFromScopes(token.scopes, 'docs')
   const writes = tasks === 'write' || docs === 'write'
   const back = token.oauth ? destination(token.oauth.redirectUri) : null
-  const idle = token.revokedAt ? null : idleDays(token.lastUsedAt ?? token.createdAt)
+  // Past its date, an access is over as much as a revoked one: no use to wait for.
+  const expired = !token.revokedAt && token.expiresAt !== null && new Date(token.expiresAt) <= new Date()
+  const idle = token.revokedAt || expired ? null : idleDays(token.lastUsedAt ?? token.createdAt)
   return (
     <article className={cn('rounded-[16px] border border-line bg-surface p-4 shadow-sm', inactive && 'opacity-60')}>
       <div className="flex items-start gap-3">
@@ -114,7 +116,7 @@ export function TokenCard({ token, onRevoke, onShowActivity, inactive, editable 
           <dd className="text-ink-2">{shortDate(token.createdAt)}</dd>
         </div>
         <div>
-          <dt className="text-ink-3">{token.revokedAt ? t('token.revoked') : token.oauth ? t('token.expiresUnused') : t('token.expires')}</dt>
+          <dt className="text-ink-3">{token.revokedAt ? t('token.revoked') : expired ? t('token.expired') : token.oauth ? t('token.expiresUnused') : t('token.expires')}</dt>
           <dd className="text-ink-2">{token.revokedAt ? shortDate(token.revokedAt) : token.expiresAt ? shortDate(token.expiresAt) : t('token.never')}</dd>
         </div>
       </dl>
