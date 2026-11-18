@@ -17,12 +17,12 @@ import { generateAccessKey, secretFingerprint } from './auth/crypto'
 import { backupDatabase, restoreDatabase } from './backup'
 import { openDatabase } from './db/client'
 import { copyState, instance, sessions, users } from './db/schema'
-import { loadEnv } from './env'
+import { loadEnvOrExit } from './env'
 import { UNINSTALLED_KEY, revokeAgents } from './services/accounts'
 
 const [command, ...flags] = process.argv.slice(2)
 const withAgents = flags.includes('--revoke-agents')
-const env = loadEnv()
+const env = loadEnvOrExit()
 const USAGE = 'Usage:\n  node dist/cli.js status\n  node dist/cli.js reset-access [--revoke-agents]\n  node dist/cli.js backup <file>\n  node dist/cli.js restore <file>'
 
 // Backups work on the database file itself: they don't open it the way the commands below do.

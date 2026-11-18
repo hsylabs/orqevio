@@ -133,7 +133,7 @@ This runs the published image (`ghcr.io/hsylabs/orqevio`, for amd64 and arm64). 
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
-The app listens on port 3000 and applies its migrations on startup. Put it behind a reverse proxy with HTTPS (Caddy, Nginx, Traefik) and, if you do, add `TRUST_PROXY=true`. The SQLite database and the attachments are stored in the `orqevio-data` volume.
+The app listens on port 3000 and applies its migrations on startup. Put it behind a reverse proxy with HTTPS (Caddy, Nginx, Traefik) and, if you do, add `TRUST_PROXY=true` (or the number of proxies in front, such as `2` for a CDN plus Nginx). The proxy may also ask for a password (HTTP basic auth); agents send their own `Authorization` header, so let `/mcp`, `/oauth/` and `/.well-known/` through without it if you connect any. The SQLite database and the attachments are stored in the `orqevio-data` volume.
 
 **Backups.** With the app running, make a live backup of the database, then copy it out of the container together with the attachments, in the `uploads` folder:
 
@@ -434,12 +434,12 @@ The tests first claim the copy through the interface and try the access key. The
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `APP_URL` | `http://localhost:3000` | Public origins, separated by commas. With `https://`, it turns on `Secure` cookies and HSTS. |
-| `PORT` / `HOST` | `3000` / `0.0.0.0` | Address to listen on. |
-| `DATA_DIR` | `./data` | Data folder: the SQLite database (`orqevio.db`) and attachments (`uploads/`). |
-| `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Path to the SQLite file, if you want to keep it apart from the attachments. |
+| `APP_URL` | `http://localhost:3000` | Public origins, full addresses separated by commas. The first one decides: with `https://`, it turns on `Secure` cookies and HSTS. |
+| `PORT` / `HOST` | `3000` / `0.0.0.0` | Address to listen on. With Docker Compose, `PORT` is the port on your machine, and the container always listens on 3000. |
+| `DATA_DIR` | `./data` | Data folder: the SQLite database (`orqevio.db`) and attachments (`uploads/`). In Docker, it is the `orqevio-data` volume. |
+| `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Path to the SQLite file, if you want to keep it apart from the attachments (from source only). |
 | `MAX_UPLOAD_MB` | `20` | Maximum size per file. |
-| `TRUST_PROXY` | `false` | Trust `X-Forwarded-For` (behind a reverse proxy). |
+| `TRUST_PROXY` | `false` | Behind a reverse proxy, `true`, or the number of proxies in front. The visitor's address for the limits on failed attempts is then the one the proxy adds at the end of `X-Forwarded-For`, never what the visitor sent. |
 | `SECURE_COOKIES` | based on `APP_URL` | Forces `Secure` cookies. |
 | `SETUP_CODE` | generated on startup | Code to claim the copy the first time. Changing it lets you recover access. |
 | `UPDATE_CHECK` | `on` | Asks `registry.npmjs.org` for new versions so the app can let you know. `off` turns it off. |

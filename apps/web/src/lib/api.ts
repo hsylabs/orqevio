@@ -7,9 +7,17 @@ export class ApiError extends Error {
     public readonly code: string,
     message: string,
     public readonly details?: unknown,
+    /** Seconds to wait before trying again, from Retry-After. */
+    public readonly retryAfter?: number,
   ) {
     super(message)
   }
+}
+
+/** Retry-After in seconds; the HTTP-date form is not used by this server. */
+function retryAfter(res: Response) {
+  const seconds = Number(res.headers.get('retry-after'))
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined
 }
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
@@ -39,7 +47,7 @@ export async function api<T = unknown>(method: Method, path: string, body?: unkn
   const data = text ? safeJson(text) : null
   if (!res.ok) {
     const err = (data as ApiErrorBody | null)?.error
-    throw new ApiError(res.status, err?.code ?? 'error', err?.message ?? res.statusText, err?.details)
+    throw new ApiError(res.status, err?.code ?? 'error', err?.message ?? res.statusText, err?.details, retryAfter(res))
   }
   return data as T
 }
@@ -64,6 +72,7 @@ const isKnown = (code: string): code is (typeof KNOWN_ERRORS)[number] => (KNOWN_
 /** A human-friendly message for any thrown value, in the app's language. */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
+    if (error.code === 'rate_limited' && error.retryAfter) return t('errors:codes.rate_limitedFor', { count: Math.ceil(error.retryAfter / 60) })
     if (isKnown(error.code)) return t(`errors:codes.${error.code}`)
     if (error.status === 404) return t('errors:notFound')
     if (error.status >= 500) return t('errors:server')

@@ -7,6 +7,8 @@
     "already_claimed": "Deze installatie is al ingesteld. Log in met je toegangssleutel.",
     "not_claimed": "Deze installatie is nog niet ingesteld.",
     "rate_limited": "Te veel pogingen. Wacht een paar minuten.",
+    "rate_limitedFor_one": "Te veel pogingen. Probeer het over {{count}} minuut opnieuw.",
+    "rate_limitedFor_other": "Te veel pogingen. Probeer het over {{count}} minuten opnieuw.",
     "network": "Er is geen verbinding met de server.",
     "file_too_large": "Het bestand is groter dan de maximaal toegestane grootte.",
     "upload_incomplete": "Het uploaden is onderbroken. Probeer het opnieuw.",

@@ -21,7 +21,7 @@ function decodeFileName(header: string | undefined) {
 
 function limit(limiter: RateLimiter, key: string) {
   const wait = limiter.hit(key)
-  if (wait > 0) throw new AppError(429, 'rate_limited', `Too many attempts. Try again in ${Math.ceil(wait / 60)} min.`)
+  if (wait > 0) throw new AppError(429, 'rate_limited', `Too many attempts. Try again in ${Math.ceil(wait / 60)} min.`, undefined, { 'Retry-After': String(wait) })
 }
 
 async function json(c: { req: { json: () => Promise<unknown> } }) {
@@ -48,7 +48,10 @@ export function createApi(env: Env) {
   // Brute force is hopeless against a 160-bit key, but failed attempts are still slowed down;
   // a success resets the counter.
   const loginLimiter = new RateLimiter(10, 15 * 60 * 1000)
-  const setupLimiter = new RateLimiter(10, 60 * 60 * 1000)
+  // Each with its own count: failing one (the installer's uninstall, say) never locks the others.
+  const claimLimiter = new RateLimiter(10, 60 * 60 * 1000)
+  const recoverLimiter = new RateLimiter(10, 60 * 60 * 1000)
+  const uninstallLimiter = new RateLimiter(10, 60 * 60 * 1000)
 
   api.use('*', originGuard)
   api.use('*', resolveActor)
@@ -65,9 +68,9 @@ export function createApi(env: Env) {
   // ── Access ──────────────────────────────────────────────────────
   api.post('/auth/claim', async (c) => {
     const key = clientIp(c)
-    limit(setupLimiter, key)
+    limit(claimLimiter, key)
     const { user, accessKey, session } = await c.get('services').accounts.claim(await json(c), c.req.header('user-agent') ?? null)
-    setupLimiter.reset(key)
+    claimLimiter.reset(key)
     setSessionCookie(c, session.token, session.expiresAt)
     return c.json({ user, accessKey }, 201)
   })
@@ -81,9 +84,9 @@ export function createApi(env: Env) {
   })
   api.post('/auth/recover', async (c) => {
     const key = clientIp(c)
-    limit(setupLimiter, key)
+    limit(recoverLimiter, key)
     const { user, accessKey, session } = await c.get('services').accounts.recover(await json(c), c.req.header('user-agent') ?? null)
-    setupLimiter.reset(key)
+    recoverLimiter.reset(key)
     setSessionCookie(c, session.token, session.expiresAt)
     return c.json({ user, accessKey })
   })
@@ -107,7 +110,7 @@ export function createApi(env: Env) {
   api.post('/account/access-key', async (c) => c.json(await c.get('services').accounts.rotateAccessKey(requireActor(c), await json(c))))
   // The installer's uninstall: no session, authorized by a token it set on this copy's Worker.
   api.post('/uninstall', async (c) => {
-    limit(setupLimiter, clientIp(c))
+    limit(uninstallLimiter, clientIp(c))
     return c.json(await c.get('services').accounts.uninstallFromInstaller(await json(c)))
   })
   api.post('/account/uninstall', async (c) => {

@@ -26,10 +26,15 @@ export function clearSessionCookie(c: Context<AppEnv>) {
   deleteCookie(c, sessionCookieName(env), { path: '/', secure: env.secureCookies })
 }
 
+/**
+ * The agent token in `Authorization: Bearer …`: null when there is none, '' when it is malformed.
+ * Other schemes are not Orqevio's: a reverse proxy that asks for a password (HTTP basic auth)
+ * passes its own credentials on, and those leave the request to the session cookie.
+ */
 export function bearerToken(c: Context) {
-  const header = c.req.header('authorization')
-  if (!header) return null
-  const match = /^Bearer\s+(\S+)$/i.exec(header.trim())
+  const header = c.req.header('authorization')?.trim()
+  if (!header || !/^bearer(?:\s|$)/i.test(header)) return null
+  const match = /^Bearer\s+(\S+)$/i.exec(header)
   return match ? match[1]! : ''
 }
 
@@ -82,9 +87,9 @@ export const originGuard: MiddlewareHandler<AppEnv> = async (c, next) => {
   await next()
 }
 
-/** Vault routes refuse any request carrying an Authorization header, before touching data. */
+/** Vault routes refuse any request carrying a token, agent or OAuth, before touching data. */
 export const sessionOnly: MiddlewareHandler<AppEnv> = async (c, next) => {
-  if (c.req.header('authorization')) {
+  if (bearerToken(c) !== null) {
     throw forbidden('The vault is never accessible to agents or API tokens.', 'vault_isolated')
   }
   await next()

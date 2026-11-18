@@ -1,9 +1,9 @@
 import { mkdirSync } from 'node:fs'
 import path from 'node:path'
-import { loadEnv } from '../env'
+import { loadEnvOrExit } from '../env'
 import { openDatabase, runMigrations } from './client'
 
-const env = loadEnv()
+const env = loadEnvOrExit()
 mkdirSync(path.dirname(env.databasePath), { recursive: true })
 const { db, close } = openDatabase(env.databasePath)
 runMigrations(db, env.migrationsDir)

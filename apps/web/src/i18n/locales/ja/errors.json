@@ -7,6 +7,7 @@
     "already_claimed": "このOrqevioはすでにセットアップされています。アクセスキーでログインしてください。",
     "not_claimed": "このOrqevioはまだセットアップされていません。",
     "rate_limited": "試行回数が多すぎます。数分待ってからお試しください。",
+    "rate_limitedFor_other": "試行回数が多すぎます。{{count}}分後にもう一度お試しください。",
     "network": "サーバーに接続できません。",
     "file_too_large": "ファイルが上限サイズを超えています。",
     "upload_incomplete": "アップロードが中断されました。もう一度お試しください。",
