@@ -465,6 +465,22 @@ describe('MCP server', () => {
     expect(found).toEqual([expect.objectContaining({ id: card.body.id, archived: true })])
   })
 
+  it('takes due dates as the day they name, and refuses free text instead of guessing a day', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const mcp = await connect((await createToken(client, workspaceId, ['tasks:write'])).token)
+    const card = data(await mcp.callTool({ name: 'create_card', arguments: { column_id: columns[0]!.id, title: 'Llamar', due_date: '2026-11-17T23:30-05:00' } }))
+    expect(data(await mcp.callTool({ name: 'get_card', arguments: { card_id: card.card_id } })).due).toBe('2026-11-17T12:00:00.000Z')
+
+    // "12" used to become 2001-12-01, without a word.
+    for (const due_date of ['12', '1', '0000-01-01', 'next friday']) {
+      const refused = await mcp.callTool({ name: 'update_card', arguments: { card_id: card.card_id, due_date } })
+      expect(refused.isError, due_date).toBe(true)
+      expect(text(refused), due_date).toContain('YYYY-MM-DD')
+    }
+    expect(data(await mcp.callTool({ name: 'get_card', arguments: { card_id: card.card_id } })).due).toBe('2026-11-17T12:00:00.000Z')
+  })
+
   it('refuses to append past what a page holds, and leaves the page as it was', async () => {
     const { client, workspaceId } = await signUp(h)
     const { projectId } = await seedBoard(client, workspaceId)

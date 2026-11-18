@@ -9,6 +9,7 @@ import {
   type UndoPlanItemDTO,
   type UndoResultDTO,
   type UndoStatus,
+  dueDay,
   undoInput,
 } from '@orqevio/shared'
 import { type SQL, and, desc, eq, getTableColumns, gt, inArray, or, sql } from 'drizzle-orm'
@@ -70,6 +71,14 @@ class State {
 const fieldKey = (row: HistoryRow) => `${row.entityId}|${row.kind}|${row.subjectId ?? ''}`
 const sameSet = (a: HistoryValue, b: HistoryValue) =>
   Array.isArray(a) && Array.isArray(b) ? a.length === b.length && [...a].sort().every((v, i) => v === [...b].sort()[i]) : a === b
+/**
+ * Two due dates are the same when they name the same day. Older versions kept the time a date was
+ * sent with; now it is the day at 12:00 UTC, so an older value and the one undoing sets agree.
+ */
+const sameDue = (a: HistoryValue, b: HistoryValue) => {
+  const day = (v: HistoryValue) => (typeof v === 'string' ? (dueDay(v) ?? v) : v)
+  return day(a) === day(b)
+}
 const columnOf = (value: HistoryValue) => (value && typeof value === 'object' && !Array.isArray(value) && 'columnId' in value ? (value as CardPlace).columnId : null)
 const fileAt = (value: HistoryValue) =>
   value && typeof value === 'object' && !Array.isArray(value) && 'pageId' in value ? `${(value as AttachmentPlace).cardId ?? ''}|${(value as AttachmentPlace).pageId ?? ''}` : null
@@ -514,7 +523,7 @@ export class UndoService {
         case 'card.description':
           return body('cards', 'description', back?.trashId)
         case 'card.due':
-          return value(card.dueAt?.toISOString() ?? null)
+          return value(card.dueAt?.toISOString() ?? null, sameDue)
         case 'card.labels': {
           // Labels deleted from its board since can't go back on: undoing it sets the others.
           const wanted = Array.isArray(before) ? before.map(String) : []
