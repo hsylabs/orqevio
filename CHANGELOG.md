@@ -56,7 +56,8 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - a full vault (5,000 items) says so in your language.
 - Accessibility:
   - buttons that show only their icon on a phone keep their names for screen readers;
-  - a dialog opened from a menu gives the focus back to the menu's button, and a form or field opened from a menu takes the focus (**New workspace**, the vault's **New**).
+  - a dialog opened from a menu gives the focus back to the menu's button, and a form or field opened from a menu takes the focus (**New workspace**, the vault's **New**);
+  - a long menu scrolls within the screen: with many workspaces, **New workspace** and **Settings** used to be out of reach.
 - The default workspace name is never cut in the middle of an emoji.
 - Errors about the data, permissions or a change made meanwhile are shown in your language instead of the server's English. The strength meter, the two-step codes' seconds and the editor's to-do checkboxes, for screen readers, speak your language too.
 - Japanese headings break between phrases, not in the middle of a word.
