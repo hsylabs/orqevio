@@ -15,6 +15,7 @@ import { del, errorMessage, patch, post } from '../../lib/api'
 import { keys } from '../../lib/queries'
 import { applyTheme } from '../../lib/theme'
 import { AccessKeyReveal } from '../auth/AccessKeyReveal'
+import { BackupsSection } from './BackupsSection'
 import { CopyVersion } from './CopyVersion'
 import { PageHeader } from '../shell/PageHeader'
 import { UninstallSection } from './UninstallSection'
@@ -184,6 +185,10 @@ export function SettingsPage() {
 
           <Section title={t('copy.title')} description={t('copy.description')}>
             <CopyVersion />
+          </Section>
+
+          <Section title={t('backups.title')} description={t('backups.description')}>
+            <BackupsSection />
           </Section>
 
           <Section title={t('erase.title')} description={t('erase.description')}>

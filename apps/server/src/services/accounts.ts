@@ -122,7 +122,8 @@ export class AccountService {
 
   private uninstalledDetails(at: string, backupsKept: boolean): UninstalledDTO {
     const { install, copyName, copyBucket } = this.deps.env
-    return { at, install, copyName, bucket: copyBucket, backups: backupsKept ? (this.deps.backups?.where ?? null) : null }
+    const where = this.deps.backups?.where
+    return { at, install, copyName, bucket: copyBucket, backups: where ? { kept: backupsKept, where } : null }
   }
 
   /** Uninstalling from Settings, confirmed with the access key. */

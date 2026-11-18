@@ -87,7 +87,7 @@ function fakeCopy({ name = 'ana', account = 'acc-1', lagging = 0 } = {}) {
       // Like the copy: the attachments go, and its backups only when asked.
       const current = JSON.parse(readFileSync(state, 'utf8'))
       writeFileSync(state, JSON.stringify({ ...current, bucket: 'empty', ...(body?.deleteBackups && current.backups ? { backups: 'empty' } : {}) }))
-      return respond(200, { at: '2026-11-14T12:00:00.000Z', install: 'cli', copyName: name, bucket: null, backups: body?.deleteBackups ? null : { kind: 'bucket', name: `${name}-backups` } })
+      return respond(200, { at: '2026-11-14T12:00:00.000Z', install: 'cli', copyName: name, bucket: null, backups: { kept: !body?.deleteBackups, where: { kind: 'bucket', name: `${name}-backups` } } })
     }
     return respond(404, {})
   }) as typeof fetch

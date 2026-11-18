@@ -58,6 +58,37 @@
     "kept": "Deine Daten, dein Zugangsschlüssel und dein Tresor bleiben erhalten.",
     "releaseNotes": "Neuerungen ansehen"
   },
+  "backups": {
+    "title": "Sicherungen",
+    "description": "Diese Instanz sichert sich jeden Tag selbst: alles so, wie es ist, auch den verschlüsselten Tresor, den Papierkorb, den Verlauf und die Anhänge. Die letzten 7 werden aufbewahrt, getrennt von ihren Daten.",
+    "whereFolder": "Sie liegen im Ordner <code>{{name}}</code> des Servers. Um sie auf einer anderen Festplatte oder einem anderen Volume abzulegen, setze BACKUP_DIR.",
+    "whereBucket": "Sie liegen im R2-Bucket <code>{{name}}</code> deines Cloudflare-Kontos, getrennt von den Anhängen.",
+    "off": "Diese Instanz erstellt keine Sicherungen (BACKUPS=off).",
+    "now": "Jetzt sichern",
+    "made": "Sicherung erstellt",
+    "none": "Noch keine Sicherungen: Die erste wird innerhalb einer Stunde erstellt.",
+    "list": "Aufbewahrte Sicherungen",
+    "kind": {
+      "daily": "Automatisch",
+      "manual": "Von dir erstellt",
+      "before-restore": "Vor dem Wiederherstellen erstellt"
+    },
+    "contents": "Karten: {{cards}} · Dokumente: {{pages}} · Anhänge: {{files}}",
+    "missingFiles_one": "{{count}} Anhang konnte nicht hineinkopiert werden.",
+    "missingFiles_other": "{{count}} Anhänge konnten nicht hineinkopiert werden.",
+    "newer": "Mit Orqevio {{version}} erstellt: Aktualisiere diese Instanz, um sie wiederherzustellen.",
+    "restore": "Wiederherstellen…",
+    "keep_one": "Die letzte tägliche Sicherung wird aufbewahrt, dazu die vor der letzten Wiederherstellung erstellte.",
+    "keep_other": "Die letzten {{count}} täglichen Sicherungen werden aufbewahrt, dazu die vor der letzten Wiederherstellung erstellte.",
+    "restoreTitle": "Diese Sicherung wiederherstellen?",
+    "restoreDescription": "Diese Instanz wird wieder so, wie sie am {{date}} war.",
+    "restoreLoses": "Alles geht zurück: Arbeitsbereiche, Dokumente, Karten, Tresor, Agenten, Papierkorb und Verlauf. Was sich seitdem geändert hat, geht verloren.",
+    "restoreSafety": "Vorher wird eine Sicherung der Instanz, so wie sie jetzt ist, erstellt und getrennt aufbewahrt, damit du zu ihr zurückkehren kannst.",
+    "restoreSessions": "Alle Sitzungen enden. Hier bleibst du angemeldet, und dein Zugangsschlüssel ist der, den du jetzt verwendest.",
+    "accessKey": "Zugangsschlüssel",
+    "typeName": "Gib „{{name}}“ ein, um zu bestätigen",
+    "restoreConfirm": "Wiederherstellen"
+  },
   "erase": {
     "title": "Diese Instanz löschen",
     "description": "Löscht deine Arbeitsbereiche, deinen Tresor und deine Tokens endgültig. Die Instanz fragt danach wieder nach dem Einrichtungscode.",
@@ -82,6 +113,17 @@
     "oneCommand": "Mit dem Befehl installiert? Auf deinem Computer erledigt <code>{{command}}</code> beide Schritte auf einmal.",
     "accessKey": "Zugangsschlüssel",
     "typeName": "Gib „{{name}}“ ein, um zu bestätigen",
-    "confirm": "Endgültig deinstallieren"
+    "confirm": "Endgültig deinstallieren",
+    "backups": {
+      "legend": "Ihre Sicherungen",
+      "keep": {
+        "label": "Behalten",
+        "hint": "Eine mit demselben Namen oder mit demselben Sicherungsordner neu installierte Instanz kann sie wiederherstellen. Lösche sie von Hand, wenn du sie nicht mehr brauchst."
+      },
+      "delete": {
+        "label": "Auch löschen",
+        "hint": "Danach lässt sich nichts von dieser Instanz zurückholen."
+      }
+    }
   }
 }

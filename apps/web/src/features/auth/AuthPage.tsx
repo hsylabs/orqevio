@@ -429,6 +429,23 @@ function RecoveredAgents({ reason }: { reason: RecoveryReason }) {
   )
 }
 
+/** What became of an uninstalled copy's backups, kept apart from its data: where they are, and what is left to do. */
+function UninstalledBackups({ backups, docker }: { backups: NonNullable<UninstalledDTO['backups']>; docker: boolean }) {
+  const { t } = useTranslation('auth')
+  const { kept, where } = backups
+  if (!kept && where.kind === 'folder') return null
+  const code = <code className="font-mono text-[12px] break-words text-ink" />
+  const key = kept ? (where.kind === 'folder' ? 'keptFolder' : 'keptBucket') : 'deletedBucket'
+  return (
+    <div className="mt-3 rounded-[14px] border border-line bg-sunken p-4 text-[13px] leading-relaxed text-ink-2">
+      <p>
+        <Trans t={t} i18nKey={`uninstalled.backups.${key}`} values={{ name: where.name }} components={{ code }} />
+      </p>
+      {kept && where.kind === 'folder' && docker && <CommandLine value={`docker compose cp app:${where.name} ./orqevio-backups`} />}
+    </div>
+  )
+}
+
 /** An uninstalled copy: no data is left, only the copy itself, and how to remove it depends on how it was installed. */
 function Uninstalled({ details }: { details: UninstalledDTO }) {
   const { t } = useTranslation(['auth', 'common'])
@@ -470,6 +487,7 @@ function Uninstalled({ details }: { details: UninstalledDTO }) {
         )}
         {details.install === 'source' && <p>{t('uninstalled.source')}</p>}
       </div>
+      {details.backups && <UninstalledBackups backups={details.backups} docker={details.install === 'docker'} />}
     </AuthLayout>
   )
 }

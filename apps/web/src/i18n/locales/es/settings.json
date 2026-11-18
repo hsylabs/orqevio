@@ -58,6 +58,39 @@
     "kept": "Tus datos, tu clave y tu bóveda se conservan.",
     "releaseNotes": "Ver las novedades"
   },
+  "backups": {
+    "title": "Copias de seguridad",
+    "description": "Cada día, esta copia hace una copia de seguridad de sí misma: de todo tal cual, con la bóveda cifrada, la papelera, el historial y los adjuntos. Se conservan las 7 últimas, aparte de sus datos.",
+    "whereFolder": "Están en la carpeta <code>{{name}}</code> del servidor. Para guardarlas en otro disco o volumen, usa BACKUP_DIR.",
+    "whereBucket": "Están en el bucket de R2 <code>{{name}}</code> de tu cuenta de Cloudflare, aparte de los adjuntos.",
+    "off": "Esta copia no hace copias de seguridad (BACKUPS=off).",
+    "now": "Hacer una copia ahora",
+    "made": "Copia de seguridad hecha",
+    "none": "Todavía no hay copias: la primera se hace antes de una hora.",
+    "list": "Copias guardadas",
+    "kind": {
+      "daily": "Automática",
+      "manual": "Hecha por ti",
+      "before-restore": "Hecha antes de restaurar"
+    },
+    "contents": "Tarjetas: {{cards}} · Documentos: {{pages}} · Adjuntos: {{files}}",
+    "missingFiles_one": "No se ha podido copiar {{count}} adjunto en ella.",
+    "missingFiles_many": "No se han podido copiar {{count}} adjuntos en ella.",
+    "missingFiles_other": "No se han podido copiar {{count}} adjuntos en ella.",
+    "newer": "Hecha con Orqevio {{version}}: actualiza esta copia para restaurarla.",
+    "restore": "Restaurar…",
+    "keep_one": "Se conserva la última copia diaria, y la hecha antes de la última restauración.",
+    "keep_many": "Se conservan las {{count}} últimas copias diarias, y la hecha antes de la última restauración.",
+    "keep_other": "Se conservan las {{count}} últimas copias diarias, y la hecha antes de la última restauración.",
+    "restoreTitle": "¿Restaurar esta copia de seguridad?",
+    "restoreDescription": "Esta copia vuelve a estar como el {{date}}.",
+    "restoreLoses": "Todo vuelve atrás: espacios, documentos, tarjetas, bóveda, agentes, papelera e historial. Lo que haya cambiado desde entonces se pierde.",
+    "restoreSafety": "Antes se hace una copia de seguridad de cómo está ahora, guardada aparte, para que puedas volver a ella.",
+    "restoreSessions": "Se cierran todas las sesiones. Aquí sigues dentro, y tu clave de acceso es la que usas ahora.",
+    "accessKey": "Clave de acceso",
+    "typeName": "Escribe «{{name}}» para confirmar",
+    "restoreConfirm": "Restaurar"
+  },
   "erase": {
     "title": "Borrar esta copia",
     "description": "Borra tus espacios, tu bóveda y tus tokens de forma permanente. La copia volverá a pedir el código de configuración.",
@@ -82,6 +115,17 @@
     "oneCommand": "¿La instalaste con el comando? Desde tu ordenador, <code>{{command}}</code> hace los dos pasos de una vez.",
     "accessKey": "Clave de acceso",
     "typeName": "Escribe «{{name}}» para confirmar",
-    "confirm": "Desinstalar para siempre"
+    "confirm": "Desinstalar para siempre",
+    "backups": {
+      "legend": "Sus copias de seguridad",
+      "keep": {
+        "label": "Conservarlas",
+        "hint": "Una copia que vuelvas a instalar con el mismo nombre, o con la misma carpeta de copias, podrá restaurarlas. Bórralas a mano cuando ya no las necesites."
+      },
+      "delete": {
+        "label": "Borrarlas también",
+        "hint": "Después no se podrá recuperar nada de esta copia."
+      }
+    }
   }
 }

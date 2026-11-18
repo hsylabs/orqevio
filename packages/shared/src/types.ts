@@ -74,8 +74,8 @@ export interface UninstalledDTO {
   copyName: string | null
   /** Its R2 bucket; null when it is the default, `<copyName>-uploads`. */
   bucket: string | null
-  /** Where its backups are, when they were kept (see BackupsDTO.where); null when they were deleted too. */
-  backups: BackupPlaceDTO | null
+  /** Where its backups are (see BackupsDTO.where) and whether they were kept or deleted; null when it made none. */
+  backups: { kept: boolean; where: BackupPlaceDTO } | null
 }
 
 // ── Backups ──────────────────────────────────────────────────────

@@ -149,7 +149,7 @@ describe('backups', () => {
     expect((await first.client.post('/api/account/uninstall', { accessKey: first.accessKey })).status).toBe(400)
     const kept = await first.client.post('/api/account/uninstall', { accessKey: first.accessKey, deleteBackups: false })
     expect(kept.status).toBe(200)
-    expect(kept.body.backups).toEqual({ kind: 'folder', name: keep.env.backupDir })
+    expect(kept.body.backups).toEqual({ kept: true, where: { kind: 'folder', name: keep.env.backupDir } })
     expect(await keep.services.backups.runIfDue(Date.now() + 2 * 24 * 60 * 60 * 1000)).toBeNull()
     expect((await keep.backups!.list('snapshots/')).length).toBe(2)
 
@@ -157,10 +157,11 @@ describe('backups', () => {
     const second = await signUp(wipe)
     expect((await second.client.post('/api/backups')).status).toBe(201)
     const wiped = await second.client.post('/api/account/uninstall', { accessKey: second.accessKey, deleteBackups: true })
-    expect(wiped.body.backups).toBeNull()
+    expect(wiped.body.backups).toEqual({ kept: false, where: { kind: 'folder', name: wipe.env.backupDir } })
     expect(await wipe.backups!.list('')).toEqual([])
     // The page shown afterwards says so too.
-    expect((await new Client(wipe).get('/api/auth/session')).body.uninstalled.backups).toBeNull()
+    expect((await new Client(wipe).get('/api/auth/session')).body.uninstalled.backups.kept).toBe(false)
+    expect((await new Client(keep).get('/api/auth/session')).body.uninstalled.backups.kept).toBe(true)
   })
 
   it('restores a backup made by an earlier version into a new copy, and brings it up to date', async () => {
