@@ -20,6 +20,8 @@ Necesitas una cuenta de Cloudflare (el plan gratuito basta). La primera vez se a
 navegador para que inicies sesión.`,
   no: /^n/i,
   yesNo: '[S/n]',
+  yes: /^s/i,
+  noYes: '[s/N]',
   extraArgument: (arg) => `Sobra «${arg}».`,
   unknownOption: (option) => `No conozco la opción «${option}».`,
   missingValue: (option) => `«${option}» necesita un valor.`,
@@ -115,6 +117,26 @@ navegador para que inicies sesión.`,
       `El bucket «${bucket}» todavía guarda adjuntos, y Cloudflare solo borra buckets vacíos.`,
       'El instalador puede pedirle a tu copia que los borre: la autoriza desde tu cuenta de Cloudflare, sin necesidad de tu clave de acceso.',
       'Deja la respuesta en blanco si prefieres hacerlo de otra forma.',
+    ].join('\n'),
+  askDeleteBackups: (bucket) =>
+    `¿Borrar también sus copias de seguridad? El bucket «${bucket}» guarda sus 7 últimas copias diarias: si lo conservas, una copia que vuelvas a instalar con el mismo nombre podrá restaurarlas.`,
+  emptyingBackupsThroughCopy: (bucket) =>
+    [
+      '',
+      `El bucket «${bucket}» todavía guarda copias de seguridad, y Cloudflare solo borra buckets vacíos.`,
+      'El instalador puede pedirle a tu copia que las borre: la autoriza desde tu cuenta de Cloudflare, sin necesidad de tu clave de acceso.',
+      'Deja la respuesta en blanco para hacerlo de otra forma.',
+    ].join('\n'),
+  backupsNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `El bucket «${bucket}» todavía guarda copias de seguridad, y Cloudflare solo borra buckets vacíos. No se ha borrado nada.`,
+      `Vacíalo en el panel de Cloudflare (R2 → ${bucket} → Settings → Empty Bucket) y vuelve a ejecutar ${retryCommand}.`,
+    ].join('\n'),
+  backupsKept: (bucket, installCommand) =>
+    [
+      `Sus copias de seguridad siguen en el bucket «${bucket}». Para recuperarlas, instala una copia con el mismo nombre (${installCommand}) y restaura una en Ajustes → Copias de seguridad.`,
+      `Para borrarlas, vacía y borra ese bucket en el panel de Cloudflare: R2 → ${bucket}.`,
     ].join('\n'),
   askAddress: (name) => `Dirección de tu copia (por ejemplo, https://${name}.<tu-subdominio>.workers.dev): `,
   badAddress: (address) => `«${address}» no es una dirección: usa la que abres en el navegador.`,

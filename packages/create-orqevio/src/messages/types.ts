@@ -7,6 +7,9 @@ export interface Messages {
   no: RegExp
   /** The hint after a yes/no question whose default is yes, such as "[Y/n]". */
   yesNo: string
+  /** For questions that mean no unless the answer is yes (deleting the backups). */
+  yes: RegExp
+  noYes: string
   extraArgument(arg: string): string
   unknownOption(option: string): string
   missingValue(option: string): string
@@ -49,6 +52,10 @@ export interface Messages {
   bucketNotEmpty(bucket: string, retryCommand: string): string
   /** Before asking for the copy's address and access key, to have it empty the bucket. */
   emptyingThroughCopy(bucket: string): string
+  askDeleteBackups(bucket: string): string
+  emptyingBackupsThroughCopy(bucket: string): string
+  backupsNotEmpty(bucket: string, retryCommand: string): string
+  backupsKept(bucket: string, installCommand: string): string
   askAddress(name: string): string
   badAddress(address: string): string
   notOrqevio(origin: string): string

@@ -20,6 +20,8 @@ Du brauchst ein Cloudflare-Konto (der kostenlose Plan reicht aus). Beim ersten M
 sich dein Browser, damit du dich anmelden kannst.`,
   no: /^n/i,
   yesNo: '[J/n]',
+  yes: /^j/i,
+  noYes: '[j/N]',
   extraArgument: (arg) => `Unerwartetes Argument „${arg}“.`,
   unknownOption: (option) => `Unbekannte Option „${option}“.`,
   missingValue: (option) => `Die Option „${option}“ braucht einen Wert.`,
@@ -116,6 +118,26 @@ sich dein Browser, damit du dich anmelden kannst.`,
       `Der Bucket „${bucket}“ enthält noch Anhänge, und Cloudflare löscht nur leere Buckets.`,
       'Der Installer kann deine Instanz die Anhänge löschen lassen: Er autorisiert sie über dein Cloudflare-Konto, ohne deinen Zugangsschlüssel.',
       'Lass die Antwort leer, wenn du es anders machen willst.',
+    ].join('\n'),
+  askDeleteBackups: (bucket) =>
+    `Auch die Sicherungen löschen? Der Bucket „${bucket}“ enthält die letzten 7 täglichen Sicherungen: Behältst du ihn, kann eine mit demselben Namen neu installierte Instanz sie wiederherstellen.`,
+  emptyingBackupsThroughCopy: (bucket) =>
+    [
+      '',
+      `Der Bucket „${bucket}“ enthält noch Sicherungen, und Cloudflare löscht nur leere Buckets.`,
+      'Das Installationsprogramm kann deine Instanz bitten, sie zu löschen: Es autorisiert sie über dein Cloudflare-Konto, ohne deinen Zugangsschlüssel.',
+      'Lass die Antwort leer, um es anders zu machen.',
+    ].join('\n'),
+  backupsNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `Der Bucket „${bucket}“ enthält noch Sicherungen, und Cloudflare löscht nur leere Buckets. Es wurde nichts gelöscht.`,
+      `Leere ihn im Cloudflare-Dashboard (R2 → ${bucket} → Settings → Empty Bucket) und führe dann ${retryCommand} noch einmal aus.`,
+    ].join('\n'),
+  backupsKept: (bucket, installCommand) =>
+    [
+      `Die Sicherungen bleiben im Bucket „${bucket}“. Um sie zurückzuholen, installiere eine Instanz mit demselben Namen (${installCommand}) und stelle eine unter Einstellungen → Sicherungen wieder her.`,
+      `Um sie zu löschen, leere und lösche diesen Bucket im Cloudflare-Dashboard: R2 → ${bucket}.`,
     ].join('\n'),
   askAddress: (name) => `Adresse deiner Instanz (zum Beispiel https://${name}.<deine-subdomain>.workers.dev): `,
   badAddress: (address) => `„${address}“ ist keine Adresse: Nimm die, die du im Browser öffnest.`,

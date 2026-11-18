@@ -6,7 +6,7 @@ import path from 'node:path'
 import { createInterface } from 'node:readline/promises'
 import { parseArgs } from 'node:util'
 import { readFileSync } from 'node:fs'
-import { DEFAULT_NAME, type BaseConfig, bucketName, copyConfig, isValidName, loadOrqevio } from './config'
+import { DEFAULT_NAME, type BaseConfig, backupBucketName, bucketName, copyConfig, isValidName, loadOrqevio } from './config'
 import { parseJsonc } from './jsonc'
 import { CATALOGS, LANGUAGES, type Language, type Messages, detectLanguage, isLanguage } from './messages'
 import { generateSetupCode } from './setup-code'
@@ -430,40 +430,54 @@ async function putSecret(name: string, key: string, value: string, env: Record<s
  * the rest of the data. Cloudflare only deletes an empty bucket, and Wrangler cannot
  * list or empty one: when it still holds attachments, the copy itself deletes them
  * (as Settings → Uninstall does), signed in with the access key the person types.
- * Nothing is deleted until the bucket is gone.
+ * Nothing is deleted until the bucket is gone. The backups bucket goes only if the
+ * person says so: kept, a copy installed again with the same name finds its backups.
  */
 async function uninstall(name: string, workerFound: boolean, env: Record<string, string>, io: Io, m: Messages, deps: Deps) {
   const bucket = bucketName(name)
+  const backups = backupBucketName(name)
   const bucketFound = await bucketExists(bucket, env)
-  if (!workerFound && bucketFound === false) {
+  const backupsFound = await bucketExists(backups, env)
+  if (!workerFound && bucketFound === false && backupsFound === false) {
     io.err(m.nothingToUninstall(name))
     return 1
   }
   io.out(m.uninstallWarning(name, bucket))
+  // No unless the answer is yes: an uninstall by mistake can still be undone.
+  const deleteBackups = backupsFound !== false && m.yes.test((await io.ask!(`${m.askDeleteBackups(backups)} ${m.noYes} `)).trim())
   if ((await io.ask!(m.askUninstallName(name))).trim() !== name) {
     io.err(m.nothingDeleted)
     return 1
   }
   const retryCommand = `npx create-orqevio@latest uninstall${nameFlag(name)}`
-  if (bucketFound !== false) {
-    let bucketDeleted = await deleteBucket(bucket, env, io)
-    if (bucketDeleted === 'not-empty' && workerFound && (await emptyThroughCopy(name, bucket, env, io, m, deps))) {
-      bucketDeleted = await deleteBucket(bucket, env, io)
+  const targets = [...(bucketFound !== false ? [bucket] : []), ...(deleteBackups ? [backups] : [])]
+  const results = new Map<string, Awaited<ReturnType<typeof deleteBucket>>>()
+  for (const target of targets) results.set(target, await deleteBucket(target, env, io))
+  const full = () => targets.filter((target) => results.get(target) === 'not-empty')
+  if (full().length && workerFound) {
+    const message = full().includes(bucket) ? m.emptyingThroughCopy(bucket) : m.emptyingBackupsThroughCopy(backups)
+    if (await emptyThroughCopy(name, message, env, io, m, deps, deleteBackups)) {
+      for (const target of full()) results.set(target, await deleteBucket(target, env, io))
     }
-    if (bucketDeleted === 'not-empty') {
-      io.err(m.bucketNotEmpty(bucket, retryCommand))
-      return 1
-    }
-    if (bucketDeleted === 'failed') {
-      io.err(m.uninstallFailed)
-      return 1
-    }
+  }
+  if (results.get(bucket) === 'not-empty') {
+    io.err(m.bucketNotEmpty(bucket, retryCommand))
+    return 1
+  }
+  if (results.get(backups) === 'not-empty') {
+    io.err(m.backupsNotEmpty(backups, retryCommand))
+    return 1
+  }
+  if ([...results.values()].includes('failed')) {
+    io.err(m.uninstallFailed)
+    return 1
   }
   if (workerFound && (await runWrangler(['delete', '--name', name, '--force'], { env })).code !== 0) {
     io.err(m.uninstallFailed)
     return 1
   }
   io.out(m.uninstalled(name, 'npx wrangler logout'))
+  if (backupsFound !== false && !deleteBackups) io.out(m.backupsKept(backups, `npx create-orqevio@latest${nameFlag(name)}`))
   return 0
 }
 
@@ -483,9 +497,9 @@ async function deleteBucket(bucket: string, env: Record<string, string>, io: Io)
  * with it: a copy at an address typed by mistake (another account, another name) refuses.
  * A blank answer stops without deleting anything. True once the copy is empty.
  */
-async function emptyThroughCopy(name: string, bucket: string, env: Record<string, string>, io: Io, m: Messages, deps: Deps) {
+async function emptyThroughCopy(name: string, message: string, env: Record<string, string>, io: Io, m: Messages, deps: Deps, deleteBackups: boolean) {
   const wait = deps.uninstallWait ?? UNINSTALL_WAIT
-  io.out(m.emptyingThroughCopy(bucket))
+  io.out(message)
   for (let attempt = 0; attempt < 3; attempt++) {
     const address = (await io.ask!(m.askAddress(name))).trim()
     if (!address) return false
@@ -507,7 +521,7 @@ async function emptyThroughCopy(name: string, bucket: string, env: Record<string
     const started = Date.now()
     let saidWaiting = false
     for (;;) {
-      const result = await emptyCopy(origin, name, token, deps.fetch)
+      const result = await emptyCopy(origin, name, token, deps.fetch, deleteBackups)
       if (result.ok) {
         io.out(m.copyEmptied)
         return true

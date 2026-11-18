@@ -22,6 +22,8 @@ Cloudflareアカウントが必要です（無料プランで十分です）。�
   // n, no, いいえ, and the full-width ｎ that a Japanese input method may type.
   no: /^(n|ｎ|いいえ)/i,
   yesNo: '[Y/n]',
+  yes: /^(y|ｙ|はい)/i,
+  noYes: '[y/N]',
   extraArgument: (arg) => `予期しない引数「${arg}」があります。`,
   unknownOption: (option) => `不明なオプション「${option}」です。`,
   missingValue: (option) => `オプション「${option}」には値が必要です。`,
@@ -118,6 +120,26 @@ Cloudflareアカウントが必要です（無料プランで十分です）。�
       `バケット「${bucket}」にはまだ添付ファイルがあり、Cloudflareは空のバケットしか削除できません。`,
       'インストーラーがCloudflareアカウントからOrqevioに許可を与え、添付ファイルを削除させることができます。アクセスキーは不要です。',
       '別の方法で行う場合は、何も入力せずにEnterを押してください。',
+    ].join('\n'),
+  askDeleteBackups: (bucket) =>
+    `バックアップも削除しますか？ バケット「${bucket}」には直近7日分のバックアップがあります。残しておけば、同じ名前で入れ直したOrqevioで復元できます。`,
+  emptyingBackupsThroughCopy: (bucket) =>
+    [
+      '',
+      `バケット「${bucket}」にはまだバックアップがあり、Cloudflareは空のバケットしか削除できません。`,
+      'インストーラーからOrqevioに削除を頼めます。アクセスキーは不要で、あなたのCloudflareアカウントから許可します。',
+      '別の方法で行う場合は、何も入力せずにEnterを押してください。',
+    ].join('\n'),
+  backupsNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `バケット「${bucket}」にはまだバックアップがあり、Cloudflareは空のバケットしか削除できません。何も削除していません。`,
+      `Cloudflareのダッシュボード（R2 → ${bucket} → Settings → Empty Bucket）で空にしてから、もう一度 ${retryCommand} を実行してください。`,
+    ].join('\n'),
+  backupsKept: (bucket, installCommand) =>
+    [
+      `バックアップはバケット「${bucket}」に残っています。戻すには、同じ名前でインストールし直し（${installCommand}）、設定 → バックアップから復元してください。`,
+      `削除するには、Cloudflareのダッシュボードでそのバケットを空にしてから削除してください：R2 → ${bucket}`,
     ].join('\n'),
   askAddress: (name) => `Orqevioのアドレス（例：https://${name}.<サブドメイン>.workers.dev）：`,
   badAddress: (address) => `「${address}」はアドレスではありません。ブラウザーで開いているアドレスを使ってください。`,
