@@ -20,6 +20,8 @@ Você precisa de uma conta da Cloudflare (o plano gratuito basta). Na primeira v
 navegador abre para você fazer login.`,
   no: /^n/i,
   yesNo: '[S/n]',
+  yes: /^s/i,
+  noYes: '[s/N]',
   extraArgument: (arg) => `Argumento inesperado: “${arg}”.`,
   unknownOption: (option) => `Opção desconhecida: “${option}”.`,
   missingValue: (option) => `A opção “${option}” precisa de um valor.`,
@@ -115,6 +117,26 @@ navegador abre para você fazer login.`,
       `O bucket “${bucket}” ainda guarda anexos, e a Cloudflare só apaga buckets vazios.`,
       'O instalador pode pedir que a sua cópia os apague: ele a autoriza pela sua conta da Cloudflare, sem precisar da sua chave de acesso.',
       'Deixe a resposta em branco se preferir fazer de outra forma.',
+    ].join('\n'),
+  askDeleteBackups: (bucket) =>
+    `Apagar também os backups? O bucket “${bucket}” guarda os 7 últimos backups diários: se você o mantiver, uma cópia instalada de novo com o mesmo nome poderá restaurá-los.`,
+  emptyingBackupsThroughCopy: (bucket) =>
+    [
+      '',
+      `O bucket “${bucket}” ainda guarda backups, e a Cloudflare só apaga buckets vazios.`,
+      'O instalador pode pedir à sua cópia que os apague: ele a autoriza a partir da sua conta da Cloudflare, sem precisar da sua chave de acesso.',
+      'Deixe a resposta em branco para fazer isso de outra forma.',
+    ].join('\n'),
+  backupsNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `O bucket “${bucket}” ainda guarda backups, e a Cloudflare só apaga buckets vazios. Nada foi apagado.`,
+      `Esvazie-o no painel da Cloudflare (R2 → ${bucket} → Settings → Empty Bucket) e execute ${retryCommand} de novo.`,
+    ].join('\n'),
+  backupsKept: (bucket, installCommand) =>
+    [
+      `Os backups continuam no bucket “${bucket}”. Para recuperá-los, instale uma cópia com o mesmo nome (${installCommand}) e restaure um em Configurações → Backups.`,
+      `Para apagá-los, esvazie e apague esse bucket no painel da Cloudflare: R2 → ${bucket}.`,
     ].join('\n'),
   askAddress: (name) => `Endereço da sua cópia (por exemplo, https://${name}.<seu-subdominio>.workers.dev): `,
   badAddress: (address) => `“${address}” não é um endereço: use o que você abre no navegador.`,

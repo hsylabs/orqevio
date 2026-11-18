@@ -7,14 +7,23 @@
     "already_claimed": "Esta cópia já está configurada. Entre com sua chave de acesso.",
     "not_claimed": "Esta cópia ainda não foi configurada.",
     "rate_limited": "Muitas tentativas. Aguarde alguns minutos.",
+    "rate_limitedFor_one": "Muitas tentativas. Tente novamente em {{count}} minuto.",
+    "rate_limitedFor_many": "Muitas tentativas. Tente novamente em {{count}} minutos.",
+    "rate_limitedFor_other": "Muitas tentativas. Tente novamente em {{count}} minutos.",
     "network": "Sem conexão com o servidor.",
     "file_too_large": "O arquivo excede o tamanho máximo permitido.",
     "upload_incomplete": "O envio foi interrompido. Tente novamente.",
     "last_workspace": "Você precisa manter pelo menos um espaço.",
     "restore_place_in_trash": "Restaure primeiro aquilo a que isto pertence: também está na lixeira.",
-    "restore_place_gone": "O lugar a que pertencia não existe mais, e não há outro onde colocá-lo."
+    "restore_place_gone": "O lugar a que pertencia não existe mais, e não há outro onde colocá-lo.",
+    "vault_key_changed": "O cofre mudou em outra aba ou em outro dispositivo. Abra-o de novo.",
+    "too_many_columns": "Um quadro comporta até 20 colunas.",
+    "vault_full": "O cofre comporta até 5.000 itens. Exclua os que você não usa mais para adicionar outros."
   },
   "notFound": "O item não foi encontrado.",
   "server": "Algo deu errado no servidor. Tente novamente.",
-  "unknown": "Algo deu errado. Tente novamente."
+  "unknown": "Algo deu errado. Tente novamente.",
+  "invalid": "Algum dado não é válido. Revise e tente de novo.",
+  "forbidden": "Você não tem permissão para fazer isso.",
+  "conflict": "Isso mudou nesse meio-tempo. Recarregue e tente de novo."
 }

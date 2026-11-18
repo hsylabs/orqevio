@@ -1,6 +1,6 @@
 import type { AccessStateDTO, MeDTO, Theme, UninstalledDTO, UserDTO } from '@orqevio/shared'
-import { DEFAULT_LOCALE, defaultWorkspaceName, isLocale } from '@orqevio/shared'
-import { claimInput, confirmAccessKeyInput, installerUninstallInput, recoverInput, rotateAccessKeyInput, unlockInput, updateAccountInput } from '@orqevio/shared'
+import { DEFAULT_LOCALE, clip, defaultWorkspaceName, isLocale } from '@orqevio/shared'
+import { claimInput, confirmAccessKeyInput, installerUninstallInput, recoverInput, rotateAccessKeyInput, uninstallInput, unlockInput, updateAccountInput } from '@orqevio/shared'
 import { and, asc, eq, gt, isNull, ne, sql } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
 import { MIN_SETUP_CODE_LENGTH, generateAccessKey, generateSetupCode, isWeakSetupCode, randomToken, safeEqual, secretFingerprint, sha256 } from '../auth/crypto'
@@ -27,6 +27,8 @@ const toUserDTO = (u: typeof users.$inferSelect): UserDTO => ({
 
 /** Where the mark of an uninstalled copy is kept (copy_state), with when it happened. */
 export const UNINSTALLED_KEY = 'uninstalled'
+/** Whether the backups were kept when the copy was uninstalled ("kept" or "deleted"). */
+const UNINSTALLED_BACKUPS_KEY = 'uninstalled_backups'
 /** Every table of the copy, each after those that point at it. */
 const UNINSTALL_ORDER = [
   schema.history,
@@ -75,6 +77,13 @@ const invalidAccessKey = () => forbidden('The access key is not valid', 'invalid
 export class AccountService {
   /** Generated when the operator did not set SETUP_CODE; lives only in memory. */
   private generatedSetupCode: string | null = null
+  /** The backups, which uninstalling waits for and may delete (set by createServices: they depend on this service). */
+  private backups: { close(): Promise<void>; reopen(): void; deleteAll(): Promise<void> } | null = null
+
+  useBackups(backups: { close(): Promise<void>; reopen(): void; deleteAll(): Promise<void> }) {
+    this.backups = backups
+  }
+
   /** Read once: uninstalling is final, so a copy found uninstalled stays so. */
   private uninstalledState: UninstalledDTO | null | undefined
 
@@ -112,20 +121,23 @@ export class AccountService {
   async uninstalled(): Promise<UninstalledDTO | null> {
     if (this.uninstalledState !== undefined && this.uninstalledState !== null) return this.uninstalledState
     const [row] = await this.deps.db.select({ value: copyState.value }).from(copyState).where(eq(copyState.key, UNINSTALLED_KEY))
-    this.uninstalledState = row ? this.uninstalledDetails(row.value) : null
+    const [backups] = row ? await this.deps.db.select({ value: copyState.value }).from(copyState).where(eq(copyState.key, UNINSTALLED_BACKUPS_KEY)) : []
+    this.uninstalledState = row ? this.uninstalledDetails(row.value, backups?.value !== 'deleted') : null
     return this.uninstalledState
   }
 
-  private uninstalledDetails(at: string): UninstalledDTO {
-    return { at, install: this.deps.env.install, copyName: this.deps.env.copyName, bucket: this.deps.env.copyBucket }
+  private uninstalledDetails(at: string, backupsKept: boolean): UninstalledDTO {
+    const { install, copyName, copyBucket } = this.deps.env
+    const where = this.deps.backups?.where
+    return { at, install, copyName, bucket: copyBucket, backups: where ? { kept: backupsKept, where } : null }
   }
 
   /** Uninstalling from Settings, confirmed with the access key. */
   async uninstall(actor: Actor, input: unknown): Promise<UninstalledDTO> {
     this.access.requireUser(actor)
-    const { accessKey } = parse(confirmAccessKeyInput, input)
+    const { accessKey, deleteBackups } = parse(uninstallInput, input)
     await this.verifyAccessKey(actor.userId, accessKey)
-    return this.wipe()
+    return this.wipe(deleteBackups)
   }
 
   /**
@@ -135,13 +147,13 @@ export class AccountService {
    * typed by mistake cannot erase it. The token expires on its own, should the uninstall stop.
    */
   async uninstallFromInstaller(input: unknown): Promise<UninstalledDTO> {
-    const { token } = parse(installerUninstallInput, input)
+    const { token, deleteBackups } = parse(installerUninstallInput, input)
     const expected = this.deps.env.uninstallToken
     const expiresAt = Number(expected?.split('.')[0])
     if (!expected || !(expiresAt > Date.now()) || !safeEqual(sha256(token), sha256(expected))) {
       throw forbidden('The installer has not authorized this uninstall', 'uninstall_not_authorized')
     }
-    return this.wipe()
+    return this.wipe(deleteBackups)
   }
 
   /**
@@ -151,12 +163,16 @@ export class AccountService {
    * copy itself (the Worker and its bucket, or the container) is left to whoever
    * installed it, as the page shown afterwards explains.
    */
-  private async wipe(): Promise<UninstalledDTO> {
+  private async wipe(deleteBackups: boolean): Promise<UninstalledDTO> {
     // Attachments first, once no upload is still writing one: if this stops half-way,
     // the data is still there, uploads open again and it can be retried.
     await this.attachments.close()
+    // No backup starts now, and the one running finishes before anything is deleted.
+    await this.backups?.close()
     const at = new Date().toISOString()
     try {
+      // Kept apart from the data, the backups go only when the person says so.
+      if (deleteBackups) await this.backups?.deleteAll()
       await this.deps.storage.deleteAll()
       this.deps.db.transaction((tx) => {
         // Every table, children first, without relying on cascades; search indexes follow by trigger.
@@ -165,12 +181,14 @@ export class AccountService {
           else tx.delete(table).run()
         }
         tx.insert(copyState).values({ key: UNINSTALLED_KEY, value: at }).run()
+        tx.insert(copyState).values({ key: UNINSTALLED_BACKUPS_KEY, value: deleteBackups ? 'deleted' : 'kept' }).run()
       })
     } catch (error) {
       this.attachments.reopen()
+      this.backups?.reopen()
       throw error
     }
-    this.uninstalledState = this.uninstalledDetails(at)
+    this.uninstalledState = this.uninstalledDetails(at, !deleteBackups)
     this.generatedSetupCode = null
     return this.uninstalledState
   }
@@ -202,7 +220,7 @@ export class AccountService {
       } else {
         owner = tx.insert(users).values({ name, locale }).returning().get()
         const firstName = name.split(/\s+/)[0] ?? name
-        const w = tx.insert(workspaces).values({ name: defaultWorkspaceName(locale, firstName).slice(0, 60) }).returning().get()
+        const w = tx.insert(workspaces).values({ name: clip(defaultWorkspaceName(locale, firstName), 60) }).returning().get()
         tx.insert(workspaceMembers).values({ workspaceId: w.id, userId: owner.id, role: 'owner' }).run()
       }
       const claimed = tx
@@ -298,6 +316,17 @@ export class AccountService {
     return user
   }
 
+  /** Forgets what it read of the copy, after a restore replaced the database under it. */
+  forget() {
+    this.uninstalledState = undefined
+    this.generatedSetupCode = null
+  }
+
+  /** A new session for the owner, for whoever just restored a backup (which ended every other one). */
+  startSession(userId: string, userAgent: string | null) {
+    return this.createSession(userId, userAgent)
+  }
+
   private async createSession(userId: string, userAgent: string | null) {
     const token = randomToken(32)
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS)
@@ -378,6 +407,13 @@ export class AccountService {
   }
 
   /** Confirms a sensitive action with the access key; only the owner has one. */
+  /** Only the person who owns the copy: backups, for instance, hold everything in it. */
+  async requireOwner(actor: Actor) {
+    this.access.requireUser(actor)
+    const row = await this.instanceRow()
+    if (!row || row.ownerId !== actor.userId) throw forbidden('Only the owner of this copy can do this')
+  }
+
   async verifyAccessKey(userId: string, accessKey: string) {
     const row = await this.instanceRow()
     if (!row || row.ownerId !== userId || !safeEqual(secretFingerprint(accessKey), row.accessKeyHash)) throw invalidAccessKey()

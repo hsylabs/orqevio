@@ -15,8 +15,8 @@ export function templateWranglerConfig(serverConfig: string) {
     assets: { ...source.assets, directory: 'node_modules/orqevio/dist/web' },
   }
   return `// Generated from Orqevio's apps/server/wrangler.jsonc. On every deploy, \`npm run deploy\`
-// reads only "name" and the UPLOADS "bucket_name" from this file: bindings, migrations and
-// compatibility settings come from the installed package, so updating it is all it takes.
+// reads only "name" and the UPLOADS and BACKUPS "bucket_name" from this file: bindings, migrations
+// and compatibility settings come from the installed package, so updating it is all it takes.
 ${JSON.stringify(config, null, 2)}
 `
 }
@@ -36,6 +36,7 @@ export function templatePackageJson(installerVersion: string) {
             'One-off code to claim your copy the first time: at least 12 letters A–Z or digits (other characters don’t count), for example from `openssl rand -hex 8`. Keep it until you open your copy; to recover access later, set a new one here and use **Lost your key?** on the sign-in screen.',
         },
         UPLOADS: { description: 'R2 bucket for the files attached to cards and documents.' },
+        BACKUPS: { description: 'R2 bucket for the daily backups of your copy, kept apart from it: the last 7.' },
         COPY: { description: 'Durable Object that keeps your data in its own SQLite database.' },
       },
     },

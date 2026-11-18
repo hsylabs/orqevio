@@ -127,7 +127,8 @@ describe('the history', () => {
     ])
     const by = (kind: string) => entries.filter((e) => e.kind === kind).reverse()
     expect(by('card.created')[0]!.meta).toMatchObject({ title: 'Arreglar login', column: columns[0]!.name })
-    expect(by('card.due')[0]).toMatchObject({ before: null, after: '2026-12-01T09:00:00.000Z' })
+    // A due date is the day it names, kept at 12:00 UTC.
+    expect(by('card.due')[0]).toMatchObject({ before: null, after: '2026-12-01T12:00:00.000Z' })
     expect(by('card.labels').map((e) => e.meta)).toEqual([
       { added: ['Urgente'], removed: [] },
       { added: ['Bug'], removed: ['Urgente'] },

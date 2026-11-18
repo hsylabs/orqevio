@@ -20,6 +20,8 @@ Ti serve un account Cloudflare (basta il piano gratuito). La prima volta si apre
 per farti accedere.`,
   no: /^n/i,
   yesNo: '[S/n]',
+  yes: /^s/i,
+  noYes: '[s/N]',
   extraArgument: (arg) => `Argomento inatteso: «${arg}».`,
   unknownOption: (option) => `Opzione sconosciuta: «${option}».`,
   missingValue: (option) => `L’opzione «${option}» richiede un valore.`,
@@ -116,6 +118,26 @@ per farti accedere.`,
       `Il bucket «${bucket}» contiene ancora degli allegati, e Cloudflare elimina solo i bucket vuoti.`,
       'L’installer può chiedere alla tua copia di eliminarli: la autorizza dal tuo account Cloudflare, senza bisogno della tua chiave di accesso.',
       'Lascia la risposta vuota se preferisci farlo in un altro modo.',
+    ].join('\n'),
+  askDeleteBackups: (bucket) =>
+    `Eliminare anche i suoi backup? Il bucket «${bucket}» conserva gli ultimi 7 backup giornalieri: se lo tieni, una copia installata di nuovo con lo stesso nome potrà ripristinarli.`,
+  emptyingBackupsThroughCopy: (bucket) =>
+    [
+      '',
+      `Il bucket «${bucket}» contiene ancora dei backup, e Cloudflare elimina solo i bucket vuoti.`,
+      'L’installer può chiedere alla tua copia di eliminarli: la autorizza dal tuo account Cloudflare, senza bisogno della tua chiave di accesso.',
+      'Lascia la risposta vuota per farlo in un altro modo.',
+    ].join('\n'),
+  backupsNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `Il bucket «${bucket}» contiene ancora dei backup, e Cloudflare elimina solo i bucket vuoti. Non è stato eliminato niente.`,
+      `Svuotalo nella dashboard di Cloudflare (R2 → ${bucket} → Settings → Empty Bucket), poi esegui di nuovo ${retryCommand}.`,
+    ].join('\n'),
+  backupsKept: (bucket, installCommand) =>
+    [
+      `I suoi backup restano nel bucket «${bucket}». Per recuperarli, installa una copia con lo stesso nome (${installCommand}) e ripristinane uno in Impostazioni → Backup.`,
+      `Per eliminarli, svuota ed elimina quel bucket nella dashboard di Cloudflare: R2 → ${bucket}.`,
     ].join('\n'),
   askAddress: (name) => `Indirizzo della tua copia (per esempio https://${name}.<tuo-sottodominio>.workers.dev): `,
   badAddress: (address) => `«${address}» non è un indirizzo: usa quello che apri nel browser.`,

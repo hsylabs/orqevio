@@ -24,7 +24,29 @@
     "content": "Contenido de la página",
     "subpages": "Subpáginas",
     "attachments": "Adjuntos",
-    "history": "Historial"
+    "history": "Historial",
+    "gone": {
+      "byName": "<strong>{{name}}</strong> ha borrado esta página.",
+      "byYou": "Has borrado esta página en otra pestaña o sesión.",
+      "withByName": "<strong>{{name}}</strong> ha borrado «{{title}}», y esta página con ello.",
+      "withByYou": "Has borrado «{{title}}» en otra pestaña o sesión, y esta página con ello.",
+      "unknown": "Esta página se ha borrado.",
+      "inTrash": "Está en la papelera.",
+      "unsaved": "Tus últimos cambios no se han guardado: se guardarán al restaurarla.",
+      "unsavedLost": "Tus últimos cambios no se han guardado y ya no se pueden guardar: cópialos antes de salir.",
+      "restore": "Restaurar"
+    },
+    "problem": {
+      "tooLong": "Este documento tiene {{length}} caracteres y el máximo es {{max}}. Acórtalo para que se pueda guardar: hasta entonces, tus cambios no se guardan.",
+      "retrying": "No se han podido guardar tus últimos cambios. {{reason}} Se volverá a intentar automáticamente.",
+      "refused": "No se han podido guardar tus últimos cambios. {{reason}}",
+      "retry": "Reintentar"
+    },
+    "leave": {
+      "title": "¿Salir sin guardar?",
+      "body": "Tus últimos cambios en esta página no se han guardado y se perderán.",
+      "confirm": "Salir sin guardar"
+    }
   },
   "editor": {
     "placeholder": "Escribe, o pulsa «/» para insertar…",
@@ -134,7 +156,9 @@
       "strike": "Tachado",
       "code": "Código",
       "link": "Enlace"
-    }
+    },
+    "taskCheckbox": "Tarea: {{text}}",
+    "taskCheckboxEmpty": "Tarea sin texto"
   },
   "icon": {
     "change": "Cambiar icono",

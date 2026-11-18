@@ -24,7 +24,29 @@
     "content": "Contenuto della pagina",
     "subpages": "Sottopagine",
     "attachments": "Allegati",
-    "history": "Cronologia"
+    "history": "Cronologia",
+    "gone": {
+      "byName": "<strong>{{name}}</strong> ha eliminato questa pagina.",
+      "byYou": "Hai eliminato questa pagina in un’altra scheda o sessione.",
+      "withByName": "<strong>{{name}}</strong> ha eliminato «{{title}}», e questa pagina con essa.",
+      "withByYou": "Hai eliminato «{{title}}» in un’altra scheda o sessione, e questa pagina con essa.",
+      "unknown": "Questa pagina è stata eliminata.",
+      "inTrash": "È nel cestino.",
+      "unsaved": "Le tue ultime modifiche non sono state salvate: lo saranno quando la ripristini.",
+      "unsavedLost": "Le tue ultime modifiche non sono state salvate e non possono più esserlo: copiale prima di uscire.",
+      "restore": "Ripristina"
+    },
+    "problem": {
+      "tooLong": "Questo documento ha {{length}} caratteri e il massimo è {{max}}. Accorcialo per poterlo salvare: fino ad allora, le tue modifiche non vengono salvate.",
+      "retrying": "Non è stato possibile salvare le tue ultime modifiche. {{reason}} Si riproverà automaticamente.",
+      "refused": "Non è stato possibile salvare le tue ultime modifiche. {{reason}}",
+      "retry": "Riprova"
+    },
+    "leave": {
+      "title": "Uscire senza salvare?",
+      "body": "Le tue ultime modifiche a questa pagina non sono state salvate e andranno perse.",
+      "confirm": "Esci senza salvare"
+    }
   },
   "editor": {
     "placeholder": "Scrivi, o premi «/» per inserire…",
@@ -134,7 +156,9 @@
       "strike": "Barrato",
       "code": "Codice",
       "link": "Link"
-    }
+    },
+    "taskCheckbox": "Da fare: {{text}}",
+    "taskCheckboxEmpty": "Cosa da fare vuota"
   },
   "icon": {
     "change": "Cambia icona",

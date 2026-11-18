@@ -128,7 +128,9 @@
     "attachments": "添付ファイル",
     "activity": "アクティビティ",
     "deleted": "カードをゴミ箱に移動しました",
-    "history": "履歴"
+    "history": "履歴",
+    "moveUp": "上へ移動",
+    "moveDown": "下へ移動"
   },
   "checklist": {
     "titleLabel": "チェックリストのタイトル",
@@ -179,7 +181,9 @@
     "heading": "アーカイブ済み",
     "emptyTitle": "アーカイブされたものはありません",
     "emptyBody": "あなたやエージェントがアーカイブしたカードはここに表示され、復元できます。",
-    "deleteConfirm": "「{{title}}」をゴミ箱に移動しますか？"
+    "deleteConfirm": "「{{title}}」をゴミ箱に移動しますか？",
+    "loadMore": "さらに読み込む",
+    "showing": "{{total}}件中{{shown}}件"
   },
   "attachments": {
     "deleteConfirm": "「{{name}}」を削除しますか？",

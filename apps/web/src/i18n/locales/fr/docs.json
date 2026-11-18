@@ -24,7 +24,29 @@
     "content": "Contenu de la page",
     "subpages": "Sous-pages",
     "attachments": "Pièces jointes",
-    "history": "Historique"
+    "history": "Historique",
+    "gone": {
+      "byName": "<strong>{{name}}</strong> a supprimé cette page.",
+      "byYou": "Vous avez supprimé cette page dans un autre onglet ou une autre session.",
+      "withByName": "<strong>{{name}}</strong> a supprimé « {{title}} », et cette page avec.",
+      "withByYou": "Vous avez supprimé « {{title}} » dans un autre onglet ou une autre session, et cette page avec.",
+      "unknown": "Cette page a été supprimée.",
+      "inTrash": "Elle est dans la corbeille.",
+      "unsaved": "Vos dernières modifications n’ont pas été enregistrées : elles le seront quand vous la restaurerez.",
+      "unsavedLost": "Vos dernières modifications n’ont pas été enregistrées et ne peuvent plus l’être : copiez-les avant de partir.",
+      "restore": "Restaurer"
+    },
+    "problem": {
+      "tooLong": "Ce document compte {{length}} caractères et le maximum est de {{max}}. Raccourcissez-le pour pouvoir l’enregistrer : d’ici là, vos modifications ne sont pas enregistrées.",
+      "retrying": "Vos dernières modifications n’ont pas pu être enregistrées. {{reason}} Un nouvel essai aura lieu automatiquement.",
+      "refused": "Vos dernières modifications n’ont pas pu être enregistrées. {{reason}}",
+      "retry": "Réessayer"
+    },
+    "leave": {
+      "title": "Quitter sans enregistrer ?",
+      "body": "Vos dernières modifications de cette page n’ont pas été enregistrées et seront perdues.",
+      "confirm": "Quitter sans enregistrer"
+    }
   },
   "editor": {
     "placeholder": "Écrivez, ou tapez « / » pour insérer…",
@@ -134,7 +156,9 @@
       "strike": "Barré",
       "code": "Code",
       "link": "Lien"
-    }
+    },
+    "taskCheckbox": "Tâche : {{text}}",
+    "taskCheckboxEmpty": "Tâche vide"
   },
   "icon": {
     "change": "Changer l’icône",

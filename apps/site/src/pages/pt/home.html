@@ -53,7 +53,7 @@
         <div class="card">
           <h3>Onde fica sua cópia</h3>
           <div class="copies">
-            <div class="copy-row"><span class="dot"></span><div><strong>Na sua conta da Cloudflare</strong><span>Um Worker, um banco de dados SQLite e um bucket para os anexos.</span></div></div>
+            <div class="copy-row"><span class="dot"></span><div><strong>Na sua conta da Cloudflare</strong><span>Um Worker, um banco de dados SQLite e buckets para os anexos e os backups.</span></div></div>
             <div class="copy-row"><span class="dot"></span><div><strong>Ou no seu servidor, com Docker</strong><span>Um contêiner e um único arquivo SQLite.</span></div></div>
             <div class="copy-row agent"><span class="dot"></span><div><strong>Seus agentes se conectam a ela</strong><span>Via MCP, com OAuth ou com um token por espaço.</span></div></div>
           </div>
@@ -65,6 +65,7 @@
             <li>Atualizar é um comando, ou o merge de um pull request.</li>
             <li>Sua cópia avisa quando há uma nova versão.</li>
             <li>Seus dados, sua chave e seu cofre são sempre preservados.</li>
+            <li>Ela faz um backup de si mesma todos os dias e exporta tudo em um ZIP que você pode ler em qualquer lugar.</li>
           </ul>
         </div>
       </div>
@@ -87,7 +88,7 @@
     <div class="wrap">
       <h2 id="license">Código disponível, uso livre</h2>
       <p class="lead">O Orqevio é distribuído sob a licença <a href="https://github.com/hsylabs/orqevio/blob/main/LICENSE.md">FSL-1.1-ALv2</a>. Você pode usá-lo, modificá-lo e hospedar sua cópia, inclusive no trabalho. A única coisa que ela não permite é oferecê-lo como produto ou serviço comercial que concorra com o Orqevio. Cada versão passa para a licença Apache 2.0 dois anos após o lançamento.</p>
-      <p>O Orqevio é fornecido como está, sem garantias de qualquer tipo. Sua cópia e os dados dela ficam por sua conta: faça backups e exporte seu cofre de vez em quando.</p>
+      <p>O Orqevio é fornecido como está, sem garantias de qualquer tipo. Sua cópia e os dados dela ficam por sua conta: guarde os backups dela também em outro lugar e exporte seu cofre de vez em quando.</p>
       <div class="actions">
         <a class="button primary" href="{{base}}/install/">Instalar sua cópia</a>
       </div>

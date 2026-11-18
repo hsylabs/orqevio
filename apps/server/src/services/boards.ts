@@ -1,4 +1,4 @@
-import type { BoardDTO, CardSummaryDTO, ColumnDTO, PaletteColor } from '@orqevio/shared'
+import { ARCHIVED_PAGE, MAX_COLUMNS, type BoardDTO, type CardSummaryDTO, type ColumnDTO, type PaletteColor } from '@orqevio/shared'
 import {
   DEFAULT_COLUMNS,
   DEFAULT_LOCALE,
@@ -10,10 +10,10 @@ import {
   labelCreateInput,
   labelUpdateInput,
 } from '@orqevio/shared'
-import { and, asc, count, desc, eq, isNotNull, isNull } from 'drizzle-orm'
+import { and, asc, count, desc, eq, isNotNull, isNull, lt, or } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { boards, cards, columns, labels, projects, users } from '../db/schema'
-import { notFound } from '../lib/errors'
+import { AppError, notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { ActivityService } from './activity'
@@ -112,14 +112,24 @@ export class BoardService {
     }
   }
 
-  async archived(actor: Actor, boardId: string): Promise<CardSummaryDTO[]> {
+  /**
+   * The archived cards of a board, most recently archived first, a page at a time: after the card
+   * `beforeId`, archived at `before`, when given (the last of the page before).
+   */
+  async archived(actor: Actor, boardId: string, page: { before?: Date; beforeId?: string; limit?: number } = {}): Promise<CardSummaryDTO[]> {
     await this.load(actor, boardId)
+    const after =
+      page.before && page.beforeId
+        ? or(lt(cards.archivedAt, page.before), and(eq(cards.archivedAt, page.before), lt(cards.id, page.beforeId)))
+        : page.before
+          ? lt(cards.archivedAt, page.before)
+          : undefined
     const rows = await this.deps.db
       .select()
       .from(cards)
-      .where(and(eq(cards.boardId, boardId), isNotNull(cards.archivedAt)))
-      .orderBy(desc(cards.archivedAt))
-      .limit(200)
+      .where(and(eq(cards.boardId, boardId), isNotNull(cards.archivedAt), after))
+      .orderBy(desc(cards.archivedAt), desc(cards.id))
+      .limit(Math.min(Math.max(1, Math.floor(page.limit ?? ARCHIVED_PAGE)), ARCHIVED_PAGE))
     return this.cards.summarize(rows)
   }
 
@@ -152,11 +162,13 @@ export class BoardService {
   async createColumn(actor: Actor, boardId: string, input: unknown): Promise<ColumnDTO> {
     const data = parse(columnCreateInput, input)
     const board = await this.load(actor, boardId, 'tasks:write')
-    const position = positionAt(this.deps.db, columns, eq(columns.boardId, boardId), data.index)
-    const [column] = await this.deps.db
-      .insert(columns)
-      .values({ workspaceId: board.workspaceId, boardId, name: data.name, position })
-      .returning()
+    // Counted and added in one go: two at once can't both take the last place.
+    const column = this.deps.db.transaction((tx) => {
+      const { total } = tx.select({ total: count() }).from(columns).where(eq(columns.boardId, boardId)).get()!
+      if (total >= MAX_COLUMNS) throw new AppError(400, 'too_many_columns', `A board holds up to ${MAX_COLUMNS} columns`)
+      const position = positionAt(tx, columns, eq(columns.boardId, boardId), data.index)
+      return tx.insert(columns).values({ workspaceId: board.workspaceId, boardId, name: data.name, position }).returning().get()
+    })
     await this.activity.record(
       actor,
       board.workspaceId,
@@ -240,6 +252,8 @@ export class BoardService {
   async updateLabel(actor: Actor, labelId: string, input: unknown) {
     const data = parse(labelUpdateInput, input)
     const label = await this.loadLabel(actor, labelId)
+    // Nothing to change: neither a write nor an entry in the activity.
+    if (data.name === undefined && data.color === undefined) return toLabelDTO(label)
     const [row] = await this.deps.db.update(labels).set(data).where(eq(labels.id, labelId)).returning()
     await this.activity.record(
       actor,

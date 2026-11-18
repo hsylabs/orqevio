@@ -7,9 +7,17 @@ export class ApiError extends Error {
     public readonly code: string,
     message: string,
     public readonly details?: unknown,
+    /** Seconds to wait before trying again, from Retry-After. */
+    public readonly retryAfter?: number,
   ) {
     super(message)
   }
+}
+
+/** Retry-After in seconds; the HTTP-date form is not used by this server. */
+function retryAfter(res: Response) {
+  const seconds = Number(res.headers.get('retry-after'))
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined
 }
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
@@ -39,7 +47,7 @@ export async function api<T = unknown>(method: Method, path: string, body?: unkn
   const data = text ? safeJson(text) : null
   if (!res.ok) {
     const err = (data as ApiErrorBody | null)?.error
-    throw new ApiError(res.status, err?.code ?? 'error', err?.message ?? res.statusText, err?.details)
+    throw new ApiError(res.status, err?.code ?? 'error', err?.message ?? res.statusText, err?.details, retryAfter(res))
   }
   return data as T
 }
@@ -58,16 +66,20 @@ export const patch = <T>(path: string, body: unknown) => api<T>('PATCH', path, b
 export const put = <T>(path: string, body: unknown) => api<T>('PUT', path, body)
 export const del = <T>(path: string) => api<T>('DELETE', path)
 
-const KNOWN_ERRORS = ['invalid_access_key', 'invalid_setup_code', 'setup_code_too_short', 'recovery_not_ready', 'already_claimed', 'not_claimed', 'rate_limited', 'network', 'file_too_large', 'upload_incomplete', 'last_workspace', 'restore_place_in_trash', 'restore_place_gone'] as const
+const KNOWN_ERRORS = ['invalid_access_key', 'invalid_setup_code', 'setup_code_too_short', 'recovery_not_ready', 'already_claimed', 'not_claimed', 'rate_limited', 'network', 'file_too_large', 'upload_incomplete', 'last_workspace', 'restore_place_in_trash', 'restore_place_gone', 'vault_key_changed', 'too_many_columns', 'vault_full'] as const
 const isKnown = (code: string): code is (typeof KNOWN_ERRORS)[number] => (KNOWN_ERRORS as readonly string[]).includes(code)
 
 /** A human-friendly message for any thrown value, in the app's language. */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
+    if (error.code === 'rate_limited' && error.retryAfter) return t('errors:codes.rate_limitedFor', { count: Math.ceil(error.retryAfter / 60) })
     if (isKnown(error.code)) return t(`errors:codes.${error.code}`)
     if (error.status === 404) return t('errors:notFound')
     if (error.status >= 500) return t('errors:server')
-    // Anything else is a validation detail from the server, which speaks English.
+    // The server speaks English: what reaches people is said in their language.
+    if (error.code === 'bad_request' && Array.isArray(error.details)) return t('errors:invalid')
+    if (error.status === 403) return t('errors:forbidden')
+    if (error.code === 'conflict') return t('errors:conflict')
     return error.message
   }
   return t('errors:unknown')

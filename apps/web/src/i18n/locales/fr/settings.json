@@ -58,6 +58,44 @@
     "kept": "Vos données, votre clé d’accès et votre coffre-fort sont conservés.",
     "releaseNotes": "Voir les nouveautés"
   },
+  "backups": {
+    "title": "Sauvegardes",
+    "description": "Chaque jour, cette copie se sauvegarde elle-même : tout, tel quel, y compris le coffre-fort chiffré, la corbeille, l’historique et les pièces jointes. Les 7 dernières sont conservées, à part de ses données.",
+    "whereFolder": "Elles se trouvent dans le dossier <code>{{name}}</code> du serveur. Pour les garder sur un autre disque ou volume, définissez BACKUP_DIR.",
+    "whereBucket": "Elles se trouvent dans le bucket R2 <code>{{name}}</code> de votre compte Cloudflare, à part des pièces jointes.",
+    "off": "Cette copie ne fait pas de sauvegardes (BACKUPS=off).",
+    "now": "Sauvegarder maintenant",
+    "made": "Sauvegarde effectuée",
+    "none": "Aucune sauvegarde pour l’instant : la première est faite dans l’heure.",
+    "list": "Sauvegardes conservées",
+    "kind": {
+      "daily": "Automatique",
+      "manual": "Faite par vous",
+      "before-restore": "Faite avant une restauration"
+    },
+    "contents": "Cartes : {{cards}} · Documents : {{pages}} · Pièces jointes : {{files}}",
+    "missingFiles_one": "{{count}} pièce jointe n’a pas pu y être copiée.",
+    "missingFiles_many": "{{count}} pièces jointes n’ont pas pu y être copiées.",
+    "missingFiles_other": "{{count}} pièces jointes n’ont pas pu y être copiées.",
+    "newer": "Faite avec Orqevio {{version}} : mettez cette copie à jour pour la restaurer.",
+    "restore": "Restaurer…",
+    "keep_one": "La dernière sauvegarde quotidienne est conservée, ainsi que celle faite avant la dernière restauration.",
+    "keep_many": "Les {{count}} dernières sauvegardes quotidiennes sont conservées, ainsi que celle faite avant la dernière restauration.",
+    "keep_other": "Les {{count}} dernières sauvegardes quotidiennes sont conservées, ainsi que celle faite avant la dernière restauration.",
+    "restoreTitle": "Restaurer cette sauvegarde ?",
+    "restoreDescription": "Cette copie redevient telle qu’elle était le {{date}}.",
+    "restoreLoses": "Tout revient en arrière : espaces, documents, cartes, coffre-fort, agents, corbeille et historique. Ce qui a changé depuis est perdu.",
+    "restoreSafety": "Une sauvegarde de la copie telle qu’elle est maintenant est d’abord faite et gardée à part, pour pouvoir y revenir.",
+    "restoreSessions": "Toutes les sessions se terminent. Vous restez connecté ici, et votre clé d’accès est celle que vous utilisez maintenant.",
+    "accessKey": "Clé d’accès",
+    "typeName": "Saisissez « {{name}} » pour confirmer",
+    "restoreConfirm": "Restaurer"
+  },
+  "export": {
+    "title": "Exporter vos données",
+    "description": "Un ZIP pour lire vos données ou les emporter ailleurs : les tâches de chaque espace en JSON, ses documents en Markdown et les pièces jointes. Sans le coffre-fort, qui a son propre export chiffré, ni l’historique ni la corbeille.",
+    "action": "Télécharger un ZIP"
+  },
   "erase": {
     "title": "Effacer cette copie",
     "description": "Efface définitivement vos espaces, votre coffre-fort et vos jetons. La copie vous redemandera le code de configuration.",
@@ -82,6 +120,17 @@
     "oneCommand": "Vous l’avez installée avec la commande ? Depuis votre ordinateur, <code>{{command}}</code> fait les deux étapes d’un coup.",
     "accessKey": "Clé d’accès",
     "typeName": "Saisissez « {{name}} » pour confirmer",
-    "confirm": "Désinstaller définitivement"
+    "confirm": "Désinstaller définitivement",
+    "backups": {
+      "legend": "Ses sauvegardes",
+      "keep": {
+        "label": "Les conserver",
+        "hint": "Une copie réinstallée avec le même nom, ou avec le même dossier de sauvegardes, pourra les restaurer. Supprimez-les à la main quand vous n’en aurez plus besoin."
+      },
+      "delete": {
+        "label": "Les supprimer aussi",
+        "hint": "Rien de cette copie ne pourra plus être récupéré."
+      }
+    }
   }
 }

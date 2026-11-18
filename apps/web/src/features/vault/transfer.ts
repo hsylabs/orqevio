@@ -1,6 +1,7 @@
+import { MAX_ENVELOPE_LENGTH } from '@orqevio/shared'
 import { t } from 'i18next'
-import type { EncryptedExport } from './crypto'
-import { type VaultItem, emptyItem } from './types'
+import { type EncryptedExport, itemEnvelopeLength } from './crypto'
+import { type VaultItem, emptyItem, tidyItem } from './types'
 
 /**
  * Moving credentials in and out of the vault, entirely in the browser.
@@ -16,7 +17,7 @@ import { type VaultItem, emptyItem } from './types'
  */
 export const MAX_IMPORT_BYTES = 256 * 1024 * 1024
 
-export type ImportProblem = 'empty' | 'unknown_format' | 'bitwarden_encrypted' | 'no_items'
+export type ImportProblem = 'empty' | 'unknown_format' | 'bitwarden_encrypted' | 'no_items' | 'unclosed_quote'
 
 /** Where a file seems to come from. An identifier: the import summary names it in the app's language. */
 export type ImportSource = 'Chrome o Edge' | 'Firefox' | 'Safari' | 'Bitwarden (CSV)' | 'Bitwarden (JSON)' | 'CSV' | 'Orqevio (cifrada)'
@@ -26,13 +27,29 @@ export interface ImportedItems {
   /** Where the file seems to come from, for the summary. */
   source: ImportSource
   items: VaultItem[]
-  /** Entries that cannot be represented (cards, identities…). */
+  /** Entries that cannot be represented (cards, identities, SSH keys). */
   unsupported: number
+  /** Items whose extra data (custom fields, more addresses, older passwords) went into their notes. */
+  extras: number
+  /** Logins whose passkey cannot come along (the rest of each one does). */
+  passkeys: number
+  /** Items larger than the server takes once encrypted: their titles. */
+  tooLong: string[]
 }
 
-export type ImportOutcome = ImportedItems | { kind: 'encrypted'; file: EncryptedExport } | { kind: 'problem'; problem: ImportProblem }
+export type ImportOutcome = ImportedItems | { kind: 'encrypted'; file: EncryptedExport } | { kind: 'problem'; problem: ImportProblem; line?: number }
 
-/** RFC 4180 CSV: quoted fields may hold commas, quotes ("") and line breaks; a BOM is ignored. */
+/** A quoted CSV field that never closes: everything after it would be read as one value. */
+export class UnclosedQuoteError extends Error {
+  constructor(readonly line: number) {
+    super(`Unclosed quote opened on line ${line}`)
+  }
+}
+
+/**
+ * RFC 4180 CSV: quoted fields may hold commas, quotes ("") and line breaks; a BOM is ignored.
+ * A quote left open throws UnclosedQuoteError, with the line it opened on.
+ */
 export function parseCsv(text: string): string[][] {
   const s = text.replace(/^﻿/, '')
   const rows: string[][] = []
@@ -40,8 +57,11 @@ export function parseCsv(text: string): string[][] {
   let field = ''
   let quoted = false
   let fieldStart = true
+  let line = 1
+  let quoteLine = 0
   for (let i = 0; i < s.length; i++) {
     const ch = s[i]!
+    if (ch === '\n') line++
     if (quoted) {
       if (ch === '"' && s[i + 1] === '"') {
         field += '"'
@@ -52,13 +72,18 @@ export function parseCsv(text: string): string[][] {
     }
     if (ch === '"' && fieldStart) {
       quoted = true
+      quoteLine = line
       fieldStart = false
     } else if (ch === ',') {
       row.push(field)
       field = ''
       fieldStart = true
     } else if (ch === '\n' || ch === '\r') {
-      if (ch === '\r' && s[i + 1] === '\n') i++
+      // A CR ends a line too, alone or before the LF it then takes along.
+      if (ch === '\r') {
+        if (s[i + 1] === '\n') i++
+        line++
+      }
       row.push(field)
       rows.push(row)
       row = []
@@ -69,11 +94,26 @@ export function parseCsv(text: string): string[][] {
       fieldStart = false
     }
   }
+  if (quoted) throw new UnclosedQuoteError(quoteLine)
   if (field !== '' || row.length) {
     row.push(field)
     rows.push(row)
   }
   return rows.filter((r) => r.some((value) => value.trim() !== ''))
+}
+
+/**
+ * The text of an import file. UTF-8 (with or without a BOM) and UTF-16 with a BOM are read as
+ * they are; anything else is read as Windows-1252, the Latin-1 of older spreadsheets, and said so.
+ */
+export function decodeImport(bytes: Uint8Array): { text: string; encoding: 'utf-8' | 'utf-16' | 'windows-1252' } {
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return { text: new TextDecoder('utf-16le').decode(bytes.subarray(2)), encoding: 'utf-16' }
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return { text: new TextDecoder('utf-16be').decode(bytes.subarray(2)), encoding: 'utf-16' }
+  try {
+    return { text: new TextDecoder('utf-8', { fatal: true }).decode(bytes), encoding: 'utf-8' }
+  } catch {
+    return { text: new TextDecoder('windows-1252').decode(bytes), encoding: 'windows-1252' }
+  }
 }
 
 // Column names seen in each exporter, compared without case.
@@ -83,6 +123,7 @@ const COLUMNS = {
   username: ['username', 'login_username'],
   password: ['password', 'login_password'],
   notes: ['note', 'notes'],
+  fields: ['fields'],
   totp: ['otpauth', 'login_totp', 'totp'],
   favorite: ['favorite'],
   type: ['type'],
@@ -113,42 +154,113 @@ function isoDate(value: unknown) {
   return Number.isNaN(date.getTime()) ? null : date.toISOString()
 }
 
-function item(type: VaultItem['type'], fields: Partial<Record<'title' | 'url' | 'username' | 'password' | 'notes' | 'totp', unknown>>, extra: { favorite?: boolean; createdAt?: string | null; updatedAt?: string | null }): VaultItem | null {
-  const text = (value: unknown) => (typeof value === 'string' ? value : value === null || value === undefined ? '' : String(value))
+const text = (value: unknown) => (typeof value === 'string' ? value : value === null || value === undefined ? '' : String(value))
+
+/** What an exporter has and the vault has no field for, kept in the item's notes under headings. */
+interface Extras {
+  /** Custom fields, one per line ("PIN: 1234"). */
+  fields?: string[]
+  /** Addresses after the first one. */
+  uris?: string[]
+  /** Older passwords, newest first. */
+  history?: string[]
+}
+
+function withExtras(notes: string, extras: Extras) {
+  const sections = (
+    [
+      ['fields', extras.fields],
+      ['uris', extras.uris],
+      ['history', extras.history],
+    ] as const
+  )
+    .filter(([, lines]) => lines?.length)
+    .map(([kind, lines]) => `${t(`vault:import.extra.${kind}`)}\n${lines!.join('\n')}`)
+  // The notes stay exactly as they were (spaces and line breaks at the end included); extras go after them.
+  if (!sections.length) return notes
+  return notes ? `${notes}\n\n${sections.join('\n\n')}` : sections.join('\n\n')
+}
+
+/**
+ * An imported entry as a vault item: null if it holds nothing at all, 'too_long' if the server could
+ * never take it. That is its size once encrypted, not the editor's limits for typing: an item kept
+ * in the vault over those (imported before 1.2.0, say) must come back from its own backup.
+ */
+function item(
+  type: VaultItem['type'],
+  fields: Partial<Record<'title' | 'url' | 'username' | 'password' | 'notes' | 'totp', unknown>>,
+  extra: { favorite?: boolean; createdAt?: string | null; updatedAt?: string | null; extras?: Extras },
+): VaultItem | 'too_long' | null {
   const next = emptyItem(type)
-  next.url = text(fields.url).trim()
+  next.url = text(fields.url)
   next.username = text(fields.username)
   next.password = text(fields.password)
-  next.notes = text(fields.notes)
-  next.totp = type === 'login' ? text(fields.totp).trim() : ''
-  next.title = text(fields.title).trim() || host(next.url) || next.username.trim() || (type === 'note' ? t('vault:import.untitledNote') : t('vault:import.untitledLogin'))
-  if (!next.url && !next.username && !next.password && !next.notes && !next.totp && !text(fields.title).trim()) return null
-  next.favorite = extra.favorite ?? false
-  if (extra.createdAt) next.createdAt = extra.createdAt
-  next.updatedAt = extra.updatedAt ?? extra.createdAt ?? next.updatedAt
-  return next
+  next.notes = extra.extras ? withExtras(text(fields.notes), extra.extras) : text(fields.notes)
+  next.totp = type === 'login' ? text(fields.totp) : ''
+  next.title = text(fields.title)
+  // Spaces around the title, the address and the code go, as when an item is saved in the vault.
+  const tidy = tidyItem(next)
+  if (!tidy.url && !tidy.username && !tidy.password && !tidy.notes && !tidy.totp && !tidy.title) return null
+  tidy.title ||= host(tidy.url) || tidy.username.trim() || (type === 'note' ? t('vault:import.untitledNote') : t('vault:import.untitledLogin'))
+  tidy.favorite = extra.favorite ?? false
+  if (extra.createdAt) tidy.createdAt = extra.createdAt
+  tidy.updatedAt = extra.updatedAt ?? extra.createdAt ?? tidy.updatedAt
+  return itemEnvelopeLength(tidy) > MAX_ENVELOPE_LENGTH ? 'too_long' : tidy
+}
+
+/** Sorts what item() gave into the items, the ones too long and those with extras in their notes. */
+function collector() {
+  const items: VaultItem[] = []
+  const tooLong: string[] = []
+  let extras = 0
+  return {
+    add(next: VaultItem | 'too_long' | null, title: unknown, hadExtras: boolean) {
+      if (next === 'too_long') tooLong.push(text(title).trim() || t('vault:import.untitledLogin'))
+      else if (next) {
+        items.push(next)
+        if (hadExtras) extras++
+      }
+    },
+    result: () => ({ items, tooLong, extras }),
+  }
 }
 
 function fromCsv(text: string): ImportOutcome {
-  const [rawHeader, ...rows] = parseCsv(text)
+  let parsed: string[][]
+  try {
+    parsed = parseCsv(text)
+  } catch (error) {
+    if (error instanceof UnclosedQuoteError) return { kind: 'problem', problem: 'unclosed_quote', line: error.line }
+    throw error
+  }
+  const [rawHeader, ...rows] = parsed
   if (!rawHeader) return { kind: 'problem', problem: 'empty' }
   const header = rawHeader.map((h) => h.trim().toLowerCase())
   const column = (names: readonly string[]) => header.findIndex((h) => names.includes(h))
   const at = Object.fromEntries(Object.entries(COLUMNS).map(([key, names]) => [key, column(names)])) as Record<keyof typeof COLUMNS, number>
   if (at.password === -1 && at.url === -1) return { kind: 'problem', problem: 'unknown_format' }
   const value = (row: string[], index: number) => (index >= 0 ? (row[index] ?? '') : '')
-  const items: VaultItem[] = []
+  const source = csvSource(header)
+  const found = collector()
   for (const row of rows) {
     const type = value(row, at.type).trim().toLowerCase() === 'note' ? 'note' : 'login'
     const created = isoDate(value(row, at.created))
-    const next = item(
-      type,
-      { title: value(row, at.title), url: value(row, at.url), username: value(row, at.username), password: value(row, at.password), notes: value(row, at.notes), totp: value(row, at.totp) },
-      { favorite: ['1', 'true'].includes(value(row, at.favorite).trim().toLowerCase()), createdAt: created, updatedAt: isoDate(value(row, at.changed)) ?? created },
+    // Bitwarden puts every address of a login in one column, separated by commas, and its
+    // custom fields in another, one "name: value" per line.
+    const uris = source === 'Bitwarden (CSV)' ? value(row, at.url).split(',').map((uri) => uri.trim()).filter(Boolean) : [value(row, at.url)]
+    const extras: Extras = { fields: value(row, at.fields).split(/\r?\n/).filter((line) => line.trim()), uris: uris.slice(1) }
+    const hadExtras = Boolean(extras.fields!.length || extras.uris!.length)
+    found.add(
+      item(
+        type,
+        { title: value(row, at.title), url: uris[0] ?? '', username: value(row, at.username), password: value(row, at.password), notes: value(row, at.notes), totp: value(row, at.totp) },
+        { favorite: ['1', 'true'].includes(value(row, at.favorite).trim().toLowerCase()), createdAt: created, updatedAt: isoDate(value(row, at.changed)) ?? created, extras },
+      ),
+      value(row, at.title),
+      hadExtras,
     )
-    if (next) items.push(next)
   }
-  return { kind: 'items', source: csvSource(header), items, unsupported: 0 }
+  return { kind: 'items', source, ...found.result(), unsupported: 0, passkeys: 0 }
 }
 
 interface BitwardenItem {
@@ -156,7 +268,10 @@ interface BitwardenItem {
   name?: string
   notes?: string | null
   favorite?: boolean
-  login?: { username?: string | null; password?: string | null; totp?: string | null; uris?: Array<{ uri?: string | null }> | null }
+  login?: { username?: string | null; password?: string | null; totp?: string | null; uris?: Array<{ uri?: string | null }> | null; fido2Credentials?: unknown[] | null }
+  /** Custom fields. Type 0 text, 1 hidden, 2 boolean, 3 linked to another field (no value of its own). */
+  fields?: Array<{ name?: string | null; value?: string | null; type?: number }> | null
+  passwordHistory?: Array<{ password?: string | null; lastUsedDate?: string | null }> | null
   creationDate?: string
   revisionDate?: string
 }
@@ -176,22 +291,41 @@ function fromJson(text: string): ImportOutcome {
 }
 
 function fromBitwardenItems(entries: BitwardenItem[]) {
-  const items: VaultItem[] = []
+  const found = collector()
   let unsupported = 0
+  let passkeys = 0
   for (const entry of entries) {
     if (entry.type !== 1 && entry.type !== 2) {
       unsupported++
       continue
     }
     const login = entry.type === 1 ? (entry.login ?? {}) : {}
-    const next = item(
-      entry.type === 1 ? 'login' : 'note',
-      { title: entry.name, notes: entry.notes, username: login.username, password: login.password, totp: login.totp, url: login.uris?.find((u) => u.uri)?.uri },
-      { favorite: entry.favorite === true, createdAt: isoDate(entry.creationDate), updatedAt: isoDate(entry.revisionDate) },
+    const uris = (login.uris ?? []).map((u) => text(u.uri).trim()).filter(Boolean)
+    const extras: Extras = {
+      fields: (entry.fields ?? [])
+        .filter((field) => field.type !== 3 && (text(field.name).trim() || text(field.value)))
+        .map((field) => (text(field.name).trim() ? `${text(field.name).trim()}: ${text(field.value)}` : text(field.value))),
+      uris: uris.slice(1),
+      history: (entry.passwordHistory ?? [])
+        .filter((old) => text(old.password))
+        .map((old) => {
+          const when = isoDate(old.lastUsedDate)
+          return when ? `${text(old.password)} (${when.slice(0, 10)})` : text(old.password)
+        }),
+    }
+    const hadExtras = Boolean(extras.fields!.length || extras.uris!.length || extras.history!.length)
+    if (login.fido2Credentials?.length) passkeys++
+    found.add(
+      item(
+        entry.type === 1 ? 'login' : 'note',
+        { title: entry.name, notes: entry.notes, username: login.username, password: login.password, totp: login.totp, url: uris[0] },
+        { favorite: entry.favorite === true, createdAt: isoDate(entry.creationDate), updatedAt: isoDate(entry.revisionDate), extras },
+      ),
+      entry.name,
+      hadExtras,
     )
-    if (next) items.push(next)
   }
-  return { items, unsupported }
+  return { ...found.result(), unsupported, passkeys }
 }
 
 /** Reads an export file; tells which format it is, or why it cannot be read. */
@@ -201,7 +335,7 @@ export function readImport(text: string): ImportOutcome {
   const start = body.trimStart()
   if (!start) return { kind: 'problem', problem: 'empty' }
   const outcome = start.startsWith('{') ? fromJson(start) : fromCsv(body)
-  return outcome.kind === 'items' && outcome.items.length === 0 && outcome.unsupported === 0 ? { kind: 'problem', problem: 'no_items' } : outcome
+  return outcome.kind === 'items' && outcome.items.length === 0 && outcome.unsupported === 0 && outcome.tooLong.length === 0 ? { kind: 'problem', problem: 'no_items' } : outcome
 }
 
 /** Decrypted Orqevio export → items. */
@@ -234,8 +368,12 @@ export function toBitwardenJson(items: VaultItem[]) {
   }
 }
 
-const sameContent = (a: VaultItem, b: VaultItem) =>
-  a.type === b.type && a.title === b.title && a.username === b.username && a.password === b.password && a.url === b.url && a.notes === b.notes && a.totp === b.totp
+/** The same item, compared as the vault saves it: without spaces around its title, address and code. */
+function sameContent(first: VaultItem, second: VaultItem) {
+  const a = tidyItem(first)
+  const b = tidyItem(second)
+  return a.type === b.type && a.title === b.title && a.username === b.username && a.password === b.password && a.url === b.url && a.notes === b.notes && a.totp === b.totp
+}
 
 /** Splits imported items into new ones and exact copies of items already in the vault. */
 export function withoutDuplicates(incoming: VaultItem[], existing: VaultItem[]) {

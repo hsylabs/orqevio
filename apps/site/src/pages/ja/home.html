@@ -53,7 +53,7 @@
         <div class="card">
           <h3>Orqevioが動く場所</h3>
           <div class="copies">
-            <div class="copy-row"><span class="dot"></span><div><strong>あなたのCloudflareアカウント</strong><span>Worker、SQLiteデータベース、添付ファイル用のバケット。</span></div></div>
+            <div class="copy-row"><span class="dot"></span><div><strong>あなたのCloudflareアカウント</strong><span>Worker、SQLiteデータベース、添付ファイルとバックアップ用のバケット。</span></div></div>
             <div class="copy-row"><span class="dot"></span><div><strong>またはDockerで自分のサーバーに</strong><span>コンテナ1つと、SQLiteファイル1つだけ。</span></div></div>
             <div class="copy-row agent"><span class="dot"></span><div><strong>エージェントはここに接続</strong><span>MCPで、OAuthまたはワークスペースごとのトークンを使います。</span></div></div>
           </div>
@@ -65,6 +65,7 @@
             <li>更新は、コマンド1つかプルリクエストのマージだけ。</li>
             <li>新しいバージョンが出ると、Orqevioが知らせてくれます。</li>
             <li>データ、キー、保管庫は常にそのまま保持されます。</li>
+            <li>毎日自動でバックアップを作成し、どこでも読めるZIPですべてをエクスポートできます。</li>
           </ul>
         </div>
       </div>
@@ -87,7 +88,7 @@
     <div class="wrap">
       <h2 id="license">ソースコードを公開、自由に使えます</h2>
       <p class="lead">Orqevioは<a href="https://github.com/hsylabs/orqevio/blob/main/LICENSE.md">FSL-1.1-ALv2</a>ライセンスで公開されています。使うのも、改変するのも、自分のOrqevioをホストするのも自由で、仕事での利用もできます。唯一認められていないのは、Orqevioと競合する商用の製品やサービスとして提供することです。各バージョンは、リリースから2年後にApache 2.0ライセンスになります。</p>
-      <p>Orqevioは現状のまま提供され、いかなる保証もありません。お使いのOrqevioとそのデータの管理は、ご自身の責任で行ってください。バックアップを取り、保管庫も定期的にエクスポートしてください。</p>
+      <p>Orqevioは現状のまま提供され、いかなる保証もありません。お使いのOrqevioとそのデータの管理は、ご自身の責任で行ってください。バックアップは別の場所にも保管し、保管庫も定期的にエクスポートしてください。</p>
       <div class="actions">
         <a class="button primary" href="{{base}}/install/">Orqevioをインストール</a>
       </div>

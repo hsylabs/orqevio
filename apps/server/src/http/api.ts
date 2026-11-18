@@ -21,7 +21,7 @@ function decodeFileName(header: string | undefined) {
 
 function limit(limiter: RateLimiter, key: string) {
   const wait = limiter.hit(key)
-  if (wait > 0) throw new AppError(429, 'rate_limited', `Too many attempts. Try again in ${Math.ceil(wait / 60)} min.`)
+  if (wait > 0) throw new AppError(429, 'rate_limited', `Too many attempts. Try again in ${Math.ceil(wait / 60)} min.`, undefined, { 'Retry-After': String(wait) })
 }
 
 async function json(c: { req: { json: () => Promise<unknown> } }) {
@@ -32,15 +32,35 @@ async function json(c: { req: { json: () => Promise<unknown> } }) {
   }
 }
 
-/** `?before=<ISO date>&beforeId=<id>&limit=<n>`: the page of history after the entry `beforeId`, updated at `before`. */
-function historyPage(c: { req: { query: (name: string) => string | undefined } }) {
+/**
+ * RFC 6266: `filename*` with the name in UTF-8 (RFC 8187 allows no `'`, `(`, `)` or `*` unescaped
+ * there), and before it a plain `filename` for clients that ignore it: ASCII, without quotes.
+ */
+function contentDisposition(kind: 'inline' | 'attachment', name: string) {
+  const encoded = encodeURIComponent(name).replace(/['()*]/g, (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`)
+  const plain = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_')
+  return `${kind}; filename="${plain}"; filename*=UTF-8''${encoded}`
+}
+
+type Query = { req: { query: (name: string) => string | undefined } }
+
+/** `?limit=<n>`: a whole number from 1 (larger ones mean the most a list gives), or none. */
+function limitParam(c: Query) {
+  const value = c.req.query('limit')
+  if (value === undefined || value === '') return undefined
+  if (!/^\d+$/.test(value) || Number(value) < 1) throw badRequest('`limit` must be a whole number from 1')
+  return Number(value)
+}
+
+/** `?before=<ISO date>`: ignored when it is not a date. */
+function beforeParam(c: Query) {
   const before = new Date(c.req.query('before') ?? '')
-  const limit = Number(c.req.query('limit'))
-  return {
-    before: Number.isNaN(before.getTime()) ? undefined : before,
-    beforeId: c.req.query('beforeId') || undefined,
-    limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
-  }
+  return Number.isNaN(before.getTime()) ? undefined : before
+}
+
+/** `?before=<ISO date>&beforeId=<id>&limit=<n>`: the page of history after the entry `beforeId`, updated at `before`. */
+function historyPage(c: Query) {
+  return { before: beforeParam(c), beforeId: c.req.query('beforeId') || undefined, limit: limitParam(c) }
 }
 
 export function createApi(env: Env) {
@@ -48,7 +68,10 @@ export function createApi(env: Env) {
   // Brute force is hopeless against a 160-bit key, but failed attempts are still slowed down;
   // a success resets the counter.
   const loginLimiter = new RateLimiter(10, 15 * 60 * 1000)
-  const setupLimiter = new RateLimiter(10, 60 * 60 * 1000)
+  // Each with its own count: failing one (the installer's uninstall, say) never locks the others.
+  const claimLimiter = new RateLimiter(10, 60 * 60 * 1000)
+  const recoverLimiter = new RateLimiter(10, 60 * 60 * 1000)
+  const uninstallLimiter = new RateLimiter(10, 60 * 60 * 1000)
 
   api.use('*', originGuard)
   api.use('*', resolveActor)
@@ -65,9 +88,9 @@ export function createApi(env: Env) {
   // ── Access ──────────────────────────────────────────────────────
   api.post('/auth/claim', async (c) => {
     const key = clientIp(c)
-    limit(setupLimiter, key)
+    limit(claimLimiter, key)
     const { user, accessKey, session } = await c.get('services').accounts.claim(await json(c), c.req.header('user-agent') ?? null)
-    setupLimiter.reset(key)
+    claimLimiter.reset(key)
     setSessionCookie(c, session.token, session.expiresAt)
     return c.json({ user, accessKey }, 201)
   })
@@ -81,9 +104,9 @@ export function createApi(env: Env) {
   })
   api.post('/auth/recover', async (c) => {
     const key = clientIp(c)
-    limit(setupLimiter, key)
+    limit(recoverLimiter, key)
     const { user, accessKey, session } = await c.get('services').accounts.recover(await json(c), c.req.header('user-agent') ?? null)
-    setupLimiter.reset(key)
+    recoverLimiter.reset(key)
     setSessionCookie(c, session.token, session.expiresAt)
     return c.json({ user, accessKey })
   })
@@ -107,7 +130,7 @@ export function createApi(env: Env) {
   api.post('/account/access-key', async (c) => c.json(await c.get('services').accounts.rotateAccessKey(requireActor(c), await json(c))))
   // The installer's uninstall: no session, authorized by a token it set on this copy's Worker.
   api.post('/uninstall', async (c) => {
-    limit(setupLimiter, clientIp(c))
+    limit(uninstallLimiter, clientIp(c))
     return c.json(await c.get('services').accounts.uninstallFromInstaller(await json(c)))
   })
   api.post('/account/uninstall', async (c) => {
@@ -119,6 +142,29 @@ export function createApi(env: Env) {
     await c.get('services').accounts.remove(requireActor(c), await json(c))
     clearSessionCookie(c)
     return c.body(null, 204)
+  })
+
+  // ── Backups (people only: the service checks it) ────────────────
+  api.get('/backups', async (c) => c.json(await c.get('services').backups.status(requireActor(c))))
+  api.post('/backups', async (c) => c.json(await c.get('services').backups.createNow(requireActor(c)), 201))
+  api.post('/backups/:id/restore', async (c) => {
+    const { session, restored } = await c.get('services').backups.restore(requireActor(c), c.req.param('id'), await json(c), c.req.header('user-agent') ?? null)
+    // Restoring ends every session, this one too: the person who restored gets a new one.
+    setSessionCookie(c, session.token, session.expiresAt)
+    return c.json({ restored })
+  })
+
+  // ── Export: the person's data as a ZIP to read or take elsewhere (people only) ──
+  api.get('/export', async (c) => {
+    const { body, filename } = await c.get('services').export.export(requireActor(c))
+    return new Response(body, {
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    })
   })
 
   // ── Workspaces ──────────────────────────────────────────────────
@@ -144,7 +190,8 @@ export function createApi(env: Env) {
   api.get('/workspaces/:id/search', async (c) => {
     const type = c.req.query('type')
     const types: Array<'card' | 'page'> | undefined = type === 'card' || type === 'page' ? [type] : undefined
-    return c.json(await c.get('services').search.search(requireActor(c), c.req.param('id'), c.req.query('q') ?? '', { types }))
+    const archived = c.req.query('archived') === '1'
+    return c.json(await c.get('services').search.search(requireActor(c), c.req.param('id'), c.req.query('q') ?? '', { types, archived }))
   })
   api.get('/workspaces/:id/activity', async (c) => {
     const actor = requireActor(c)
@@ -152,11 +199,10 @@ export function createApi(env: Env) {
     const access: Access = services.access
     await access.workspace(actor, c.req.param('id'))
     access.requireUser(actor)
-    const before = c.req.query('before')
     return c.json(
       await services.activity.list(c.req.param('id'), {
-        limit: Number(c.req.query('limit') ?? 30),
-        before: before ? new Date(before) : undefined,
+        limit: limitParam(c),
+        before: beforeParam(c),
         tokenId: c.req.query('tokenId') || undefined,
         agentsOnly: c.req.query('agents') === '1',
       }),
@@ -185,7 +231,8 @@ export function createApi(env: Env) {
     return c.body(null, 204)
   })
   api.delete('/boards/:id', async (c) => c.json({ trashId: await c.get('services').boards.remove(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
-  api.get('/boards/:id/archived', async (c) => c.json(await c.get('services').boards.archived(requireActor(c), c.req.param('id'))))
+  // `?before=<archivedAt>&beforeId=<id>`: the page after the last card of the one before.
+  api.get('/boards/:id/archived', async (c) => c.json(await c.get('services').boards.archived(requireActor(c), c.req.param('id'), historyPage(c))))
   api.post('/boards/:id/columns', async (c) =>
     c.json(await c.get('services').boards.createColumn(requireActor(c), c.req.param('id'), await json(c)), 201),
   )
@@ -273,12 +320,11 @@ export function createApi(env: Env) {
   }
   api.get('/attachments/:id', async (c) => {
     const { meta, inline, body } = await c.get('services').attachments.open(requireActor(c), c.req.param('id'))
-    const encoded = encodeURIComponent(meta.filename)
     return new Response(body, {
       headers: {
         'Content-Type': inline ? meta.mimeType : 'application/octet-stream',
         'Content-Length': String(meta.size),
-        'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encoded}`,
+        'Content-Disposition': contentDisposition(inline ? 'inline' : 'attachment', meta.filename),
         'Cache-Control': 'private, max-age=3600',
         'X-Content-Type-Options': 'nosniff',
         'Content-Security-Policy': "default-src 'none'; sandbox",
@@ -305,10 +351,7 @@ export function createApi(env: Env) {
   const vault = new Hono<AppEnv>()
   vault.use('*', sessionOnly)
   vault.get('/', async (c) => c.json(await c.get('services').vault.state(requireActor(c))))
-  vault.post('/setup', async (c) => {
-    await c.get('services').vault.setup(requireActor(c), await json(c))
-    return c.body(null, 204)
-  })
+  vault.post('/setup', async (c) => c.json(await c.get('services').vault.setup(requireActor(c), await json(c))))
   vault.put('/keys', async (c) => {
     await c.get('services').vault.rekey(requireActor(c), await json(c))
     return c.body(null, 204)

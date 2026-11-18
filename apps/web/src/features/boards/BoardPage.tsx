@@ -1,4 +1,4 @@
-import type { BoardDTO, CardSummaryDTO, ColumnDTO, LabelDTO, TrashedDTO } from '@orqevio/shared'
+import { type BoardDTO, type CardSummaryDTO, type ColumnDTO, type LabelDTO, MAX_COLUMNS, type TrashedDTO } from '@orqevio/shared'
 import {
   type Announcements,
   type CollisionDetection,
@@ -11,7 +11,8 @@ import {
   getFirstCollision,
   type KeyboardCoordinateGetter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCenter,
   pointerWithin,
   rectIntersection,
@@ -140,7 +141,10 @@ export function BoardPage() {
   }, [])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    // A mouse drags at once; a finger after resting a moment on the card, so that a swipe still
+    // scrolls the board (a pointer sensor loses the drag to the scroll: the browser cancels it).
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter, keyboardCodes: { start: ['Space'], cancel: ['Escape'], end: ['Space'] } }),
   )
 
@@ -382,7 +386,7 @@ export function BoardPage() {
             <>
               <FilterPopover filter={filter} onChange={setFilter} labels={data.labels} />
               <Button variant="ghost" size="sm" icon={<Archive />} onClick={() => setArchivedOpen(true)}>
-                <span className="max-sm:hidden">{t('board.archived')}</span>
+                <span className="max-sm:sr-only">{t('board.archived')}</span>
               </Button>
               <MenuRoot>
                 <MenuTrigger asChild>
@@ -464,7 +468,7 @@ export function BoardPage() {
                   )
                 })}
               </SortableContext>
-              <AddColumn boardId={boardId} />
+              {data.columns.length < MAX_COLUMNS && <AddColumn boardId={boardId} />}
             </div>
             <DragOverlay dropAnimation={{ duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }}>
               {activeCard ? (
@@ -559,7 +563,7 @@ function FilterPopover({ filter, onChange, labels }: { filter: Filter; onChange:
       className="w-[300px] p-3"
       trigger={
         <Button variant={count ? 'secondary' : 'ghost'} size="sm" icon={<ListFilter />}>
-          <span className="max-sm:hidden">{t('filter.button')}</span>
+          <span className="max-sm:sr-only">{t('filter.button')}</span>
           {count > 0 && <span className="grid size-4.5 place-items-center rounded-full bg-ink font-mono text-[10px] text-sheet">{count}</span>}
         </Button>
       }

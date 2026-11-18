@@ -24,9 +24,10 @@ import { ExportDialog, ImportDialog } from './TransferDialogs'
 import { Generator, PasswordText } from './Generator'
 import { getSession, lockVault, setAutoLock, updateSessionItems, useAutoLockRemaining, useVaultSession } from './session'
 import { type VaultBlocker, vaultBlockers } from '../../lib/browser'
+import { announceVaultChange, freshVaultState, lockIfVaultChanged } from './sync'
 import { estimateMasterPassword } from './strength'
 import { groupCode, parseTotp, totp } from './totp'
-import { ITEM_LIMITS, type VaultItem, type VaultItemType, emptyItem } from './types'
+import { ITEM_LIMITS, type VaultItem, type VaultItemType, emptyItem, tidyItem } from './types'
 import { VaultSetup, VaultUnlock } from './VaultGate'
 
 const CLIPBOARD_MS = 30_000
@@ -40,7 +41,7 @@ export function VaultPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <PageHeader crumbs={[{ label: t('title') }]} actions={session.key && state.data ? <UnlockedActions state={state.data} /> : undefined} />
+      <PageHeader crumbs={[{ label: t('title') }]} actions={session.key && state.data ? <UnlockedActions /> : undefined} />
       <div className="min-h-0 flex-1 overflow-y-auto">
         {blockers.length > 0 ? (
           <VaultUnsupported blockers={blockers} />
@@ -49,11 +50,11 @@ export function VaultPage() {
             <div className="skeleton size-24 rounded-full" />
           </div>
         ) : !state.data.initialized ? (
-          <VaultSetup userId={me.user.id} state={state.data} />
+          <VaultSetup userId={me.user.id} />
         ) : session.key && session.userId === me.user.id ? (
           <Unlocked />
         ) : (
-          <VaultUnlock userId={me.user.id} state={state.data} />
+          <VaultUnlock userId={me.user.id} />
         )}
       </div>
     </div>
@@ -103,7 +104,7 @@ function AutoLockRing() {
   )
 }
 
-function UnlockedActions({ state }: { state: VaultStateDTO }) {
+function UnlockedActions() {
   const { t } = useTranslation('vault')
   const session = useVaultSession()
   const [changeOpen, setChangeOpen] = useState(false)
@@ -116,6 +117,7 @@ function UnlockedActions({ state }: { state: VaultStateDTO }) {
     setAutoLock(minutes)
     try {
       await patch('/vault/settings', { autoLockMinutes: minutes })
+      announceVaultChange()
       await queryClient.invalidateQueries({ queryKey: keys.vault })
     } catch (error) {
       toast.error(errorMessage(error))
@@ -126,7 +128,7 @@ function UnlockedActions({ state }: { state: VaultStateDTO }) {
     <>
       <AutoLockRing />
       <Button variant="ghost" size="sm" icon={<Dices />} onClick={() => setGeneratorOpen(true)}>
-        <span className="max-sm:hidden">{t('toolbar.generator')}</span>
+        <span className="max-sm:sr-only">{t('toolbar.generator')}</span>
       </Button>
       <MenuRoot>
         <MenuTrigger asChild>
@@ -156,9 +158,9 @@ function UnlockedActions({ state }: { state: VaultStateDTO }) {
       <Button variant="primary" size="sm" icon={<LockKeyhole />} onClick={lockVault}>
         {t('toolbar.lock')}
       </Button>
-      <ChangeMasterDialog open={changeOpen} onOpenChange={setChangeOpen} state={state} />
+      <ChangeMasterDialog open={changeOpen} onOpenChange={setChangeOpen} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
-      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} state={state} />
+      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
       <Dialog open={generatorOpen} onOpenChange={setGeneratorOpen} title={t('toolbar.generatorTitle')} description={t('toolbar.generatorDescription')}>
         <Generator />
       </Dialog>
@@ -187,31 +189,38 @@ function Unlocked() {
   const confirm = useConfirm()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | VaultItemType | 'favorite'>('all')
-  const [selectedId, setSelectedId] = useState<string | null>(session.items[0]?.id ?? null)
+  // Side by side, the first item of the list is open; on a phone, where an open item covers the
+  // list, it starts at the list.
+  const [selectedId, setSelectedId] = useState<string | null>(() =>
+    window.matchMedia(SIDE_BY_SIDE).matches ? ([...session.items].sort(listOrder(language))[0]?.id ?? null) : null,
+  )
   const [draft, setDraft] = useState<VaultItem | null>(null)
 
   const items = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = fold(query.trim())
     return [...session.items]
       .filter((i) => (filter === 'all' ? true : filter === 'favorite' ? i.favorite : i.type === filter))
-      .filter((i) => !q || `${i.title} ${i.username} ${i.url}`.toLowerCase().includes(q))
-      .sort((a, b) => Number(b.favorite) - Number(a.favorite) || a.title.localeCompare(b.title, language))
+      .filter((i) => !q || fold(`${i.title} ${i.username} ${i.url}`).includes(q))
+      .sort(listOrder(language))
   }, [session.items, query, filter, language])
 
   const selected = session.items.find((i) => i.id === selectedId) ?? null
 
   async function save(item: VaultItem) {
     const s = getSession()
-    if (!s.key || !s.userId) return false
-    const next = { ...item, title: item.title.trim() || (item.type === 'login' ? host(item.url) || t('untitled.login') : t('untitled.note')), updatedAt: new Date().toISOString() }
+    if (!s.key || s.keyVersion === null || !s.userId) return false
+    // Tidied as an import is, so that the same item exported and imported again is seen as the same.
+    const tidy = tidyItem(item)
+    const next = { ...tidy, title: tidy.title || (item.type === 'login' ? host(tidy.url) || t('untitled.login') : t('untitled.note')), updatedAt: new Date().toISOString() }
     try {
       const data = await encryptItem(s.key, s.userId, next)
-      await put(`/vault/items/${next.id}`, { data })
+      await put(`/vault/items/${next.id}`, { data, keyVersion: s.keyVersion })
       updateSessionItems(s.key, (items) => (items.some((i) => i.id === next.id) ? items.map((i) => (i.id === next.id ? next : i)) : [...items, next]))
       setSelectedId(next.id)
       return true
     } catch (error) {
       toast.error(errorMessage(error))
+      lockIfVaultChanged(error, s.key)
       return false
     }
   }
@@ -274,7 +283,8 @@ function Unlocked() {
         </div>
         <ul className="min-h-0 flex-1 overflow-y-auto p-1.5" aria-label={t('list.label')}>
           {items.map((item) => (
-            <li key={item.id}>
+            // A long vault draws only the rows in view (up to 5,000 items).
+            <li key={item.id} className="[contain-intrinsic-size:auto_52px] [content-visibility:auto]">
               <button
                 type="button"
                 onClick={() => {
@@ -479,7 +489,7 @@ function TotpField({ value }: { value: string }) {
             {groupCode(current.code)}
           </span>
           <span className={cn('text-[12px] tabular-nums', current.remaining <= 5 ? 'text-warn' : 'text-ink-3')} aria-label={t('totp.changesIn', { count: current.remaining })}>
-            {current.remaining} s
+            {t('totp.seconds', { count: current.remaining })}
           </span>
         </span>
       ) : (
@@ -614,7 +624,17 @@ function ItemEditor({ initial, onSave, onCancel }: { initial: VaultItem; onSave:
   )
 }
 
-function ChangeMasterDialog({ open, onOpenChange, state }: { open: boolean; onOpenChange: (o: boolean) => void; state: VaultStateDTO }) {
+/** Favourites first, then by title. */
+const listOrder = (language: string | undefined) => (a: VaultItem, b: VaultItem) =>
+  Number(b.favorite) - Number(a.favorite) || a.title.localeCompare(b.title, language)
+
+/** Tailwind's `md`: the list and the open item side by side. */
+const SIDE_BY_SIDE = '(min-width: 768px)'
+
+/** For searching: lower case, without accents (`Música` is found as `musica`). */
+const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+
+function ChangeMasterDialog({ open, onOpenChange: setOpen }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { t } = useTranslation(['vault', 'common'])
   const { me } = useWorkspace()
   const [current, setCurrent] = useState('')
@@ -622,6 +642,16 @@ function ChangeMasterDialog({ open, onOpenChange, state }: { open: boolean; onOp
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Closed, it forgets what was typed: passwords don't wait in a hidden form.
+  const onOpenChange = (o: boolean) => {
+    if (!o) {
+      setCurrent('')
+      setNext('')
+      setConfirm('')
+      setError(null)
+    }
+    setOpen(o)
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -630,14 +660,14 @@ function ChangeMasterDialog({ open, onOpenChange, state }: { open: boolean; onOp
     setBusy(true)
     setError(null)
     try {
-      const fresh = await get<VaultStateDTO>('/vault')
+      const fresh = await freshVaultState()
+      // Reset in another tab since this one opened it: it is locked now, and says why.
+      if (fresh.keyVersion !== getSession().keyVersion) return
       const newKeys = await changeMasterPassword(fresh, current, next, me.user.id)
-      await put('/vault/keys', newKeys)
+      await put('/vault/keys', { ...newKeys, keyVersion: fresh.keyVersion })
+      announceVaultChange()
       await queryClient.invalidateQueries({ queryKey: keys.vault })
       onOpenChange(false)
-      setCurrent('')
-      setNext('')
-      setConfirm('')
       toast.success(t('changeMaster.done'))
     } catch (err) {
       setError(err instanceof WrongSecretError ? t('changeMaster.wrongCurrent') : errorMessage(err))

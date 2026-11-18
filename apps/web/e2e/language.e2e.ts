@@ -1,4 +1,4 @@
-import { OWNER_STATE, expect, openNewWorkspace, settle, test } from './helpers'
+import { behindProxy, expect, openNewWorkspace, OWNER_STATE, settle, test } from './helpers'
 
 test('the app speaks the language of the account, chosen in Settings', async ({ page, browser, baseURL }) => {
   await openNewWorkspace(page, 'Idiomas E2E')
@@ -22,7 +22,7 @@ test('the app speaks the language of the account, chosen in Settings', async ({ 
     await expect(page.getByRole('region', { name: 'Column Done' })).toBeVisible()
 
     // Another device signed in to the account follows it, whatever its browser says.
-    const device = await browser.newContext({ storageState: OWNER_STATE, locale: 'es-ES', baseURL })
+    const device = await browser.newContext({ ...behindProxy, storageState: OWNER_STATE, locale: 'es-ES', baseURL })
     const other = await device.newPage()
     await settle(other, baseURL!)
     await other.goto('/')
@@ -31,7 +31,7 @@ test('the app speaks the language of the account, chosen in Settings', async ({ 
 
     // Before signing in, a device uses its own language, and the picker changes it.
     // Contexts made in a test inherit the owner's session unless told otherwise.
-    const visitor = await browser.newContext({ locale: 'en-US', baseURL, storageState: { cookies: [], origins: [] } })
+    const visitor = await browser.newContext({ ...behindProxy, locale: 'en-US', baseURL, storageState: { cookies: [], origins: [] } })
     const signIn = await visitor.newPage()
     await settle(signIn, baseURL!)
     await signIn.goto('/login')

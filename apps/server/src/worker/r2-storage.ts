@@ -27,6 +27,10 @@ export class R2Storage implements AttachmentStorage {
     return object?.body ?? null
   }
 
+  async exists(key: string) {
+    return (await this.bucket.head(this.check(key))) !== null
+  }
+
   async delete(key: string) {
     await this.bucket.delete(this.check(key))
   }

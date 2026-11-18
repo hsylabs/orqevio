@@ -28,6 +28,7 @@ And **nothing an agent does is final.** Every change can be undone for 30 days, 
 - **No stepping on each other's toes.** Documents and card descriptions use optimistic versioning: if an agent edits a page or a card while you're writing, Orqevio lets you know and you choose which version to keep.
 - **Nothing is lost by mistake.** What you delete waits 30 days in the trash with everything it held: a page with its subpages and files, a column with its cards. Undo it right away from the notice, or restore it later with one click.
 - **Every change has its history, and can be undone.** Each page and card keeps 30 days of changes, by people and by agents: who changed what and when, and for texts what changed line by line, like a diff. Undo one change, put back an earlier version, or take back everything an agent did from a point on; if someone changed the same thing since, Orqevio asks first.
+- **Your data, safe and yours.** Your copy backs itself up every day, apart from its data, and you restore any of the last 7 backups from **Settings**. **Export your data** gives you everything as a ZIP you can read without Orqevio: tasks in JSON, documents in Markdown and the attachments.
 - **Keyboard first.** `⌘K`/`Ctrl K` opens the command palette to search and jump anywhere; `⌘\` hides the sidebar; and you can rearrange the whole Kanban board from the keyboard (space to pick up, arrow keys to move, space to drop), with screen reader announcements.
 - **A look of its own.** Warm paper, ink and two signal colors: khaki for you, ultramarine for your agents. Editorial type (Fraunces) over a restrained interface (Instrument Sans). Light and dark themes, with text colors tuned to WCAG AA contrast.
 - **In your language.** The app and the installer speak English, Spanish, French, Portuguese, Italian, German, Dutch and Japanese. Your copy takes your browser's language when you claim it, and you can change it anytime in **Settings**.
@@ -46,6 +47,8 @@ Everything people and agents change can be taken back for 30 days.
 - **Restore this version** puts a page's content or a card's description back as it was.
 
 If someone changed the same thing after the change you undo, Orqevio says who and asks first. Undoing is a change of its own, so it can be undone too. Only people undo.
+
+**Backups.** Beyond 30 days, or if something goes wrong, the daily backups bring the whole copy back as it was on a given day: in **Settings → Backups**, pick one and restore it after typing your access key. Before restoring, the copy backs itself up as it is. See [With Docker](#with-docker-recommended-for-production) and [On Cloudflare](#on-cloudflare-with-one-command) for where they are kept.
 
 **What agents may delete and move.** Each token and OAuth connection has the permission **Can delete and move**. With it, an agent can delete what it can write, always to the trash, and move cards to another board and files to another card or page. New tokens and connections have it unless you untick it; those made before 1.1.0 don't until you turn it on in **Agents**, where each one has the switch. Without it, an agent can still archive cards, and move cards within their board and pages within their project.
 
@@ -133,9 +136,19 @@ This runs the published image (`ghcr.io/hsylabs/orqevio`, for amd64 and arm64). 
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
-The app listens on port 3000 and applies its migrations on startup. Put it behind a reverse proxy with HTTPS (Caddy, Nginx, Traefik) and, if you do, add `TRUST_PROXY=true`. The SQLite database and the attachments are stored in the `orqevio-data` volume.
+The app listens on port 3000 and applies its migrations on startup. Put it behind a reverse proxy with HTTPS (Caddy, Nginx, Traefik) and, if you do, add `TRUST_PROXY=true` (or the number of proxies in front, such as `2` for a CDN plus Nginx). The proxy may also ask for a password (HTTP basic auth). Agents send their own `Authorization: Bearer` header, with a token Orqevio checks itself: if you connect any, let requests carrying one through without the password, and also `/mcp`, `/oauth/` and `/.well-known/`, which OAuth clients reach before they have a token. Let the live updates (`/api/workspaces/…/live`) through too: Safari does not send the password when it opens them, and Orqevio checks the session itself. [`apps/web/e2e/proxy/nginx.conf`](apps/web/e2e/proxy/nginx.conf) does all this with Nginx. The SQLite database and the attachments are stored in the `orqevio-data` volume.
 
-**Backups.** With the app running, make a live backup of the database, then copy it out of the container together with the attachments, in the `uploads` folder:
+**Backups.** Your copy backs itself up every day: the database and the attachments, as they are, in the `backups` folder of the volume (`/data/backups`). It keeps the 7 newest. **Settings → Backups** lists them, makes one on the spot with **Back up now**, and restores any of them after you type your access key. Before restoring, it backs up the copy as it is, so you can go back. To keep the backups off the server too, copy them out from time to time, or set `BACKUP_DIR` to a folder you mount from another disk:
+
+```bash
+docker compose cp app:/data/backups ./orqevio-backups
+```
+
+On a new server, a backup comes back the same way: put the folder in the new copy's volume (or mount it as `BACKUP_DIR`), claim the copy and restore it from **Settings → Backups**. `BACKUPS=off` turns them off.
+
+**Export.** **Settings → Export your data** downloads a ZIP you can read without Orqevio: each workspace's tasks in JSON, its documents in Markdown and the attachments, with the links between them pointing at the files. The vault has its own encrypted export.
+
+**Backups by hand.** With the app running, make a live backup of the database, then copy it out of the container together with the attachments, in the `uploads` folder:
 
 ```bash
 docker compose exec app node dist/cli.js backup /data/backup.db
@@ -169,7 +182,7 @@ The installer:
 
 1. Opens your browser so you can sign in to Cloudflare (Wrangler's official sign-in). If it doesn't open, open the link the installer shows. On Windows, the installer opens it itself, through Explorer: some antivirus programs (Norton, for example) block the encoded PowerShell command Wrangler uses to open the browser. If signing in still fails, sign in on its own with `npx wrangler login --browser=false` and run the installer again.
 2. Asks you for a name for the copy (`orqevio` by default), which becomes part of its address.
-3. Deploys the copy and creates its R2 bucket.
+3. Deploys the copy and creates its two R2 buckets: one for attachments and one for backups (`<name>-backups`).
 4. Shows you its address (`https://orqevio.<your-subdomain>.workers.dev`) and a randomly generated, single-use **setup code**.
 
 Open the address and enter the code and your name: Orqevio gives you your access key. From then on, the code no longer works.
@@ -195,6 +208,7 @@ Deletes your copy and everything in it, in one step, after you type its name: se
 - **Several copies:** add `--name <name>` to any of these commands.
 - **Several Cloudflare accounts:** the installer asks which one to use; you can also pass it with `--account <id>` or `CLOUDFLARE_ACCOUNT_ID`.
 - **Language:** the installer speaks your terminal's language; pick another with `--lang <code>` (`en`, `es`, `fr`, `pt`, `it`, `de`, `nl` or `ja`).
+- **Backups:** your copy backs itself up every day to its backups bucket, and keeps the 7 newest. **Settings → Backups** lists them, makes one on the spot and restores any of them; **Settings → Export your data** downloads everything as a readable ZIP. Copies installed before 1.2.0 get the bucket with their next update, and make their first backup within the hour. A copy installed again with the same name finds the backups of the one before, if you kept them when uninstalling, and can restore them from **Settings → Backups**.
 - **Your settings are kept:** the variables you set in the Cloudflare dashboard (`APP_URL`, `MAX_UPLOAD_MB`) survive updates.
 - **Privacy:** the installer turns off Wrangler's anonymous telemetry, unless you turned it on yourself.
 - **What it does, exactly:**
@@ -434,12 +448,14 @@ The tests first claim the copy through the interface and try the access key. The
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `APP_URL` | `http://localhost:3000` | Public origins, separated by commas. With `https://`, it turns on `Secure` cookies and HSTS. |
-| `PORT` / `HOST` | `3000` / `0.0.0.0` | Address to listen on. |
-| `DATA_DIR` | `./data` | Data folder: the SQLite database (`orqevio.db`) and attachments (`uploads/`). |
-| `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Path to the SQLite file, if you want to keep it apart from the attachments. |
+| `APP_URL` | `http://localhost:3000` | Public origins, full addresses separated by commas. The first one decides: with `https://`, it turns on `Secure` cookies and HSTS. |
+| `PORT` / `HOST` | `3000` / `0.0.0.0` | Address to listen on. With Docker Compose, `PORT` is the port on your machine, and the container always listens on 3000. |
+| `DATA_DIR` | `./data` | Data folder: the SQLite database (`orqevio.db`) and attachments (`uploads/`). In Docker, it is the `orqevio-data` volume. |
+| `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Path to the SQLite file, if you want to keep it apart from the attachments (from source only). |
 | `MAX_UPLOAD_MB` | `20` | Maximum size per file. |
-| `TRUST_PROXY` | `false` | Trust `X-Forwarded-For` (behind a reverse proxy). |
+| `BACKUP_DIR` | `DATA_DIR/backups` | Where the daily backups go. Set it to a folder on another disk to keep them apart from the data. |
+| `BACKUPS` | `on` | `off` turns the daily backups off. |
+| `TRUST_PROXY` | `false` | Behind a reverse proxy, `true`, or the number of proxies in front. The visitor's address for the limits on failed attempts is then the one the proxy adds at the end of `X-Forwarded-For`, never what the visitor sent. |
 | `SECURE_COOKIES` | based on `APP_URL` | Forces `Secure` cookies. |
 | `SETUP_CODE` | generated on startup | Code to claim the copy the first time. Changing it lets you recover access. |
 | `UPDATE_CHECK` | `on` | Asks `registry.npmjs.org` for new versions so the app can let you know. `off` turns it off. |
@@ -452,7 +468,6 @@ On Cloudflare, only `SETUP_CODE` (a required secret), `APP_URL` (optional; defau
 - **No simultaneous co-editing.** There's no CRDT-style real-time collaborative editing; conflicts are detected by version and resolved explicitly.
 - **OAuth for public clients only.** Confidential clients (`client_secret_*`, `private_key_jwt`) and the `client_credentials` flow aren't supported; the usual MCP clients, Claude connectors included, are public.
 - **One process per copy.** SQLite, attachments on disk and in-memory real time assume a single server instance per copy, which is Orqevio's model (one copy per person).
-- **Backups on Cloudflare.** There's no export from the app yet: the data stays in the Durable Object and in the R2 bucket in your account.
 - **No migration from PostgreSQL.** Earlier development versions used PostgreSQL; there's no tool to move that data to SQLite.
 - **One person per copy.** There's no sign-up or email; if you lose your access key, you recover access from the server (with the CLI or a new `SETUP_CODE`).
 - **Personal vault.** It isn't shared between people. It imports browser CSV exports and Bitwarden's formats; it can't read those of other password managers (1Password, KeePass…) unless you convert them to one of these first.
@@ -486,7 +501,7 @@ apps/site            the public website, orqevio.com: static pages with no cooki
 
 Orqevio is provided as is, without warranty of any kind, as its [license](LICENSE.md) says. You host and run your own copy, so its data is in your hands:
 
-- **Make backups.** With Docker, copy the volume or make a live backup of the database (see [With Docker](#with-docker-recommended-for-production)). On Cloudflare, the app can't export your data yet, apart from the vault.
+- **Keep your backups somewhere else too.** Your copy backs itself up every day, but on the same server or account: copy the backups out from time to time, or download a ZIP from **Settings → Export your data** (see [With Docker](#with-docker-recommended-for-production) and [On Cloudflare](#on-cloudflare-with-one-command)).
 - **Export your vault** from time to time, encrypted with your master password.
 - **Keep your access key and your vault's recovery key safe.** No one can open your vault without its master password or its recovery key, not even us.
 

@@ -113,7 +113,8 @@
       "bad_secret": "De geheime sleutel mag alleen de letters A t/m Z en de cijfers 2 t/m 7 bevatten.",
       "too_short": "De geheime sleutel is te kort.",
       "bad_parameters": "De otpauth://-link heeft ongeldige parameters."
-    }
+    },
+    "seconds": "{{count}} s"
   },
   "editor": {
     "editTitle": "Item bewerken",
@@ -150,7 +151,8 @@
     "fairHint": "Voeg meer woorden of meer soorten tekens toe.",
     "good": "Goed",
     "veryGood": "Zeer goed",
-    "rememberHint": "Let op: als je het vergeet, kan alleen de herstelsleutel de kluis nog openen."
+    "rememberHint": "Let op: als je het vergeet, kan alleen de herstelsleutel de kluis nog openen.",
+    "labelled": "{{label}}. "
   },
   "generator": {
     "regenerate": "Nog een genereren",
@@ -237,7 +239,8 @@
       "empty": "Het bestand is leeg.",
       "unknown_format": "Orqevio herkent dit bestand niet. Gebruik de CSV die Chrome, Edge, Firefox of Safari exporteren, de CSV of JSON van Bitwarden, of een export van Orqevio.",
       "bitwarden_encrypted": "Dit is een versleutelde export van Bitwarden. Exporteer opnieuw als onversleutelde ‘.json’ of ‘.csv’ en importeer die hier.",
-      "no_items": "Het bestand bevat geen logins of notities."
+      "no_items": "Het bestand bevat geen logins of notities.",
+      "unclosed_quote": "Een aanhalingsteken op regel {{line}} wordt nooit gesloten: het bestand is onvolledig of beschadigd. Open het in een spreadsheet, controleer het en sla het opnieuw op als CSV."
     },
     "encrypted_one": "Dit is een versleutelde export van Orqevio met {{count}} item. Voer het hoofdwachtwoord in dat je had toen je exporteerde.",
     "encrypted_other": "Dit is een versleutelde export van Orqevio met {{count}} items. Voer het hoofdwachtwoord in dat je had toen je exporteerde.",
@@ -260,8 +263,15 @@
     "nothingNew": "Niets nieuws om te importeren",
     "duplicates_one": "{{count}} item staat al in je kluis en wordt overgeslagen",
     "duplicates_other": "{{count}} items staan al in je kluis en worden overgeslagen",
-    "unsupported_one": "{{count}} item wordt niet ondersteund (betaalkaarten of identiteiten) en wordt niet geïmporteerd",
-    "unsupported_other": "{{count}} items worden niet ondersteund (betaalkaarten of identiteiten) en worden niet geïmporteerd",
+    "extras_one": "{{count}} item heeft aangepaste velden, meer adressen of eerdere wachtwoorden: die komen in de notities ervan",
+    "extras_other": "{{count}} items hebben aangepaste velden, meer adressen of eerdere wachtwoorden: die komen in hun notities",
+    "passkeys_one": "{{count}} login heeft een passkey, die niet kan worden geïmporteerd; de rest van de login wel",
+    "passkeys_other": "{{count}} logins hebben een passkey, die niet kan worden geïmporteerd; de rest van elke login wel",
+    "unsupported_one": "{{count}} item wordt niet ondersteund (betaalkaarten, identiteiten of SSH-sleutels) en wordt niet geïmporteerd",
+    "unsupported_other": "{{count}} items worden niet ondersteund (betaalkaarten, identiteiten of SSH-sleutels) en worden niet geïmporteerd",
+    "tooLong_one": "{{count}} item is groter dan de kluis kan bevatten en wordt niet geïmporteerd: {{titles}}",
+    "tooLong_other": "{{count}} items zijn groter dan de kluis kan bevatten en worden niet geïmporteerd: {{titles}}",
+    "latin1": "Het bestand was niet in UTF-8 en is gelezen als Windows-1252 (Latin-1), de codering van oudere spreadsheets. Controleer vóór het importeren of accenten en speciale tekens goed worden weergegeven.",
     "unencryptedWarning": "Het bestand dat je hebt gekozen, is niet versleuteld: verwijder het van je computer als je klaar bent.",
     "chooseAnother": "Ander bestand kiezen",
     "progress": "{{done}} van {{total}} versleutelen…",
@@ -274,7 +284,12 @@
     "locked": "De kluis is vergrendeld voordat het importeren klaar was. Ontgrendel hem en importeer het bestand opnieuw: wat al is geïmporteerd, wordt overgeslagen.",
     "untitledNote": "Notitie",
     "untitledLogin": "Naamloos",
-    "damaged": "Deze export is beschadigd en kan niet worden gelezen."
+    "damaged": "Deze export is beschadigd en kan niet worden gelezen.",
+    "extra": {
+      "fields": "Aangepaste velden:",
+      "uris": "Andere adressen:",
+      "history": "Eerdere wachtwoorden:"
+    }
   },
   "export": {
     "title": "Kluis exporteren",

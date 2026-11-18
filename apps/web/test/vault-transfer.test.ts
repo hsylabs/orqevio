@@ -1,8 +1,13 @@
-import { describe, expect, it } from 'vitest'
-import { WrongSecretError, openExport, sealExport } from '../src/features/vault/crypto'
-import { MAX_IMPORT_BYTES, parseCsv, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from '../src/features/vault/transfer'
-import { ITEM_LIMITS, type VaultItem, emptyItem } from '../src/features/vault/types'
-import { MAX_VAULT_ITEMS } from '@orqevio/shared'
+import i18next from 'i18next'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { WrongSecretError, encryptItem, itemEnvelopeLength, openExport, sealExport } from '../src/features/vault/crypto'
+import { MAX_IMPORT_BYTES, UnclosedQuoteError, decodeImport, parseCsv, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from '../src/features/vault/transfer'
+import { ITEM_LIMITS, type VaultItem, emptyItem, tidyItem } from '../src/features/vault/types'
+import vault from '../src/i18n/locales/es/vault.json'
+import { MAX_ENVELOPE_LENGTH, MAX_VAULT_ITEMS } from '@orqevio/shared'
+
+// The headings an import writes in notes are in the person's language.
+beforeAll(() => i18next.init({ lng: 'es', resources: { es: { vault } }, ns: ['vault'] }))
 
 function items(text: string) {
   const outcome = readImport(text)
@@ -18,6 +23,30 @@ describe('CSV', () => {
       ['1,5', 'dice "hola"', 'línea 1\nlínea 2'],
     ])
     expect(parseCsv('a,b\nx,')).toEqual([['a', 'b'], ['x', '']])
+  })
+
+  it('stops at a quote that never closes, and says on which line it opened', () => {
+    // Without the check, the three rows after the quote became one value of one row.
+    const text = 'name,url,username,password\r\nUno,a.com,u,p\r\nDos,"b.com,u,p\r\nTres,c.com,u,p\r\nCuatro,d.com,u,p\r\n'
+    expect(() => parseCsv(text)).toThrow(UnclosedQuoteError)
+    expect(readImport(text)).toEqual({ kind: 'problem', problem: 'unclosed_quote', line: 3 })
+    // A quote that closes on a later line is a value with a line break, as always.
+    expect(parseCsv('a,b\n"uno\ndos",x\n')).toEqual([['a', 'b'], ['uno\ndos', 'x']])
+  })
+})
+
+describe('reading the file', () => {
+  it('reads UTF-8 with or without a BOM, UTF-16 with one, and anything else as Windows-1252, saying so', () => {
+    const csv = 'name,url,username,password\nCafé Ñandú,ejemplo.es,ana,contraseña€\n'
+    expect(decodeImport(new TextEncoder().encode(csv))).toEqual({ text: csv, encoding: 'utf-8' })
+    expect(decodeImport(new TextEncoder().encode(`\uFEFF${csv}`)).encoding).toBe('utf-8')
+    const utf16 = new Uint8Array([0xff, 0xfe, ...Array.from(csv).flatMap((ch) => [ch.charCodeAt(0) & 0xff, ch.charCodeAt(0) >> 8])])
+    expect(decodeImport(utf16)).toEqual({ text: csv, encoding: 'utf-16' })
+    // The same file saved by an older spreadsheet, in Latin-1 (Windows-1252 has the euro sign at 0x80).
+    const latin1 = new Uint8Array(Array.from(csv).map((ch) => (ch === '€' ? 0x80 : ch.charCodeAt(0))))
+    const read = decodeImport(latin1)
+    expect(read).toEqual({ text: csv, encoding: 'windows-1252' })
+    expect(items(read.text).items[0]).toMatchObject({ title: 'Café Ñandú', password: 'contraseña€' })
   })
 })
 
@@ -85,6 +114,94 @@ describe('importing', () => {
     expect(result.items[0]).toMatchObject({ createdAt: '2025-01-02T03:04:05.000Z', updatedAt: '2025-06-01T00:00:00.000Z' })
   })
 
+  it("keeps what Bitwarden's JSON has and the vault has no field for in the notes, and counts it", () => {
+    const json = {
+      encrypted: false,
+      items: [
+        {
+          type: 1,
+          name: 'Banco',
+          notes: 'Cuenta nómina',
+          login: {
+            uris: [{ uri: 'https://banco.es' }, { uri: 'https://app.banco.es' }, { uri: '' }, { uri: 'https://movil.banco.es' }],
+            username: 'ana',
+            password: 'nueva',
+            fido2Credentials: [{ credentialId: 'x' }],
+          },
+          fields: [
+            { name: 'PIN', value: '1234', type: 1 },
+            { name: 'Pregunta de seguridad', value: 'Mi primer perro', type: 0 },
+            { name: 'Recordar', value: 'true', type: 2 },
+            { name: 'Usuario', value: null, type: 3, linkedId: 100 },
+          ],
+          passwordHistory: [
+            { password: 'anterior', lastUsedDate: '2025-05-01T10:00:00.000Z' },
+            { password: 'antigua', lastUsedDate: null },
+          ],
+        },
+        { type: 2, name: 'Wi-Fi', notes: null, secureNote: { type: 0 }, fields: [{ name: 'Red', value: 'Casa', type: 0 }] },
+        { type: 1, name: 'Simple', login: { uris: [{ uri: 'simple.com' }], username: 'u', password: 'p' } },
+        { type: 5, name: 'Servidor', sshKey: { privateKey: 'x' } },
+      ],
+    }
+    const result = items(JSON.stringify(json))
+    expect(result).toMatchObject({ extras: 2, passkeys: 1, unsupported: 1, tooLong: [] })
+    expect(result.items[0]).toMatchObject({ url: 'https://banco.es', password: 'nueva' })
+    expect(result.items[0]!.notes).toBe(
+      [
+        'Cuenta nómina',
+        'Campos personalizados:\nPIN: 1234\nPregunta de seguridad: Mi primer perro\nRecordar: true',
+        'Otras direcciones:\nhttps://app.banco.es\nhttps://movil.banco.es',
+        'Contraseñas anteriores:\nanterior (2025-05-01)\nantigua',
+      ].join('\n\n'),
+    )
+    expect(result.items[1]!.notes).toBe('Campos personalizados:\nRed: Casa')
+    expect(result.items[2]!.notes).toBe('')
+  })
+
+  it("keeps Bitwarden CSV's custom fields and every address of a login", () => {
+    const result = items(
+      'folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp\n' +
+        ',,login,Correo,,"PIN: 1234\nPregunta: Lisboa",0,"https://a.com,https://b.com, https://c.com",ana,pw,\n' +
+        ',,login,Solo,,,0,https://solo.com,ana,pw,\n',
+    )
+    expect(result.extras).toBe(1)
+    expect(result.items.map((i) => [i.url, i.notes])).toEqual([
+      ['https://a.com', 'Campos personalizados:\nPIN: 1234\nPregunta: Lisboa\n\nOtras direcciones:\nhttps://b.com\nhttps://c.com'],
+      ['https://solo.com', ''],
+    ])
+    // Other exporters' addresses are kept whole: a comma can be part of one.
+    expect(items('name,url,username,password\nX,"https://x.com/?a=1,2",u,p\n').items[0]!.url).toBe('https://x.com/?a=1,2')
+  })
+
+  it('does not take items larger than the vault can hold once encrypted, and names them', () => {
+    const huge = 'a'.repeat(MAX_ENVELOPE_LENGTH)
+    const result = items(`name,url,username,password,note\nEnorme,a.com,u,p,${huge}\nCorta,b.com,u,p,ok\n`)
+    expect(result.items.map((i) => i.title)).toEqual(['Corta'])
+    expect(result.tooLong).toEqual(['Enorme'])
+    // Notes that the extras push over the size count too.
+    const near = 'n'.repeat(299_000)
+    expect(items(JSON.stringify({ items: [{ type: 2, name: 'Cabe', notes: near }] })).items).toHaveLength(1)
+    const json = { items: [{ type: 2, name: 'Casi', notes: near, fields: [{ name: 'Campo', value: 'v'.repeat(2_000), type: 0 }] }] }
+    expect(items(JSON.stringify(json))).toMatchObject({ items: [], tooLong: ['Casi'] })
+  })
+
+  it("takes items over the editor's limits that the vault holds, so its own backups come back whole", async () => {
+    // Imported before 1.2.0, which had no limit: the vault took it and keeps it.
+    const kept: VaultItem = { ...emptyItem('note'), title: 'Larga', notes: 'n'.repeat(ITEM_LIMITS.notes + 1) }
+    const back = readDecryptedExport(JSON.stringify(toBitwardenJson([kept])))
+    expect(back).toMatchObject({ tooLong: [] })
+    expect(back!.items[0]!.notes).toBe(kept.notes)
+  })
+
+  it('knows the size of an item once encrypted without encrypting it', async () => {
+    const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
+    for (const notes of ['', 'ñandú 🍳', 'x'.repeat(1001), 'línea\n"comillas"\t\u0001']) {
+      const one = { ...emptyItem('login'), title: 'Prueba', username: 'ana', notes }
+      expect(itemEnvelopeLength(one)).toBe((await encryptItem(key, 'user-1', one)).length)
+    }
+  })
+
   it('explains the files it cannot read', () => {
     expect(readImport('   ')).toEqual({ kind: 'problem', problem: 'empty' })
     expect(readImport('{"encrypted":true,"encKeyValidation_DO_NOT_EDIT":"2.x","items":[]}')).toEqual({ kind: 'problem', problem: 'bitwarden_encrypted' })
@@ -92,6 +209,27 @@ describe('importing', () => {
     expect(readImport('fecha,importe\n2025-01-01,10\n')).toEqual({ kind: 'problem', problem: 'unknown_format' })
     expect(readImport('{ no es json')).toEqual({ kind: 'problem', problem: 'unknown_format' })
     expect(readImport('name,url,username,password,note\n')).toEqual({ kind: 'problem', problem: 'no_items' })
+  })
+
+  it('keeps notes exactly as they are, spaces and line breaks at the end included', () => {
+    const vaultItems: VaultItem[] = [
+      { ...emptyItem('note'), title: 'Clave', notes: 'secreto  \n' },
+      { ...emptyItem('login'), title: 'Correo', username: 'ana', password: 'pw', notes: '\n  sangría\n\n' },
+    ]
+    const back = items(JSON.stringify(toBitwardenJson(vaultItems))).items
+    expect(back.map((i) => i.notes)).toEqual(['secreto  \n', '\n  sangría\n\n'])
+    expect(withoutDuplicates(back, vaultItems)).toEqual({ fresh: [], duplicates: 2 })
+    expect(items('name,url,username,password,note\nX,x.com,u,p,"línea  \n"\n').items[0]!.notes).toBe('línea  \n')
+  })
+
+  it('sees its own export as the same items, even with spaces around an address saved before', () => {
+    // Before 1.2.0 the editor only trimmed the title: an address could keep its spaces.
+    const saved: VaultItem = { ...emptyItem('login'), title: 'GitHub', url: '  https://github.com  ', username: 'lucia', password: 'pw', totp: ' JBSWY3DPEHPK3PXP ' }
+    const back = items(JSON.stringify(toBitwardenJson([saved]))).items
+    expect(back[0]).toMatchObject({ url: 'https://github.com', totp: 'JBSWY3DPEHPK3PXP' })
+    expect(withoutDuplicates(back, [saved])).toEqual({ fresh: [], duplicates: 1 })
+    // Saved now, the same spaces go, as on import.
+    expect(tidyItem(saved)).toMatchObject({ url: 'https://github.com', totp: 'JBSWY3DPEHPK3PXP', password: 'pw' })
   })
 
   it('skips exact copies of items the vault already has, and repeated rows', () => {

@@ -22,6 +22,8 @@ Il vous faut un compte Cloudflare (l’offre gratuite suffit). La première fois
 navigateur s’ouvre pour que vous puissiez vous connecter.`,
   no: /^n/i,
   yesNo: '[O/n]',
+  yes: /^o/i,
+  noYes: '[o/N]',
   extraArgument: (arg) => `Argument inattendu : « ${arg} ».`,
   unknownOption: (option) => `Option inconnue : « ${option} ».`,
   missingValue: (option) => `L’option « ${option} » attend une valeur.`,
@@ -118,6 +120,26 @@ navigateur s’ouvre pour que vous puissiez vous connecter.`,
       `Le bucket « ${bucket} » contient encore des pièces jointes, et Cloudflare ne supprime que les buckets vides.`,
       'L’installateur peut demander à votre copie de les supprimer : il l’y autorise depuis votre compte Cloudflare, sans votre clé d’accès.',
       'Laissez la réponse vide pour procéder autrement.',
+    ].join('\n'),
+  askDeleteBackups: (bucket) =>
+    `Supprimer aussi ses sauvegardes ? Le bucket « ${bucket} » garde ses 7 dernières sauvegardes quotidiennes : si vous le gardez, une copie réinstallée avec le même nom pourra les restaurer.`,
+  emptyingBackupsThroughCopy: (bucket) =>
+    [
+      '',
+      `Le bucket « ${bucket} » contient encore des sauvegardes, et Cloudflare ne supprime que les buckets vides.`,
+      'L’installateur peut demander à votre copie de les supprimer : il l’autorise depuis votre compte Cloudflare, sans votre clé d’accès.',
+      'Laissez la réponse vide pour le faire autrement.',
+    ].join('\n'),
+  backupsNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `Le bucket « ${bucket} » contient encore des sauvegardes, et Cloudflare ne supprime que les buckets vides. Rien n’a été supprimé.`,
+      `Videz-le dans le tableau de bord Cloudflare (R2 → ${bucket} → Settings → Empty Bucket), puis relancez ${retryCommand}.`,
+    ].join('\n'),
+  backupsKept: (bucket, installCommand) =>
+    [
+      `Ses sauvegardes restent dans le bucket « ${bucket} ». Pour les récupérer, installez une copie avec le même nom (${installCommand}) et restaurez-en une dans Paramètres → Sauvegardes.`,
+      `Pour les supprimer, videz puis supprimez ce bucket dans le tableau de bord Cloudflare : R2 → ${bucket}.`,
     ].join('\n'),
   askAddress: (name) => `Adresse de votre copie (par exemple https://${name}.<votre-sous-domaine>.workers.dev) : `,
   badAddress: (address) => `« ${address} » n’est pas une adresse : utilisez celle que vous ouvrez dans le navigateur.`,

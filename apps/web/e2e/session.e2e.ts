@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { ACCESS_KEY_FILE, createProject, expect, settle, test } from './helpers'
+import { ACCESS_KEY_FILE, behindProxy, createProject, expect, settle, test } from './helpers'
 
 // A tab whose session ended elsewhere goes to the sign-in screen. Signing in again there must
 // open the app once, not bounce between the app and the sign-in screen opening connections.
@@ -7,7 +7,7 @@ test('signing in again in a tab whose session ended opens the app once', async (
   test.setTimeout(90_000)
   const accessKey = (await readFile(ACCESS_KEY_FILE, 'utf8')).trim()
   // A session of its own: ending the owner's would sign the other tests out.
-  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+  const context = await browser.newContext({ ...behindProxy, storageState: { cookies: [], origins: [] } })
   const page = await context.newPage()
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
@@ -58,7 +58,7 @@ test('signing in again in a tab whose session ended opens the app once', async (
 test('signing in follows a next inside the app and ignores one that leads elsewhere', async ({ browser, baseURL }) => {
   const accessKey = (await readFile(ACCESS_KEY_FILE, 'utf8')).trim()
   const signInWith = async (next: string) => {
-    const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+    const context = await browser.newContext({ ...behindProxy, storageState: { cookies: [], origins: [] } })
     const page = await context.newPage()
     const errors: string[] = []
     page.on('pageerror', (e) => errors.push(e.message))
@@ -85,7 +85,7 @@ test('signing in follows a next inside the app and ignores one that leads elsewh
 test('a tab keeps its live updates when another tab signs out and back in', async ({ browser, baseURL }) => {
   test.setTimeout(90_000)
   const accessKey = (await readFile(ACCESS_KEY_FILE, 'utf8')).trim()
-  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+  const context = await browser.newContext({ ...behindProxy, storageState: { cookies: [], origins: [] } })
   const page = await context.newPage()
   await settle(page, baseURL!)
   await page.goto('/login')

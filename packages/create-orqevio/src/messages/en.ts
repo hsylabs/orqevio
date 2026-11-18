@@ -20,6 +20,8 @@ You need a Cloudflare account (the free plan is enough). The first time, your br
 opens so you can sign in.`,
   no: /^n/i,
   yesNo: '[Y/n]',
+  yes: /^y/i,
+  noYes: '[y/N]',
   extraArgument: (arg) => `Unexpected “${arg}”.`,
   unknownOption: (option) => `Unknown option “${option}”.`,
   missingValue: (option) => `“${option}” needs a value.`,
@@ -115,6 +117,26 @@ opens so you can sign in.`,
       `The bucket “${bucket}” still holds attachments, and Cloudflare only deletes empty buckets.`,
       'The installer can have your copy delete them: it authorizes the copy from your Cloudflare account, with no need for your access key.',
       'Leave the answer blank to do it another way.',
+    ].join('\n'),
+  askDeleteBackups: (bucket) =>
+    `Delete its backups too? The bucket “${bucket}” keeps its last 7 daily backups: keep it, and a copy you install again with the same name can restore them.`,
+  emptyingBackupsThroughCopy: (bucket) =>
+    [
+      '',
+      `The bucket “${bucket}” still holds backups, and Cloudflare only deletes empty buckets.`,
+      'The installer can have your copy delete them: it authorizes the copy from your Cloudflare account, with no need for your access key.',
+      'Leave the answer blank to do it another way.',
+    ].join('\n'),
+  backupsNotEmpty: (bucket, retryCommand) =>
+    [
+      '',
+      `The bucket “${bucket}” still holds backups, and Cloudflare only deletes empty buckets. Nothing was deleted.`,
+      `Empty it in the Cloudflare dashboard (R2 → ${bucket} → Settings → Empty Bucket), then run ${retryCommand} again.`,
+    ].join('\n'),
+  backupsKept: (bucket, installCommand) =>
+    [
+      `Its backups stay in the bucket “${bucket}”. To bring them back, install a copy with the same name (${installCommand}) and restore one in Settings → Backups.`,
+      `To delete them, empty and delete that bucket in the Cloudflare dashboard: R2 → ${bucket}.`,
     ].join('\n'),
   askAddress: (name) => `Address of your copy (for example https://${name}.<your-subdomain>.workers.dev): `,
   badAddress: (address) => `“${address}” isn’t an address: use the one you open in the browser.`,

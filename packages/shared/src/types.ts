@@ -74,6 +74,43 @@ export interface UninstalledDTO {
   copyName: string | null
   /** Its R2 bucket; null when it is the default, `<copyName>-uploads`. */
   bucket: string | null
+  /** Where its backups are (see BackupsDTO.where) and whether they were kept or deleted; null when it made none. */
+  backups: { kept: boolean; where: BackupPlaceDTO } | null
+}
+
+// ── Backups ──────────────────────────────────────────────────────
+/** A folder of the server (Docker, Node) or the copy's second R2 bucket (Cloudflare). */
+export interface BackupPlaceDTO {
+  kind: 'folder' | 'bucket'
+  name: string
+}
+
+/** Made by itself once a day, asked for in Settings, or made right before restoring another one. */
+export type BackupKind = 'daily' | 'manual' | 'before-restore'
+
+export interface BackupDTO {
+  id: string
+  kind: BackupKind
+  createdAt: string
+  /** The version of Orqevio that made it. */
+  version: string
+  /** Its data, compressed, plus the attachments it lists (each kept once for all backups). */
+  bytes: number
+  counts: { workspaces: number; projects: number; boards: number; cards: number; pages: number; attachments: number; vaultItems: number; trash: number }
+  files: number
+  /** Attachments that couldn't be copied into it. */
+  missingFiles: number
+  /** Made by a newer version of Orqevio than this copy runs: update first to restore it. */
+  newer: boolean
+}
+
+/** `GET /backups`: where they are and the ones kept, newest first. */
+export interface BackupsDTO {
+  /** Null when this copy makes no backups (BACKUPS=off, or no backups bucket bound). */
+  where: BackupPlaceDTO | null
+  /** How many daily (and manual) backups are kept. */
+  keep: number
+  backups: BackupDTO[]
 }
 
 /** `GET /auth/session` for visitors without a session. */
@@ -166,7 +203,12 @@ export interface CardSummaryDTO {
   createdBy: ActorRef | null
   createdAt: string
   updatedAt: string
+  /** When it was archived; null while it is on the board. */
+  archivedAt: string | null
 }
+
+/** Archived cards come a page at a time, the most recently archived first. */
+export const ARCHIVED_PAGE = 50
 
 export interface BoardDTO {
   id: string
@@ -280,6 +322,8 @@ export interface SearchResultDTO {
   boardId: string | null
   boardName: string | null
   columnName: string | null
+  /** A card found among the archived ones (only when asked to include them). */
+  archived?: boolean
 }
 
 export interface HomeCardDTO extends CardSummaryDTO {
@@ -320,6 +364,14 @@ export interface VaultStateDTO {
   kdf: KdfParams | null
   wrappedKey: string | null
   recoveryWrappedKey: string | null
+  autoLockMinutes: number
+  /** The vault key's version: items and new wrappings are only taken for this one. */
+  keyVersion: number
+}
+
+/** What setting up a vault gives: its key's version, which the server takes items for, and when it locks. */
+export interface VaultSetupDTO {
+  keyVersion: number
   autoLockMinutes: number
 }
 

@@ -7,14 +7,23 @@
     "already_claimed": "Esta copia ya está configurada. Entra con tu clave de acceso.",
     "not_claimed": "Esta copia aún no está configurada.",
     "rate_limited": "Demasiados intentos. Espera unos minutos.",
+    "rate_limitedFor_one": "Demasiados intentos. Vuelve a intentarlo dentro de {{count}} minuto.",
+    "rate_limitedFor_many": "Demasiados intentos. Vuelve a intentarlo dentro de {{count}} minutos.",
+    "rate_limitedFor_other": "Demasiados intentos. Vuelve a intentarlo dentro de {{count}} minutos.",
     "network": "No hay conexión con el servidor.",
     "file_too_large": "El archivo supera el tamaño máximo permitido.",
     "upload_incomplete": "La subida se interrumpió. Vuelve a intentarlo.",
     "last_workspace": "Necesitas conservar al menos un espacio.",
     "restore_place_in_trash": "Restaura antes aquello a lo que pertenece: también está en la papelera.",
-    "restore_place_gone": "El sitio al que pertenecía ya no existe y no hay otro donde ponerlo."
+    "restore_place_gone": "El sitio al que pertenecía ya no existe y no hay otro donde ponerlo.",
+    "vault_key_changed": "La bóveda ha cambiado en otra pestaña o en otro dispositivo. Vuelve a abrirla.",
+    "too_many_columns": "Un tablero admite hasta 20 columnas.",
+    "vault_full": "La bóveda admite hasta 5.000 elementos. Borra los que ya no uses para añadir más."
   },
   "notFound": "No se ha encontrado el elemento.",
   "server": "Algo ha fallado en el servidor. Inténtalo de nuevo.",
-  "unknown": "Algo ha fallado. Inténtalo de nuevo."
+  "unknown": "Algo ha fallado. Inténtalo de nuevo.",
+  "invalid": "Algún dato no es válido. Revísalo y vuelve a intentarlo.",
+  "forbidden": "No tienes permiso para hacer esto.",
+  "conflict": "Ha cambiado mientras tanto. Vuelve a cargarlo e inténtalo de nuevo."
 }

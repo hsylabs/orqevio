@@ -7,13 +7,15 @@ import type { VaultItem } from './types'
  */
 interface VaultSession {
   key: CryptoKey | null
+  /** The version of that key, as the vault had it when the session opened: the server takes items only for it. */
+  keyVersion: number | null
   userId: string | null
   items: VaultItem[]
   autoLockMinutes: number
   lastActivity: number
 }
 
-let session: VaultSession = { key: null, userId: null, items: [], autoLockMinutes: 15, lastActivity: Date.now() }
+let session: VaultSession = { key: null, keyVersion: null, userId: null, items: [], autoLockMinutes: 15, lastActivity: Date.now() }
 const listeners = new Set<() => void>()
 let timer: ReturnType<typeof setInterval> | null = null
 
@@ -30,8 +32,8 @@ const touch = () => {
   session.lastActivity = Date.now()
 }
 
-export function unlockSession(key: CryptoKey, userId: string, items: VaultItem[], autoLockMinutes: number) {
-  session = { key, userId, items, autoLockMinutes, lastActivity: Date.now() }
+export function unlockSession(key: CryptoKey, keyVersion: number, userId: string, items: VaultItem[], autoLockMinutes: number) {
+  session = { key, keyVersion, userId, items, autoLockMinutes, lastActivity: Date.now() }
   window.addEventListener('pointerdown', touch, { passive: true })
   window.addEventListener('keydown', touch, { passive: true })
   timer ??= setInterval(() => {
@@ -42,7 +44,7 @@ export function unlockSession(key: CryptoKey, userId: string, items: VaultItem[]
 }
 
 export function lockVault() {
-  session = { key: null, userId: null, items: [], autoLockMinutes: session.autoLockMinutes, lastActivity: Date.now() }
+  session = { key: null, keyVersion: null, userId: null, items: [], autoLockMinutes: session.autoLockMinutes, lastActivity: Date.now() }
   window.removeEventListener('pointerdown', touch)
   window.removeEventListener('keydown', touch)
   if (timer) clearInterval(timer)

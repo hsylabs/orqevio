@@ -130,7 +130,9 @@
     "attachments": "Attachments",
     "activity": "Activity",
     "deleted": "Card moved to the trash",
-    "history": "History"
+    "history": "History",
+    "moveUp": "Move up",
+    "moveDown": "Move down"
   },
   "checklist": {
     "titleLabel": "Checklist title",
@@ -181,7 +183,9 @@
     "heading": "Archived",
     "emptyTitle": "Nothing archived",
     "emptyBody": "Cards that you or your agents archive show up here, and you can restore them.",
-    "deleteConfirm": "Move “{{title}}” to the trash?"
+    "deleteConfirm": "Move “{{title}}” to the trash?",
+    "loadMore": "Load more",
+    "showing": "{{shown}} of {{total}}"
   },
   "attachments": {
     "deleteConfirm": "Delete “{{name}}”?",

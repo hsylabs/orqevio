@@ -87,8 +87,9 @@ function handle(workspaceId: string, event: RealtimeEvent, selfId: string | unde
     else for (const key of [keys.card(event.cardId), keys.history('card', event.cardId)]) live.forget(key)
     for (const l of cardListeners) l(event)
   }
+  // An open page also hears of its project, which may be deleted or restored with it inside.
+  if (event.pageId || event.projectId) for (const l of pageListeners) l(event)
   if (event.pageId) {
-    for (const l of pageListeners) l(event)
     if (event.action === 'page.deleted') live.forget(keys.history('page', event.pageId))
     if (event.cardId) live.refresh(keys.page(event.pageId))
   }

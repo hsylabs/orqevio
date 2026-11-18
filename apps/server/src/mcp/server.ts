@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { PALETTE, TRASH_DAYS } from '@orqevio/shared'
+import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
+import { DUE_DATE_HINT, MAX_MARKDOWN, PALETTE, TRASH_DAYS, dueDay } from '@orqevio/shared'
 import { z } from 'zod'
 import type { AgentActor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
@@ -63,15 +63,14 @@ async function readAll(body: ReadableStream<Uint8Array>, max: number) {
 const attachmentSummary = (a: { id: string; filename: string; mimeType: string; size: number }) => ({ id: a.id, name: a.filename, type: a.mimeType, size: a.size })
 const dueDate = z
   .string()
-  .describe('Due date as YYYY-MM-DD or a full ISO 8601 date-time. Use null to clear it.')
+  .describe('Due date: the day as YYYY-MM-DD (a full ISO 8601 date-time also works; its date is the day). Use null to clear it.')
 
+/** A due date as the day it names, stored at 12:00 UTC; anything else is refused, never guessed. */
 function normaliseDue(value: string | null | undefined): string | null | undefined {
   if (value === undefined || value === null) return value
-  const trimmed = value.trim()
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return `${trimmed}T12:00:00.000Z`
-  const date = new Date(trimmed)
-  if (Number.isNaN(date.getTime())) throw new AppError(400, 'bad_request', `Invalid due date "${value}"`)
-  return date.toISOString()
+  const day = dueDay(value)
+  if (!day) throw new AppError(400, 'bad_request', `Invalid due date "${value}": use ${DUE_DATE_HINT}.`)
+  return day
 }
 
 const ok = (data: unknown): CallToolResult => ({
@@ -158,16 +157,17 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       inputSchema: {
         query: z.string().min(1).max(100),
         type: z.enum(['all', 'cards', 'pages']).default('all'),
+        include_archived: z.boolean().default(false).describe('Also find archived cards, marked archived: true.'),
       },
       annotations: READ,
     },
-    ({ query, type }) =>
+    ({ query, type, include_archived }) =>
       run(async () => {
         const types = type === 'cards' ? (['card'] as const) : type === 'pages' ? (['page'] as const) : undefined
-        const results = await services.search.search(actor, ws, query, { types: types ? [...types] : undefined, limit: 15 })
+        const results = await services.search.search(actor, ws, query, { types: types ? [...types] : undefined, limit: 15, archived: include_archived })
         return results.map((r) =>
           r.type === 'card'
-            ? { type: 'card', id: r.id, title: r.title, board: r.boardName, board_id: r.boardId, column: r.columnName, excerpt: r.excerpt }
+            ? { type: 'card', id: r.id, title: r.title, board: r.boardName, board_id: r.boardId, column: r.columnName, excerpt: r.excerpt, ...(r.archived ? { archived: true } : {}) }
             : { type: 'page', id: r.id, title: r.title || 'Untitled', project: r.projectName, excerpt: r.excerpt },
         )
       }),
@@ -435,19 +435,13 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       },
       (args) =>
         run(async () => {
-          let checklistId = args.checklist_id
-          if (checklistId) {
-            const lists = await services.cards.detail(actor, args.card_id)
-            if (!lists.checklists.some((cl) => cl.id === checklistId)) {
-              throw new AppError(404, 'not_found', 'Checklist not found on this card')
-            }
-          } else {
-            const created = await services.cards.createChecklist(actor, args.card_id, { title: args.checklist_title ?? 'Checklist' })
-            checklistId = created.id
-          }
-          const items = []
-          for (const text of args.items) items.push(await services.cards.addItem(actor, checklistId, { text }))
-          return { checklist_id: checklistId, items: items.map((i) => ({ id: i.id, text: i.text })) }
+          // All or nothing: an item that is not valid leaves the card as it was.
+          const { checklistId, items } = await services.cards.addItems(actor, args.card_id, {
+            checklistId: args.checklist_id,
+            checklistTitle: args.checklist_title,
+            items: args.items,
+          })
+          return { checklist_id: checklistId, items }
         }),
     )
 
@@ -531,7 +525,7 @@ export function createMcpServer(services: Services, actor: AgentActor) {
         inputSchema: {
           project_id: uuid,
           title: z.string().min(1).max(200),
-          content: z.string().max(200_000).optional(),
+          content: z.string().max(MAX_MARKDOWN).optional(),
           parent_id: uuid.optional(),
         },
         annotations: WRITE,
@@ -548,12 +542,12 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       {
         title: 'Update page',
         description:
-          'Updates a page title, icon and/or Markdown content. mode "replace" overwrites the content (send base_version from read_page to avoid overwriting newer edits); mode "append" adds content at the end.',
+          `Updates a page title, icon and/or Markdown content. mode "replace" overwrites the content (send base_version from read_page to avoid overwriting newer edits); mode "append" adds content at the end. A page holds up to ${MAX_MARKDOWN} characters, also after appending.`,
         inputSchema: {
           page_id: uuid,
           title: z.string().max(200).optional(),
           icon: z.string().max(16).nullable().optional().describe('An emoji for the page, or null to remove it.'),
-          content: z.string().max(200_000).optional(),
+          content: z.string().max(MAX_MARKDOWN).optional(),
           mode: z.enum(['replace', 'append']).default('replace'),
           base_version: z.number().int().min(1).optional(),
         },
@@ -710,5 +704,31 @@ export function createMcpServer(services: Services, actor: AgentActor) {
     )
   }
 
+  invalidParamsForMalformedRequests(server)
   return server
+}
+
+type RequestHandler = (request: unknown, extra: unknown) => Promise<unknown>
+
+/**
+ * The SDK checks each request against its schema before calling the handler, and answers one
+ * that does not fit (`tools/call` without a `name`, say) with -32603, an internal error, and the
+ * raw validation output. The mistake is the client's: -32602, invalid params, says so. Still so in
+ * SDK 1.32.2; the handlers are in a private field, so if it moves this does nothing.
+ */
+function invalidParamsForMalformedRequests(server: McpServer) {
+  const handlers = (server.server as unknown as { _requestHandlers?: unknown })._requestHandlers
+  if (!(handlers instanceof Map)) return
+  for (const [method, handler] of handlers as Map<string, RequestHandler>) {
+    handlers.set(method, async (request: unknown, extra: unknown) => {
+      try {
+        return await handler(request, extra)
+      } catch (error) {
+        const issues = (error as { issues?: Array<{ path: PropertyKey[]; message: string }> } | null)?.issues
+        // `ZodError`, or `$ZodError` from the zod build the SDK uses.
+        if (!/^\$?ZodError$/.test((error as Error | null)?.name ?? '') || !Array.isArray(issues)) throw error
+        throw new McpError(ErrorCode.InvalidParams, issues.map((i) => `${i.path.map(String).join('.') || 'request'}: ${i.message}`).join('; '))
+      }
+    })
+  }
 }

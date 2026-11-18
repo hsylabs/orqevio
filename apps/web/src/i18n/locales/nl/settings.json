@@ -58,6 +58,42 @@
     "kept": "Je gegevens, toegangssleutel en kluis blijven behouden.",
     "releaseNotes": "Bekijk wat er nieuw is"
   },
+  "backups": {
+    "title": "Back-ups",
+    "description": "Elke dag maakt deze installatie een back-up van zichzelf: van alles zoals het is, ook de versleutelde kluis, de prullenbak, de geschiedenis en de bijlagen. De laatste 7 worden bewaard, los van de gegevens.",
+    "whereFolder": "Ze staan in de map <code>{{name}}</code> van de server. Stel BACKUP_DIR in om ze op een andere schijf of een ander volume te bewaren.",
+    "whereBucket": "Ze staan in de R2-bucket <code>{{name}}</code> van je Cloudflare-account, los van de bijlagen.",
+    "off": "Deze installatie maakt geen back-ups (BACKUPS=off).",
+    "now": "Nu een back-up maken",
+    "made": "Back-up gemaakt",
+    "none": "Nog geen back-ups: de eerste wordt binnen het uur gemaakt.",
+    "list": "Bewaarde back-ups",
+    "kind": {
+      "daily": "Automatisch",
+      "manual": "Door jou gemaakt",
+      "before-restore": "Gemaakt voor het terugzetten"
+    },
+    "contents": "Kaarten: {{cards}} · Documenten: {{pages}} · Bijlagen: {{files}}",
+    "missingFiles_one": "{{count}} bijlage kon er niet in worden gekopieerd.",
+    "missingFiles_other": "{{count}} bijlagen konden er niet in worden gekopieerd.",
+    "newer": "Gemaakt met Orqevio {{version}}: werk deze installatie bij om hem terug te zetten.",
+    "restore": "Terugzetten…",
+    "keep_one": "De laatste dagelijkse back-up wordt bewaard, en die van voor het laatste terugzetten.",
+    "keep_other": "De laatste {{count}} dagelijkse back-ups worden bewaard, en die van voor het laatste terugzetten.",
+    "restoreTitle": "Deze back-up terugzetten?",
+    "restoreDescription": "Deze installatie wordt weer zoals ze was op {{date}}.",
+    "restoreLoses": "Alles gaat terug: werkruimtes, documenten, kaarten, kluis, agents, prullenbak en geschiedenis. Wat sindsdien is veranderd, gaat verloren.",
+    "restoreSafety": "Eerst wordt een back-up gemaakt van de installatie zoals ze nu is, apart bewaard, zodat je ernaar terug kunt.",
+    "restoreSessions": "Alle sessies worden beëindigd. Hier blijf je ingelogd, en je toegangssleutel is de sleutel die je nu gebruikt.",
+    "accessKey": "Toegangssleutel",
+    "typeName": "Typ ‘{{name}}’ om te bevestigen",
+    "restoreConfirm": "Terugzetten"
+  },
+  "export": {
+    "title": "Je gegevens exporteren",
+    "description": "Een ZIP om je gegevens te lezen of mee te nemen: de taken van elke werkruimte als JSON, de documenten als Markdown en de bijlagen. Zonder de kluis, die een eigen versleutelde export heeft, en zonder geschiedenis en prullenbak.",
+    "action": "ZIP downloaden"
+  },
   "erase": {
     "title": "Deze installatie wissen",
     "description": "Wist je werkruimtes, je kluis en je tokens definitief. De installatie vraagt daarna opnieuw om de installatiecode.",
@@ -82,6 +118,17 @@
     "oneCommand": "Met de opdracht geïnstalleerd? Op je computer doet <code>{{command}}</code> beide stappen in één keer.",
     "accessKey": "Toegangssleutel",
     "typeName": "Typ ‘{{name}}’ om te bevestigen",
-    "confirm": "Definitief verwijderen"
+    "confirm": "Definitief verwijderen",
+    "backups": {
+      "legend": "De back-ups",
+      "keep": {
+        "label": "Bewaren",
+        "hint": "Een installatie met dezelfde naam, of met dezelfde map voor back-ups, kan ze terugzetten. Verwijder ze zelf als je ze niet meer nodig hebt."
+      },
+      "delete": {
+        "label": "Ook verwijderen",
+        "hint": "Daarna is niets van deze installatie meer terug te halen."
+      }
+    }
   }
 }

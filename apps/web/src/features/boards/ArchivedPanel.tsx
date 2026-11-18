@@ -14,6 +14,8 @@ import { toastTrashed, trashNote } from '../../lib/trash'
 export function ArchivedPanel({ open, onOpenChange, board, onOpenCard }: { open: boolean; onOpenChange: (o: boolean) => void; board: BoardDTO; onOpenCard: (id: string) => void }) {
   const { t } = useTranslation(['boards', 'common'])
   const archived = useArchived(board.id, open)
+  const shown = archived.data?.pages.flat()
+  const total = board.columns.reduce((sum, c) => sum + c.archivedCards, 0)
   const confirm = useConfirm()
   const labels = new Map(board.labels.map((l) => [l.id, l]))
   const refresh = () =>
@@ -32,13 +34,13 @@ export function ArchivedPanel({ open, onOpenChange, board, onOpenCard }: { open:
         </SheetClose>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        {archived.data?.length === 0 && (
+        {shown?.length === 0 && (
           <EmptyState icon={<Archive />} title={t('archived.emptyTitle')}>
             {t('archived.emptyBody')}
           </EmptyState>
         )}
         <ul className="flex flex-col gap-3">
-          {archived.data?.map((card) => (
+          {shown?.map((card) => (
             <li key={card.id} className="list-none">
               <button type="button" className="block w-full text-left" onClick={() => onOpenCard(card.id)}>
                 <CardView card={card} labels={labels} />
@@ -81,6 +83,14 @@ export function ArchivedPanel({ open, onOpenChange, board, onOpenCard }: { open:
             </li>
           ))}
         </ul>
+        {archived.hasNextPage && (
+          <div className="mt-4 flex items-center justify-between gap-3 text-[12.5px] text-ink-3">
+            <span>{t('archived.showing', { shown: shown?.length ?? 0, total: Math.max(total, shown?.length ?? 0) })}</span>
+            <Button size="sm" variant="secondary" loading={archived.isFetchingNextPage} onClick={() => void archived.fetchNextPage()}>
+              {t('archived.loadMore')}
+            </Button>
+          </div>
+        )}
       </div>
     </Sheet>
   )

@@ -26,7 +26,7 @@ export function copyOrigin(address: string) {
  * name) refuses with `not-authorized`, which is also the answer while the secret is still
  * on its way to the copy.
  */
-export async function emptyCopy(origin: string, name: string, token: string, fetchImpl: typeof fetch = fetch): Promise<EmptyResult> {
+export async function emptyCopy(origin: string, name: string, token: string, fetchImpl: typeof fetch = fetch, deleteBackups = false): Promise<EmptyResult> {
   const call = async (path: string, init: RequestInit = {}) => {
     try {
       const res = await fetchImpl(`${origin}${path}`, { ...init, headers: { Accept: 'application/json', ...init.headers }, signal: AbortSignal.timeout(60_000) })
@@ -45,7 +45,7 @@ export async function emptyCopy(origin: string, name: string, token: string, fet
   if (typeof state.copyName === 'string' && state.copyName !== name) return { ok: false, reason: 'other-copy', detail: state.copyName }
   if (state.uninstalled) return { ok: true, already: true }
 
-  const uninstall = await call('/api/uninstall', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) })
+  const uninstall = await call('/api/uninstall', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(deleteBackups ? { token, deleteBackups } : { token }) })
   if ('error' in uninstall) return { ok: false, reason: 'unreachable', detail: uninstall.error }
   if (uninstall.res.ok) return { ok: true, already: false }
   if (uninstall.res.status === 410) return { ok: true, already: true }

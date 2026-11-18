@@ -7,14 +7,23 @@
     "already_claimed": "Cette copie est déjà configurée. Connectez-vous avec votre clé d’accès.",
     "not_claimed": "Cette copie n’est pas encore configurée.",
     "rate_limited": "Trop de tentatives. Patientez quelques minutes.",
+    "rate_limitedFor_one": "Trop de tentatives. Réessayez dans {{count}} minute.",
+    "rate_limitedFor_many": "Trop de tentatives. Réessayez dans {{count}} minutes.",
+    "rate_limitedFor_other": "Trop de tentatives. Réessayez dans {{count}} minutes.",
     "network": "Aucune connexion au serveur.",
     "file_too_large": "Le fichier dépasse la taille maximale autorisée.",
     "upload_incomplete": "L’envoi a été interrompu. Réessayez.",
     "last_workspace": "Vous devez conserver au moins un espace.",
     "restore_place_in_trash": "Restaurez d’abord ce à quoi il appartient : c’est aussi dans la corbeille.",
-    "restore_place_gone": "L’emplacement auquel il appartenait n’existe plus, et il n’y a nulle part où le remettre."
+    "restore_place_gone": "L’emplacement auquel il appartenait n’existe plus, et il n’y a nulle part où le remettre.",
+    "vault_key_changed": "Le coffre-fort a changé dans un autre onglet ou sur un autre appareil. Rouvrez-le.",
+    "too_many_columns": "Un tableau peut contenir jusqu’à 20 colonnes.",
+    "vault_full": "Le coffre peut contenir jusqu’à 5 000 éléments. Supprimez ceux que vous n’utilisez plus pour en ajouter d’autres."
   },
   "notFound": "Élément introuvable.",
   "server": "Une erreur est survenue sur le serveur. Réessayez.",
-  "unknown": "Une erreur est survenue. Réessayez."
+  "unknown": "Une erreur est survenue. Réessayez.",
+  "invalid": "Certaines données ne sont pas valides. Vérifiez-les et réessayez.",
+  "forbidden": "Vous n’avez pas l’autorisation de faire cela.",
+  "conflict": "Cela a changé entre-temps. Rechargez et réessayez."
 }

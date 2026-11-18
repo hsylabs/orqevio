@@ -24,7 +24,29 @@
     "content": "ページの内容",
     "subpages": "サブページ",
     "attachments": "添付ファイル",
-    "history": "履歴"
+    "history": "履歴",
+    "gone": {
+      "byName": "<strong>{{name}}</strong>がこのページを削除しました。",
+      "byYou": "別のタブまたはセッションでこのページを削除しました。",
+      "withByName": "<strong>{{name}}</strong>が「{{title}}」を削除したため、このページも削除されました。",
+      "withByYou": "別のタブまたはセッションで「{{title}}」を削除したため、このページも削除されました。",
+      "unknown": "このページは削除されました。",
+      "inTrash": "ゴミ箱にあります。",
+      "unsaved": "最新の変更は保存されていません。復元すると保存されます。",
+      "unsavedLost": "最新の変更は保存されておらず、もう保存できません。移動する前にコピーしてください。",
+      "restore": "復元"
+    },
+    "problem": {
+      "tooLong": "このドキュメントは{{length}}文字あり、上限は{{max}}文字です。保存できるように短くしてください。それまで変更は保存されません。",
+      "retrying": "最新の変更を保存できませんでした。{{reason}}自動的に再試行します。",
+      "refused": "最新の変更を保存できませんでした。{{reason}}",
+      "retry": "再試行"
+    },
+    "leave": {
+      "title": "保存せずに移動しますか？",
+      "body": "このページへの最新の変更は保存されておらず、失われます。",
+      "confirm": "保存せずに移動"
+    }
   },
   "editor": {
     "placeholder": "入力するか、「/」で挿入…",
@@ -134,7 +156,9 @@
       "strike": "取り消し線",
       "code": "コード",
       "link": "リンク"
-    }
+    },
+    "taskCheckbox": "ToDo：{{text}}",
+    "taskCheckboxEmpty": "空のToDo"
   },
   "icon": {
     "change": "アイコンを変更",

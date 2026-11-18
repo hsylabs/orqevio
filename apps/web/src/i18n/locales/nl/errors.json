@@ -7,14 +7,22 @@
     "already_claimed": "Deze installatie is al ingesteld. Log in met je toegangssleutel.",
     "not_claimed": "Deze installatie is nog niet ingesteld.",
     "rate_limited": "Te veel pogingen. Wacht een paar minuten.",
+    "rate_limitedFor_one": "Te veel pogingen. Probeer het over {{count}} minuut opnieuw.",
+    "rate_limitedFor_other": "Te veel pogingen. Probeer het over {{count}} minuten opnieuw.",
     "network": "Er is geen verbinding met de server.",
     "file_too_large": "Het bestand is groter dan de maximaal toegestane grootte.",
     "upload_incomplete": "Het uploaden is onderbroken. Probeer het opnieuw.",
     "last_workspace": "Je moet minstens één werkruimte houden.",
     "restore_place_in_trash": "Zet eerst terug waar dit bij hoort: dat staat ook in de prullenbak.",
-    "restore_place_gone": "De plek waar het bij hoorde, bestaat niet meer, en er is geen andere plek om het terug te zetten."
+    "restore_place_gone": "De plek waar het bij hoorde, bestaat niet meer, en er is geen andere plek om het terug te zetten.",
+    "vault_key_changed": "De kluis is gewijzigd in een ander tabblad of op een ander apparaat. Open hem opnieuw.",
+    "too_many_columns": "Een bord bevat maximaal 20 kolommen.",
+    "vault_full": "De kluis bevat maximaal 5.000 items. Verwijder items die je niet meer gebruikt om er meer toe te voegen."
   },
   "notFound": "Het item is niet gevonden.",
   "server": "Er ging iets mis op de server. Probeer het opnieuw.",
-  "unknown": "Er ging iets mis. Probeer het opnieuw."
+  "unknown": "Er ging iets mis. Probeer het opnieuw.",
+  "invalid": "Sommige gegevens zijn ongeldig. Controleer ze en probeer het opnieuw.",
+  "forbidden": "Je hebt geen toestemming om dit te doen.",
+  "conflict": "Dit is intussen gewijzigd. Laad opnieuw en probeer het nog eens."
 }

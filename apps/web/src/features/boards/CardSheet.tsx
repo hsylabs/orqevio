@@ -1,6 +1,6 @@
 import type { ActorRef, BoardDTO, CardDetailDTO, CardSummaryDTO, TrashedDTO } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
-import { Archive, ArchiveX, Bot, Calendar, ChevronDown, Columns3, Ellipsis, History, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
+import { Archive, ArchiveX, ArrowDown, ArrowUp, Bot, Calendar, ChevronDown, Columns3, Ellipsis, History, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
 import { type ReactNode, useEffect, useReducer, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
@@ -58,6 +58,15 @@ export function CardSheet({ cardId, board, onClose }: { cardId: string | null; b
   useEffect(() => {
     if (elsewhere && cardId) navigate(`/w/${workspaceId}/b/${elsewhere}?card=${cardId}`, { replace: true })
   }, [elsewhere, cardId, workspaceId, navigate])
+  // Its column deleted elsewhere took it to the trash too: asked for again, it is gone. And when the
+  // column is back from the trash, so is the card: asked for again, it is there.
+  const columnGone = open && card.data?.boardId === board.id && !board.columns.some((c) => c.id === card.data!.columnId)
+  const { refetch, isError } = card
+  useEffect(() => {
+    if (columnGone || isError) void refetch()
+    // Only when the column goes or comes back: a failed fetch is not retried on its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columnGone, refetch])
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={data?.title ?? t('sheet.fallbackTitle')} label={t('sheet.label')}>
       {elsewhere ? null : data && !(open && gone) ? (
@@ -151,6 +160,18 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
       queryClient.invalidateQueries({ queryKey: keys.card(card.id) }),
       queryClient.invalidateQueries({ queryKey: keys.board(card.boardId) }),
     ])
+
+  // Where it is in its column, as the board shows it; moving takes the place among the others.
+  const inColumn = board.cards.filter((c) => c.columnId === card.columnId).sort((a, b) => (a.position < b.position ? -1 : a.position > b.position ? 1 : a.id < b.id ? -1 : 1))
+  const place = inColumn.findIndex((c) => c.id === card.id)
+  const moveTo = async (columnId: string, index: number) => {
+    try {
+      await post(`/cards/${card.id}/move`, { columnId, index })
+      await refresh()
+    } catch (error) {
+      toast.error(errorMessage(error))
+    }
+  }
 
   /** Puts a saved card in the caches. The description and its version only ever change together. */
   function applySummary(summary: CardSummaryDTO, description?: string) {
@@ -286,21 +307,22 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
           </MenuTrigger>
           <MenuContent align="start">
             {board.columns.map((c) => (
-              <MenuItem
-                key={c.id}
-                disabled={c.id === card.columnId}
-                onSelect={async () => {
-                  try {
-                    await post(`/cards/${card.id}/move`, { columnId: c.id, index: 100_000 })
-                    await refresh()
-                  } catch (error) {
-                    toast.error(errorMessage(error))
-                  }
-                }}
-              >
+              <MenuItem key={c.id} disabled={c.id === card.columnId} onSelect={() => void moveTo(c.id, 100_000)}>
                 {c.name}
               </MenuItem>
             ))}
+            {/* Without dragging (on a phone, say): one place up or down in its column. */}
+            {!card.archivedAt && (
+              <>
+                <MenuSeparator />
+                <MenuItem icon={<ArrowUp />} disabled={place <= 0} onSelect={() => void moveTo(card.columnId, place - 1)}>
+                  {t('sheet.moveUp')}
+                </MenuItem>
+                <MenuItem icon={<ArrowDown />} disabled={place < 0 || place >= inColumn.length - 1} onSelect={() => void moveTo(card.columnId, place + 1)}>
+                  {t('sheet.moveDown')}
+                </MenuItem>
+              </>
+            )}
           </MenuContent>
         </MenuRoot>
         {card.archivedAt && <span className="rounded-full bg-sunken px-2 py-0.5 text-[11.5px] font-medium text-ink-3">{t('sheet.archived')}</span>}

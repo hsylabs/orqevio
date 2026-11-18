@@ -6,7 +6,7 @@
     "deploy": "create-orqevio deploy-repo"
   },
   "dependencies": {
-    "create-orqevio": "1.1.1"
+    "create-orqevio": "1.2.0"
   },
   "engines": {
     "node": ">=22.12"
@@ -18,6 +18,9 @@
       },
       "UPLOADS": {
         "description": "R2 bucket for the files attached to cards and documents."
+      },
+      "BACKUPS": {
+        "description": "R2 bucket for the daily backups of your copy, kept apart from it: the last 7."
       },
       "COPY": {
         "description": "Durable Object that keeps your data in its own SQLite database."

@@ -71,6 +71,13 @@
       "when": 1794951959656,
       "tag": "0009_oauth_token_scopes",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1794969843692,
+      "tag": "0010_vault_key_version",
+      "breakpoints": true
     }
   ]
 }

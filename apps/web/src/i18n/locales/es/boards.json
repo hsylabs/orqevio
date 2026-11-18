@@ -132,7 +132,9 @@
     "attachments": "Adjuntos",
     "activity": "Actividad",
     "deleted": "Tarjeta movida a la papelera",
-    "history": "Historial"
+    "history": "Historial",
+    "moveUp": "Subir",
+    "moveDown": "Bajar"
   },
   "checklist": {
     "titleLabel": "Título de la checklist",
@@ -183,7 +185,9 @@
     "heading": "Archivadas",
     "emptyTitle": "Nada archivado",
     "emptyBody": "Las tarjetas que archives (tú o tus agentes) aparecerán aquí y podrás restaurarlas.",
-    "deleteConfirm": "¿Mover «{{title}}» a la papelera?"
+    "deleteConfirm": "¿Mover «{{title}}» a la papelera?",
+    "loadMore": "Cargar más",
+    "showing": "{{shown}} de {{total}}"
   },
   "attachments": {
     "deleteConfirm": "¿Eliminar «{{name}}»?",

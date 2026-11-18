@@ -24,7 +24,29 @@
     "content": "Conteúdo da página",
     "subpages": "Subpáginas",
     "attachments": "Anexos",
-    "history": "Histórico"
+    "history": "Histórico",
+    "gone": {
+      "byName": "<strong>{{name}}</strong> excluiu esta página.",
+      "byYou": "Você excluiu esta página em outra aba ou sessão.",
+      "withByName": "<strong>{{name}}</strong> excluiu “{{title}}”, e esta página junto.",
+      "withByYou": "Você excluiu “{{title}}” em outra aba ou sessão, e esta página junto.",
+      "unknown": "Esta página foi excluída.",
+      "inTrash": "Ela está na lixeira.",
+      "unsaved": "Suas últimas alterações não foram salvas: serão salvas quando você a restaurar.",
+      "unsavedLost": "Suas últimas alterações não foram salvas e não podem mais ser: copie-as antes de sair.",
+      "restore": "Restaurar"
+    },
+    "problem": {
+      "tooLong": "Este documento tem {{length}} caracteres e o máximo é {{max}}. Encurte-o para que possa ser salvo: até lá, suas alterações não são salvas.",
+      "retrying": "Não foi possível salvar suas últimas alterações. {{reason}} Uma nova tentativa será feita automaticamente.",
+      "refused": "Não foi possível salvar suas últimas alterações. {{reason}}",
+      "retry": "Tentar de novo"
+    },
+    "leave": {
+      "title": "Sair sem salvar?",
+      "body": "Suas últimas alterações nesta página não foram salvas e serão perdidas.",
+      "confirm": "Sair sem salvar"
+    }
   },
   "editor": {
     "placeholder": "Escreva ou pressione “/” para inserir…",
@@ -134,7 +156,9 @@
       "strike": "Tachado",
       "code": "Código",
       "link": "Link"
-    }
+    },
+    "taskCheckbox": "Tarefa: {{text}}",
+    "taskCheckboxEmpty": "Tarefa sem texto"
   },
   "icon": {
     "change": "Mudar ícone",

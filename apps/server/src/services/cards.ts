@@ -13,6 +13,7 @@ import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { actorRef, hasScope } from '../auth/actor'
 import type { DbOrTx } from '../db/client'
+import { inList } from '../db/in-list'
 import {
   apiTokens,
   attachments,
@@ -81,7 +82,7 @@ export class CardService {
     if (rows.length === 0) return []
     const ids = rows.map((r) => r.id)
     const [labelRows, checklistRows, linkRows, attachmentRows, creators] = await Promise.all([
-      db.select().from(cardLabels).where(inArray(cardLabels.cardId, ids)),
+      db.select().from(cardLabels).where(inList(cardLabels.cardId, ids)),
       db
         .select({
           cardId: checklists.cardId,
@@ -90,17 +91,17 @@ export class CardService {
         })
         .from(checklists)
         .leftJoin(checklistItems, eq(checklistItems.checklistId, checklists.id))
-        .where(inArray(checklists.cardId, ids))
+        .where(inList(checklists.cardId, ids))
         .groupBy(checklists.cardId),
       db
         .select({ cardId: cardPageLinks.cardId, total: sql<number>`count(distinct ${cardPageLinks.pageId})` })
         .from(cardPageLinks)
-        .where(inArray(cardPageLinks.cardId, ids))
+        .where(inList(cardPageLinks.cardId, ids))
         .groupBy(cardPageLinks.cardId),
       db
         .select({ cardId: attachments.cardId, total: sql<number>`count(*)` })
         .from(attachments)
-        .where(inArray(attachments.cardId, ids))
+        .where(inList(attachments.cardId, ids))
         .groupBy(attachments.cardId),
       this.creatorNames(rows, db),
     ])
@@ -122,6 +123,7 @@ export class CardService {
         createdBy: creators.get(card.id) ?? null,
         createdAt: card.createdAt.toISOString(),
         updatedAt: card.updatedAt.toISOString(),
+        archivedAt: card.archivedAt?.toISOString() ?? null,
       }
     })
   }
@@ -130,9 +132,9 @@ export class CardService {
     const userIds = [...new Set(rows.flatMap((r) => (r.createdByUserId && !r.createdByTokenId ? [r.createdByUserId] : [])))]
     const tokenIds = [...new Set(rows.flatMap((r) => (r.createdByTokenId ? [r.createdByTokenId] : [])))]
     const [u, t] = await Promise.all([
-      userIds.length ? db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, userIds)) : [],
+      userIds.length ? db.select({ id: users.id, name: users.name }).from(users).where(inList(users.id, userIds)) : [],
       tokenIds.length
-        ? db.select({ id: apiTokens.id, name: apiTokens.name }).from(apiTokens).where(inArray(apiTokens.id, tokenIds))
+        ? db.select({ id: apiTokens.id, name: apiTokens.name }).from(apiTokens).where(inList(apiTokens.id, tokenIds))
         : [],
     ])
     const result = new Map<string, ActorRef>()
@@ -270,6 +272,12 @@ export class CardService {
   async update(actor: Actor, cardId: string, input: unknown): Promise<CardSummaryDTO> {
     const data = parse(cardUpdateInput, input)
     const card = await this.load(actor, cardId, 'tasks:write')
+    const changed = Object.keys(data).filter((k) => k !== 'baseVersion' && data[k as keyof typeof data] !== undefined)
+    // Nothing to change: neither a write nor an entry in the activity.
+    if (changed.length === 0) {
+      const [summary] = await this.summarize([card])
+      return summary!
+    }
     const updated = this.deps.db.transaction((tx) => {
       const prev = tx.select().from(cards).where(eq(cards.id, cardId)).get()
       if (!prev) throw notFound('Card')
@@ -312,7 +320,6 @@ export class CardService {
       }
       return row
     })
-    const changed = Object.keys(data).filter((k) => k !== 'baseVersion' && data[k as keyof typeof data] !== undefined)
     await this.activity.record(
       actor,
       card.workspaceId,
@@ -385,6 +392,8 @@ export class CardService {
 
   async setArchived(actor: Actor, cardId: string, archived: boolean) {
     const card = await this.load(actor, cardId, 'tasks:write')
+    // Already so: it keeps its place, and the activity does not say it twice.
+    if ((card.archivedAt !== null) === archived) return
     const patch: Partial<CardRow> = { archivedAt: archived ? new Date() : null, updatedAt: new Date() }
     if (!archived) {
       // Restored cards return to the end of their column.
@@ -489,6 +498,41 @@ export class CardService {
     return { id: row.id, checklistId, text, done: false, position: row.position }
   }
 
+  /**
+   * Adds several items at once, to a checklist of the card or to a new one: all of them or, if
+   * one is not valid, none (nor the new checklist).
+   */
+  async addItems(actor: Actor, cardId: string, input: { checklistId?: string; checklistTitle?: string; items: string[] }) {
+    const texts = input.items.map((text) => parse(checklistItemCreateInput, { text }).text)
+    const title = input.checklistId ? undefined : parse(checklistCreateInput, { title: input.checklistTitle }).title
+    const card = await this.load(actor, cardId, 'tasks:write')
+    const result = this.deps.db.transaction((tx) => {
+      let list: { id: string; title: string }
+      if (input.checklistId) {
+        const found = tx
+          .select({ id: checklists.id, title: checklists.title })
+          .from(checklists)
+          .where(and(eq(checklists.id, input.checklistId), eq(checklists.cardId, cardId)))
+          .get()
+        if (!found) throw notFound('Checklist')
+        list = found
+      } else {
+        const position = positionAt(tx, checklists, eq(checklists.cardId, cardId), undefined)
+        list = tx.insert(checklists).values({ workspaceId: card.workspaceId, cardId, title: title!, position }).returning().get()
+        this.change(tx, actor, card, { kind: 'checklist.created', subjectId: list.id, meta: { title: list.title } })
+      }
+      const items = texts.map((text) => {
+        const position = positionAt(tx, checklistItems, eq(checklistItems.checklistId, list.id), undefined)
+        const row = tx.insert(checklistItems).values({ workspaceId: card.workspaceId, checklistId: list.id, text, position }).returning().get()
+        this.change(tx, actor, card, { kind: 'item.created', subjectId: row.id, meta: { text, checklist: list.title } })
+        return { id: row.id, text }
+      })
+      return { checklistId: list.id, items }
+    })
+    await this.touch(actor, card, texts.at(-1)!)
+    return result
+  }
+
   private async loadItem(actor: Actor, itemId: string) {
     const [item] = await this.deps.db.select().from(checklistItems).where(eq(checklistItems.id, itemId))
     if (!item) throw notFound('Checklist item')
@@ -535,7 +579,7 @@ export class CardService {
     const card = await this.load(actor, cardId, 'tasks:read')
     const [page] = await this.deps.db.select().from(pages).where(eq(pages.id, pageId))
     if (!page || page.workspaceId !== card.workspaceId) throw notFound('Page')
-    this.deps.db.transaction((tx) => {
+    const added = this.deps.db.transaction((tx) => {
       const added = tx
         .insert(cardPageLinks)
         .values({ cardId, pageId, workspaceId: card.workspaceId, source: 'manual' })
@@ -543,7 +587,10 @@ export class CardService {
         .returning({ pageId: cardPageLinks.pageId })
         .all()
       if (added.length) this.change(tx, actor, card, { kind: 'card.linked', subjectId: pageId, meta: { page: page.title } })
+      return added.length > 0
     })
+    // Already linked: nothing new to tell.
+    if (!added) return
     await this.activity.record(
       actor,
       card.workspaceId,

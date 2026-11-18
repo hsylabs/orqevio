@@ -8,6 +8,7 @@
         <a href="#button">ボタンで</a>
         <a href="#docker">Dockerで</a>
         <a href="#access">初回ログイン</a>
+        <a href="#backups">バックアップとエクスポート</a>
         <a href="#agents">エージェントの接続</a>
         <a href="#update">更新</a>
         <a href="#uninstall">アンインストール</a>
@@ -18,14 +19,14 @@
 
   <div class="wrap prose">
     <h2 id="command">コマンドで <span class="badge">おすすめ</span></h2>
-    <p>Orqevioは、あなた自身のCloudflareアカウントにインストールされます。構成は、Webアプリ・API・MCPを提供するWorker、SQLiteデータベース、添付ファイル用のR2バケットです。</p>
+    <p>Orqevioは、あなた自身のCloudflareアカウントにインストールされます。構成は、Webアプリ・API・MCPを提供するWorker、SQLiteデータベース、添付ファイルとバックアップ用のR2バケットです。</p>
     <p><strong>必要なもの：</strong>Cloudflareアカウント（無料プランで十分です）と、Node.js 22.12以降。</p>
     <p class="note"><strong>始める前に、R2を有効にしてください。</strong>Cloudflareのダッシュボードの<a href="https://dash.cloudflare.com/?to=/:account/r2/overview">R2 → Overview</a>で有効にできます。無料枠（ストレージは月10 GBまで）なら料金はかかりませんが、Cloudflareから支払い方法の登録を求められることがあります。Cloudflareへのインストールには、コマンドとボタンのどちらの方法でもR2が必要です。</p>
     <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
     <ol>
       <li>ブラウザが開くので、Cloudflareにログインします。</li>
       <li>Orqevioの名前を決めます（既定は<code>orqevio</code>）。名前はアドレスの一部になります。</li>
-      <li>インストーラーがOrqevioをデプロイし、バケットを作成します。</li>
+      <li>インストーラーがOrqevioをデプロイし、添付ファイル用とバックアップ用のバケットを作成します。</li>
       <li>アドレス（<code>https://orqevio.&lt;サブドメイン&gt;.workers.dev</code>）と、1回限りの<strong>セットアップコード</strong>が表示されます。</li>
     </ol>
     <p>アドレスを開き、<a href="#access">初回ログイン</a>に進んでください。</p>
@@ -54,7 +55,9 @@
     <p><code>.env</code>を編集し、<code>APP_URL</code>にOrqevioの公開アドレス（例：<code>https://orqevio.example.jp</code>）を設定します。必要なら、英字または数字12文字以上で独自の<code>SETUP_CODE</code>も設定できます。その後：</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
     <p>Orqevioはポート3000で待ち受けます。HTTPS対応のリバースプロキシ（Caddy、Nginx、Traefik）の背後に置き、<code>.env</code>に<code>TRUST_PROXY=true</code>を追加してください。</p>
-    <p><strong>バックアップ：</strong>Orqevioの稼働中にデータベースのライブバックアップを作成し、<code>uploads</code>フォルダーの添付ファイルと一緒にコンテナーの外へコピーしてください。</p>
+    <p><strong>バックアップ：</strong>Orqevioは毎日、ボリュームの<code>backups</code>フォルダーに自動でバックアップを作成し、最新の7件を保持します（<a href="#backups">バックアップとエクスポート</a>を参照）。サーバーの外にも保管するには、ときどきコピーしてください。</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backups ./orqevio-backups</code></pre></div>
+    <p>手動でバックアップするには、Orqevioの稼働中にデータベースのライブバックアップを作成し、<code>uploads</code>フォルダーの添付ファイルと一緒にコンテナーの外へコピーしてください。</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose exec app node dist/cli.js backup /data/backup.db</code></pre></div>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backup.db ./orqevio-backup.db</code></pre></div>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/uploads ./orqevio-uploads</code></pre></div>
@@ -67,7 +70,12 @@
       <li><strong>キーを紛失したら、</strong><code>npx create-orqevio@latest recover</code>（Cloudflare）または<code>docker compose exec app node dist/cli.js reset-access</code>（Docker）で新しいコードを生成し、「キーを紛失した場合」で入力します。保管庫には影響しません。サーバーがマスターパスワードを知ることはないからです。</li>
     </ol>
     <p>Orqevioは、セットアップしたときのブラウザの言語で表示されます。対応言語は英語、スペイン語、フランス語、ポルトガル語、イタリア語、ドイツ語、オランダ語、日本語で、<strong>設定</strong>からいつでも変更できます。</p>
-    <p class="note"><strong>データの管理はご自身で。</strong>Orqevioは現状のまま提供され、保証はありません。アクセスキーと保管庫の回復キーを安全に保管し、バックアップを取り、保管庫も定期的にエクスポートしてください。Cloudflareでは、保管庫以外のデータをアプリからエクスポートする機能はまだありません。</p>
+    <p class="note"><strong>データの管理はご自身で。</strong>Orqevioは現状のまま提供され、保証はありません。アクセスキーと保管庫の回復キーを安全に保管し、バックアップは別の場所にも保管し、保管庫も定期的にエクスポートしてください。</p>
+
+    <h2 id="backups">バックアップとエクスポート</h2>
+    <p>Orqevioは毎日、保管庫・ゴミ箱・履歴・添付ファイルを含めて自動でバックアップを作成し、最新の7件を保持します。Dockerではボリュームの<code>backups</code>フォルダー、Cloudflareではアカウント内のR2バケット<code>&lt;名前&gt;-backups</code>に保存されます。<strong>設定 → バックアップ</strong>で一覧を確認し、<strong>今すぐバックアップ</strong>で作成でき、アクセスキーを入力すればどれでも復元できます。復元の前に、現在の状態もバックアップされるので、元に戻せます。</p>
+    <p><strong>設定 → データのエクスポート</strong>では、Orqevioがなくても読めるZIPをダウンロードできます。各ワークスペースのタスクはJSON、ドキュメントはMarkdown、それに添付ファイルが含まれます。保管庫には専用の暗号化エクスポートがあります。</p>
+    <p>バージョン1.2.0より前にCloudflareにインストールしたOrqevioには、次回のアップデートでバックアップ用バケットが追加されます。</p>
 
     <h2 id="agents">エージェントの接続</h2>
     <p>OrqevioのMCPアドレスは<code>https://&lt;あなたのOrqevio&gt;/mcp</code>です。</p>

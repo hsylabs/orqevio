@@ -63,6 +63,58 @@ describe('boards and cards', () => {
     expect((await client.get(`/api/boards/${boardId}`)).body.cards).toHaveLength(1)
   })
 
+  it('reaches every archived card a page at a time, and finds them when asked to', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { boardId, columns } = await seedBoard(client, workspaceId)
+    const archived: string[] = []
+    for (let i = 0; i < 250; i++) {
+      const card = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: `Archivada ${i}` })
+      expect((await client.post(`/api/cards/${card.body.id}/archive`)).status).toBe(204)
+      archived.push(card.body.id)
+    }
+    // Many archived in the same instant: the cursor goes by the card too.
+    const seen: string[] = []
+    let url = `/api/boards/${boardId}/archived`
+    for (let pages = 0; pages < 10; pages++) {
+      const page = (await client.get(url)).body as Array<{ id: string; archivedAt: string }>
+      seen.push(...page.map((c) => c.id))
+      if (page.length < 50) break
+      const last = page.at(-1)!
+      url = `/api/boards/${boardId}/archived?before=${encodeURIComponent(last.archivedAt)}&beforeId=${last.id}`
+    }
+    expect(seen).toHaveLength(250)
+    expect(new Set(seen).size).toBe(250)
+    expect([...seen].sort()).toEqual([...archived].sort())
+    // Most recently archived first.
+    expect(seen[0]).toBe(archived.at(-1))
+
+    // Search leaves them out, unless asked to include them, and then says which are archived.
+    const search = async (q: string) => (await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent(q)}`)).body as Array<{ id: string; archived?: boolean }>
+    expect(await search('Archivada 7')).toEqual([])
+    const found = (await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent('Archivada 7')}&archived=1`)).body as Array<{ id: string; archived?: boolean }>
+    expect(found.map((r) => r.id)).toContain(archived[7])
+    expect(found.every((r) => r.archived === true)).toBe(true)
+  })
+
+  it('keeps a due date on the calendar day it names, and refuses what names no day', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    // Late on the 17th in New York is already the 18th in UTC: it stays the 17th, for everyone.
+    const card = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Entregar', dueAt: '2026-11-17T23:30-05:00' })
+    expect(card.status, JSON.stringify(card.body)).toBe(201)
+    expect(card.body.dueAt).toBe('2026-11-17T12:00:00.000Z')
+    const dayOnly = await client.patch(`/api/cards/${card.body.id}`, { dueAt: '2026-12-01' })
+    expect(dayOnly.status).toBe(200)
+    expect(dayOnly.body.dueAt).toBe('2026-12-01T12:00:00.000Z')
+
+    for (const dueAt of ['12', '0000-01-01', '2026-02-30', 'mañana']) {
+      const refused = await client.patch(`/api/cards/${card.body.id}`, { dueAt })
+      expect(refused.status, dueAt).toBe(400)
+      expect(JSON.stringify(refused.body.error), dueAt).toContain('YYYY-MM-DD')
+    }
+    expect((await client.get(`/api/cards/${card.body.id}`)).body.dueAt).toBe('2026-12-01T12:00:00.000Z')
+  })
+
   it('tells, column by column, how many archived cards would be deleted with it', async () => {
     const { client, workspaceId } = await signUp(h)
     const { boardId, columns } = await seedBoard(client, workspaceId)

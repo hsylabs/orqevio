@@ -6,10 +6,47 @@ import { SCOPES } from './scopes'
 /** Input schemas shared by the REST API, the MCP tools and the web forms. */
 
 const id = z.uuid()
-const name = (max = 120) => z.string().trim().min(1, 'Required').max(max)
+/** A character that shows: not a space, a control or formatting character, or a blank filler. */
+const VISIBLE = /[^\s\p{Cc}\p{Cf}\p{Z}\u115F\u1160\u3164\uFFA0\u2800]/u
+/** A one-line name: control characters (line breaks, tabs) become spaces, and it must show something. */
+const name = (max = 120) =>
+  z
+    .string()
+    .overwrite((value) => value.replace(/\p{Cc}+/gu, ' '))
+    .trim()
+    .min(1, { message: 'Required', abort: true })
+    .max(max)
+    .refine((value) => VISIBLE.test(value), 'Required')
 const color = z.enum(PALETTE)
 const index = z.number().int().min(0).max(100_000)
-const isoDate = z.iso.datetime({ offset: true })
+
+/** Due dates are calendar days, stored at 12:00 UTC so that every time zone shows the same day. */
+export const DUE_YEARS = { min: 1900, max: 2199 } as const
+const DUE_FORMAT = /^(\d{4})-(\d{2})-(\d{2})(?:T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,9})?)?(?:Z|[+-](?:[01]\d|2[0-3]):?[0-5]\d)?)?$/i
+
+/**
+ * The calendar day a due date names, as stored: `YYYY-MM-DD`, or an ISO 8601 date-time whose day
+ * is the one written in it, whatever its time and offset (`2026-11-17T23:30-05:00` is the 17th).
+ * Null when it is neither, names no real day, or falls outside `DUE_YEARS`.
+ */
+export function dueDay(value: string): string | null {
+  const match = DUE_FORMAT.exec(value.trim())
+  if (!match) return null
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])]
+  if (year < DUE_YEARS.min || year > DUE_YEARS.max) return null
+  const date = new Date(Date.UTC(year, month - 1, day, 12))
+  if (date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null
+  return date.toISOString()
+}
+
+export const DUE_DATE_HINT = `a day as YYYY-MM-DD, or an ISO 8601 date-time, between ${DUE_YEARS.min} and ${DUE_YEARS.max}`
+
+const dueAt = z.string().transform((value, ctx) => {
+  const day = dueDay(value)
+  if (day) return day
+  ctx.addIssue({ code: 'custom', message: `Due dates are ${DUE_DATE_HINT}` })
+  return z.NEVER
+})
 
 export const MAX_MARKDOWN = 200_000
 
@@ -25,8 +62,12 @@ export const RECOVERY_REASONS = ['lost', 'compromised'] as const
 export const recoverInput = z.object({ setupCode: secret, reason: z.enum(RECOVERY_REASONS) })
 export const rotateAccessKeyInput = z.object({ currentAccessKey: secret })
 export const confirmAccessKeyInput = z.object({ accessKey: secret })
+/** Uninstalling asks each time whether the copy's backups go too (they are kept apart from its data). */
+export const uninstallInput = z.object({ accessKey: secret, deleteBackups: z.boolean() })
 /** The installer's one-time authorization to uninstall, set as a Worker secret on the copy. */
-export const installerUninstallInput = z.object({ token: z.string().min(40).max(200) })
+export const installerUninstallInput = z.object({ token: z.string().min(40).max(200), deleteBackups: z.boolean().default(false) })
+/** Restoring a backup replaces everything: it is confirmed with the access key. */
+export const restoreBackupInput = z.object({ accessKey: secret })
 export const updateAccountInput = z.object({
   name: name(80).optional(),
   theme: z.enum(['system', 'light', 'dark']).optional(),
@@ -47,9 +88,11 @@ export const projectUpdateInput = z.object({
 })
 
 // ── Boards, columns, labels ─────────────────────────────────────
+/** The most columns a board holds. */
+export const MAX_COLUMNS = 20
 export const boardCreateInput = z.object({
   name: name(80),
-  columns: z.array(name(60)).max(20).optional(),
+  columns: z.array(name(60)).max(MAX_COLUMNS).optional(),
 })
 export const boardUpdateInput = z.object({ name: name(80) })
 export const columnCreateInput = z.object({ name: name(60), index: index.optional() })
@@ -61,7 +104,7 @@ export const labelUpdateInput = z.object({ name: z.string().trim().max(40).optio
 export const cardCreateInput = z.object({
   title: name(300),
   description: z.string().max(MAX_MARKDOWN).optional(),
-  dueAt: isoDate.nullable().optional(),
+  dueAt: dueAt.nullable().optional(),
   labelIds: z.array(id).max(20).optional(),
   index: index.optional(),
 })
@@ -70,7 +113,7 @@ export const cardUpdateInput = z.object({
   description: z.string().max(MAX_MARKDOWN).optional(),
   /** Optional with `description`: the version it was edited from. Without it, the last write wins. */
   baseVersion: z.number().int().min(1).optional(),
-  dueAt: isoDate.nullable().optional(),
+  dueAt: dueAt.nullable().optional(),
   labelIds: z.array(id).max(20).optional(),
 })
 export const cardMoveInput = z.object({ columnId: id, index })
@@ -125,16 +168,24 @@ export const kdfSchema = z.object({
 })
 /** Items a vault can hold. */
 export const MAX_VAULT_ITEMS = 5000
+/** Longest encrypted envelope the server keeps: a vault item, once encrypted, must fit in it. */
+export const MAX_ENVELOPE_LENGTH = 400_000
 export const envelopeSchema = z
   .string()
   .regex(/^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/, 'Invalid envelope')
-  .max(400_000)
+  .max(MAX_ENVELOPE_LENGTH)
 export const vaultKeysInput = z.object({
   kdf: kdfSchema,
   wrappedKey: envelopeSchema,
   recoveryWrappedKey: envelopeSchema,
 })
-export const vaultItemInput = z.object({ data: envelopeSchema })
+/**
+ * Which vault key a client holds: it goes up each time a vault is set up (again, after a reset).
+ * The server takes items and new wrappings only for the vault key it has now.
+ */
+const keyVersion = z.number().int().min(0).max(2_147_483_647)
+export const vaultRekeyInput = vaultKeysInput.extend({ keyVersion })
+export const vaultItemInput = z.object({ data: envelopeSchema, keyVersion })
 export const vaultSettingsInput = z.object({ autoLockMinutes: z.union([z.literal(1), z.literal(5), z.literal(15), z.literal(30), z.literal(60)]) })
 
 export type ClaimInput = z.infer<typeof claimInput>

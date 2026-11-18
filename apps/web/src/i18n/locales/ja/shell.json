@@ -134,6 +134,8 @@
       "theme": "テーマ 変更 ライト ダーク 外観 てーま theme light dark",
       "lockVault": "保管庫 ロック ほかんこ ろっく lock vault",
       "trash": "ゴミ箱 削除 復元"
-    }
+    },
+    "includeArchived": "アーカイブも含める",
+    "archived": "アーカイブ済み"
   }
 }

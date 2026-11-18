@@ -130,7 +130,9 @@
     "attachments": "Bijlagen",
     "activity": "Activiteit",
     "deleted": "Kaart naar de prullenbak verplaatst",
-    "history": "Geschiedenis"
+    "history": "Geschiedenis",
+    "moveUp": "Omhoog",
+    "moveDown": "Omlaag"
   },
   "checklist": {
     "titleLabel": "Titel van de checklist",
@@ -181,7 +183,9 @@
     "heading": "Gearchiveerd",
     "emptyTitle": "Niets gearchiveerd",
     "emptyBody": "Kaarten die jij of je agents archiveren, verschijnen hier. Je kunt ze herstellen.",
-    "deleteConfirm": "‘{{title}}’ naar de prullenbak verplaatsen?"
+    "deleteConfirm": "‘{{title}}’ naar de prullenbak verplaatsen?",
+    "loadMore": "Meer laden",
+    "showing": "{{shown}} van {{total}}"
   },
   "attachments": {
     "deleteConfirm": "‘{{name}}’ verwijderen?",

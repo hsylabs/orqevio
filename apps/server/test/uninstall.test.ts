@@ -28,8 +28,8 @@ describe('uninstalling a copy', () => {
     const uploads = path.join(h.env.dataDir, 'uploads')
     expect(readdirSync(uploads).length).toBeGreaterThan(0)
 
-    expect((await client.post('/api/account/uninstall', { accessKey: 'ZZZZ-ZZZZ' })).status).toBe(403)
-    const done = await client.post('/api/account/uninstall', { accessKey })
+    expect((await client.post('/api/account/uninstall', { accessKey: 'ZZZZ-ZZZZ', deleteBackups: false })).status).toBe(403)
+    const done = await client.post('/api/account/uninstall', { accessKey, deleteBackups: false })
     expect(done.status).toBe(200)
     expect(done.body).toMatchObject({ install: 'source', copyName: null, bucket: null })
 
@@ -83,7 +83,7 @@ describe('uninstalling a copy', () => {
       const upload = client.request('POST', url, slow, { 'Content-Type': 'text/plain', 'Content-Length': '10', 'X-File-Name': 'a.txt' })
       await new Promise((resolve) => setTimeout(resolve, 50))
       let done = false
-      const uninstall = client.post('/api/account/uninstall', { accessKey }).finally(() => (done = true))
+      const uninstall = client.post('/api/account/uninstall', { accessKey, deleteBackups: false }).finally(() => (done = true))
       await new Promise((resolve) => setTimeout(resolve, 50))
       expect(done).toBe(false)
       expect((await client.upload(url, 'otro', { name: 'b.txt', type: 'text/plain' })).status).toBe(410)

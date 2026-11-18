@@ -8,6 +8,7 @@
         <a href="#button">Per Button</a>
         <a href="#docker">Mit Docker</a>
         <a href="#access">Erste Anmeldung</a>
+        <a href="#backups">Sicherungen und Export</a>
         <a href="#agents">Agenten verbinden</a>
         <a href="#update">Aktualisieren</a>
         <a href="#uninstall">Deinstallieren</a>
@@ -18,14 +19,14 @@
 
   <div class="wrap prose">
     <h2 id="command">Per Befehl <span class="badge">Empfohlen</span></h2>
-    <p>Deine Instanz wird in deinem eigenen Cloudflare-Konto installiert: ein Worker mit der Web-App, der API und dem MCP-Server, eine SQLite-Datenbank und ein R2-Bucket für Anhänge.</p>
+    <p>Deine Instanz wird in deinem eigenen Cloudflare-Konto installiert: ein Worker mit der Web-App, der API und dem MCP-Server, eine SQLite-Datenbank und R2-Buckets für Anhänge und Sicherungen.</p>
     <p><strong>Du brauchst</strong> ein Cloudflare-Konto (der kostenlose Plan reicht aus) und Node.js 22.12 oder neuer.</p>
     <p class="note"><strong>Aktiviere vorher R2</strong> im Cloudflare-Dashboard unter <a href="https://dash.cloudflare.com/?to=/:account/r2/overview">R2 → Overview</a>. Die enthaltene Nutzung ist kostenlos (10 GB Speicherplatz pro Monat), Cloudflare fragt aber eventuell nach einer Zahlungsmethode. Beide Wege, Orqevio bei Cloudflare zu installieren, setzen R2 voraus: der Befehl und der Button.</p>
     <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
     <ol>
       <li>Dein Browser öffnet sich, damit du dich bei Cloudflare anmelden kannst.</li>
       <li>Du wählst einen Namen für die Instanz (standardmäßig <code>orqevio</code>), der Teil ihrer Adresse wird.</li>
-      <li>Der Installer stellt die Instanz bereit und legt ihren Bucket an.</li>
+      <li>Der Installer stellt die Instanz bereit und legt ihre Buckets an, für Anhänge und für Sicherungen.</li>
       <li>Zum Schluss zeigt er dir die Adresse (<code>https://orqevio.&lt;deine-subdomain&gt;.workers.dev</code>) und einen einmaligen <strong>Einrichtungscode</strong>.</li>
     </ol>
     <p>Öffne die Adresse und folge den Schritten unter <a href="#access">Erste Anmeldung</a>.</p>
@@ -54,7 +55,9 @@
     <p>Bearbeite die <code>.env</code>: Trage unter <code>APP_URL</code> die öffentliche Adresse deiner Instanz ein (zum Beispiel <code>https://orqevio.deine-domain.de</code>) und, wenn du möchtest, einen eigenen <code>SETUP_CODE</code> mit mindestens 12 Buchstaben oder Ziffern. Dann:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
     <p>Die Instanz lauscht auf Port 3000. Betreibe sie hinter einem Reverse Proxy mit HTTPS (Caddy, Nginx oder Traefik) und ergänze <code>TRUST_PROXY=true</code> in der <code>.env</code>.</p>
-    <p><strong>Backups:</strong> Erstelle bei laufender Instanz ein Live-Backup der Datenbank und kopiere es zusammen mit den Anhängen im Ordner <code>uploads</code> aus dem Container:</p>
+    <p><strong>Sicherungen:</strong> Deine Instanz sichert sich jeden Tag selbst im Ordner <code>backups</code> ihres Volumes und behält die 7 neuesten (siehe <a href="#backups">Sicherungen und Export</a>). Um sie auch außerhalb des Servers aufzubewahren, kopiere sie von Zeit zu Zeit heraus:</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backups ./orqevio-backups</code></pre></div>
+    <p>Für eine Sicherung von Hand erstelle bei laufender Instanz ein Live-Backup der Datenbank und kopiere es zusammen mit den Anhängen im Ordner <code>uploads</code> aus dem Container:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose exec app node dist/cli.js backup /data/backup.db</code></pre></div>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backup.db ./orqevio-backup.db</code></pre></div>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/uploads ./orqevio-uploads</code></pre></div>
@@ -67,7 +70,12 @@
       <li><strong>Wenn du ihn verlierst,</strong> erzeuge einen neuen Code mit <code>npx create-orqevio@latest recover</code> (Cloudflare) oder <code>docker compose exec app node dist/cli.js reset-access</code> (Docker) und gib ihn unter „Schlüssel verloren?“ ein. Dein Tresor ist davon nicht betroffen: Der Server kennt sein Master-Passwort nie.</li>
     </ol>
     <p>Deine Instanz übernimmt beim Einrichten die Sprache deines Browsers: Englisch, Spanisch, Französisch, Portugiesisch, Italienisch, Deutsch, Niederländisch oder Japanisch. Du kannst sie jederzeit unter <strong>Einstellungen</strong> ändern.</p>
-    <p class="note"><strong>Deine Daten, deine Verantwortung.</strong> Orqevio wird ohne Gewähr bereitgestellt, so wie es ist. Bewahre deinen Zugangsschlüssel und den Wiederherstellungsschlüssel deines Tresors sicher auf, erstelle Backups und exportiere deinen Tresor von Zeit zu Zeit. Auf Cloudflare kann die App den Rest deiner Daten noch nicht exportieren.</p>
+    <p class="note"><strong>Deine Daten, deine Verantwortung.</strong> Orqevio wird ohne Gewähr bereitgestellt, so wie es ist. Bewahre deinen Zugangsschlüssel und den Wiederherstellungsschlüssel deines Tresors sicher auf, bewahre deine Sicherungen auch an einem anderen Ort auf und exportiere deinen Tresor von Zeit zu Zeit.</p>
+
+    <h2 id="backups">Sicherungen und Export</h2>
+    <p>Deine Instanz sichert sich jeden Tag selbst, mit dem Tresor, dem Papierkorb, dem Verlauf und den Anhängen, und behält die 7 neuesten Sicherungen: mit Docker im Ordner <code>backups</code> ihres Volumes, auf Cloudflare im R2-Bucket <code>&lt;Name&gt;-backups</code> deines Kontos. Unter <strong>Einstellungen → Sicherungen</strong> siehst du sie, erstellst mit <strong>Jetzt sichern</strong> eine neue und stellst nach Eingabe deines Zugangsschlüssels jede davon wieder her. Vor dem Wiederherstellen sichert sich deine Instanz so, wie sie gerade ist, damit du zurückkehren kannst.</p>
+    <p><strong>Einstellungen → Deine Daten exportieren</strong> lädt ein ZIP herunter, das du ohne Orqevio lesen kannst: die Aufgaben jedes Arbeitsbereichs als JSON, seine Dokumente als Markdown und die Anhänge. Der Tresor hat seinen eigenen verschlüsselten Export.</p>
+    <p>Instanzen, die vor Version 1.2.0 auf Cloudflare installiert wurden, erhalten ihren Bucket für Sicherungen mit dem nächsten Update.</p>
 
     <h2 id="agents">Agenten verbinden</h2>
     <p>Die MCP-Adresse deiner Instanz lautet <code>https://&lt;deine-instanz&gt;/mcp</code>.</p>

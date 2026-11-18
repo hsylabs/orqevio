@@ -7,14 +7,22 @@
     "already_claimed": "This copy is already set up. Sign in with your access key.",
     "not_claimed": "This copy isn’t set up yet.",
     "rate_limited": "Too many attempts. Wait a few minutes.",
+    "rate_limitedFor_one": "Too many attempts. Try again in {{count}} minute.",
+    "rate_limitedFor_other": "Too many attempts. Try again in {{count}} minutes.",
     "network": "There’s no connection to the server.",
     "file_too_large": "The file is larger than the maximum allowed size.",
     "upload_incomplete": "The upload was interrupted. Try again.",
     "last_workspace": "You need to keep at least one workspace.",
     "restore_place_in_trash": "Restore what this belongs to first: it’s in the trash too.",
-    "restore_place_gone": "The place it belonged to no longer exists, and there’s nowhere else to put it."
+    "restore_place_gone": "The place it belonged to no longer exists, and there’s nowhere else to put it.",
+    "vault_key_changed": "The vault changed in another tab or on another device. Open it again.",
+    "too_many_columns": "A board holds up to 20 columns.",
+    "vault_full": "The vault holds up to 5,000 items. Delete the ones you no longer use to add more."
   },
   "notFound": "The item couldn’t be found.",
   "server": "Something went wrong on the server. Try again.",
-  "unknown": "Something went wrong. Try again."
+  "unknown": "Something went wrong. Try again.",
+  "invalid": "Some of the data isn’t valid. Check it and try again.",
+  "forbidden": "You don’t have permission to do this.",
+  "conflict": "It changed in the meantime. Reload it and try again."
 }

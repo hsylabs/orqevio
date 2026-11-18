@@ -7,14 +7,22 @@
     "already_claimed": "Diese Instanz ist bereits eingerichtet. Melde dich mit deinem Zugangsschlüssel an.",
     "not_claimed": "Diese Instanz ist noch nicht eingerichtet.",
     "rate_limited": "Zu viele Versuche. Warte ein paar Minuten.",
+    "rate_limitedFor_one": "Zu viele Versuche. Versuche es in {{count}} Minute erneut.",
+    "rate_limitedFor_other": "Zu viele Versuche. Versuche es in {{count}} Minuten erneut.",
     "network": "Keine Verbindung zum Server.",
     "file_too_large": "Die Datei ist größer als erlaubt.",
     "upload_incomplete": "Der Upload wurde unterbrochen. Versuch es noch einmal.",
     "last_workspace": "Du musst mindestens einen Arbeitsbereich behalten.",
     "restore_place_in_trash": "Stell zuerst wieder her, wozu es gehört: Das liegt auch im Papierkorb.",
-    "restore_place_gone": "Der Platz, zu dem es gehörte, existiert nicht mehr, und es gibt keinen anderen, wohin es könnte."
+    "restore_place_gone": "Der Platz, zu dem es gehörte, existiert nicht mehr, und es gibt keinen anderen, wohin es könnte.",
+    "vault_key_changed": "Der Tresor wurde in einem anderen Tab oder auf einem anderen Gerät geändert. Öffne ihn erneut.",
+    "too_many_columns": "Ein Board kann bis zu 20 Spalten enthalten.",
+    "vault_full": "Der Tresor fasst bis zu 5.000 Einträge. Lösche die, die du nicht mehr brauchst, um weitere hinzuzufügen."
   },
   "notFound": "Das Element wurde nicht gefunden.",
   "server": "Auf dem Server ist etwas schiefgelaufen. Versuch es noch einmal.",
-  "unknown": "Etwas ist schiefgelaufen. Versuch es noch einmal."
+  "unknown": "Etwas ist schiefgelaufen. Versuch es noch einmal.",
+  "invalid": "Einige Angaben sind ungültig. Prüfe sie und versuche es erneut.",
+  "forbidden": "Dazu hast du keine Berechtigung.",
+  "conflict": "Das hat sich inzwischen geändert. Lade neu und versuche es erneut."
 }

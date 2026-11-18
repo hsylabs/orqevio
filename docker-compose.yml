@@ -1,5 +1,6 @@
 # Your own copy of Orqevio: a single container with its SQLite database and
-# attachments in the `orqevio-data` volume.
+# attachments in the `orqevio-data` volume, and its daily backups in /data/backups
+# (BACKUP_DIR). To keep them on another disk, mount it and point BACKUP_DIR there.
 #   cp .env.example .env     # set APP_URL and, optionally, SETUP_CODE
 #   docker compose up -d     # runs the published image
 # Update to the latest version (data is kept; migrations run on start):
@@ -13,9 +14,12 @@ services:
     environment:
       APP_URL: ${APP_URL:-http://localhost:3000}
       TRUST_PROXY: ${TRUST_PROXY:-false}
+      SECURE_COOKIES: ${SECURE_COOKIES:-}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-20}
       SETUP_CODE: ${SETUP_CODE:-}
       UPDATE_CHECK: ${UPDATE_CHECK:-on}
+      BACKUPS: ${BACKUPS:-on}
+      BACKUP_DIR: ${BACKUP_DIR:-/data/backups}
     ports:
       - '${PORT:-3000}:3000'
     volumes:
