@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Page, WebSocketRoute } from '@playwright/test'
 import { createProject, expect, openNewWorkspace, settle, test } from './helpers'
 
 /** Opens a new page of the project from the sidebar, gives it a title and a first line, and waits for it to be saved. */
@@ -94,6 +94,43 @@ test('a page deleted in another tab says so at once, keeps what was written and 
   await page.keyboard.type(' Tercera.')
   await expect.poll(() => content(page, doc.id)).toBe('Primera parte. Segunda parte. Tercera.')
   await expect(page.getByRole('navigation').getByRole('link', { name: /^Guía/ })).toBeVisible()
+})
+
+// Live events missed while disconnected: the page is read again on reconnecting, and found back.
+test('a page restored elsewhere while this tab was disconnected comes back once it reconnects', async ({ page }) => {
+  test.setTimeout(90_000)
+  let deaf = false
+  const sockets: WebSocketRoute[] = []
+  await page.routeWebSocket(/\/live$/, (ws) => {
+    sockets.push(ws)
+    const server = ws.connectToServer()
+    server.onMessage((message) => {
+      if (!deaf) ws.send(message)
+    })
+  })
+  await openNewWorkspace(page, 'Reconexión E2E')
+  await createProject(page, 'Notas')
+  const doc = await newDoc(page, 'Notas', 'Acta', 'Primer punto.')
+
+  const deleted = await page.request.delete(`/api/pages/${doc.id}`)
+  const { trashId } = (await deleted.json()) as { trashId: string }
+  const banner = page.getByRole('alert').filter({ hasText: 'Has borrado esta página en otra pestaña o sesión.' })
+  await expect(banner).toBeVisible()
+
+  // Restored from elsewhere while this tab hears nothing.
+  deaf = true
+  expect((await page.request.post(`/api/trash/${trashId}/restore`)).status()).toBe(200)
+  await page.waitForTimeout(1000)
+  await expect(banner).toBeVisible()
+
+  // The connection drops and comes back: the page is read again, and it is there.
+  deaf = false
+  await sockets.at(-1)!.close()
+  await expect(banner).toBeHidden({ timeout: 20_000 })
+  await page.getByRole('textbox', { name: 'Contenido de la página' }).click()
+  await page.keyboard.press('ControlOrMeta+End')
+  await page.keyboard.type(' Segundo punto.')
+  await expect.poll(() => content(page, doc.id)).toBe('Primer punto. Segundo punto.')
 })
 
 test('without a connection the editor waits longer each time, warns once, and saves when it is back', async ({ page, context, consoleErrors }, testInfo) => {

@@ -52,10 +52,11 @@ export function DocPage() {
   const page = usePage(pageId)
   if (!page.data) return page.isError ? <NotFound /> : <PageSkeleton />
   // Already open, a page that is no longer found stays on screen, with what was written in it.
-  return <DocBody key={page.data.id} page={page.data} missing={page.isError && isNotFound(page.error)} />
+  return <DocBody key={page.data.id} page={page.data} missing={page.isError && isNotFound(page.error)} readAt={page.dataUpdatedAt} />
 }
 
-function DocBody({ page, missing }: { page: PageDTO; missing: boolean }) {
+/** `missing`: the page was not found when read again. `readAt`: when it was last read. */
+function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; readAt: number }) {
   const { t } = useTranslation('docs')
   const { workspaceId, me, overview } = useWorkspace()
   const navigate = useNavigate()
@@ -200,16 +201,26 @@ function DocBody({ page, missing }: { page: PageDTO; missing: boolean }) {
       .catch(() => {})
   }
 
-  useEffect(() => {
-    if (missing) markGone.current(null)
-  }, [missing])
-
   /** Back from the trash, here or elsewhere: saving goes on where it left off. */
   const backAgain = useCallback(() => {
+    if (!goneRef.current) return
     goneRef.current = false
     setGone(null)
     if (dirty.current) void save()
   }, [save])
+
+  /** Something was restored elsewhere: maybe this page. Says whether it is back. */
+  const recheck = useCallback(async () => {
+    try {
+      const fresh = await get<PageDTO>(`/pages/${page.id}`)
+      queryClient.setQueryData(keys.page(page.id), fresh)
+      backAgain()
+      return true
+    } catch {
+      // Still in the trash.
+      return false
+    }
+  }, [page.id, backAgain])
 
   async function restore(entry: TrashEntryDTO) {
     setRestoring(true)
@@ -217,25 +228,25 @@ function DocBody({ page, missing }: { page: PageDTO; missing: boolean }) {
       const restored = await restoreFromTrash(entry.id)
       if (restored.movedTo) toast.message(t('restoredElsewhere', { ns: 'trash', place: restored.movedTo }))
       backAgain()
-      // The button goes away with the notice: writing goes on where it was.
-      editorRef.current?.commands.focus()
     } catch (error) {
-      toast.error(errorMessage(error))
+      // Restored elsewhere meanwhile, maybe: then it is back all the same.
+      if (!isNotFound(error) || !(await recheck())) {
+        toast.error(errorMessage(error))
+        return
+      }
     } finally {
       setRestoring(false)
     }
+    // The button goes away with the notice: writing goes on where it was.
+    editorRef.current?.commands.focus()
   }
 
-  /** Something was restored elsewhere: maybe this page. */
-  const recheck = useCallback(async () => {
-    try {
-      const fresh = await get<PageDTO>(`/pages/${page.id}`)
-      queryClient.setQueryData(keys.page(page.id), fresh)
-      if (goneRef.current) backAgain()
-    } catch {
-      // Still in the trash.
-    }
-  }, [page.id, backAgain])
+  // What reading the page again finds, also after a reconnection that may have missed live
+  // events: a page no longer there is gone; one there again while it seemed gone may be back.
+  useEffect(() => {
+    if (missing) markGone.current(null)
+    else if (goneRef.current) void recheck()
+  }, [missing, readAt, recheck])
 
   /** Unsaved text that leaving would lose: it can't be saved now, or saving it failed. */
   const unsaveable = () => dirty.current && (goneRef.current || conflictRef.current || problemRef.current !== null)
