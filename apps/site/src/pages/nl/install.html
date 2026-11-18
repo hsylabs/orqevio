@@ -8,6 +8,7 @@
         <a href="#button">Met de knop</a>
         <a href="#docker">Met Docker</a>
         <a href="#access">Eerste keer inloggen</a>
+        <a href="#backups">Back-ups en export</a>
         <a href="#agents">Agents koppelen</a>
         <a href="#update">Bijwerken</a>
         <a href="#uninstall">Verwijderen</a>
@@ -18,14 +19,14 @@
 
   <div class="wrap prose">
     <h2 id="command">Met een opdracht <span class="badge">Aanbevolen</span></h2>
-    <p>Je installatie komt in je eigen Cloudflare-account: een Worker met de webapp, de API en MCP, een SQLite-database en een R2-bucket voor bijlagen.</p>
+    <p>Je installatie komt in je eigen Cloudflare-account: een Worker met de webapp, de API en MCP, een SQLite-database en R2-buckets voor bijlagen en back-ups.</p>
     <p><strong>Wat je nodig hebt:</strong> een Cloudflare-account (het gratis abonnement is genoeg) en Node.js 22.12 of nieuwer.</p>
     <p class="note"><strong>Schakel eerst R2 in</strong> in het Cloudflare-dashboard, onder <a href="https://dash.cloudflare.com/?to=/:account/r2/overview">R2 → Overview</a>. Het inbegrepen gebruik is gratis (10 GB opslag per maand), al kan Cloudflare om een betaalmethode vragen. Beide manieren om op Cloudflare te installeren hebben het nodig: de opdracht en de knop.</p>
     <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
     <ol>
       <li>Je browser opent, zodat je kunt inloggen bij Cloudflare.</li>
       <li>Je kiest een naam voor de installatie (standaard <code>orqevio</code>), die onderdeel wordt van het adres.</li>
-      <li>De installer rolt de installatie uit en maakt de bucket aan.</li>
+      <li>De installer rolt de installatie uit en maakt de buckets aan, voor bijlagen en voor back-ups.</li>
       <li>Je krijgt het adres te zien (<code>https://orqevio.&lt;jouw-subdomein&gt;.workers.dev</code>) en een eenmalige <strong>installatiecode</strong>.</li>
     </ol>
     <p>Open het adres en volg de stappen bij <a href="#access">eerste keer inloggen</a>.</p>
@@ -54,7 +55,9 @@
     <p>Bewerk <code>.env</code>: zet in <code>APP_URL</code> het openbare adres van je installatie (bijvoorbeeld <code>https://orqevio.jouw-domein.nl</code>) en, als je wilt, een eigen <code>SETUP_CODE</code> van minstens 12 letters of cijfers. Daarna:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
     <p>De installatie luistert op poort 3000. Zet hem achter een reverse proxy met HTTPS (Caddy, Nginx of Traefik) en voeg <code>TRUST_PROXY=true</code> toe aan <code>.env</code>.</p>
-    <p><strong>Back-ups:</strong> maak terwijl de installatie draait een live back-up van de database en kopieer die uit de container, samen met de bijlagen in de map <code>uploads</code>:</p>
+    <p><strong>Back-ups:</strong> je installatie maakt elke dag een back-up van zichzelf in de map <code>backups</code> van haar volume en bewaart de 7 nieuwste (zie <a href="#backups">Back-ups en export</a>). Wil je ze ook buiten de server bewaren, kopieer ze dan af en toe:</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backups ./orqevio-backups</code></pre></div>
+    <p>Voor een back-up met de hand maak je terwijl de installatie draait een live back-up van de database en kopieer je die uit de container, samen met de bijlagen in de map <code>uploads</code>:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose exec app node dist/cli.js backup /data/backup.db</code></pre></div>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backup.db ./orqevio-backup.db</code></pre></div>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/uploads ./orqevio-uploads</code></pre></div>
@@ -67,7 +70,12 @@
       <li><strong>Ben je hem kwijt,</strong> genereer dan een nieuwe code met <code>npx create-orqevio@latest recover</code> (Cloudflare) of <code>docker compose exec app node dist/cli.js reset-access</code> (Docker), en gebruik die bij ‘Sleutel kwijt?’. Je kluis blijft onaangetast: de server kent het hoofdwachtwoord nooit.</li>
     </ol>
     <p>Je installatie spreekt de taal die je browser gebruikt op het moment dat je hem instelt: Engels, Spaans, Frans, Portugees, Italiaans, Duits, Nederlands of Japans. Je kunt de taal altijd wijzigen in <strong>Instellingen</strong>.</p>
-    <p class="note"><strong>Jouw gegevens, jouw verantwoordelijkheid.</strong> Orqevio wordt geleverd zoals het is, zonder garantie. Bewaar je toegangssleutel en de herstelsleutel van je kluis goed, maak back-ups en exporteer je kluis af en toe. Op Cloudflare kan de app de rest van je gegevens nog niet exporteren.</p>
+    <p class="note"><strong>Jouw gegevens, jouw verantwoordelijkheid.</strong> Orqevio wordt geleverd zoals het is, zonder garantie. Bewaar je toegangssleutel en de herstelsleutel van je kluis goed, bewaar je back-ups ook ergens anders en exporteer je kluis af en toe.</p>
+
+    <h2 id="backups">Back-ups en export</h2>
+    <p>Je installatie maakt elke dag een back-up van zichzelf, met de kluis, de prullenbak, de geschiedenis en de bijlagen, en bewaart de 7 nieuwste: met Docker in de map <code>backups</code> van haar volume, op Cloudflare in de R2-bucket <code>&lt;naam&gt;-backups</code> van je account. In <strong>Instellingen → Back-ups</strong> zie je ze, maak je er een met <strong>Nu een back-up maken</strong> en zet je er een terug nadat je je toegangssleutel hebt ingetypt. Voor het terugzetten maakt je installatie een back-up van hoe ze nu is, zodat je terug kunt.</p>
+    <p><strong>Instellingen → Je gegevens exporteren</strong> downloadt een ZIP die je zonder Orqevio kunt lezen: de taken van elke werkruimte in JSON, de documenten in Markdown en de bijlagen. De kluis heeft een eigen versleutelde export.</p>
+    <p>Installaties die vóór versie 1.2.0 op Cloudflare zijn geïnstalleerd, krijgen hun back-upbucket bij de volgende update.</p>
 
     <h2 id="agents">Agents koppelen</h2>
     <p>Het MCP-adres van je installatie is <code>https://&lt;jouw-installatie&gt;/mcp</code>.</p>

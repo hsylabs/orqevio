@@ -6,6 +6,30 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+### Added
+- Daily backups. Once a day, your copy backs itself up, as it is: workspaces, documents, cards, the encrypted vault, agents, the trash, the history and the attachments. It keeps them apart from its data: with Docker and Node in `BACKUP_DIR` (by default `DATA_DIR/backups`), and on Cloudflare in a second R2 bucket, `<name>-backups`, which installing and `npx create-orqevio update` create. It keeps the 7 newest, and the one made before the last restore; attachments are stored once for all of them. A Node and a Cloudflare backup are the same file. `BACKUPS=off` turns them off.
+- **Settings → Backups** lists the backups, with what each holds, makes one on the spot with **Back up now**, and restores any of them after you type your access key and the copy's name. Before restoring, your copy backs itself up as it is. Restoring brings everything back as it was that day, and an older backup comes up to date. It ends every session: you stay signed in, and your access key is the one you use now. A backup made by a newer version, or damaged, is refused without touching anything. A copy installed again with the same name, or started with the same backups folder, finds the backups of the one before.
+- Uninstalling asks whether the backups go too, in **Settings** and in `npx create-orqevio uninstall`, and keeps them unless you say so. The page shown afterwards says where they are.
+- **Settings → Export your data** downloads a ZIP you can read without Orqevio, on Docker and on Cloudflare: each workspace's tasks in JSON, its documents in Markdown, in folders as in the page tree, and the attachments next to what they belong to. Links between documents, tasks and files point at the files in the ZIP. The vault has its own encrypted export, and the history and the trash are left out.
+- The archived cards of a board are all within reach: **Archived** loads them 50 at a time, newest first, and says how many there are. Search finds archived cards when you ask: a checkbox in the command palette, and `include_archived` in the MCP `search` tool.
+- On a phone, you drag cards with your finger: a long press (a quarter of a second) on a card or a column's handle picks it up, and a swipe still scrolls the board. In a card's sheet, the column menu has **Move up** and **Move down**, to reorder without dragging.
+
+### Changed
+- Due dates are the day they name, in every time zone. The REST API takes a day (`YYYY-MM-DD`) or an ISO 8601 date-time, whose day is the one written in it whatever its time and offset, and refuses days that don't exist and years outside 1900–2199. MCP no longer guesses from free text: `"12"` used to be December 2001.
+- Each workspace's **Agents** page shows only its own accesses, and links to the other workspaces that have some, with how many. An access past its date says **Expired** with the date, not when it expires. The home checklist's "Connect an agent" counts only accesses of the workspace you're in.
+- Behind a reverse proxy, `TRUST_PROXY` takes the number of proxies in front, and the visitor's address is the one the last of them added to `X-Forwarded-For`: never what the visitor sent. Orqevio warns once when it gets `X-Forwarded-For` without `TRUST_PROXY`.
+- Claiming, recovering access and uninstalling from the installer each have their own limit of failed attempts. When one is reached, the app says how many minutes to wait, and the API answers with `Retry-After`.
+- An `APP_URL` that isn't a valid address stops the start with a message that says which one and why, instead of an unexplained crash. When the first address, which decides on secure cookies and HSTS, isn't `https://` but another one is, Orqevio warns at start.
+
+### Fixed
+- Behind a proxy that asks for a password (HTTP basic auth), the app works: the proxy's `Authorization: Basic` header no longer makes every request fail, nor stops the copy from being claimed or the vault from opening. The README shows a configuration for Nginx.
+- A board with more than 100 cards, or a document mentioning more than 100 cards, failed to load on Cloudflare.
+- The vault in other tabs follows a new master password or a reset at once: they used to take the old password and export with it. A tab left open while the vault was reset can no longer save items with the old key, which no one could open. **Recover** from a tab opened before a reset no longer puts the old vault key back.
+- Importing from Bitwarden keeps what has no field of its own in the vault: custom fields, more addresses and older passwords go into the item's notes, and the review says so. Bitwarden CSV's addresses separated by commas are split. A file that isn't UTF-8, a quote left open in a CSV and items over the limits are reported instead of breaking the import, and importing the vault's own export no longer duplicates items with spaces.
+- The document editor no longer retries a save forever. It waits longer each time, 1 second up to 30, only when the failure may pass (no connection, a server error), and shows one notice that stays. A document too long to save says how long it is. A page deleted in another session says so at once, keeps what you wrote and offers to restore it.
+- Agents can no longer grow a page past 200,000 characters by appending to it (`update_page` with `append`): the copy answers with how much still fits.
+- With Docker, `SECURE_COOKIES` from `.env` now reaches the app.
+
 ## [1.1.1] - 2026-11-17
 
 ### Added
