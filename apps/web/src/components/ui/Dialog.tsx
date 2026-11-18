@@ -34,17 +34,18 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
         <D.Content
           // A field meant to take the focus may have lost it, to a menu that was closing when the
           // dialog opened: it gets it back instead of the first button.
-          onCloseAutoFocus={(e) => {
-            const { element, menuButton } = opener.current
-            if (element?.isConnected || !menuButton?.isConnected) return
-            e.preventDefault()
-            menuButton.focus()
-          }}
           onOpenAutoFocus={(e) => {
             const field = e.currentTarget instanceof HTMLElement ? e.currentTarget.querySelector<HTMLElement>('[data-autofocus]') : null
             if (!field) return
             e.preventDefault()
             field.focus()
+          }}
+          // Closing, the focus goes back to what had it; opened from a menu, to the menu's button.
+          onCloseAutoFocus={(e) => {
+            const { element, menuButton } = opener.current
+            if (element?.isConnected || !menuButton?.isConnected) return
+            e.preventDefault()
+            menuButton.focus()
           }}
           className={cn(
             'fixed top-1/2 left-1/2 z-50 flex max-h-[min(88dvh,760px)] w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[18px] border border-line bg-sheet shadow-lg outline-none data-[state=open]:animate-[dialog-in_0.26s_var(--ease-out-quint)]',
