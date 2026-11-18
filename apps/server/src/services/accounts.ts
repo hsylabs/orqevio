@@ -398,6 +398,13 @@ export class AccountService {
   }
 
   /** Confirms a sensitive action with the access key; only the owner has one. */
+  /** Only the person who owns the copy: backups, for instance, hold everything in it. */
+  async requireOwner(actor: Actor) {
+    this.access.requireUser(actor)
+    const row = await this.instanceRow()
+    if (!row || row.ownerId !== actor.userId) throw forbidden('Only the owner of this copy can do this')
+  }
+
   async verifyAccessKey(userId: string, accessKey: string) {
     const row = await this.instanceRow()
     if (!row || row.ownerId !== userId || !safeEqual(secretFingerprint(accessKey), row.accessKeyHash)) throw invalidAccessKey()

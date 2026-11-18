@@ -16,6 +16,9 @@ test('uninstall the copy from Settings: everything goes, and only the way to rem
   await expect(dialog.getByText('Todos los adjuntos.')).toBeVisible()
   const confirm = dialog.getByRole('button', { name: 'Desinstalar para siempre' })
   await dialog.getByLabel('Clave de acceso').fill(accessKey)
+  // What becomes of the backups is asked each time, with nothing chosen beforehand.
+  const backups = dialog.getByRole('group', { name: 'Sus copias de seguridad' })
+  await expect(backups.getByRole('radio', { checked: true })).toHaveCount(0)
   // The name to type is the copy's: the Worker's on Cloudflare, the address's host elsewhere.
   const nameLabel = dialog.locator('label', { hasText: 'para confirmar' })
   const name = /«(.+)»/.exec(await nameLabel.innerText())![1]!
@@ -23,10 +26,14 @@ test('uninstall the copy from Settings: everything goes, and only the way to rem
   await nameField.fill(`${name}x`)
   await expect(confirm).toBeDisabled()
   await nameField.fill(name)
+  await expect(confirm).toBeDisabled()
+  await backups.getByRole('radio', { name: /Conservarlas/ }).check()
   await confirm.click()
 
   await expect(page.getByRole('heading', { name: 'Orqevio se ha desinstalado' })).toBeVisible()
   await expect(page).toHaveURL(/\/login/)
+  // The backups were kept, apart from the data: the page says where.
+  await expect(page.getByText('Sus copias de seguridad se han conservado')).toBeVisible()
   // The copy stays that way, refuses everything else, and still answers its health check.
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Orqevio se ha desinstalado' })).toBeVisible()

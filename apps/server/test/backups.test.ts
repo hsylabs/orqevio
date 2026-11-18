@@ -225,13 +225,17 @@ describe('backups', () => {
     expect((await client.post('/api/backups/../../etc/restore', { accessKey })).status).toBe(404)
   })
 
-  it('is for people only', async () => {
+  it('is for the owner only, never for agents', async () => {
     const h = await copy()
     const { client, workspaceId } = await signUp(h)
     const token = (await client.post('/api/tokens', { name: 'Claude', workspaceId, scopes: ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'], expiresInDays: 30 })).body.token as string
     const agent = new Client(h, token)
     expect((await agent.get('/api/backups')).status).toBe(403)
     expect((await agent.post('/api/backups')).status).toBe(403)
+    // Nor anyone but the owner, should a copy have someone else.
+    const member = await signUp(h, 'Otra persona')
+    expect((await member.client.get('/api/backups')).status).toBe(403)
+    expect((await member.client.post('/api/backups')).status).toBe(403)
   })
 
   it('says when this copy makes no backups', async () => {

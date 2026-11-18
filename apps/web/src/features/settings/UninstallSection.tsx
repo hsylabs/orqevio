@@ -96,7 +96,7 @@ export function UninstallSection() {
             <Button variant="ghost" onClick={() => setOpen(false)}>
               {t('common:actions.cancel')}
             </Button>
-            <Button type="submit" variant="danger" loading={busy} disabled={!accessKey || typed.trim() !== name || (where !== null && deleteBackups === null)}>
+            <Button type="submit" variant="danger" loading={busy} disabled={!accessKey || typed.trim() !== name || backups.isPending || (where !== null && deleteBackups === null)}>
               {t('uninstall.confirm')}
             </Button>
           </div>

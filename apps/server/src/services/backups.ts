@@ -4,7 +4,6 @@ import { DUMP_FORMAT, DUMP_VERSION, DumpError, currentMigration, readHeader, res
 import { AppError, notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
 import { VERSION } from '../version'
-import type { Access } from './access'
 import type { AccountService } from './accounts'
 import type { AttachmentService } from './attachments'
 import type { Deps } from './deps'
@@ -54,7 +53,6 @@ export class BackupService {
 
   constructor(
     private readonly deps: Deps,
-    private readonly access: Access,
     private readonly accounts: AccountService,
     private readonly attachments: AttachmentService,
     private readonly oauth: OAuthService,
@@ -65,7 +63,7 @@ export class BackupService {
   }
 
   async status(actor: Actor): Promise<BackupsDTO> {
-    this.access.requireUser(actor)
+    await this.accounts.requireOwner(actor)
     if (!this.enabled) return { where: null, keep: KEEP_BACKUPS, backups: [] }
     const migration = currentMigration(this.deps.sql!)
     const manifests = await this.manifests()
@@ -74,7 +72,7 @@ export class BackupService {
 
   /** "Back up now", from Settings. */
   async createNow(actor: Actor): Promise<BackupDTO> {
-    this.access.requireUser(actor)
+    await this.accounts.requireOwner(actor)
     if (!this.enabled) throw backupsOff()
     const manifest = await this.exclusive(() => this.create('manual'))
     return this.toDTO(manifest, currentMigration(this.deps.sql!))
@@ -244,7 +242,7 @@ export class BackupService {
    * session ends, and the person who restored it gets a new one.
    */
   async restore(actor: Actor, id: string, input: unknown, userAgent: string | null) {
-    this.access.requireUser(actor)
+    await this.accounts.requireOwner(actor)
     const { accessKey } = parse(restoreBackupInput, input)
     if (!this.enabled) throw backupsOff()
     if (!/^[0-9A-Za-z-]+$/.test(id)) throw notFound('Backup')

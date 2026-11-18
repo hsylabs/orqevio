@@ -49,7 +49,7 @@ export function createServices(deps: Deps) {
     oauth,
     vault: new VaultService(deps, access),
     accounts,
-    backups: new BackupService(deps, access, accounts, attachments, oauth),
+    backups: new BackupService(deps, accounts, attachments, oauth),
     updates: new UpdateService(deps, access),
   }
 }
