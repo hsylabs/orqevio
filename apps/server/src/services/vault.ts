@@ -1,4 +1,4 @@
-import type { VaultItemRecordDTO, VaultStateDTO } from '@orqevio/shared'
+import type { VaultItemRecordDTO, VaultSetupDTO, VaultStateDTO } from '@orqevio/shared'
 import { MAX_VAULT_ITEMS, vaultItemInput, vaultKeysInput, vaultRekeyInput, vaultSettingsInput } from '@orqevio/shared'
 import { and, asc, count, eq, isNotNull } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
@@ -47,18 +47,27 @@ export class VaultService {
     }
   }
 
-  /** A new vault key: its version is one more than the last one this person's vault had. */
-  async setup(actor: Actor, input: unknown) {
+  /**
+   * A new vault key: its version is one more than the last one this person's vault had. It is
+   * given back with the write, so the tab that set it up holds the version of its own key, even
+   * if another tab resets the vault and sets it up again right after.
+   */
+  async setup(actor: Actor, input: unknown): Promise<VaultSetupDTO> {
     this.guard(actor)
     const keys = parse(vaultKeysInput, input)
-    this.deps.db.transaction((tx) => {
-      const existing = tx.select({ wrappedKey: vaults.wrappedKey, keyVersion: vaults.keyVersion }).from(vaults).where(eq(vaults.userId, actor.userId)).get()
+    return this.deps.db.transaction((tx) => {
+      const existing = tx
+        .select({ wrappedKey: vaults.wrappedKey, keyVersion: vaults.keyVersion, autoLockMinutes: vaults.autoLockMinutes })
+        .from(vaults)
+        .where(eq(vaults.userId, actor.userId))
+        .get()
       if (existing?.wrappedKey) throw conflict('The vault is already set up')
       const keyVersion = (existing?.keyVersion ?? 0) + 1
       tx.insert(vaults)
         .values({ userId: actor.userId, ...keys, keyVersion })
         .onConflictDoUpdate({ target: vaults.userId, set: { ...keys, keyVersion, updatedAt: new Date() } })
         .run()
+      return { keyVersion, autoLockMinutes: existing?.autoLockMinutes ?? 15 }
     })
   }
 

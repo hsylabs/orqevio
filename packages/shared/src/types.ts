@@ -362,6 +362,12 @@ export interface VaultStateDTO {
   keyVersion: number
 }
 
+/** What setting up a vault gives: its key's version, which the server takes items for, and when it locks. */
+export interface VaultSetupDTO {
+  keyVersion: number
+  autoLockMinutes: number
+}
+
 export interface VaultItemRecordDTO {
   id: string
   data: string

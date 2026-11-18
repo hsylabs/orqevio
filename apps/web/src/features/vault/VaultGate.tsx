@@ -1,4 +1,4 @@
-import type { VaultItemRecordDTO, VaultStateDTO } from '@orqevio/shared'
+import type { VaultItemRecordDTO, VaultSetupDTO, VaultStateDTO } from '@orqevio/shared'
 import { t as translate } from 'i18next'
 import { Check, Copy, Download, Eye, EyeOff, KeyRound, ShieldCheck } from 'lucide-react'
 import { type FormEvent, type ReactNode, useState } from 'react'
@@ -102,11 +102,11 @@ export function VaultSetup({ userId }: { userId: string }) {
     if (!created) return
     setBusy(true)
     try {
-      await post('/vault/setup', created.keys)
+      // The version of this key, as the setup gave it: read later, it could be another tab's new vault.
+      const { keyVersion, autoLockMinutes } = await post<VaultSetupDTO>('/vault/setup', created.keys)
       announceVaultChange()
-      // Its key's version, which the server takes items for.
-      const fresh = await freshVaultState()
-      unlockSession(created.vaultKey, fresh.keyVersion, userId, [], fresh.autoLockMinutes)
+      unlockSession(created.vaultKey, keyVersion, userId, [], autoLockMinutes)
+      await queryClient.invalidateQueries({ queryKey: keys.vault })
       toast.success(t('gate.setup.ready'))
     } catch (err) {
       toast.error(errorMessage(err))

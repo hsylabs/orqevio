@@ -19,7 +19,10 @@ describe('vault', () => {
     const { client } = await signUp(h)
     expect((await client.get('/api/vault')).body.initialized).toBe(false)
     expect((await client.put('/api/vault/items/7d1d9b52-5f39-4c43-a43e-36d9c3f06a10', { data: 'v1.YQ.Yg', keyVersion: 0 })).status).toBe(409)
-    expect((await client.post('/api/vault/setup', keys)).status).toBe(204)
+    const setup = await client.post('/api/vault/setup', keys)
+    expect(setup.status).toBe(200)
+    // The version of the key it set up, given back with the write.
+    expect(setup.body).toEqual({ keyVersion: 1, autoLockMinutes: 15 })
     expect((await client.post('/api/vault/setup', keys)).status).toBe(409)
     const state = await client.get('/api/vault')
     expect(state.body).toMatchObject({ initialized: true, wrappedKey: keys.wrappedKey, autoLockMinutes: 15, keyVersion: 1 })
@@ -68,7 +71,7 @@ describe('vault', () => {
   it('refuses what a tab encrypted, or wrapped, with a vault key the vault no longer has', async () => {
     const { client, accessKey } = await signInOwner(h)
     await client.post('/api/vault/reset', { accessKey })
-    expect((await client.post('/api/vault/setup', keys)).status).toBe(204)
+    expect((await client.post('/api/vault/setup', keys)).status).toBe(200)
     const first = (await client.get('/api/vault')).body.keyVersion as number
     const kept = 'c3b1f0a2-6d4e-4b8a-9f1c-2e7d5a0b8c41'
     expect((await client.put(`/api/vault/items/${kept}`, { data: 'v1.YQ.YQ', keyVersion: first })).status).toBe(200)
@@ -77,7 +80,9 @@ describe('vault', () => {
     expect((await client.post('/api/vault/reset', { accessKey })).status).toBe(204)
     expect((await client.get('/api/vault')).body).toMatchObject({ initialized: false, keyVersion: first })
     const fresh = { ...keys, wrappedKey: 'v1.ZnJlc2g.a2V5', recoveryWrappedKey: 'v1.ZnJlc2g.cmVj' }
-    expect((await client.post('/api/vault/setup', fresh)).status).toBe(204)
+    // Set up again: the next version, given back to the tab that did it, and when it locks as it was.
+    expect((await client.patch('/api/vault/settings', { autoLockMinutes: 5 })).status).toBe(204)
+    expect((await client.post('/api/vault/setup', fresh)).body).toEqual({ keyVersion: first + 1, autoLockMinutes: 5 })
     expect((await client.get('/api/vault')).body.keyVersion).toBe(first + 1)
 
     // The tab that opened the old vault still holds its key: what it saves nobody could open.
