@@ -180,6 +180,21 @@ const registrationInput = z.object({
   response_types: z.array(z.string()).optional(),
 })
 
+/** What is wrong with a registration, by the first field that is not valid. */
+function registrationProblem(field: PropertyKey | undefined) {
+  switch (field) {
+    case 'client_name':
+      return 'client_name must be text of at most 200 characters'
+    case 'grant_types':
+    case 'response_types':
+      return `${field} must be a list of strings`
+    case 'redirect_uris':
+      return 'redirect_uris must list one to five addresses'
+    default:
+      return 'The registration must be a JSON object with redirect_uris'
+  }
+}
+
 const invalidGrant = (description = 'The code or refresh token is invalid, expired or already used') => new OAuthError('invalid_grant', description)
 
 export class OAuthService {
@@ -202,7 +217,7 @@ export class OAuthService {
   /** Dynamic Client Registration (RFC 7591). Nothing is stored: the client_id is signed. */
   async register(input: unknown) {
     const result = registrationInput.safeParse(input)
-    if (!result.success) throw new OAuthError('invalid_client_metadata', 'redirect_uris must list one to five addresses')
+    if (!result.success) throw new OAuthError('invalid_client_metadata', registrationProblem(result.error.issues[0]?.path[0]))
     const data = result.data
     const bad = data.redirect_uris.find((uri) => !validRedirectUri(uri))
     if (bad) throw new OAuthError('invalid_redirect_uri', `Not an allowed redirect URI: ${bad.slice(0, 100)}`)

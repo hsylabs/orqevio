@@ -1,5 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
 import { DUE_DATE_HINT, MAX_MARKDOWN, PALETTE, TRASH_DAYS, dueDay } from '@orqevio/shared'
 import { z } from 'zod'
 import type { AgentActor } from '../auth/actor'
@@ -435,19 +435,13 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       },
       (args) =>
         run(async () => {
-          let checklistId = args.checklist_id
-          if (checklistId) {
-            const lists = await services.cards.detail(actor, args.card_id)
-            if (!lists.checklists.some((cl) => cl.id === checklistId)) {
-              throw new AppError(404, 'not_found', 'Checklist not found on this card')
-            }
-          } else {
-            const created = await services.cards.createChecklist(actor, args.card_id, { title: args.checklist_title ?? 'Checklist' })
-            checklistId = created.id
-          }
-          const items = []
-          for (const text of args.items) items.push(await services.cards.addItem(actor, checklistId, { text }))
-          return { checklist_id: checklistId, items: items.map((i) => ({ id: i.id, text: i.text })) }
+          // All or nothing: an item that is not valid leaves the card as it was.
+          const { checklistId, items } = await services.cards.addItems(actor, args.card_id, {
+            checklistId: args.checklist_id,
+            checklistTitle: args.checklist_title,
+            items: args.items,
+          })
+          return { checklist_id: checklistId, items }
         }),
     )
 
@@ -710,5 +704,31 @@ export function createMcpServer(services: Services, actor: AgentActor) {
     )
   }
 
+  invalidParamsForMalformedRequests(server)
   return server
+}
+
+type RequestHandler = (request: unknown, extra: unknown) => Promise<unknown>
+
+/**
+ * The SDK checks each request against its schema before calling the handler, and answers one
+ * that does not fit (`tools/call` without a `name`, say) with -32603, an internal error, and the
+ * raw validation output. The mistake is the client's: -32602, invalid params, says so. Still so in
+ * SDK 1.32.2; the handlers are in a private field, so if it moves this does nothing.
+ */
+function invalidParamsForMalformedRequests(server: McpServer) {
+  const handlers = (server.server as unknown as { _requestHandlers?: unknown })._requestHandlers
+  if (!(handlers instanceof Map)) return
+  for (const [method, handler] of handlers as Map<string, RequestHandler>) {
+    handlers.set(method, async (request: unknown, extra: unknown) => {
+      try {
+        return await handler(request, extra)
+      } catch (error) {
+        const issues = (error as { issues?: Array<{ path: PropertyKey[]; message: string }> } | null)?.issues
+        // `ZodError`, or `$ZodError` from the zod build the SDK uses.
+        if (!/^\$?ZodError$/.test((error as Error | null)?.name ?? '') || !Array.isArray(issues)) throw error
+        throw new McpError(ErrorCode.InvalidParams, issues.map((i) => `${i.path.map(String).join('.') || 'request'}: ${i.message}`).join('; '))
+      }
+    })
+  }
 }
