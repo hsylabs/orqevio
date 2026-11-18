@@ -20,6 +20,18 @@ export interface ActivityEntry {
 
 const COALESCE_MS = 10 * 60 * 1000
 
+/**
+ * The details of edits folded into one entry: the latest values, except `fields`, which lists
+ * every field edited since the entry was made, not only the last edit's.
+ */
+function mergeMeta(before: Meta, after: Meta): Meta {
+  const merged = { ...before, ...after }
+  if (typeof before.fields === 'string' && typeof after.fields === 'string') {
+    merged.fields = [...new Set([...before.fields.split(','), ...after.fields.split(',')].filter(Boolean))].join(',')
+  }
+  return merged
+}
+
 export function toActivityDTO(row: typeof activity.$inferSelect): ActivityDTO {
   return {
     id: row.id,
@@ -50,24 +62,28 @@ export class ActivityService {
   ) {
     const actorFilter =
       actor.kind === 'agent' ? eq(activity.actorTokenId, actor.tokenId) : eq(activity.actorUserId, actor.userId)
-    let coalesced = false
-    if (entry.coalesce) {
-      const updated = await db
+    const [recent] = entry.coalesce
+      ? await db
+          .select({ id: activity.id, meta: activity.meta })
+          .from(activity)
+          .where(
+            and(
+              eq(activity.entityId, entry.entityId),
+              eq(activity.action, entry.action),
+              eq(activity.actorKind, actor.kind),
+              actorFilter,
+              gt(activity.createdAt, new Date(Date.now() - COALESCE_MS)),
+            ),
+          )
+          .orderBy(desc(activity.createdAt), desc(sql`rowid`))
+          .limit(1)
+      : []
+    if (recent) {
+      await db
         .update(activity)
-        .set({ createdAt: new Date(), summary: entry.summary, meta: entry.meta ?? {} })
-        .where(
-          and(
-            eq(activity.entityId, entry.entityId),
-            eq(activity.action, entry.action),
-            eq(activity.actorKind, actor.kind),
-            actorFilter,
-            gt(activity.createdAt, new Date(Date.now() - COALESCE_MS)),
-          ),
-        )
-        .returning({ id: activity.id })
-      coalesced = updated.length > 0
-    }
-    if (!coalesced) {
+        .set({ createdAt: new Date(), summary: entry.summary.slice(0, 300), meta: mergeMeta(recent.meta as Meta, entry.meta ?? {}) })
+        .where(eq(activity.id, recent.id))
+    } else {
       await db.insert(activity).values({
         workspaceId,
         actorKind: actor.kind,

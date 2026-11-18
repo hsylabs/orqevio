@@ -6,7 +6,17 @@ import { SCOPES } from './scopes'
 /** Input schemas shared by the REST API, the MCP tools and the web forms. */
 
 const id = z.uuid()
-const name = (max = 120) => z.string().trim().min(1, 'Required').max(max)
+/** A character that shows: not a space, a control or formatting character, or a blank filler. */
+const VISIBLE = /[^\s\p{Cc}\p{Cf}\p{Z}\u115F\u1160\u3164\uFFA0\u2800]/u
+/** A one-line name: control characters (line breaks, tabs) become spaces, and it must show something. */
+const name = (max = 120) =>
+  z
+    .string()
+    .overwrite((value) => value.replace(/\p{Cc}+/gu, ' '))
+    .trim()
+    .min(1, { message: 'Required', abort: true })
+    .max(max)
+    .refine((value) => VISIBLE.test(value), 'Required')
 const color = z.enum(PALETTE)
 const index = z.number().int().min(0).max(100_000)
 
@@ -78,9 +88,11 @@ export const projectUpdateInput = z.object({
 })
 
 // ── Boards, columns, labels ─────────────────────────────────────
+/** The most columns a board holds. */
+export const MAX_COLUMNS = 20
 export const boardCreateInput = z.object({
   name: name(80),
-  columns: z.array(name(60)).max(20).optional(),
+  columns: z.array(name(60)).max(MAX_COLUMNS).optional(),
 })
 export const boardUpdateInput = z.object({ name: name(80) })
 export const columnCreateInput = z.object({ name: name(60), index: index.optional() })

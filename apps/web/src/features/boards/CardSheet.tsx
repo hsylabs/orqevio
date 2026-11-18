@@ -58,6 +58,12 @@ export function CardSheet({ cardId, board, onClose }: { cardId: string | null; b
   useEffect(() => {
     if (elsewhere && cardId) navigate(`/w/${workspaceId}/b/${elsewhere}?card=${cardId}`, { replace: true })
   }, [elsewhere, cardId, workspaceId, navigate])
+  // Its column deleted elsewhere took it to the trash too: asked for again, it is gone.
+  const columnGone = open && card.data?.boardId === board.id && !board.columns.some((c) => c.id === card.data!.columnId)
+  const { refetch } = card
+  useEffect(() => {
+    if (columnGone) void refetch()
+  }, [columnGone, refetch])
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()} title={data?.title ?? t('sheet.fallbackTitle')} label={t('sheet.label')}>
       {elsewhere ? null : data && !(open && gone) ? (
