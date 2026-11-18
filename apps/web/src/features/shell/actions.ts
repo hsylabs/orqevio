@@ -45,7 +45,13 @@ export function useStructureActions(workspaceId: string) {
         danger: true,
       })
       if (!ok) return false
-      const trashed = await del<TrashedDTO>(`/boards/${board.id}`)
+      let trashed: TrashedDTO
+      try {
+        trashed = await del<TrashedDTO>(`/boards/${board.id}`)
+      } catch (error) {
+        toast.error(errorMessage(error))
+        return false
+      }
       await refresh()
       toastTrashed(t('actions.deleteBoard.done'), trashed)
       return true
@@ -58,7 +64,13 @@ export function useStructureActions(workspaceId: string) {
         danger: true,
       })
       if (!ok) return false
-      const trashed = await del<TrashedDTO>(`/pages/${page.id}`)
+      let trashed: TrashedDTO
+      try {
+        trashed = await del<TrashedDTO>(`/pages/${page.id}`)
+      } catch (error) {
+        toast.error(errorMessage(error))
+        return false
+      }
       await refresh()
       toastTrashed(t('actions.deletePage.done'), trashed)
       return true
@@ -71,7 +83,13 @@ export function useStructureActions(workspaceId: string) {
         danger: true,
       })
       if (!ok) return false
-      const trashed = await del<TrashedDTO>(`/projects/${project.id}`)
+      let trashed: TrashedDTO
+      try {
+        trashed = await del<TrashedDTO>(`/projects/${project.id}`)
+      } catch (error) {
+        toast.error(errorMessage(error))
+        return false
+      }
       await refresh()
       navigate(`/w/${workspaceId}`)
       toastTrashed(t('actions.deleteProject.done'), trashed)

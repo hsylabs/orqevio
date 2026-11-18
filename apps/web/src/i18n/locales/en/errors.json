@@ -15,7 +15,8 @@
     "last_workspace": "You need to keep at least one workspace.",
     "restore_place_in_trash": "Restore what this belongs to first: it’s in the trash too.",
     "restore_place_gone": "The place it belonged to no longer exists, and there’s nowhere else to put it.",
-    "vault_key_changed": "The vault changed in another tab or on another device. Open it again."
+    "vault_key_changed": "The vault changed in another tab or on another device. Open it again.",
+    "too_many_columns": "A board holds up to 20 columns."
   },
   "notFound": "The item couldn’t be found.",
   "server": "Something went wrong on the server. Try again.",

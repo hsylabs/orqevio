@@ -32,15 +32,35 @@ async function json(c: { req: { json: () => Promise<unknown> } }) {
   }
 }
 
-/** `?before=<ISO date>&beforeId=<id>&limit=<n>`: the page of history after the entry `beforeId`, updated at `before`. */
-function historyPage(c: { req: { query: (name: string) => string | undefined } }) {
+/**
+ * RFC 6266: `filename*` with the name in UTF-8 (RFC 8187 allows no `'`, `(`, `)` or `*` unescaped
+ * there), and before it a plain `filename` for clients that ignore it: ASCII, without quotes.
+ */
+function contentDisposition(kind: 'inline' | 'attachment', name: string) {
+  const encoded = encodeURIComponent(name).replace(/['()*]/g, (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`)
+  const plain = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_')
+  return `${kind}; filename="${plain}"; filename*=UTF-8''${encoded}`
+}
+
+type Query = { req: { query: (name: string) => string | undefined } }
+
+/** `?limit=<n>`: a whole number from 1 (larger ones mean the most a list gives), or none. */
+function limitParam(c: Query) {
+  const value = c.req.query('limit')
+  if (value === undefined || value === '') return undefined
+  if (!/^\d+$/.test(value) || Number(value) < 1) throw badRequest('`limit` must be a whole number from 1')
+  return Number(value)
+}
+
+/** `?before=<ISO date>`: ignored when it is not a date. */
+function beforeParam(c: Query) {
   const before = new Date(c.req.query('before') ?? '')
-  const limit = Number(c.req.query('limit'))
-  return {
-    before: Number.isNaN(before.getTime()) ? undefined : before,
-    beforeId: c.req.query('beforeId') || undefined,
-    limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
-  }
+  return Number.isNaN(before.getTime()) ? undefined : before
+}
+
+/** `?before=<ISO date>&beforeId=<id>&limit=<n>`: the page of history after the entry `beforeId`, updated at `before`. */
+function historyPage(c: Query) {
+  return { before: beforeParam(c), beforeId: c.req.query('beforeId') || undefined, limit: limitParam(c) }
 }
 
 export function createApi(env: Env) {
@@ -179,11 +199,10 @@ export function createApi(env: Env) {
     const access: Access = services.access
     await access.workspace(actor, c.req.param('id'))
     access.requireUser(actor)
-    const before = c.req.query('before')
     return c.json(
       await services.activity.list(c.req.param('id'), {
-        limit: Number(c.req.query('limit') ?? 30),
-        before: before ? new Date(before) : undefined,
+        limit: limitParam(c),
+        before: beforeParam(c),
         tokenId: c.req.query('tokenId') || undefined,
         agentsOnly: c.req.query('agents') === '1',
       }),
@@ -301,12 +320,11 @@ export function createApi(env: Env) {
   }
   api.get('/attachments/:id', async (c) => {
     const { meta, inline, body } = await c.get('services').attachments.open(requireActor(c), c.req.param('id'))
-    const encoded = encodeURIComponent(meta.filename)
     return new Response(body, {
       headers: {
         'Content-Type': inline ? meta.mimeType : 'application/octet-stream',
         'Content-Length': String(meta.size),
-        'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encoded}`,
+        'Content-Disposition': contentDisposition(inline ? 'inline' : 'attachment', meta.filename),
         'Cache-Control': 'private, max-age=3600',
         'X-Content-Type-Options': 'nosniff',
         'Content-Security-Policy': "default-src 'none'; sandbox",
