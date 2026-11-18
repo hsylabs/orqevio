@@ -185,7 +185,13 @@ export const vaultKeysInput = z.object({
  */
 const keyVersion = z.number().int().min(0).max(2_147_483_647)
 export const vaultRekeyInput = vaultKeysInput.extend({ keyVersion })
-export const vaultItemInput = z.object({ data: envelopeSchema, keyVersion })
+/**
+ * `baseUpdatedAt`: the item's `updatedAt` as this tab has it, or null for a new item. The server
+ * refuses the save when the item changed or went since (`vault_item_changed`), so a tab that shows
+ * an older version can't overwrite a newer one, or bring back a deleted one. Left out, nothing is
+ * checked (tabs opened before 1.2.1).
+ */
+export const vaultItemInput = z.object({ data: envelopeSchema, keyVersion, baseUpdatedAt: z.string().datetime().nullable().optional() })
 export const vaultSettingsInput = z.object({ autoLockMinutes: z.union([z.literal(1), z.literal(5), z.literal(15), z.literal(30), z.literal(60)]) })
 
 export type ClaimInput = z.infer<typeof claimInput>

@@ -375,7 +375,7 @@ export function createApi(env: Env) {
     c.json(await c.get('services').vault.putItem(requireActor(c), c.req.param('id'), await json(c))),
   )
   vault.delete('/items/:id{[0-9a-f-]{36}}', async (c) => {
-    await c.get('services').vault.deleteItem(requireActor(c), c.req.param('id'))
+    await c.get('services').vault.deleteItem(requireActor(c), c.req.param('id'), c.req.query('base'))
     return c.body(null, 204)
   })
   api.route('/vault', vault)

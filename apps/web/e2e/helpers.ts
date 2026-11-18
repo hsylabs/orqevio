@@ -19,9 +19,10 @@ export async function settle(page: Page, baseURL: string) {
 /**
  * Firefox logs a font whose download was cancelled (status NS_BINDING_ABORTED, 0x804B0002) as an
  * error: when the page starts a download or goes elsewhere while a font is still loading. Nothing
- * failed, and the font loads again when needed. Any other font error still counts.
+ * failed, and the font loads again when needed. Any other font error still counts. Playwright
+ * hands the message over wrapped, as `[JavaScript Error: "downloadable font: …"]`.
  */
-export const cancelledFontLoad = (text: string) => /^downloadable font: download failed .*: status=2152398850 /.test(text)
+export const cancelledFontLoad = (text: string) => /\bdownloadable font: download failed \(.*\): status=2152398850\b/.test(text)
 
 /**
  * Test fixture that fails the test on any uncaught page error or console error.

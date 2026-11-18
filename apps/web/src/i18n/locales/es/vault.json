@@ -122,6 +122,7 @@
   },
   "editor": {
     "editTitle": "Editar",
+    "changedElsewhere": "Este elemento ha cambiado en otra pestaña o en otro dispositivo. Tus cambios siguen aquí: si vuelves a guardar, sustituirán a los otros.",
     "newLogin": "Nueva credencial",
     "newNote": "Nueva nota segura",
     "name": "Nombre",

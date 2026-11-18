@@ -118,6 +118,7 @@
   },
   "editor": {
     "editTitle": "Item bewerken",
+    "changedElsewhere": "Dit item is gewijzigd in een ander tabblad of op een ander apparaat. Je wijzigingen staan er nog: sla opnieuw op om de andere te vervangen.",
     "newLogin": "Nieuwe login",
     "newNote": "Nieuwe beveiligde notitie",
     "name": "Naam",
