@@ -109,4 +109,13 @@ describe('small fixes in tasks', () => {
     expect(extra.body.error.code).toBe('too_many_columns')
     expect((await client.get(`/api/boards/${boardId}`)).body.columns).toHaveLength(20)
   })
+
+  it('two columns added at once to a board with 19 do not make 21', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { boardId, columns } = await seedBoard(client, workspaceId)
+    for (let i = columns.length; i < 19; i++) await client.post(`/api/boards/${boardId}/columns`, { name: `Columna ${i + 1}` })
+    const both = await Promise.all([1, 2].map((n) => client.post(`/api/boards/${boardId}/columns`, { name: `A la vez ${n}` })))
+    expect(both.map((r) => r.status).sort()).toEqual([201, 400])
+    expect((await client.get(`/api/boards/${boardId}`)).body.columns).toHaveLength(20)
+  })
 })
