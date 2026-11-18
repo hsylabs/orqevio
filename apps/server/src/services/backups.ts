@@ -1,6 +1,7 @@
 import { type BackupDTO, type BackupKind, type BackupsDTO, restoreBackupInput } from '@orqevio/shared'
 import type { Actor } from '../auth/actor'
 import { DUMP_FORMAT, DUMP_VERSION, DumpError, currentMigration, readHeader, restoreDump, writeDump } from '../backups/dump'
+import { applyKept, readKept } from '../backups/kept'
 import { emptyBackupStore } from '../backups/store'
 import { AppError, notFound, uninstalled } from '../lib/errors'
 import { parse } from '../lib/validate'
@@ -243,7 +244,8 @@ export class BackupService {
    * Puts a backup back in place of everything. First a backup of the copy as it is now, kept
    * apart from the daily ones; then the attachments the backup lists that are missing; then
    * the database, in one transaction. The access key in use now still opens the copy, every
-   * session ends, and the person who restored it gets a new one.
+   * session ends, and the person who restored it gets a new one. Agents' accesses revoked since stay
+   * revoked, and the vault key version only goes up (see backups/kept.ts).
    */
   async restore(actor: Actor, id: string, input: unknown, userAgent: string | null) {
     await this.accounts.requireOwner(actor)
@@ -279,6 +281,8 @@ export class BackupService {
           const body = await store.stream(fileKey(file.key))
           if (body) await this.deps.storage.put(file.key, body, file.size, 'application/octet-stream')
         }
+        // Read before the restore takes it away: what must stay as it is now.
+        const kept = readKept(sql)
         try {
           restoreDump(sql, data, {
             migration,
@@ -289,6 +293,8 @@ export class BackupService {
               // Whoever restores keeps opening the copy with the key they use now, even if the backup had another.
               sql.run('UPDATE instance SET access_key_hash = ?, setup_code_hash = ?, key_changed_at = ? WHERE id = 1', owner.accessKeyHash, owner.setupCodeHash, owner.keyChangedAt.getTime())
               sql.run('DELETE FROM sessions')
+              // Nor do agents get back an access taken away since, nor does a vault key version come round again.
+              applyKept(sql, kept, ownerId)
             },
           })
         } catch (error) {

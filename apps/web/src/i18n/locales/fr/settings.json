@@ -87,6 +87,7 @@
     "restoreLoses": "Tout revient en arrière : espaces, documents, cartes, coffre-fort, agents, corbeille et historique. Ce qui a changé depuis est perdu.",
     "restoreSafety": "Une sauvegarde de la copie telle qu’elle est maintenant est d’abord faite et gardée à part, pour pouvoir y revenir.",
     "restoreSessions": "Toutes les sessions se terminent. Vous restez connecté ici, et votre clé d’accès est celle que vous utilisez maintenant.",
+    "restoreAgents": "Les agents dont vous avez retiré l’accès depuis ne le récupèrent pas.",
     "accessKey": "Clé d’accès",
     "typeName": "Saisissez « {{name}} » pour confirmer",
     "restoreConfirm": "Restaurer"
