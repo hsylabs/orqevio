@@ -32,6 +32,16 @@ async function json(c: { req: { json: () => Promise<unknown> } }) {
   }
 }
 
+/**
+ * RFC 6266: `filename*` with the name in UTF-8 (RFC 8187 allows no `'`, `(`, `)` or `*` unescaped
+ * there), and before it a plain `filename` for clients that ignore it: ASCII, without quotes.
+ */
+function contentDisposition(kind: 'inline' | 'attachment', name: string) {
+  const encoded = encodeURIComponent(name).replace(/['()*]/g, (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`)
+  const plain = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_')
+  return `${kind}; filename="${plain}"; filename*=UTF-8''${encoded}`
+}
+
 /** `?before=<ISO date>&beforeId=<id>&limit=<n>`: the page of history after the entry `beforeId`, updated at `before`. */
 function historyPage(c: { req: { query: (name: string) => string | undefined } }) {
   const before = new Date(c.req.query('before') ?? '')
@@ -301,12 +311,11 @@ export function createApi(env: Env) {
   }
   api.get('/attachments/:id', async (c) => {
     const { meta, inline, body } = await c.get('services').attachments.open(requireActor(c), c.req.param('id'))
-    const encoded = encodeURIComponent(meta.filename)
     return new Response(body, {
       headers: {
         'Content-Type': inline ? meta.mimeType : 'application/octet-stream',
         'Content-Length': String(meta.size),
-        'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encoded}`,
+        'Content-Disposition': contentDisposition(inline ? 'inline' : 'attachment', meta.filename),
         'Cache-Control': 'private, max-age=3600',
         'X-Content-Type-Options': 'nosniff',
         'Content-Security-Policy': "default-src 'none'; sandbox",
