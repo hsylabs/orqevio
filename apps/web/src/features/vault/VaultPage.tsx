@@ -189,15 +189,19 @@ function Unlocked() {
   const confirm = useConfirm()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | VaultItemType | 'favorite'>('all')
-  const [selectedId, setSelectedId] = useState<string | null>(session.items[0]?.id ?? null)
+  // Side by side, the first item of the list is open; on a phone, where an open item covers the
+  // list, it starts at the list.
+  const [selectedId, setSelectedId] = useState<string | null>(() =>
+    window.matchMedia(SIDE_BY_SIDE).matches ? ([...session.items].sort(listOrder(language))[0]?.id ?? null) : null,
+  )
   const [draft, setDraft] = useState<VaultItem | null>(null)
 
   const items = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = fold(query.trim())
     return [...session.items]
       .filter((i) => (filter === 'all' ? true : filter === 'favorite' ? i.favorite : i.type === filter))
-      .filter((i) => !q || `${i.title} ${i.username} ${i.url}`.toLowerCase().includes(q))
-      .sort((a, b) => Number(b.favorite) - Number(a.favorite) || a.title.localeCompare(b.title, language))
+      .filter((i) => !q || fold(`${i.title} ${i.username} ${i.url}`).includes(q))
+      .sort(listOrder(language))
   }, [session.items, query, filter, language])
 
   const selected = session.items.find((i) => i.id === selectedId) ?? null
@@ -279,7 +283,8 @@ function Unlocked() {
         </div>
         <ul className="min-h-0 flex-1 overflow-y-auto p-1.5" aria-label={t('list.label')}>
           {items.map((item) => (
-            <li key={item.id}>
+            // A long vault draws only the rows in view (up to 5,000 items).
+            <li key={item.id} className="[contain-intrinsic-size:auto_52px] [content-visibility:auto]">
               <button
                 type="button"
                 onClick={() => {
@@ -619,7 +624,17 @@ function ItemEditor({ initial, onSave, onCancel }: { initial: VaultItem; onSave:
   )
 }
 
-function ChangeMasterDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+/** Favourites first, then by title. */
+const listOrder = (language: string | undefined) => (a: VaultItem, b: VaultItem) =>
+  Number(b.favorite) - Number(a.favorite) || a.title.localeCompare(b.title, language)
+
+/** Tailwind's `md`: the list and the open item side by side. */
+const SIDE_BY_SIDE = '(min-width: 768px)'
+
+/** For searching: lower case, without accents (`Música` is found as `musica`). */
+const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+
+function ChangeMasterDialog({ open, onOpenChange: setOpen }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { t } = useTranslation(['vault', 'common'])
   const { me } = useWorkspace()
   const [current, setCurrent] = useState('')
@@ -627,6 +642,16 @@ function ChangeMasterDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Closed, it forgets what was typed: passwords don't wait in a hidden form.
+  const onOpenChange = (o: boolean) => {
+    if (!o) {
+      setCurrent('')
+      setNext('')
+      setConfirm('')
+      setError(null)
+    }
+    setOpen(o)
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -643,9 +668,6 @@ function ChangeMasterDialog({ open, onOpenChange }: { open: boolean; onOpenChang
       announceVaultChange()
       await queryClient.invalidateQueries({ queryKey: keys.vault })
       onOpenChange(false)
-      setCurrent('')
-      setNext('')
-      setConfirm('')
       toast.success(t('changeMaster.done'))
     } catch (err) {
       setError(err instanceof WrongSecretError ? t('changeMaster.wrongCurrent') : errorMessage(err))
