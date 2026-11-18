@@ -18,14 +18,16 @@ export function Attachments({ items, target, onChanged }: { items: AttachmentDTO
 
   async function upload(files: File[]) {
     setBusy(true)
-    try {
-      for (const file of files) await uploadFile(file, target)
-      onChanged()
-    } catch (error) {
-      toast.error(errorMessage(error))
-    } finally {
-      setBusy(false)
+    // One that fails says so, by name, and the others still go up.
+    for (const file of files) {
+      try {
+        await uploadFile(file, target)
+      } catch (error) {
+        toast.error(`${file.name}: ${errorMessage(error)}`)
+      }
     }
+    onChanged()
+    setBusy(false)
   }
 
   async function remove(a: AttachmentDTO) {
