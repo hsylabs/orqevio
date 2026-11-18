@@ -1,4 +1,5 @@
 import { LIVE_CLOSE, type LiveMessage, type MeDTO, type RealtimeEvent } from '@orqevio/shared'
+import type { QueryKey } from '@tanstack/react-query'
 import { useEffect, useSyncExternalStore } from 'react'
 import { createLiveRefresh } from './live-refresh'
 import { keys, queryClient } from './queries'
@@ -48,6 +49,9 @@ export function useAgentLive(): boolean {
   useSyncExternalStore(subscribe, () => snapshot)
   return Date.now() - lastAgentActivity < 6000
 }
+
+/** Refetches the queries under `queryKey` soon, together with the other live changes of the moment. */
+export const refreshLive = (queryKey: QueryKey) => live.refresh(queryKey)
 
 type LiveListener = (event: RealtimeEvent) => void
 const pageListeners = new Set<LiveListener>()
