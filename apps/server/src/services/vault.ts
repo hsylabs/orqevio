@@ -115,7 +115,7 @@ export class VaultService {
       if (owner && owner.userId !== actor.userId) throw notFound('Item')
       if (!owner) {
         const stored = tx.select({ n: count() }).from(vaultItems).where(eq(vaultItems.userId, actor.userId)).get()
-        if ((stored?.n ?? 0) >= MAX_VAULT_ITEMS) throw conflict(`The vault is limited to ${MAX_VAULT_ITEMS} items`)
+        if ((stored?.n ?? 0) >= MAX_VAULT_ITEMS) throw new AppError(409, 'vault_full', `The vault holds up to ${MAX_VAULT_ITEMS} items`)
       }
       return tx
         .insert(vaultItems)

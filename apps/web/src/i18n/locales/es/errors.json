@@ -17,7 +17,8 @@
     "restore_place_in_trash": "Restaura antes aquello a lo que pertenece: también está en la papelera.",
     "restore_place_gone": "El sitio al que pertenecía ya no existe y no hay otro donde ponerlo.",
     "vault_key_changed": "La bóveda ha cambiado en otra pestaña o en otro dispositivo. Vuelve a abrirla.",
-    "too_many_columns": "Un tablero admite hasta 20 columnas."
+    "too_many_columns": "Un tablero admite hasta 20 columnas.",
+    "vault_full": "La bóveda admite hasta 5.000 elementos. Borra los que ya no uses para añadir más."
   },
   "notFound": "No se ha encontrado el elemento.",
   "server": "Algo ha fallado en el servidor. Inténtalo de nuevo.",

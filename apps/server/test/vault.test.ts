@@ -128,6 +128,8 @@ describe('vault', () => {
     )
     const extra = await client.put('/api/vault/items/0b0b0b0b-0000-4000-8000-000000000000', { data: 'v1.YQ.YQ', keyVersion: 1 })
     expect(extra.status).toBe(409)
+    // Its own code, which the web app explains in the person's language.
+    expect(extra.body.error.code).toBe('vault_full')
     expect(extra.body.error.message).toContain(String(MAX_VAULT_ITEMS))
     // Changing one that is there is still fine.
     expect((await client.put('/api/vault/items/00000000-0000-4000-8000-000000000001', { data: 'v1.Yg.Yg', keyVersion: 1 })).status).toBe(200)
