@@ -20,7 +20,9 @@
     "emptyTitle": "Du hast noch keine Agenten verbunden",
     "emptyBody": "Erstelle ein Token und füge die Konfiguration in Claude Code, Cursor, VS Code oder Claude Desktop ein.",
     "inactive_one": "{{count}} widerrufen oder abgelaufen",
-    "inactive_other": "{{count}} widerrufen oder abgelaufen"
+    "inactive_other": "{{count}} widerrufen oder abgelaufen",
+    "elsewhere": "Du hast auch Zugänge in anderen Bereichen:",
+    "elsewhereLink": "{{name}} ({{count}})"
   },
   "activity": {
     "title": "Aktivität der Agenten",
@@ -93,7 +95,8 @@
       "hint": "In den Papierkorb; du entscheidest, ob es zurückkommt.",
       "on": "{{name}} darf jetzt löschen und verschieben",
       "off": "{{name}} darf nicht mehr löschen oder verschieben"
-    }
+    },
+    "expired": "Abgelaufen"
   },
   "access": {
     "levels": {

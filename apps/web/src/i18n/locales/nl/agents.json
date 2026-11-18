@@ -20,7 +20,9 @@
     "emptyTitle": "Je hebt nog geen agents gekoppeld",
     "emptyBody": "Maak een token en plak de configuratie in Claude Code, Cursor, VS Code of Claude Desktop.",
     "inactive_one": "{{count}} ingetrokken of verlopen",
-    "inactive_other": "{{count}} ingetrokken of verlopen"
+    "inactive_other": "{{count}} ingetrokken of verlopen",
+    "elsewhere": "Je hebt ook toegangen in andere ruimtes:",
+    "elsewhereLink": "{{name}} ({{count}})"
   },
   "activity": {
     "title": "Activiteit van agents",
@@ -93,7 +95,8 @@
       "hint": "Naar de prullenbak; jij beslist of het terugkomt.",
       "on": "{{name}} mag nu verwijderen en verplaatsen",
       "off": "{{name}} mag niet meer verwijderen of verplaatsen"
-    }
+    },
+    "expired": "Verlopen"
   },
   "access": {
     "levels": {
