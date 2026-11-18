@@ -11,7 +11,9 @@ test('importing from Bitwarden keeps custom fields, every address and older pass
   await reset()
   try {
     const workspaceId = await openNewWorkspace(page, 'Importar E2E')
-    await page.goto(`/w/${workspaceId}/vault`)
+    // From the sidebar, not a new page load: leaving a page still fetching its fonts makes Firefox
+    // log their download as failed.
+    await page.getByRole('link', { name: /^Bóveda/ }).click()
     await page.getByLabel('Contraseña maestra', { exact: true }).fill('frase maestra para importar')
     await page.getByLabel('Repite la contraseña maestra').fill('frase maestra para importar')
     await page.getByRole('button', { name: 'Crear bóveda' }).click()
