@@ -132,7 +132,9 @@
     "attachments": "Pièces jointes",
     "activity": "Activité",
     "deleted": "Carte placée dans la corbeille",
-    "history": "Historique"
+    "history": "Historique",
+    "moveUp": "Monter",
+    "moveDown": "Descendre"
   },
   "checklist": {
     "titleLabel": "Titre de la checklist",
