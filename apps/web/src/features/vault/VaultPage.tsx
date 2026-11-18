@@ -1,4 +1,4 @@
-import { PALETTE, type VaultStateDTO } from '@orqevio/shared'
+import { PALETTE, type VaultItemRecordDTO, type VaultStateDTO } from '@orqevio/shared'
 import { useQuery } from '@tanstack/react-query'
 import { ExternalLink, Eye, EyeOff, KeyRound, LockKeyhole, Pencil, Plus, Search, ShieldCheck, Star, StickyNote, Trash, Dices, Ellipsis, Clock, Download, FileUp } from 'lucide-react'
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
@@ -13,7 +13,7 @@ import { MenuContent, MenuItem, MenuLabel, MenuRadioGroup, MenuRadioItem, MenuRo
 import { Popover } from '../../components/ui/Popover'
 import { Segmented } from '../../components/ui/Segmented'
 import { useConfirm } from '../../components/ui/confirm'
-import { del, errorMessage, get, patch, put } from '../../lib/api'
+import { ApiError, del, errorMessage, get, patch, put } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { relativeTime } from '../../lib/format'
 import { keys, queryClient } from '../../lib/queries'
@@ -24,13 +24,16 @@ import { ExportDialog, ImportDialog } from './TransferDialogs'
 import { Generator, PasswordText } from './Generator'
 import { getSession, lockVault, setAutoLock, updateSessionItems, useAutoLockRemaining, useVaultSession } from './session'
 import { type VaultBlocker, vaultBlockers } from '../../lib/browser'
-import { announceVaultChange, freshVaultState, lockIfVaultChanged } from './sync'
+import { announceVaultChange, announceVaultItemsChange, freshVaultState, lockIfVaultChanged, reloadVaultItems } from './sync'
 import { estimateMasterPassword } from './strength'
 import { groupCode, parseTotp, totp } from './totp'
 import { ITEM_LIMITS, type VaultItem, type VaultItemType, emptyItem, tidyItem } from './types'
 import { VaultSetup, VaultUnlock } from './VaultGate'
 
 const CLIPBOARD_MS = 30_000
+
+/** The server refused a save or delete: another tab or device changed or deleted the item since. */
+const changedElsewhere = (error: unknown) => error instanceof ApiError && error.code === 'vault_item_changed'
 
 export function VaultPage() {
   const { t } = useTranslation('vault')
@@ -195,6 +198,8 @@ function Unlocked() {
     window.matchMedia(SIDE_BY_SIDE).matches ? ([...session.items].sort(listOrder(language))[0]?.id ?? null) : null,
   )
   const [draft, setDraft] = useState<VaultItem | null>(null)
+  // The version of the item the editor opened (null for a new one): what saving it is checked against.
+  const [draftBase, setDraftBase] = useState<string | null>(null)
 
   const items = useMemo(() => {
     const q = fold(query.trim())
@@ -206,7 +211,13 @@ function Unlocked() {
 
   const selected = session.items.find((i) => i.id === selectedId) ?? null
 
-  async function save(item: VaultItem) {
+  /**
+   * Saves `item` over the version `base` of it (null for a new item): the server refuses it when
+   * another tab or device changed or deleted the item since. From the editor (`editing`), what was
+   * typed stays there, and saving it again replaces the other change; otherwise the item is shown
+   * as it is now.
+   */
+  async function save(item: VaultItem, base: string | null | undefined, editing = false) {
     const s = getSession()
     if (!s.key || s.keyVersion === null || !s.userId) return false
     // Tidied as an import is, so that the same item exported and imported again is seen as the same.
@@ -214,32 +225,50 @@ function Unlocked() {
     const next = { ...tidy, title: tidy.title || (item.type === 'login' ? host(tidy.url) || t('untitled.login') : t('untitled.note')), updatedAt: new Date().toISOString() }
     try {
       const data = await encryptItem(s.key, s.userId, next)
-      await put(`/vault/items/${next.id}`, { data, keyVersion: s.keyVersion })
-      updateSessionItems(s.key, (items) => (items.some((i) => i.id === next.id) ? items.map((i) => (i.id === next.id ? next : i)) : [...items, next]))
+      const record = await put<VaultItemRecordDTO>(`/vault/items/${next.id}`, { data, keyVersion: s.keyVersion, baseUpdatedAt: base })
+      const saved = (items: VaultItem[]) => (items.some((i) => i.id === next.id) ? items.map((i) => (i.id === next.id ? next : i)) : [...items, next])
+      updateSessionItems(s.key, saved, { [next.id]: record.updatedAt })
+      announceVaultItemsChange()
       setSelectedId(next.id)
       return true
     } catch (error) {
+      if (editing && changedElsewhere(error)) {
+        toast.error(t('editor.changedElsewhere'))
+        await reloadVaultItems().catch(() => {})
+        setDraftBase(getSession().revisions[next.id] ?? null)
+        return false
+      }
       toast.error(errorMessage(error))
-      lockIfVaultChanged(error, s.key)
+      if (!lockIfVaultChanged(error, s.key) && changedElsewhere(error)) void reloadVaultItems().catch(() => {})
       return false
     }
   }
 
   async function remove(item: VaultItem) {
+    // The version shown when asked: refused if another tab or device changes the item meanwhile.
+    const base = getSession().revisions[item.id]
     if (!(await confirm({ title: t('delete.title', { title: item.title }), description: t('delete.description'), confirmLabel: t('delete.confirm'), danger: true }))) return
     const { key } = getSession()
     if (!key) return
-    try {
-      await del(`/vault/items/${item.id}`)
-      updateSessionItems(key, (items) => items.filter((i) => i.id !== item.id))
+    const gone = () => {
+      updateSessionItems(key, (items) => items.filter((i) => i.id !== item.id), { [item.id]: null })
+      announceVaultItemsChange()
       setSelectedId(null)
+    }
+    try {
+      await del(`/vault/items/${item.id}${base ? `?base=${encodeURIComponent(base)}` : ''}`)
+      gone()
     } catch (error) {
+      // Deleted in another tab or device already: it is gone, as asked.
+      if (error instanceof ApiError && error.status === 404) return gone()
       toast.error(errorMessage(error))
+      if (changedElsewhere(error)) void reloadVaultItems().catch(() => {})
     }
   }
 
   const startNew = (type: VaultItemType) => {
     setDraft(emptyItem(type))
+    setDraftBase(null)
     setSelectedId(null)
   }
 
@@ -320,7 +349,7 @@ function Unlocked() {
             initial={draft}
             onCancel={() => setDraft(null)}
             onSave={async (item) => {
-              if (await save(item)) setDraft(null)
+              if (await save(item, draftBase, true)) setDraft(null)
             }}
           />
         ) : selected ? (
@@ -328,9 +357,12 @@ function Unlocked() {
             key={selected.id}
             item={selected}
             onBack={() => setSelectedId(null)}
-            onEdit={() => setDraft(selected)}
+            onEdit={() => {
+              setDraft(selected)
+              setDraftBase(getSession().revisions[selected.id] ?? null)
+            }}
             onDelete={() => void remove(selected)}
-            onToggleFavorite={() => void save({ ...selected, favorite: !selected.favorite })}
+            onToggleFavorite={() => void save({ ...selected, favorite: !selected.favorite }, getSession().revisions[selected.id])}
           />
         ) : (
           <EmptyState

@@ -122,6 +122,7 @@
   },
   "editor": {
     "editTitle": "Editar item",
+    "changedElsewhere": "Este item mudou em outra aba ou em outro dispositivo. Suas alterações continuam aqui: salve de novo para substituir as outras.",
     "newLogin": "Novo login",
     "newNote": "Nova nota segura",
     "name": "Nome",

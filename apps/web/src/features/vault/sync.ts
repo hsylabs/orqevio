@@ -1,9 +1,11 @@
-import type { VaultStateDTO } from '@orqevio/shared'
+import type { VaultItemRecordDTO, VaultStateDTO } from '@orqevio/shared'
 import { t } from 'i18next'
 import { toast } from 'sonner'
 import { ApiError, get } from '../../lib/api'
 import { keys, queryClient } from '../../lib/queries'
-import { getSession, lockVault, setAutoLock } from './session'
+import { decryptItem } from './crypto'
+import { getSession, lockVault, replaceSessionItems, setAutoLock } from './session'
+import type { VaultItem } from './types'
 
 /**
  * Keeps every tab's view of the vault current.
@@ -38,7 +40,33 @@ export function announceVaultChange() {
   channel?.postMessage('changed')
 }
 
-if (channel) channel.onmessage = () => void freshVaultState().catch(() => {})
+/** Tells the other tabs that items were saved or deleted here: they read them again. */
+export function announceVaultItemsChange() {
+  channel?.postMessage('items')
+}
+
+/**
+ * Reads the items again, as the server has them now, into the open session: after another tab
+ * saved or deleted some, or when the server refused a save because another device changed the item.
+ */
+export async function reloadVaultItems() {
+  const { key, userId } = getSession()
+  if (!key || !userId) return
+  const records = await get<VaultItemRecordDTO[]>('/vault/items')
+  const items: VaultItem[] = []
+  const revisions: Record<string, string> = {}
+  for (const record of records) {
+    try {
+      items.push(await decryptItem(key, userId, record.id, record.data))
+      revisions[record.id] = record.updatedAt
+    } catch {
+      // Unlocking already said that some items could not be decrypted.
+    }
+  }
+  replaceSessionItems(key, items, revisions)
+}
+
+if (channel) channel.onmessage = (event: MessageEvent) => void (event.data === 'items' ? reloadVaultItems() : freshVaultState()).catch(() => {})
 
 queryClient.getQueryCache().subscribe((event) => {
   if (event.type !== 'updated' || event.action.type !== 'success' || event.query.queryKey[0] !== keys.vault[0]) return

@@ -11,11 +11,16 @@ interface VaultSession {
   keyVersion: number | null
   userId: string | null
   items: VaultItem[]
+  /**
+   * Each item's `updatedAt` as the server has it, sent back with each save or delete: the server
+   * refuses it when another tab or device changed the item since.
+   */
+  revisions: Record<string, string>
   autoLockMinutes: number
   lastActivity: number
 }
 
-let session: VaultSession = { key: null, keyVersion: null, userId: null, items: [], autoLockMinutes: 15, lastActivity: Date.now() }
+let session: VaultSession = { key: null, keyVersion: null, userId: null, items: [], revisions: {}, autoLockMinutes: 15, lastActivity: Date.now() }
 const listeners = new Set<() => void>()
 let timer: ReturnType<typeof setInterval> | null = null
 
@@ -32,8 +37,8 @@ const touch = () => {
   session.lastActivity = Date.now()
 }
 
-export function unlockSession(key: CryptoKey, keyVersion: number, userId: string, items: VaultItem[], autoLockMinutes: number) {
-  session = { key, keyVersion, userId, items, autoLockMinutes, lastActivity: Date.now() }
+export function unlockSession(key: CryptoKey, keyVersion: number, userId: string, items: VaultItem[], autoLockMinutes: number, revisions: Record<string, string> = {}) {
+  session = { key, keyVersion, userId, items, revisions, autoLockMinutes, lastActivity: Date.now() }
   window.addEventListener('pointerdown', touch, { passive: true })
   window.addEventListener('keydown', touch, { passive: true })
   timer ??= setInterval(() => {
@@ -44,7 +49,7 @@ export function unlockSession(key: CryptoKey, keyVersion: number, userId: string
 }
 
 export function lockVault() {
-  session = { key: null, keyVersion: null, userId: null, items: [], autoLockMinutes: session.autoLockMinutes, lastActivity: Date.now() }
+  session = { key: null, keyVersion: null, userId: null, items: [], revisions: {}, autoLockMinutes: session.autoLockMinutes, lastActivity: Date.now() }
   window.removeEventListener('pointerdown', touch)
   window.removeEventListener('keydown', touch)
   if (timer) clearInterval(timer)
@@ -57,9 +62,22 @@ export function lockVault() {
  * session is locked or replaced, so work that outlives a lock cannot put
  * decrypted items back in memory.
  */
-export function updateSessionItems(key: CryptoKey, change: (items: VaultItem[]) => VaultItem[]) {
+export function updateSessionItems(key: CryptoKey, change: (items: VaultItem[]) => VaultItem[], revisions: Record<string, string | null> = {}) {
   if (session.key !== key) return false
-  session = { ...session, items: change(session.items) }
+  const next = { ...session.revisions }
+  for (const [id, updatedAt] of Object.entries(revisions)) {
+    if (updatedAt === null) delete next[id]
+    else next[id] = updatedAt
+  }
+  session = { ...session, items: change(session.items), revisions: next }
+  emit()
+  return true
+}
+
+/** Puts the items as the server has them now in the session that holds `key` (false once it is locked or replaced). */
+export function replaceSessionItems(key: CryptoKey, items: VaultItem[], revisions: Record<string, string>) {
+  if (session.key !== key) return false
+  session = { ...session, items, revisions }
   emit()
   return true
 }

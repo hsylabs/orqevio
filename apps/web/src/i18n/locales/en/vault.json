@@ -118,6 +118,7 @@
   },
   "editor": {
     "editTitle": "Edit item",
+    "changedElsewhere": "This item changed in another tab or on another device. Your changes are still here: save again to replace the other ones.",
     "newLogin": "New login",
     "newNote": "New secure note",
     "name": "Name",

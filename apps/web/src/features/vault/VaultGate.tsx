@@ -21,16 +21,18 @@ import { VaultLockArt } from './VaultLockArt'
 async function openSession(vaultKey: CryptoKey, userId: string, state: VaultStateDTO) {
   const records = await get<VaultItemRecordDTO[]>('/vault/items')
   const items: VaultItem[] = []
+  const revisions: Record<string, string> = {}
   let failed = 0
   for (const r of records) {
     try {
       items.push(await decryptItem(vaultKey, userId, r.id, r.data))
+      revisions[r.id] = r.updatedAt
     } catch {
       failed++
     }
   }
   if (failed) toast.error(translate('vault:gate.decryptFailed', { count: failed }))
-  unlockSession(vaultKey, state.keyVersion, userId, items, state.autoLockMinutes)
+  unlockSession(vaultKey, state.keyVersion, userId, items, state.autoLockMinutes, revisions)
 }
 
 function PasswordInput({ label, value, onChange, autoFocus, autoComplete, error, hint }: { label: string; value: string; onChange: (v: string) => void; autoFocus?: boolean; autoComplete: string; error?: string | null; hint?: string }) {
