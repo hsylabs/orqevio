@@ -7,6 +7,8 @@
     "already_claimed": "This copy is already set up. Sign in with your access key.",
     "not_claimed": "This copy isn’t set up yet.",
     "rate_limited": "Too many attempts. Wait a few minutes.",
+    "rate_limitedFor_one": "Too many attempts. Try again in {{count}} minute.",
+    "rate_limitedFor_other": "Too many attempts. Try again in {{count}} minutes.",
     "network": "There’s no connection to the server.",
     "file_too_large": "The file is larger than the maximum allowed size.",
     "upload_incomplete": "The upload was interrupted. Try again.",

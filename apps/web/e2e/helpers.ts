@@ -66,6 +66,15 @@ export const test = base.extend<{ consoleErrors: string[] }>({
 })
 export { expect }
 
+/**
+ * For contexts a test opens itself, which do not take the configuration's options: the
+ * password of the reverse proxy in front of the copy, when E2E_BASIC_AUTH gives one.
+ */
+export const behindProxy = (() => {
+  const [username, ...password] = (process.env.E2E_BASIC_AUTH ?? '').split(':')
+  return username ? { httpCredentials: { username, password: password.join(':') } } : {}
+})()
+
 /** Must match the server's SETUP_CODE; the CI sets both. */
 export const SETUP_CODE = process.env.SETUP_CODE ?? 'e2e-setup-code-1234'
 /** Browser state of the owner, saved by setup.e2e.ts once the copy is claimed. */

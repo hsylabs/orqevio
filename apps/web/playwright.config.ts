@@ -7,6 +7,9 @@ const ENGINES = { chromium: devices['Desktop Chrome'], firefox: devices['Desktop
 const browser = (process.env.E2E_BROWSER ?? 'chromium') as keyof typeof ENGINES
 if (!(browser in ENGINES)) throw new Error(`E2E_BROWSER must be chromium, firefox or webkit, not ${browser}`)
 const viewport = { width: 1440, height: 900 }
+// E2E_BASIC_AUTH=user:password: the copy is behind a reverse proxy that asks for a password.
+const [proxyUser, ...proxyPassword] = (process.env.E2E_BASIC_AUTH ?? '').split(':')
+const httpCredentials = proxyUser ? { username: proxyUser, password: proxyPassword.join(':') } : undefined
 
 /**
  * End-to-end tests run against a running Orqevio server (production build) on
@@ -31,6 +34,7 @@ export default defineConfig({
     trace: 'off',
     locale: 'es-ES',
     timezoneId: 'Europe/Madrid',
+    httpCredentials,
   },
   projects: [
     { name: 'setup', testMatch: 'setup.e2e.ts', use: { ...ENGINES[browser], viewport } },

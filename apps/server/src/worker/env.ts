@@ -40,7 +40,7 @@ export function workerEnv(bindings: Bindings): Env {
     databasePath: '',
     webDist: '',
     migrationsDir: '',
-    trustProxy: false,
+    trustProxy: 0,
     secureCookies: true,
     maxUploadBytes: Number(bindings.MAX_UPLOAD_MB ?? 20) * 1024 * 1024,
     setupCode: bindings.SETUP_CODE?.trim() || null,

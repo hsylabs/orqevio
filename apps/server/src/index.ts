@@ -7,7 +7,7 @@ import { MIN_SETUP_CODE_LENGTH, isWeakSetupCode } from './auth/crypto'
 import { FolderBackupStore } from './backups/store'
 import { openDatabase, runMigrations } from './db/client'
 import { nodeSql } from './db/raw'
-import { loadEnv } from './env'
+import { configWarnings, loadEnvOrExit } from './env'
 import { RealtimeBus } from './lib/realtime'
 import { LocalStorage } from './lib/storage-local'
 import { attachLiveUpdates } from './node/live'
@@ -15,7 +15,8 @@ import { nodePlatform } from './node/platform'
 import { publicFetch } from './node/public-fetch'
 import { createServices } from './services'
 
-const env = loadEnv()
+const env = loadEnvOrExit()
+for (const warning of configWarnings(env)) console.warn(warning)
 await mkdir(env.dataDir, { recursive: true })
 await mkdir(path.dirname(env.databasePath), { recursive: true })
 const { db, sqlite, close } = openDatabase(env.databasePath)

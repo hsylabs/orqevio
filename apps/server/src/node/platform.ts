@@ -3,15 +3,22 @@ import path from 'node:path'
 import { getConnInfo } from '@hono/node-server/conninfo'
 import { serveStatic } from '@hono/node-server/serve-static'
 import type { Env } from '../env'
+import { forwardedClient } from '../http/client-ip'
 import type { Platform } from '../http/types'
 
 /** Node/Docker: the caller's address comes from the socket, and the web build is served from disk. */
 export function nodePlatform(env: Env): Platform {
+  let warned = false
   return {
     clientIp(c) {
-      if (env.trustProxy) {
-        const forwarded = c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
-        if (forwarded) return forwarded
+      const header = c.req.header('x-forwarded-for')
+      const forwarded = forwardedClient(header, env.trustProxy)
+      if (forwarded) return forwarded
+      if (header && !env.trustProxy && !warned) {
+        warned = true
+        console.warn(
+          'Requests come through a reverse proxy (X-Forwarded-For), but TRUST_PROXY is off: every visitor counts as the proxy for the limits on failed sign-ins. Set TRUST_PROXY=true (or the number of proxies in front).',
+        )
       }
       try {
         return getConnInfo(c).remote.address ?? 'unknown'

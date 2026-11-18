@@ -1,8 +1,8 @@
-import { expect, settle, test } from './helpers'
+import { behindProxy, expect, settle, test } from './helpers'
 
 // Contexts made in a test inherit the owner's session unless told otherwise.
 test('the recovery form is there from the start, and says when the new code has not arrived', async ({ browser, baseURL }) => {
-  const visitor = await browser.newContext({ locale: 'es-ES', baseURL, storageState: { cookies: [], origins: [] } })
+  const visitor = await browser.newContext({ ...behindProxy, locale: 'es-ES', baseURL, storageState: { cookies: [], origins: [] } })
   try {
     const page = await visitor.newPage()
     await settle(page, baseURL!)

@@ -7,6 +7,8 @@
     "already_claimed": "Diese Instanz ist bereits eingerichtet. Melde dich mit deinem Zugangsschlüssel an.",
     "not_claimed": "Diese Instanz ist noch nicht eingerichtet.",
     "rate_limited": "Zu viele Versuche. Warte ein paar Minuten.",
+    "rate_limitedFor_one": "Zu viele Versuche. Versuche es in {{count}} Minute erneut.",
+    "rate_limitedFor_other": "Zu viele Versuche. Versuche es in {{count}} Minuten erneut.",
     "network": "Keine Verbindung zum Server.",
     "file_too_large": "Die Datei ist größer als erlaubt.",
     "upload_incomplete": "Der Upload wurde unterbrochen. Versuch es noch einmal.",

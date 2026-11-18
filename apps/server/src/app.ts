@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Env } from './env'
 import { createApi } from './http/api'
 import { createOAuthRoutes } from './http/oauth'
+import { forwardedClient } from './http/client-ip'
 import { allowedOrigins, securityHeaders } from './http/security'
 import type { AppEnv, Platform } from './http/types'
 import { AppError } from './lib/errors'
@@ -11,7 +12,7 @@ import type { Services } from './services'
 /** Without a platform-specific resolver, trust X-Forwarded-For only when configured to. */
 function defaultClientIp(env: Env) {
   return (c: Parameters<NonNullable<Platform['clientIp']>>[0]) =>
-    (env.trustProxy ? c.req.header('x-forwarded-for')?.split(',')[0]?.trim() : undefined) || 'unknown'
+    forwardedClient(c.req.header('x-forwarded-for'), env.trustProxy) || 'unknown'
 }
 
 export function createApp(env: Env, services: Services, platform: Platform = {}) {
@@ -33,7 +34,7 @@ export function createApp(env: Env, services: Services, platform: Platform = {})
 
   app.onError((error, c) => {
     if (error instanceof AppError) {
-      return c.json({ error: { code: error.code, message: error.message, details: error.details } }, error.status)
+      return c.json({ error: { code: error.code, message: error.message, details: error.details } }, error.status, error.headers)
     }
     console.error('[http] unhandled error', error)
     return c.json({ error: { code: 'internal', message: 'Something went wrong' } }, 500)

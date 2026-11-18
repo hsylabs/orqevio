@@ -6,6 +6,8 @@ export class AppError extends Error {
     public readonly code: string,
     message: string,
     public readonly details?: unknown,
+    /** Headers sent with the error, such as Retry-After. */
+    public readonly headers?: Record<string, string>,
   ) {
     super(message)
   }

@@ -133,7 +133,7 @@ Usa la imagen publicada (`ghcr.io/hsylabs/orqevio`, para amd64 y arm64). Para fi
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
-La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx, Traefik) y, en ese caso, añade `TRUST_PROXY=true`. La base de datos SQLite y los adjuntos se guardan en el volumen `orqevio-data`.
+La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx, Traefik) y, en ese caso, añade `TRUST_PROXY=true` (o el número de proxies que hay delante, como `2` para una CDN más Nginx). El proxy también puede pedir una contraseña (autenticación básica HTTP). Los agentes envían su propia cabecera `Authorization: Bearer`, con un token que Orqevio comprueba por su cuenta: si conectas alguno, deja pasar sin la contraseña las peticiones que lleven uno, y también `/mcp`, `/oauth/` y `/.well-known/`, a los que los clientes OAuth llegan antes de tener token. Deja pasar también el tiempo real (`/api/workspaces/…/live`): Safari no envía la contraseña al abrirlo, y Orqevio comprueba la sesión por su cuenta. [`apps/web/e2e/proxy/nginx.conf`](apps/web/e2e/proxy/nginx.conf) hace todo esto con Nginx. La base de datos SQLite y los adjuntos se guardan en el volumen `orqevio-data`.
 
 **Copias de seguridad.** Con la app en marcha, haz una copia en caliente de la base de datos y sácala del contenedor junto con los adjuntos, que están en la carpeta `uploads`:
 
@@ -434,12 +434,12 @@ Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Despu�
 
 | Variable | Por defecto | Descripción |
 | --- | --- | --- |
-| `APP_URL` | `http://localhost:3000` | Orígenes públicos separados por comas. Con `https://` activa cookies `Secure` y HSTS. |
-| `PORT` / `HOST` | `3000` / `0.0.0.0` | Dirección de escucha. |
-| `DATA_DIR` | `./data` | Carpeta de datos: base SQLite (`orqevio.db`) y adjuntos (`uploads/`). |
-| `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Ruta del archivo SQLite, si quieres separarlo de los adjuntos. |
+| `APP_URL` | `http://localhost:3000` | Orígenes públicos, direcciones completas separadas por comas. Decide la primera: con `https://` activa cookies `Secure` y HSTS. |
+| `PORT` / `HOST` | `3000` / `0.0.0.0` | Dirección de escucha. Con Docker Compose, `PORT` es el puerto de tu máquina, y el contenedor siempre escucha en el 3000. |
+| `DATA_DIR` | `./data` | Carpeta de datos: base SQLite (`orqevio.db`) y adjuntos (`uploads/`). En Docker es el volumen `orqevio-data`. |
+| `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Ruta del archivo SQLite, si quieres separarlo de los adjuntos (solo desde el código fuente). |
 | `MAX_UPLOAD_MB` | `20` | Tamaño máximo por archivo. |
-| `TRUST_PROXY` | `false` | Confiar en `X-Forwarded-For` (detrás de un proxy inverso). |
+| `TRUST_PROXY` | `false` | Detrás de un proxy inverso, `true`, o el número de proxies que hay delante. La dirección del visitante para los límites de intentos fallidos pasa a ser la que el proxy añade al final de `X-Forwarded-For`, nunca lo que envió el visitante. |
 | `SECURE_COOKIES` | según `APP_URL` | Fuerza cookies `Secure`. |
 | `SETUP_CODE` | generado al arrancar | Código para reclamar la copia la primera vez. Si lo cambias, permite recuperar el acceso. |
 | `UPDATE_CHECK` | `on` | Comprueba en `registry.npmjs.org` si hay versiones nuevas para avisarte. `off` lo desactiva. |
