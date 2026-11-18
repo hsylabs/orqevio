@@ -8,6 +8,7 @@
         <a href="#button">Con il pulsante</a>
         <a href="#docker">Con Docker</a>
         <a href="#access">Primo accesso</a>
+        <a href="#backups">Backup ed esportazione</a>
         <a href="#agents">Collega gli agenti</a>
         <a href="#update">Aggiorna</a>
         <a href="#uninstall">Disinstalla</a>
@@ -18,14 +19,14 @@
 
   <div class="wrap prose">
     <h2 id="command">Con un comando <span class="badge">Consigliato</span></h2>
-    <p>La tua copia viene installata nel tuo account Cloudflare: un Worker con l’app web, l’API e il server MCP, un database SQLite e un bucket R2 per gli allegati.</p>
+    <p>La tua copia viene installata nel tuo account Cloudflare: un Worker con l’app web, l’API e il server MCP, un database SQLite e dei bucket R2 per gli allegati e i backup.</p>
     <p><strong>Ti serve</strong> un account Cloudflare (basta il piano gratuito) e Node.js 22.12 o successivo.</p>
     <p class="note"><strong>Prima di iniziare, attiva R2</strong> nella dashboard di Cloudflare, in <a href="https://dash.cloudflare.com/?to=/:account/r2/overview">R2 → Overview</a>. L’utilizzo incluso è gratuito (10 GB di spazio al mese), anche se Cloudflare potrebbe chiederti un metodo di pagamento. Serve a entrambi i metodi di installazione su Cloudflare: il comando e il pulsante.</p>
     <div class="command"><pre><code><span class="prompt">$ </span>npx create-orqevio</code></pre></div>
     <ol>
       <li>Si apre il browser per farti accedere a Cloudflare.</li>
       <li>Scegli un nome per la copia (<code>orqevio</code> di default), che diventa parte del suo indirizzo.</li>
-      <li>L’installer esegue il deploy della copia e crea il suo bucket.</li>
+      <li>L’installer esegue il deploy della copia e crea i suoi bucket, per gli allegati e per i backup.</li>
       <li>Ti mostra l’indirizzo (<code>https://orqevio.&lt;tuo-sottodominio&gt;.workers.dev</code>) e un <strong>codice di configurazione</strong> monouso.</li>
     </ol>
     <p>Apri l’indirizzo e segui i passaggi del <a href="#access">primo accesso</a>.</p>
@@ -54,7 +55,9 @@
     <p>Modifica <code>.env</code>: imposta in <code>APP_URL</code> l’indirizzo pubblico della tua copia (per esempio <code>https://orqevio.tuo-dominio.com</code>) e, se vuoi, un <code>SETUP_CODE</code> scelto da te di almeno 12 lettere o cifre. Poi:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
     <p>La copia è in ascolto sulla porta 3000. Mettila dietro un reverse proxy con HTTPS (Caddy, Nginx o Traefik) e aggiungi <code>TRUST_PROXY=true</code> a <code>.env</code>.</p>
-    <p><strong>Backup:</strong> con la copia in esecuzione, fai un backup a caldo del database e copialo fuori dal container insieme agli allegati della cartella <code>uploads</code>:</p>
+    <p><strong>Backup:</strong> la tua copia fa un backup di sé stessa ogni giorno nella cartella <code>backups</code> del suo volume e conserva i 7 più recenti (vedi <a href="#backups">Backup ed esportazione</a>). Per tenerli anche fuori dal server, copiali altrove di tanto in tanto:</p>
+    <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backups ./orqevio-backups</code></pre></div>
+    <p>Per fare un backup a mano, con la copia in esecuzione, fai un backup a caldo del database e copialo fuori dal container insieme agli allegati della cartella <code>uploads</code>:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose exec app node dist/cli.js backup /data/backup.db</code></pre></div>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backup.db ./orqevio-backup.db</code></pre></div>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/uploads ./orqevio-uploads</code></pre></div>
@@ -67,7 +70,12 @@
       <li><strong>Se la perdi,</strong> genera un nuovo codice con <code>npx create-orqevio@latest recover</code> (Cloudflare) o <code>docker compose exec app node dist/cli.js reset-access</code> (Docker) e usalo in «Hai perso la chiave?». La tua cassaforte non ne risente: il server non conosce mai la sua password principale.</li>
     </ol>
     <p>La tua copia usa la lingua del browser con cui ne prendi possesso: inglese, spagnolo, francese, portoghese, italiano, tedesco, olandese o giapponese. Puoi cambiarla quando vuoi in <strong>Impostazioni</strong>.</p>
-    <p class="note"><strong>I tuoi dati, la tua responsabilità.</strong> Orqevio è fornito così com’è, senza garanzie. Conserva al sicuro la chiave di accesso e la chiave di recupero della cassaforte, fai dei backup ed esporta la cassaforte di tanto in tanto. Su Cloudflare, l’app non può ancora esportare il resto dei tuoi dati.</p>
+    <p class="note"><strong>I tuoi dati, la tua responsabilità.</strong> Orqevio è fornito così com’è, senza garanzie. Conserva al sicuro la chiave di accesso e la chiave di recupero della cassaforte, tieni i backup anche altrove ed esporta la cassaforte di tanto in tanto.</p>
+
+    <h2 id="backups">Backup ed esportazione</h2>
+    <p>La tua copia fa un backup di sé stessa ogni giorno, con la cassaforte, il cestino, la cronologia e gli allegati, e conserva i 7 più recenti: con Docker, nella cartella <code>backups</code> del suo volume; su Cloudflare, nel bucket R2 <code>&lt;nome&gt;-backups</code> del tuo account. In <strong>Impostazioni → Backup</strong> li vedi, ne fai uno con <strong>Fai un backup ora</strong> e ripristini quello che vuoi dopo aver inserito la chiave di accesso. Prima di ripristinare, la copia fa un backup di com’è adesso, così puoi tornare indietro.</p>
+    <p><strong>Impostazioni → Esportare i tuoi dati</strong> scarica uno ZIP che puoi leggere senza Orqevio: le attività di ogni spazio in JSON, i documenti in Markdown e gli allegati. La cassaforte ha la sua esportazione cifrata.</p>
+    <p>Le copie installate su Cloudflare prima della versione 1.2.0 ricevono il bucket dei backup con il prossimo aggiornamento.</p>
 
     <h2 id="agents">Collega gli agenti</h2>
     <p>L’indirizzo MCP della tua copia è <code>https://&lt;tua-copia&gt;/mcp</code>.</p>

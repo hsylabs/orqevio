@@ -53,7 +53,7 @@
         <div class="card">
           <h3>Where your copy lives</h3>
           <div class="copies">
-            <div class="copy-row"><span class="dot"></span><div><strong>In your Cloudflare account</strong><span>A Worker, a SQLite database and a bucket for attachments.</span></div></div>
+            <div class="copy-row"><span class="dot"></span><div><strong>In your Cloudflare account</strong><span>A Worker, a SQLite database and buckets for attachments and backups.</span></div></div>
             <div class="copy-row"><span class="dot"></span><div><strong>Or on your server, with Docker</strong><span>One container and a single SQLite file.</span></div></div>
             <div class="copy-row agent"><span class="dot"></span><div><strong>Your agents connect to it</strong><span>Through MCP, with OAuth or a token per workspace.</span></div></div>
           </div>
@@ -65,6 +65,7 @@
             <li>Updating is one command, or merging a pull request.</li>
             <li>Your copy tells you when there’s a new version.</li>
             <li>Your data, your key and your vault are always kept.</li>
+            <li>It backs itself up every day, and exports everything as a ZIP you can read anywhere.</li>
           </ul>
         </div>
       </div>
@@ -87,7 +88,7 @@
     <div class="wrap">
       <h2 id="license">Source available, free to use</h2>
       <p class="lead">Orqevio is released under the <a href="https://github.com/hsylabs/orqevio/blob/main/LICENSE.md">FSL-1.1-ALv2</a> license. You can use it, change it and host your copy, at work too. The only thing it doesn’t allow is offering it as a commercial product or service that competes with Orqevio. Each version becomes Apache 2.0 two years after its release.</p>
-      <p>Orqevio is provided as is, without warranty of any kind. Your copy and its data are yours to look after: make backups, and export your vault from time to time.</p>
+      <p>Orqevio is provided as is, without warranty of any kind. Your copy and its data are yours to look after: keep its backups somewhere else too, and export your vault from time to time.</p>
       <div class="actions">
         <a class="button primary" href="{{base}}/install/">Install your copy</a>
       </div>

@@ -28,6 +28,7 @@ Y **nada de lo que hace un agente es definitivo.** Cualquier cambio se puede des
 - **Sin pisarse.** Los documentos y las descripciones de las tarjetas usan control de versiones optimista: si un agente edita una página o una tarjeta mientras escribes, Orqevio te avisa y eliges qué versión conservar.
 - **Nada se pierde por error.** Lo que borras espera 30 días en la papelera con todo lo que contenía: una página con sus subpáginas y archivos, una columna con sus tarjetas. Deshazlo al momento desde el aviso o restáuralo más tarde con un clic.
 - **Cada cambio tiene su historial y se puede deshacer.** Cada página y cada tarjeta guardan 30 días de cambios, de personas y de agentes: quién cambió qué y cuándo y, en los textos, qué cambió línea a línea, como un diff. Deshaz un cambio, vuelve a una versión anterior o deshaz todo lo que hizo un agente desde un momento dado; si alguien cambió lo mismo después, Orqevio pregunta antes.
+- **Tus datos, a salvo y tuyos.** Tu copia hace una copia de seguridad de sí misma cada día, aparte de sus datos, y restauras cualquiera de las 7 últimas desde **Ajustes**. **Exportar tus datos** te da todo en un ZIP que puedes leer sin Orqevio: tareas en JSON, documentos en Markdown y los adjuntos.
 - **Teclado primero.** `⌘K`/`Ctrl K` abre la paleta para buscar y saltar a cualquier sitio; `⌘\` oculta la barra lateral; el Kanban se puede reorganizar entero con teclado (espacio para coger, flechas, espacio para soltar), con anuncios para lector de pantalla.
 - **Identidad propia.** Papel cálido, tinta y dos señales de color: caqui para ti, ultramar para los agentes. Tipografía editorial (Fraunces) sobre una interfaz sobria (Instrument Sans). Tema claro y oscuro, con los tonos de texto ajustados a contraste WCAG AA.
 - **En tu idioma.** La app y el instalador hablan inglés, español, francés, portugués, italiano, alemán, neerlandés y japonés. Tu copia toma el idioma del navegador al reclamarla y puedes cambiarlo cuando quieras en **Ajustes**.
@@ -46,6 +47,8 @@ Todo lo que cambian las personas y los agentes se puede recuperar durante 30 dí
 - **Restaurar esta versión** deja el contenido de una página o la descripción de una tarjeta como estaba.
 
 Si alguien cambió lo mismo después del cambio que deshaces, Orqevio dice quién y pregunta antes. Deshacer es un cambio más, así que también se puede deshacer. Solo las personas deshacen.
+
+**Copias de seguridad.** Más allá de 30 días, o si algo sale mal, las copias diarias devuelven la copia entera a como estaba un día concreto: en **Ajustes → Copias de seguridad**, elige una y restáurala tras escribir tu clave de acceso. Antes de restaurar, la copia hace una copia de seguridad de cómo está. Mira [Con Docker](#con-docker-recomendado-para-producción) y [En Cloudflare](#en-cloudflare-con-un-comando) para saber dónde se guardan.
 
 **Qué pueden borrar y mover los agentes.** Cada token y cada conexión OAuth tiene el permiso **Puede borrar y mover**. Con él, un agente puede borrar lo que puede escribir, siempre a la papelera, y mover tarjetas a otro tablero y archivos a otra tarjeta o página. Los tokens y conexiones nuevos lo tienen salvo que lo desmarques; los creados antes de la 1.1.0 no, hasta que lo actives en **Agentes**, donde cada uno tiene su casilla. Sin él, un agente puede archivar tarjetas y mover tarjetas dentro de su tablero y páginas dentro de su proyecto.
 
@@ -135,7 +138,17 @@ docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 
 La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx, Traefik) y, en ese caso, añade `TRUST_PROXY=true` (o el número de proxies que hay delante, como `2` para una CDN más Nginx). El proxy también puede pedir una contraseña (autenticación básica HTTP). Los agentes envían su propia cabecera `Authorization: Bearer`, con un token que Orqevio comprueba por su cuenta: si conectas alguno, deja pasar sin la contraseña las peticiones que lleven uno, y también `/mcp`, `/oauth/` y `/.well-known/`, a los que los clientes OAuth llegan antes de tener token. Deja pasar también el tiempo real (`/api/workspaces/…/live`): Safari no envía la contraseña al abrirlo, y Orqevio comprueba la sesión por su cuenta. [`apps/web/e2e/proxy/nginx.conf`](apps/web/e2e/proxy/nginx.conf) hace todo esto con Nginx. La base de datos SQLite y los adjuntos se guardan en el volumen `orqevio-data`.
 
-**Copias de seguridad.** Con la app en marcha, haz una copia en caliente de la base de datos y sácala del contenedor junto con los adjuntos, que están en la carpeta `uploads`:
+**Copias de seguridad.** Tu copia hace una copia de seguridad de sí misma cada día: la base de datos y los adjuntos, tal cual, en la carpeta `backups` del volumen (`/data/backups`). Conserva las 7 últimas. **Ajustes → Copias de seguridad** las muestra, hace una en el momento con **Hacer una copia ahora** y restaura cualquiera de ellas tras escribir tu clave de acceso. Antes de restaurar, hace una copia de cómo está todo, para que puedas volver. Para tenerlas también fuera del servidor, sácalas de vez en cuando o pon en `BACKUP_DIR` una carpeta que montes desde otro disco:
+
+```bash
+docker compose cp app:/data/backups ./orqevio-backups
+```
+
+En un servidor nuevo se recuperan igual: pon la carpeta en el volumen de la copia nueva (o móntala como `BACKUP_DIR`), reclama la copia y restáurala desde **Ajustes → Copias de seguridad**. `BACKUPS=off` las desactiva.
+
+**Exportación.** **Ajustes → Exportar tus datos** descarga un ZIP que puedes leer sin Orqevio: las tareas de cada espacio en JSON, sus documentos en Markdown y los adjuntos, con los enlaces entre ellos apuntando a los archivos. La bóveda tiene su propia exportación cifrada.
+
+**Copias a mano.** Con la app en marcha, haz una copia en caliente de la base de datos y sácala del contenedor junto con los adjuntos, que están en la carpeta `uploads`:
 
 ```bash
 docker compose exec app node dist/cli.js backup /data/backup.db
@@ -169,7 +182,7 @@ El instalador:
 
 1. Abre el navegador para que inicies sesión en Cloudflare (inicio de sesión oficial de Wrangler). Si no se abre, abre el enlace que muestra el instalador. En Windows, el instalador lo abre él mismo con el Explorador: algunos antivirus (Norton, por ejemplo) bloquean la orden de PowerShell codificada con la que Wrangler abre el navegador. Si aun así no se completa, inicia sesión aparte con `npx wrangler login --browser=false` y vuelve a ejecutar el instalador.
 2. Te pide un nombre para la copia (por defecto, `orqevio`), que forma parte de su dirección.
-3. Despliega la copia y crea su bucket R2.
+3. Despliega la copia y crea sus dos buckets R2: uno para los adjuntos y otro para las copias de seguridad (`<nombre>-backups`).
 4. Te muestra su dirección (`https://orqevio.<tu-subdominio>.workers.dev`) y un **código de configuración** de un solo uso, generado al azar.
 
 Abre la dirección, escribe el código y tu nombre: Orqevio te dará tu clave de acceso. Desde ese momento el código ya no sirve.
@@ -195,6 +208,7 @@ Borra tu copia y todo lo que contiene, en un solo paso, después de que escribas
 - **Varias copias:** añade `--name <nombre>` a cualquiera de las órdenes.
 - **Varias cuentas de Cloudflare:** el instalador te pregunta cuál usar; también puedes indicarla con `--account <id>` o `CLOUDFLARE_ACCOUNT_ID`.
 - **Idioma:** el instalador habla el idioma de tu terminal; elige otro con `--lang <código>` (`en`, `es`, `fr`, `pt`, `it`, `de`, `nl` o `ja`).
+- **Copias de seguridad:** tu copia hace una copia de seguridad de sí misma cada día en su bucket de copias, y conserva las 7 últimas. **Ajustes → Copias de seguridad** las muestra, hace una en el momento y restaura cualquiera de ellas; **Ajustes → Exportar tus datos** descarga todo en un ZIP legible. Las copias instaladas antes de la 1.2.0 reciben el bucket con su siguiente actualización y hacen su primera copia antes de una hora. Una copia que vuelvas a instalar con el mismo nombre encuentra las copias de seguridad de la anterior, si las conservaste al desinstalar, y puede restaurarlas desde **Ajustes → Copias de seguridad**.
 - **Tus ajustes se conservan:** las variables que pongas en el panel de Cloudflare (`APP_URL`, `MAX_UPLOAD_MB`) sobreviven a las actualizaciones.
 - **Privacidad:** el instalador desactiva la telemetría anónima de Wrangler, salvo que tú la hayas activado.
 - **Lo que hace exactamente:**
@@ -439,6 +453,8 @@ Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Despu�
 | `DATA_DIR` | `./data` | Carpeta de datos: base SQLite (`orqevio.db`) y adjuntos (`uploads/`). En Docker es el volumen `orqevio-data`. |
 | `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Ruta del archivo SQLite, si quieres separarlo de los adjuntos (solo desde el código fuente). |
 | `MAX_UPLOAD_MB` | `20` | Tamaño máximo por archivo. |
+| `BACKUP_DIR` | `DATA_DIR/backups` | Dónde van las copias de seguridad diarias. Pon una carpeta de otro disco para guardarlas aparte de los datos. |
+| `BACKUPS` | `on` | `off` desactiva las copias de seguridad diarias. |
 | `TRUST_PROXY` | `false` | Detrás de un proxy inverso, `true`, o el número de proxies que hay delante. La dirección del visitante para los límites de intentos fallidos pasa a ser la que el proxy añade al final de `X-Forwarded-For`, nunca lo que envió el visitante. |
 | `SECURE_COOKIES` | según `APP_URL` | Fuerza cookies `Secure`. |
 | `SETUP_CODE` | generado al arrancar | Código para reclamar la copia la primera vez. Si lo cambias, permite recuperar el acceso. |
@@ -452,7 +468,6 @@ En Cloudflare solo se usan `SETUP_CODE` (secreto obligatorio), `APP_URL` (opcion
 - **Sin coedición simultánea.** No hay edición colaborativa en tiempo real tipo CRDT; los conflictos se detectan por versión y se resuelven explícitamente.
 - **OAuth solo para clientes públicos.** No se admiten clientes confidenciales (`client_secret_*`, `private_key_jwt`) ni el flujo `client_credentials`; los clientes MCP habituales, incluidos los conectores de Claude, son públicos.
 - **Un solo proceso por copia.** SQLite, los adjuntos en disco y el tiempo real en memoria asumen una única instancia del servidor por copia, que es el modelo de Orqevio (una copia por persona).
-- **Copias de seguridad en Cloudflare.** Aún no hay exportación desde la app: los datos quedan en el Durable Object y en el bucket R2 de tu cuenta.
 - **Sin migración desde PostgreSQL.** Las versiones de desarrollo anteriores usaban PostgreSQL; no hay herramienta para pasar esos datos a SQLite.
 - **Una persona por copia.** No hay registro ni correo; si se pierde la clave de acceso, se recupera desde el servidor (CLI o un `SETUP_CODE` nuevo).
 - **Bóveda personal.** No se comparte entre personas. Importa los CSV de los navegadores y los formatos de Bitwarden; no lee los de otros gestores (1Password, KeePass…), salvo que los conviertas antes a uno de esos.
@@ -486,7 +501,7 @@ apps/site            la web pública orqevio.com: páginas estáticas sin cookie
 
 Orqevio se ofrece tal cual, sin garantías de ningún tipo, como dice su [licencia](LICENSE.md). Tú alojas y administras tu copia, así que sus datos quedan a tu cargo:
 
-- **Haz copias de seguridad.** Con Docker, copia el volumen o haz una copia en caliente de la base de datos (ver [Con Docker](#con-docker-recomendado-para-producción)). En Cloudflare, la app todavía no puede exportar tus datos, salvo la bóveda.
+- **Guarda tus copias también en otro sitio.** Tu copia hace una copia de seguridad cada día, pero en el mismo servidor o la misma cuenta: sácalas de vez en cuando, o descarga un ZIP desde **Ajustes → Exportar tus datos** (ver [Con Docker](#con-docker-recomendado-para-producción) y [En Cloudflare](#en-cloudflare-con-un-comando)).
 - **Exporta tu bóveda** de vez en cuando, cifrada con tu contraseña maestra.
 - **Guarda bien tu clave de acceso y la clave de recuperación de tu bóveda.** Nadie puede abrir tu bóveda sin su contraseña maestra o su clave de recuperación, ni siquiera nosotros.
 
