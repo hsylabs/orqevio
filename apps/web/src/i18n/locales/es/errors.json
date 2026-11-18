@@ -12,7 +12,8 @@
     "upload_incomplete": "La subida se interrumpió. Vuelve a intentarlo.",
     "last_workspace": "Necesitas conservar al menos un espacio.",
     "restore_place_in_trash": "Restaura antes aquello a lo que pertenece: también está en la papelera.",
-    "restore_place_gone": "El sitio al que pertenecía ya no existe y no hay otro donde ponerlo."
+    "restore_place_gone": "El sitio al que pertenecía ya no existe y no hay otro donde ponerlo.",
+    "vault_key_changed": "La bóveda ha cambiado en otra pestaña o en otro dispositivo. Vuelve a abrirla."
   },
   "notFound": "No se ha encontrado el elemento.",
   "server": "Algo ha fallado en el servidor. Inténtalo de nuevo.",

@@ -358,6 +358,8 @@ export interface VaultStateDTO {
   wrappedKey: string | null
   recoveryWrappedKey: string | null
   autoLockMinutes: number
+  /** The vault key's version: items and new wrappings are only taken for this one. */
+  keyVersion: number
 }
 
 export interface VaultItemRecordDTO {

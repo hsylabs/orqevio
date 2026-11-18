@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSession, lockVault, unlockSession } from '../src/features/vault/session'
 import { type VaultItem, emptyItem } from '../src/features/vault/types'
 import { VaultLockedError, importItems } from '../src/features/vault/upload'
+import { ApiError } from '../src/lib/api'
 
 const vaultKey = () => crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt'])
 const several = (n: number): VaultItem[] => Array.from({ length: n }, (_, i) => ({ ...emptyItem('login'), title: `Elemento ${i}`, password: `secreto-${i}` }))
@@ -17,7 +18,7 @@ describe('importing into the vault', () => {
   })
 
   it('adds what the server accepted to the open session', async () => {
-    unlockSession(await vaultKey(), 'user-1', [], 15)
+    unlockSession(await vaultKey(), 1, 'user-1', [], 15)
     const sent: string[] = []
     const result = await importItems(several(6), () => {}, async (id, data) => {
       expect(data).toMatch(/^v1\./)
@@ -27,8 +28,28 @@ describe('importing into the vault', () => {
     expect(getSession().items.map((i) => i.id).sort()).toEqual([...sent].sort())
   })
 
+  it('sends each item for the version of the key the session holds', async () => {
+    unlockSession(await vaultKey(), 7, 'user-1', [], 15)
+    const versions: number[] = []
+    await importItems(several(3), () => {}, async (_id, _data, keyVersion) => {
+      versions.push(keyVersion)
+    })
+    expect(versions).toEqual([7, 7, 7])
+  })
+
+  it('locks and stops when the vault no longer has that key (reset in another tab)', async () => {
+    unlockSession(await vaultKey(), 1, 'user-1', [], 15)
+    let calls = 0
+    const run = importItems(several(40), () => {}, async () => {
+      if (++calls === 2) throw new ApiError(409, 'vault_key_changed', 'The vault changed')
+    })
+    await expect(run).rejects.toMatchObject({ code: 'vault_key_changed' })
+    expect(calls).toBeLessThanOrEqual(6)
+    expect(getSession()).toMatchObject({ key: null, keyVersion: null, items: [] })
+  })
+
   it('stops when the vault locks and leaves nothing decrypted in memory', async () => {
-    unlockSession(await vaultKey(), 'user-1', [], 15)
+    unlockSession(await vaultKey(), 1, 'user-1', [], 15)
     let calls = 0
     const run = importItems(several(40), () => {}, async () => {
       if (++calls === 3) lockVault()
@@ -40,10 +61,10 @@ describe('importing into the vault', () => {
   })
 
   it('does not touch a session unlocked again while it was running', async () => {
-    unlockSession(await vaultKey(), 'user-1', [], 15)
+    unlockSession(await vaultKey(), 1, 'user-1', [], 15)
     const fresh = await vaultKey()
     const run = importItems(several(4), () => {}, async () => {
-      if (getSession().key !== fresh) unlockSession(fresh, 'user-1', [], 15)
+      if (getSession().key !== fresh) unlockSession(fresh, 1, 'user-1', [], 15)
     })
     await expect(run).rejects.toBeInstanceOf(VaultLockedError)
     expect(getSession().key).toBe(fresh)
