@@ -85,7 +85,7 @@ describe('export', () => {
     expect(names.some((n) => /vault|history|trash/i.test(n))).toBe(false)
   })
 
-  it('keeps every entry apart, links documents to their attachments and to each other, walks any depth and lists missing files', async () => {
+  it('keeps every entry apart, links documents to their attachments, to each other and to tasks, walks any depth and lists missing files', async () => {
     const { client, workspaceId } = await signUp(h, 'Árboles')
     await client.patch(`/api/workspaces/${workspaceId}`, { name: 'Árboles' })
     const { projectId, columns } = await seedBoard(client, workspaceId)
@@ -103,10 +103,10 @@ describe('export', () => {
     const plan = (await client.upload(`/api/cards/${card}/attachments`, 'plano', { name: 'plano (v2).png', type: 'image/png' })).body as { id: string }
     const version = (await client.get(`/api/pages/${a}`)).body.version as number
     const elsewhere = '00000000-0000-4000-8000-000000000000'
-    const content = `![](/api/attachments/${image.id})\n\n[plano](http://localhost:3000/api/attachments/${plan.id})\n\n[Hijo](/doc/${child}) [Otro](/doc/${elsewhere})`
+    const content = `![](/api/attachments/${image.id})\n\n[plano](http://localhost:3000/api/attachments/${plan.id})\n\n[Hijo](/doc/${child}) [Otro](/doc/${elsewhere}) [Con plano](/card/${card}) [Otra](/card/${elsewhere})`
     const saved = await client.patch(`/api/pages/${a}`, { content, baseVersion: version })
     expect(saved.status, JSON.stringify(saved.body)).toBe(200)
-    await client.patch(`/api/cards/${card}`, { description: `Ver ![](/api/attachments/${plan.id}) y [A](/doc/${a} "A")` })
+    await client.patch(`/api/cards/${card}`, { description: `Ver ![](/api/attachments/${plan.id}) y [A](/doc/${a} "A"), como [esta](/card/${card})` })
     // A chain deeper than any limit a recursive walk would have.
     const deep = (await client.post(`/api/workspaces/${workspaceId}/projects`, { name: 'Hondo', color: 'jade' })).body.id as string
     let parent: string | null = null
@@ -132,14 +132,16 @@ describe('export', () => {
     // "A.md" gives way to A's file: "A.md (2).md", with its subpages in "A.md (2)/".
     expect(strFromU8(at('documents/Lanzamiento/A.md (2)/Child.md')!)).toBe('bajo A.md')
     expect(at('documents/Lanzamiento/A.md (2).md')).toBeDefined()
-    // Links point at the files in the ZIP, relative to the document, encoded; one to a document
-    // that isn't in the export stays as it was.
+    // Links point at the files in the ZIP, relative to the document, encoded; references to tasks
+    // at tasks.json, with the card's id; one to anything that isn't in the export stays as it was.
     expect(strFromU8(at('documents/Lanzamiento/A.md')!)).toBe(
-      `![](A%20%28files%29/Child.md)\n\n[plano](../../attachments/Con%20plano/plano%20%28v2%29.png)\n\n[Hijo](A%20%28files%29%20%282%29/Child.md) [Otro](/doc/${elsewhere})`,
+      `![](A%20%28files%29/Child.md)\n\n[plano](../../attachments/Con%20plano/plano%20%28v2%29.png)\n\n[Hijo](A%20%28files%29%20%282%29/Child.md) [Otro](/doc/${elsewhere}) [Con plano](../../tasks.json#${card}) [Otra](/card/${elsewhere})`,
     )
     expect(at('attachments/Con plano/plano (v2).png')).toBeDefined()
     const tasks = JSON.parse(strFromU8(at('tasks.json')!))
-    expect(tasks.projects[0].boards[0].columns[0].cards[0].description).toBe('Ver ![](attachments/Con%20plano/plano%20%28v2%29.png) y [A](documents/Lanzamiento/A.md "A")')
+    const exported = tasks.projects[0].boards[0].columns[0].cards[0]
+    expect(exported.id).toBe(card)
+    expect(exported.description).toBe(`Ver ![](attachments/Con%20plano/plano%20%28v2%29.png) y [A](documents/Lanzamiento/A.md "A"), como [esta](tasks.json#${card})`)
     expect(names.filter((n) => n.includes('/documents/Hondo/'))).toHaveLength(230)
     expect(names.some((n) => n.endsWith('perdido.txt'))).toBe(false)
     expect(JSON.parse(strFromU8(files[`${root}/export.json`]!)).missingAttachments).toEqual(['Árboles/attachments/Con plano/perdido.txt'])

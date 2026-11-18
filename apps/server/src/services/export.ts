@@ -72,8 +72,8 @@ function linkTo(fromDir: string, target: string) {
 
 /** Links to attachments in a text, as the editor writes them (/api/attachments/<id>, or with the copy's address). */
 const ATTACHMENT_LINK = /(?:https?:\/\/[^\s()<>"']+)?\/api\/attachments\/([0-9a-f-]{36})/g
-/** References to documents, as the editor writes them: [Title](/doc/<id>) (see docHref in @orqevio/shared). */
-const DOC_LINK = /(\]\(\s*)\/doc\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?=[\s)])/gi
+/** References to documents and tasks, as the editor writes them: [Title](/doc/<id>), [Title](/card/<id>) (see links.ts in @orqevio/shared). */
+const REFERENCE = /(\]\(\s*)\/(doc|card)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?=[\s)])/gi
 
 const iso = (date: Date | null) => (date ? date.toISOString() : null)
 /** Due dates are calendar days: the day, without the hour they are stored at. */
@@ -266,11 +266,17 @@ export class ExportService {
         files.push({ path: `${base}/${path}`, storageKey: file.storageKey, size: file.size })
       }
       // Links to attachments and references to documents point at their files in the ZIP, relative
-      // to where the text is. One to anything that isn't in the export stays as it was.
+      // to where the text is; references to tasks at tasks.json, with the card's id (it is in there)
+      // after the "#". One to anything that isn't in the export stays as it was.
+      const target = (type: string, id: string) => (type.toLowerCase() === 'doc' ? pagePath.get(id) : cardById.has(id) ? 'tasks.json' : undefined)
       const relink = (text: string, fromDir: string) =>
         text
           .replace(ATTACHMENT_LINK, (link, id: string) => (filePath.has(id) ? linkTo(fromDir, filePath.get(id)!) : link))
-          .replace(DOC_LINK, (link, open: string, id: string) => (pagePath.has(id.toLowerCase()) ? `${open}${linkTo(fromDir, pagePath.get(id.toLowerCase())!)}` : link))
+          .replace(REFERENCE, (link, open: string, type: string, id: string) => {
+            const to = target(type, id.toLowerCase())
+            if (!to) return link
+            return `${open}${linkTo(fromDir, to)}${to === 'tasks.json' ? `#${id.toLowerCase()}` : ''}`
+          })
       for (const page of pageRows) {
         const path = pagePath.get(page.id)
         if (path) texts.push([`${base}/${path}`, relink(page.content, path.slice(0, path.lastIndexOf('/')))])
@@ -290,6 +296,8 @@ export class ExportService {
             columns: columnsOf(board.id).map((column) => ({
               name: column.name,
               cards: cardsOf(column.id).map((card) => ({
+                // What references to this task (#<id> after tasks.json) point at.
+                id: card.id,
                 title: card.title,
                 description: relink(card.description, ''),
                 labels: labelsOfCard(card.id)
