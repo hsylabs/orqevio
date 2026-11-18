@@ -23,6 +23,8 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field({ l
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
           className={cn('field h-10', trailing ? 'pr-10' : undefined)}
+          // Lets a dialog give it the focus when opening from a menu kept it from taking it (see Dialog).
+          data-autofocus={rest.autoFocus || undefined}
           {...rest}
         />
         {trailing && <div className="absolute inset-y-0 right-1 flex items-center">{trailing}</div>}

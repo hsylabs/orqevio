@@ -16,7 +16,8 @@
     "last_workspace": "Devi mantenere almeno uno spazio.",
     "restore_place_in_trash": "Ripristina prima ciò a cui appartiene: anche quello è nel cestino.",
     "restore_place_gone": "Il posto a cui apparteneva non esiste più e non c’è nessun altro posto dove rimetterlo.",
-    "vault_key_changed": "La cassaforte è cambiata in un’altra scheda o su un altro dispositivo. Riaprila."
+    "vault_key_changed": "La cassaforte è cambiata in un’altra scheda o su un altro dispositivo. Riaprila.",
+    "too_many_columns": "Una bacheca può contenere fino a 20 colonne."
   },
   "notFound": "Elemento non trovato.",
   "server": "Si è verificato un errore sul server. Riprova.",
