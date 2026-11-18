@@ -40,7 +40,8 @@ export class SearchService {
   ) {}
 
   /** Full-text search over card and page titles and bodies (FTS5), titles ranked first. */
-  async search(actor: Actor, workspaceId: string, rawQuery: string, opts: { types?: Array<'card' | 'page'>; limit?: number } = {}) {
+  /** `archived`: archived cards are found too, and say so; otherwise only those on their boards. */
+  async search(actor: Actor, workspaceId: string, rawQuery: string, opts: { types?: Array<'card' | 'page'>; limit?: number; archived?: boolean } = {}) {
     await this.access.workspace(actor, workspaceId)
     const terms = searchTerms(rawQuery.trim().slice(0, 100))
     if (terms.length === 0) return []
@@ -61,16 +62,17 @@ export class SearchService {
         columnName: string
         projectId: string
         projectName: string
+        archivedAt: number | null
       }>(sql`
         SELECT c.id, c.title, c.description, b.id AS boardId, b.name AS boardName, col.name AS columnName,
-               p.id AS projectId, p.name AS projectName
+               p.id AS projectId, p.name AS projectName, c.archived_at AS archivedAt
         FROM cards_fts
         JOIN cards_fts_map m ON m.id = cards_fts.rowid
         JOIN cards c ON c.id = m.entity_id
         JOIN boards b ON b.id = c.board_id
         JOIN board_columns col ON col.id = c.column_id
         JOIN projects p ON p.id = b.project_id
-        WHERE cards_fts MATCH ${match} AND c.workspace_id = ${workspaceId} AND c.archived_at IS NULL
+        WHERE cards_fts MATCH ${match} AND c.workspace_id = ${workspaceId} AND (${opts.archived ? 1 : 0} OR c.archived_at IS NULL)
         ORDER BY cards_fts.rowid NOT IN (SELECT rowid FROM cards_fts WHERE cards_fts MATCH ${titleMatch}),
                  bm25(cards_fts, 10, 1), c.updated_at DESC
         LIMIT ${limit}`)
@@ -86,6 +88,7 @@ export class SearchService {
           boardId: r.boardId,
           boardName: r.boardName,
           columnName: r.columnName,
+          ...(r.archivedAt !== null ? { archived: true } : {}),
         })
       }
     }

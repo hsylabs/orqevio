@@ -134,6 +134,8 @@
       "theme": "Changer thème theme clair sombre apparence",
       "lockVault": "Verrouiller coffre-fort",
       "trash": "corbeille supprimé récupérer restaurer"
-    }
+    },
+    "includeArchived": "Inclure les archivées",
+    "archived": "Archivée"
   }
 }

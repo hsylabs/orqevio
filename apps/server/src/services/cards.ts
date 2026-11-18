@@ -122,6 +122,7 @@ export class CardService {
         createdBy: creators.get(card.id) ?? null,
         createdAt: card.createdAt.toISOString(),
         updatedAt: card.updatedAt.toISOString(),
+        archivedAt: card.archivedAt?.toISOString() ?? null,
       }
     })
   }

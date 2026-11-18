@@ -1,19 +1,20 @@
-import type {
-  BackupsDTO,
-  ActivityDTO,
-  AnonymousSessionDTO,
-  BoardDTO,
-  CardDetailDTO,
-  CardSummaryDTO,
-  HistoryEntryDTO,
-  HomeDTO,
-  MeDTO,
-  OverviewDTO,
-  PageDTO,
-  SearchResultDTO,
-  TokenDTO,
-  TrashEntryDTO,
-  UpdateStatusDTO,
+import {
+  ARCHIVED_PAGE,
+  type BackupsDTO,
+  type ActivityDTO,
+  type AnonymousSessionDTO,
+  type BoardDTO,
+  type CardDetailDTO,
+  type CardSummaryDTO,
+  type HistoryEntryDTO,
+  type HomeDTO,
+  type MeDTO,
+  type OverviewDTO,
+  type PageDTO,
+  type SearchResultDTO,
+  type TokenDTO,
+  type TrashEntryDTO,
+  type UpdateStatusDTO,
 } from '@orqevio/shared'
 import { QueryClient, keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { ApiError, get } from './api'
@@ -86,8 +87,21 @@ export const useHome = (wid: string) =>
 export const useBoard = (id: string) =>
   useQuery({ queryKey: keys.board(id), queryFn: ({ signal }) => get<BoardDTO>(`/boards/${id}`, signal) })
 
+/** The archived cards of a board, the most recently archived first, a page at a time. */
 export const useArchived = (id: string, enabled: boolean) =>
-  useQuery({ queryKey: keys.archived(id), queryFn: ({ signal }) => get<CardSummaryDTO[]>(`/boards/${id}/archived`, signal), enabled })
+  useInfiniteQuery({
+    queryKey: keys.archived(id),
+    queryFn: ({ signal, pageParam }) =>
+      get<CardSummaryDTO[]>(
+        `/boards/${id}/archived?limit=${ARCHIVED_PAGE}${pageParam ? `&before=${encodeURIComponent(pageParam.archivedAt)}&beforeId=${pageParam.id}` : ''}`,
+        signal,
+      ),
+    // The next page starts after the last card: when it was archived, and the card itself for those archived at once.
+    initialPageParam: null as { id: string; archivedAt: string } | null,
+    getNextPageParam: (last: CardSummaryDTO[]) =>
+      last.length < ARCHIVED_PAGE || !last.at(-1)!.archivedAt ? undefined : { id: last.at(-1)!.id, archivedAt: last.at(-1)!.archivedAt! },
+    enabled,
+  })
 
 export const useCard = (id: string | null) =>
   useQuery({ queryKey: keys.card(id ?? ''), queryFn: ({ signal }) => get<CardDetailDTO>(`/cards/${id}`, signal), enabled: Boolean(id) })
@@ -95,11 +109,12 @@ export const useCard = (id: string | null) =>
 export const usePage = (id: string) =>
   useQuery({ queryKey: keys.page(id), queryFn: ({ signal }) => get<PageDTO>(`/pages/${id}`, signal), staleTime: 5_000 })
 
-export const useSearch = (wid: string, q: string, type?: 'card' | 'page') =>
+/** `archived`: archived cards are found too. */
+export const useSearch = (wid: string, q: string, type?: 'card' | 'page', archived = false) =>
   useQuery({
-    queryKey: [...keys.search(wid, q), type ?? 'all'],
+    queryKey: [...keys.search(wid, q), type ?? 'all', archived],
     queryFn: ({ signal }) =>
-      get<SearchResultDTO[]>(`/workspaces/${wid}/search?q=${encodeURIComponent(q)}${type ? `&type=${type}` : ''}`, signal),
+      get<SearchResultDTO[]>(`/workspaces/${wid}/search?q=${encodeURIComponent(q)}${type ? `&type=${type}` : ''}${archived ? '&archived=1' : ''}`, signal),
     enabled: q.trim().length >= 2,
     placeholderData: keepPreviousData,
     staleTime: 10_000,

@@ -181,7 +181,9 @@
     "heading": "Archiviert",
     "emptyTitle": "Nichts archiviert",
     "emptyBody": "Karten, die du oder deine Agenten archivieren, erscheinen hier, und du kannst sie wiederherstellen.",
-    "deleteConfirm": "„{{title}}“ in den Papierkorb verschieben?"
+    "deleteConfirm": "„{{title}}“ in den Papierkorb verschieben?",
+    "loadMore": "Mehr laden",
+    "showing": "{{shown}} von {{total}}"
   },
   "attachments": {
     "deleteConfirm": "„{{name}}“ löschen?",
