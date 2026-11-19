@@ -54,6 +54,7 @@ const kept: Array<[string, string]> = [
   ['footnotes', 'Texto con nota[^1] y otra[^web].\n\n[^1]: La nota.\n\n[^web]: https://orqevio.com'],
   ['a footnote of several lines', 'Uno[^larga], dos.\n\n[^larga]: Primera línea\n    y la segunda, sangrada.'],
   ['front matter alone', '---\ntitle: Hola\n---'],
+  ['a private-use character in an ordered list, as an icon font uses', '1. paso \uE000 con icono\n   - [ ] a\n2. otro'],
   ['tasks under a two-digit item', '10. diez\n    - [ ] a\n    - [x] b\n11. once'],
   ['an ordered list inside another', '1. uno\n   1. sub\n   2. sub dos\n2. dos'],
 ]

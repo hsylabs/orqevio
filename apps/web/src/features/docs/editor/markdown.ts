@@ -352,7 +352,8 @@ const FaithfulOrderedList = OrderedList.extend({
       const aligned = alignOrderedContinuations(src)
       const token = orderedListTokenizer.tokenize(aligned, tokens, lexer)
       if (!token) return token
-      if (aligned.includes(NOT_AN_ITEM)) removeMarks(token)
+      // Only marks put there now: a document that held the character already got none, and keeps it.
+      if (!src.includes(NOT_AN_ITEM) && aligned.includes(NOT_AN_ITEM)) removeMarks(token)
       // What it took from the source, as it was: marked goes on from there.
       return { ...token, raw: firstLines(src, token.raw.split('\n').length) }
     },
