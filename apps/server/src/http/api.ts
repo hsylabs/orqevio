@@ -1,4 +1,4 @@
-import { type TrashedDTO, UPLOAD_NAME_HEADER } from '@orqevio/shared'
+import { type TrashedDTO, UPLOAD_NAME_HEADER, withoutBidiControls } from '@orqevio/shared'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { AppError, badRequest } from '../lib/errors'
@@ -36,7 +36,9 @@ async function json(c: { req: { json: () => Promise<unknown> } }) {
  * RFC 6266: `filename*` with the name in UTF-8 (RFC 8187 allows no `'`, `(`, `)` or `*` unescaped
  * there), and before it a plain `filename` for clients that ignore it: ASCII, without quotes.
  */
-function contentDisposition(kind: 'inline' | 'attachment', name: string) {
+function contentDisposition(kind: 'inline' | 'attachment', stored: string) {
+  // Names stored before 1.2.1 may still hold characters that show them in another order.
+  const name = withoutBidiControls(stored)
   const encoded = encodeURIComponent(name).replace(/['()*]/g, (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`)
   const plain = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_')
   return `${kind}; filename="${plain}"; filename*=UTF-8''${encoded}`
