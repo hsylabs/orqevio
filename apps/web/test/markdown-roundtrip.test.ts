@@ -65,6 +65,16 @@ const normalised: Array<[string, string, string]> = [
   ['front matter gets a blank line after it', '---\ntitle: Hola\n---\nTexto', '---\ntitle: Hola\n---\n\nTexto'],
   ['an item with a parenthesis is written with a dot, its tasks side by side', '1) paso\n   - [ ] a\n   - [x] b', '1. paso\n   - [ ] a\n   - [x] b'],
   ['a code block in an ordered list keeps its indentation', '1. paso\n\n   ```js\n   const a = 1\n   ```\n2. otro', '1. paso\n   ```js\n   const a = 1\n   ```\n2. otro'],
+  [
+    'a code block in an ordered list keeps a line that looks like an item',
+    '1. paso\n\n   ```python\n   def f():\n       x = 1\n       1. + 2\n       return x\n   ```\n2. otro',
+    '1. paso\n   ```python\n   def f():\n       x = 1\n       1. + 2\n       return x\n   ```\n2. otro',
+  ],
+  [
+    'a code block in an ordered list keeps a line like an item at its margin',
+    '1. paso\n\n   ~~~\n   2. no es un paso\n   ~~~\n2. otro',
+    '1. paso\n   ```\n   2. no es un paso\n   ```\n2. otro',
+  ],
 ]
 
 describe('Markdown round trip', () => {

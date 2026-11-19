@@ -262,6 +262,13 @@ const FaithfulCodeBlock = CodeBlock.extend({
 // ── Ordered lists ────────────────────────────────────────────────
 
 const ORDERED_ITEM = new RegExp(`^([ \\t]*)(${ORDERED_LIST_MARKER_PATTERN})([.)])( +)`)
+const FENCE = /^(`{3,}|~{3,})/
+/**
+ * Put before a line of code that looks like an item of an ordered list (`1. + 2` in a code block
+ * under a numbered step), for the time @tiptap/extension-list reads the list: it would take the
+ * line for an item and split the code there. Taken out of what it read straight after.
+ */
+const NOT_AN_ITEM = '\uE000'
 
 /**
  * Lines under an item of an ordered list belong to it from the column its text starts at (3 for
@@ -271,6 +278,9 @@ const ORDERED_ITEM = new RegExp(`^([ \\t]*)(${ORDERED_LIST_MARKER_PATTERN})([.)]
  */
 export function alignOrderedContinuations(src: string) {
   let item: { strippedThere: number; textColumn: number } | null = null
+  /** The fence of a code block open under the item: its lines are code, whatever they look like. */
+  let fence: { char: string; length: number } | null = null
+  const protect = !src.includes(NOT_AN_ITEM)
   let aligned = ''
   let previousBlank = false
   // Line by line, up to where the list ends: the rest of the document is left as it is.
@@ -278,16 +288,24 @@ export function alignOrderedContinuations(src: string) {
     const newline = src.indexOf('\n', start)
     const end = newline === -1 ? src.length : newline
     let line = src.slice(start, end)
-    const match = ORDERED_ITEM.exec(line)
+    const lead = line.length - line.trimStart().length
+    // A line less indented than the item's text closes a code block left open under it.
+    if (fence && line.trim() && item && lead < item.textColumn) fence = null
+    const match = fence ? null : ORDERED_ITEM.exec(line)
     if (match) {
       const [, indent = '', marker = '', , spaces = ''] = match
       // Five spaces or more after the marker: the text starts after one, and the rest is code.
       const gap = spaces.length > 4 ? 1 : spaces.length
       item = { strippedThere: indent.length + marker.length + 1, textColumn: indent.length + marker.length + 1 + gap }
     } else if (item && line.trim()) {
-      const lead = line.length - line.trimStart().length
       // Text at the margin after a blank line: the list is over.
-      if (lead === 0 && previousBlank) return aligned + src.slice(start)
+      if (lead === 0 && previousBlank && !fence) return aligned + src.slice(start)
+      const text = line.trimStart()
+      const run = FENCE.exec(text)?.[1]
+      if (fence) {
+        if (run && run[0] === fence.char && run.length >= fence.length && !text.slice(run.length).trim()) fence = null
+        else if (protect && ORDERED_ITEM.test(line)) line = `${line.slice(0, lead)}${NOT_AN_ITEM}${text}`
+      } else if (run && lead >= item.textColumn) fence = { char: run[0]!, length: run.length }
       if (lead >= item.textColumn) line = line.slice(item.textColumn - item.strippedThere)
     }
     previousBlank = !line.trim()
@@ -296,6 +314,19 @@ export function alignOrderedContinuations(src: string) {
     start = newline + 1
   }
   return aligned
+}
+
+/** Takes NOT_AN_ITEM out of the strings of `value`, however deep, in place. */
+function removeMarks(value: unknown, seen = new WeakSet<object>()) {
+  if (!value || typeof value !== 'object' || seen.has(value)) return
+  seen.add(value)
+  const entries = value as Record<string, unknown>
+  for (const key of Object.keys(entries)) {
+    const field = entries[key]
+    if (typeof field === 'string') {
+      if (field.includes(NOT_AN_ITEM)) entries[key] = field.replaceAll(NOT_AN_ITEM, '')
+    } else removeMarks(field, seen)
+  }
 }
 
 /** The first `count` lines of `text`. */
@@ -318,9 +349,12 @@ const FaithfulOrderedList = OrderedList.extend({
       // Tried at the start of every block: only an ordered list is worth the work.
       const end = src.indexOf('\n')
       if (!ORDERED_ITEM.test(end === -1 ? src : src.slice(0, end))) return orderedListTokenizer.tokenize(src, tokens, lexer)
-      const token = orderedListTokenizer.tokenize(alignOrderedContinuations(src), tokens, lexer)
+      const aligned = alignOrderedContinuations(src)
+      const token = orderedListTokenizer.tokenize(aligned, tokens, lexer)
+      if (!token) return token
+      if (aligned.includes(NOT_AN_ITEM)) removeMarks(token)
       // What it took from the source, as it was: marked goes on from there.
-      return token && { ...token, raw: firstLines(src, token.raw.split('\n').length) }
+      return { ...token, raw: firstLines(src, token.raw.split('\n').length) }
     },
   },
 })
