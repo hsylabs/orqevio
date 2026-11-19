@@ -42,17 +42,47 @@ const kept: Array<[string, string]> = [
   ['quotes', '> cita\n> larga'],
   ['rules', 'Antes\n\n---\n\nDespués'],
   ['accents and emoji', 'Canción ñandú 🎉 日本語'],
+  ['a code block that shows a fence', '````md\n```js\nconst a = 1\n```\n````\n\nDespués'],
+  ['a code block with backticks inside a line', '```\na ```b\n```'],
+  ['YAML front matter', '---\ntitle: Hola\ntags: [a, b]\n---\n\nTexto'],
+  ['TOML front matter', '+++\ntitle = "Hola"\n+++\n\nTexto'],
+  ['a rule at the start, which is not front matter', '---\n\nTexto\n\n---\n\nMás'],
+  ['tasks inside an ordered list', '1. paso\n   - [ ] a\n   - [x] b\n2. otro'],
+  ['a list inside an ordered list', '1. paso\n   - a\n   - b\n2. otro'],
+  ['links with spaces in the address', 'Ver [y](</ruta con espacios>) y [z](<https://a.test/x y>)'],
+  ['a link with parentheses in the address', '[Foo](https://es.wikipedia.org/wiki/Foo_(bar))'],
+  ['footnotes', 'Texto con nota[^1] y otra[^web].\n\n[^1]: La nota.\n\n[^web]: https://orqevio.com'],
+  ['a footnote of several lines', 'Uno[^larga], dos.\n\n[^larga]: Primera línea\n    y la segunda, sangrada.'],
+  ['front matter alone', '---\ntitle: Hola\n---'],
+  ['a private-use character in an ordered list, as an icon font uses', '1. paso \uE000 con icono\n   - [ ] a\n2. otro'],
+  ['tasks under a two-digit item', '10. diez\n    - [ ] a\n    - [x] b\n11. once'],
+  ['an ordered list inside another', '1. uno\n   1. sub\n   2. sub dos\n2. dos'],
 ]
 
 /** Read the same again: written in another, equivalent way. */
 const normalised: Array<[string, string, string]> = [
   ['named entities become their characters', 'Copyright &copy; y caf&eacute;', 'Copyright © y café'],
   ['an unclosed tag is escaped', 'a <b sin cerrar', 'a \\<b sin cerrar'],
+  ['front matter gets a blank line after it', '---\ntitle: Hola\n---\nTexto', '---\ntitle: Hola\n---\n\nTexto'],
+  ['an item with a parenthesis is written with a dot, its tasks side by side', '1) paso\n   - [ ] a\n   - [x] b', '1. paso\n   - [ ] a\n   - [x] b'],
+  ['a code block in an ordered list keeps its indentation', '1. paso\n\n   ```js\n   const a = 1\n   ```\n2. otro', '1. paso\n   ```js\n   const a = 1\n   ```\n2. otro'],
+  [
+    'a code block in an ordered list keeps a line that looks like an item',
+    '1. paso\n\n   ```python\n   def f():\n       x = 1\n       1. + 2\n       return x\n   ```\n2. otro',
+    '1. paso\n   ```python\n   def f():\n       x = 1\n       1. + 2\n       return x\n   ```\n2. otro',
+  ],
+  [
+    'a code block in an ordered list keeps a line like an item at its margin',
+    '1. paso\n\n   ~~~\n   2. no es un paso\n   ~~~\n2. otro',
+    '1. paso\n   ```\n   2. no es un paso\n   ```\n2. otro',
+  ],
 ]
 
 describe('Markdown round trip', () => {
   it.each(kept)('keeps %s', (_name, markdown) => {
     expect(roundTrip(markdown)).toBe(markdown)
+    // Saved again, it stays the same: nothing drifts a little more on each save.
+    expect(roundTrip(roundTrip(markdown))).toBe(markdown)
   })
 
   it.each(normalised)('%s', (_name, markdown, written) => {

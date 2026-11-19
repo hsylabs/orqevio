@@ -71,3 +71,46 @@ test('editing a page keeps the Markdown the editor cannot show', async ({ page }
   const content = async () => ((await (await page.request.get(`/api/pages/${pageId}`)).json()) as { content: string }).content
   await expect.poll(content).toBe(`${markdown} editado`)
 })
+
+// More Markdown the editor can't show, or used to write back differently: front matter, a code
+// block showing a fence, tasks under a numbered step, an address with spaces and footnotes. Opened
+// and edited in the editor, the page keeps all of it as it was.
+test('editing a page keeps front matter, fences in code, tasks in numbered steps, addresses with spaces and footnotes', async ({ page }) => {
+  // Made through the API before the browser opens anything: nothing is on its way when it does.
+  const workspace = (await (await page.request.post('/api/workspaces', { data: { name: 'Markdown fiel E2E' } })).json()) as { id: string }
+  const project = (await (await page.request.post(`/api/workspaces/${workspace.id}/projects`, { data: { name: 'Notas' } })).json()) as { id: string }
+  const markdown = [
+    '---\ntitle: Guía\ntags: [a, b]\n---',
+    'Así se escribe un bloque:',
+    '````md\n```js\nconst a = 1\n```\n````',
+    '1. Preparar\n   - [ ] revisar\n   - [x] enviar\n2. Publicar',
+    'Ver [la guía](</docs/guía de estilo>) y una nota[^1].',
+    '[^1]: La nota, con [enlace](https://orqevio.com).',
+    'Final',
+  ].join('\n\n')
+  const created = await page.request.post(`/api/projects/${project.id}/pages`, { data: { title: 'Fiel', content: markdown } })
+  expect(created.status(), await created.text()).toBe(201)
+  const pageId = ((await created.json()) as { id: string }).id
+
+  await page.goto(`/w/${workspace.id}/d/${pageId}`)
+  const editor = page.getByRole('textbox', { name: 'Contenido de la página' })
+  // Front matter and the footnote show as their source; the rest as usual.
+  await expect(editor.locator('pre[data-raw-markdown]').first()).toHaveText('---\ntitle: Guía\ntags: [a, b]\n---')
+  await expect(editor.locator('code[data-raw-markdown]')).toHaveText('[^1]')
+  await expect(editor.locator('pre code').first()).toContainText('```js')
+  await expect(editor.getByRole('link', { name: 'la guía' })).toBeVisible()
+  await expect(editor.getByRole('checkbox')).toHaveCount(2)
+
+  await editor.getByText('Final').click()
+  await page.keyboard.press('Control+End')
+  // The editor takes the new caret a moment after the browser moves it.
+  await page.waitForFunction(() => {
+    type Tiptap = { state: { selection: { to: number }; doc: { content: { size: number } } } }
+    const tiptap = (document.querySelector('.orq-prose') as (HTMLElement & { editor?: Tiptap }) | null)?.editor
+    return tiptap !== undefined && tiptap.state.selection.to === tiptap.state.doc.content.size - 1
+  })
+  await page.keyboard.type(' editado')
+  await expect(page.getByText('Guardado')).toBeVisible()
+  const content = async () => ((await (await page.request.get(`/api/pages/${pageId}`)).json()) as { content: string }).content
+  await expect.poll(content).toBe(`${markdown} editado`)
+})
