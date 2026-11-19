@@ -1,6 +1,8 @@
 import { type AnyExtension, type JSONContent, Node } from '@tiptap/core'
+import CodeBlock from '@tiptap/extension-code-block'
 import Image from '@tiptap/extension-image'
-import { TaskItem, TaskList } from '@tiptap/extension-list'
+import Link from '@tiptap/extension-link'
+import { ORDERED_LIST_MARKER_PATTERN, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
 import Paragraph from '@tiptap/extension-paragraph'
 import { TableKit } from '@tiptap/extension-table'
 import { Markdown, MarkdownManager, assumeContentType } from '@tiptap/markdown'
@@ -81,6 +83,82 @@ export const RawHtmlInline = Node.create({
   renderMarkdown: (node) => String(node.attrs?.html ?? ''),
 })
 
+// ── Raw Markdown ─────────────────────────────────────────────────
+// Markdown the editor has no way to show, kept as it was written and shown as its source: front
+// matter at the top of a document, footnote definitions and footnote references.
+
+export const RawMarkdownBlock = Node.create({
+  name: 'rawMarkdownBlock',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  draggable: false,
+  addAttributes() {
+    return { markdown: { default: '' } }
+  },
+  parseHTML() {
+    return [{ tag: 'pre[data-raw-markdown]', priority: 100, preserveWhitespace: 'full', getAttrs: (el) => ({ markdown: (el as HTMLElement).textContent ?? '' }) }]
+  },
+  renderHTML({ node }) {
+    return ['pre', { 'data-raw-markdown': '', class: 'orq-raw-html' }, node.attrs.markdown as string]
+  },
+  markdownTokenName: 'footnoteDefinition',
+  // A footnote definition, and the lines indented under it. Otherwise marked reads one whose text
+  // looks like an address as a link reference definition, which disappears, and escapes the rest.
+  markdownTokenizer: {
+    name: 'footnoteDefinition',
+    level: 'block',
+    // Asked at every paragraph with the rest of the document: only the paragraph matters.
+    start: (src: string) => {
+      const end = src.indexOf('\n\n')
+      return (end === -1 ? src : src.slice(0, end)).search(/(?:^|\n) {0,3}\[\^[^\]\s]+\]:/)
+    },
+    tokenize: (src: string) => {
+      const match = /^ {0,3}\[\^[^\]\s]+\]:[^\n]*(?:\n(?: {4}|\t)[^\n]*)*/.exec(src)
+      return match ? { type: 'footnoteDefinition', raw: match[0], text: match[0] } : undefined
+    },
+  },
+  parseMarkdown: (token, helpers) => helpers.createNode('rawMarkdownBlock', { markdown: String(token.raw ?? '') }),
+  renderMarkdown: (node) => String(node.attrs?.markdown ?? ''),
+})
+
+export const RawMarkdownInline = Node.create({
+  name: 'rawMarkdownInline',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  selectable: true,
+  addAttributes() {
+    return { markdown: { default: '' } }
+  },
+  parseHTML() {
+    return [{ tag: 'code[data-raw-markdown]', priority: 100, getAttrs: (el) => ({ markdown: (el as HTMLElement).textContent ?? '' }) }]
+  },
+  renderHTML({ node }) {
+    return ['code', { 'data-raw-markdown': '', class: 'orq-raw-html-inline' }, node.attrs.markdown as string]
+  },
+  markdownTokenName: 'footnoteReference',
+  // A footnote reference such as `[^1]`, which marked would read as text with brackets to escape.
+  markdownTokenizer: {
+    name: 'footnoteReference',
+    level: 'inline',
+    start: (src: string) => src.indexOf('[^'),
+    tokenize: (src: string) => {
+      const match = /^\[\^[^\]\s]+\](?![(:[])/.exec(src)
+      return match ? { type: 'footnoteReference', raw: match[0], text: match[0] } : undefined
+    },
+  },
+  parseMarkdown: (token, helpers) => helpers.createNode('rawMarkdownInline', { markdown: String(token.raw ?? '') }),
+  renderMarkdown: (node) => String(node.attrs?.markdown ?? ''),
+})
+
+/**
+ * YAML front matter: `---` on the first line, its fields, and `---` (or `...`) closing it. Not a
+ * rule, a setext heading and text, as marked reads it. A first `---` followed by a blank line is a
+ * rule, as it was.
+ */
+const FRONT_MATTER = /^---[ \t]*\r?\n(?![ \t]*\r?\n)[\s\S]*?\r?\n(?:---|\.\.\.)[ \t]*(?=\r?\n|$)/
+
 // ── Text ─────────────────────────────────────────────────────────
 
 /** Backslash-escapes what would open a block at the start of a line: headings, lists, quotes, rules, setext underlines. */
@@ -145,6 +223,108 @@ const FaithfulParagraph = Paragraph.extend({
 const escapeAlt = (alt: string) => alt.replace(/([\\[\]])/g, '\\$1')
 const destination = (src: string) => (/[\s()<>]/.test(src) ? `<${src.replace(/([<>])/g, '\\$1')}>` : src)
 
+/** Whether the parentheses in `href` pair up, as a link's address may hold them without `<>`. */
+function balancedParentheses(href: string) {
+  let depth = 0
+  for (const char of href) {
+    if (char === '(') depth++
+    else if (char === ')' && --depth < 0) return false
+  }
+  return depth === 0
+}
+
+// A link's address with spaces or angle brackets goes between `<>`, or it stops being a link.
+const FaithfulLink = Link.extend({
+  renderMarkdown: (node, helpers) => {
+    const href = String(node.attrs?.href ?? '')
+    const title = String(node.attrs?.title ?? '')
+    const address = /[\s<>]/.test(href) || !balancedParentheses(href) ? destination(href) : href
+    return `[${helpers.renderChildren(node)}](${address}${title ? ` "${title.replace(/"/g, '\\"')}"` : ''})`
+  },
+})
+
+// ── Code blocks ──────────────────────────────────────────────────
+
+/** A fence longer than any run of backticks that starts a line of the code, as CommonMark has it. */
+const fenceFor = (code: string) => '`'.repeat(Math.max(3, ...[...code.matchAll(/^ {0,3}(`{3,})/gm)].map((m) => m[1]!.length + 1)))
+
+// A block showing a fence (Markdown about Markdown, say) keeps it inside: a fence of three would
+// close the block there, and everything after it would become code.
+const FaithfulCodeBlock = CodeBlock.extend({
+  renderMarkdown: (node, helpers) => {
+    const language = String(node.attrs?.language ?? '')
+    const code = node.content ? helpers.renderChildren(node.content) : ''
+    const fence = fenceFor(code)
+    return `${fence}${language}\n${code}\n${fence}`
+  },
+})
+
+// ── Ordered lists ────────────────────────────────────────────────
+
+const ORDERED_ITEM = new RegExp(`^([ \\t]*)(${ORDERED_LIST_MARKER_PATTERN})([.)])( +)`)
+
+/**
+ * Lines under an item of an ordered list belong to it from the column its text starts at (3 for
+ * `1. `). @tiptap/extension-list 3.33.0 strips one column fewer (the marker and one space, without
+ * the `.`), and then trims only the first line: in `1. paso` with `   - [ ] a` and `   - [x] b`
+ * under it, the second task ends up inside the first. The extra column is taken off here first.
+ */
+export function alignOrderedContinuations(src: string) {
+  let item: { strippedThere: number; textColumn: number } | null = null
+  let aligned = ''
+  let previousBlank = false
+  // Line by line, up to where the list ends: the rest of the document is left as it is.
+  for (let start = 0; start <= src.length; ) {
+    const newline = src.indexOf('\n', start)
+    const end = newline === -1 ? src.length : newline
+    let line = src.slice(start, end)
+    const match = ORDERED_ITEM.exec(line)
+    if (match) {
+      const [, indent = '', marker = '', , spaces = ''] = match
+      // Five spaces or more after the marker: the text starts after one, and the rest is code.
+      const gap = spaces.length > 4 ? 1 : spaces.length
+      item = { strippedThere: indent.length + marker.length + 1, textColumn: indent.length + marker.length + 1 + gap }
+    } else if (item && line.trim()) {
+      const lead = line.length - line.trimStart().length
+      // Text at the margin after a blank line: the list is over.
+      if (lead === 0 && previousBlank) return aligned + src.slice(start)
+      if (lead >= item.textColumn) line = line.slice(item.textColumn - item.strippedThere)
+    }
+    previousBlank = !line.trim()
+    aligned += newline === -1 ? line : `${line}\n`
+    if (newline === -1) break
+    start = newline + 1
+  }
+  return aligned
+}
+
+/** The first `count` lines of `text`. */
+function firstLines(text: string, count: number) {
+  let end = -1
+  for (let i = 0; i < count; i++) {
+    end = text.indexOf('\n', end + 1)
+    if (end === -1) return text
+  }
+  return text.slice(0, end)
+}
+
+type ListTokenizer = { name: string; level: 'block'; start: (src: string) => number; tokenize: (src: string, tokens: unknown[], lexer: unknown) => { raw: string } | undefined }
+const orderedListTokenizer = (OrderedList.config as { markdownTokenizer: ListTokenizer }).markdownTokenizer
+
+const FaithfulOrderedList = OrderedList.extend({
+  markdownTokenizer: {
+    ...orderedListTokenizer,
+    tokenize: (src: string, tokens: unknown[], lexer: unknown) => {
+      // Tried at the start of every block: only an ordered list is worth the work.
+      const end = src.indexOf('\n')
+      if (!ORDERED_ITEM.test(end === -1 ? src : src.slice(0, end))) return orderedListTokenizer.tokenize(src, tokens, lexer)
+      const token = orderedListTokenizer.tokenize(alignOrderedContinuations(src), tokens, lexer)
+      // What it took from the source, as it was: marked goes on from there.
+      return token && { ...token, raw: firstLines(src, token.raw.split('\n').length) }
+    },
+  },
+})
+
 const FaithfulImage = Image.extend({
   renderMarkdown: (node) => {
     const { src = '', alt = '', title = '' } = (node.attrs ?? {}) as { src?: string; alt?: string; title?: string }
@@ -176,6 +356,15 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
       (parentNode?.type != null && internals.codeTypes.has(parentNode.type)) ||
       (node.marks ?? []).some((m) => internals.codeTypes.has(typeof m === 'string' ? m : m.type))
     return inCode ? text : encodeText(internals.escapeMarkdownSyntax(text))
+  }
+
+  // Front matter stays at the top as written; the rest is read as usual.
+  const parse = manager.parse.bind(manager)
+  manager.parse = (markdown: string) => {
+    const front = FRONT_MATTER.exec(markdown)
+    if (!front) return parse(markdown)
+    const rest = parse(markdown.slice(front[0].length).replace(/^(?:[ \t]*\r?\n)+/, ''))
+    return { ...rest, type: 'doc', content: [{ type: 'rawMarkdownBlock', attrs: { markdown: front[0] } }, ...(rest.content ?? [])] }
   }
 
   const parseInlineTokens = internals.parseInlineTokens.bind(manager)
@@ -218,15 +407,20 @@ export function documentExtensions(): AnyExtension[] {
       heading: { levels: [1, 2, 3, 4, 5, 6] },
       paragraph: false,
       underline: false,
-      link: {
-        openOnClick: false,
-        autolink: true,
-        linkOnPaste: true,
-        defaultProtocol: 'https',
-        isAllowedUri: (url, ctx) => SAFE_PROTOCOL.test(url) && ctx.defaultValidate(url),
-        HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: null },
-      },
+      link: false,
+      codeBlock: false,
+      orderedList: false,
     }),
+    FaithfulLink.configure({
+      openOnClick: false,
+      autolink: true,
+      linkOnPaste: true,
+      defaultProtocol: 'https',
+      isAllowedUri: (url, ctx) => SAFE_PROTOCOL.test(url) && ctx.defaultValidate(url),
+      HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: null },
+    }),
+    FaithfulCodeBlock,
+    FaithfulOrderedList,
     FaithfulParagraph,
     FaithfulMarkdown.configure({ markedOptions: { gfm: true } }),
     TaskList,
@@ -239,5 +433,7 @@ export function documentExtensions(): AnyExtension[] {
     FaithfulImage,
     RawHtmlBlock,
     RawHtmlInline,
+    RawMarkdownBlock,
+    RawMarkdownInline,
   ]
 }
