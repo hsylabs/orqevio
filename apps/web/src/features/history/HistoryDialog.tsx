@@ -1,4 +1,4 @@
-import { type DiffLine, HISTORY_BODY_KINDS, HISTORY_DAYS, type HistoryEntryDTO, diffLines } from '@orqevio/shared'
+import { type DiffLine, HISTORY_BODY_KINDS, HISTORY_DAYS, type HistoryEntryDTO, diffLines, withoutBidiControls } from '@orqevio/shared'
 import { ChevronDown, ChevronRight, History, RotateCcw, Undo2 } from 'lucide-react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { t } from 'i18next'
@@ -244,7 +244,7 @@ function describe(entry: HistoryEntryDTO): { key: KindKey; values: Record<string
     default:
       return {
         key: `kinds.${kind}` as KindKey,
-        values: { before: text(before), after: text(after), title: text(meta.title), text: text(meta.text), checklist: text(meta.checklist), name: text(meta.name), page: text(meta.page), from: text(meta.from), to: text(meta.to) },
+        values: { before: text(before), after: text(after), title: text(meta.title), text: text(meta.text), checklist: text(meta.checklist), name: text(typeof meta.name === 'string' ? withoutBidiControls(meta.name) : meta.name), page: text(meta.page), from: text(meta.from), to: text(meta.to) },
       }
   }
 }

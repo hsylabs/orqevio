@@ -43,7 +43,8 @@ export async function uploadFile(file: File, target: UploadTarget): Promise<Atta
   // The server refuses oversized files before reading them, which browsers report as a
   // network error; checking first gives the real reason.
   const limit = queryClient.getQueryData<MeDTO>(keys.me)?.limits.maxUploadBytes
-  if (limit !== undefined && file.size > limit) throw new ApiError(413, 'file_too_large', 'File too large')
+  // A copy before 1.2.1 with MAX_UPLOAD_MB set wrong gives no number: the server decides then.
+  if (typeof limit === 'number' && file.size > limit) throw new ApiError(413, 'file_too_large', 'File too large')
   return api<AttachmentDTO>('POST', `/${target.type === 'page' ? 'pages' : 'cards'}/${target.id}/attachments`, file)
 }
 

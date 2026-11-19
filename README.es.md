@@ -452,7 +452,7 @@ Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Despu�
 | `PORT` / `HOST` | `3000` / `0.0.0.0` | Dirección de escucha. Con Docker Compose, `PORT` es el puerto de tu máquina, y el contenedor siempre escucha en el 3000. |
 | `DATA_DIR` | `./data` | Carpeta de datos: base SQLite (`orqevio.db`) y adjuntos (`uploads/`). En Docker es el volumen `orqevio-data`. |
 | `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Ruta del archivo SQLite, si quieres separarlo de los adjuntos (solo desde el código fuente). |
-| `MAX_UPLOAD_MB` | `20` | Tamaño máximo por archivo. |
+| `MAX_UPLOAD_MB` | `20` | Tamaño máximo por archivo, en megabytes: un número como `20` o `2.5`, sin unidades. Si no lo es, la copia no arranca y dice por qué; en Cloudflare, se queda con 20 y lo dice en el registro del Worker. |
 | `BACKUP_DIR` | `DATA_DIR/backups` | Dónde van las copias de seguridad diarias. Pon una carpeta de otro disco para guardarlas aparte de los datos. |
 | `BACKUPS` | `on` | `off` desactiva las copias de seguridad diarias. |
 | `TRUST_PROXY` | `false` | Detrás de un proxy inverso, `true`, o el número de proxies que hay delante. La dirección del visitante para los límites de intentos fallidos pasa a ser la que el proxy añade al final de `X-Forwarded-For`, nunca lo que envió el visitante. |

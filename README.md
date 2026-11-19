@@ -452,7 +452,7 @@ The tests first claim the copy through the interface and try the access key. The
 | `PORT` / `HOST` | `3000` / `0.0.0.0` | Address to listen on. With Docker Compose, `PORT` is the port on your machine, and the container always listens on 3000. |
 | `DATA_DIR` | `./data` | Data folder: the SQLite database (`orqevio.db`) and attachments (`uploads/`). In Docker, it is the `orqevio-data` volume. |
 | `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Path to the SQLite file, if you want to keep it apart from the attachments (from source only). |
-| `MAX_UPLOAD_MB` | `20` | Maximum size per file. |
+| `MAX_UPLOAD_MB` | `20` | Maximum size per file, in megabytes: a number such as `20` or `2.5`, without units. Set otherwise, the copy doesn't start and says why; on Cloudflare, it keeps 20 and says so in the Worker's log. |
 | `BACKUP_DIR` | `DATA_DIR/backups` | Where the daily backups go. Set it to a folder on another disk to keep them apart from the data. |
 | `BACKUPS` | `on` | `off` turns the daily backups off. |
 | `TRUST_PROXY` | `false` | Behind a reverse proxy, `true`, or the number of proxies in front. The visitor's address for the limits on failed attempts is then the one the proxy adds at the end of `X-Forwarded-For`, never what the visitor sent. |
