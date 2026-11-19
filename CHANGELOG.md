@@ -6,6 +6,27 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-19
+
+### Changed
+- `MAX_UPLOAD_MB` takes a number of megabytes greater than 0, such as `20` or `2.5`. With Docker and Node, a copy given anything else, such as `20MB`, doesn't start, and says how to write it. It used to start with no limit on uploads, while the app refused every file. On Cloudflare, the copy keeps the default of 20 MB and says so once in the Worker's log. **Before updating, check this setting if you changed it.**
+
+### Fixed
+- Restoring a backup no longer gives back access to agents revoked since it was made. That includes the accesses cut off by recovering your access key because someone else may have it, and OAuth connections ended since. A backup from another copy, as when moving to a new server, still comes back with its agents. Restoring no longer takes the vault's key version back either, so a tab left open can't save items that no one could open.
+- On Cloudflare:
+  - a page mentioning more than 20 cards couldn't be saved: the editor kept retrying, and agents got an internal error;
+  - creating a board with 17 to 20 columns at once failed;
+  - a card with more than 100 checklists didn't open.
+- Vault:
+  - An item saved in one tab or device is no longer undone by another that still had an older copy, for example when starring it there. A deleted item no longer comes back the same way. The other tabs of the browser show the change at once. A tab or device that missed it says the item changed, keeps what you typed and shows the item as it is now.
+  - Signing out locks the vault in every tab of the browser at once, and they show the sign-in screen. When a session ends another way (it expires, you sign out from elsewhere, a backup is restored), the vault locks at the first request refused, and the app says your session ended. Signing in again always asks for the master password: the vault key used to stay in memory.
+- Documents:
+  - Ctrl+Z after a change that came from an agent or another session no longer undoes it. It undoes only what you wrote since.
+  - An open page shows at once a new title or icon given by an agent, and the subpages added or moved in another session.
+  - A conflict with another tab or device of your own says **Another session**, instead of your name.
+  - These stay as written when a page is saved: a code block holding a line of ```` ``` ````, YAML front matter, tasks under a numbered step, links to addresses with spaces, and footnotes. Some of them used to change on every save.
+- Attachment names no longer hide what a file is. The characters that change the direction of text, which can make a name ending in `exe` show as one ending in `png`, are taken out of names when a file is uploaded. Names stored before 1.2.1 are shown and downloaded without them.
+
 ## [1.2.0] - 2026-11-18
 
 ### Added
