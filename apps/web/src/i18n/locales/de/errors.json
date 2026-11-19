@@ -16,8 +16,10 @@
     "restore_place_in_trash": "Stell zuerst wieder her, wozu es gehört: Das liegt auch im Papierkorb.",
     "restore_place_gone": "Der Platz, zu dem es gehörte, existiert nicht mehr, und es gibt keinen anderen, wohin es könnte.",
     "vault_key_changed": "Der Tresor wurde in einem anderen Tab oder auf einem anderen Gerät geändert. Öffne ihn erneut.",
+    "vault_item_changed": "Dieser Eintrag wurde in einem anderen Tab oder auf einem anderen Gerät geändert. Du siehst ihn jetzt so, wie er ist: Nimm deine Änderung erneut vor, wenn sie noch nötig ist.",
     "too_many_columns": "Ein Board kann bis zu 20 Spalten enthalten.",
-    "vault_full": "Der Tresor fasst bis zu 5.000 Einträge. Lösche die, die du nicht mehr brauchst, um weitere hinzuzufügen."
+    "vault_full": "Der Tresor fasst bis zu 5.000 Einträge. Lösche die, die du nicht mehr brauchst, um weitere hinzuzufügen.",
+    "unauthorized": "Deine Sitzung ist beendet. Melde dich erneut an."
   },
   "notFound": "Das Element wurde nicht gefunden.",
   "server": "Auf dem Server ist etwas schiefgelaufen. Versuch es noch einmal.",

@@ -204,7 +204,7 @@ export class CardService {
     const items = await db
       .select()
       .from(checklistItems)
-      .where(inArray(checklistItems.checklistId, lists.map((l) => l.id)))
+      .where(inList(checklistItems.checklistId, lists.map((l) => l.id)))
       .orderBy(asc(checklistItems.position), asc(checklistItems.id))
     return lists.map((l) => ({
       id: l.id,

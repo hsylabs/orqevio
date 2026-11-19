@@ -1,6 +1,6 @@
 import i18next from 'i18next'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { ApiError, errorMessage, post } from '../src/lib/api'
+import { ApiError, errorMessage, get, onSessionEnded, post } from '../src/lib/api'
 import errors from '../src/i18n/locales/es/errors.json'
 
 beforeAll(() => i18next.init({ lng: 'es', resources: { es: { errors } }, ns: ['errors'] }))
@@ -31,5 +31,34 @@ describe('messages from the server, which speaks English', () => {
     expect(errorMessage(new ApiError(409, 'conflict', 'This card was modified since you loaded it'))).toBe(
       'Ha cambiado mientras tanto. Vuelve a cargarlo e inténtalo de nuevo.',
     )
+  })
+})
+
+describe('a session that ended', () => {
+  const answer = (status: number, code: string) => async () => new Response(JSON.stringify({ error: { code, message: 'x' } }), { status, headers: { 'Content-Type': 'application/json' } })
+
+  it('is told to whoever listens when a request is refused for it, and only then', async () => {
+    const ended = vi.fn()
+    const stop = onSessionEnded(ended)
+    try {
+      vi.stubGlobal('fetch', answer(401, 'invalid_access_key'))
+      await post('/auth/login', { accessKey: 'x' }).catch(() => {})
+      vi.stubGlobal('fetch', answer(403, 'forbidden'))
+      await get('/vault').catch(() => {})
+      expect(ended).not.toHaveBeenCalled()
+      vi.stubGlobal('fetch', answer(401, 'unauthorized'))
+      await get('/vault').catch(() => {})
+      expect(ended).toHaveBeenCalledTimes(1)
+    } finally {
+      stop()
+    }
+    await get('/vault').catch(() => {})
+    expect(ended).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the message for a session that ended', () => {
+  it('says so in the app language, not the server’s English', () => {
+    expect(errorMessage(new ApiError(401, 'unauthorized', 'Authentication required'))).toBe('Tu sesión ha terminado. Vuelve a entrar.')
   })
 })

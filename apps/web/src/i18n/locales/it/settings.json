@@ -87,6 +87,7 @@
     "restoreLoses": "Tutto torna indietro: spazi, documenti, schede, cassaforte, agenti, cestino e cronologia. Quello che è cambiato da allora va perso.",
     "restoreSafety": "Prima viene fatto un backup della copia com’è adesso, tenuto da parte, per poterci tornare.",
     "restoreSessions": "Tutte le sessioni si chiudono. Qui resti dentro, e la tua chiave di accesso è quella che usi adesso.",
+    "restoreAgents": "Gli agenti a cui hai tolto l’accesso da allora non lo riottengono.",
     "accessKey": "Chiave di accesso",
     "typeName": "Scrivi «{{name}}» per confermare",
     "restoreConfirm": "Ripristina"

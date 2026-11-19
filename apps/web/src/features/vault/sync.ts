@@ -1,9 +1,11 @@
-import type { VaultStateDTO } from '@orqevio/shared'
+import type { VaultItemRecordDTO, VaultStateDTO } from '@orqevio/shared'
 import { t } from 'i18next'
 import { toast } from 'sonner'
 import { ApiError, get } from '../../lib/api'
 import { keys, queryClient } from '../../lib/queries'
-import { getSession, lockVault, setAutoLock } from './session'
+import { decryptItem } from './crypto'
+import { getSession, lockVault, replaceSessionItems, sessionItemChanges, setAutoLock, updateSessionItems } from './session'
+import type { VaultItem } from './types'
 
 /**
  * Keeps every tab's view of the vault current.
@@ -38,7 +40,74 @@ export function announceVaultChange() {
   channel?.postMessage('changed')
 }
 
-if (channel) channel.onmessage = () => void freshVaultState().catch(() => {})
+/** Tells the other tabs that items were saved or deleted here: they read them again. */
+export function announceVaultItemsChange() {
+  channel?.postMessage('items')
+}
+
+let reloading: Promise<void> | null = null
+let readAgain = false
+
+/**
+ * Reads the items again, as the server has them now, into the open session: after another tab
+ * saved or deleted some, or when the server refused a save because another device changed the item.
+ *
+ * One read at a time, so an older one never lands after a newer one. Asked while one is on its
+ * way, it reads once more after it, and resolves then.
+ */
+export function reloadVaultItems(): Promise<void> {
+  if (reloading) {
+    readAgain = true
+    return reloading
+  }
+  reloading = (async () => {
+    try {
+      do {
+        readAgain = false
+        await readItems()
+      } while (readAgain)
+    } finally {
+      reloading = null
+    }
+  })()
+  return reloading
+}
+
+/**
+ * Puts in the session that holds `key` what a save, delete or import made here got back. When the
+ * items changed since it began (`before`, from sessionItemChanges()), a read may have come in
+ * meanwhile with newer versions than this answer, which took long: the items are read again.
+ */
+export function applyItemsChange(key: CryptoKey, before: number, change: (items: VaultItem[]) => VaultItem[], revisions: Record<string, string | null> = {}) {
+  const changedMeanwhile = sessionItemChanges() !== before
+  const applied = updateSessionItems(key, change, revisions)
+  if (applied && changedMeanwhile) void reloadVaultItems().catch(() => {})
+  return applied
+}
+
+async function readItems() {
+  const { key, userId } = getSession()
+  if (!key || !userId) return
+  const before = sessionItemChanges()
+  const records = await get<VaultItemRecordDTO[]>('/vault/items')
+  const items: VaultItem[] = []
+  const revisions: Record<string, string> = {}
+  for (const record of records) {
+    try {
+      items.push(await decryptItem(key, userId, record.id, record.data))
+      revisions[record.id] = record.updatedAt
+    } catch {
+      // Unlocking already said that some items could not be decrypted.
+    }
+  }
+  if (sessionItemChanges() === before) replaceSessionItems(key, items, revisions)
+  // Saved or deleted here meanwhile: what was read may come from before that, so read again
+  // (unless the vault locked). Never cleared here: another read may have been asked meanwhile.
+  else if (getSession().key === key) readAgain = true
+}
+
+// 'lock' is for session.ts, which locks the vault.
+if (channel) channel.onmessage = (event: MessageEvent) => void (event.data === 'items' ? reloadVaultItems() : event.data === 'changed' ? freshVaultState() : Promise.resolve()).catch(() => {})
 
 queryClient.getQueryCache().subscribe((event) => {
   if (event.type !== 'updated' || event.action.type !== 'success' || event.query.queryKey[0] !== keys.vault[0]) return

@@ -118,6 +118,7 @@
   },
   "editor": {
     "editTitle": "Eintrag bearbeiten",
+    "changedElsewhere": "Dieser Eintrag wurde in einem anderen Tab oder auf einem anderen Gerät geändert. Deine Änderungen sind noch da: Speichere erneut, um die anderen zu ersetzen.",
     "newLogin": "Neuer Login",
     "newNote": "Neue sichere Notiz",
     "name": "Name",

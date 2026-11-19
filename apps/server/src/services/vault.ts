@@ -13,6 +13,7 @@ import type { Deps } from './deps'
  * again, since that tab opened it. What it encrypts now nobody could open, so it is refused.
  */
 const keyChanged = () => new AppError(409, 'vault_key_changed', 'The vault changed since it was opened here: open it again')
+const itemChanged = () => new AppError(409, 'vault_item_changed', 'This item changed in another tab or device since it was opened here')
 
 /**
  * The vault stores opaque, client-side encrypted envelopes. The server has no
@@ -105,35 +106,41 @@ export class VaultService {
   /** Saves an item encrypted with the vault key the vault has now, checked and written at once. */
   async putItem(actor: Actor, itemId: string, input: unknown): Promise<VaultItemRecordDTO> {
     this.guard(actor)
-    const { data, keyVersion } = parse(vaultItemInput, input)
+    const { data, keyVersion, baseUpdatedAt } = parse(vaultItemInput, input)
     const row = this.deps.db.transaction((tx) => {
       const vault = tx.select({ wrappedKey: vaults.wrappedKey, keyVersion: vaults.keyVersion }).from(vaults).where(eq(vaults.userId, actor.userId)).get()
       if (!vault) throw conflict('Set up the vault first')
       // Reset since this tab opened it, whether it was set up again or not: its key is gone.
       if (!vault.wrappedKey || vault.keyVersion !== keyVersion) throw keyChanged()
-      const owner = tx.select({ userId: vaultItems.userId }).from(vaultItems).where(eq(vaultItems.id, itemId)).get()
+      const owner = tx.select({ userId: vaultItems.userId, updatedAt: vaultItems.updatedAt }).from(vaultItems).where(eq(vaultItems.id, itemId)).get()
       if (owner && owner.userId !== actor.userId) throw notFound('Item')
+      // Saved from what this tab had: refused when another tab or device changed or deleted it since.
+      if (baseUpdatedAt !== undefined && (owner ? owner.updatedAt.toISOString() : null) !== baseUpdatedAt) throw itemChanged()
       if (!owner) {
         const stored = tx.select({ n: count() }).from(vaultItems).where(eq(vaultItems.userId, actor.userId)).get()
         if ((stored?.n ?? 0) >= MAX_VAULT_ITEMS) throw new AppError(409, 'vault_full', `The vault holds up to ${MAX_VAULT_ITEMS} items`)
       }
+      // Always later than the version it replaces, even within the same millisecond: it is what tabs compare.
+      const updatedAt = new Date(Math.max(Date.now(), (owner?.updatedAt.getTime() ?? 0) + 1))
       return tx
         .insert(vaultItems)
-        .values({ id: itemId, userId: actor.userId, data, keyVersion })
-        .onConflictDoUpdate({ target: vaultItems.id, set: { data, keyVersion, updatedAt: new Date() }, where: eq(vaultItems.userId, actor.userId) })
+        .values({ id: itemId, userId: actor.userId, data, keyVersion, updatedAt })
+        .onConflictDoUpdate({ target: vaultItems.id, set: { data, keyVersion, updatedAt }, where: eq(vaultItems.userId, actor.userId) })
         .returning()
         .get()
     })
     return { id: row.id, data: row.data, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() }
   }
 
-  async deleteItem(actor: Actor, itemId: string) {
+  /** `baseUpdatedAt`, as for putItem: refused when the item changed since this tab read it. */
+  async deleteItem(actor: Actor, itemId: string, baseUpdatedAt?: string) {
     this.guard(actor)
-    const [row] = await this.deps.db
-      .delete(vaultItems)
-      .where(and(eq(vaultItems.id, itemId), eq(vaultItems.userId, actor.userId)))
-      .returning({ id: vaultItems.id })
-    if (!row) throw notFound('Item')
+    this.deps.db.transaction((tx) => {
+      const row = tx.select({ updatedAt: vaultItems.updatedAt }).from(vaultItems).where(and(eq(vaultItems.id, itemId), eq(vaultItems.userId, actor.userId))).get()
+      if (!row) throw notFound('Item')
+      if (baseUpdatedAt !== undefined && row.updatedAt.toISOString() !== baseUpdatedAt) throw itemChanged()
+      tx.delete(vaultItems).where(and(eq(vaultItems.id, itemId), eq(vaultItems.userId, actor.userId))).run()
+    })
   }
 
   /** Irreversibly wipes the vault (used when both the master password and recovery key are lost). */

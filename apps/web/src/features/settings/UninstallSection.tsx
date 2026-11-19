@@ -10,7 +10,7 @@ import { errorMessage, post } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { useBackups, useUpdates } from '../../lib/queries'
 import { BackupPlace } from './BackupsSection'
-import { lockVault } from '../vault/session'
+import { lockVaultEverywhere } from '../vault/session'
 
 const LOSSES = ['data', 'files', 'vault', 'agents'] as const
 
@@ -43,7 +43,7 @@ export function UninstallSection() {
     setBusy(true)
     try {
       await post('/account/uninstall', { accessKey, deleteBackups: where ? deleteBackups === true : false })
-      lockVault()
+      lockVaultEverywhere()
       queryClient.clear()
       navigate('/login', { replace: true })
     } catch (error) {

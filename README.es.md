@@ -48,7 +48,7 @@ Todo lo que cambian las personas y los agentes se puede recuperar durante 30 dí
 
 Si alguien cambió lo mismo después del cambio que deshaces, Orqevio dice quién y pregunta antes. Deshacer es un cambio más, así que también se puede deshacer. Solo las personas deshacen.
 
-**Copias de seguridad.** Más allá de 30 días, o si algo sale mal, las copias diarias devuelven la copia entera a como estaba un día concreto: en **Ajustes → Copias de seguridad**, elige una y restáurala tras escribir tu clave de acceso. Antes de restaurar, la copia hace una copia de seguridad de cómo está. Mira [Con Docker](#con-docker-recomendado-para-producción) y [En Cloudflare](#en-cloudflare-con-un-comando) para saber dónde se guardan.
+**Copias de seguridad.** Más allá de 30 días, o si algo sale mal, las copias diarias devuelven la copia entera a como estaba un día concreto: en **Ajustes → Copias de seguridad**, elige una y restáurala tras escribir tu clave de acceso. Antes de restaurar, la copia hace una copia de seguridad de cómo está. Tu clave de acceso sigue siendo la que usas ahora, y los agentes a los que hayas quitado el acceso desde entonces no lo recuperan. Mira [Con Docker](#con-docker-recomendado-para-producción) y [En Cloudflare](#en-cloudflare-con-un-comando) para saber dónde se guardan.
 
 **Qué pueden borrar y mover los agentes.** Cada token y cada conexión OAuth tiene el permiso **Puede borrar y mover**. Con él, un agente puede borrar lo que puede escribir, siempre a la papelera, y mover tarjetas a otro tablero y archivos a otra tarjeta o página. Los tokens y conexiones nuevos lo tienen salvo que lo desmarques; los creados antes de la 1.1.0 no, hasta que lo actives en **Agentes**, donde cada uno tiene su casilla. Sin él, un agente puede archivar tarjetas y mover tarjetas dentro de su tablero y páginas dentro de su proyecto.
 
@@ -452,7 +452,7 @@ Primero reclaman la copia desde la interfaz y prueban la clave de acceso. Despu�
 | `PORT` / `HOST` | `3000` / `0.0.0.0` | Dirección de escucha. Con Docker Compose, `PORT` es el puerto de tu máquina, y el contenedor siempre escucha en el 3000. |
 | `DATA_DIR` | `./data` | Carpeta de datos: base SQLite (`orqevio.db`) y adjuntos (`uploads/`). En Docker es el volumen `orqevio-data`. |
 | `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Ruta del archivo SQLite, si quieres separarlo de los adjuntos (solo desde el código fuente). |
-| `MAX_UPLOAD_MB` | `20` | Tamaño máximo por archivo. |
+| `MAX_UPLOAD_MB` | `20` | Tamaño máximo por archivo, en megabytes: un número como `20` o `2.5`, sin unidades. Si no lo es, la copia no arranca y dice por qué; en Cloudflare, se queda con 20 y lo dice en el registro del Worker. |
 | `BACKUP_DIR` | `DATA_DIR/backups` | Dónde van las copias de seguridad diarias. Pon una carpeta de otro disco para guardarlas aparte de los datos. |
 | `BACKUPS` | `on` | `off` desactiva las copias de seguridad diarias. |
 | `TRUST_PROXY` | `false` | Detrás de un proxy inverso, `true`, o el número de proxies que hay delante. La dirección del visitante para los límites de intentos fallidos pasa a ser la que el proxy añade al final de `X-Forwarded-For`, nunca lo que envió el visitante. |

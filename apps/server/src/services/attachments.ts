@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { type AttachmentDTO, attachmentMoveInput } from '@orqevio/shared'
+import { type AttachmentDTO, attachmentMoveInput, withoutBidiControls } from '@orqevio/shared'
 import { eq, sql } from 'drizzle-orm'
 import { type Actor, actorRef } from '../auth/actor'
 import { attachments, cards, pages } from '../db/schema'
@@ -17,7 +17,8 @@ const INLINE_IMAGES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/we
 
 export const toAttachmentDTO = (a: typeof attachments.$inferSelect): AttachmentDTO => ({
   id: a.id,
-  filename: a.filename,
+  // Names stored before 1.2.1 may still hold them.
+  filename: withoutBidiControls(a.filename),
   mimeType: a.mimeType,
   size: a.size,
   url: `/api/attachments/${a.id}`,
@@ -38,7 +39,7 @@ const MAX_FILENAME = 180
 
 /** A name safe to store and send back, at most 180 characters, keeping its extension when cut. */
 function safeFilename(name: string) {
-  const cleaned = name.replace(/[\\/\u0000-\u001f\u007f"]/g, '_').trim()
+  const cleaned = withoutBidiControls(name).replace(/[\\/\u0000-\u001f\u007f"]/g, '_').trim()
   if (cleaned.length <= MAX_FILENAME) return cleaned || 'file'
   const ext = /\.[^.\s]{1,16}$/.exec(cleaned)?.[0] ?? ''
   return cleaned.slice(0, MAX_FILENAME - ext.length).trimEnd() + ext

@@ -1,8 +1,9 @@
 import { randomBytes } from 'node:crypto'
 import { readdir } from 'node:fs/promises'
 import path from 'node:path'
-import { eq, inArray } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { inList } from '../src/db/in-list'
 import { attachments, pages } from '../src/db/schema'
 import { type Harness, createHarness, createPageChain, seedBoard, signUp } from './harness'
 
@@ -147,7 +148,7 @@ describe('documents', () => {
     const { client, workspaceId } = await signUp(h, 'Raíz')
     const { projectId, columns } = await seedBoard(client, workspaceId)
     const card = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Enlazada' })
-    const left = (ids: string[]) => h.db.select({ id: pages.id }).from(pages).where(inArray(pages.id, ids)).all()
+    const left = (ids: string[]) => h.db.select({ id: pages.id }).from(pages).where(inList(pages.id, ids)).all()
 
     // A page with 119 levels under it, a card reference halfway down and a file at the bottom.
     const tree = await createPageChain(client, projectId, 120)
@@ -156,7 +157,7 @@ describe('documents', () => {
     expect((await client.get(`/api/cards/${card.body.id}`)).body.pages).toHaveLength(1)
     expect((await client.del(`/api/pages/${tree[0]}`)).status).toBe(200)
     expect(left(tree)).toEqual([])
-    expect(h.db.select().from(attachments).where(inArray(attachments.pageId, tree)).all()).toEqual([])
+    expect(h.db.select().from(attachments).where(inList(attachments.pageId, tree)).all()).toEqual([])
     expect((await client.get(`/api/cards/${card.body.id}`)).body.pages).toEqual([])
     expect((await client.get(`/api/workspaces/${workspaceId}/search?q=honduras&type=page`)).body).toEqual([])
 

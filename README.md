@@ -48,7 +48,7 @@ Everything people and agents change can be taken back for 30 days.
 
 If someone changed the same thing after the change you undo, Orqevio says who and asks first. Undoing is a change of its own, so it can be undone too. Only people undo.
 
-**Backups.** Beyond 30 days, or if something goes wrong, the daily backups bring the whole copy back as it was on a given day: in **Settings → Backups**, pick one and restore it after typing your access key. Before restoring, the copy backs itself up as it is. See [With Docker](#with-docker-recommended-for-production) and [On Cloudflare](#on-cloudflare-with-one-command) for where they are kept.
+**Backups.** Beyond 30 days, or if something goes wrong, the daily backups bring the whole copy back as it was on a given day: in **Settings → Backups**, pick one and restore it after typing your access key. Before restoring, the copy backs itself up as it is. Your access key stays the one you use now, and agents whose access you took away since then don't get it back. See [With Docker](#with-docker-recommended-for-production) and [On Cloudflare](#on-cloudflare-with-one-command) for where they are kept.
 
 **What agents may delete and move.** Each token and OAuth connection has the permission **Can delete and move**. With it, an agent can delete what it can write, always to the trash, and move cards to another board and files to another card or page. New tokens and connections have it unless you untick it; those made before 1.1.0 don't until you turn it on in **Agents**, where each one has the switch. Without it, an agent can still archive cards, and move cards within their board and pages within their project.
 
@@ -452,7 +452,7 @@ The tests first claim the copy through the interface and try the access key. The
 | `PORT` / `HOST` | `3000` / `0.0.0.0` | Address to listen on. With Docker Compose, `PORT` is the port on your machine, and the container always listens on 3000. |
 | `DATA_DIR` | `./data` | Data folder: the SQLite database (`orqevio.db`) and attachments (`uploads/`). In Docker, it is the `orqevio-data` volume. |
 | `DATABASE_PATH` | `DATA_DIR/orqevio.db` | Path to the SQLite file, if you want to keep it apart from the attachments (from source only). |
-| `MAX_UPLOAD_MB` | `20` | Maximum size per file. |
+| `MAX_UPLOAD_MB` | `20` | Maximum size per file, in megabytes: a number such as `20` or `2.5`, without units. Set otherwise, the copy doesn't start and says why; on Cloudflare, it keeps 20 and says so in the Worker's log. |
 | `BACKUP_DIR` | `DATA_DIR/backups` | Where the daily backups go. Set it to a folder on another disk to keep them apart from the data. |
 | `BACKUPS` | `on` | `off` turns the daily backups off. |
 | `TRUST_PROXY` | `false` | Behind a reverse proxy, `true`, or the number of proxies in front. The visitor's address for the limits on failed attempts is then the one the proxy adds at the end of `X-Forwarded-For`, never what the visitor sent. |

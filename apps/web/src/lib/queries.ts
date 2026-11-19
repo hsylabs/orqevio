@@ -17,7 +17,7 @@ import {
   type UpdateStatusDTO,
 } from '@orqevio/shared'
 import { QueryClient, keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { ApiError, get } from './api'
+import { ApiError, get, onSessionEnded, sessionEnded } from './api'
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,12 +51,19 @@ export const keys = {
   backups: ['backups'] as const,
 }
 
+// A request refused because the session ended: the app asks for the session again, and shows the
+// sign-in screen. Not while it is being asked already: that is where it learnt it.
+onSessionEnded(() => {
+  if (!queryClient.isFetching({ queryKey: keys.me })) void queryClient.invalidateQueries({ queryKey: keys.me })
+})
+
 export const useMe = () =>
   useQuery({
     queryKey: keys.me,
     queryFn: async ({ signal }) => {
       const session = await get<MeDTO | AnonymousSessionDTO>('/auth/session', signal)
       if (!session.user) {
+        sessionEnded()
         // Keep the sign-in screens' view in sync, so they never act on a stale signed-in state.
         queryClient.setQueryData(keys.access, session)
         throw new ApiError(401, 'unauthorized', 'Authentication required')

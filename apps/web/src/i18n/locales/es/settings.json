@@ -87,6 +87,7 @@
     "restoreLoses": "Todo vuelve atrás: espacios, documentos, tarjetas, bóveda, agentes, papelera e historial. Lo que haya cambiado desde entonces se pierde.",
     "restoreSafety": "Antes se hace una copia de seguridad de cómo está ahora, guardada aparte, para que puedas volver a ella.",
     "restoreSessions": "Se cierran todas las sesiones. Aquí sigues dentro, y tu clave de acceso es la que usas ahora.",
+    "restoreAgents": "Los agentes a los que hayas quitado el acceso desde entonces no lo recuperan.",
     "accessKey": "Clave de acceso",
     "typeName": "Escribe «{{name}}» para confirmar",
     "restoreConfirm": "Restaurar"

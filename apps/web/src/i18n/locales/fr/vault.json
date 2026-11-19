@@ -122,6 +122,7 @@
   },
   "editor": {
     "editTitle": "Modifier l’élément",
+    "changedElsewhere": "Cet élément a changé dans un autre onglet ou sur un autre appareil. Vos modifications sont toujours là : enregistrez à nouveau pour remplacer les autres.",
     "newLogin": "Nouvel identifiant",
     "newNote": "Nouvelle note sécurisée",
     "name": "Nom",

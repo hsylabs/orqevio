@@ -9,7 +9,8 @@ import { Field } from '../../components/ui/Field'
 import { errorMessage, post } from '../../lib/api'
 import { bytes, dateTime, formatNumber, relativeTime } from '../../lib/format'
 import { keys, useBackups, useUpdates } from '../../lib/queries'
-import { lockVault } from '../vault/session'
+import { lockVaultEverywhere } from '../vault/session'
+import { announceVaultChange } from '../vault/sync'
 
 const code = <code className="font-mono text-[12px] break-words text-ink" />
 
@@ -108,7 +109,10 @@ function RestoreDialog({ backup, onClose }: { backup: BackupDTO | null; onClose:
     try {
       await post(`/backups/${backup.id}/restore`, { accessKey })
       // Everything changed underneath: start again from the restored copy, with the new session.
-      lockVault()
+      // The other tabs of this browser share that session: their vault locks too, and they read
+      // it again.
+      lockVaultEverywhere()
+      announceVaultChange()
       window.location.assign('/')
     } catch (error) {
       toast.error(errorMessage(error))
@@ -133,6 +137,7 @@ function RestoreDialog({ backup, onClose }: { backup: BackupDTO | null; onClose:
           <li>{t('backups.restoreLoses')}</li>
           <li>{t('backups.restoreSafety')}</li>
           <li>{t('backups.restoreSessions')}</li>
+          <li>{t('backups.restoreAgents')}</li>
         </ul>
         <Field label={t('backups.accessKey')} type="password" autoComplete="current-password" spellCheck={false} className="[&_input]:font-mono" value={accessKey} onChange={(e) => setAccessKey(e.target.value)} autoFocus />
         <Field label={t('backups.typeName', { name })} autoComplete="off" spellCheck={false} className="[&_input]:font-mono" value={typed} onChange={(e) => setTyped(e.target.value)} />

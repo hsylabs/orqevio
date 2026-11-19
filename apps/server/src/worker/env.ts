@@ -1,5 +1,6 @@
 import { installKind } from '@orqevio/shared'
 import type { Env } from '../env'
+import { workerMaxUploadBytes } from '../lib/upload-limit'
 import type { OrqevioCopy } from './copy'
 
 /** Bindings declared in wrangler.jsonc. */
@@ -42,7 +43,7 @@ export function workerEnv(bindings: Bindings): Env {
     migrationsDir: '',
     trustProxy: 0,
     secureCookies: true,
-    maxUploadBytes: Number(bindings.MAX_UPLOAD_MB ?? 20) * 1024 * 1024,
+    maxUploadBytes: workerMaxUploadBytes(bindings.MAX_UPLOAD_MB),
     setupCode: bindings.SETUP_CODE?.trim() || null,
     install: installKind(bindings.ORQEVIO_INSTALL, 'cloudflare'),
     copyName: bindings.ORQEVIO_COPY_NAME?.trim() || null,

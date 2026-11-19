@@ -1,6 +1,7 @@
 import type { ActorRef, PageDTO, RealtimeEvent, TrashEntryDTO } from '@orqevio/shared'
 import { MAX_MARKDOWN, extractReferences } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
+import { EditorState } from '@tiptap/pm/state'
 import { Bot, CornerDownRight, Ellipsis, FileText, FilePlus, FolderInput, History, Paperclip, SquareKanban, Trash, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
@@ -13,7 +14,7 @@ import { ApiError, errorMessage, get, patch } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { formatNumber, relativeTime } from '../../lib/format'
 import { keys, queryClient, usePage } from '../../lib/queries'
-import { onPageEvent, useAgentHighlight } from '../../lib/realtime'
+import { onPageEvent, refreshLive, useAgentHighlight } from '../../lib/realtime'
 import { restoreFromTrash } from '../../lib/trash'
 import { Attachments } from '../boards/Attachments'
 import { DueChip } from '../boards/CardItem'
@@ -289,7 +290,15 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
       version.current = fresh.version
       latest.current = fresh.content
       dirty.current = false
-      editorRef.current?.commands.setContent(fresh.content, { contentType: 'markdown', emitUpdate: false })
+      const editor = editorRef.current
+      if (editor) {
+        editor.commands.setContent(fresh.content, { contentType: 'markdown', emitUpdate: false })
+        // What came from elsewhere is not this person's to undo, and what they did before no longer
+        // fits the text: the editor's history starts again here, so Ctrl+Z can't take the new text
+        // back (and save the page without it), nor scramble it.
+        const { doc, plugins, selection } = editor.state
+        editor.view.updateState(EditorState.create({ doc, plugins, selection }))
+      }
       queryClient.setQueryData(keys.page(page.id), fresh)
       if (!titleFocused.current) setTitle(fresh.title)
       setConflict(null)
@@ -317,6 +326,9 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
           return
         }
         if (deletesThis(event)) return markGone.current(event.actor)
+        // Renamed, given another icon, or a subpage added, moved or deleted: the title, icon and
+        // subpages shown come with the page, and change without a new version of its text.
+        if (event.structure && (event.pageId === page.id || event.projectId === page.projectId)) refreshLive(keys.page(page.id))
         if (event.pageId !== page.id) return
         // Only changes to the text carry a version. Attachments and links leave it
         // alone: refresh the side lists, never the editor, or a just-pasted image
@@ -328,10 +340,11 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
         if (event.version <= version.current) return
         const self = event.actor.kind === 'user' && event.actor.id === me.user.id
         if (self && saving.current) return
-        if (dirty.current) setConflict({ by: event.actor.name })
+        // From another tab or device of this person: said as another session, not with their own name.
+        if (dirty.current) setConflict({ by: self ? null : event.actor.name })
         else void reloadFromServer(event.actor.kind === 'agent' ? event.actor.name : undefined)
       }),
-    [page.id, me.user.id, reloadFromServer, recheck, deletesThis],
+    [page.id, page.projectId, me.user.id, reloadFromServer, recheck, deletesThis],
   )
 
   async function keepMine() {

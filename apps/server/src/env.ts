@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { type InstallKind, installKind } from '@orqevio/shared'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { maxUploadBytes } from './lib/upload-limit'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 
@@ -80,6 +81,13 @@ export function parseTrustProxy(value: string | undefined) {
   throw new ConfigError(`TRUST_PROXY must be true, false or the number of reverse proxies in front of Orqevio (got "${value}")`)
 }
 
+/** MAX_UPLOAD_MB, which the copy does not start without when it is set wrong. */
+export function parseMaxUpload(value: string | undefined) {
+  const bytes = maxUploadBytes(value)
+  if (bytes === null) throw new ConfigError(`MAX_UPLOAD_MB must be a number of megabytes greater than 0, such as 20 (got "${value}")`)
+  return bytes
+}
+
 export function loadEnv(overrides: Partial<Env> = {}): Env {
   const nodeEnv = (process.env.NODE_ENV as Env['nodeEnv']) ?? 'development'
   const appUrls = overrides.appUrls ?? parseAppUrls(process.env.APP_URL ?? 'http://localhost:3000')
@@ -97,7 +105,7 @@ export function loadEnv(overrides: Partial<Env> = {}): Env {
     migrationsDir: path.resolve(process.env.MIGRATIONS_DIR ?? (existsSync(path.join(here, 'drizzle')) ? path.join(here, 'drizzle') : path.join(here, '../drizzle'))),
     trustProxy: overrides.trustProxy ?? parseTrustProxy(process.env.TRUST_PROXY),
     secureCookies: bool(process.env.SECURE_COOKIES, appUrls[0]!.startsWith('https://')),
-    maxUploadBytes: Number(process.env.MAX_UPLOAD_MB ?? 20) * 1024 * 1024,
+    maxUploadBytes: parseMaxUpload(process.env.MAX_UPLOAD_MB),
     setupCode: process.env.SETUP_CODE?.trim() || null,
     install: installKind(process.env.ORQEVIO_INSTALL, 'source'),
     copyName: process.env.ORQEVIO_COPY_NAME?.trim() || null,

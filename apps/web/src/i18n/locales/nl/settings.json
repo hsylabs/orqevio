@@ -85,6 +85,7 @@
     "restoreLoses": "Alles gaat terug: werkruimtes, documenten, kaarten, kluis, agents, prullenbak en geschiedenis. Wat sindsdien is veranderd, gaat verloren.",
     "restoreSafety": "Eerst wordt een back-up gemaakt van de installatie zoals ze nu is, apart bewaard, zodat je ernaar terug kunt.",
     "restoreSessions": "Alle sessies worden beëindigd. Hier blijf je ingelogd, en je toegangssleutel is de sleutel die je nu gebruikt.",
+    "restoreAgents": "Agents bij wie je sindsdien de toegang hebt ingetrokken, krijgen die niet terug.",
     "accessKey": "Toegangssleutel",
     "typeName": "Typ ‘{{name}}’ om te bevestigen",
     "restoreConfirm": "Terugzetten"

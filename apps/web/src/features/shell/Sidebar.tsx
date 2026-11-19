@@ -36,7 +36,7 @@ import { cn } from '../../lib/cn'
 import { keys, useUpdates } from '../../lib/queries'
 import { useAgentLive } from '../../lib/realtime'
 import { applyTheme, localPref, setLocalPref } from '../../lib/theme'
-import { lockVault, useVaultLocked } from '../vault/session'
+import { lockVaultEverywhere, useVaultLocked } from '../vault/session'
 import { useStructureActions } from './actions'
 import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 import { useWorkspace } from './workspace'
@@ -381,8 +381,11 @@ function UserMenu() {
   }
 
   async function logout() {
+    // Before, so nothing of the vault stays on screen in any tab while signing out; and after, so
+    // the other tabs, checking their session again, find it gone and show the sign-in screen.
+    lockVaultEverywhere()
     await post('/auth/logout').catch(() => {})
-    lockVault()
+    lockVaultEverywhere()
     queryClient.clear()
     navigate('/login', { replace: true })
   }
