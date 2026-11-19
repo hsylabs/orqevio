@@ -94,6 +94,7 @@
     "impossible": {
       "gone": "“{{title}}” no longer exists.",
       "place_gone": "Where “{{title}}” was no longer exists.",
+      "place_in_trash": "Where “{{title}}” was is in the trash.",
       "trash_gone": "“{{title}}” was deleted for good from the trash.",
       "refused": "“{{title}}” couldn’t be undone."
     },

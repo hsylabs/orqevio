@@ -1,4 +1,4 @@
-import { type TrashedDTO, UPLOAD_NAME_HEADER, withoutBidiControls } from '@orqevio/shared'
+import { TRASH_KEY, type TrashedDTO, UPLOAD_NAME_HEADER, withoutBidiControls } from '@orqevio/shared'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { AppError, badRequest } from '../lib/errors'
@@ -22,6 +22,12 @@ function decodeFileName(header: string | undefined) {
 function limit(limiter: RateLimiter, key: string) {
   const wait = limiter.hit(key)
   if (wait > 0) throw new AppError(429, 'rate_limited', `Too many attempts. Try again in ${Math.ceil(wait / 60)} min.`, undefined, { 'Retry-After': String(wait) })
+}
+
+/** Something in the trash, by the key in the path: `kind:id`. */
+function trashItemKey(value: string) {
+  if (!TRASH_KEY.test(value)) throw badRequest('Not a trash key')
+  return value
 }
 
 async function json(c: { req: { json: () => Promise<unknown> } }) {
@@ -182,6 +188,14 @@ export function createApi(env: Env) {
 
   // ── Trash (people only) ─────────────────────────────────────────
   api.get('/workspaces/:id/trash', async (c) => c.json(await c.get('services').trash.list(requireActor(c), c.req.param('id'))))
+  api.post('/workspaces/:id/trash/restore', async (c) =>
+    c.json(await c.get('services').trash.restoreItem(requireActor(c), c.req.param('id'), await json(c))),
+  )
+  api.get('/workspaces/:id/trash/:key', async (c) => c.json(await c.get('services').trash.tree(requireActor(c), c.req.param('id'), trashItemKey(c.req.param('key')))))
+  api.delete('/workspaces/:id/trash/:key', async (c) => {
+    await c.get('services').trash.purgeItem(requireActor(c), c.req.param('id'), trashItemKey(c.req.param('key')))
+    return c.body(null, 204)
+  })
   api.post('/trash/:id/restore', async (c) => c.json(await c.get('services').trash.restore(requireActor(c), c.req.param('id'))))
   api.delete('/trash/:id', async (c) => {
     await c.get('services').trash.purge(requireActor(c), c.req.param('id'))

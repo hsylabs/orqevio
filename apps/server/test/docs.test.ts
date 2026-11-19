@@ -139,7 +139,7 @@ describe('documents', () => {
     // about a second by itself; a lookup per page that scanned a table would take far longer.
     const [entry] = (await client.get(`/api/workspaces/${workspaceId}/trash`)).body
     const restoring = Date.now()
-    expect((await client.post(`/api/trash/${entry.id}/restore`)).status).toBe(200)
+    expect((await client.post(`/api/trash/${entry.trashId}/restore`)).status).toBe(200)
     expect(Date.now() - restoring).toBeLessThan(5000)
     expect((await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent('nota 7999')}&type=page`)).body).toHaveLength(1)
   })

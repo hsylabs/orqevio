@@ -13,7 +13,8 @@ import {
   type PageDTO,
   type SearchResultDTO,
   type TokenDTO,
-  type TrashEntryDTO,
+  type TrashNodeDTO,
+  type TrashTreeDTO,
   type UpdateStatusDTO,
 } from '@orqevio/shared'
 import { QueryClient, keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
@@ -127,8 +128,18 @@ export const useSearch = (wid: string, q: string, type?: 'card' | 'page', archiv
     staleTime: 10_000,
   })
 
+/** What is at the top of the trash. */
 export const useTrash = (wid: string) =>
-  useQuery({ queryKey: keys.trash(wid), queryFn: ({ signal }) => get<TrashEntryDTO[]>(`/workspaces/${wid}/trash`, signal) })
+  useQuery({ queryKey: keys.trash(wid), queryFn: ({ signal }) => get<TrashNodeDTO[]>(`/workspaces/${wid}/trash`, signal) })
+
+/** One thing in the trash with everything below it; kept under the trash's key, so changes refetch it too. */
+export const useTrashTree = (wid: string, key: string | null) =>
+  useQuery({
+    queryKey: [...keys.trash(wid), 'tree', key],
+    queryFn: ({ signal }) => get<TrashTreeDTO | null>(`/workspaces/${wid}/trash/${encodeURIComponent(key!)}`, signal),
+    enabled: key !== null,
+    retry: false,
+  })
 
 /** The changes of a page or a card, newest first, 50 at a time. */
 export const useHistory = (type: 'page' | 'card', id: string, enabled: boolean) =>

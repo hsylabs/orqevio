@@ -10,6 +10,7 @@ import {
   lineStats,
 } from '@orqevio/shared'
 import { and, desc, eq, getTableColumns, gt, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm'
+import { inList } from '../db/in-list'
 import { type Actor, hasScope } from '../auth/actor'
 import type { DbOrTx } from '../db/client'
 import { cards, history, pages } from '../db/schema'
@@ -224,6 +225,16 @@ export class HistoryService {
    * Forgets the history of what a trash entry holds, as it is deleted for good: the pages and
    * cards in it, and the checklists, items and files it took from a card or a page.
    */
+  /** Forgets the history of things deleted for good, by their ids: as the page or card, or what a change is about. */
+  forgetIds(db: DbOrTx, ids: readonly string[]) {
+    for (let i = 0; i < ids.length; i += 500) {
+      const chunk = ids.slice(i, i + 500)
+      db.delete(history)
+        .where(or(inList(history.entityId, chunk), inList(history.subjectId, chunk)))
+        .run()
+    }
+  }
+
   forget(db: DbOrTx, trashId: string) {
     const ids = sql`SELECT json_extract(data, '$.id') FROM trash_rows WHERE trash_id = ${trashId}`
     db.delete(history)

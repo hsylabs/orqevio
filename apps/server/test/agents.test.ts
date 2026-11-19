@@ -112,11 +112,17 @@ describe('agent tokens', () => {
 
     // Only people see the trash and bring things back.
     expect((await organizer.get(`/api/workspaces/${workspaceId}/trash`)).status).toBe(403)
-    const trash = (await client.get(`/api/workspaces/${workspaceId}/trash`)).body as Array<{ id: string; kind: string }>
-    expect(trash.map((t) => t.kind).sort()).toEqual(['attachment', 'checklist', 'checklist_item', 'label', 'link'])
-    expect((await organizer.post(`/api/trash/${trash[0]!.id}/restore`)).status).toBe(403)
-    expect((await organizer.del(`/api/trash/${trash[0]!.id}`)).status).toBe(403)
-    for (const entry of trash) expect((await client.post(`/api/trash/${entry.id}/restore`)).status).toBe(200)
+    const listed = async () => (await client.get(`/api/workspaces/${workspaceId}/trash`)).body as Array<{ trashId: string; key: string; kind: string }>
+    const trash = await listed()
+    // The item, deleted before its checklist, waits inside it.
+    expect(trash.map((t) => t.kind).sort()).toEqual(['attachment', 'checklist', 'label', 'link'])
+    expect((await organizer.post(`/api/trash/${trash[0]!.trashId}/restore`)).status).toBe(403)
+    expect((await organizer.del(`/api/trash/${trash[0]!.trashId}`)).status).toBe(403)
+    expect((await organizer.post(`/api/workspaces/${workspaceId}/trash/restore`, { key: trash[0]!.key })).status).toBe(403)
+    expect((await organizer.del(`/api/workspaces/${workspaceId}/trash/${trash[0]!.key}`)).status).toBe(403)
+    for (const entry of trash) expect((await client.post(`/api/trash/${entry.trashId}/restore`)).status).toBe(200)
+    for (const entry of await listed()) expect((await client.post(`/api/trash/${entry.trashId}/restore`)).status).toBe(200)
+    expect(await listed()).toEqual([])
     const back = await client.get(`/api/cards/${card.body.id}`)
     expect(back.body.checklists[0].items).toHaveLength(1)
     expect(back.body.pages.map((p: { id: string }) => p.id)).toEqual([page.body.id])

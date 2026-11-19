@@ -124,6 +124,27 @@ export class ActivityService {
       // Timestamps have millisecond precision: insertion order breaks ties.
       .orderBy(desc(activity.createdAt), desc(sql`rowid`))
       .limit(Math.min(opts.limit ?? 30, 100))
-    return rows.map(toActivityDTO)
+    return this.markTrashed(workspaceId, rows.map(toActivityDTO))
+  }
+
+  /**
+   * Entries about something that is in the trash now say so, with its key there: a link to it
+   * would find nothing. What was deleted for good is in neither, and is told as text.
+   */
+  private markTrashed(workspaceId: string, entries: ActivityDTO[]) {
+    const ids = [...new Set(entries.filter((e) => e.action !== 'trash.purged' && TRASH_TABLE[e.entityType]).map((e) => e.entityId))]
+    if (ids.length === 0) return entries
+    const found = this.deps.db.all<{ tableName: string; id: string }>(
+      sql`SELECT r.table_name AS tableName, json_extract(r.data, '$.id') AS id FROM trash_rows r JOIN trash t ON t.id = r.trash_id
+          WHERE t.workspace_id = ${workspaceId} AND json_extract(r.data, '$.id') IN (SELECT value FROM json_each(${JSON.stringify(ids)}))`,
+    )
+    const trashed = new Set(found.map((r) => `${r.tableName}|${r.id}`))
+    return entries.map((e) => {
+      const table = e.action === 'trash.purged' ? undefined : TRASH_TABLE[e.entityType]
+      return table && trashed.has(`${table}|${e.entityId}`) ? { ...e, inTrash: `${e.entityType}:${e.entityId}` } : e
+    })
   }
 }
+
+/** The table of the trash holding each kind of thing activity is about. */
+const TRASH_TABLE: Partial<Record<EntityType, string>> = { project: 'projects', board: 'boards', column: 'board_columns', card: 'cards', label: 'labels', page: 'pages' }

@@ -38,7 +38,7 @@ export interface IncomingFile {
 const MAX_FILENAME = 180
 
 /** A name safe to store and send back, at most 180 characters, keeping its extension when cut. */
-function safeFilename(name: string) {
+export function safeFilename(name: string) {
   const cleaned = withoutBidiControls(name).replace(/[\\/\u0000-\u001f\u007f"]/g, '_').trim()
   if (cleaned.length <= MAX_FILENAME) return cleaned || 'file'
   const ext = /\.[^.\s]{1,16}$/.exec(cleaned)?.[0] ?? ''

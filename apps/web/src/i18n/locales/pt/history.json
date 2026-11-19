@@ -103,6 +103,7 @@
     "impossible": {
       "gone": "“{{title}}” não existe mais.",
       "place_gone": "O lugar onde “{{title}}” estava não existe mais.",
+      "place_in_trash": "O lugar onde “{{title}}” estava está na lixeira.",
       "trash_gone": "“{{title}}” foi excluído de vez da lixeira.",
       "refused": "Não foi possível desfazer “{{title}}”."
     },

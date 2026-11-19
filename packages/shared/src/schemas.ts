@@ -231,3 +231,33 @@ export const undoInput = z
     dryRun: z.boolean().default(false),
   })
   .refine((v) => (v.ids === undefined) !== (v.since === undefined), { message: 'Send either ids or since' })
+
+// ── Trash ────────────────────────────────────────────────────────
+/** Something in the trash, by key: `kind:id`, or `link:<card id>:<page id>`. */
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+export const TRASH_KEY = new RegExp(`^(?:(?:project|board|column|card|page|attachment|label|checklist|checklist_item):${UUID}|link:${UUID}:${UUID})$`, 'i')
+export const trashKey = z.string().regex(TRASH_KEY, 'Not a trash key')
+/**
+ * Restoring something from the trash with everything below it but what is left out (`exclude`).
+ * `to` says where: where it was (`original`), with its place brought back too (`recreate`), or
+ * in another container (`other`). Names already used where things go back are changed
+ * (`names`) or kept on purpose (`keepNames`). Other ends of its relations that are in the
+ * trash come back too when in `include`. `dryRun` only plans.
+ */
+export const trashRestoreInput = z.object({
+  key: trashKey,
+  exclude: z.array(trashKey).max(10_000).default([]),
+  to: z
+    .discriminatedUnion('kind', [
+      z.object({ kind: z.literal('original') }),
+      z.object({ kind: z.literal('recreate') }),
+      z.object({ kind: z.literal('other'), parent: z.object({ kind: z.enum(['project', 'board', 'column', 'card', 'page', 'checklist']), id }) }),
+    ])
+    .optional(),
+  names: z.record(trashKey, name(300)).default({}),
+  keepNames: z.array(trashKey).max(10_000).default([]),
+  include: z.array(trashKey).max(1000).default([]),
+  dryRun: z.boolean().default(false),
+})
+export type TrashRestoreInput = z.infer<typeof trashRestoreInput>
+export const trashPurgeInput = z.object({ key: trashKey, dryRun: z.boolean().default(false) })

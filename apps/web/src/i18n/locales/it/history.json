@@ -103,6 +103,7 @@
     "impossible": {
       "gone": "«{{title}}» non esiste più.",
       "place_gone": "Il posto in cui si trovava «{{title}}» non esiste più.",
+      "place_in_trash": "Il posto in cui si trovava «{{title}}» è nel cestino.",
       "trash_gone": "«{{title}}» è stato eliminato definitivamente dal cestino.",
       "refused": "Impossibile annullare «{{title}}»."
     },

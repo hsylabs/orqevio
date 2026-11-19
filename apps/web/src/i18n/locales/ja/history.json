@@ -85,6 +85,7 @@
     "impossible": {
       "gone": "「{{title}}」はもう存在しません。",
       "place_gone": "「{{title}}」があった場所はもう存在しません。",
+      "place_in_trash": "「{{title}}」があった場所はゴミ箱にあります。",
       "trash_gone": "「{{title}}」はゴミ箱から完全に削除されました。",
       "refused": "「{{title}}」を元に戻せませんでした。"
     },

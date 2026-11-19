@@ -48,6 +48,7 @@ const LIGHT_COLUMNS = (() => {
 interface Check {
   status: UndoStatus
   reason?: UndoPlanItemDTO['reason']
+  trashKey?: string
   current?: HistoryValue
   /** For a conflict found on something else than the change itself: who made the newer change. */
   by?: ActorRef | null
@@ -198,6 +199,7 @@ export class UndoService {
       entityTitle: title ?? (typeof row.meta.title === 'string' ? row.meta.title : ''),
       status: check.status,
       ...(check.reason ? { reason: check.reason } : {}),
+      ...(check.trashKey ? { trashKey: check.trashKey } : {}),
       ...(check.status === 'conflict' ? { changedBy: check.by !== undefined ? check.by : this.changedSince(row, check.exists === undefined, undoing, state), current: check.current ?? null } : {}),
     }
   }
@@ -308,37 +310,45 @@ export class UndoService {
     return id !== null && Boolean(this.deps.db.select({ id: trash.id }).from(trash).where(eq(trash.id, id)).get())
   }
 
+  /** The key of `kind:id` in this workspace's trash, when it is there. */
+  private inTrash(workspaceId: string, kind: 'project' | 'column' | 'page' | 'card', id: string | null) {
+    if (!id) return null
+    const table = { project: 'projects', column: 'board_columns', page: 'pages', card: 'cards' }[kind]
+    const found = this.deps.db.get<{ found: number }>(
+      sql`SELECT 1 AS found FROM trash_rows r JOIN trash t ON t.id = r.trash_id WHERE t.workspace_id = ${workspaceId} AND r.table_name = ${table} AND json_extract(r.data, '$.id') = ${id} LIMIT 1`,
+    )
+    return found ? `${kind}:${id}` : null
+  }
+
   /**
-   * Where the page or card a deletion took away goes back, when that is not where it was:
-   * restoring puts it elsewhere if its place is gone by then (TrashService.place). By then, the
-   * newer changes being undone have brought back what they bring back (`state.restoring`).
-   * undefined: where it was; null: nowhere it fits.
+   * Whether the page or card a deletion took away can go back where it was: undoing never puts
+   * it anywhere else. Its place is there, or comes back with the newer changes being undone
+   * (`state.restoring`); a card follows its column if that went to another board. Otherwise:
+   * that place is in the trash (with its key there) or gone for good.
    */
-  private returnPlace(row: Row, state: State): PagePlace | CardPlace | null | undefined {
+  private returnPlace(row: Row, state: State): CardPlace | { reason: 'place_in_trash'; trashKey: string } | { reason: 'place_gone' } | undefined {
     const db = this.deps.db
     const trashId = typeof row.meta.trashId === 'string' ? row.meta.trashId : ''
     const [kept] = this.keptRows(new Set([trashId]), row.entityType === 'page' ? 'pages' : 'cards', 'id', row.entityId)
     if (!kept) return undefined
     const data = kept.data
+    const missing = (kind: 'project' | 'column' | 'page', id: string | null) => {
+      const trashKey = this.inTrash(row.workspaceId, kind, id)
+      return trashKey ? { reason: 'place_in_trash' as const, trashKey } : { reason: 'place_gone' as const }
+    }
     if (row.entityType === 'page') {
       const parentId = data.parent_id == null ? null : String(data.parent_id)
-      const parentThere = parentId !== null && (Boolean(db.get(sql`SELECT 1 AS found FROM pages WHERE id = ${parentId}`)) || this.keptRows(state.restoring, 'pages', 'id', parentId).length > 0)
-      if (parentThere) return undefined
-      // Without its parent, at the top of its project, or of the first project if that one is gone.
-      const project = db.get<{ id: string }>(sql`SELECT id FROM projects WHERE id = ${data.project_id}`)?.id ??
-        db.get<{ id: string }>(sql`SELECT id FROM projects WHERE workspace_id = ${row.workspaceId} ORDER BY position, id LIMIT 1`)?.id
-      if (!project) return null
-      return parentId === null && project === data.project_id ? undefined : { projectId: project, parentId: null }
+      if (parentId !== null) {
+        const there = Boolean(db.get(sql`SELECT 1 AS found FROM pages WHERE id = ${parentId}`)) || this.keptRows(state.restoring, 'pages', 'id', parentId).length > 0
+        return there ? undefined : missing('page', parentId)
+      }
+      const projectId = String(data.project_id)
+      return db.get(sql`SELECT 1 AS found FROM projects WHERE id = ${projectId}`) ? undefined : missing('project', projectId)
     }
-    // Its column, wherever it is now; or else the first column of its board, or of the first board.
-    const column = db.get<{ board_id: string }>(sql`SELECT board_id FROM board_columns WHERE id = ${data.column_id}`)
-    if (column) return column.board_id === data.board_id ? undefined : { boardId: column.board_id, columnId: String(data.column_id) }
-    const first = (scope: SQL) =>
-      db.get<{ id: string; board_id: string }>(
-        sql`SELECT c.id, b.id AS board_id FROM board_columns c JOIN boards b ON b.id = c.board_id JOIN projects p ON p.id = b.project_id WHERE ${scope} ORDER BY p.position, p.id, b.position, b.id, c.position, c.id LIMIT 1`,
-      )
-    const target = first(sql`c.board_id = ${data.board_id}`) ?? first(sql`c.workspace_id = ${row.workspaceId}`)
-    return target ? { boardId: target.board_id, columnId: target.id } : null
+    const columnId = String(data.column_id)
+    const column = db.get<{ board_id: string }>(sql`SELECT board_id FROM board_columns WHERE id = ${columnId}`)
+    if (!column) return missing('column', columnId)
+    return column.board_id === data.board_id ? undefined : { boardId: column.board_id, columnId }
   }
 
   /** How undoing this change stands, against `state`: now, and after the newer changes being undone. */
@@ -385,10 +395,15 @@ export class UndoService {
       place?: () => boolean,
       key = fieldKey(row),
       back: HistoryValue = before,
+      /** Where the old place is in the trash, when it is: its key there. */
+      inTrash?: () => string | null,
     ): Check => {
       const now = state.values.has(key) ? state.values.get(key)! : current
       if (same(now, back)) return { status: 'unchanged' }
-      if (place && !place()) return { status: 'impossible', reason: 'place_gone' }
+      if (place && !place()) {
+        const trashKey = inTrash?.()
+        return trashKey ? { status: 'impossible', reason: 'place_in_trash', trashKey } : { status: 'impossible', reason: 'place_gone' }
+      }
       const status = same(now, after) ? 'ready' : 'conflict'
       if (status === 'ready') state.values.set(key, back)
       return { status, current: now }
@@ -418,9 +433,9 @@ export class UndoService {
       case 'page.deleted':
       case 'card.deleted': {
         if (has(entityKey, () => entityExists)) return { status: 'unchanged' }
-        // Where it goes back: where it was, unless that place is gone by then.
+        // Where it goes back: where it was, and nowhere else.
         const place = this.returnPlace(row, state)
-        if (place === null) return { status: 'impossible', reason: 'place_gone' }
+        if (place && 'reason' in place) return { status: 'impossible', ...place }
         const check = bringBack(entityKey, () => entityExists)
         if (check.status === 'ready' && place) state.values.set(`${row.entityId}|${row.entityType}.moved|`, place)
         return check
@@ -456,7 +471,9 @@ export class UndoService {
           )
         }
         // One move, in the history of both places: keyed by the file, so undoing both entries moves it once.
-        return value({ cardId: at.cardId, pageId: at.pageId }, (a, b) => fileAt(a) === fileAt(b), there, key)
+        return value({ cardId: at.cardId, pageId: at.pageId }, (a, b) => fileAt(a) === fileAt(b), there, key, before, () =>
+          this.inTrash(row.workspaceId, back?.pageId ? 'page' : 'card', back?.pageId ?? back?.cardId ?? null),
+        )
       }
     }
 
@@ -482,6 +499,9 @@ export class UndoService {
               target === null ||
               Boolean(one(db.select({ id: pages.id }).from(pages).where(and(eq(pages.id, target ?? ''), eq(pages.projectId, page.projectId))))) ||
               kept('pages', target ?? '').some(({ data }) => data.project_id === page.projectId),
+            fieldKey(row),
+            before,
+            () => this.inTrash(row.workspaceId, 'page', target ?? null),
           )
         }
       }
@@ -552,6 +572,9 @@ export class UndoService {
             (a, b) => columnOf(a) === columnOf(b),
             // Its old column, on its board or another one of the same workspace.
             () => Boolean(one(db.select({ id: columns.id }).from(columns).where(and(eq(columns.id, target ?? ''), eq(columns.workspaceId, card.workspaceId))))),
+            key,
+            before,
+            () => this.inTrash(row.workspaceId, 'column', target ?? null),
           )
           // Back to another board, it leaves the labels it has on this one: newer labels are a conflict.
           const toOtherBoard = (before as CardPlace | null)?.boardId !== undefined && (before as CardPlace).boardId !== place.boardId

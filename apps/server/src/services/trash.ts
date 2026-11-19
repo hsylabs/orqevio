@@ -5,22 +5,29 @@ import {
   type RestoredDTO,
   TRASH_DAYS,
   type TrashContents,
-  extractReferences,
-  type TrashEntryDTO,
   type TrashKind,
+  type TrashNodeDTO,
+  type TrashPlanDTO,
+  type TrashRestoreInput,
+  type TrashTreeDTO,
+  extractReferences,
+  trashRestoreInput,
 } from '@orqevio/shared'
-import { type SQL, and, desc, eq, getTableColumns, isNotNull, lte, sql } from 'drizzle-orm'
+import { type SQL, and, eq, getTableColumns, lte, sql } from 'drizzle-orm'
 import { type SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core'
 import type { Actor } from '../auth/actor'
 import type { DbOrTx } from '../db/client'
 import * as schema from '../db/schema'
 import { AppError, notFound } from '../lib/errors'
 import { keyAtEnd } from '../lib/positions'
+import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { ActivityService } from './activity'
+import { safeFilename } from './attachments'
 import type { Deps } from './deps'
 import type { Change, HistoryService } from './history'
 import { deletePageTrees, pageTree } from './pages'
+import { type IndexRow, NAME_COLUMN, NAME_MAX, type Node, type Plan, type Ref, TrashIndex, planDTO, planRestore, restoreError } from './trash-tree'
 
 /**
  * The tables an item in the trash can hold rows of, in the order they go back in:
@@ -39,8 +46,8 @@ const TABLES = {
   card_page_links: schema.cardPageLinks,
   attachments: schema.attachments,
 } satisfies Record<string, SQLiteTable>
-type TableName = keyof typeof TABLES
-const ORDER = Object.keys(TABLES) as TableName[]
+export type TableName = keyof typeof TABLES
+export const ORDER = Object.keys(TABLES) as TableName[]
 
 /** The table holding the item itself. */
 const ROOT_TABLE: Record<TrashKind, TableName> = {
@@ -123,8 +130,6 @@ class Snapshot {
     return this.rows.map((row, i) => ({ row, i })).sort((a, b) => ORDER.indexOf(a.row.table) - ORDER.indexOf(b.row.table) || a.i - b.i).map((x) => x.row)
   }
 }
-
-const restoreError = (code: 'restore_place_in_trash' | 'restore_place_gone', message: string, details?: unknown) => new AppError(409, code, message, details)
 
 /**
  * The trash. Deleting an item copies its rows, and those of everything it holds, into
@@ -339,11 +344,24 @@ export class TrashService {
 
   // ── People's side: listing, restoring, deleting for good ─────
 
-  async list(actor: Actor, workspaceId: string): Promise<TrashEntryDTO[]> {
+  /** What is at the top of the trash: what isn't held by anything else in it. Newest first. */
+  async list(actor: Actor, workspaceId: string): Promise<TrashNodeDTO[]> {
     this.access.requireUser(actor)
     await this.access.workspace(actor, workspaceId)
-    const rows = await this.deps.db.select().from(schema.trash).where(eq(schema.trash.workspaceId, workspaceId)).orderBy(desc(schema.trash.deletedAt))
-    return rows.map(toTrashEntryDTO)
+    const index = TrashIndex.load(this.deps.db, workspaceId)
+    return index.top().map((node) => index.dto(node))
+  }
+
+  /**
+   * One thing in the trash, with everything below it and what holds it there; null when it is
+   * not in the trash (any more): asking is how the app finds out.
+   */
+  async tree(actor: Actor, workspaceId: string, key: string): Promise<TrashTreeDTO | null> {
+    this.access.requireUser(actor)
+    await this.access.workspace(actor, workspaceId)
+    const index = TrashIndex.load(this.deps.db, workspaceId)
+    const node = index.node(key)
+    return node ? index.tree(node) : null
   }
 
   private async load(actor: Actor, trashId: string) {
@@ -354,180 +372,282 @@ export class TrashService {
     return entry
   }
 
-  /** Puts the item back, with everything it held. If its place is gone, in the first one available. */
-  async restore(actor: Actor, trashId: string): Promise<RestoredDTO> {
-    const entry = await this.load(actor, trashId)
-    const result = this.deps.db.transaction((tx) => {
-      const rows = tx
-        .select({ table: schema.trashRows.tableName, data: schema.trashRows.data })
-        .from(schema.trashRows)
-        .where(eq(schema.trashRows.trashId, trashId))
-        .orderBy(schema.trashRows.id)
-        .all() as Captured[]
-      const root = rows.find((r) => r.table === ROOT_TABLE[entry.kind])
-      if (!root) throw notFound('Trash entry')
-      const placed = this.place(tx, entry.workspaceId, entry.kind, root.data, rows)
-      const reinsert = new Reinsert(tx)
-      for (const row of rows) {
-        // Mentions come from what pages say now: they are rebuilt below, not put back as they were.
-        if (row.table === 'card_page_links' && row.data.source === 'mention') continue
-        // Without the item itself nothing comes back: the transaction rolls back and the entry stays.
-        if (!reinsert.insert(row) && row === root) throw restoreError('restore_place_gone', 'It no longer fits anywhere it could go back to.')
-      }
-      rebuildMentions(tx, entry.workspaceId, reinsert.cards, reinsert.pages)
-      const restored = this.restoredChange(tx, entry.kind, root.data, { trashId, movedTo: placed.movedTo })
-      if (restored) this.history.record(tx, actor, entry.workspaceId, restored)
-      tx.delete(schema.trash).where(eq(schema.trash.id, trashId)).run()
-      return placed
+  /**
+   * Restores something with everything below it but what is left out, where the person says.
+   * With `dryRun`, only says what that would do. Without it, it does exactly that, worked out
+   * again in the same transaction: if anything is still to decide (where, or names already
+   * used there), nothing is done and the plan says what.
+   */
+  async restoreItem(actor: Actor, workspaceId: string, body: unknown): Promise<TrashPlanDTO | RestoredDTO> {
+    this.access.requireUser(actor)
+    await this.access.workspace(actor, workspaceId)
+    const input: TrashRestoreInput = parse(trashRestoreInput, body)
+    if (input.dryRun) {
+      const index = TrashIndex.load(this.deps.db, workspaceId)
+      return planDTO(index, planRestore(index, input))
+    }
+    const done = this.deps.db.transaction((tx) => {
+      const index = TrashIndex.load(tx, workspaceId)
+      const plan = planRestore(index, input)
+      if (plan.missing.length) throw new AppError(409, 'restore_incomplete', 'Say where it goes back, and what to do with names already used there, first.', planDTO(index, plan))
+      return this.apply(tx, actor, workspaceId, plan)
     })
-    await this.activity.record(
-      actor,
-      entry.workspaceId,
-      { action: 'trash.restored', entityType: result.entityType, entityId: result.entityId, summary: entry.title, meta: { kind: entry.kind, ...(result.movedTo ? { movedTo: result.movedTo } : {}) } },
-      result.event,
-    )
-    return { kind: entry.kind, entityId: entry.entityId, movedTo: result.movedTo, path: result.path }
+    await this.announce(actor, workspaceId, done)
+    return done.result
   }
 
   /**
-   * Checks the item still has somewhere to go back to and points its row there. Cards,
-   * columns, boards and pages whose place is gone go to the first one available; the
-   * rest need theirs. Throws when there is none.
+   * Puts back exactly what one deletion took away, where it was: what was deleted before on its
+   * own stays in the trash. It is what undoing a deletion does, so it never goes anywhere else:
+   * when its place is not there, it says so. Names stay as they were.
    */
-  private place(tx: DbOrTx, workspaceId: string, kind: TrashKind, root: Row, rows: Captured[]) {
-    const exists = (table: TableName, id: unknown) => id != null && Boolean(tx.get(sql`SELECT 1 AS found FROM ${sql.identifier(table)} WHERE id = ${id} LIMIT 1`))
-    const atEnd = (table: TableName, scope: SQL) => {
-      const keys = tx.all<{ position: string }>(sql`SELECT position FROM ${sql.identifier(table)} WHERE ${scope} ORDER BY position`).map((r) => r.position)
-      return keyAtEnd(keys)
-    }
-    /** The place is gone: say so, or which entry of the trash holds it. */
-    const missing = (table: TableName, id: unknown, what: string) => {
-      const holder = tx.get<{ title: string }>(
-        sql`SELECT t.title FROM trash_rows r JOIN trash t ON t.id = r.trash_id WHERE r.table_name = ${table} AND json_extract(r.data, '$.id') = ${id} LIMIT 1`,
-      )
-      if (holder) return restoreError('restore_place_in_trash', `Restore “${holder.title}” first: the ${what} it belongs to is in the trash too.`, { title: holder.title })
-      return restoreError('restore_place_gone', `The ${what} it belonged to no longer exists, and there is nowhere else to put it.`)
-    }
-    const needs = (table: TableName, id: unknown, what: string) => {
-      if (!exists(table, id)) throw missing(table, id, what)
-    }
-    const firstProject = () => tx.get<{ id: string; name: string }>(sql`SELECT id, name FROM projects WHERE workspace_id = ${workspaceId} ORDER BY position, id LIMIT 1`)
-    const firstBoard = () =>
-      tx.get<{ id: string; name: string; project: string }>(
-        sql`SELECT b.id, b.name, p.name AS project FROM boards b JOIN projects p ON p.id = b.project_id WHERE b.workspace_id = ${workspaceId} ORDER BY p.position, p.id, b.position, b.id LIMIT 1`,
-      )
-    const boardName = (boardId: unknown) =>
-      tx.get<{ name: string; project: string }>(sql`SELECT b.name, p.name AS project FROM boards b JOIN projects p ON p.id = b.project_id WHERE b.id = ${boardId}`)
-    const ofTable = (table: TableName) => rows.filter((r) => r.table === table).map((r) => r.data)
-    const event = (e: Omit<RealtimeEvent, 'action' | 'actor' | 'summary'>) => e
-    let movedTo: string | null = null
+  async restore(actor: Actor, trashId: string): Promise<RestoredDTO> {
+    const entry = await this.load(actor, trashId)
+    const done = this.deps.db.transaction((tx) => {
+      const results: Applied[] = []
+      const seen = new Set<string>()
+      for (;;) {
+        // Read again each time: what came back before is there now.
+        const index = TrashIndex.load(tx, entry.workspaceId)
+        const tops = [...index.nodes.values()]
+          .filter((n) => n.entry.id === trashId && (!n.parent || n.parent.entry.id !== trashId))
+          .sort((a, b) => Number(b.entryRoot) - Number(a.entryRoot) || a.row.rowId - b.row.rowId)
+        const top = tops[0]
+        if (!top) break
+        if (seen.has(top.key)) throw restoreError('restore_changed', 'It could not be put back.')
+        seen.add(top.key)
+        if (top.place === 'trash') {
+          const holder = top.parent!
+          throw restoreError('restore_place_in_trash', `Restore “${holder.title}” first: what it belongs to is in the trash too.`, { title: holder.title, key: holder.key })
+        }
+        if (top.place === 'gone') throw restoreError('restore_place_gone', 'What it belonged to no longer exists.')
+        const subtree = index.subtree(top)
+        const plan = planRestore(index, {
+          key: top.key,
+          exclude: subtree.filter((n) => n.entry.id !== trashId).map((n) => n.key),
+          to: { kind: 'original' },
+          names: {},
+          keepNames: subtree.map((n) => n.key),
+          include: [],
+          dryRun: false,
+        })
+        if (plan.missing.length) throw restoreError('restore_place_gone', 'What it belonged to no longer exists.')
+        // A link goes back between a card and a page: both must be there.
+        const waiting = top.kind === 'link' ? plan.wait.find((w) => w.row === top.row) : undefined
+        if (waiting) {
+          const page = index.node(`page:${top.row.pageId}`)
+          throw restoreError('restore_place_in_trash', `Restore “${page?.title ?? ''}” first: the page is in the trash too.`, { title: page?.title ?? '', key: page?.key })
+        }
+        results.push(this.apply(tx, actor, entry.workspaceId, plan))
+      }
+      if (!results.length) throw notFound('Trash entry')
+      return results
+    })
+    for (const applied of done) await this.announce(actor, entry.workspaceId, applied)
+    const first = done[0]!.result
+    return { ...first, kind: entry.kind, entityId: entry.entityId, movedTo: null }
+  }
 
-    switch (kind) {
-      case 'project':
-        return { entityType: 'project' as EntityType, entityId: String(root.id), movedTo, path: `p/${root.id}`, event: event({ projectId: String(root.id), structure: true }) }
-      case 'board': {
-        if (!exists('projects', root.project_id)) {
-          const target = firstProject()
-          if (!target) throw missing('projects', root.project_id, 'project')
-          root.project_id = target.id
-          root.position = atEnd('boards', sql`project_id = ${target.id}`)
-          movedTo = target.name
+  /** The end of the list of `table`'s rows in `scope`, for something put there now. */
+  private atEnd(tx: DbOrTx, table: TableName, scope: SQL) {
+    const keys = tx.all<{ position: string }>(sql`SELECT position FROM ${sql.identifier(table)} WHERE ${scope} ORDER BY position`).map((r) => r.position)
+    return keyAtEnd(keys)
+  }
+
+  /** Applies a plan inside the transaction it was worked out in. */
+  private apply(tx: DbOrTx, actor: Actor, workspaceId: string, plan: Plan): Applied {
+    const { root } = plan
+
+    // Containers made anew, only for what was in the trash before its place was deleted for good.
+    for (const made of plan.create) {
+      if (made.kind === 'project') {
+        tx.insert(schema.projects)
+          .values({ id: made.id, workspaceId, name: made.title.slice(0, NAME_MAX.project), color: 'slate', position: this.atEnd(tx, 'projects', sql`workspace_id = ${workspaceId}`) })
+          .run()
+      } else if (made.kind === 'page') {
+        const projectId = made.in!.id
+        tx.insert(schema.pages)
+          .values({
+            id: made.id,
+            workspaceId,
+            projectId,
+            parentId: null,
+            title: made.title.slice(0, NAME_MAX.page),
+            position: this.atEnd(tx, 'pages', sql`project_id = ${projectId} AND parent_id IS NULL`),
+            createdByUserId: actor.kind === 'user' ? actor.userId : null,
+          })
+          .run()
+      } else {
+        const boardId = made.in!.id
+        tx.insert(schema.columns)
+          .values({ id: made.id, workspaceId, boardId, name: made.title.slice(0, NAME_MAX.column), position: this.atEnd(tx, 'board_columns', sql`board_id = ${boardId}`) })
+          .run()
+      }
+    }
+
+    // The rows as they were kept, with where they go now and their new names.
+    const wanted = [...plan.coming.map((n) => n.row.rowId), ...plan.reinsert.map((r) => r.rowId)]
+    const kept = new Map<number, Captured>()
+    for (let i = 0; i < wanted.length; i += 500) {
+      const chunk = wanted.slice(i, i + 500)
+      for (const row of tx
+        .select({ id: schema.trashRows.id, table: schema.trashRows.tableName, data: schema.trashRows.data })
+        .from(schema.trashRows)
+        .where(sql`${schema.trashRows.id} IN (SELECT value FROM json_each(${JSON.stringify(chunk)}))`)
+        .all()) {
+        kept.set(row.id, { table: row.table as TableName, data: row.data as Row })
+      }
+    }
+    const order = new Map(plan.coming.map((n, i) => [n.row.rowId, i]))
+    const byRow = new Map(plan.coming.map((n) => [n.row.rowId, n]))
+    const rows = wanted
+      .map((rowId) => ({ rowId, captured: kept.get(rowId), node: byRow.get(rowId) }))
+      .filter((r): r is { rowId: number; captured: Captured; node: Node | undefined } => r.captured !== undefined)
+      .sort((a, b) => ORDER.indexOf(a.captured.table) - ORDER.indexOf(b.captured.table) || (order.get(a.rowId) ?? Infinity) - (order.get(b.rowId) ?? Infinity) || a.rowId - b.rowId)
+    if (rows.filter((r) => r.node).length !== plan.coming.length) throw restoreError('restore_changed', 'Something in the trash changed meanwhile: look again before restoring.')
+
+    const reinsert = new Reinsert(tx)
+    const data = new Map<string, Row>()
+    for (const { captured, node } of rows) {
+      if (node) {
+        const place = plan.placement.get(node.key)
+        if (place) {
+          Object.assign(captured.data, place.sets)
+          const scope = place.moved ? positionScope(node.kind, place.container) : null
+          if (scope) captured.data.position = this.atEnd(tx, scope.table, scope.where)
         }
-        return { entityType: 'board' as EntityType, entityId: String(root.id), movedTo, path: `b/${root.id}`, event: event({ boardId: String(root.id), projectId: String(root.project_id), structure: true }) }
+        const name = plan.names.get(node.key)
+        const column = NAME_COLUMN[node.kind]
+        if (name !== undefined && column) captured.data[column] = node.kind === 'attachment' ? safeFilename(name) : name
+        data.set(node.key, captured.data)
+        // Planned to fit: if it doesn't, nothing comes back and it all stays in the trash.
+        if (!reinsert.insert(captured)) throw restoreError('restore_place_gone', 'It no longer fits where it goes back.')
+      } else {
+        reinsert.insert(captured)
       }
-      case 'column': {
-        if (!exists('boards', root.board_id)) {
-          const target = firstBoard()
-          if (!target) throw missing('boards', root.board_id, 'board')
-          root.board_id = target.id
-          root.position = atEnd('board_columns', sql`board_id = ${target.id}`)
-          for (const card of ofTable('cards')) card.board_id = target.id
-          movedTo = [target.project, target.name].join(SEPARATOR)
-        }
-        return { entityType: 'column' as EntityType, entityId: String(root.id), movedTo, path: `b/${root.board_id}`, event: event({ boardId: String(root.board_id), structure: true }) }
-      }
-      case 'card': {
-        const column = tx.get<{ board_id: string; name: string }>(sql`SELECT board_id, name FROM board_columns WHERE id = ${root.column_id}`)
-        if (column && column.board_id !== root.board_id) {
-          // Its column went back to another board meanwhile: the card follows it there.
-          const board = boardName(column.board_id)!
-          root.board_id = column.board_id
-          root.position = atEnd('cards', sql`column_id = ${root.column_id}`)
-          movedTo = [board.project, board.name, column.name].join(SEPARATOR)
-        } else if (!column) {
-          // The first column of its board, or else of the first board that has one.
-          const first = (scope: SQL) =>
-            tx.get<{ id: string; name: string; board_id: string; board: string; project: string }>(
-              sql`SELECT c.id, c.name, b.id AS board_id, b.name AS board, p.name AS project FROM board_columns c JOIN boards b ON b.id = c.board_id JOIN projects p ON p.id = b.project_id WHERE ${scope} ORDER BY p.position, p.id, b.position, b.id, c.position, c.id LIMIT 1`,
-            )
-          const target = first(sql`c.board_id = ${root.board_id}`) ?? first(sql`c.workspace_id = ${workspaceId}`)
-          if (!target) throw missing('board_columns', root.column_id, 'column')
-          root.board_id = target.board_id
-          root.column_id = target.id
-          root.position = atEnd('cards', sql`column_id = ${target.id}`)
-          movedTo = [target.project, target.board, target.name].join(SEPARATOR)
-        }
-        return { entityType: 'card' as EntityType, entityId: String(root.id), movedTo, path: `b/${root.board_id}`, event: event({ boardId: String(root.board_id), cardId: String(root.id), structure: true }) }
-      }
-      case 'page': {
-        const parent = root.parent_id != null ? tx.get<{ project_id: string }>(sql`SELECT project_id FROM pages WHERE id = ${root.parent_id}`) : undefined
-        const projectName = (id: unknown) => tx.get<{ name: string }>(sql`SELECT name FROM projects WHERE id = ${id}`)?.name ?? null
-        if (parent) {
-          // Under its parent, in whatever project the parent is now: the pages follow it there.
-          if (parent.project_id !== root.project_id) {
-            for (const page of ofTable('pages')) page.project_id = parent.project_id
-            root.position = atEnd('pages', sql`parent_id = ${root.parent_id}`)
-            movedTo = projectName(parent.project_id)
-          }
-        } else if (!exists('projects', root.project_id)) {
-          const target = firstProject()
-          if (!target) throw missing('projects', root.project_id, 'project')
-          for (const page of ofTable('pages')) page.project_id = target.id
-          root.parent_id = null
-          root.position = atEnd('pages', sql`project_id = ${target.id} AND parent_id IS NULL`)
-          movedTo = target.name
-        } else if (root.parent_id != null) {
-          root.parent_id = null
-          root.position = atEnd('pages', sql`project_id = ${root.project_id} AND parent_id IS NULL`)
-          movedTo = projectName(root.project_id)
-        }
-        return { entityType: 'page' as EntityType, entityId: String(root.id), movedTo, path: `d/${root.id}`, event: event({ pageId: String(root.id), projectId: String(root.project_id), structure: true }) }
-      }
-      case 'attachment': {
-        if (root.card_id != null) {
-          needs('cards', root.card_id, 'card')
-          const boardId = tx.get<{ board_id: string }>(sql`SELECT board_id FROM cards WHERE id = ${root.card_id}`)!.board_id
-          return { entityType: 'card' as EntityType, entityId: String(root.card_id), movedTo, path: `b/${boardId}`, event: event({ boardId, cardId: String(root.card_id) }) }
-        }
-        needs('pages', root.page_id, 'page')
-        return { entityType: 'page' as EntityType, entityId: String(root.page_id), movedTo, path: `d/${root.page_id}`, event: event({ pageId: String(root.page_id) }) }
-      }
-      case 'label':
-        needs('boards', root.board_id, 'board')
-        return { entityType: 'label' as EntityType, entityId: String(root.id), movedTo, path: `b/${root.board_id}`, event: event({ boardId: String(root.board_id) }) }
-      case 'checklist':
-      case 'checklist_item': {
-        const cardId =
-          kind === 'checklist'
-            ? (needs('cards', root.card_id, 'card'), root.card_id)
-            : (needs('checklists', root.checklist_id, 'checklist'), tx.get<{ card_id: string }>(sql`SELECT card_id FROM checklists WHERE id = ${root.checklist_id}`)!.card_id)
-        const boardId = tx.get<{ board_id: string }>(sql`SELECT board_id FROM cards WHERE id = ${cardId}`)!.board_id
-        return { entityType: 'card' as EntityType, entityId: String(cardId), movedTo, path: `b/${boardId}`, event: event({ boardId, cardId: String(cardId) }) }
-      }
-      case 'link': {
-        needs('cards', root.card_id, 'card')
-        needs('pages', root.page_id, 'page')
-        const boardId = tx.get<{ board_id: string }>(sql`SELECT board_id FROM cards WHERE id = ${root.card_id}`)!.board_id
-        return { entityType: 'card' as EntityType, entityId: String(root.card_id), movedTo, path: `b/${boardId}`, event: event({ boardId, cardId: String(root.card_id), pageId: String(root.page_id) }) }
-      }
+    }
+
+    // The trash: what came back leaves it; what waits for its other end goes with that.
+    const removed = [...plan.coming.map((n) => n.row), ...plan.reinsert, ...plan.drop, ...plan.mentions].map((r) => r.rowId)
+    for (let i = 0; i < removed.length; i += 500) {
+      tx.delete(schema.trashRows)
+        .where(sql`${schema.trashRows.id} IN (SELECT value FROM json_each(${JSON.stringify(removed.slice(i, i + 500))}))`)
+        .run()
+    }
+    for (const { row, trashId } of plan.wait) tx.update(schema.trashRows).set({ trashId }).where(eq(schema.trashRows.id, row.rowId)).run()
+    const touched = new Set([...plan.coming.map((n) => n.entry.id), ...[...plan.reinsert, ...plan.drop, ...plan.mentions, ...plan.wait.map((w) => w.row)].map((r) => r.trashId)])
+    this.dropEmpty(tx, touched)
+
+    rebuildMentions(tx, workspaceId, reinsert.cards, reinsert.pages)
+
+    // What comes back says so in its history; what goes somewhere else, where.
+    const movedTo = plan.to === 'other' || plan.create.length > 0 ? plan.location : null
+    for (const node of plan.coming) {
+      if (!node.entryRoot) continue
+      const change = this.restoredChange(tx, node.kind, data.get(node.key) ?? {}, { trashId: node.entry.id, ...(node === root && movedTo ? { movedTo } : {}) })
+      if (change) this.history.record(tx, actor, workspaceId, change)
+    }
+
+    const extras = plan.extras.filter((n) => !n.parent || !plan.comingKeys.has(n.parent.key))
+    const targets = [root, ...extras].map((node) => ({ node, ...this.target(tx, node, data.get(node.key)) }))
+    const main = targets[0]!
+    const result: RestoredDTO = {
+      kind: root.kind,
+      entityId: root.id,
+      movedTo,
+      path: main.path,
+      location: plan.location,
+      restored: Math.max(0, plan.coming.length - (data.has(root.key) ? 1 : 0)),
+      left: plan.subtree.filter((n) => plan.excluded.has(n.key) && !(n.parent && plan.excluded.has(n.parent.key))).length,
+    }
+    const structure = plan.path.length > 0 || plan.create.length > 0
+    return { result, targets: targets.map((t) => ({ ...t, event: structure ? { ...t.event, structure: true } : t.event })), movedTo }
+  }
+
+  /** Deletes the entries left with nothing of their own; what else they kept goes with them. */
+  private dropEmpty(tx: DbOrTx, trashIds: Iterable<string>) {
+    for (const trashId of trashIds) {
+      const left = tx.get<{ found: number }>(
+        sql`SELECT 1 AS found FROM trash_rows WHERE trash_id = ${trashId} AND (table_name NOT IN ('card_labels', 'card_page_links') OR (table_name = 'card_page_links' AND trash_id IN (SELECT id FROM trash WHERE id = ${trashId} AND kind = 'link'))) LIMIT 1`,
+      )
+      if (!left) tx.delete(schema.trash).where(eq(schema.trash.id, trashId)).run()
     }
   }
 
-  /** Deletes an entry for good, with the files of its attachments. */
+  /** What restoring `node` is about, where to open it, and who hears of it. */
+  private target(tx: DbOrTx, node: Node, data: Row | undefined) {
+    const text = (value: unknown) => (typeof value === 'string' ? value : '')
+    const row = data ?? { id: node.id, card_id: node.row.cardId, page_id: node.row.pageId, board_id: node.row.boardId, project_id: node.row.projectId, checklist_id: node.row.checklistId }
+    const id = text(row.id) || node.id
+    const boardOfCard = (cardId: string) => tx.get<{ board_id: string }>(sql`SELECT board_id FROM cards WHERE id = ${cardId}`)?.board_id ?? ''
+    const onCard = (cardId: string, extra: Omit<RealtimeEvent, 'action' | 'actor' | 'summary'> = {}) => {
+      const boardId = boardOfCard(cardId)
+      return { entityType: 'card' as EntityType, entityId: cardId, path: boardId ? `b/${boardId}` : null, event: { boardId, cardId, ...extra } }
+    }
+    switch (node.kind) {
+      case 'project':
+        return { entityType: 'project' as EntityType, entityId: id, path: `p/${id}`, event: { projectId: id, structure: true } }
+      case 'board':
+        return { entityType: 'board' as EntityType, entityId: id, path: `b/${id}`, event: { boardId: id, projectId: text(row.project_id), structure: true } }
+      case 'column':
+        return { entityType: 'column' as EntityType, entityId: id, path: `b/${text(row.board_id)}`, event: { boardId: text(row.board_id), structure: true } }
+      case 'card':
+        return { entityType: 'card' as EntityType, entityId: id, path: `b/${text(row.board_id)}`, event: { boardId: text(row.board_id), cardId: id, structure: true } }
+      case 'page':
+        return { entityType: 'page' as EntityType, entityId: id, path: `d/${id}`, event: { pageId: id, projectId: text(row.project_id), structure: true } }
+      case 'label':
+        return { entityType: 'label' as EntityType, entityId: id, path: `b/${text(row.board_id)}`, event: { boardId: text(row.board_id) } }
+      case 'attachment':
+        if (row.card_id) return onCard(text(row.card_id))
+        return { entityType: 'page' as EntityType, entityId: text(row.page_id), path: `d/${text(row.page_id)}`, event: { pageId: text(row.page_id) } }
+      case 'checklist':
+        return onCard(text(row.card_id))
+      case 'checklist_item': {
+        const list = tx.get<{ card_id: string }>(sql`SELECT card_id FROM checklists WHERE id = ${text(row.checklist_id)}`)
+        return onCard(list?.card_id ?? '')
+      }
+      case 'link':
+        return onCard(text(row.card_id), { pageId: text(row.page_id) })
+    }
+  }
+
+  /** Records and announces what came back. */
+  private async announce(actor: Actor, workspaceId: string, applied: Applied) {
+    for (const [i, target] of applied.targets.entries()) {
+      await this.activity.record(
+        actor,
+        workspaceId,
+        {
+          action: 'trash.restored',
+          entityType: target.entityType,
+          entityId: target.entityId,
+          summary: target.node.title,
+          meta: { kind: target.node.kind, ...(i === 0 && applied.movedTo ? { movedTo: applied.movedTo } : {}) },
+        },
+        target.event,
+      )
+    }
+  }
+
+  /** Deletes something for good with everything below it, and the files of its attachments. */
+  async purgeItem(actor: Actor, workspaceId: string, key: string) {
+    this.access.requireUser(actor)
+    await this.access.workspace(actor, workspaceId)
+    const erased = await this.erase(workspaceId, (index) => {
+      const node = index.node(key)
+      return node ? [node] : []
+    })
+    if (!erased) throw notFound('Trash item')
+    const [node] = erased
+    await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node!.kind), entityId: node!.id, summary: node!.title, meta: { kind: node!.kind } })
+  }
+
+  /** Deletes for good what one deletion took away, with everything below it. */
   async purge(actor: Actor, trashId: string) {
     const entry = await this.load(actor, trashId)
     // Restored meanwhile: there is nothing left to delete.
-    if (!(await this.erase(trashId))) throw notFound('Trash entry')
+    const erased = await this.erase(entry.workspaceId, (index) => [...index.nodes.values()].filter((n) => n.entry.id === trashId), [trashId])
+    if (!erased) throw notFound('Trash entry')
     await this.activity.record(actor, entry.workspaceId, {
       action: 'trash.purged',
       entityType: purgedEntityType(entry.kind),
@@ -539,34 +659,82 @@ export class TrashService {
 
   /** Deletes for good what has been in the trash for TRASH_DAYS. Runs hourly. */
   async purgeExpired(now = new Date()) {
-    const expired = await this.deps.db.select({ id: schema.trash.id }).from(schema.trash).where(lte(schema.trash.expiresAt, now))
+    const expired = await this.deps.db.select({ id: schema.trash.id, workspaceId: schema.trash.workspaceId }).from(schema.trash).where(lte(schema.trash.expiresAt, now))
+    const byWorkspace = new Map<string, string[]>()
+    for (const { id, workspaceId } of expired) byWorkspace.set(workspaceId, [...(byWorkspace.get(workspaceId) ?? []), id])
     let erased = 0
-    for (const { id } of expired) if (await this.erase(id)) erased++
+    for (const [workspaceId, ids] of byWorkspace) {
+      const set = new Set(ids)
+      if (await this.erase(workspaceId, (index) => [...index.nodes.values()].filter((n) => set.has(n.entry.id)), ids)) erased += ids.length
+    }
     return erased
   }
 
   /**
-   * Deletes an entry and then the files of its attachments. Reading the files and deleting
-   * the entry happen in one transaction, so a restore running at the same time either
-   * comes first (and nothing is erased) or finds nothing to restore. Returns whether this
-   * call erased it.
+   * Deletes for good what `pick` chooses, with everything below it, and then the files of its
+   * attachments. Choosing, reading the files and deleting happen in one transaction, so a
+   * restore running at the same time either comes first (and nothing of it is erased) or finds
+   * nothing to restore. Relations of what goes can never come back: they go too, as do links
+   * to a page that goes. Entries left with nothing of their own go, and so do `entries`.
+   * Returns what was picked, or null when there was nothing.
    */
-  private async erase(trashId: string) {
-    const files = this.deps.db.transaction((tx) => {
-      const keys = tx
-        .select({ key: schema.trashRows.storageKey })
-        .from(schema.trashRows)
-        .where(and(eq(schema.trashRows.trashId, trashId), isNotNull(schema.trashRows.storageKey)))
-        .all()
+  private async erase(workspaceId: string, pick: (index: TrashIndex) => Node[], entries: string[] = []) {
+    const done = this.deps.db.transaction((tx) => {
+      const index = TrashIndex.load(tx, workspaceId)
+      const picked = pick(index)
+      const gone = new Map<string, Node>()
+      for (const node of picked) for (const n of index.subtree(node)) gone.set(n.key, n)
+      for (const n of index.nodes.values()) if (n.kind === 'link' && gone.has(`page:${n.row.pageId}`)) for (const m of index.subtree(n)) gone.set(m.key, m)
+      const has = (kind: string, id: string | null) => gone.has(`${kind}:${id}`)
+      const touches = (r: IndexRow) => has('card', r.cardId) || (r.table === 'card_labels' ? has('label', r.labelId) : has('page', r.pageId))
+      const rows = [...[...gone.values()].map((n) => n.row), ...index.relations.filter(touches), ...index.mentions.filter(touches)]
+      const existing = entries.filter((id) => index.entries.has(id))
+      if (rows.length === 0 && existing.length === 0) return null
       // What it held leaves the history too: nothing of it is kept once it is deleted for good.
-      this.history.forget(tx, trashId)
-      const erased = tx.delete(schema.trash).where(eq(schema.trash.id, trashId)).returning({ id: schema.trash.id }).all()
-      return erased.length > 0 ? keys : null
+      this.history.forgetIds(
+        tx,
+        [...gone.values()].filter((n) => n.kind !== 'link').map((n) => n.id),
+      )
+      const ids = rows.map((r) => r.rowId)
+      for (let i = 0; i < ids.length; i += 500) {
+        tx.delete(schema.trashRows)
+          .where(sql`${schema.trashRows.id} IN (SELECT value FROM json_each(${JSON.stringify(ids.slice(i, i + 500))}))`)
+          .run()
+      }
+      for (const id of existing) tx.delete(schema.trash).where(eq(schema.trash.id, id)).run()
+      this.dropEmpty(tx, new Set(rows.map((r) => r.trashId)))
+      return { picked, files: rows.flatMap((r) => (r.table === 'attachments' && r.storageKey ? [r.storageKey] : [])) }
     })
-    if (!files) return false
+    if (!done) return null
     // A file that fails to go now is left to the hourly sweep: nothing references it any more.
-    for (const { key } of files) await this.deps.storage.delete(key!).catch(() => {})
-    return true
+    for (const key of done.files) await this.deps.storage.delete(key).catch(() => {})
+    return done.picked.length ? done.picked : entries.length ? ([] as Node[]) : null
+  }
+}
+
+interface Applied {
+  result: RestoredDTO
+  targets: { node: Node; entityType: EntityType; entityId: string; path: string | null; event: Omit<RealtimeEvent, 'action' | 'actor' | 'summary'> }[]
+  movedTo: string | null
+}
+
+/** Where something put somewhere new goes in the order of what is there: at the end. */
+function positionScope(kind: TrashKind, container: Ref): { table: TableName; where: SQL } | null {
+  switch (kind) {
+    case 'board':
+      return { table: 'boards', where: sql`project_id = ${container.id}` }
+    case 'column':
+      return { table: 'board_columns', where: sql`board_id = ${container.id}` }
+    case 'card':
+      return { table: 'cards', where: sql`column_id = ${container.id}` }
+    case 'checklist':
+      return { table: 'checklists', where: sql`card_id = ${container.id}` }
+    case 'checklist_item':
+      return { table: 'checklist_items', where: sql`checklist_id = ${container.id}` }
+    case 'page':
+      return { table: 'pages', where: container.kind === 'page' ? sql`parent_id = ${container.id}` : sql`project_id = ${container.id} AND parent_id IS NULL` }
+    default:
+      return null
   }
 }
 
@@ -667,22 +835,3 @@ class Reinsert {
 }
 
 const purgedEntityType = (kind: TrashKind): EntityType => (['project', 'board', 'column', 'card', 'label', 'page'] as const).find((k) => k === kind) ?? 'card'
-
-export function toTrashEntryDTO(row: typeof schema.trash.$inferSelect): TrashEntryDTO {
-  return {
-    id: row.id,
-    kind: row.kind,
-    entityId: row.entityId,
-    title: row.title,
-    location: row.location,
-    contents: row.contents,
-    bytes: row.bytes,
-    deletedBy: {
-      kind: row.actorKind,
-      id: (row.actorKind === 'agent' ? row.actorTokenId : row.actorUserId) ?? '',
-      name: row.actorName,
-    },
-    deletedAt: row.deletedAt.toISOString(),
-    expiresAt: row.expiresAt.toISOString(),
-  }
-}
