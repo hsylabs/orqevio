@@ -187,12 +187,18 @@ export const useUpdates = () =>
     retry: false,
   })
 
-export const useActivity = (wid: string, opts: { agentsOnly?: boolean; tokenId?: string } = {}) => {
-  const params = new URLSearchParams({ limit: '40' })
+/** The workspace's activity, newest first, `pageSize` entries at a time; only agents' with `agentsOnly`, one access's with `tokenId`. */
+export const useActivity = (wid: string, opts: { agentsOnly?: boolean; tokenId?: string; pageSize?: number } = {}) => {
+  const pageSize = opts.pageSize ?? 40
+  const params = new URLSearchParams({ limit: String(pageSize) })
   if (opts.agentsOnly) params.set('agents', '1')
   if (opts.tokenId) params.set('tokenId', opts.tokenId)
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: keys.activity(wid, params.toString()),
-    queryFn: ({ signal }) => get<ActivityDTO[]>(`/workspaces/${wid}/activity?${params}`, signal),
+    queryFn: ({ signal, pageParam }) =>
+      get<ActivityDTO[]>(`/workspaces/${wid}/activity?${params}${pageParam ? `&before=${encodeURIComponent(pageParam.createdAt)}&beforeId=${pageParam.id}` : ''}`, signal),
+    // The next page starts after the last entry: its time, and the entry itself for those of the same millisecond.
+    initialPageParam: null as Pick<ActivityDTO, 'id' | 'createdAt'> | null,
+    getNextPageParam: (last: ActivityDTO[]) => (last.length < pageSize ? undefined : { id: last.at(-1)!.id, createdAt: last.at(-1)!.createdAt }),
   })
 }

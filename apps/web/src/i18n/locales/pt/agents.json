@@ -30,7 +30,8 @@
     "titleFor": "Atividade de “{{name}}”",
     "showAll": "Mostrar tudo",
     "loading": "Carregando…",
-    "empty": "Quando um agente trabalhar neste espaço, você vai ver aqui."
+    "empty": "Quando um agente trabalhar neste espaço, você vai ver aqui.",
+    "older": "Ver atividade anterior"
   },
   "tools": {
     "title": "Ferramentas MCP",
@@ -41,11 +42,13 @@
       "tasksRead": "Tarefas · leitura",
       "tasksWrite": "Tarefas · escrita",
       "docsRead": "Documentos · leitura",
-      "docsWrite": "Documentos · escrita"
+      "docsWrite": "Documentos · escrita",
+      "organize": "Pode excluir e mover"
     },
     "descriptions": {
       "listProjects": "Projetos, quadros e estrutura de páginas",
       "search": "Busca em cartões e páginas",
+      "readAttachments": "Ler anexos de texto e imagem",
       "readBoards": "Colunas, cartões, checklists e vínculos",
       "editCards": "Criar, editar e mover cartões",
       "archiveCard": "Arquivar (restaurável pelo app)",
@@ -53,8 +56,13 @@
       "labels": "Etiquetas e checklists",
       "readPages": "Árvore de páginas e conteúdo em Markdown",
       "writePages": "Criar e atualizar, com controle de versão",
+      "movePage": "Mover páginas dentro do projeto",
+      "uploadAttachment": "Anexar arquivos a cartões e páginas",
       "linkCard": "Vincular tarefas e documentos",
-      "createProject": "Criar projetos"
+      "createProject": "Criar projetos",
+      "deleteTasks": "Excluir cartões, quadros, colunas, etiquetas e checklists (para a lixeira)",
+      "deleteDocs": "Excluir páginas, projetos e anexos (para a lixeira)",
+      "moveElsewhere": "Mover anexos e desvincular cartões de páginas"
     }
   },
   "revoke": {

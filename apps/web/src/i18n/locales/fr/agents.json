@@ -30,7 +30,8 @@
     "titleFor": "Activité de « {{name}} »",
     "showAll": "Tout afficher",
     "loading": "Chargement…",
-    "empty": "Quand un agent travaillera dans cet espace, vous le verrez ici."
+    "empty": "Quand un agent travaillera dans cet espace, vous le verrez ici.",
+    "older": "Voir l’activité précédente"
   },
   "tools": {
     "title": "Outils MCP",
@@ -41,11 +42,13 @@
       "tasksRead": "Tâches · lecture",
       "tasksWrite": "Tâches · écriture",
       "docsRead": "Documents · lecture",
-      "docsWrite": "Documents · écriture"
+      "docsWrite": "Documents · écriture",
+      "organize": "Peut supprimer et déplacer"
     },
     "descriptions": {
       "listProjects": "Projets, tableaux et arborescence des pages",
       "search": "Recherche dans les cartes et les pages",
+      "readAttachments": "Lire les pièces jointes texte et image",
       "readBoards": "Colonnes, cartes, checklists et liens",
       "editCards": "Créer, modifier et déplacer des cartes",
       "archiveCard": "Archiver (restaurable depuis l’application)",
@@ -53,8 +56,13 @@
       "labels": "Étiquettes et checklists",
       "readPages": "Arborescence des pages et contenu Markdown",
       "writePages": "Créer et mettre à jour, avec gestion des versions",
+      "movePage": "Déplacer des pages dans leur projet",
+      "uploadAttachment": "Joindre des fichiers aux cartes et aux pages",
       "linkCard": "Lier tâches et documents",
-      "createProject": "Créer des projets"
+      "createProject": "Créer des projets",
+      "deleteTasks": "Supprimer cartes, tableaux, colonnes, étiquettes et checklists (vers la corbeille)",
+      "deleteDocs": "Supprimer pages, projets et pièces jointes (vers la corbeille)",
+      "moveElsewhere": "Déplacer des pièces jointes et délier cartes et pages"
     }
   },
   "revoke": {

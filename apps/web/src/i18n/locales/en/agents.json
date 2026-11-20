@@ -29,7 +29,8 @@
     "titleFor": "Activity by “{{name}}”",
     "showAll": "Show all",
     "loading": "Loading…",
-    "empty": "When an agent works in this workspace, you’ll see it here."
+    "empty": "When an agent works in this workspace, you’ll see it here.",
+    "older": "Show earlier activity"
   },
   "tools": {
     "title": "MCP tools",
@@ -40,11 +41,13 @@
       "tasksRead": "Tasks · read",
       "tasksWrite": "Tasks · write",
       "docsRead": "Documents · read",
-      "docsWrite": "Documents · write"
+      "docsWrite": "Documents · write",
+      "organize": "Can delete and move"
     },
     "descriptions": {
       "listProjects": "Projects, boards and page outline",
       "search": "Search across cards and pages",
+      "readAttachments": "Read text and image attachments",
       "readBoards": "Columns, cards, checklists and links",
       "editCards": "Create, edit and move cards",
       "archiveCard": "Archive (restorable from the app)",
@@ -52,8 +55,13 @@
       "labels": "Labels and checklists",
       "readPages": "Page tree and Markdown content",
       "writePages": "Create and update, with version control",
+      "movePage": "Move pages within their project",
+      "uploadAttachment": "Attach files to cards and pages",
       "linkCard": "Link tasks and documents",
-      "createProject": "Create projects"
+      "createProject": "Create projects",
+      "deleteTasks": "Delete cards, boards, columns, labels and checklists (to the trash)",
+      "deleteDocs": "Delete pages, projects and attachments (to the trash)",
+      "moveElsewhere": "Move attachments and unlink cards from pages"
     }
   },
   "revoke": {

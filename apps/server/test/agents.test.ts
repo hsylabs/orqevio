@@ -1,8 +1,8 @@
 import { Client as McpClient } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { type HistoryEntryDTO, MAX_MARKDOWN } from '@orqevio/shared'
+import { type AccessLevel, type ActivityDTO, type HistoryEntryDTO, MAX_MARKDOWN, MCP_TOOL_GROUPS, type McpToolNeed, scopesFromLevels } from '@orqevio/shared'
 import { strFromU8, unzipSync } from 'fflate'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { VERSION } from '../src/version'
 import { Client, type Harness, ORIGIN, createHarness, seedBoard, signUp } from './harness'
 
@@ -288,6 +288,71 @@ describe('MCP server', () => {
     expect(names2).not.toContain('delete_page')
     expect(names2).not.toContain('delete_project')
     expect(names2).not.toContain('unlink_card_from_page')
+  })
+
+  it('gives the activity a page at a time, without skipping what happened in the same millisecond', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-20T10:00:00.000Z') })
+    try {
+      for (let i = 1; i <= 7; i++) await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: `Tarjeta ${i}` })
+    } finally {
+      vi.useRealTimers()
+    }
+    // «See more» asks for what comes after the last entry it has: its time and the entry itself.
+    const seen: ActivityDTO[] = []
+    let after = ''
+    for (let pages = 0; pages < 10; pages++) {
+      const page = (await client.get(`/api/workspaces/${workspaceId}/activity?limit=3${after}`)).body as ActivityDTO[]
+      seen.push(...page)
+      if (page.length < 3) break
+      after = `&before=${encodeURIComponent(page.at(-1)!.createdAt)}&beforeId=${page.at(-1)!.id}`
+    }
+    expect(seen.filter((e) => e.action === 'card.created').map((e) => e.summary)).toEqual([7, 6, 5, 4, 3, 2, 1].map((i) => `Tarjeta ${i}`))
+    expect(new Set(seen.map((e) => e.id)).size).toBe(seen.length)
+  })
+
+  it('has every tool in the Agents page catalog, each with what it needs to be seen', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const seen = async (tasks: AccessLevel, docs: AccessLevel, organize = false) => {
+      const mcp = await connect((await createToken(client, workspaceId, scopesFromLevels({ tasks, docs, organize }))).token)
+      const names = (await mcp.listTools()).tools.map((t) => t.name)
+      await mcp.close()
+      return names
+    }
+    const catalog = MCP_TOOL_GROUPS.flatMap((group) => group.tools.map((tool) => ({ tool, need: group.need as McpToolNeed })))
+
+    // The same tools, each once: one the server adds shows on the page, or this fails.
+    const everything = await seen('write', 'write', true)
+    expect(catalog.map((t) => t.tool).sort()).toEqual([...everything].sort())
+
+    // «Can delete and move» marks exactly the tools that need it.
+    const withoutOrganize = await seen('write', 'write')
+    expect(catalog.filter((t) => !withoutOrganize.includes(t.tool)).map((t) => t.tool)).toEqual(catalog.filter((t) => t.need === 'organize').map((t) => t.tool))
+
+    // The least that each need names is enough to see the tools.
+    const least: Record<Exclude<McpToolNeed, 'organize'>, Array<[AccessLevel, AccessLevel]>> = {
+      read: [
+        ['read', 'none'],
+        ['none', 'read'],
+      ],
+      // Writing in one area, reading the other: link_card_to_page joins the two.
+      write: [
+        ['write', 'read'],
+        ['read', 'write'],
+      ],
+      tasksRead: [['read', 'none']],
+      tasksWrite: [['write', 'none']],
+      docsRead: [['none', 'read']],
+      docsWrite: [['none', 'write']],
+    }
+    for (const [need, accesses] of Object.entries(least)) {
+      for (const [tasks, docs] of accesses) {
+        const names = await seen(tasks, docs)
+        const missing = catalog.filter((t) => t.need === need && !names.includes(t.tool)).map((t) => t.tool)
+        expect(missing, `${need} with tasks ${tasks}, docs ${docs}`).toEqual([])
+      }
+    }
   })
 
   it('lets an agent organise a board and document it through the shared services', async () => {

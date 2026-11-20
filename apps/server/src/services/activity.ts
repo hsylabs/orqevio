@@ -1,5 +1,5 @@
 import type { ActivityDTO, EntityType, RealtimeEvent } from '@orqevio/shared'
-import { and, desc, eq, gt, lt, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, lt, or, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { actorRef } from '../auth/actor'
 import { activity } from '../db/schema'
@@ -111,9 +111,15 @@ export class ActivityService {
     }
   }
 
-  async list(workspaceId: string, opts: { limit?: number; before?: Date; entityId?: string; tokenId?: string; agentsOnly?: boolean } = {}) {
+  /**
+   * The workspace's activity, newest first. A page after the first starts after the last entry
+   * of the previous one: `before`, its time, and `beforeId`, the entry itself, as several can
+   * share a millisecond.
+   */
+  async list(workspaceId: string, opts: { limit?: number; before?: Date; beforeId?: string; entityId?: string; tokenId?: string; agentsOnly?: boolean } = {}) {
     const filters = [eq(activity.workspaceId, workspaceId)]
-    if (opts.before) filters.push(lt(activity.createdAt, opts.before))
+    const after = this.after(opts.before, opts.beforeId)
+    if (after) filters.push(after)
     if (opts.entityId) filters.push(eq(activity.entityId, opts.entityId))
     if (opts.tokenId) filters.push(eq(activity.actorTokenId, opts.tokenId))
     if (opts.agentsOnly) filters.push(eq(activity.actorKind, 'agent'))
@@ -125,6 +131,19 @@ export class ActivityService {
       .orderBy(desc(activity.createdAt), desc(sql`rowid`))
       .limit(Math.min(opts.limit ?? 30, 100))
     return this.markTrashed(workspaceId, rows.map(toActivityDTO))
+  }
+
+  /**
+   * Where the next page starts, in the list's order. If the entry changed since (merged with a
+   * later one, which moves it to the top), the time alone is the best there is.
+   */
+  private after(before: Date | undefined, beforeId: string | undefined) {
+    if (!before) return undefined
+    const anchor = beforeId
+      ? this.deps.db.get<{ seq: number }>(sql`SELECT rowid AS seq FROM activity WHERE id = ${beforeId} AND created_at = ${before.getTime()}`)
+      : undefined
+    if (!anchor) return lt(activity.createdAt, before)
+    return or(lt(activity.createdAt, before), and(eq(activity.createdAt, before), sql`rowid < ${anchor.seq}`))
   }
 
   /**
