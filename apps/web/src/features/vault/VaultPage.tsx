@@ -15,7 +15,7 @@ import { Segmented } from '../../components/ui/Segmented'
 import { useConfirm } from '../../components/ui/confirm'
 import { ApiError, del, errorMessage, get, patch, put } from '../../lib/api'
 import { cn } from '../../lib/cn'
-import { relativeTime } from '../../lib/format'
+import { monogram, relativeTime } from '../../lib/format'
 import { keys, queryClient } from '../../lib/queries'
 import { PageHeader } from '../shell/PageHeader'
 import { useWorkspace } from '../shell/workspace'
@@ -388,7 +388,7 @@ function Unlocked() {
 function Monogram({ item, size = 34 }: { item: VaultItem; size?: number }) {
   return (
     <span className={cn('glyph rounded-[9px]', `c-${item.type === 'note' ? 'slate' : monogramColor(item.title)}`)} style={{ width: size, height: size, fontSize: size * 0.42 }}>
-      {item.type === 'note' ? <StickyNote style={{ width: size * 0.45, height: size * 0.45 }} /> : (item.title[0] ?? '·').toUpperCase()}
+      {item.type === 'note' ? <StickyNote style={{ width: size * 0.45, height: size * 0.45 }} /> : monogram(item.title)}
     </span>
   )
 }

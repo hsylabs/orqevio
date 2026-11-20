@@ -167,7 +167,8 @@
     "editNamed": "Modifier {{name}}",
     "editUnnamed": "Modifier l’étiquette",
     "create": "Créer l’étiquette",
-    "deleted": "Étiquette « {{name}} » placée dans la corbeille"
+    "deleted": "Étiquette « {{name}} » placée dans la corbeille",
+    "deletedUnnamed": "Étiquette sans nom placée dans la corbeille"
   },
   "linked": {
     "mentioned": "mentionnée",
