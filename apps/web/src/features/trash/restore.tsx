@@ -326,7 +326,7 @@ function ManySummary({ item, plan, stale }: { item: ManyItem; plan: TrashPlanDTO
   const inside = plan.nodes.filter((n) => n.included).length - 1
   if (inside > 0) notes.push({ text: t('many.withInside', { count: inside }) })
   return (
-    <p className={cn('truncate text-[12.5px] text-ink-3', stale && 'opacity-60')}>
+    <p className={cn('text-[12.5px] text-pretty text-ink-3', stale && 'opacity-60')}>
       {notes.map((n, i) => (
         <span key={n.text} className={cn(n.tone === 'warn' && 'text-warn', n.tone === 'danger' && 'text-danger')}>
           {i > 0 && ' · '}

@@ -383,15 +383,13 @@ function Row({ info, depth, expandable, covered, actions }: { info: RowInfo; dep
       </span>
       <div className="min-w-0 flex-1">
         <p className="flex min-w-0 items-baseline gap-2">
-          <span className="truncate text-[14px] font-semibold">{name}</span>
-          <span className="truncate text-[12.5px] text-ink-3 max-sm:hidden">{details}</span>
+          <span className="max-w-[55%] shrink-0 truncate text-[14px] font-semibold max-sm:max-w-full max-sm:shrink">{name}</span>
+          <span className="min-w-0 truncate text-[12.5px] text-ink-3 max-sm:hidden">
+            {details}
+            {(status || soon) && <span className="text-warn"> · {[status, soon].filter(Boolean).join(' · ')}</span>}
+          </span>
           {node.earlier && <span className="shrink-0 rounded-full bg-sunken px-2 py-px text-[11px] text-ink-3">{t('earlier')}</span>}
         </p>
-        {(status || soon) && (
-          <p className="truncate text-[12px] text-warn max-sm:hidden">
-            {[status, soon].filter(Boolean).join(' · ')}
-          </p>
-        )}
       </div>
       <Who node={node} className="max-sm:hidden" />
       <div className="flex shrink-0 items-center gap-1 max-sm:hidden">
@@ -418,7 +416,8 @@ function Row({ info, depth, expandable, covered, actions }: { info: RowInfo; dep
       {/* On a phone, a second line: what it is, and who deleted it and when. */}
       <div className="flex w-full min-w-0 items-center gap-2 pl-[66px] text-[12px] text-ink-3 sm:hidden">
         <span className="min-w-0 flex-1 truncate">
-          {[details, status, soon].filter(Boolean).join(' · ')}
+          {details}
+          {(status || soon) && <span className="text-warn"> · {[status, soon].filter(Boolean).join(' · ')}</span>}
         </span>
         <Who node={node} />
       </div>
