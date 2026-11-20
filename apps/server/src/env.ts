@@ -2,7 +2,11 @@ import { existsSync } from 'node:fs'
 import { type InstallKind, installKind } from '@orqevio/shared'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { ConfigError, parseAppUrls } from './lib/app-urls'
 import { maxUploadBytes } from './lib/upload-limit'
+
+// Parsed the same way on Cloudflare, which can't load this file.
+export { ConfigError, parseAppUrls }
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 
@@ -51,25 +55,6 @@ export interface Env {
   backupDir: string | null
   /** Cloudflare: the name of the backups bucket (ORQEVIO_BACKUP_BUCKET), to say where they are. */
   backupBucket: string | null
-}
-
-/** A setting this copy cannot start with, said plainly instead of a stack trace. */
-export class ConfigError extends Error {}
-
-/** APP_URL: one or more full addresses, comma-separated; their origins. */
-export function parseAppUrls(value: string) {
-  const urls = value
-    .split(',')
-    .map((u) => u.trim())
-    .filter(Boolean)
-  if (urls.length === 0) throw new ConfigError('APP_URL is empty. Set it to the address people open Orqevio at, such as https://orqevio.example.com')
-  return urls.map((u) => {
-    const url = URL.canParse(u) ? new URL(u) : null
-    if (!url || (url.protocol !== 'http:' && url.protocol !== 'https:')) {
-      throw new ConfigError(`APP_URL must be full addresses starting with https:// or http://, such as https://orqevio.example.com (got "${u}")`)
-    }
-    return url.origin
-  })
 }
 
 /** TRUST_PROXY: true (one proxy), false, or how many proxies are in front of this copy. */
