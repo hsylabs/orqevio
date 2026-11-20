@@ -5,6 +5,8 @@ name: CI after a change of base
 # every change of title or description): the pull request would keep the checks of its light
 # run, with the heavy jobs skipped, and so counted as passed. This starts the whole of ci.yml
 # by hand on the pull request's branch, so the heavy checks run on that same commit.
+# A pull request from a fork gets them on its next push instead: its token cannot start
+# workflows, and its branch is not in this repository.
 on:
   pull_request:
     types: [edited]
@@ -16,7 +18,7 @@ permissions:
 jobs:
   full-suite:
     name: Start the full CI for main
-    if: github.event.changes.base
+    if: github.event.changes.base && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
