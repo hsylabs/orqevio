@@ -62,7 +62,8 @@ export function BackupsSection() {
         {t('backups.now')}
       </Button>
       {data.backups.length === 0 ? (
-        <p className="text-[13px] text-ink-3">{t('backups.none')}</p>
+        // "The first one comes within the hour" isn't so while the folder can't be used: the notice above says why.
+        !data.problem && <p className="text-[13px] text-ink-3">{t('backups.none')}</p>
       ) : (
         <ul aria-label={t('backups.list')} className="flex flex-col divide-y divide-line rounded-[12px] border border-line">
           {data.backups.map((backup) => (
