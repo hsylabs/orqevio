@@ -67,6 +67,11 @@ export async function restoreDatabase(backupPath: string, databasePath: string, 
   if (check !== 'ok') throw new Error(`This backup can't be restored: ${check}`)
   const target = path.resolve(databasePath)
   if (path.resolve(backupPath) === target) throw new Error('The backup is the database itself: copy it somewhere else first.')
+  if (inUse(target)) {
+    throw new Error(
+      'The app is running and using this database: what it writes from now on would be lost. Stop it first (docker compose stop app), restore with docker compose run --rm --user root app node dist/cli.js restore <file>, then start it again (docker compose start app).',
+    )
+  }
   // Copied next to the database first, then swapped in: it is never half written.
   const incoming = `${target}.restoring`
   rmSync(incoming, { force: true })
@@ -100,6 +105,29 @@ export async function restoreDatabase(backupPath: string, databasePath: string, 
     for (const file of [target, kept, ...walk(uploadsDir)]) if (existsSync(file)) chownSync(file, owner.uid, owner.gid)
   }
   return { path: target, kept: existsSync(kept) ? kept : null }
+}
+
+/**
+ * Whether another process has the database open: the app keeps it in WAL mode, and leaving that
+ * mode needs every other connection gone. Done on a database about to be set aside anyway.
+ */
+function inUse(database: string) {
+  if (!existsSync(database)) return false
+  let db: Sqlite.Database
+  try {
+    db = new Sqlite(database, { fileMustExist: true, timeout: 0 })
+  } catch {
+    return false
+  }
+  try {
+    if (db.pragma('journal_mode', { simple: true }) !== 'wal') return false
+    db.pragma('journal_mode = DELETE')
+    return db.pragma('journal_mode', { simple: true }) === 'wal'
+  } catch (error) {
+    return (error as { code?: string }).code === 'SQLITE_BUSY' || /locked|busy/i.test(String(error))
+  } finally {
+    db.close()
+  }
 }
 
 /** A folder and everything in it (without following links), or nothing if it doesn't exist. */

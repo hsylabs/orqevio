@@ -20,7 +20,8 @@
     "vault_item_changed": "Questo elemento è cambiato in un’altra scheda o su un altro dispositivo. Ora lo vedi com’è: rifai la modifica se serve ancora.",
     "too_many_columns": "Una bacheca può contenere fino a 20 colonne.",
     "vault_full": "La cassaforte può contenere fino a 5.000 elementi. Elimina quelli che non usi più per aggiungerne altri.",
-    "unauthorized": "La tua sessione è terminata. Accedi di nuovo."
+    "unauthorized": "La tua sessione è terminata. Accedi di nuovo.",
+    "backup_folder": "Impossibile fare il backup: c’è un problema con la cartella dei backup. Vedi l’avviso nelle impostazioni."
   },
   "notFound": "Elemento non trovato.",
   "server": "Si è verificato un errore sul server. Riprova.",

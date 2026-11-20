@@ -1,9 +1,10 @@
-import { type BackupDTO, type BackupKind, type BackupsDTO, restoreBackupInput } from '@orqevio/shared'
+import { type BackupDTO, type BackupKind, type BackupsDTO, type DamagedFileDTO, restoreBackupInput } from '@orqevio/shared'
 import type { Actor } from '../auth/actor'
 import { DUMP_FORMAT, DUMP_VERSION, DumpError, currentMigration, readHeader, restoreDump, writeDump } from '../backups/dump'
 import { applyKept, readKept } from '../backups/kept'
-import { emptyBackupStore } from '../backups/store'
+import { describeBackupProblem, emptyBackupStore, isFolderError, problemOf } from '../backups/store'
 import { AppError, notFound, uninstalled } from '../lib/errors'
+import { measure, measureAll } from '../lib/measure'
 import { parse } from '../lib/validate'
 import { VERSION } from '../version'
 import type { AccountService } from './accounts'
@@ -28,7 +29,8 @@ interface Manifest {
   migration: number
   data: { bytes: number; sha256: string }
   counts: BackupDTO['counts']
-  files: Array<{ key: string; size: number }>
+  /** Each attachment it lists, with what it was when kept (`sha256` and `name` since 1.3.0). */
+  files: Array<{ key: string; size: number; sha256?: string; name?: string }>
   missingFiles: string[]
 }
 
@@ -70,16 +72,31 @@ export class BackupService {
     await this.accounts.requireOwner(actor)
     if (!this.enabled) return { where: null, keep: KEEP_BACKUPS, backups: [] }
     const migration = currentMigration(this.deps.sql!)
+    // Said when backups can't be made or read there: a folder that isn't the app's says nothing otherwise.
+    const problem = (await this.deps.backups!.check?.()) ?? null
     const manifests = await this.manifests()
-    return { where: this.deps.backups!.where, keep: KEEP_BACKUPS, backups: manifests.map((m) => this.toDTO(m, migration)) }
+    return { where: this.deps.backups!.where, keep: KEEP_BACKUPS, backups: manifests.map((m) => this.toDTO(m, migration)), problem }
   }
 
   /** "Back up now", from Settings. */
   async createNow(actor: Actor): Promise<BackupDTO> {
     await this.accounts.requireOwner(actor)
     if (!this.enabled) throw backupsOff()
-    const manifest = await this.exclusive(() => this.create('manual'))
-    return this.toDTO(manifest, currentMigration(this.deps.sql!))
+    try {
+      const manifest = await this.exclusive(() => this.create('manual'))
+      return this.toDTO(manifest, currentMigration(this.deps.sql!))
+    } catch (error) {
+      throw this.folderError(error)
+    }
+  }
+
+  /** A backup that failed because of where it goes (not the app's, read-only, full, not a folder): said as such. */
+  private folderError(error: unknown) {
+    // Any failed file operation of the store is about the folder: the backup itself is made in memory.
+    if (!isFolderError(error) && typeof (error as NodeJS.ErrnoException | undefined)?.syscall !== 'string') return error
+    const where = this.deps.backups!.where.name
+    const problem = problemOf(error, (error as NodeJS.ErrnoException).path ?? where)
+    return new AppError(409, 'backup_folder', describeBackupProblem(problem, where), problem)
   }
 
   /** Hourly: makes the daily backup once the last one is a day old, for a copy that is claimed and in use. */
@@ -152,35 +169,45 @@ export class BackupService {
     const now = new Date()
     const id = now.toISOString().replace(/[:.]/g, '-')
     const dump = writeDump(sql, VERSION, now)
-    const listed = new Map<string, number>()
-    for (const [key, size] of sql.rows(
-      "SELECT storage_key, size FROM attachments UNION ALL SELECT storage_key, json_extract(data, '$.size') FROM trash_rows WHERE storage_key IS NOT NULL",
+    const listed = new Map<string, { size: number; name: string }>()
+    for (const [key, size, name] of sql.rows(
+      "SELECT storage_key, size, filename FROM attachments UNION ALL SELECT storage_key, json_extract(data, '$.size'), json_extract(data, '$.filename') FROM trash_rows WHERE storage_key IS NOT NULL",
     )) {
-      if (typeof key === 'string') listed.set(key, Number(size ?? 0))
+      if (typeof key === 'string') listed.set(key, { size: Number(size ?? 0), name: typeof name === 'string' ? name : key })
     }
     const migration = currentMigration(sql)
     const count = (table: string) => dump.counts[table] ?? 0
 
     await store.write(dataKey(id), dump.data)
-    const stored = new Set((await store.list('files/')).map((f) => f.key))
+    // An attachment is kept once for all backups. A kept copy is used again only when it is the
+    // size it should be and an earlier backup says what it was (its SHA-256); otherwise it is
+    // copied again from the copy's own file, and checked while it is.
+    const stored = new Map((await store.list('files/')).map((f) => [f.key, f.size]))
+    const known = new Map<string, string>()
+    for (const m of await this.manifests()) for (const f of m.files) if (f.sha256 && !known.has(f.key)) known.set(f.key, f.sha256)
     const files: Manifest['files'] = []
     const missingFiles: string[] = []
-    for (const [key, size] of listed) {
-      if (!stored.has(fileKey(key))) {
+    for (const [key, { size, name }] of listed) {
+      let sha256 = stored.get(fileKey(key)) === size ? known.get(key) : undefined
+      if (!sha256) {
         try {
           const body = await this.deps.storage.stream(key)
           if (!body) {
             missingFiles.push(key)
             continue
           }
-          await store.writeStream(fileKey(key), body, size)
+          const measured = measure()
+          await store.writeStream(fileKey(key), body.pipeThrough(measured.stream), size)
+          sha256 = measured.result().sha256
         } catch (error) {
+          // Where backups go failing (not the app's, full) fails the backup: it is said, not hidden.
+          if (isFolderError(error)) throw error
           console.error(`[backups] could not copy ${key}`, error)
           missingFiles.push(key)
           continue
         }
       }
-      files.push({ key, size })
+      files.push({ key, size, sha256, name })
     }
 
     const manifest: Manifest = {
@@ -249,7 +276,7 @@ export class BackupService {
    */
   async restore(actor: Actor, id: string, input: unknown, userAgent: string | null) {
     await this.accounts.requireOwner(actor)
-    const { accessKey } = parse(restoreBackupInput, input)
+    const { accessKey, withoutDamaged } = parse(restoreBackupInput, input)
     if (!this.enabled) throw backupsOff()
     if (!/^[0-9A-Za-z-]+$/.test(id)) throw notFound('Backup')
     const owner = await this.accounts.verifyAccessKey(actor.userId, accessKey)
@@ -270,14 +297,24 @@ export class BackupService {
         throw this.dumpError(error)
       }
 
+      // Every attachment it needs back is checked before anything changes: kept, whole, and what it
+      // was. One that isn't stops the restore and is named, unless asked to go on without it.
+      const damaged = await this.damagedFiles(manifest)
+      if (damaged.length && !withoutDamaged) {
+        throw new AppError(422, 'backup_files_damaged', 'Some attachments of this backup are damaged or gone: restore it without them, or keep this copy as it is', { files: damaged.map(({ file, reason }) => ({ name: file.name ?? file.key, reason })) })
+      }
+      const leftOut = new Set(damaged.map((d) => d.file.key))
+
       // Not pruned yet: the backup being restored (an older one made before a restore, say) and the
       // attachments only it lists must stay until it is back.
-      await this.create('before-restore', { prune: false })
+      await this.create('before-restore', { prune: false }).catch((error) => {
+        throw this.folderError(error)
+      })
       let ownerId = ''
       await this.attachments.close()
       try {
         for (const file of manifest.files) {
-          if (await this.deps.storage.exists(file.key)) continue
+          if (leftOut.has(file.key) || (await this.deps.storage.exists(file.key))) continue
           const body = await store.stream(fileKey(file.key))
           if (body) await this.deps.storage.put(file.key, body, file.size, 'application/octet-stream')
         }
@@ -308,8 +345,34 @@ export class BackupService {
       this.accounts.forget()
       this.oauth.forget()
       const session = await this.accounts.startSession(ownerId, userAgent)
-      return { session, restored: this.toDTO(manifest, currentMigration(sql)) }
+      const files: DamagedFileDTO[] = damaged.map(({ file, reason }) => ({ name: file.name ?? file.key, reason }))
+      return { session, restored: this.toDTO(manifest, currentMigration(sql)), ...(files.length && { leftOut: files }) }
     })
+  }
+
+  /**
+   * The attachments a backup needs back that it can't give: the copy has no file of its own for
+   * them, and the kept one is gone, of another size, or (when the backup says what it was) not
+   * the same bytes.
+   */
+  private async damagedFiles(manifest: Manifest) {
+    const store = this.deps.backups!
+    const stored = new Map((await store.list('files/')).map((f) => [f.key, f.size]))
+    const damaged: Array<{ file: Manifest['files'][number]; reason: DamagedFileDTO['reason'] }> = []
+    for (const file of manifest.files) {
+      if (await this.deps.storage.exists(file.key)) continue
+      const size = stored.get(fileKey(file.key))
+      if (size === undefined) damaged.push({ file, reason: 'missing' })
+      else if (size !== file.size) damaged.push({ file, reason: 'size' })
+      else if (file.sha256) {
+        const body = await store.stream(fileKey(file.key))
+        const read = body ? await measureAll(body) : null
+        if (!read) damaged.push({ file, reason: 'missing' })
+        else if (read.bytes !== file.size) damaged.push({ file, reason: 'size' })
+        else if (read.sha256 !== file.sha256) damaged.push({ file, reason: 'changed' })
+      }
+    }
+    return damaged
   }
 
   /**

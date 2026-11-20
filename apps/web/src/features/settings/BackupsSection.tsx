@@ -1,4 +1,4 @@
-import type { BackupDTO, BackupsDTO } from '@orqevio/shared'
+import type { BackupDTO, BackupProblemDTO, BackupsDTO, DamagedFileDTO } from '@orqevio/shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
 import { Dialog } from '../../components/ui/Dialog'
 import { Field } from '../../components/ui/Field'
-import { errorMessage, post } from '../../lib/api'
+import { ApiError, errorMessage, post } from '../../lib/api'
 import { bytes, dateTime, formatNumber, relativeTime } from '../../lib/format'
 import { keys, useBackups, useUpdates } from '../../lib/queries'
 import { lockVaultEverywhere } from '../vault/session'
@@ -42,6 +42,8 @@ export function BackupsSection() {
       toast.success(t('backups.made'))
     } catch (error) {
       toast.error(errorMessage(error))
+      // What went wrong with the folder shows above, as it is now.
+      await queryClient.invalidateQueries({ queryKey: keys.backups })
     } finally {
       setBusy(false)
     }
@@ -55,6 +57,7 @@ export function BackupsSection() {
       <p className="text-[13px] leading-relaxed text-ink-2">
         <BackupPlace where={data.where} />
       </p>
+      {data.problem && <FolderProblem problem={data.problem} root={data.where.name} />}
       <Button variant="secondary" className="self-start" loading={busy} onClick={backUpNow}>
         {t('backups.now')}
       </Button>
@@ -93,21 +96,44 @@ export function BackupsSection() {
   )
 }
 
+/** Why backups can't be made or listed where they go, and what to do about it. */
+function FolderProblem({ problem, root }: { problem: BackupProblemDTO; root: string }) {
+  const { t } = useTranslation('settings')
+  return (
+    <div role="alert" className="flex flex-col gap-1 rounded-[12px] border border-danger/30 bg-danger-soft px-3.5 py-3 text-[13px] leading-relaxed">
+      <p className="font-medium text-ink">{t('backups.problem.title')}</p>
+      <p className="text-ink-2">
+        <Trans t={t} i18nKey={`backups.problem.${problem.code}`} values={{ path: problem.path, root, user: problem.user ?? '100:101', detail: problem.detail }} components={{ code }} />
+      </p>
+    </div>
+  )
+}
+
 function RestoreDialog({ backup, onClose }: { backup: BackupDTO | null; onClose: () => void }) {
   const { t } = useTranslation(['settings', 'common'])
   const updates = useUpdates()
   const [accessKey, setAccessKey] = useState('')
   const [typed, setTyped] = useState('')
   const [busy, setBusy] = useState(false)
+  /** Attachments of this backup that can't be put back: shown, and restoring goes on without them only if asked again. */
+  const [damaged, setDamaged] = useState<DamagedFileDTO[] | null>(null)
   // The Worker's name on Cloudflare; elsewhere, the address the copy is reached at.
   const name = updates.data?.copyName ?? window.location.hostname
+
+  // Closed however it is, it starts afresh next time: nothing typed, nothing found damaged.
+  function close() {
+    setAccessKey('')
+    setTyped('')
+    setDamaged(null)
+    onClose()
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (!backup) return
     setBusy(true)
     try {
-      await post(`/backups/${backup.id}/restore`, { accessKey })
+      await post(`/backups/${backup.id}/restore`, { accessKey, withoutDamaged: damaged !== null })
       // Everything changed underneath: start again from the restored copy, with the new session.
       // The other tabs of this browser share that session: their vault locks too, and they read
       // it again.
@@ -115,7 +141,8 @@ function RestoreDialog({ backup, onClose }: { backup: BackupDTO | null; onClose:
       announceVaultChange()
       window.location.assign('/')
     } catch (error) {
-      toast.error(errorMessage(error))
+      if (error instanceof ApiError && error.code === 'backup_files_damaged') setDamaged((error.details as { files: DamagedFileDTO[] }).files)
+      else toast.error(errorMessage(error))
       setBusy(false)
     }
   }
@@ -123,12 +150,7 @@ function RestoreDialog({ backup, onClose }: { backup: BackupDTO | null; onClose:
   return (
     <Dialog
       open={backup !== null}
-      onOpenChange={(open) => {
-        if (open) return
-        setAccessKey('')
-        setTyped('')
-        onClose()
-      }}
+      onOpenChange={(open) => !open && close()}
       title={t('backups.restoreTitle')}
       description={backup ? t('backups.restoreDescription', { date: dateTime(backup.createdAt) }) : undefined}
     >
@@ -139,14 +161,27 @@ function RestoreDialog({ backup, onClose }: { backup: BackupDTO | null; onClose:
           <li>{t('backups.restoreSessions')}</li>
           <li>{t('backups.restoreAgents')}</li>
         </ul>
+        {damaged && (
+          <div role="alert" className="flex flex-col gap-1.5 rounded-[12px] border border-danger/30 bg-danger-soft px-3.5 py-3 text-[13px] leading-relaxed">
+            <p className="font-medium text-ink">{t('backups.damaged.title', { count: damaged.length })}</p>
+            <ul className="flex flex-col gap-0.5 text-ink-2" aria-label={t('backups.damaged.list')}>
+              {damaged.map((f) => (
+                <li key={f.name}>
+                  <span className="font-medium text-ink">{f.name}</span> · {t(`backups.damaged.reason.${f.reason}`)}
+                </li>
+              ))}
+            </ul>
+            <p className="text-ink-2">{t('backups.damaged.body')}</p>
+          </div>
+        )}
         <Field label={t('backups.accessKey')} type="password" autoComplete="current-password" spellCheck={false} className="[&_input]:font-mono" value={accessKey} onChange={(e) => setAccessKey(e.target.value)} autoFocus />
         <Field label={t('backups.typeName', { name })} autoComplete="off" spellCheck={false} className="[&_input]:font-mono" value={typed} onChange={(e) => setTyped(e.target.value)} />
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={close}>
             {t('common:actions.cancel')}
           </Button>
           <Button type="submit" variant="danger" loading={busy} disabled={!accessKey || typed.trim() !== name}>
-            {t('backups.restoreConfirm')}
+            {damaged ? t('backups.damaged.confirm') : t('backups.restoreConfirm')}
           </Button>
         </div>
       </form>

@@ -90,7 +90,27 @@
     "restoreAgents": "Os agentes de quem você tirou o acesso desde então não o recuperam.",
     "accessKey": "Chave de acesso",
     "typeName": "Digite “{{name}}” para confirmar",
-    "restoreConfirm": "Restaurar"
+    "restoreConfirm": "Restaurar",
+    "problem": {
+      "title": "Os backups não podem ser feitos aí",
+      "access": "O Orqevio (o usuário <code>{{user}}</code> do servidor) não consegue ler ou gravar em <code>{{path}}</code>. Devolva a ele a pasta de backups: se ela é montada do servidor, com <code>sudo chown -R {{user}}</code> nela; se está dentro do volume (o que <code>docker compose cp</code> copia fica com o root), com <code>docker compose run --rm --user root app chown -R orqevio:orqevio {{root}}</code>.",
+      "readonly": "<code>{{path}}</code> é somente leitura.",
+      "full": "O disco de <code>{{path}}</code> está cheio.",
+      "other": "Não é possível usar <code>{{path}}</code>: {{detail}}"
+    },
+    "damaged": {
+      "title_one": "{{count}} anexo deste backup está danificado ou falta:",
+      "title_many": "{{count}} anexos deste backup estão danificados ou faltam:",
+      "title_other": "{{count}} anexos deste backup estão danificados ou faltam:",
+      "list": "Anexos danificados",
+      "reason": {
+        "missing": "falta",
+        "size": "está cortado",
+        "changed": "mudou"
+      },
+      "body": "Esta cópia continua como está. Se você restaurar sem eles, os cartões e documentos voltam, mas esses arquivos não.",
+      "confirm": "Restaurar sem esses arquivos"
+    }
   },
   "export": {
     "title": "Exportar seus dados",

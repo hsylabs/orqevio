@@ -5,6 +5,7 @@ import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
 import { type AttachmentStorage, STORAGE_KEY, WORKSPACE_ID } from './storage'
+import { exactLength } from './upload-stream'
 
 /** Attachment storage on the local filesystem (Node/Docker). */
 export class LocalStorage implements AttachmentStorage {
@@ -15,11 +16,12 @@ export class LocalStorage implements AttachmentStorage {
     return path.join(this.root, key)
   }
 
-  async put(key: string, body: ReadableStream<Uint8Array>, _size: number, _contentType: string) {
+  /** Keeps exactly `size` bytes, or nothing: like R2, a body cut short or longer fails. */
+  async put(key: string, body: ReadableStream<Uint8Array>, size: number, _contentType: string) {
     const file = this.resolve(key)
     await mkdir(path.dirname(file), { recursive: true })
     try {
-      await pipeline(Readable.fromWeb(body as NodeReadableStream<Uint8Array>), createWriteStream(file, { mode: 0o600 }))
+      await pipeline(Readable.fromWeb(body.pipeThrough(exactLength(size)) as NodeReadableStream<Uint8Array>), createWriteStream(file, { mode: 0o600 }))
     } catch (error) {
       await unlink(file).catch(() => {})
       throw error

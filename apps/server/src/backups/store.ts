@@ -1,5 +1,6 @@
 import { createReadStream, createWriteStream } from 'node:fs'
 import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
+import type { BackupProblemDTO } from '@orqevio/shared'
 import path from 'node:path'
 import { Readable, Writable } from 'node:stream'
 
@@ -20,6 +21,38 @@ export interface BackupStore {
   /** Streams exactly `size` bytes into `key`, or keeps nothing. */
   writeStream(key: string, body: ReadableStream<Uint8Array>, size: number): Promise<void>
   delete(keys: string[]): Promise<void>
+  /** Why backups can't be made or read there, if so: a folder that isn't the app's, read-only, or full. */
+  check?(): Promise<BackupProblemDTO | null>
+}
+
+/** What a failed file operation means for backups, and where. */
+export function problemOf(error: unknown, at: string): BackupProblemDTO {
+  const code = (error as NodeJS.ErrnoException | undefined)?.code
+  const uid = typeof process !== 'undefined' ? process.getuid?.() : undefined
+  const gid = typeof process !== 'undefined' ? process.getgid?.() : undefined
+  return {
+    code: code === 'EACCES' || code === 'EPERM' ? 'access' : code === 'EROFS' ? 'readonly' : code === 'ENOSPC' || code === 'EDQUOT' ? 'full' : 'other',
+    path: at,
+    user: uid === undefined ? null : `${uid}:${gid ?? uid}`,
+    detail: error instanceof Error ? error.message : String(error),
+  }
+}
+
+/** A file operation that failed because of the folder itself (its owner, read-only, full), not the backup. */
+export const isFolderError = (error: unknown) => ['EACCES', 'EPERM', 'EROFS', 'ENOSPC', 'EDQUOT'].includes((error as NodeJS.ErrnoException | undefined)?.code ?? '')
+
+/** For the server's log: what is wrong, and what to do. `root` is the backups folder. */
+export function describeBackupProblem(problem: BackupProblemDTO, root = problem.path) {
+  switch (problem.code) {
+    case 'access':
+      return `Backups can't be made: this server's user (${problem.user ?? 'unknown'}) can't read or write ${problem.path}. Give the backups folder back to that user: mounted from the host, with sudo chown -R ${problem.user ?? '100:101'} on it; inside the volume (backups copied in with docker compose cp are left to root), with docker compose run --rm --user root app chown -R orqevio:orqevio ${root}.`
+    case 'readonly':
+      return `Backups can't be made: ${problem.path} is read-only.`
+    case 'full':
+      return `Backups can't be made: the disk of ${problem.path} is full.`
+    default:
+      return `Backups can't be made in ${problem.path}: ${problem.detail}`
+  }
 }
 
 export const BACKUP_KEY = /^(?:snapshots\/[0-9A-Za-z-]+\/(?:data\.ndjson\.gz|manifest\.json)|files\/[0-9a-f-]{36}\/[0-9a-f-]{36})$/
@@ -62,6 +95,31 @@ export class FolderBackupStore implements BackupStore {
     }
     await walk(this.root, '')
     return found
+  }
+
+  /**
+   * The folder and every folder in it must be the app's to read and write: backups are written
+   * there, and old ones removed. A file is made and removed in each, to be sure.
+   */
+  async check() {
+    try {
+      await mkdir(this.root, { recursive: true, mode: PRIVATE_DIR })
+    } catch (error) {
+      return problemOf(error, this.root)
+    }
+    const dirs = [this.root]
+    for (let i = 0; i < dirs.length; i++) {
+      const dir = dirs[i]!
+      try {
+        for (const entry of await readdir(dir, { withFileTypes: true })) if (entry.isDirectory()) dirs.push(path.join(dir, entry.name))
+        const probe = path.join(dir, '.orqevio-check')
+        await writeFile(probe, '', { mode: PRIVATE_FILE })
+        await rm(probe, { force: true })
+      } catch (error) {
+        return problemOf(error, dir)
+      }
+    }
+    return null
   }
 
   async read(key: string) {
