@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { BackupDTO } from '@orqevio/shared'
@@ -537,10 +537,12 @@ describe('attachments on disk', () => {
 
     await storage.put(key, body(new Uint8Array(20)), 20, 'application/octet-stream')
     expect((await stat(path.join(dir, key))).size).toBe(20)
-    // Left by a server stopped while writing, and a file that isn't the app's.
+    // Left by a server stopped while writing two hours ago, and a file that isn't the app's.
     await writeFile(path.join(dir, `${key}.partial`), 'half')
     await writeFile(path.join(dir, path.dirname(key), 'notes.txt'), 'mine')
-    expect(await storage.sweep(async () => true, 0)).toBe(0)
+    const before = new Date(Date.now() - 2 * 60 * 60 * 1000)
+    for (const name of [key, `${key}.partial`, `${path.dirname(key)}/notes.txt`]) await utimes(path.join(dir, name), before, before)
+    expect(await storage.sweep(async () => true)).toBe(0)
     expect((await readdir(path.join(dir, path.dirname(key)))).sort()).toEqual([path.basename(key), 'notes.txt'])
   })
 })
