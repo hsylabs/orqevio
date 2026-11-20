@@ -52,6 +52,44 @@ describe('small fixes for agents', () => {
     await mcp.close()
   })
 
+  it('create_checklist makes an empty checklist, which add_checklist_items then fills', async () => {
+    const { client, workspaceId, mcp } = await agent(['tasks:read', 'tasks:write'])
+    const { columns } = await seedBoard(client, workspaceId)
+    const card = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Copiada de Trello' })
+    const checklists = async () => (await client.get(`/api/cards/${card.body.id}`)).body.checklists as Array<{ id: string; title: string; items: Array<{ text: string }> }>
+
+    // As on Trello: two checklists with the same name and nothing in them yet.
+    const first = await mcp.callTool({ name: 'create_checklist', arguments: { card_id: card.body.id, title: 'Pendientes' } })
+    expect(first.isError).toBeFalsy()
+    const created = JSON.parse((first.content as Array<{ text: string }>)[0]!.text)
+    expect(created).toMatchObject({ created: true, title: 'Pendientes' })
+    await mcp.callTool({ name: 'create_checklist', arguments: { card_id: card.body.id, title: 'Pendientes' } })
+    expect((await checklists()).map((c) => [c.id === created.checklist_id, c.title, c.items.length])).toEqual([
+      [true, 'Pendientes', 0],
+      [false, 'Pendientes', 0],
+    ])
+
+    await mcp.callTool({ name: 'add_checklist_items', arguments: { card_id: card.body.id, checklist_id: created.checklist_id, items: ['Revisar', 'Publicar'] } })
+    const [filled, empty] = await checklists()
+    expect(filled!.items.map((i) => i.text)).toEqual(['Revisar', 'Publicar'])
+    expect(empty!.items).toEqual([])
+
+    // A blank title is refused, and leaves the card as it was.
+    const blank = await mcp.callTool({ name: 'create_checklist', arguments: { card_id: card.body.id, title: '   ' } })
+    expect(blank.isError).toBe(true)
+    expect(await checklists()).toHaveLength(2)
+
+    // The card's history says who made each one.
+    const history = (await client.get(`/api/cards/${card.body.id}/history`)).body as Array<{ kind: string; actor: { kind: string } }>
+    expect(history.filter((e) => e.kind === 'checklist.created').map((e) => e.actor.kind)).toEqual(['agent', 'agent'])
+    await mcp.close()
+
+    // Only an agent allowed to write tasks has it.
+    const reader = await agent(['tasks:read'])
+    expect((await reader.mcp.listTools()).tools.map((t) => t.name)).not.toContain('create_checklist')
+    await reader.mcp.close()
+  })
+
   it('a malformed MCP request is invalid params (-32602), not an internal error', async () => {
     const { rpc, mcp } = await agent(['tasks:read'])
     for (const params of [undefined, {}, { name: 5 }, { name: 'list_projects', arguments: 'x' }]) {

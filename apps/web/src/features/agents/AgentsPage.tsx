@@ -20,7 +20,7 @@ const TOOLS = [
   { id: 'editCards', name: 'create_card · update_card · move_card', scope: 'tasksWrite' },
   { id: 'archiveCard', name: 'archive_card', scope: 'tasksWrite' },
   { id: 'organizeBoards', name: 'create_board · create_column · update_column', scope: 'tasksWrite' },
-  { id: 'labels', name: 'create_label · add_checklist_items · update_checklist_item', scope: 'tasksWrite' },
+  { id: 'labels', name: 'create_label · create_checklist · add_checklist_items · update_checklist_item', scope: 'tasksWrite' },
   { id: 'readPages', name: 'list_pages · read_page', scope: 'docsRead' },
   { id: 'writePages', name: 'create_page · update_page', scope: 'docsWrite' },
   { id: 'linkCard', name: 'link_card_to_page', scope: 'write' },

@@ -420,11 +420,26 @@ export function createMcpServer(services: Services, actor: AgentActor) {
     )
 
     server.registerTool(
+      'create_checklist',
+      {
+        title: 'Create checklist',
+        description: 'Creates an empty checklist on a card. To create one with items, use add_checklist_items with checklist_title instead.',
+        inputSchema: { card_id: uuid, title: z.string().min(1).max(120) },
+        annotations: WRITE,
+      },
+      ({ card_id, title }) =>
+        run(async () => {
+          const checklist = await services.cards.createChecklist(actor, card_id, { title })
+          return { created: true, checklist_id: checklist.id, title: checklist.title }
+        }),
+    )
+
+    server.registerTool(
       'add_checklist_items',
       {
         title: 'Add checklist items',
         description:
-          'Adds items to a checklist of a card. Pass checklist_id to use an existing checklist; otherwise a new checklist is created with checklist_title.',
+          'Adds items to a checklist of a card. Pass checklist_id to use an existing checklist; otherwise a new checklist is created with checklist_title. For an empty checklist, use create_checklist.',
         inputSchema: {
           card_id: uuid,
           items: z.array(z.string().min(1).max(500)).min(1).max(50),

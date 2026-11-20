@@ -395,7 +395,7 @@ claude mcp add --transport http orqevio https://tu-dominio/mcp --header "Authori
 | --- | --- |
 | Cualquier lectura | `list_projects`, `search`, `read_attachment` (texto como texto, imágenes como imágenes) |
 | Tareas · lectura | `get_board`, `get_card` |
-| Tareas · escritura | `create_card`, `update_card` (con `base_version` si cambia la descripción), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
+| Tareas · escritura | `create_card`, `update_card` (con `base_version` si cambia la descripción), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `create_checklist`, `add_checklist_items`, `update_checklist_item` |
 | Documentos · lectura | `list_pages`, `read_page` |
 | Documentos · escritura | `create_page`, `update_page` (título, icono y contenido: reemplazar con `base_version`, o añadir al final), `move_page` (dentro de su proyecto) |
 | Escritura + lectura de ambas áreas | `link_card_to_page` |
