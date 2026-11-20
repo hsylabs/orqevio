@@ -26,6 +26,12 @@
     "title": "Il n’y a rien ici",
     "body": "Cette page n’existe pas ou vous n’y avez pas accès."
   },
+  "gone": {
+    "card": "Cette carte n’existe plus",
+    "page": "Cette page n’existe plus",
+    "cardBody": "Elle a été supprimée définitivement ou se trouve dans un espace auquel vous n’avez pas accès.",
+    "pageBody": "Elle a été supprimée définitivement ou se trouve dans un espace auquel vous n’avez pas accès."
+  },
   "time": {
     "justNow": "à l’instant"
   },

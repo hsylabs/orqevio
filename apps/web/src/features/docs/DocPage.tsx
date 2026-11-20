@@ -1,5 +1,5 @@
 import type { ActorRef, PageDTO, RealtimeEvent, TrashTreeDTO } from '@orqevio/shared'
-import { MAX_MARKDOWN, extractReferences } from '@orqevio/shared'
+import { MAX_MARKDOWN, characters, extractReferences } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { EditorState } from '@tiptap/pm/state'
 import { Bot, CornerDownRight, Ellipsis, FileText, FilePlus, FolderInput, History, Paperclip, SquareKanban, Trash, TriangleAlert } from 'lucide-react'
@@ -127,9 +127,11 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
     if (saving.current || conflictRef.current || goneRef.current || !dirty.current) return
     clearTimeout(timer.current)
     const content = latest.current
-    // The server would refuse it: say so once, and try again when it is short enough.
-    if (content.length > MAX_MARKDOWN) {
-      report({ kind: 'too_long', length: content.length })
+    // The server would refuse it: say so once, and try again when it is short enough. Counted as
+    // the server counts, so a page full of emoji that it takes can be saved from here too.
+    const length = characters(content)
+    if (length > MAX_MARKDOWN) {
+      report({ kind: 'too_long', length })
       setStatus('error')
       return
     }
@@ -264,7 +266,7 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
     return () => {
       window.removeEventListener('beforeunload', beforeUnload)
       clearTimeout(timer.current)
-      if (dirty.current && !conflictRef.current && !goneRef.current && latest.current.length <= MAX_MARKDOWN) {
+      if (dirty.current && !conflictRef.current && !goneRef.current && characters(latest.current) <= MAX_MARKDOWN) {
         void patch(`/pages/${page.id}`, { content: latest.current, baseVersion: version.current }).catch(() => {})
       }
     }

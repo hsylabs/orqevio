@@ -126,7 +126,7 @@
       },
       "image": {
         "title": "Afbeelding",
-        "subtitle": "Upload een PNG, JPG, GIF of WebP",
+        "subtitle": "Upload een PNG, JPG, GIF, WebP of AVIF",
         "keywords": "afbeelding foto plaatje image picture"
       },
       "file": {
