@@ -582,9 +582,11 @@ export interface TrashPlanDTO {
   }
   conflicts: TrashConflictDTO[]
   relations: TrashRelationDTO[]
-  /** Restoring as asked can go ahead; otherwise, what is missing: where to put it, or which names. */
+  /** Boards that would hold more columns than they take (MAX_COLUMNS), and how many. */
+  limits: { board: string; count: number; max: number }[]
+  /** Restoring as asked can go ahead; otherwise, what is missing: where to put it, which names, or room for columns. */
   ready: boolean
-  missing: ('place' | 'names')[]
+  missing: ('place' | 'names' | 'columns')[]
 }
 
 // ── History ──────────────────────────────────────────────────────

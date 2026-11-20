@@ -82,7 +82,9 @@ jobs:
     # The same suite in Firefox and Safari's engine (WebKit), each against a fresh copy.
     name: End-to-end tests (${{ matrix.browser }})
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Installing a browser's system packages takes a minute, but up to 12 when the package
+    # mirror is slow: the suite still gets its ten minutes after that.
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -102,6 +104,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: Install ${{ matrix.browser }} for Playwright
+        timeout-minutes: 15
         run: pnpm --filter @orqevio/web exec playwright install --with-deps ${{ matrix.browser }}
       - name: Start the production server
         run: |

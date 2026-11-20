@@ -130,7 +130,11 @@
     "confirm": "復元",
     "ofMany_other": "戻るもののうち{{count}}件",
     "planFailed": "復元した場合の結果を確認できませんでした。",
-    "retry": "再試行"
+    "retry": "再試行",
+    "tooManyColumns": "ボード「{{board}}」の列が{{count}}列になりますが、上限は{{max}}列です。",
+    "whereWas": "元の場所",
+    "roomHint": "別の場所を選ぶか、先にそのボードの列を減らしてください。",
+    "roomHintMany": "列をいくつか外すか、別の場所を選ぶか、先にそのボードの列を減らしてください。"
   },
   "picker": {
     "project": "プロジェクト",

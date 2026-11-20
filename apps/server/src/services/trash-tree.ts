@@ -1,15 +1,16 @@
-import type {
-  ActorRef,
-  TrashConflictDTO,
-  TrashContents,
-  TrashKind,
-  TrashNodeDTO,
-  TrashPlace,
-  TrashPlaceKind,
-  TrashPlanDTO,
-  TrashRelationDTO,
-  TrashRestoreInput,
-  TrashTreeDTO,
+import {
+  type ActorRef,
+  MAX_COLUMNS,
+  type TrashConflictDTO,
+  type TrashContents,
+  type TrashKind,
+  type TrashNodeDTO,
+  type TrashPlace,
+  type TrashPlaceKind,
+  type TrashPlanDTO,
+  type TrashRelationDTO,
+  type TrashRestoreInput,
+  type TrashTreeDTO,
 } from '@orqevio/shared'
 import { type SQL, eq, sql } from 'drizzle-orm'
 import type { DbOrTx } from '../db/client'
@@ -225,6 +226,11 @@ export class Live {
       case 'attachment':
         return [...(row.card_id ? up('card', row.card_id) : up('page', row.page_id)), name]
     }
+  }
+
+  /** How many columns a board has now. */
+  columnCount(boardId: string) {
+    return this.db.get<{ total: number }>(sql`SELECT count(*) AS total FROM board_columns WHERE board_id = ${boardId}`)?.total ?? 0
   }
 
   /** The names of what is next to where something of `kind` goes, in `container`. */
@@ -537,7 +543,9 @@ export interface Plan {
   canRecreate: boolean
   choose: TrashPlaceKind[]
   location: string
-  missing: ('place' | 'names')[]
+  /** Boards that would hold more columns than they take. */
+  limits: { board: string; count: number; max: number }[]
+  missing: ('place' | 'names' | 'columns')[]
 }
 
 export const restoreError = (code: 'restore_place_in_trash' | 'restore_place_gone' | 'restore_changed', message: string, details?: unknown) => new AppError(409, code, message, details)
@@ -873,8 +881,26 @@ export function planRestore(index: TrashIndex, input: TrashRestoreInput): Plan {
     location = [...base, ...path.map((n) => names.get(n.key) ?? n.title)].join(SEPARATOR)
   }
 
+  // A board holds up to MAX_COLUMNS columns: what comes back can't take one over that, where
+  // it goes back or where it is put.
+  const columnsInto = new Map<string, number>()
+  const into = (boardId: string | null | undefined) => {
+    if (boardId) columnsInto.set(boardId, (columnsInto.get(boardId) ?? 0) + 1)
+  }
+  for (const n of coming) if (n.kind === 'column') into(placement.get(n.key)?.sets.board_id)
+  for (const c of create) if (c.kind === 'column') into(c.in?.id)
+  const limits: Plan['limits'] = []
+  for (const [boardId, incoming] of columnsInto) {
+    const key = keyOf('board', boardId)
+    const there = comingKeys.has(key) ? 0 : live.columnCount(boardId)
+    if (there + incoming <= MAX_COLUMNS) continue
+    const board = comingKeys.has(key) ? (names.get(key) ?? index.node(key)?.title ?? '') : (live.get('board', boardId)?.name ?? '')
+    limits.push({ board, count: there + incoming, max: MAX_COLUMNS })
+  }
+
   const missing: Plan['missing'] = []
   if (to === null) missing.push('place')
+  if (limits.length) missing.push('columns')
   if (conflicts.some((c) => c.taken && !c.kept)) missing.push('names')
   return {
     root,
@@ -899,6 +925,7 @@ export function planRestore(index: TrashIndex, input: TrashRestoreInput): Plan {
     canRecreate,
     choose,
     location,
+    limits,
     missing,
   }
 }
@@ -926,6 +953,7 @@ export function planDTO(index: TrashIndex, plan: Plan): TrashPlanDTO {
     },
     conflicts: plan.conflicts,
     relations: plan.relations,
+    limits: plan.limits,
     ready: plan.missing.length === 0,
     missing: plan.missing,
   }
