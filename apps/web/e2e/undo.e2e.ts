@@ -146,3 +146,108 @@ test('a forced undo shows in the open page even when live updates are down', asy
   await page.keyboard.press('Escape')
   await expect(page.locator('.orq-prose')).toHaveText('Uno')
 })
+
+// More than 500 changes go back in batches, each shown first, and the change chosen is never left
+// out; what has no history (columns here) is listed as not undone, with its place in the trash.
+test('undoing everything an agent did goes in batches and says what it leaves as it is', async ({ page, request, baseURL }) => {
+  const workspaceId = await openNewWorkspace(page, 'Tandas E2E')
+  const boardId = await createProject(page, 'Inventario')
+  await addCard(page, 'Por hacer', 'Contar el almacén')
+  const board = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string; name: string }>; cards: Array<{ id: string }> }
+  const cardId = board.cards[0]!.id
+  const created = (await (await page.request.post('/api/tokens', { data: { name: 'Claude', workspaceId, scopes: ['tasks:read', 'tasks:write'], expiresInDays: null } })).json()) as { id: string; token: string }
+  expect((await page.request.patch(`/api/tokens/${created.id}`, { data: { organize: true } })).status()).toBe(200)
+  const asAgent = async (method: 'patch' | 'post' | 'delete', path: string, data?: unknown) => {
+    const res = await request[method](`${baseURL}/api${path}`, { headers: { Authorization: `Bearer ${created.token}` }, data })
+    expect(res.ok(), await res.text()).toBe(true)
+    return res.json()
+  }
+
+  // 503 changes: a new name, a card with a checklist and 500 items; and two columns.
+  await asAgent('patch', `/cards/${cardId}`, { title: 'Contar el almacén (IA)' })
+  const other = (await asAgent('post', `/columns/${board.columns[0]!.id}/cards`, { title: 'Recuento' })) as { id: string }
+  const list = (await asAgent('post', `/cards/${other.id}/checklists`, { title: 'Estantes' })) as { id: string }
+  for (let start = 0; start < 500; start += 25) await Promise.all(Array.from({ length: 25 }, (_, i) => asAgent('post', `/checklists/${list.id}/items`, { text: `Estante ${start + i + 1}` })))
+  await asAgent('post', `/boards/${boardId}/columns`, { name: 'Revisión' })
+  const done = board.columns.find((c) => c.name === 'Hecho')!
+  await asAgent('delete', `/columns/${done.id}`)
+
+  await page.reload()
+  await page.getByRole('button', { name: 'Contar el almacén (IA)' }).click()
+  await page.getByRole('button', { name: 'Acciones de la tarjeta' }).click()
+  await page.getByRole('menuitem', { name: 'Historial' }).click()
+  const history = page.getByRole('dialog', { name: /^Historial de/ })
+  await history.getByRole('listitem').filter({ hasText: 'Claude le cambió el nombre' }).getByRole('button', { name: 'Deshacer todo lo que hizo Claude desde aquí' }).click()
+
+  // The newest 500 first: the rest, the change chosen among them, wait for the next batch.
+  const first = page.getByRole('dialog', { name: '¿Deshacer 500 cambios de Claude?' })
+  await expect(first.getByRole('status')).toHaveText('Se deshacen hasta 500 cambios cada vez. Quedan 3 más antiguos, entre ellos el que elegiste: se muestran al terminar esta tanda.')
+  const left = first.getByRole('list', { name: 'No se deshacen aquí' })
+  await expect(left.getByRole('listitem')).toHaveText(['Columna «Revisión»: creada', 'Columna «Hecho»: borrada Abrir en la papelera'])
+  await expect(left.getByRole('link', { name: 'Abrir en la papelera' })).toHaveAttribute('href', `/w/${workspaceId}/trash?item=${encodeURIComponent(`column:${done.id}`)}`)
+  await first.getByRole('button', { name: 'Deshacer 500 cambios' }).click()
+  await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'Se han deshecho 500 cambios' })).toBeVisible()
+
+  const second = page.getByRole('dialog', { name: '¿Deshacer 3 cambios de Claude?' })
+  await expect(second.getByRole('status')).toHaveText('Ya se han deshecho 500 cambios; esta es la tanda siguiente.')
+  await expect(second.getByRole('list', { name: 'Cambiados después' })).toHaveCount(0)
+  await second.getByRole('button', { name: 'Deshacer 3 cambios' }).click()
+  await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'Se han deshecho 3 cambios' })).toBeVisible()
+  await expect(second).toHaveCount(0)
+
+  await page.keyboard.press('Escape')
+  await expect(page.getByLabel('Título de la tarjeta')).toHaveValue('Contar el almacén')
+  expect((await page.request.get(`/api/cards/${other.id}`)).status()).toBe(404)
+  // The columns stay as the agent left them.
+  const now = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ name: string }> }
+  expect(now.columns.map((c) => c.name)).toEqual(['Por hacer', 'En curso', 'Revisión'])
+})
+
+// A batch where everything was changed since by someone else can be left as it is, to go on with
+// the older changes, the one chosen among them.
+test('a batch where everything was changed since can be left, to go on with the older ones', async ({ page, request, baseURL }) => {
+  const workspaceId = await openNewWorkspace(page, 'Tanda en conflicto E2E')
+  const boardId = await createProject(page, 'Almacén')
+  await addCard(page, 'Por hacer', 'Revisar estantes')
+  const board = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string }>; cards: Array<{ id: string }> }
+  const created = (await (await page.request.post('/api/tokens', { data: { name: 'Claude', workspaceId, scopes: ['tasks:read', 'tasks:write'], expiresInDays: null } })).json()) as { token: string }
+  const asAgent = async (method: 'patch' | 'post', path: string, data?: unknown) => {
+    const res = await request[method](`${baseURL}/api${path}`, { headers: { Authorization: `Bearer ${created.token}` }, data })
+    expect(res.ok(), await res.text()).toBe(true)
+    return res.json()
+  }
+  // The agent renames the card and fills another with 500 items; a person then edits every item.
+  await asAgent('patch', `/cards/${board.cards[0]!.id}`, { title: 'Revisar estantes (IA)' })
+  const other = (await asAgent('post', `/columns/${board.columns[0]!.id}/cards`, { title: 'Recuento' })) as { id: string }
+  const list = (await asAgent('post', `/cards/${other.id}/checklists`, { title: 'Estantes' })) as { id: string }
+  const items: string[] = []
+  for (let start = 0; start < 500; start += 25) {
+    const made = await Promise.all(Array.from({ length: 25 }, (_, i) => asAgent('post', `/checklists/${list.id}/items`, { text: `Estante ${start + i + 1}` }) as Promise<{ id: string }>))
+    items.push(...made.map((m) => m.id))
+  }
+  for (let start = 0; start < items.length; start += 25) {
+    await Promise.all(items.slice(start, start + 25).map(async (id) => expect((await page.request.patch(`/api/checklist-items/${id}`, { data: { done: true } })).ok()).toBe(true)))
+  }
+
+  await page.reload()
+  await page.getByRole('button', { name: 'Revisar estantes (IA)' }).click()
+  await page.getByRole('button', { name: 'Acciones de la tarjeta' }).click()
+  await page.getByRole('menuitem', { name: 'Historial' }).click()
+  await page.getByRole('dialog', { name: /^Historial de/ }).getByRole('listitem').filter({ hasText: 'Claude le cambió el nombre' }).getByRole('button', { name: 'Deshacer todo lo que hizo Claude desde aquí' }).click()
+
+  // All 500 were changed since: nothing to undo without losing that, so it goes on to the older ones.
+  const first = page.getByRole('dialog', { name: '¿Deshacer 500 cambios de Claude?' })
+  await expect(first.getByRole('list', { name: 'Cambiados después' }).getByRole('listitem')).toHaveCount(500)
+  await first.getByRole('button', { name: 'Ver los 3 anteriores' }).click()
+
+  const second = page.getByRole('dialog', { name: '¿Deshacer 3 cambios de Claude?' })
+  await expect(second.getByRole('status')).toHaveCount(0)
+  await second.getByRole('button', { name: 'Deshacer 1 y saltar el resto' }).click()
+  await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'Cambio deshecho' })).toContainText('Se han saltado 2 cambios que se tocaron después.')
+  await expect(second).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await expect(page.getByLabel('Título de la tarjeta')).toHaveValue('Revisar estantes')
+  // What the person worked on stays.
+  const kept = (await (await page.request.get(`/api/cards/${other.id}`)).json()) as { checklists: Array<{ items: Array<{ done: boolean }> }> }
+  expect(kept.checklists[0]!.items.filter((i) => i.done)).toHaveLength(500)
+})

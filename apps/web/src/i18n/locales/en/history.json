@@ -121,7 +121,52 @@
       "skip_other": "Undo {{count}}, skip the rest",
       "force": "Undo them all anyway",
       "confirm_one": "Undo {{count}} change",
-      "confirm_other": "Undo {{count}} changes"
+      "confirm_other": "Undo {{count}} changes",
+      "nothingInBatch": "Nothing left to undo in this batch",
+      "next_one": "Show the earlier one",
+      "next_other": "Show the {{count}} earlier ones",
+      "undoneBefore_one": "{{count}} change already undone; this is the next batch.",
+      "undoneBefore_other": "{{count}} changes already undone; this is the next batch.",
+      "remaining_one": "Up to 500 changes are undone at a time. {{count}} older one is left, the one you chose: it shows once this batch is done.",
+      "remaining_other": "Up to 500 changes are undone at a time. {{count}} older ones are left, including the one you chose: they show once this batch is done."
+    },
+    "left": {
+      "title": "Not undone here",
+      "body": "Projects, boards, columns and labels have no history: what {{name}} changed in them stays as it is.",
+      "item": {
+        "project": "Project “{{title}}”: {{actions}}",
+        "board": "Board “{{title}}”: {{actions}}",
+        "column": "Column “{{title}}”: {{actions}}",
+        "label": "Label “{{title}}”: {{actions}}"
+      },
+      "actions": {
+        "project": {
+          "created": "created",
+          "updated": "changed",
+          "moved": "moved",
+          "deleted": "deleted"
+        },
+        "board": {
+          "created": "created",
+          "updated": "changed",
+          "moved": "moved",
+          "deleted": "deleted"
+        },
+        "column": {
+          "created": "created",
+          "updated": "changed",
+          "moved": "moved",
+          "deleted": "deleted"
+        },
+        "label": {
+          "created": "created",
+          "updated": "changed",
+          "moved": "moved",
+          "deleted": "deleted"
+        }
+      },
+      "more_one": "And {{count}} more.",
+      "more_other": "And {{count}} more."
     }
   }
 }

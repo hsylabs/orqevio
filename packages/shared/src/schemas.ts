@@ -226,11 +226,14 @@ export const undoInput = z
   .object({
     ids: z.array(id).min(1).max(500).optional(),
     since: id.optional(),
+    /** With `since`: only the changes older than this one, to go on after a batch that ended there. */
+    until: id.optional(),
     conflicts: z.enum(['ask', 'skip', 'force']).default('ask'),
     /** Only say what would happen: nothing is undone. */
     dryRun: z.boolean().default(false),
   })
   .refine((v) => (v.ids === undefined) !== (v.since === undefined), { message: 'Send either ids or since' })
+  .refine((v) => v.until === undefined || v.since !== undefined, { message: 'until goes with since' })
 
 // ── Trash ────────────────────────────────────────────────────────
 /** Something in the trash, by key: `kind:id`, or `link:<card id>:<page id>`. */

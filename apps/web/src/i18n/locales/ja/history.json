@@ -107,7 +107,48 @@
       "impossible_other": "{{count}}件は元に戻せません:",
       "skip_other": "{{count}}件を元に戻し、残りはスキップ",
       "force": "それでもすべて元に戻す",
-      "confirm_other": "{{count}}件の変更を元に戻す"
+      "confirm_other": "{{count}}件の変更を元に戻す",
+      "nothingInBatch": "このまとまりで元に戻すものはもうありません",
+      "next_other": "前の {{count}} 件を表示",
+      "undoneBefore_other": "{{count}} 件はすでに元に戻しました。次のまとまりです。",
+      "remaining_other": "一度に元に戻せるのは 500 件までです。選んだ変更を含む、より古い {{count}} 件が残っています。このまとまりが終わると表示されます。"
+    },
+    "left": {
+      "title": "ここでは元に戻りません",
+      "body": "プロジェクト、ボード、列、ラベルには履歴がないため、{{name}}による変更はそのまま残ります。",
+      "item": {
+        "project": "プロジェクト「{{title}}」: {{actions}}",
+        "board": "ボード「{{title}}」: {{actions}}",
+        "column": "列「{{title}}」: {{actions}}",
+        "label": "ラベル「{{title}}」: {{actions}}"
+      },
+      "actions": {
+        "project": {
+          "created": "作成",
+          "updated": "変更",
+          "moved": "移動",
+          "deleted": "削除"
+        },
+        "board": {
+          "created": "作成",
+          "updated": "変更",
+          "moved": "移動",
+          "deleted": "削除"
+        },
+        "column": {
+          "created": "作成",
+          "updated": "変更",
+          "moved": "移動",
+          "deleted": "削除"
+        },
+        "label": {
+          "created": "作成",
+          "updated": "変更",
+          "moved": "移動",
+          "deleted": "削除"
+        }
+      },
+      "more_other": "ほか {{count}} 件"
     }
   }
 }
