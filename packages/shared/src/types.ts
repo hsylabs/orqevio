@@ -717,6 +717,18 @@ export interface UndoPlanItemDTO {
   current?: HistoryValue
 }
 
+/** Something an author changed that undoing from the history doesn't take back: it has no history. */
+export interface UndoLeftDTO {
+  entityType: 'project' | 'board' | 'column' | 'label'
+  entityId: string
+  /** Its name, as the latest of those changes left it. */
+  title: string
+  /** What they did to it, each once. */
+  actions: ('created' | 'updated' | 'moved' | 'deleted')[]
+  /** Its key in the trash, when it is there now. */
+  trashKey?: string
+}
+
 export interface UndoResultDTO {
   /** False when nothing was done because there were conflicts to decide on first. */
   applied: boolean
@@ -724,4 +736,13 @@ export interface UndoResultDTO {
   undone: number
   skipped: number
   failed: number
+  /**
+   * With `since`: the changes from there on that this batch leaves for the next one, the oldest,
+   * as one batch covers up to 500. Ask again with `until` set to the plan's last entry.
+   */
+  remaining?: number
+  /** With `since`: what the author changed from there on in projects, boards, columns and labels, which this doesn't undo. */
+  left?: UndoLeftDTO[]
+  /** How many more of those there are than `left` lists. */
+  leftMore?: number
 }
