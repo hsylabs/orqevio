@@ -269,7 +269,8 @@ function Actions({ node, name, actions, compact }: { node: TrashNodeDTO; name: s
         onClick={() => actions.restore(node)}
         aria-label={t('restoreNamed', { name })}
       >
-        {t('restore')}
+        {/* Inside the tree on a phone, the icon alone: the name needs the room. */}
+        <span className={compact ? 'max-sm:hidden' : undefined}>{t('restore')}</span>
       </Button>
       <Button
         size="sm"

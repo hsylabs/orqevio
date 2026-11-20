@@ -16,12 +16,15 @@ test('a column whose board and project are in the trash goes back there, with th
   const doing = xxx.columns.find((c) => c.name === 'En curso')!
   const done = xxx.columns.find((c) => c.name === 'Hecho')!
   await page.request.post(`/api/columns/${doing.id}/cards`, { data: { title: 'Diseñar portada' } })
+  // Away from the board first: an open board that is deleted asks for itself again, and finds nothing.
+  // From the sidebar, as a person would: loading anew cuts short requests, which WebKit reports as errors.
+  await page.getByRole('navigation').getByRole('link', { name: 'Papelera' }).click()
+  await expect(page).toHaveURL(`/w/${workspaceId}/trash`)
   await remove(page.request, `/api/columns/${doing.id}`)
   await remove(page.request, `/api/columns/${done.id}`)
   await remove(page.request, `/api/boards/${tasks}`)
   await remove(page.request, `/api/projects/${xxx.projectId}`)
 
-  await page.goto(`/w/${workspaceId}/trash`)
   const list = page.getByRole('list', { name: 'Papelera' })
   await expect(list.getByRole('listitem')).toHaveCount(1)
   const project = list.getByRole('listitem', { name: 'xxx' })
@@ -65,11 +68,14 @@ test('a card is put where the person chooses, a repeated name is asked about, an
   const card = (await (await page.request.post(`/api/columns/${source.columns[0]!.id}/cards`, { data: { title: 'Factura' } })).json()) as { id: string }
   const destination = await board(page.request, target)
   await page.request.post(`/api/columns/${destination.columns[1]!.id}/cards`, { data: { title: 'Factura' } })
+  await page.getByRole('navigation').getByRole('link', { name: 'Papelera' }).click()
+  await expect(page).toHaveURL(`/w/${workspaceId}/trash`)
   await remove(page.request, `/api/cards/${card.id}`)
   await remove(page.request, `/api/boards/${gone}`)
 
   // The activity says the card is in the trash, and opens it there.
-  await page.goto(`/w/${workspaceId}`)
+  await page.getByRole('navigation').getByRole('link', { name: 'Inicio' }).click()
+  await expect(page).toHaveURL(`/w/${workspaceId}`)
   const created = page.getByRole('listitem').filter({ hasText: /creó la tarjeta «Factura»/ }).filter({ hasText: 'en la papelera' })
   await created.getByRole('link', { name: '«Factura»' }).click()
   await expect(page).toHaveURL(`/w/${workspaceId}/trash?item=${encodeURIComponent(`card:${card.id}`)}`)
