@@ -1,4 +1,4 @@
-import type { VaultStateDTO } from '@orqevio/shared'
+import { type VaultStateDTO, isTokenActive } from '@orqevio/shared'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowUpRight, Bot, Check, FileText, FolderPlus, LockKeyhole, SquareKanban, X } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
@@ -29,7 +29,7 @@ export function HomePage() {
     { done: projects.length > 0, title: t('onboarding.project.title'), body: t('onboarding.project.body'), icon: <FolderPlus />, action: openNewProject },
     { done: projects.some((p) => p.pages.length > 0), title: t('onboarding.page.title'), body: t('onboarding.page.body'), icon: <FileText />, to: projects[0] ? `${base}/p/${projects[0].id}` : undefined },
     { done: Boolean(vault.data?.initialized), title: t('onboarding.vault.title'), body: t('onboarding.vault.body'), icon: <LockKeyhole />, to: `${base}/vault` },
-    { done: (tokens.data ?? []).some((token) => token.workspaceId === workspaceId), title: t('onboarding.agent.title'), body: t('onboarding.agent.body'), icon: <Bot />, to: `${base}/agents` },
+    { done: (tokens.data ?? []).some((token) => token.workspaceId === workspaceId && isTokenActive(token)), title: t('onboarding.agent.title'), body: t('onboarding.agent.body'), icon: <Bot />, to: `${base}/agents` },
   ]
   const ready = overview && tokens.data && vault.data
   const showSteps = ready && !dismissed && steps.some((s) => !s.done)
