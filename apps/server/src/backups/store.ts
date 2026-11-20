@@ -190,8 +190,10 @@ export class FolderBackupStore implements BackupStore {
     const file = this.file(key)
     try {
       await stat(file)
-    } catch {
-      return null
+    } catch (error) {
+      // Gone: said as such. One that can't be read is a problem of the folder, not a file gone.
+      if (isMissing(error)) return null
+      throw error
     }
     return Readable.toWeb(createReadStream(file)) as ReadableStream<Uint8Array>
   }

@@ -148,7 +148,7 @@ On a new server, a backup comes back the same way: put the folder in the new cop
 
 The backups folder must be the app's to read and write: the app runs as the user `orqevio` of the image (uid 100). A folder you mount needs `sudo chown -R 100:101 <folder>` on the server; what `docker compose cp` copies into the volume is left to root, so give it back with `docker compose run --rm --user root app chown -R orqevio:orqevio /data/backups`. If the folder isn't the app's, read-only or full, the log says so when the app starts, and **Settings → Backups** says why and what to do.
 
-Restoring checks every attachment the backup needs before changing anything: one that is gone, cut short or not what it was when kept is named, and you choose to restore without it or to keep the copy as it is.
+Restoring checks every attachment the backup needs as it puts it back, and changes nothing until they are all right: one that is gone, cut short or not what it was when kept is named, and you choose to restore without it or to keep the copy as it is.
 
 **Export.** **Settings → Export your data** downloads a ZIP you can read without Orqevio: each workspace's tasks in JSON, its documents in Markdown and the attachments, with the links between them pointing at the files. The vault has its own encrypted export.
 

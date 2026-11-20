@@ -302,7 +302,11 @@ export class BackupService {
         throw this.folderError(error)
       })
       const manifest = manifests.find((m) => m.id === id)
-      const data = manifest && (await store.read(dataKey(id)))
+      const data =
+        manifest &&
+        (await store.read(dataKey(id)).catch((error) => {
+          throw this.folderError(error)
+        }))
       if (!manifest || !data) throw notFound('Backup')
       if (data.length !== manifest.data.bytes || (await sha256(data)) !== manifest.data.sha256) {
         throw new AppError(422, 'backup_damaged', 'This backup is damaged: its data is not what it was when it was made')
@@ -356,7 +360,9 @@ export class BackupService {
       let ownerId = ''
       try {
         for (const file of wanted) {
-          const body = await store.stream(fileKey(file.key))
+          const body = await store.stream(fileKey(file.key)).catch((error) => {
+            throw this.folderError(error)
+          })
           if (!body) {
             damaged.push(named(file, 'missing'))
             continue
