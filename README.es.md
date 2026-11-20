@@ -432,7 +432,7 @@ La misma batería se pasa contra el runtime de Cloudflare en local (`pnpm --filt
 E2E_BASE_URL=http://127.0.0.1:8787 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-La CI ejecuta las dos y, además, repite la batería contra el servidor de Node en Firefox y en WebKit (el motor de Safari), cada uno con una copia limpia. En local, instala el navegador y elígelo con `E2E_BROWSER`, también contra una copia recién creada:
+La CI ejecuta las dos y, además, repite la batería contra el servidor de Node en Firefox y en WebKit (el motor de Safari), cada uno con una copia limpia, y contra la imagen de Docker, directamente y detrás de un proxy que pide contraseña. Juntas suman cerca de una hora de máquina en cada pasada, así que se ejecutan en los PR hacia `main` y cuando se lanzan a mano (Actions → CI → Run workflow). Los PR hacia `develop` y los envíos a `develop` y `main` pasan el typecheck, `pnpm test` y la compilación. En local, instala el navegador y elígelo con `E2E_BROWSER`, también contra una copia recién creada:
 
 ```bash
 pnpm --filter @orqevio/web exec playwright install firefox
