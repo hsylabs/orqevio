@@ -121,7 +121,52 @@
       "skip_other": "{{count}} ongedaan maken, rest overslaan",
       "force": "Toch alles ongedaan maken",
       "confirm_one": "{{count}} wijziging ongedaan maken",
-      "confirm_other": "{{count}} wijzigingen ongedaan maken"
+      "confirm_other": "{{count}} wijzigingen ongedaan maken",
+      "nothingInBatch": "Niets meer ongedaan te maken in deze ronde",
+      "next_one": "De vorige tonen",
+      "next_other": "De {{count}} vorige tonen",
+      "undoneBefore_one": "{{count}} wijziging al ongedaan gemaakt; dit is de volgende ronde.",
+      "undoneBefore_other": "{{count}} wijzigingen al ongedaan gemaakt; dit is de volgende ronde.",
+      "remaining_one": "Er worden maximaal 500 wijzigingen tegelijk ongedaan gemaakt. Er blijft {{count}} oudere over, die je koos: die verschijnt na deze ronde.",
+      "remaining_other": "Er worden maximaal 500 wijzigingen tegelijk ongedaan gemaakt. Er blijven {{count}} oudere over, waaronder die je koos: die verschijnen na deze ronde."
+    },
+    "left": {
+      "title": "Hier niet ongedaan gemaakt",
+      "body": "Projecten, borden, kolommen en labels hebben geen geschiedenis: wat {{name}} eraan veranderde, blijft zoals het is.",
+      "item": {
+        "project": "Project ‘{{title}}’: {{actions}}",
+        "board": "Bord ‘{{title}}’: {{actions}}",
+        "column": "Kolom ‘{{title}}’: {{actions}}",
+        "label": "Label ‘{{title}}’: {{actions}}"
+      },
+      "actions": {
+        "project": {
+          "created": "aangemaakt",
+          "updated": "gewijzigd",
+          "moved": "verplaatst",
+          "deleted": "verwijderd"
+        },
+        "board": {
+          "created": "aangemaakt",
+          "updated": "gewijzigd",
+          "moved": "verplaatst",
+          "deleted": "verwijderd"
+        },
+        "column": {
+          "created": "aangemaakt",
+          "updated": "gewijzigd",
+          "moved": "verplaatst",
+          "deleted": "verwijderd"
+        },
+        "label": {
+          "created": "aangemaakt",
+          "updated": "gewijzigd",
+          "moved": "verplaatst",
+          "deleted": "verwijderd"
+        }
+      },
+      "more_one": "En nog {{count}}.",
+      "more_other": "En nog {{count}}."
     }
   }
 }

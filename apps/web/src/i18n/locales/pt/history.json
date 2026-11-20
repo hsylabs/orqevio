@@ -135,7 +135,56 @@
       "force": "Desfazer todas mesmo assim",
       "confirm_one": "Desfazer {{count}} mudança",
       "confirm_many": "Desfazer {{count}} mudanças",
-      "confirm_other": "Desfazer {{count}} mudanças"
+      "confirm_other": "Desfazer {{count}} mudanças",
+      "nothingInBatch": "Nada mais a desfazer neste lote",
+      "next_one": "Ver a anterior",
+      "next_many": "Ver as {{count}} anteriores",
+      "next_other": "Ver as {{count}} anteriores",
+      "undoneBefore_one": "{{count}} alteração já desfeita; este é o lote seguinte.",
+      "undoneBefore_many": "{{count}} alterações já desfeitas; este é o lote seguinte.",
+      "undoneBefore_other": "{{count}} alterações já desfeitas; este é o lote seguinte.",
+      "remaining_one": "São desfeitas até 500 alterações de cada vez. Falta {{count}} mais antiga, a que você escolheu: ela aparece ao terminar este lote.",
+      "remaining_many": "São desfeitas até 500 alterações de cada vez. Faltam {{count}} mais antigas, entre elas a que você escolheu: elas aparecem ao terminar este lote.",
+      "remaining_other": "São desfeitas até 500 alterações de cada vez. Faltam {{count}} mais antigas, entre elas a que você escolheu: elas aparecem ao terminar este lote."
+    },
+    "left": {
+      "title": "Não é desfeito aqui",
+      "body": "Projetos, quadros, colunas e etiquetas não têm histórico: o que {{name}} mudou neles fica como está.",
+      "item": {
+        "project": "Projeto “{{title}}”: {{actions}}",
+        "board": "Quadro “{{title}}”: {{actions}}",
+        "column": "Coluna “{{title}}”: {{actions}}",
+        "label": "Etiqueta “{{title}}”: {{actions}}"
+      },
+      "actions": {
+        "project": {
+          "created": "criado",
+          "updated": "alterado",
+          "moved": "movido",
+          "deleted": "excluído"
+        },
+        "board": {
+          "created": "criado",
+          "updated": "alterado",
+          "moved": "movido",
+          "deleted": "excluído"
+        },
+        "column": {
+          "created": "criada",
+          "updated": "alterada",
+          "moved": "movida",
+          "deleted": "excluída"
+        },
+        "label": {
+          "created": "criada",
+          "updated": "alterada",
+          "moved": "movida",
+          "deleted": "excluída"
+        }
+      },
+      "more_one": "E mais {{count}}.",
+      "more_many": "E mais {{count}}.",
+      "more_other": "E mais {{count}}."
     }
   }
 }

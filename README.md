@@ -43,7 +43,7 @@ Everything people and agents change can be taken back for 30 days.
 
 **Undo.** In the history:
 - **Undo** puts back what one change changed, without touching what changed after it. What it added goes to the trash, and what it deleted comes back.
-- **Undo everything Claude did from here**, on an agent's change, takes back all that agent did from that change on, across cards and pages, after saying what that covers.
+- **Undo everything Claude did from here**, on an agent's change, takes back all that agent did from that change on, across cards and pages, after saying what that covers. More than 500 changes go back in batches of up to 500, the newest first, each shown before it is undone. What the agent changed in projects, boards, columns and labels has no history: it is listed as not undone, with a link to it in the trash when it is there.
 - **Restore this version** puts a page's content or a card's description back as it was.
 
 If someone changed the same thing after the change you undo, Orqevio says who and asks first. Undoing is a change of its own, so it can be undone too. Only people undo.
