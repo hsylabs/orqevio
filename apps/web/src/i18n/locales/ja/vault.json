@@ -54,7 +54,8 @@
     "filters": {
       "all": "すべて",
       "logins": "ログイン",
-      "notes": "メモ"
+      "notes": "メモ",
+      "favorites": "お気に入り"
     },
     "label": "保管庫の項目",
     "noMatches": "一致する項目はありません。",

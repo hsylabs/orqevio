@@ -1,5 +1,5 @@
 import { DEFAULT_LOCALE, LOCALES, type Locale, isLocale, matchLocale } from '@orqevio/shared'
-import i18n, { type BackendModule, type ResourceKey } from 'i18next'
+import i18n, { type BackendModule, type FormatFunction, type ResourceKey } from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { NAMESPACES, en } from './resources'
 
@@ -61,11 +61,25 @@ export async function setupI18n() {
       defaultNS: 'common',
       resources: { en },
       partialBundledLanguages: true,
-      // React already escapes what it renders.
-      interpolation: { escapeValue: false },
+      // React already escapes what it renders. Every value goes through format (below), so that
+      // numbers come out as the language writes them.
+      interpolation: { escapeValue: false, alwaysFormat: true },
       // Catalogs are loaded before a language is shown, so nothing needs to suspend.
       react: { useSuspense: false },
     })
+  numbersAsWritten(i18n)
+}
+
+/**
+ * A number in a text is written as its language writes it ("5,000 items", "5.000 Elemente"), as
+ * `{{n, number}}` would; a text naming a format keeps it. For an instance initialised with
+ * `alwaysFormat`: init has put i18next's own formatter in the interpolator, which this wraps.
+ */
+export function numbersAsWritten(instance: typeof i18n) {
+  const { interpolator, formatter } = instance.services
+  const format: FormatFunction = (value, name, lng, options) =>
+    name ? formatter!.format(value, name, lng!, options ?? {}) : typeof value === 'number' ? new Intl.NumberFormat(lng).format(value) : value
+  ;(interpolator as unknown as { format: FormatFunction }).format = format
 }
 
 /** The language the app is showing now. */

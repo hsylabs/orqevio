@@ -139,3 +139,67 @@ test.describe('on a phone', () => {
     await expect(page.getByRole('button', { name: 'Archivadas' })).toBeVisible()
   })
 })
+
+// A board reads as headings and lists, and a card says its labels and due date as well as its title.
+test('the board has headings and lists, and a card says its labels and due date', async ({ page }, testInfo) => {
+  await openNewWorkspace(page, 'Lectura E2E')
+  const boardId = await createProject(page, 'Lecturas')
+  const board = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { name: string; columns: Array<{ id: string; name: string }> }
+  const label = (await (await page.request.post(`/api/boards/${boardId}/labels`, { data: { name: 'Urgente', color: 'amber' } })).json()) as { id: string }
+  await page.request.post(`/api/columns/${board.columns[0]!.id}/cards`, { data: { title: 'Leer el contrato', labelIds: [label.id], dueAt: '2031-03-14' } })
+  await expect(page.getByRole('heading', { level: 1, name: board.name })).toBeAttached()
+  for (const column of board.columns) await expect(page.getByRole('heading', { level: 2, name: column.name })).toBeAttached()
+  const cards = page.getByRole('list', { name: `Tarjetas de ${board.columns[0]!.name}` })
+  await expect(cards.getByRole('listitem')).toHaveCount(1)
+  const card = cards.getByRole('listitem').getByRole('button', { name: 'Leer el contrato' })
+  await expect(card).toHaveAccessibleDescription(/Etiquetas: Urgente\. Fecha límite: .*14/)
+  await page.screenshot({ path: testInfo.outputPath('2-tablero.png'), animations: 'disabled' })
+})
+
+// Names and states a screen reader needs: the sidebar button says whether it is open, the current
+// workspace is marked, the notices are named in Spanish, and the lines a change added are read.
+test('the sidebar button says if it is open, the current workspace is marked, notices and history are read', async ({ page }) => {
+  await openNewWorkspace(page, 'Estados E2E')
+  await expect(page.getByRole('region', { name: /^Avisos/ })).toBeAttached()
+  await page.getByRole('button', { name: /^Estados E2E/ }).click()
+  await expect(page.getByRole('menuitem', { name: /Estados E2E/ })).toHaveAttribute('aria-current', 'true')
+  await page.keyboard.press('Escape')
+
+  await createProject(page, 'Notas')
+  await page.getByRole('button', { name: 'Nueva página en Notas' }).click({ force: true })
+  await page.waitForURL(/\/d\//)
+  await page.getByLabel('Título de la página').fill('Acta')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Primera línea')
+  await expect(page.getByText('Guardado')).toBeVisible()
+  await page.getByRole('button', { name: 'Acciones de la página' }).click()
+  await page.getByRole('menuitem', { name: 'Historial' }).click()
+  const history = page.getByRole('dialog', { name: /Historial de/ })
+  await expect(history.getByText(/Líneas añadidas: 1\. Líneas quitadas: 0\./)).toBeAttached()
+  await page.keyboard.press('Escape')
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  // At this width the sidebar starts closed, or is closed with Escape (it stays open as an overlay after a resize).
+  if (await page.getByRole('navigation', { name: 'Navegación principal' }).isVisible()) await page.keyboard.press('Escape')
+  const toggle = page.getByRole('button', { name: 'Alternar barra lateral' })
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+})
+
+// On a phone, the palette's search takes the line, "with archived" goes under it, and nothing is cut.
+test('on a phone the palette keeps its search whole', async ({ page }, testInfo) => {
+  await openNewWorkspace(page, 'Paleta E2E')
+  await page.setViewportSize({ width: 390, height: 844 })
+  if (await page.getByRole('navigation', { name: 'Navegación principal' }).isVisible()) await page.keyboard.press('Escape')
+  await page.keyboard.press('ControlOrMeta+k')
+  const input = page.getByRole('combobox')
+  await expect(input).toBeVisible()
+  // The palette opens growing from 96 %: measured before that ends, each box has its own scale.
+  await page.getByRole('dialog').evaluate((dialog) => Promise.all(dialog.getAnimations({ subtree: true }).map((animation) => animation.finished)))
+  const field = (await input.boundingBox())!
+  const archived = (await page.getByText('Incluir archivadas').boundingBox())!
+  expect(field.width).toBeGreaterThan(250)
+  expect(archived.y).toBeGreaterThanOrEqual(field.y + field.height - 2)
+  await page.screenshot({ path: testInfo.outputPath('3-paleta-en-el-telefono.png'), animations: 'disabled' })
+})

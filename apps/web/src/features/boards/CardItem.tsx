@@ -2,7 +2,7 @@ import type { CardSummaryDTO, LabelDTO } from '@orqevio/shared'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Bot, Calendar, FileText, Paperclip, TextAlignStart } from 'lucide-react'
-import { memo } from 'react'
+import { memo, useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { currentLocale } from '../../i18n'
 import { cn } from '../../lib/cn'
@@ -129,30 +129,57 @@ export const CardView = memo(function CardView({ card, labels, overlay, ghost }:
   )
 })
 
+/** What a card shows besides its title, said in words: its name alone left out its labels and due date. */
+function useCardDescription(card: CardSummaryDTO, labels: Map<string, LabelDTO>) {
+  const { t } = useTranslation('boards')
+  const names = card.labelIds.map((id) => labels.get(id)).filter((l): l is LabelDTO => Boolean(l)).map((l) => l.name || t('labels.unnamed'))
+  return [
+    names.length && t('card.a11y.labels', { list: new Intl.ListFormat(currentLocale(), { type: 'conjunction' }).format(names) }),
+    card.dueAt && t('card.a11y.due', { date: dueLabel(card.dueAt) }),
+    card.checklist.total > 0 && t('card.a11y.checklist', { done: card.checklist.done, total: card.checklist.total }),
+    card.hasDescription && t('card.hasDescription'),
+    card.linkedPages > 0 && `${t('card.linkedDocs')}: ${card.linkedPages}`,
+    card.attachments > 0 && `${t('card.attachments')}: ${card.attachments}`,
+    card.createdBy?.kind === 'agent' && t('card.createdByName', { name: card.createdBy.name }),
+  ]
+    .filter(Boolean)
+    .join('. ')
+}
+
 export function SortableCard({ card, labels, onOpen, disabled }: { card: CardSummaryDTO; labels: Map<string, LabelDTO>; onOpen: (id: string) => void; disabled: boolean }) {
   const { t } = useTranslation('boards')
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
     data: { type: 'card', title: card.title },
     disabled,
   })
+  const described = useId()
+  const description = useCardDescription(card, labels)
+  // An item of its column's list, with the card inside it: the drag attributes make whatever has them a button.
   return (
-    <li
-      ref={setNodeRef}
-      style={{ transform: CSS.Translate.toString(transform), transition }}
-      {...attributes}
-      {...listeners}
-      aria-roledescription={t('card.roleDescription')}
-      aria-label={card.title}
-      onClick={() => onOpen(card.id)}
-      onKeyDown={(e) => {
-        listeners?.onKeyDown?.(e)
-        if (e.key === 'Enter' && !e.defaultPrevented) onOpen(card.id)
-      }}
-      // Resting a finger on it starts a drag: no text selection or system menu instead.
-      className="list-none rounded-[11px] outline-none select-none [-webkit-touch-callout:none] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-sunken"
-    >
-      <CardView card={card} labels={labels} ghost={isDragging} />
+    <li ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), transition }} className="list-none">
+      <div
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        aria-roledescription={t('card.roleDescription')}
+        aria-label={card.title}
+        aria-describedby={[attributes['aria-describedby'], description && described].filter(Boolean).join(' ') || undefined}
+        onClick={() => onOpen(card.id)}
+        onKeyDown={(e) => {
+          listeners?.onKeyDown?.(e)
+          if (e.key === 'Enter' && !e.defaultPrevented) onOpen(card.id)
+        }}
+        // Resting a finger on it starts a drag: no text selection or system menu instead.
+        className="rounded-[11px] outline-none select-none [-webkit-touch-callout:none] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-sunken"
+      >
+        <CardView card={card} labels={labels} ghost={isDragging} />
+      </div>
+      {description && (
+        <span id={described} className="sr-only">
+          {description}
+        </span>
+      )}
     </li>
   )
 }

@@ -91,7 +91,12 @@
     "hasDescription": "Tem descrição",
     "linkedDocs": "Documentos vinculados",
     "attachments": "Anexos",
-    "createdByName": "Criado por {{name}}"
+    "createdByName": "Criado por {{name}}",
+    "a11y": {
+      "labels": "Etiquetas: {{list}}",
+      "due": "Prazo: {{date}}",
+      "checklist": "Checklist: {{done}} de {{total}} feitos"
+    }
   },
   "sheet": {
     "fallbackTitle": "Cartão",

@@ -372,6 +372,8 @@ export function BoardPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {/* The board's name as its heading, for screen readers; on screen it is in the path. */}
+      {data && <h1 className="sr-only">{data.name}</h1>}
       <PageHeader
         crumbs={
           data

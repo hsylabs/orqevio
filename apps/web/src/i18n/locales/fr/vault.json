@@ -58,7 +58,8 @@
     "filters": {
       "all": "Tout",
       "logins": "Identifiants",
-      "notes": "Notes"
+      "notes": "Notes",
+      "favorites": "Favoris"
     },
     "label": "Éléments du coffre-fort",
     "noMatches": "Aucun résultat.",
@@ -197,7 +198,7 @@
       "busy": "Génération des clés…",
       "submit": "Créer le coffre-fort",
       "ready": "Votre coffre-fort est prêt. Personne d’autre que vous ne peut l’ouvrir.",
-      "elsewhere": "Le coffre-fort a d’abord été configuré dans un autre onglet ou sur un autre appareil : la clé de récupération affichée ici n’ouvre rien. Utilisez celle affichée là-bas, avec son mot de passe principal."
+      "elsewhere": "Le coffre-fort a d’abord été configuré dans un autre onglet ou sur un autre appareil : la clé de récupération affichée ici n’ouvre rien. Utilisez celle affichée là-bas, avec son mot de passe principal."
     },
     "recoveryKey": {
       "title": "Enregistrez votre clé de récupération",
