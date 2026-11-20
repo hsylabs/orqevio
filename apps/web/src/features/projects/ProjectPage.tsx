@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { Button } from '../../components/ui/Button'
 import { cn } from '../../lib/cn'
-import { relativeTime } from '../../lib/format'
+import { monogram, relativeTime } from '../../lib/format'
 import { PageHeader } from '../shell/PageHeader'
 import { ProjectSettingsDialog } from '../shell/ProjectSettingsDialog'
 import { useStructureActions } from '../shell/actions'
@@ -42,7 +42,7 @@ export function ProjectPage() {
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[1040px] px-6 py-10 sm:px-10">
           <div className="animate-rise flex items-start gap-4">
-            <span className={cn('glyph size-12 rounded-[12px] text-[22px]', `c-${project.color}`)}>{project.name[0]?.toUpperCase()}</span>
+            <span className={cn('glyph size-12 rounded-[12px] text-[22px]', `c-${project.color}`)}>{monogram(project.name)}</span>
             <div className="min-w-0">
               <h1 className="font-display text-[34px] leading-tight font-medium tracking-[-0.02em]">{project.name}</h1>
               <p className="mt-1 text-[14px] text-ink-2">

@@ -16,6 +16,7 @@
   "noLineChanges": "変更された行はありません。",
   "movedTo": "元の場所がなくなっていたため、{{place}}に移動しました",
   "quoted": "「{{name}}」",
+  "unnamedLabel": "（名前なし）",
   "kinds": {
     "page": {
       "created": "<actor>{{actor}}</actor>がこのページを作成しました",
