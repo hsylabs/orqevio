@@ -178,6 +178,30 @@ describe('small fixes in tasks', () => {
     expect(blanked.body.name).toBe('')
   })
 
+  it('page titles are cleaned as other names, through the API and MCP: one line, and one that shows nothing is no title', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { projectId } = await seedBoard(client, workspaceId)
+    const page = await client.post(`/api/projects/${projectId}/pages`, { title: 'Acta\nde la\treunión' })
+    expect(page.status).toBe(201)
+    expect(page.body.title).toBe('Acta de la reunión')
+    const invisible = await client.post(`/api/projects/${projectId}/pages`, { title: '\u200B\uFE0F' })
+    expect(invisible.status).toBe(201)
+    expect(invisible.body.title).toBe('')
+    const renamed = await client.patch(`/api/pages/${page.body.id}`, { title: 'Dos\r\nlíneas' })
+    expect(renamed.status).toBe(200)
+    expect((await client.get(`/api/pages/${page.body.id}`)).body.title).toBe('Dos líneas')
+    // MCP goes through the same rules.
+    const token = await client.post('/api/tokens', { name: 'Claude', workspaceId, scopes: ['docs:write'], expiresInDays: 30 })
+    const res = await h.app.request('/mcp', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token.body.token}`, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'create_page', arguments: { project_id: projectId, title: 'Notas\nsueltas' } } }),
+    })
+    expect(res.status).toBe(200)
+    const created = (await client.get(`/api/projects/${projectId}/pages`)).body as Array<{ title: string }>
+    expect(created.map((p) => p.title)).toContain('Notas sueltas')
+  })
+
   it('a board holds up to 20 columns, also once created', async () => {
     const { client, workspaceId } = await signUp(h)
     const { boardId, columns } = await seedBoard(client, workspaceId)

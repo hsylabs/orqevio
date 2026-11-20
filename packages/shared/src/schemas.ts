@@ -144,13 +144,13 @@ export const linkPageInput = z.object({ pageId: id })
 
 // ── Pages ───────────────────────────────────────────────────────
 export const pageCreateInput = z.object({
-  title: z.string().trim().max(200).default(''),
+  title: optionalName(200).default(''),
   icon: z.string().max(16).nullable().optional(),
   parentId: id.nullable().optional(),
   content: z.string().max(MAX_MARKDOWN).default(''),
 })
 export const pageUpdateInput = z.object({
-  title: z.string().trim().max(200).optional(),
+  title: optionalName(200).optional(),
   icon: z.string().max(16).nullable().optional(),
   content: z.string().max(MAX_MARKDOWN).optional(),
   /** Required when `content` is sent: optimistic concurrency guard. */
