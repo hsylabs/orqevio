@@ -1,10 +1,12 @@
-import { randomBytes } from 'node:crypto'
-import { cp, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { randomBytes, randomUUID } from 'node:crypto'
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import type { BackupDTO } from '@orqevio/shared'
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
+import { FolderBackupStore } from '../src/backups/store'
 import type { RawSql } from '../src/db/raw'
+import { LocalStorage } from '../src/lib/storage-local'
 import { Client, type Harness, createHarness, seedBoard, signInOwner, signUp } from './harness'
 
 const harnesses: Harness[] = []
@@ -348,22 +350,34 @@ describe('backups and their attachments', () => {
     const refused = await client.post(`/api/backups/${made.id}/restore`, { accessKey })
     expect(refused.status).toBe(422)
     expect(refused.body.error.code).toBe('backup_files_damaged')
-    expect(refused.body.error.details.files).toEqual(
-      expect.arrayContaining([
-        { name: 'presupuesto.pdf', reason: 'size' },
-        { name: 'plano.png', reason: 'changed' },
-        { name: 'lista.txt', reason: 'missing' },
-      ]),
-    )
-    expect(refused.body.error.details.files).toHaveLength(3)
+    // What can be told without reading them: one cut short, one gone.
+    expect(refused.body.error.details.files).toEqual([
+      { key: key('presupuesto.pdf'), name: 'presupuesto.pdf', reason: 'size' },
+      { key: key('lista.txt'), name: 'lista.txt', reason: 'missing' },
+    ])
     // Nothing changed: not the data, and no backup was made before a restore that didn't happen.
     expect(everything(h.sql)).toEqual(before)
     expect(((await client.get('/api/backups')).body.backups as BackupDTO[]).map((b) => b.kind)).toEqual(['manual'])
 
-    // Asked to, it restores without them, and says which were left out.
-    const done = await client.post(`/api/backups/${made.id}/restore`, { accessKey, withoutDamaged: true })
+    // Restoring without those two: the one that changed shows as it is put back, and stops it again.
+    const again = await client.post(`/api/backups/${made.id}/restore`, { accessKey, leaveOut: [key('presupuesto.pdf'), key('lista.txt')] })
+    expect(again.status).toBe(422)
+    expect(again.body.error.details.files).toEqual([
+      { key: key('presupuesto.pdf'), name: 'presupuesto.pdf', reason: 'size' },
+      { key: key('lista.txt'), name: 'lista.txt', reason: 'missing' },
+      { key: key('plano.png'), name: 'plano.png', reason: 'changed' },
+    ])
+    expect(everything(h.sql)).toEqual(before)
+    expect(((await client.get('/api/backups')).body.backups as BackupDTO[]).map((b) => b.kind)).toEqual(['manual'])
+    // What was put back meanwhile went again; and the kept copy that changed is gone, so no later
+    // backup takes it as good.
+    expect(await h.storage.exists(key('intacto.txt'))).toBe(false)
+    await expect(stat(keptFile(h, key('plano.png')))).rejects.toThrow()
+
+    // Without the three, it restores, and says which were left out.
+    const done = await client.post(`/api/backups/${made.id}/restore`, { accessKey, leaveOut: [key('presupuesto.pdf'), key('lista.txt'), key('plano.png')] })
     expect(done.status, JSON.stringify(done.body)).toBe(200)
-    expect(done.body.leftOut).toHaveLength(3)
+    expect((done.body.leftOut as Array<{ name: string }>).map((f) => f.name).sort()).toEqual(['lista.txt', 'plano.png', 'presupuesto.pdf'])
     expect(new TextDecoder().decode(await fileBytes(h, client, files.fine))).toBe('Intacto')
     // A damaged copy is never put back: what was cut short or changed is not served as if whole.
     for (const id of [files.pdf, files.image, files.note]) {
@@ -371,7 +385,28 @@ describe('backups and their attachments', () => {
     }
   })
 
-  it('copies again a kept attachment that is cut short, or that an earlier backup kept without saying what it was', async () => {
+  it('names the attachments of a backup made before 1.3 from its data, those in the trash too', async () => {
+    const h = await copy()
+    const { client, workspaceId, accessKey } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Con archivos' })).body.id as string
+    await client.upload(`/api/cards/${card}/attachments`, 'Uno', { name: 'uno.txt', type: 'text/plain' })
+    const trashed = (await client.upload(`/api/cards/${card}/attachments`, 'Dos', { name: 'dos.txt', type: 'text/plain' })).body.id as string
+    expect((await client.del(`/api/attachments/${trashed}`)).status).toBeLessThan(300)
+    const made = (await client.post('/api/backups')).body as BackupDTO
+    // As 1.2 wrote it: only the key and the size of each.
+    const manifest = await manifestOf(h, made.id)
+    expect(manifest.files).toHaveLength(2)
+    await h.backups!.write(`snapshots/${made.id}/manifest.json`, new TextEncoder().encode(JSON.stringify({ ...manifest, files: manifest.files.map(({ key, size }: { key: string; size: number }) => ({ key, size })) })))
+    await rm(path.join(h.env.dataDir, 'uploads', workspaceId), { recursive: true, force: true })
+    for (const f of manifest.files) await rm(keptFile(h, f.key))
+
+    const refused = await client.post(`/api/backups/${made.id}/restore`, { accessKey })
+    expect(refused.status).toBe(422)
+    expect((refused.body.error.details.files as Array<{ name: string }>).map((f) => f.name).sort()).toEqual(['dos.txt', 'uno.txt'])
+  })
+
+  it('uses again a kept attachment of the right size, even with the copy’s own file gone, and copies again one cut short', async () => {
     const h = await copy()
     const { client, workspaceId } = await signUp(h)
     const { columns } = await seedBoard(client, workspaceId)
@@ -387,13 +422,54 @@ describe('backups and their attachments', () => {
     expect((await readFile(keptFile(h, kept.key))).equals(bytes)).toBe(true)
     expect((await manifestOf(h, second.id)).files[0]).toMatchObject({ key: kept.key, size: 20_000, sha256: kept.sha256 })
 
-    // A backup of 1.2: files without their SHA-256. The next one copies them again, and says it.
-    const legacy = await manifestOf(h, second.id)
-    await h.backups!.write(`snapshots/${second.id}/manifest.json`, new TextEncoder().encode(JSON.stringify({ ...legacy, files: legacy.files.map(({ key, size }: { key: string; size: number }) => ({ key, size })) })))
-    await rm(path.join(h.env.backupDir!, 'snapshots', first.id), { recursive: true, force: true })
+    // Backups of 1.2: files without their SHA-256. One of the right size is used again as it is,
+    // not copied again: it stays even once the copy's own file is gone.
+    for (const id of [first.id, second.id]) {
+      const legacy = await manifestOf(h, id)
+      await h.backups!.write(`snapshots/${id}/manifest.json`, new TextEncoder().encode(JSON.stringify({ ...legacy, files: legacy.files.map(({ key, size }: { key: string; size: number }) => ({ key, size })) })))
+    }
+    await rm(path.join(h.env.dataDir, 'uploads', ...kept.key.split('/')))
     vi.setSystemTime(Date.now() + 120_000)
     const third = (await client.post('/api/backups')).body as BackupDTO
-    expect((await manifestOf(h, third.id)).files[0]).toMatchObject({ key: kept.key, sha256: kept.sha256, name: 'datos.bin' })
+    expect(third.missingFiles).toBe(0)
+    expect((await manifestOf(h, third.id)).files).toEqual([{ key: kept.key, size: 20_000, name: 'datos.bin' }])
+    expect((await readFile(keptFile(h, kept.key))).equals(bytes)).toBe(true)
+  })
+
+  it('takes a copy’s own file it can’t read as missing, not as a problem of the backups folder', async () => {
+    const h = await copy()
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Con archivo' })).body.id as string
+    await client.upload(`/api/cards/${card}/attachments`, 'No se lee', { name: 'cerrado.txt', type: 'text/plain' })
+    const upload = path.join(h.env.dataDir, 'uploads')
+    vi.spyOn(h.storage, 'stream').mockRejectedValueOnce(Object.assign(new Error(`EACCES: permission denied, open '${upload}/x'`), { code: 'EACCES', syscall: 'open', path: `${upload}/x` }))
+    const made = await client.post('/api/backups')
+    expect(made.status, JSON.stringify(made.body)).toBe(201)
+    expect((made.body as BackupDTO).missingFiles).toBe(1)
+
+    const store = new FolderBackupStore('/data/backups')
+    const failed = (code: string, at?: string) => Object.assign(new Error(code), { code, syscall: at ? 'open' : 'write', ...(at && { path: at }) })
+    expect(store.failedHere(failed('EACCES', '/data/uploads/w/f'))).toBe(false)
+    expect(store.failedHere(failed('EACCES', '/data/backups-old/f'))).toBe(false)
+    expect(store.failedHere(failed('EACCES', '/data/backups/files/w/f'))).toBe(true)
+    expect(store.failedHere(failed('ENOTDIR', '/data/backups'))).toBe(true)
+    expect(store.failedHere(failed('ENOSPC'))).toBe(true)
+    expect(store.failedHere(failed('EIO'))).toBe(false)
+  })
+
+  it('makes the backup even when old ones can’t be removed yet', async () => {
+    const h = await copy()
+    const { client } = await signUp(h)
+    const unused = `files/${randomUUID()}/${randomUUID()}`
+    await h.backups!.write(unused, new Uint8Array([1, 2, 3]))
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(h.backups!, 'delete').mockRejectedValueOnce(new Error('EBUSY: resource busy'))
+    const made = await client.post('/api/backups')
+    expect(made.status).toBe(201)
+    expect(errors).toHaveBeenCalledWith('[backups] prune failed', expect.any(Error))
+    errors.mockRestore()
+    expect(((await client.get('/api/backups')).body.backups as BackupDTO[]).map((b) => b.id)).toEqual([(made.body as BackupDTO).id])
   })
 
   it('says why backups cannot be made where they go, in Settings and when backing up now', async () => {
@@ -411,6 +487,30 @@ describe('backups and their attachments', () => {
     expect(now.body.error.message).toContain(file)
   })
 
+  it('reads only its own folders in the backups folder, and says one it can’t read instead of taking its backups as gone', async () => {
+    const h = await copy()
+    const { client, accessKey } = await signUp(h)
+    const made = (await client.post('/api/backups')).body as BackupDTO
+    // Another folder there (a disk's lost+found, say), where nothing could be written: not the app's business.
+    await mkdir(path.join(h.env.backupDir!, 'lost+found', '.orqevio-check'), { recursive: true })
+    expect((await client.get('/api/backups')).body.problem).toBeNull()
+
+    // A folder of it can't be read (it isn't this user's): said, in Settings and when restoring,
+    // instead of its backups or their attachments looking gone.
+    const at = path.join(h.env.backupDir!, 'files')
+    const denied = () => Object.assign(new Error(`EACCES: permission denied, scandir '${at}'`), { code: 'EACCES', syscall: 'scandir', path: at })
+    const list = h.backups!.list.bind(h.backups!)
+    vi.spyOn(h.backups!, 'list').mockImplementation(async (prefix) => {
+      if (prefix === 'files/') throw denied()
+      return list(prefix)
+    })
+    vi.spyOn(h.backups!, 'check').mockResolvedValue(null)
+    const status = (await client.get('/api/backups')).body
+    expect((status.backups as BackupDTO[]).map((b) => b.id)).toEqual([made.id])
+    const restore = await client.post(`/api/backups/${made.id}/restore`, { accessKey })
+    expect([restore.status, restore.body.error.code]).toEqual([409, 'backup_folder'])
+  })
+
   it('tells a folder that is not the app’s, read-only or full, and what to do', async () => {
     const { problemOf, describeBackupProblem } = await import('../src/backups/store')
     const error = (code: string) => Object.assign(new Error(`${code}: failed`), { code })
@@ -421,5 +521,26 @@ describe('backups and their attachments', () => {
     const told = describeBackupProblem(problemOf(error('EACCES'), '/data/backups/files'), '/data/backups')
     expect(told).toContain(`sudo chown -R ${user}`)
     expect(told).toContain('chown -R orqevio:orqevio /data/backups.')
+  })
+})
+
+describe('attachments on disk', () => {
+  it('are written whole or not at all, and what a write stopped half-way left goes with the sweep', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'orqevio-uploads-'))
+    folders.push(dir)
+    const storage = new LocalStorage(dir)
+    const key = `${randomUUID()}/${randomUUID()}`
+    const body = (bytes: Uint8Array) => new Response(bytes).body!
+    await expect(storage.put(key, body(new Uint8Array(10)), 20, 'application/octet-stream')).rejects.toThrow()
+    expect(await storage.exists(key)).toBe(false)
+    expect(await readdir(path.dirname(path.join(dir, key)))).toEqual([])
+
+    await storage.put(key, body(new Uint8Array(20)), 20, 'application/octet-stream')
+    expect((await stat(path.join(dir, key))).size).toBe(20)
+    // Left by a server stopped while writing, and a file that isn't the app's.
+    await writeFile(path.join(dir, `${key}.partial`), 'half')
+    await writeFile(path.join(dir, path.dirname(key), 'notes.txt'), 'mine')
+    expect(await storage.sweep(async () => true, 0)).toBe(0)
+    expect((await readdir(path.join(dir, path.dirname(key)))).sort()).toEqual([path.basename(key), 'notes.txt'])
   })
 })

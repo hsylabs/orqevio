@@ -25,12 +25,7 @@ export function measure() {
       if (digest === null) throw new Error('Not measured yet')
       return { bytes, sha256: digest }
     },
+    /** How much has gone through so far, and whether that was all (the stream ended). */
+    sofar: () => ({ bytes, ended: digest !== null }),
   }
-}
-
-/** The size and SHA-256 of a whole stream, reading it to the end. */
-export async function measureAll(body: ReadableStream<Uint8Array>) {
-  const measured = measure()
-  await body.pipeThrough(measured.stream).pipeTo(new WritableStream())
-  return measured.result()
 }

@@ -128,6 +128,8 @@ export interface BackupsDTO {
 
 /** An attachment a backup lists whose kept copy can't be put back: gone, cut short, or not what was kept. */
 export interface DamagedFileDTO {
+  /** Its storage key: what restoring without it names. */
+  key: string
   name: string
   reason: 'missing' | 'size' | 'changed'
 }

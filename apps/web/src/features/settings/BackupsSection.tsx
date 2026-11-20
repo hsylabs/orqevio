@@ -33,16 +33,21 @@ export function BackupsSection() {
   const backups = useBackups()
   const [busy, setBusy] = useState(false)
   const [restoring, setRestoring] = useState<BackupDTO | null>(null)
+  /** Why the last backup made from here failed, when it was the folder: shown until one is made. */
+  const [failed, setFailed] = useState<BackupProblemDTO | null>(null)
 
   async function backUpNow() {
     setBusy(true)
     try {
       await post('/backups')
+      setFailed(null)
       await queryClient.invalidateQueries({ queryKey: keys.backups })
       toast.success(t('backups.made'))
     } catch (error) {
       toast.error(errorMessage(error))
-      // What went wrong with the folder shows above, as it is now.
+      // What went wrong with the folder shows above: as it is now, or as the backup found it (a disk
+      // filled up while it was written, say).
+      if (error instanceof ApiError && error.code === 'backup_folder' && error.details) setFailed(error.details as BackupProblemDTO)
       await queryClient.invalidateQueries({ queryKey: keys.backups })
     } finally {
       setBusy(false)
@@ -51,19 +56,20 @@ export function BackupsSection() {
 
   const data = backups.data
   if (!data) return null
+  const problem = data.problem ?? failed
   if (!data.where) return <p className="text-[13px] leading-relaxed text-ink-3">{t('backups.off')}</p>
   return (
     <div className="flex flex-col gap-4">
       <p className="text-[13px] leading-relaxed text-ink-2">
         <BackupPlace where={data.where} />
       </p>
-      {data.problem && <FolderProblem problem={data.problem} root={data.where.name} />}
+      {problem && <FolderProblem problem={problem} root={data.where.name} />}
       <Button variant="secondary" className="self-start" loading={busy} onClick={backUpNow}>
         {t('backups.now')}
       </Button>
       {data.backups.length === 0 ? (
         // "The first one comes within the hour" isn't so while the folder can't be used: the notice above says why.
-        !data.problem && <p className="text-[13px] text-ink-3">{t('backups.none')}</p>
+        !problem && <p className="text-[13px] text-ink-3">{t('backups.none')}</p>
       ) : (
         <ul aria-label={t('backups.list')} className="flex flex-col divide-y divide-line rounded-[12px] border border-line">
           {data.backups.map((backup) => (
@@ -134,7 +140,8 @@ function RestoreDialog({ backup, onClose }: { backup: BackupDTO | null; onClose:
     if (!backup) return
     setBusy(true)
     try {
-      await post(`/backups/${backup.id}/restore`, { accessKey, withoutDamaged: damaged !== null })
+      // Without the attachments shown, and only those: one found damaged since stops it again, named.
+      await post(`/backups/${backup.id}/restore`, { accessKey, leaveOut: damaged?.map((f) => f.key) ?? [] })
       // Everything changed underneath: start again from the restored copy, with the new session.
       // The other tabs of this browser share that session: their vault locks too, and they read
       // it again.
@@ -167,7 +174,7 @@ function RestoreDialog({ backup, onClose }: { backup: BackupDTO | null; onClose:
             <p className="font-medium text-ink">{t('backups.damaged.title', { count: damaged.length })}</p>
             <ul className="flex flex-col gap-0.5 text-ink-2" aria-label={t('backups.damaged.list')}>
               {damaged.map((f) => (
-                <li key={f.name}>
+                <li key={f.key}>
                   <span className="font-medium text-ink">{f.name}</span> · {t(`backups.damaged.reason.${f.reason}`)}
                 </li>
               ))}

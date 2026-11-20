@@ -23,6 +23,8 @@ export interface BackupStore {
   delete(keys: string[]): Promise<void>
   /** Why backups can't be made or read there, if so: a folder that isn't the app's, read-only, or full. */
   check?(): Promise<BackupProblemDTO | null>
+  /** Whether a failed file operation was about this folder, not about the copy's own files being read. */
+  failedHere?(error: unknown): boolean
 }
 
 /** What a failed file operation means for backups, and where. */
@@ -65,6 +67,13 @@ function checked(key: string) {
 // Backups hold everything the copy holds: like the attachments, only the server's user reads them.
 const PRIVATE_DIR = 0o700
 const PRIVATE_FILE = 0o600
+/** The folders backups are written in: snapshots/<id>/ and files/<workspaceId>/. Nothing else there is read. */
+const LAYOUT = /^(?:snapshots|files)\/(?:[^/]+\/)?$/
+/** Made and removed to check a folder can be written; not empty, since a full disk still takes an empty file. */
+const PROBE = '.orqevio-check'
+const PROBE_BYTES = new Uint8Array(64 * 1024)
+
+const isMissing = (error: unknown) => (error as NodeJS.ErrnoException | undefined)?.code === 'ENOENT'
 
 /** Backups in a folder (BACKUP_DIR), written next to their final name and then renamed into place. */
 export class FolderBackupStore implements BackupStore {
@@ -78,19 +87,32 @@ export class FolderBackupStore implements BackupStore {
     return path.join(this.root, ...checked(key).split('/'))
   }
 
+  /**
+   * What is under `prefix`, reading only its own folder: another folder in the backups folder (a
+   * disk's lost+found, say) is not the app's. A folder that can't be read is said, not taken for
+   * an empty one: backups there would look gone.
+   */
   async list(prefix: string) {
     const found: Array<{ key: string; size: number }> = []
     const walk = async (dir: string, key: string): Promise<void> => {
       let entries: import('node:fs').Dirent[]
       try {
         entries = await readdir(dir, { withFileTypes: true })
-      } catch {
-        return
+      } catch (error) {
+        if (isMissing(error)) return
+        throw error
       }
       for (const entry of entries) {
-        const child = key ? `${key}/${entry.name}` : entry.name
-        if (entry.isDirectory()) await walk(path.join(dir, entry.name), child)
-        else if (entry.isFile() && child.startsWith(prefix) && BACKUP_KEY.test(child)) found.push({ key: child, size: (await stat(path.join(dir, entry.name))).size })
+        const child = `${key}${entry.name}`
+        if (entry.isDirectory()) {
+          if (LAYOUT.test(`${child}/`) && (`${child}/`.startsWith(prefix) || prefix.startsWith(`${child}/`))) await walk(path.join(dir, entry.name), `${child}/`)
+        } else if (entry.isFile() && child.startsWith(prefix) && BACKUP_KEY.test(child)) {
+          const info = await stat(path.join(dir, entry.name)).catch((error) => {
+            if (isMissing(error)) return null
+            throw error
+          })
+          if (info) found.push({ key: child, size: info.size })
+        }
       }
     }
     await walk(this.root, '')
@@ -98,8 +120,8 @@ export class FolderBackupStore implements BackupStore {
   }
 
   /**
-   * The folder and every folder in it must be the app's to read and write: backups are written
-   * there, and old ones removed. A file is made and removed in each, to be sure.
+   * The folder, and the folders backups are written in, must be the app's to read and write:
+   * backups are written there, and old ones removed. A file is made and removed in each, to be sure.
    */
   async check() {
     try {
@@ -108,18 +130,36 @@ export class FolderBackupStore implements BackupStore {
       return problemOf(error, this.root)
     }
     const dirs = [this.root]
-    for (let i = 0; i < dirs.length; i++) {
-      const dir = dirs[i]!
+    for (const top of ['snapshots', 'files']) {
+      const dir = path.join(this.root, top)
       try {
-        for (const entry of await readdir(dir, { withFileTypes: true })) if (entry.isDirectory()) dirs.push(path.join(dir, entry.name))
-        const probe = path.join(dir, '.orqevio-check')
-        await writeFile(probe, '', { mode: PRIVATE_FILE })
+        const entries = await readdir(dir, { withFileTypes: true })
+        dirs.push(dir, ...entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(dir, entry.name)))
+      } catch (error) {
+        // Not there yet: the first backup makes it.
+        if (isMissing(error)) continue
+        return problemOf(error, dir)
+      }
+    }
+    for (const dir of dirs) {
+      const probe = path.join(dir, PROBE)
+      try {
+        await writeFile(probe, dir === this.root ? PROBE_BYTES : '', { mode: PRIVATE_FILE })
         await rm(probe, { force: true })
       } catch (error) {
+        await rm(probe, { force: true }).catch(() => {})
         return problemOf(error, dir)
       }
     }
     return null
+  }
+
+  /** A failed operation in this folder: one whose path is in it, or a write with no path (a full disk). */
+  failedHere(error: unknown) {
+    const e = error as NodeJS.ErrnoException | undefined
+    if (!e?.path) return isFolderError(e)
+    const inside = path.relative(this.root, e.path)
+    return typeof e.syscall === 'string' && inside !== '..' && !inside.startsWith(`..${path.sep}`) && !path.isAbsolute(inside)
   }
 
   async read(key: string) {

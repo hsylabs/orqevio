@@ -70,6 +70,7 @@ export async function createHarness(overrides: Partial<Env> = {}) {
     app,
     db,
     sql,
+    storage,
     backups,
     env,
     services,
