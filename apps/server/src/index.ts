@@ -10,6 +10,7 @@ import { nodeSql } from './db/raw'
 import { configWarnings, loadEnvOrExit } from './env'
 import { RealtimeBus } from './lib/realtime'
 import { LocalStorage } from './lib/storage-local'
+import { keepConnectionsOpen } from './node/keep-alive'
 import { attachLiveUpdates } from './node/live'
 import { nodePlatform } from './node/platform'
 import { publicFetch } from './node/public-fetch'
@@ -32,6 +33,7 @@ const app = createApp(env, services, nodePlatform(env))
 const server = serve({ fetch: app.fetch, port: env.port, hostname: env.host }, (info) => {
   console.log(`Orqevio listening on http://${info.address}:${info.port} (public URL ${env.appUrls[0]})`)
 })
+keepConnectionsOpen(server as Server)
 const live = attachLiveUpdates(server as Server, env, services, bus)
 
 if (env.setupCode && isWeakSetupCode(env.setupCode)) {
