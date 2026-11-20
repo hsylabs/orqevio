@@ -29,12 +29,31 @@ export interface ImportedItems {
   items: VaultItem[]
   /** Entries that cannot be represented (cards, identities, SSH keys). */
   unsupported: number
-  /** Items whose extra data (custom fields, more addresses, older passwords) went into their notes. */
+  /** Items whose extra data (custom fields, more addresses, older passwords, a folder) went into their notes. */
   extras: number
   /** Logins whose passkey cannot come along (the rest of each one does). */
   passkeys: number
+  /** What each item brings that the summary tells, by item id: counted again on the ones actually imported. */
+  marks: Record<string, ItemMarks>
   /** Items larger than the server takes once encrypted: their titles. */
   tooLong: string[]
+}
+
+export interface ItemMarks {
+  /** Custom fields, more addresses or older passwords, kept in its notes. */
+  extras?: boolean
+  /** A passkey, which can't come along. */
+  passkey?: boolean
+  /** It was in a Bitwarden folder, whose name goes in its notes. */
+  folder?: boolean
+  /** Bitwarden asked for the master password again before showing it. */
+  reprompt?: boolean
+}
+
+/** What the summary says about `items` (the ones to import, not every one in the file). */
+export function marked(items: VaultItem[], marks: Record<string, ItemMarks>) {
+  const count = (mark: keyof ItemMarks) => items.filter((item) => marks[item.id]?.[mark]).length
+  return { extras: count('extras'), passkeys: count('passkey'), folders: count('folder'), reprompts: count('reprompt') }
 }
 
 export type ImportOutcome = ImportedItems | { kind: 'encrypted'; file: EncryptedExport } | { kind: 'problem'; problem: ImportProblem; line?: number }
@@ -126,6 +145,8 @@ const COLUMNS = {
   fields: ['fields'],
   totp: ['otpauth', 'login_totp', 'totp'],
   favorite: ['favorite'],
+  folder: ['folder'],
+  reprompt: ['reprompt'],
   type: ['type'],
   created: ['timecreated'],
   changed: ['timepasswordchanged'],
@@ -164,6 +185,8 @@ interface Extras {
   uris?: string[]
   /** Older passwords, newest first. */
   history?: string[]
+  /** The Bitwarden folder it was in. */
+  folder?: string[]
 }
 
 function withExtras(notes: string, extras: Extras) {
@@ -172,6 +195,7 @@ function withExtras(notes: string, extras: Extras) {
       ['fields', extras.fields],
       ['uris', extras.uris],
       ['history', extras.history],
+      ['folder', extras.folder],
     ] as const
   )
     .filter(([, lines]) => lines?.length)
@@ -208,20 +232,23 @@ function item(
   return itemEnvelopeLength(tidy) > MAX_ENVELOPE_LENGTH ? 'too_long' : tidy
 }
 
-/** Sorts what item() gave into the items, the ones too long and those with extras in their notes. */
+/** Sorts what item() gave into the items and the ones too long, with what each one brings. */
 function collector() {
   const items: VaultItem[] = []
   const tooLong: string[] = []
-  let extras = 0
+  const marks: Record<string, ItemMarks> = {}
   return {
-    add(next: VaultItem | 'too_long' | null, title: unknown, hadExtras: boolean) {
+    add(next: VaultItem | 'too_long' | null, title: unknown, mark: ItemMarks) {
       if (next === 'too_long') tooLong.push(text(title).trim() || t('vault:import.untitledLogin'))
       else if (next) {
         items.push(next)
-        if (hadExtras) extras++
+        if (Object.values(mark).some(Boolean)) marks[next.id] = mark
       }
     },
-    result: () => ({ items, tooLong, extras }),
+    result: () => {
+      const all = marked(items, marks)
+      return { items, tooLong, marks, extras: all.extras, passkeys: all.passkeys }
+    },
   }
 }
 
@@ -248,8 +275,9 @@ function fromCsv(text: string): ImportOutcome {
     // Bitwarden puts every address of a login in one column, separated by commas, and its
     // custom fields in another, one "name: value" per line.
     const uris = source === 'Bitwarden (CSV)' ? value(row, at.url).split(',').map((uri) => uri.trim()).filter(Boolean) : [value(row, at.url)]
-    const extras: Extras = { fields: value(row, at.fields).split(/\r?\n/).filter((line) => line.trim()), uris: uris.slice(1) }
-    const hadExtras = Boolean(extras.fields!.length || extras.uris!.length)
+    const folder = value(row, at.folder).trim()
+    const extras: Extras = { fields: value(row, at.fields).split(/\r?\n/).filter((line) => line.trim()), uris: uris.slice(1), folder: folder ? [folder] : [] }
+    const mark: ItemMarks = { extras: Boolean(extras.fields!.length || extras.uris!.length), folder: Boolean(folder), reprompt: value(row, at.reprompt).trim() === '1' }
     found.add(
       item(
         type,
@@ -257,10 +285,10 @@ function fromCsv(text: string): ImportOutcome {
         { favorite: ['1', 'true'].includes(value(row, at.favorite).trim().toLowerCase()), createdAt: created, updatedAt: isoDate(value(row, at.changed)) ?? created, extras },
       ),
       value(row, at.title),
-      hadExtras,
+      mark,
     )
   }
-  return { kind: 'items', source, ...found.result(), unsupported: 0, passkeys: 0 }
+  return { kind: 'items', source, ...found.result(), unsupported: 0 }
 }
 
 interface BitwardenItem {
@@ -274,6 +302,9 @@ interface BitwardenItem {
   passwordHistory?: Array<{ password?: string | null; lastUsedDate?: string | null }> | null
   creationDate?: string
   revisionDate?: string
+  folderId?: string | null
+  /** 1: Bitwarden asks for the master password again before showing it. */
+  reprompt?: number
 }
 
 function fromJson(text: string): ImportOutcome {
@@ -287,13 +318,16 @@ function fromJson(text: string): ImportOutcome {
   if (json.format === 'orqevio-vault-export' && typeof (json as EncryptedExport).data === 'string') return { kind: 'encrypted', file: json as EncryptedExport }
   if (json.encrypted === true || json.passwordProtected === true) return { kind: 'problem', problem: 'bitwarden_encrypted' }
   if (!Array.isArray(json.items)) return { kind: 'problem', problem: 'unknown_format' }
-  return { kind: 'items', source: 'Bitwarden (JSON)', ...fromBitwardenItems(json.items as BitwardenItem[]) }
+  const folders = new Map<string, string>()
+  for (const folder of Array.isArray((json as { folders?: unknown }).folders) ? (json as { folders: Array<{ id?: unknown; name?: unknown }> }).folders : []) {
+    if (typeof folder?.id === 'string' && typeof folder.name === 'string' && folder.name.trim()) folders.set(folder.id, folder.name.trim())
+  }
+  return { kind: 'items', source: 'Bitwarden (JSON)', ...fromBitwardenItems(json.items as BitwardenItem[], folders) }
 }
 
-function fromBitwardenItems(entries: BitwardenItem[]) {
+function fromBitwardenItems(entries: BitwardenItem[], folders: Map<string, string>) {
   const found = collector()
   let unsupported = 0
-  let passkeys = 0
   for (const entry of entries) {
     if (entry.type !== 1 && entry.type !== 2) {
       unsupported++
@@ -313,8 +347,14 @@ function fromBitwardenItems(entries: BitwardenItem[]) {
           return when ? `${text(old.password)} (${when.slice(0, 10)})` : text(old.password)
         }),
     }
-    const hadExtras = Boolean(extras.fields!.length || extras.uris!.length || extras.history!.length)
-    if (login.fido2Credentials?.length) passkeys++
+    const folder = entry.folderId ? folders.get(entry.folderId) : undefined
+    extras.folder = folder ? [folder] : []
+    const mark: ItemMarks = {
+      extras: Boolean(extras.fields!.length || extras.uris!.length || extras.history!.length),
+      passkey: Boolean(login.fido2Credentials?.length),
+      folder: Boolean(folder),
+      reprompt: entry.reprompt === 1,
+    }
     found.add(
       item(
         entry.type === 1 ? 'login' : 'note',
@@ -322,10 +362,10 @@ function fromBitwardenItems(entries: BitwardenItem[]) {
         { favorite: entry.favorite === true, createdAt: isoDate(entry.creationDate), updatedAt: isoDate(entry.revisionDate), extras },
       ),
       entry.name,
-      hadExtras,
+      mark,
     )
   }
-  return { ...found.result(), unsupported, passkeys }
+  return { ...found.result(), unsupported }
 }
 
 /** Reads an export file; tells which format it is, or why it cannot be read. */

@@ -25,8 +25,20 @@ describe('importing into the vault', () => {
       expect(data).toMatch(/^v1\./)
       sent.push(id)
     })
-    expect(result).toEqual({ saved: 6, failed: 0 })
+    expect(result).toEqual({ saved: 6, failed: 0, full: false, left: 0 })
     expect(getSession().items.map((i) => i.id).sort()).toEqual([...sent].sort())
+  })
+
+  it('stops sending at the first «vault full», and says how many did not go in', async () => {
+    unlockSession(await vaultKey(), 1, 'user-1', [], 15)
+    let calls = 0
+    const result = await importItems(several(40), () => {}, async () => {
+      if (++calls > 5) throw new ApiError(409, 'vault_full', 'The vault holds up to 5000 items')
+    })
+    expect(result).toEqual({ saved: 5, failed: 0, full: true, left: 35 })
+    // Only what was already on its way when the first refusal came: nothing more is sent.
+    expect(calls).toBeLessThanOrEqual(5 + 4)
+    expect(getSession().items).toHaveLength(5)
   })
 
   it('sends each item for the version of the key the session holds', async () => {
