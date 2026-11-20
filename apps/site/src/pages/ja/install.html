@@ -55,7 +55,7 @@
     <p><code>.env</code>を編集し、<code>APP_URL</code>にOrqevioの公開アドレス（例：<code>https://orqevio.example.jp</code>）を設定します。必要なら、英字または数字12文字以上で独自の<code>SETUP_CODE</code>も設定できます。その後：</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
     <p>Orqevioはポート3000で待ち受けます。HTTPS対応のリバースプロキシ（Caddy、Nginx、Traefik）の背後に置き、<code>.env</code>に<code>TRUST_PROXY=true</code>を追加してください。</p>
-    <p><strong>バックアップ：</strong>Orqevioは毎日、ボリュームの<code>backups</code>フォルダーに自動でバックアップを作成し、最新の7件を保持します（<a href="#backups">バックアップとエクスポート</a>を参照）。サーバーの外にも保管するには、ときどきコピーしてください。</p>
+    <p><strong>バックアップ：</strong>Orqevioは毎日、ボリュームの<code>backups</code>フォルダーに自動でバックアップを作成し、毎日のバックアップの最新7件と、それとは別に手動で作成した最新7件を保持します（<a href="#backups">バックアップとエクスポート</a>を参照）。サーバーの外にも保管するには、ときどきコピーしてください。</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backups ./orqevio-backups</code></pre></div>
     <p>手動でバックアップするには、Orqevioの稼働中にデータベースのライブバックアップを作成し、<code>uploads</code>フォルダーの添付ファイルと一緒にコンテナーの外へコピーしてください。</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose exec app node dist/cli.js backup /data/backup.db</code></pre></div>
@@ -73,7 +73,7 @@
     <p class="note"><strong>データの管理はご自身で。</strong>Orqevioは現状のまま提供され、保証はありません。アクセスキーと保管庫の回復キーを安全に保管し、バックアップは別の場所にも保管し、保管庫も定期的にエクスポートしてください。</p>
 
     <h2 id="backups">バックアップとエクスポート</h2>
-    <p>Orqevioは毎日、保管庫・ゴミ箱・履歴・添付ファイルを含めて自動でバックアップを作成し、最新の7件を保持します。Dockerではボリュームの<code>backups</code>フォルダー、Cloudflareではアカウント内のR2バケット<code>&lt;名前&gt;-backups</code>に保存されます。<strong>設定 → バックアップ</strong>で一覧を確認し、<strong>今すぐバックアップ</strong>で作成でき、アクセスキーを入力すればどれでも復元できます。復元の前に、現在の状態もバックアップされるので、元に戻せます。</p>
+    <p>Orqevioは毎日、保管庫・ゴミ箱・履歴・添付ファイルを含めて自動でバックアップを作成し、毎日のバックアップの最新7件と、それとは別に手動で作成した最新7件を保持します。Dockerではボリュームの<code>backups</code>フォルダー、Cloudflareではアカウント内のR2バケット<code>&lt;名前&gt;-backups</code>に保存されます。<strong>設定 → バックアップ</strong>で一覧を確認し、<strong>今すぐバックアップ</strong>で作成でき、アクセスキーを入力すればどれでも復元できます。復元の前に、現在の状態もバックアップされるので、元に戻せます。</p>
     <p><strong>設定 → データのエクスポート</strong>では、Orqevioがなくても読めるZIPをダウンロードできます。各ワークスペースのタスクはJSON、ドキュメントはMarkdown、それに添付ファイルが含まれます。保管庫には専用の暗号化エクスポートがあります。</p>
     <p>バージョン1.2.0より前にCloudflareにインストールしたOrqevioには、次回のアップデートでバックアップ用バケットが追加されます。</p>
 
