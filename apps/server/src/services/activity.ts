@@ -134,14 +134,14 @@ export class ActivityService {
   }
 
   /**
-   * Where the next page starts, in the list's order. If the entry changed since (merged with a
-   * later one, which moves it to the top), the time alone is the best there is.
+   * Where the next page starts, in the list's order: after the time the previous page ended at
+   * and, within that millisecond, after its last entry. The entry keeps its rowid when a later
+   * one merges into it and takes it to the top, so it still marks where the page ended; only if
+   * it is gone is the time alone the best there is.
    */
   private after(before: Date | undefined, beforeId: string | undefined) {
     if (!before) return undefined
-    const anchor = beforeId
-      ? this.deps.db.get<{ seq: number }>(sql`SELECT rowid AS seq FROM activity WHERE id = ${beforeId} AND created_at = ${before.getTime()}`)
-      : undefined
+    const anchor = beforeId ? this.deps.db.get<{ seq: number }>(sql`SELECT rowid AS seq FROM activity WHERE id = ${beforeId}`) : undefined
     if (!anchor) return lt(activity.createdAt, before)
     return or(lt(activity.createdAt, before), and(eq(activity.createdAt, before), sql`rowid < ${anchor.seq}`))
   }

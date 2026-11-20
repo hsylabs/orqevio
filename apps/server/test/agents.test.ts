@@ -312,6 +312,29 @@ describe('MCP server', () => {
     expect(new Set(seen.map((e) => e.id)).size).toBe(seen.length)
   })
 
+  it('keeps its place in the activity when the last entry it got merges with a later one', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const agent = new Client(h, (await createToken(client, workspaceId, ['tasks:read', 'tasks:write'])).token)
+    const cards: string[] = []
+    for (let i = 1; i <= 7; i++) cards.push((await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: `Tarjeta ${i}` })).body.id)
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-20T10:00:00.000Z') })
+    try {
+      // Seven renames by the agent in the same millisecond.
+      for (const [i, id] of cards.entries()) expect((await agent.patch(`/api/cards/${id}`, { title: `Renombrada ${i + 1}` })).status).toBe(200)
+      const first = (await client.get(`/api/workspaces/${workspaceId}/activity?agents=1&limit=3`)).body as ActivityDTO[]
+      expect(first.map((e) => e.summary)).toEqual(['Renombrada 7', 'Renombrada 6', 'Renombrada 5'])
+      // The agent renames the last one it got again: its entry takes the new time and goes to the top.
+      vi.setSystemTime(new Date('2026-11-20T10:00:05.000Z'))
+      expect((await agent.patch(`/api/cards/${cards[4]}`, { title: 'Renombrada 5 otra vez' })).status).toBe(200)
+      const last = first.at(-1)!
+      const next = (await client.get(`/api/workspaces/${workspaceId}/activity?agents=1&limit=3&before=${encodeURIComponent(last.createdAt)}&beforeId=${last.id}`)).body as ActivityDTO[]
+      expect(next.map((e) => e.summary)).toEqual(['Renombrada 4', 'Renombrada 3', 'Renombrada 2'])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('has every tool in the Agents page catalog, each with what it needs to be seen', async () => {
     const { client, workspaceId } = await signUp(h)
     const seen = async (tasks: AccessLevel, docs: AccessLevel, organize = false) => {
