@@ -26,6 +26,12 @@
     "title": "Hier is niets te vinden",
     "body": "De pagina bestaat niet of je hebt er geen toegang toe."
   },
+  "gone": {
+    "card": "Deze kaart bestaat niet meer",
+    "page": "Deze pagina bestaat niet meer",
+    "cardBody": "Ze is definitief verwijderd of staat in een werkruimte waar je geen toegang toe hebt.",
+    "pageBody": "Ze is definitief verwijderd of staat in een werkruimte waar je geen toegang toe hebt."
+  },
   "time": {
     "justNow": "zojuist"
   },

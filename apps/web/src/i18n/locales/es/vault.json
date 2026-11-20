@@ -196,7 +196,8 @@
       "repeat": "Repite la contraseña maestra",
       "busy": "Generando claves…",
       "submit": "Crear bóveda",
-      "ready": "Bóveda lista. Solo tú puedes abrirla."
+      "ready": "Bóveda lista. Solo tú puedes abrirla.",
+      "elsewhere": "La bóveda se configuró antes en otra pestaña o en otro dispositivo, así que la clave de recuperación de esta pantalla no sirve. Usa la que se mostró allí, con su contraseña maestra."
     },
     "recoveryKey": {
       "title": "Guarda tu clave de recuperación",
