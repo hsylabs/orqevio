@@ -150,7 +150,13 @@ test('end-to-end encrypted vault', async ({ page, browserName }) => {
   // Firefox and Safari need a click, which test/clipboard.test.ts covers.
   if (browserName === 'chromium') await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
   // The test can read the clipboard in Chromium (granted above) and Firefox, not in WebKit.
-  const clipboard = () => (browserName === 'webkit' ? Promise.resolve(null) : page.evaluate(() => navigator.clipboard.readText()))
+  // Firefox turns down a read made while a write is still on its way ("Clipboard read operation
+  // is not allowed"), as when the page has just started clearing it: that read gives null, and
+  // a poll tries again.
+  const clipboard = () =>
+    browserName === 'webkit'
+      ? Promise.resolve(null)
+      : page.evaluate(() => navigator.clipboard.readText().catch(() => null))
   const reminder = page.getByText('Lo que copiaste de la bóveda puede seguir en el portapapeles.')
   // Shown once the copy is done and the clear scheduled: the fake clock must not run before.
   const copied = page.getByText('Contraseña copiada · a los 30 s se vaciará del portapapeles o te lo recordaremos')
