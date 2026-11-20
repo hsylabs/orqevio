@@ -153,7 +153,16 @@ test('something picked that left the trash meanwhile is said, and left out', asy
   for (const name of ['Uno', 'Dos']) await page.getByRole('checkbox', { name: `Seleccionar «${name}»` }).click()
   const workspaceId = page.url().split('/w/')[1]!.split('/')[0]!
   const uno = (await (await page.request.get(`/api/workspaces/${workspaceId}/trash`)).json()) as Array<{ key: string; title: string }>
-  expect((await page.request.post(`/api/workspaces/${workspaceId}/trash/restore`, { data: { key: uno.find((n) => n.title === 'Uno')!.key } })).status()).toBe(200)
+  // Restored elsewhere just as this dialog asks what restoring both would do: once picked, before
+  // the live update that would let go of it reaches this tab.
+  let restoredElsewhere = false
+  await page.route('**/trash/restore-many', async (route) => {
+    if (!restoredElsewhere) {
+      restoredElsewhere = true
+      expect((await page.request.post(`/api/workspaces/${workspaceId}/trash/restore`, { data: { key: uno.find((n) => n.title === 'Uno')!.key } })).status()).toBe(200)
+    }
+    await route.continue()
+  })
   await page.getByRole('toolbar', { name: 'Seleccionar todo' }).getByRole('button', { name: 'Restaurar' }).click()
   const items = page.getByRole('dialog', { name: 'Restaurar 2 elementos' }).getByRole('list', { name: 'Lo que se restaura' })
   await expect(items.getByRole('listitem', { name: 'Uno' })).toContainText('Ya no está en la papelera')
