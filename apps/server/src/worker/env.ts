@@ -1,6 +1,7 @@
 import { installKind } from '@orqevio/shared'
 import type { Env } from '../env'
 import { workerMaxUploadBytes } from '../lib/upload-limit'
+import { appUrlProblem, workerAppUrls } from './settings'
 import type { OrqevioCopy } from './copy'
 
 /** Bindings declared in wrangler.jsonc. */
@@ -26,12 +27,11 @@ export interface Bindings {
   UPDATE_CHECK?: string
 }
 
+/** Why this copy can't serve with its settings, said plainly; null when it can. */
+export const workerConfigProblem = (bindings: Bindings) => appUrlProblem(bindings.APP_URL)
+
 export function workerEnv(bindings: Bindings): Env {
-  const appUrls = (bindings.APP_URL ?? '')
-    .split(',')
-    .map((url) => url.trim())
-    .filter(Boolean)
-    .map((url) => new URL(url).origin)
+  const appUrls = workerAppUrls(bindings.APP_URL)
   return {
     nodeEnv: 'production',
     port: 0,

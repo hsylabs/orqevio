@@ -11,7 +11,7 @@ import { LIVE_PATH, authorizeLive, isAllowedOrigin, readCookie } from '../http/l
 import { sessionCookieName } from '../http/middleware'
 import { type Services, createServices } from '../services'
 import { durableSql } from './durable-sql'
-import { type Bindings, workerEnv } from './env'
+import { type Bindings, workerConfigProblem, workerEnv } from './env'
 import migrations from './migrations.gen'
 import { R2BackupStore } from './r2-backups'
 import { R2Storage } from './r2-storage'
@@ -43,7 +43,11 @@ export class OrqevioCopy extends DurableObject<Bindings> {
 
   constructor(ctx: DurableObjectState, env: Bindings) {
     super(ctx, env)
-    this.config = workerEnv(env)
+    // With settings it can't serve with, no request gets here (the Worker says what is wrong);
+    // its hourly work (trash, history, backups) goes on as without APP_URL.
+    const problem = workerConfigProblem(env)
+    if (problem) console.error(`Orqevio can't serve requests: ${problem}`)
+    this.config = workerEnv(problem ? { ...env, APP_URL: undefined } : env)
     const db = drizzle(ctx.storage, { schema })
     this.services = createServices({
       db: db as unknown as Database,
