@@ -207,7 +207,8 @@
     "comesWith": "「{{name}}」と一緒に戻ります",
     "alsoBrings": "{{list}}も一緒に戻します",
     "quoted": "「{{name}}」",
-    "lost_other": "関連{{count}}件は失われます"
+    "lost_other": "関連{{count}}件は失われます",
+    "waiting_other": "リンク{{count}}件は、ゴミ箱にあるページを待っています。ページと一緒に戻ります。"
   },
   "selectLimit": "一度に選べるのは{{count}}件までです。"
 }

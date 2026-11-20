@@ -261,7 +261,10 @@
     "quoted": "“{{name}}”",
     "lost_one": "{{count}} relação se perde",
     "lost_many": "{{count}} relações se perdem",
-    "lost_other": "{{count}} relações se perdem"
+    "lost_other": "{{count}} relações se perdem",
+    "waiting_one": "{{count}} link espera a sua página, que continua na lixeira: volta com ela.",
+    "waiting_many": "{{count}} links esperam a sua página, que continua na lixeira: voltam com ela.",
+    "waiting_other": "{{count}} links esperam a sua página, que continua na lixeira: voltam com ela."
   },
   "selectLimit": "É possível escolher até {{count}} de cada vez."
 }

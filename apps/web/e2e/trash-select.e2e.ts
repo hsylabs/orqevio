@@ -147,6 +147,22 @@ test('two cards that had the same deleted label come back together with it', asy
   await expect(page.getByRole('heading', { name: 'La papelera está vacía' })).toBeVisible()
 })
 
+// Restored meanwhile (in another tab, by someone else): the dialog says so and leaves it out.
+test('something picked that left the trash meanwhile is said, and left out', async ({ page }) => {
+  const { list } = await fill(page)
+  for (const name of ['Uno', 'Dos']) await page.getByRole('checkbox', { name: `Seleccionar «${name}»` }).click()
+  const workspaceId = page.url().split('/w/')[1]!.split('/')[0]!
+  const uno = (await (await page.request.get(`/api/workspaces/${workspaceId}/trash`)).json()) as Array<{ key: string; title: string }>
+  expect((await page.request.post(`/api/workspaces/${workspaceId}/trash/restore`, { data: { key: uno.find((n) => n.title === 'Uno')!.key } })).status()).toBe(200)
+  await page.getByRole('toolbar', { name: 'Seleccionar todo' }).getByRole('button', { name: 'Restaurar' }).click()
+  const items = page.getByRole('dialog', { name: 'Restaurar 2 elementos' }).getByRole('list', { name: 'Lo que se restaura' })
+  await expect(items.getByRole('listitem', { name: 'Uno' })).toContainText('Ya no está en la papelera')
+  await expect(items.getByRole('checkbox', { name: 'Restaurar «Uno»' })).toBeDisabled()
+  await page.getByRole('button', { name: 'Restaurar todo (1)' }).click()
+  await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'Se ha restaurado 1 elemento' })).toBeVisible()
+  await expect(list.getByRole('listitem', { name: 'Dos' })).toHaveCount(0)
+})
+
 // On a phone: two lines a row, the actions in a menu, and what is picked in a bar at the bottom.
 test('on a phone, actions are in a menu and the bar for what is picked stays at the bottom', async ({ page }) => {
   const { list } = await fill(page)

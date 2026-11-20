@@ -234,7 +234,9 @@
     "alsoBrings": "bringt auch {{list}} zurück",
     "quoted": "„{{name}}“",
     "lost_one": "{{count}} Verknüpfung geht verloren",
-    "lost_other": "{{count}} Verknüpfungen gehen verloren"
+    "lost_other": "{{count}} Verknüpfungen gehen verloren",
+    "waiting_one": "{{count}} Verknüpfung wartet auf ihre Seite, die noch im Papierkorb ist: Sie kommt mit ihr zurück.",
+    "waiting_other": "{{count}} Verknüpfungen warten auf ihre Seite, die noch im Papierkorb ist: Sie kommen mit ihr zurück."
   },
   "selectLimit": "Es lassen sich bis zu {{count}} auf einmal auswählen."
 }

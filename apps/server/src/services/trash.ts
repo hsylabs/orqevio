@@ -784,9 +784,8 @@ export class TrashService {
     const done = this.deps.db.transaction((tx) => {
       const index = TrashIndex.load(tx, workspaceId)
       const picked = pick(index)
-      const gone = new Map<string, Node>()
-      for (const node of picked) for (const n of index.subtree(node)) gone.set(n.key, n)
-      for (const n of index.nodes.values()) if (n.kind === 'link' && gone.has(`page:${n.row.pageId}`)) for (const m of index.subtree(n)) gone.set(m.key, m)
+      // The same as the count shown before: see TrashIndex.goneWith.
+      const gone = index.goneWith(picked)
       const has = (kind: string, id: string | null) => gone.has(`${kind}:${id}`)
       const touches = (r: IndexRow) => has('card', r.cardId) || (r.table === 'card_labels' ? has('label', r.labelId) : has('page', r.pageId))
       const rows = [...[...gone.values()].map((n) => n.row), ...index.relations.filter(touches), ...index.mentions.filter(touches)]

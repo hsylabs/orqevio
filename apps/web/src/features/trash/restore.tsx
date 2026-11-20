@@ -92,6 +92,8 @@ interface ManyItem {
   choice: Where | null
   /** Unticked, it stays in the trash. */
   on: boolean
+  /** No longer in the trash (restored meanwhile, say): it can't come back from here. */
+  gone: boolean
 }
 
 /**
@@ -116,9 +118,12 @@ export function useRestoreMany(workspaceId: string, options: { onRestored?: (res
         const plan = byKey.get(node.key)
         const request = plan ? proposedRequest(plan, node.key, pattern, asked) : { key: node.key }
         for (const key of request.include ?? []) asked.add(key)
-        return { node, request, choice: plan?.where.to ?? null, on: !first.missing?.includes(node.key) }
+        const gone = Boolean(first.missing?.includes(node.key))
+        return { node, request, choice: plan?.where.to ?? null, on: !gone, gone }
       })
-      setAsking({ items, planned: await planRestoreMany(workspaceId, items.filter((i) => i.on).map((i) => i.request)) })
+      const on = items.filter((i) => i.on)
+      // All gone meanwhile: the dialog says so, and there is nothing to plan.
+      setAsking({ items, planned: on.length ? await planRestoreMany(workspaceId, on.map((i) => i.request)) : { plans: [], ready: false } })
     } catch (error) {
       toast.error(errorMessage(error))
     } finally {
@@ -133,7 +138,12 @@ export function useRestoreMany(workspaceId: string, options: { onRestored?: (res
       onCancel={() => setAsking(null)}
       onDone={(restored) => {
         setAsking(null)
-        toast.success(t('many.restored', { count: restored.length }))
+        // A link whose page stays in the trash waits for it: nothing of it came back yet.
+        const back = restored.filter((r) => r.waitsFor === undefined).length
+        const waiting = restored.length - back
+        const note = waiting ? { description: t('many.waiting', { count: waiting }) } : undefined
+        if (back) toast.success(t('many.restored', { count: back }), note)
+        else toast.message(t('many.waiting', { count: waiting }))
         options.onRestored?.(restored)
       }}
     />
@@ -170,7 +180,7 @@ function RestoreManyDialog({
   const active = items.filter((i) => i.on)
   const planFor = new Map(shown.result.plans.map((p) => [p.node.key, p]))
   const cameWith = shown.result.cameWith ?? {}
-  const missing = new Set(shown.result.missing ?? [])
+  const missing = new Set([...items.filter((i) => i.gone).map((i) => i.node.key), ...(shown.result.missing ?? [])])
   const titleOf = (key: string) => items.find((i) => i.node.key === key)?.node.title || t('common:untitled')
 
   // Every change is planned again, together, the last one winning; typing a name waits for a pause.
@@ -205,10 +215,10 @@ function RestoreManyDialog({
     const pattern = t('restoreDialog.suggested', { name: '{{name}}' })
     let changed = false
     const next = items.map((item) => {
-      // No longer in the trash (restored meanwhile, say): it can't come back, and is left out.
-      if (item.on && missing.has(item.node.key)) {
+      // No longer in the trash (restored meanwhile, say): it can't come back, and is left out for good.
+      if (!item.gone && missing.has(item.node.key)) {
         changed = true
-        return { ...item, on: false }
+        return { ...item, on: false, gone: true }
       }
       const plan = planFor.get(item.node.key)
       if (!item.on || !plan) return item

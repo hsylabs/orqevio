@@ -111,7 +111,7 @@ export function TrashPage() {
   // What is picked, without what is inside something else picked: that comes with it.
   const picked = [...selected.values()].filter((i) => !i.path.some((k) => selected.has(k)))
   // All there is, or as many as can go at once.
-  const allTop = nodes.length > 0 && (nodes.every((n) => selected.has(n.key)) || selected.size >= MAX_TRASH_BATCH)
+  const allTop = nodes.length > 0 && (nodes.every((n) => selected.has(n.key)) || picked.length >= MAX_TRASH_BATCH)
 
   function select(info: RowInfo, on: boolean, range: boolean) {
     const rows = [...(list.current?.querySelectorAll<HTMLElement>('[data-trash-row]') ?? [])].map((el) => el.dataset.trashRow!)
@@ -120,11 +120,15 @@ export function TrashPage() {
     const keys = range && from >= 0 && to >= 0 ? rows.slice(Math.min(from, to), Math.max(from, to) + 1) : [info.node.key]
     setSelected((s) => {
       const next = new Map(s)
+      // What counts: what is picked without something picked above it (what is inside comes with it).
+      const counted = () => [...next.values()].filter((i) => !i.path.some((k) => next.has(k))).length
       for (const key of keys) {
         const row = key === info.node.key ? info : seen.get(key)
         if (!row) continue
+        // Inside something picked in the same range: it comes with it, there is nothing to pick.
+        if (on && key !== info.node.key && row.path.some((k) => next.has(k))) continue
         // Restoring or deleting goes up to MAX_TRASH_BATCH at a time: picking stops there, and says so.
-        if (on && !next.has(key) && next.size >= MAX_TRASH_BATCH) {
+        if (on && !next.has(key) && counted() >= MAX_TRASH_BATCH) {
           toast(t('selectLimit', { count: MAX_TRASH_BATCH }))
           break
         }

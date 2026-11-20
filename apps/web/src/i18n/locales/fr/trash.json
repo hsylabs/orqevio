@@ -261,7 +261,10 @@
     "quoted": "« {{name}} »",
     "lost_one": "{{count}} relation est perdue",
     "lost_many": "{{count}} relations sont perdues",
-    "lost_other": "{{count}} relations sont perdues"
+    "lost_other": "{{count}} relations sont perdues",
+    "waiting_one": "{{count}} lien attend sa page, encore dans la corbeille : il reviendra avec elle.",
+    "waiting_many": "{{count}} liens attendent leur page, encore dans la corbeille : ils reviendront avec elle.",
+    "waiting_other": "{{count}} liens attendent leur page, encore dans la corbeille : ils reviendront avec elle."
   },
   "selectLimit": "On peut en choisir jusqu’à {{count}} à la fois."
 }

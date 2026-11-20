@@ -744,4 +744,17 @@ describe('several at once', () => {
     // Gone already: nothing to delete.
     expect((await purgeMany(s, { keys })).status).toBe(404)
   })
+
+  it('counts, before deleting a page for good, the link to it that waits in the trash under its card', async () => {
+    const s = await space('Enlace que se va')
+    const linked = await card(s, s.columns[0]!.id, 'Con enlace')
+    const page = (await s.client.post(`/api/projects/${s.projectId}/pages`, { title: 'Notas' })).body.id as string
+    expect((await s.client.post(`/api/cards/${linked}/pages`, { pageId: page })).status).toBe(204)
+    await del(s.client, `/api/cards/${linked}/pages/${page}`)
+    await del(s.client, `/api/pages/${page}`)
+    const counted = (await purgeMany(s, { keys: [`page:${page}`], dryRun: true })).body
+    expect(counted).toEqual({ count: 1, contents: { pages: 1, links: 1 }, bytes: 0 })
+    expect((await purgeMany(s, { keys: [`page:${page}`] })).body).toEqual(counted)
+    expect(await top(s)).toEqual([])
+  })
 })

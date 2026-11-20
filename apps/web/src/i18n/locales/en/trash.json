@@ -234,7 +234,9 @@
     "alsoBrings": "also brings back {{list}}",
     "quoted": "“{{name}}”",
     "lost_one": "{{count}} relation is lost",
-    "lost_other": "{{count}} relations are lost"
+    "lost_other": "{{count}} relations are lost",
+    "waiting_one": "{{count}} link waits for its page, still in the trash: it comes back with it.",
+    "waiting_other": "{{count}} links wait for their page, still in the trash: they come back with it."
   },
   "selectLimit": "Up to {{count}} can be picked at a time."
 }

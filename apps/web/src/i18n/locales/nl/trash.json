@@ -234,7 +234,9 @@
     "alsoBrings": "brengt ook {{list}} terug",
     "quoted": "‘{{name}}’",
     "lost_one": "{{count}} relatie gaat verloren",
-    "lost_other": "{{count}} relaties gaan verloren"
+    "lost_other": "{{count}} relaties gaan verloren",
+    "waiting_one": "{{count}} koppeling wacht op haar pagina, die nog in de prullenbak staat: ze komt ermee terug.",
+    "waiting_other": "{{count}} koppelingen wachten op hun pagina, die nog in de prullenbak staat: ze komen ermee terug."
   },
   "selectLimit": "Er kunnen er maximaal {{count}} tegelijk worden gekozen."
 }

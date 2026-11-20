@@ -441,10 +441,20 @@ export class TrashIndex {
     return [...picked].filter((node) => !this.ancestors(node).some((up) => picked.has(up)))
   }
 
-  /** Everything `nodes` take with them, they included, by kind, and the size of its files. */
+  /**
+   * What deleting `nodes` for good takes: everything below them, and the links to a page that goes
+   * (with what is below them), wherever those wait in the trash.
+   */
+  goneWith(nodes: Node[]) {
+    const gone = new Map<string, Node>()
+    for (const node of nodes) for (const n of this.subtree(node)) gone.set(n.key, n)
+    for (const n of this.nodes.values()) if (n.kind === 'link' && gone.has(`page:${n.row.pageId}`)) for (const m of this.subtree(n)) gone.set(m.key, m)
+    return gone
+  }
+
+  /** Everything deleting `nodes` for good takes (see goneWith), by kind, and the size of its files. */
   totals(nodes: Node[]): { contents: TrashContents; bytes: number } {
-    const all = new Map<string, Node>()
-    for (const node of nodes) for (const n of this.subtree(node)) all.set(n.key, n)
+    const all = this.goneWith(nodes)
     const contents: TrashContents = {}
     let bytes = 0
     for (const n of all.values()) {
