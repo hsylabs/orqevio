@@ -26,9 +26,9 @@ export function activityKey(action: string, self = false): Known | AboutThisCard
   return self && entity === 'card' ? (`actions.${action}_self` as AboutThisCard) : (`actions.${action}` as Known)
 }
 
-/** What an entry is about: its title, or a placeholder for an untitled page. */
+/** What an entry is about: its title, or a placeholder for an untitled page or a label without a name. */
 export function activityTarget(a: { entityType: string; summary: string }) {
-  return a.summary || (a.entityType === 'page' ? t('common:untitled') : '')
+  return a.summary || (a.entityType === 'label' ? t('boards:labels.unnamed') : t('common:untitled'))
 }
 
 export function activityDetail(a: Pick<ActivityDTO, 'action' | 'meta'>): string | null {

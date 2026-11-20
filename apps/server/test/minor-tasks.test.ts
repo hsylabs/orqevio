@@ -142,6 +142,66 @@ describe('small fixes in tasks', () => {
     expect(project.status).toBe(400)
   })
 
+  it('a name made only of marks (an emoji variation selector, accents) shows nothing, and is refused', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { boardId, columns } = await seedBoard(client, workspaceId)
+    for (const title of ['\uFE0F', '\u0301\u0308', ' \uFE0F\u20E3 ', '\u{E0100}']) {
+      const res = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title })
+      expect(res.status, JSON.stringify(title)).toBe(400)
+    }
+    expect((await client.post(`/api/boards/${boardId}/columns`, { name: '\uFE0F' })).status).toBe(400)
+    expect((await client.post(`/api/workspaces/${workspaceId}/projects`, { name: '\u0301', color: 'tomato' })).status).toBe(400)
+    // A mark on a character that shows is part of a name.
+    for (const title of ['❤️', 'é', '1️⃣']) {
+      const res = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title })
+      expect(res.status, JSON.stringify(title)).toBe(201)
+      expect(res.body.title).toBe(title)
+    }
+  })
+
+  it('label names are cleaned as other names: line breaks become spaces, one that shows nothing is no name', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { boardId } = await seedBoard(client, workspaceId)
+    const created = await client.post(`/api/boards/${boardId}/labels`, { name: ' Muy\nurgente\t', color: 'tomato' })
+    expect(created.status).toBe(201)
+    expect(created.body.name).toBe('Muy urgente')
+    for (const name of ['\u200B', '\uFE0F', 'ㅤ', '\u0000']) {
+      const res = await client.post(`/api/boards/${boardId}/labels`, { name, color: 'teal' })
+      expect(res.status, JSON.stringify(name)).toBe(201)
+      expect(res.body.name, JSON.stringify(name)).toBe('')
+    }
+    const renamed = await client.patch(`/api/labels/${created.body.id}`, { name: 'Dos\r\nlíneas' })
+    expect(renamed.status).toBe(200)
+    expect(renamed.body.name).toBe('Dos líneas')
+    const blanked = await client.patch(`/api/labels/${created.body.id}`, { name: '\u200B\u200C' })
+    expect(blanked.status).toBe(200)
+    expect(blanked.body.name).toBe('')
+  })
+
+  it('page titles are cleaned as other names, through the API and MCP: one line, and one that shows nothing is no title', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { projectId } = await seedBoard(client, workspaceId)
+    const page = await client.post(`/api/projects/${projectId}/pages`, { title: 'Acta\nde la\treunión' })
+    expect(page.status).toBe(201)
+    expect(page.body.title).toBe('Acta de la reunión')
+    const invisible = await client.post(`/api/projects/${projectId}/pages`, { title: '\u200B\uFE0F' })
+    expect(invisible.status).toBe(201)
+    expect(invisible.body.title).toBe('')
+    const renamed = await client.patch(`/api/pages/${page.body.id}`, { title: 'Dos\r\nlíneas' })
+    expect(renamed.status).toBe(200)
+    expect((await client.get(`/api/pages/${page.body.id}`)).body.title).toBe('Dos líneas')
+    // MCP goes through the same rules.
+    const token = await client.post('/api/tokens', { name: 'Claude', workspaceId, scopes: ['docs:write'], expiresInDays: 30 })
+    const res = await h.app.request('/mcp', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token.body.token}`, 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'create_page', arguments: { project_id: projectId, title: 'Notas\nsueltas' } } }),
+    })
+    expect(res.status).toBe(200)
+    const created = (await client.get(`/api/projects/${projectId}/pages`)).body as Array<{ title: string }>
+    expect(created.map((p) => p.title)).toContain('Notas sueltas')
+  })
+
   it('a board holds up to 20 columns, also once created', async () => {
     const { client, workspaceId } = await signUp(h)
     const { boardId, columns } = await seedBoard(client, workspaceId)
