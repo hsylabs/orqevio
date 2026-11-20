@@ -28,7 +28,7 @@ Y **nada de lo que hace un agente es definitivo.** Cualquier cambio se puede des
 - **Sin pisarse.** Los documentos y las descripciones de las tarjetas usan control de versiones optimista: si un agente edita una página o una tarjeta mientras escribes, Orqevio te avisa y eliges qué versión conservar.
 - **Nada se pierde por error.** Lo que borras espera 30 días en la papelera con todo lo que contenía: una página con sus subpáginas y archivos, una columna con sus tarjetas. Deshazlo al momento desde el aviso o restáuralo más tarde con un clic.
 - **Cada cambio tiene su historial y se puede deshacer.** Cada página y cada tarjeta guardan 30 días de cambios, de personas y de agentes: quién cambió qué y cuándo y, en los textos, qué cambió línea a línea, como un diff. Deshaz un cambio, vuelve a una versión anterior o deshaz todo lo que hizo un agente desde un momento dado; si alguien cambió lo mismo después, Orqevio pregunta antes.
-- **Tus datos, a salvo y tuyos.** Tu copia hace una copia de seguridad de sí misma cada día, aparte de sus datos, y restauras cualquiera de las 7 últimas desde **Ajustes**. **Exportar tus datos** te da todo en un ZIP que puedes leer sin Orqevio: tareas en JSON, documentos en Markdown y los adjuntos.
+- **Tus datos, a salvo y tuyos.** Tu copia hace una copia de seguridad de sí misma cada día, aparte de sus datos, y restauras cualquiera de las 7 últimas diarias, o de las 7 últimas que hiciste tú, desde **Ajustes**. **Exportar tus datos** te da todo en un ZIP que puedes leer sin Orqevio: tareas en JSON, documentos en Markdown y los adjuntos.
 - **Teclado primero.** `⌘K`/`Ctrl K` abre la paleta para buscar y saltar a cualquier sitio; `⌘\` oculta la barra lateral; el Kanban se puede reorganizar entero con teclado (espacio para coger, flechas, espacio para soltar), con anuncios para lector de pantalla.
 - **Identidad propia.** Papel cálido, tinta y dos señales de color: caqui para ti, ultramar para los agentes. Tipografía editorial (Fraunces) sobre una interfaz sobria (Instrument Sans). Tema claro y oscuro, con los tonos de texto ajustados a contraste WCAG AA.
 - **En tu idioma.** La app y el instalador hablan inglés, español, francés, portugués, italiano, alemán, neerlandés y japonés. Tu copia toma el idioma del navegador al reclamarla y puedes cambiarlo cuando quieras en **Ajustes**.
@@ -37,13 +37,13 @@ Y **nada de lo que hace un agente es definitivo.** Cualquier cambio se puede des
 
 Todo lo que cambian las personas y los agentes se puede recuperar durante 30 días.
 
-**Papelera.** Al borrar un proyecto, un tablero, una columna, una tarjeta, una página, un archivo, una etiqueta, una checklist o uno de sus elementos, o el enlace entre una tarjeta y una página, va a la **Papelera**, en la barra lateral, con todo lo que contenía. Justo después de borrar, **Deshacer** en el aviso lo trae de vuelta. En la **Papelera** ves qué es cada cosa, dónde estaba, quién la borró y cuándo se borrará para siempre, con **Restaurar** y **Borrar para siempre**. Restaurar lo deja todo como estaba; si su sitio ya no existe, la app dice dónde ha ido. Pasados 30 días, la papelera se vacía sola.
+**Papelera.** Al borrar un proyecto, un tablero, una columna, una tarjeta, una página, un archivo, una etiqueta, una checklist o uno de sus elementos, o el enlace entre una tarjeta y una página, va a la **Papelera**, en la barra lateral, con todo lo que contenía. Justo después de borrar, **Deshacer** en el aviso lo trae de vuelta. En la **Papelera**, una línea por cosa, ves qué es, dónde estaba y qué contiene, quién la borró y cuándo; lo que se borró dentro de otra cosa espera dentro de ella. **Restaurar** la devuelve a su sitio con lo que contiene; cuando antes hay algo que decidir (su sitio también está en la papelera o ya no existe, o allí ya hay algo con ese nombre), pregunta antes de hacer nada. Marca varias para restaurarlas juntas, viendo adónde va cada una, o para borrarlas para siempre, después de ver cuánto se va con ellas. Pasados 30 días, la papelera se vacía sola.
 
 **Historial.** **Historial**, en el menú de una tarjeta o una página, muestra sus cambios de los últimos 30 días: qué cambió, quién lo cambió (una persona, o qué agente) y cuándo. En el contenido de una página o la descripción de una tarjeta, **Ver qué cambió** muestra las líneas añadidas y quitadas.
 
 **Deshacer.** En el historial:
 - **Deshacer** devuelve lo que cambió un cambio, sin tocar lo que cambió después. Lo que añadió va a la papelera, y lo que borró vuelve.
-- **Deshacer todo lo que hizo Claude desde aquí**, en el cambio de un agente, deshace todo lo que hizo ese agente desde ese cambio, en tarjetas y páginas, después de decir qué abarca.
+- **Deshacer todo lo que hizo Claude desde aquí**, en el cambio de un agente, deshace todo lo que hizo ese agente desde ese cambio, en tarjetas y páginas, después de decir qué abarca. Más de 500 cambios se deshacen por tandas de hasta 500, empezando por los más recientes, y cada tanda se muestra antes de deshacerla. Lo que el agente cambió en proyectos, tableros, columnas y etiquetas no tiene historial: aparece en la lista como no deshecho, con un enlace a la papelera cuando está allí.
 - **Restaurar esta versión** deja el contenido de una página o la descripción de una tarjeta como estaba.
 
 Si alguien cambió lo mismo después del cambio que deshaces, Orqevio dice quién y pregunta antes. Deshacer es un cambio más, así que también se puede deshacer. Solo las personas deshacen.
@@ -146,7 +146,11 @@ docker compose cp app:/data/backups ./orqevio-backups
 
 En un servidor nuevo se recuperan igual: pon la carpeta en el volumen de la copia nueva (o móntala como `BACKUP_DIR`), reclama la copia y restáurala desde **Ajustes → Copias de seguridad**. `BACKUPS=off` las desactiva.
 
-**Exportación.** **Ajustes → Exportar tus datos** descarga un ZIP que puedes leer sin Orqevio: las tareas de cada espacio en JSON, sus documentos en Markdown y los adjuntos, con los enlaces entre ellos apuntando a los archivos. La bóveda tiene su propia exportación cifrada.
+La carpeta de copias tiene que poder leerla y escribirla la app, que se ejecuta como el usuario `orqevio` de la imagen (uid 100). Una carpeta que montes necesita `sudo chown -R 100:101 <carpeta>` en el servidor; lo que `docker compose cp` copia en el volumen queda a nombre de root, así que devuélveselo con `docker compose run --rm --user root app chown -R orqevio:orqevio /data/backups`. Si la carpeta no es de la app, es de solo lectura o está llena, el registro lo dice al arrancar, y **Ajustes → Copias de seguridad** dice por qué y qué hacer.
+
+Al restaurar, se comprueba cada adjunto que necesita la copia a medida que se repone, y no se cambia nada hasta que todos están bien: si alguno falta, está cortado o no es el que era al guardarlo, se nombra, y eliges restaurar sin él o dejar la copia como está.
+
+**Exportación.** **Ajustes → Exportar tus datos** descarga un ZIP que puedes leer sin Orqevio: las tareas de cada espacio en JSON, sus documentos en Markdown y los adjuntos, con los enlaces entre ellos apuntando a los archivos. Da igual lo grande que sea: pasados 4 GiB o 65.535 archivos es un ZIP64, que abren 7-Zip, unzip y bsdtar. La bóveda tiene su propia exportación cifrada.
 
 **Copias a mano.** Con la app en marcha, haz una copia en caliente de la base de datos y sácala del contenedor junto con los adjuntos, que están en la carpeta `uploads`:
 
@@ -156,7 +160,7 @@ docker compose cp app:/data/backup.db ./orqevio-copia.db
 docker compose cp app:/data/uploads ./orqevio-adjuntos
 ```
 
-Para restaurarla, para la app, vuelve a meter las dos cosas y deja que Orqevio coloque la base de datos. Guarda la que sustituye como `orqevio.db.before-restore` y devuelve los archivos al usuario de la app:
+Para restaurarla, para la app, vuelve a meter las dos cosas y deja que Orqevio coloque la base de datos. Se niega mientras la app está en marcha, porque se perdería lo que escribiera desde entonces. Guarda la que sustituye como `orqevio.db.before-restore` y devuelve los archivos al usuario de la app:
 
 ```bash
 docker compose stop app

@@ -6,6 +6,76 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-20
+
+### Added
+- **Trash, several at once.** Pick several things in the trash, with their box, their row or Shift for a range, and restore them together, each with where it goes in sight. Or delete them for good together, after seeing how much goes with them. Up to 100 at a time.
+- **MCP:** `create_checklist` makes an empty checklist, which `add_checklist_items` fills later. An agent copying boards from another tool can now copy empty checklists too.
+
+### Changed
+- **The trash is a tree.** What was deleted waits inside what held it, even when that was deleted later, and the trash shows on top what can go back to its place, one line each. **Restore** brings back everything under it, unless you untick some of it. When there is something to decide first, it asks before doing anything:
+  - its place is in the trash too, or gone: **Recreate its place** brings back those containers, and only them, or **Somewhere else** lets you choose;
+  - a name is already taken where it goes: it proposes «X (restored)», which you can change, or keeps the same name;
+  - something it was related to is in the trash too, such as a label, a document or a card: it comes back with it, or the relation waits and comes back when that does.
+
+  Nothing goes back anywhere else without asking. Before 1.3.0, a card or a page whose place was gone went to the first project, board or column of the workspace. **Undo** on a deletion, from the notice or the history, brings back exactly what it removed, to its place, or says why it can't. **Delete for good** takes away everything under it, history and files included, and says how much first. What is already in the trash shows as a tree as it is. Something whose place was lost for good before 1.3.0 offers **Somewhere else**, and in three cases also **Recreate its place** with a new container of the same name: a board or a page without its project, a page without its parent, and a card without its column.
+- **Undoing everything an agent did** goes back in batches of up to 500 changes, the newest first, each shown before it is undone, and never leaves out the change you chose. A newer change by the same agent no longer counts as a conflict. What the agent changed in projects, boards, columns and labels has no history: it is listed as not undone, with a link to it in the trash when it is there. A batch with only conflicts can be left, to go on with the older ones.
+- **Backups:**
+  - The 7 newest daily backups are kept whatever the ones you make by hand, which are kept apart: the 7 newest of them. The one made before the last restore is kept too, so a copy may now keep up to 15 backups.
+  - Restoring checks every attachment as it puts it back, and changes nothing until they are all right. One that is gone, cut short or changed is named, and you choose to restore without it or to keep the copy as it is.
+  - A backups folder the app can't use (not its own, read-only or full) is said in the log and in **Settings → Backups**.
+  - With Docker and Node, restoring from the command line refuses while the app is running.
+- **Agents:**
+  - **Agents** lists all 35 MCP tools, with what each group needs. The activity scrolls in its own box and loads earlier activity on request: 40 at a time, 10 on a phone.
+  - A token asked for with only «organize» is refused: it could read and write nothing, only see project names. The OAuth consent already refused it.
+  - `upload_attachment` refuses content that isn't base64, such as a `data:` URL or text never encoded, instead of storing a damaged file.
+  - `create_card` and `update_card` take descriptions of up to 200,000 characters, as the app does. They took 50,000.
+- **Project page:** **Documents** is as wide as **Boards**, and **Recently edited** has its own section below.
+- **The Node server** (Docker and Node) keeps idle connections open for 65 seconds. A proxy that keeps its own longer, such as Nginx with `keepalive`, no longer gets an occasional `502`.
+
+### Fixed
+- **Restoring** never leaves a board with more than 20 columns: past 20, it offers another place. Editing a card or a label with the values it already has no longer counts as a change.
+- **Export:**
+  - A ZIP past 4 GiB or 65,535 files came out damaged. It is now a ZIP64, which 7-Zip, unzip and bsdtar open, and the server's memory stays flat.
+  - Links inside indented code are kept as written.
+  - A card's document linked by hand and mentioned too is listed once in `tasks.json`.
+  - File names can't clash on macOS or hide invisible characters.
+  - With the session ended, **Download a ZIP** asks you to sign in again.
+- **Vault:**
+  - Importing into a vault that fills up stops and says how many items didn't go in, and the review says how many fit (up to 5,000). Bitwarden folders are kept in the notes, items that asked for the master password again are told, and the summary counts only what was imported.
+  - The strength meter no longer rates keyboard rows, look-alike letters or years as good, such as `P@ssw0rd2024!` or `1q2w3e4r5t6y`.
+  - Searching without accents also matches ß, œ, æ, ø, ł and similar letters.
+  - **Reset the vault** forgets the access key once closed.
+  - If another tab set up the vault while this one was doing it, this one says so, instead of showing a recovery key that opens nothing.
+- **Cloudflare:** an `APP_URL` that isn't a full address is said, with what to do, instead of a `500` everywhere or every write refused.
+- **Pages and attachments:**
+  - The sidebar and the path show every level of a deep page tree. They stopped at 13 and 32 levels. The middle of a long path folds into a menu.
+  - The editor counts emoji as the server does, so a page full of them saves.
+  - A long file name is cut between characters, never inside an emoji.
+  - A file that fails among several dropped on a page is named.
+  - A link to a card or a page deleted for good says it no longer exists.
+  - **/Image** takes AVIF.
+- **Names:** a name made only of marks, such as an emoji variation selector, is refused like an invisible one. Label names and page titles are cleaned like other names. A label without a name is told as such in the history and the activity. Tiles and initials of names that start with an emoji show the emoji.
+- **Agents:**
+  - **You also have accesses in other workspaces** and the Home step **Connect an agent** count only accesses that still work.
+  - The **View its activity** filter stays in its workspace.
+  - JSON that isn't a JSON-RPC request gets `-32600`.
+  - An OAuth registration with a too-long address says so.
+- **Backups:**
+  - A file uploaded during a restore waits and goes into the backup made before restoring, instead of being lost or told the copy was uninstalled.
+  - A failed restore no longer takes the place of the backup made before the last one.
+  - What an interrupted backup left half-written is cleaned up.
+  - Backup errors show in the app's language.
+- **Signing in** with a `next` path that starts with `//` goes home instead of to an error.
+- **Accessibility and languages:**
+  - Dialogs, sheets and the palette give the focus back to what opened them. A card's sheet keeps Tab inside it. Below 900 px the closed sidebar is skipped.
+  - The board has headings, and its cards are list items again, each telling its labels, due date and checklist.
+  - The sidebar button says whether it is open, the current workspace is marked, and the history reads the lines added and removed.
+  - Amber and lime labels have enough contrast in light mode (4.9:1).
+  - On a phone, the palette's search takes the whole line.
+  - Numbers are written as each language writes them (5,000 or 5.000), and times use the language's short form. French uses its narrow spaces before : ; ! ? ». The notices region is named in the language shown.
+- **Building from source:** the Cloudflare package, `dev:worker` and `check:worker` always use Orqevio's own `wrangler.jsonc`, not a `wrangler.json` left in a folder above.
+
 ## [1.2.1] - 2026-11-19
 
 ### Changed
