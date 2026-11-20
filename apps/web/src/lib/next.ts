@@ -7,6 +7,8 @@ export function internalPath(next: string | null, origin: string = window.locati
   try {
     const url = new URL(next, origin)
     if (url.origin !== origin) return '/'
+    // `/.//evil.example` is this origin, but its path `//evil.example` would be another site's address.
+    if (url.pathname.startsWith('//')) return '/'
     return `${url.pathname}${url.search}${url.hash}`
   } catch {
     return '/'

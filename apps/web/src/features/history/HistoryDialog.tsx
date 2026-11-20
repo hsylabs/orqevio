@@ -213,8 +213,8 @@ function describe(entry: HistoryEntryDTO): { key: KindKey; values: Record<string
   const { kind, before, after, meta } = entry
   const text = (value: unknown) => (typeof value === 'string' ? value : '')
   const names = (value: unknown) => (Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [])
-  // Each name in the quotes of the language shown.
-  const quoted = (list: string[]) => formatList(list.map((name) => t('history:quoted', { name })))
+  // Each name in the quotes of the language shown; a label without one is said so, not shown as «».
+  const quoted = (list: string[]) => formatList(list.map((name) => (name ? t('history:quoted', { name }) : t('history:unnamedLabel'))))
   switch (kind) {
     case 'page.icon':
       return after ? { key: 'kinds.page.iconSet', values: { icon: text(after) } } : { key: 'kinds.page.iconRemoved', values: {} }
