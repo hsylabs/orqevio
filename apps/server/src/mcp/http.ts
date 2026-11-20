@@ -15,6 +15,18 @@ const rpcError = (status: number, code: number, message: string, headers: Record
     headers: { 'Content-Type': 'application/json', ...headers },
   })
 
+/**
+ * The SDK answers JSON that is not a JSON-RPC message (`{"hello": 1}`) with -32700, a parse error,
+ * though it parsed. It is an invalid request: -32600, as JSON-RPC 2.0 says. Still so in SDK 1.32.2;
+ * if its words change, its answer goes out as it is.
+ */
+async function invalidRequestForNonRpc(response: Response) {
+  if (response.status !== 400 || !response.headers.get('content-type')?.includes('application/json')) return response
+  const body = (await response.clone().json().catch(() => null)) as { error?: { code?: number; message?: string } } | null
+  if (body?.error?.code !== -32700 || body.error.message !== 'Parse error: Invalid JSON-RPC message') return response
+  return rpcError(400, -32600, 'Invalid Request: the body is JSON, but not a JSON-RPC 2.0 request (jsonrpc "2.0", method, and an id for a call)')
+}
+
 /** Stateless Streamable HTTP endpoint: one short-lived MCP server per request. */
 export async function handleMcp(c: Context<AppEnv>) {
   if (c.req.method !== 'POST') {
@@ -39,7 +51,7 @@ export async function handleMcp(c: Context<AppEnv>) {
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true, maxRequestBodySize: MCP_MAX_REQUEST_BYTES })
   await server.connect(transport)
   try {
-    return await transport.handleRequest(c.req.raw)
+    return invalidRequestForNonRpc(await transport.handleRequest(c.req.raw))
   } finally {
     // JSON responses are fully buffered, so the per-request server can be released.
     void server.close()

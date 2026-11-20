@@ -362,6 +362,11 @@ export interface HomeDTO {
   activity: ActivityDTO[]
 }
 
+/** Whether an access still works: not revoked, and not past its expiry. */
+export function isTokenActive(token: Pick<TokenDTO, 'revokedAt' | 'expiresAt'>, now = new Date()) {
+  return !token.revokedAt && (!token.expiresAt || new Date(token.expiresAt) > now)
+}
+
 export interface TokenDTO {
   id: string
   name: string

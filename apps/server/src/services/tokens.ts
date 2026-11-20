@@ -59,6 +59,8 @@ export class TokenService {
     await this.access.workspace(actor, data.workspaceId)
     const token = `${TOKEN_PREFIX}${randomToken(32)}`
     const scopes = consistentScopes(data.scopes)
+    // "organize" alone gives nothing to read or write, so nothing to delete or move either.
+    if (scopes.length === 0) throw badRequest('Allow at least read access to tasks or docs: "organize" alone gives none')
     const [row] = await this.deps.db
       .insert(apiTokens)
       .values({
