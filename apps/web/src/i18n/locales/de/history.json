@@ -19,6 +19,7 @@
   "noLineChanges": "Keine Zeile hat sich geändert.",
   "movedTo": "Ihr Platz existierte nicht mehr, deshalb kam sie nach {{place}}",
   "quoted": "„{{name}}“",
+  "unnamedLabel": "(ohne Namen)",
   "kinds": {
     "page": {
       "created": "<actor>{{actor}}</actor> hat diese Seite erstellt",

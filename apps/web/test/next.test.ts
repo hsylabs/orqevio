@@ -11,7 +11,7 @@ describe('where signing in leads', () => {
   })
 
   it('sends anything that leaves this origin to the home screen', () => {
-    for (const next of ['https://evil.example', '//evil.example/x', '/\\evil.example', '\\\\evil.example', 'javascript:alert(1)', 'http://orqevio.example.com/vault']) {
+    for (const next of ['https://evil.example', '//evil.example/x', '/\\evil.example', '\\\\evil.example', 'javascript:alert(1)', 'http://orqevio.example.com/vault', '/.//evil.example/', '/w/../..//evil.example', '/./\\evil.example', '/%2E//evil.example']) {
       expect(internalPath(next, ORIGIN), next).toBe('/')
     }
   })
