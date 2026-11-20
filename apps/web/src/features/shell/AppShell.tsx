@@ -141,7 +141,8 @@ export function AppShell() {
             sidebarOpen ? 'max-[899px]:translate-x-0 min-[900px]:w-[260px]' : 'max-[899px]:-translate-x-full min-[900px]:w-0',
           )}
         >
-          <div className={cn('h-full w-[260px] max-[899px]:w-[272px]', !sidebarOpen && 'min-[900px]:invisible')}>
+          {/* Closed, it is off the screen on a phone: inert, so Tab and screen readers skip it too. */}
+          <div className={cn('h-full w-[260px] max-[899px]:w-[272px]', !sidebarOpen && 'min-[900px]:invisible')} inert={!sidebarOpen}>
             <Sidebar />
           </div>
         </div>
