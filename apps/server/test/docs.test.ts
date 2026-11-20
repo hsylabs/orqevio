@@ -51,6 +51,17 @@ describe('documents', () => {
     expect(after.body.pages[0].sources).toEqual(['manual'])
   })
 
+  it('names every page above a deep one, the top first', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { projectId } = await seedBoard(client, workspaceId)
+    let parentId: string | null = null
+    for (let i = 1; i <= 40; i++) parentId = (await client.post(`/api/projects/${projectId}/pages`, { title: `Nivel ${i}`, parentId })).body.id
+    const deepest = await client.get(`/api/pages/${parentId}`)
+    expect(deepest.body.title).toBe('Nivel 40')
+    // It used to stop at 32: the 7 at the top were missing.
+    expect(deepest.body.breadcrumbs.map((b: { title: string }) => b.title)).toEqual(Array.from({ length: 39 }, (_, i) => `Nivel ${i + 1}`))
+  })
+
   it('prevents moving a page inside its own subtree', async () => {
     const { client, workspaceId } = await signUp(h)
     const { projectId } = await seedBoard(client, workspaceId)

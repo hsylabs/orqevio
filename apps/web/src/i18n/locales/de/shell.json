@@ -57,7 +57,8 @@
     "hideSidebar": "Seitenleiste ausblenden",
     "showSidebar": "Seitenleiste einblenden",
     "toggleSidebar": "Seitenleiste umschalten",
-    "breadcrumb": "Navigationspfad"
+    "breadcrumb": "Navigationspfad",
+    "moreCrumbs": "Zwischenebenen zeigen"
   },
   "newProject": {
     "title": "Neues Projekt",

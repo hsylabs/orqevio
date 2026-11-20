@@ -316,6 +316,17 @@ function TreeLink({ to, icon, label, trailing, onToggle, expanded, hasChildren, 
   )
 }
 
+/**
+ * How far a page's subpages go in: the full step down to the fourth level, a narrow one down to
+ * the eighth and none past that, 78 px at most, so a title keeps room to be read however deep the
+ * tree goes. The path at the top of the page names every level.
+ */
+function nested(depth: number) {
+  if (depth < 3) return 'ml-[11px] border-l border-line pl-1.5'
+  if (depth < 7) return 'ml-[5px] border-l border-line'
+  return ''
+}
+
 function PageItem({ page, all, projectId, depth }: { page: PageNodeDTO; all: PageNodeDTO[]; projectId: string; depth: number }) {
   const { t } = useTranslation(['shell', 'common'])
   const { workspaceId } = useWorkspace()
@@ -349,8 +360,8 @@ function PageItem({ page, all, projectId, depth }: { page: PageNodeDTO; all: Pag
           </span>
         }
       />
-      {open && children.length > 0 && depth < 12 && (
-        <div className="ml-[11px] border-l border-line pl-1.5">
+      {open && children.length > 0 && (
+        <div className={nested(depth)}>
           {children.map((c) => (
             <PageItem key={c.id} page={c} all={all} projectId={projectId} depth={depth + 1} />
           ))}
