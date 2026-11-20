@@ -195,6 +195,8 @@ test('on a phone the palette keeps its search whole', async ({ page }, testInfo)
   await page.keyboard.press('ControlOrMeta+k')
   const input = page.getByRole('combobox')
   await expect(input).toBeVisible()
+  // The palette opens growing from 96 %: measured before that ends, each box has its own scale.
+  await page.getByRole('dialog').evaluate((dialog) => Promise.all(dialog.getAnimations({ subtree: true }).map((animation) => animation.finished)))
   const field = (await input.boundingBox())!
   const archived = (await page.getByText('Incluir archivadas').boundingBox())!
   expect(field.width).toBeGreaterThan(250)
