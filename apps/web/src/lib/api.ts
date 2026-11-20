@@ -87,7 +87,7 @@ export const patch = <T>(path: string, body: unknown) => api<T>('PATCH', path, b
 export const put = <T>(path: string, body: unknown) => api<T>('PUT', path, body)
 export const del = <T>(path: string) => api<T>('DELETE', path)
 
-const KNOWN_ERRORS = ['invalid_access_key', 'invalid_setup_code', 'setup_code_too_short', 'recovery_not_ready', 'already_claimed', 'not_claimed', 'rate_limited', 'network', 'file_too_large', 'upload_incomplete', 'last_workspace', 'restore_place_in_trash', 'restore_place_gone', 'vault_key_changed', 'too_many_columns', 'vault_full', 'vault_item_changed', 'unauthorized', 'backup_folder'] as const
+const KNOWN_ERRORS = ['invalid_access_key', 'invalid_setup_code', 'setup_code_too_short', 'recovery_not_ready', 'already_claimed', 'not_claimed', 'rate_limited', 'network', 'file_too_large', 'upload_incomplete', 'last_workspace', 'restore_place_in_trash', 'restore_place_gone', 'vault_key_changed', 'too_many_columns', 'vault_full', 'vault_item_changed', 'unauthorized', 'backup_folder', 'backup_damaged', 'backup_newer', 'backup_running', 'backups_off', 'restoring', 'file_empty', 'uninstalled'] as const
 const isKnown = (code: string): code is (typeof KNOWN_ERRORS)[number] => (KNOWN_ERRORS as readonly string[]).includes(code)
 
 /** A human-friendly message for any thrown value, in the app's language. */

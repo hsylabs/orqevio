@@ -21,7 +21,14 @@
     "too_many_columns": "Um quadro comporta até 20 colunas.",
     "vault_full": "O cofre comporta até 5.000 itens. Exclua os que você não usa mais para adicionar outros.",
     "unauthorized": "Sua sessão terminou. Entre novamente.",
-    "backup_folder": "Não foi possível fazer o backup: há um problema com a pasta de backups. Veja o aviso nas configurações."
+    "backup_folder": "Não foi possível fazer o backup: há um problema com a pasta de backups. Veja o aviso nas configurações.",
+    "backup_damaged": "Este backup está danificado ou incompleto, então não pode ser restaurado. Tente outro.",
+    "backup_newer": "Este backup foi feito por uma versão mais nova do Orqevio: atualize esta cópia antes de restaurá-lo.",
+    "backup_running": "Já há um backup sendo feito ou restaurado. Espere ele terminar.",
+    "backups_off": "Esta cópia não faz backups.",
+    "restoring": "Um backup está sendo restaurado: envie o arquivo de novo daqui a pouco.",
+    "file_empty": "O arquivo está vazio.",
+    "uninstalled": "Esta cópia do Orqevio foi desinstalada."
   },
   "notFound": "O item não foi encontrado.",
   "server": "Algo deu errado no servidor. Tente novamente.",

@@ -83,9 +83,11 @@ export class AttachmentService {
    */
   /** Uploads still running, which uninstalling waits for (see close). */
   private readonly inFlight = new Set<Promise<unknown>>()
-  private closed = false
+  /** Why uploads are refused for now: the copy being uninstalled, or a backup being put back. */
+  private closed: 'uninstalling' | 'restoring' | null = null
 
   async upload(actor: Actor, target: { pageId?: string; cardId?: string }, file: IncomingFile): Promise<AttachmentDTO> {
+    if (this.closed === 'restoring') throw new AppError(409, 'restoring', 'A backup is being restored: upload the file again in a moment')
     if (this.closed) throw uninstalled()
     const work = this.store(actor, target, file)
     this.inFlight.add(work)
@@ -100,13 +102,13 @@ export class AttachmentService {
    * Refuses new uploads and waits for the running ones, so that deleting every stored
    * file afterwards cannot miss one still being written. reopen() undoes it.
    */
-  async close() {
-    this.closed = true
+  async close(reason: 'uninstalling' | 'restoring' = 'uninstalling') {
+    this.closed = reason
     await Promise.allSettled([...this.inFlight])
   }
 
   reopen() {
-    this.closed = false
+    this.closed = null
   }
 
   private async store(actor: Actor, target: { pageId?: string; cardId?: string }, file: IncomingFile): Promise<AttachmentDTO> {
@@ -115,7 +117,7 @@ export class AttachmentService {
       throw new AppError(415, 'raw_upload_required', 'Send the file itself as the request body, with its name in the X-File-Name header')
     }
     if (!Number.isSafeInteger(file.size) || file.size < 0) throw new AppError(411, 'length_required', 'Content-Length is required')
-    if (file.size === 0 || !file.body) throw badRequest('The file is empty')
+    if (file.size === 0 || !file.body) throw new AppError(400, 'file_empty', 'The file is empty')
     if (file.size > this.deps.env.maxUploadBytes) {
       throw new AppError(413, 'file_too_large', `Files are limited to ${Math.round(this.deps.env.maxUploadBytes / 1048576)} MB`)
     }
