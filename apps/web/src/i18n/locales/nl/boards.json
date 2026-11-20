@@ -165,7 +165,8 @@
     "editNamed": "{{name}} bewerken",
     "editUnnamed": "Label bewerken",
     "create": "Label maken",
-    "deleted": "Label ‘{{name}}’ naar de prullenbak verplaatst"
+    "deleted": "Label ‘{{name}}’ naar de prullenbak verplaatst",
+    "deletedUnnamed": "Label zonder naam naar de prullenbak verplaatst"
   },
   "linked": {
     "mentioned": "vermeld",

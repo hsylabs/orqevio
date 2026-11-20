@@ -163,7 +163,8 @@
     "editNamed": "{{name}}を編集",
     "editUnnamed": "ラベルを編集",
     "create": "ラベルを作成",
-    "deleted": "ラベル「{{name}}」をゴミ箱に移動しました"
+    "deleted": "ラベル「{{name}}」をゴミ箱に移動しました",
+    "deletedUnnamed": "名前のないラベルをゴミ箱に移動しました"
   },
   "linked": {
     "mentioned": "メンション",

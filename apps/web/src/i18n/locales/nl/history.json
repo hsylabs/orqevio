@@ -19,6 +19,7 @@
   "noLineChanges": "Er is geen regel veranderd.",
   "movedTo": "Haar plek bestond niet meer, dus ging ze naar {{place}}",
   "quoted": "‘{{name}}’",
+  "unnamedLabel": "(zonder naam)",
   "kinds": {
     "page": {
       "created": "<actor>{{actor}}</actor> heeft deze pagina gemaakt",
