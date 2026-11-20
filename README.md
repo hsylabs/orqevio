@@ -399,7 +399,7 @@ claude mcp add --transport http orqevio https://your-domain/mcp --header "Author
 | --- | --- |
 | Any read permission | `list_projects`, `search`, `read_attachment` (text files as text, images as images) |
 | Tasks · read | `get_board`, `get_card` |
-| Tasks · write | `create_card`, `update_card` (with `base_version` when it changes the description), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
+| Tasks · write | `create_card`, `update_card` (with `base_version` when it changes the description), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `create_checklist`, `add_checklist_items`, `update_checklist_item` |
 | Docs · read | `list_pages`, `read_page` |
 | Docs · write | `create_page`, `update_page` (title, icon and content: replace with `base_version`, or append to the end), `move_page` (within its project) |
 | Read and write on both areas | `link_card_to_page` |
