@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { addCard, createProject, expect, openNewWorkspace, test } from './helpers'
 
 // From the history, people undo what an agent did (one change, or everything since a point),
@@ -147,12 +148,35 @@ test('a forced undo shows in the open page even when live updates are down', asy
   await expect(page.locator('.orq-prose')).toHaveText('Uno')
 })
 
+/**
+ * A workspace with a board (its columns «Por hacer», «En curso» and «Hecho») and a card in «Por
+ * hacer», made through the API without opening anything. The batch tests make hundreds of changes:
+ * with the board open, each would refresh it live, and opening it again in the middle cuts those
+ * refreshes short, which WebKit reports as errors («… due to access control checks»). The board is
+ * opened once they are all made.
+ */
+async function boardWithCard(page: Page, workspace: string, project: string, card: string) {
+  const made = async (path: string, data: unknown) => {
+    const res = await page.request.post(`/api${path}`, { data })
+    expect(res.status(), await res.text()).toBe(201)
+    return (await res.json()) as { id: string }
+  }
+  const workspaceId = (await made('/workspaces', { name: workspace })).id
+  const projectId = (await made(`/workspaces/${workspaceId}/projects`, { name: project })).id
+  const boardId = (await made(`/projects/${projectId}/boards`, { name: 'Tablero' })).id
+  const board = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string; name: string }> }
+  await made(`/columns/${board.columns.find((c) => c.name === 'Por hacer')!.id}/cards`, { title: card })
+  const open = async () => {
+    await page.goto(`/w/${workspaceId}/b/${boardId}`)
+    await expect(page.getByRole('region', { name: 'Columna Por hacer' })).toBeVisible()
+  }
+  return { workspaceId, boardId, open }
+}
+
 // More than 500 changes go back in batches, each shown first, and the change chosen is never left
 // out; what has no history (columns here) is listed as not undone, with its place in the trash.
 test('undoing everything an agent did goes in batches and says what it leaves as it is', async ({ page, request, baseURL }) => {
-  const workspaceId = await openNewWorkspace(page, 'Tandas E2E')
-  const boardId = await createProject(page, 'Inventario')
-  await addCard(page, 'Por hacer', 'Contar el almacén')
+  const { workspaceId, boardId, open } = await boardWithCard(page, 'Tandas E2E', 'Inventario', 'Contar el almacén')
   const board = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string; name: string }>; cards: Array<{ id: string }> }
   const cardId = board.cards[0]!.id
   const created = (await (await page.request.post('/api/tokens', { data: { name: 'Claude', workspaceId, scopes: ['tasks:read', 'tasks:write'], expiresInDays: null } })).json()) as { id: string; token: string }
@@ -172,7 +196,7 @@ test('undoing everything an agent did goes in batches and says what it leaves as
   const done = board.columns.find((c) => c.name === 'Hecho')!
   await asAgent('delete', `/columns/${done.id}`)
 
-  await page.reload()
+  await open()
   await page.getByRole('button', { name: 'Contar el almacén (IA)' }).click()
   await page.getByRole('button', { name: 'Acciones de la tarjeta' }).click()
   await page.getByRole('menuitem', { name: 'Historial' }).click()
@@ -206,9 +230,7 @@ test('undoing everything an agent did goes in batches and says what it leaves as
 // A batch where everything was changed since by someone else can be left as it is, to go on with
 // the older changes, the one chosen among them.
 test('a batch where everything was changed since can be left, to go on with the older ones', async ({ page, request, baseURL }) => {
-  const workspaceId = await openNewWorkspace(page, 'Tanda en conflicto E2E')
-  const boardId = await createProject(page, 'Almacén')
-  await addCard(page, 'Por hacer', 'Revisar estantes')
+  const { workspaceId, boardId, open } = await boardWithCard(page, 'Tanda en conflicto E2E', 'Almacén', 'Revisar estantes')
   const board = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string }>; cards: Array<{ id: string }> }
   const created = (await (await page.request.post('/api/tokens', { data: { name: 'Claude', workspaceId, scopes: ['tasks:read', 'tasks:write'], expiresInDays: null } })).json()) as { token: string }
   const asAgent = async (method: 'patch' | 'post', path: string, data?: unknown) => {
@@ -229,7 +251,7 @@ test('a batch where everything was changed since can be left, to go on with the 
     await Promise.all(items.slice(start, start + 25).map(async (id) => expect((await page.request.patch(`/api/checklist-items/${id}`, { data: { done: true } })).ok()).toBe(true)))
   }
 
-  await page.reload()
+  await open()
   await page.getByRole('button', { name: 'Revisar estantes (IA)' }).click()
   await page.getByRole('button', { name: 'Acciones de la tarjeta' }).click()
   await page.getByRole('menuitem', { name: 'Historial' }).click()
