@@ -21,7 +21,14 @@
     "too_many_columns": "Una bacheca può contenere fino a 20 colonne.",
     "vault_full": "La cassaforte può contenere fino a 5.000 elementi. Elimina quelli che non usi più per aggiungerne altri.",
     "unauthorized": "La tua sessione è terminata. Accedi di nuovo.",
-    "backup_folder": "Impossibile fare il backup: c’è un problema con la cartella dei backup. Vedi l’avviso nelle impostazioni."
+    "backup_folder": "Impossibile fare il backup: c’è un problema con la cartella dei backup. Vedi l’avviso nelle impostazioni.",
+    "backup_damaged": "Questo backup è danneggiato o incompleto, quindi non si può ripristinare. Provane un altro.",
+    "backup_newer": "Questo backup è stato fatto da una versione più recente di Orqevio: aggiorna questa copia prima di ripristinarlo.",
+    "backup_running": "C’è già un backup in corso o un ripristino. Aspetta che finisca.",
+    "backups_off": "Questa copia non fa backup.",
+    "restoring": "È in corso il ripristino di un backup: carica di nuovo il file tra un momento.",
+    "file_empty": "Il file è vuoto.",
+    "uninstalled": "Questa copia di Orqevio è stata disinstallata."
   },
   "notFound": "Elemento non trovato.",
   "server": "Si è verificato un errore sul server. Riprova.",
