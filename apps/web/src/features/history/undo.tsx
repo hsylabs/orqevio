@@ -244,9 +244,16 @@ function UndoDialog({
                 {t('undo.bulk.force')}
               </Button>
             )}
-            <Button variant="primary" loading={busy} disabled={ready.length === 0} onClick={() => onUndo('skip')}>
-              {conflicts.length ? t('undo.bulk.skip', { count: ready.length }) : t('undo.bulk.confirm', { count })}
-            </Button>
+            {ready.length === 0 && remaining > 0 ? (
+              // Nothing here can go without losing what someone did since: leave it, and go on with the older ones.
+              <Button variant="primary" loading={busy} onClick={onNext}>
+                {t('undo.bulk.next', { count: remaining })}
+              </Button>
+            ) : (
+              <Button variant="primary" loading={busy} disabled={ready.length === 0} onClick={() => onUndo('skip')}>
+                {conflicts.length ? t('undo.bulk.skip', { count: ready.length }) : t('undo.bulk.confirm', { count })}
+              </Button>
+            )}
           </>
         ) : (
           <Button variant="secondary" onClick={onCancel}>
