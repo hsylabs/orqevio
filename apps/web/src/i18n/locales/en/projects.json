@@ -18,9 +18,7 @@
     "new": "New page",
     "subpages_one": "{{count}} subpage",
     "subpages_other": "{{count}} subpages",
-    "emptyTitle": "No documents yet",
-    "emptyAction": "Write the first page",
-    "emptyBody": "Specs, decisions, processes or meeting notes. In Markdown and linked to your tasks."
+    "empty": "Write a page to document this project, such as specs, decisions or meeting notes."
   },
   "recent": "Recently edited"
 }

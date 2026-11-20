@@ -18,9 +18,7 @@
     "new": "Neue Seite",
     "subpages_one": "{{count}} Unterseite",
     "subpages_other": "{{count}} Unterseiten",
-    "emptyTitle": "Noch keine Dokumente",
-    "emptyAction": "Erste Seite schreiben",
-    "emptyBody": "Spezifikationen, Entscheidungen, Abläufe oder Besprechungsnotizen. In Markdown und mit deinen Aufgaben verknüpft."
+    "empty": "Schreibe eine Seite, um dieses Projekt zu dokumentieren, etwa Spezifikationen, Entscheidungen oder Besprechungsnotizen."
   },
   "recent": "Zuletzt bearbeitet"
 }
