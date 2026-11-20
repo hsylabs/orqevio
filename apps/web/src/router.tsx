@@ -1,7 +1,7 @@
 import { Navigate, createBrowserRouter, useParams } from 'react-router'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router'
-import type { CardDetailDTO, PageDTO } from '@orqevio/shared'
+import type { CardDetailDTO, MeDTO, PageDTO } from '@orqevio/shared'
 import { get } from './lib/api'
 import { localPref } from './lib/theme'
 import { useMe } from './lib/queries'
@@ -34,6 +34,19 @@ function ReferenceRedirect({ type }: { type: 'card' | 'doc' }) {
           if (!cancelled) navigate(`/w/${page.workspaceId}/d/${page.id}`, { replace: true })
         }
       } catch {
+        // In the trash, it is shown there; deleted for good, there is nothing to show.
+        const key = `${type === 'card' ? 'card' : 'page'}:${id}`
+        const workspaces = (await get<MeDTO>('/auth/me').catch(() => null))?.workspaces ?? []
+        for (const w of workspaces) {
+          const found = await get<unknown>(`/workspaces/${w.id}/trash/${encodeURIComponent(key)}`).then(
+            (tree) => tree !== null,
+            () => false,
+          )
+          if (found) {
+            if (!cancelled) navigate(`/w/${w.id}/trash?item=${encodeURIComponent(key)}`, { replace: true })
+            return
+          }
+        }
         if (!cancelled) navigate('/', { replace: true })
       }
     }

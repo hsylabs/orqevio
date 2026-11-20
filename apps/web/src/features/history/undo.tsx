@@ -1,10 +1,12 @@
 import type { ActorRef, HistoryEntryDTO, PageDTO, UndoPlanItemDTO, UndoResultDTO } from '@orqevio/shared'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
 import { Dialog } from '../../components/ui/Dialog'
 import { errorMessage, get, post } from '../../lib/api'
+import { openInApp, trashHref } from '../../lib/trash'
 import { queryClient } from '../../lib/queries'
 import { announcePage } from '../../lib/realtime'
 import { useWorkspace } from '../shell/workspace'
@@ -40,8 +42,8 @@ const quote = (value: unknown) => {
  * dialog to render.
  */
 export function useUndo() {
-  const { t } = useTranslation('history')
-  const { me } = useWorkspace()
+  const { t } = useTranslation(['history', 'trash'])
+  const { me, workspaceId } = useWorkspace()
   const self: ActorRef = { kind: 'user', id: me.user.id, name: me.user.name }
   const [asking, setAsking] = useState<Asking | null>(null)
   const [busy, setBusy] = useState(false)
@@ -56,7 +58,11 @@ export function useUndo() {
       result.failed ? t('undo.failed', { count: result.failed }) : '',
     ].filter(Boolean)
     if (result.undone === 0 && result.failed === 0 && result.skipped === 0) return toast(t('undo.nothing'))
-    if (result.undone === 0 && result.plan.length === 1 && result.plan[0]!.status === 'impossible') return toast.error(impossible(result.plan[0]!))
+    if (result.undone === 0 && result.plan.length === 1 && result.plan[0]!.status === 'impossible') {
+      const item = result.plan[0]!
+      // Its place is in the trash: restoring it from there is where it can be decided.
+      return toast.error(impossible(item), item.trashKey ? { action: { label: t('trash:openInTrash'), onClick: () => openInApp(trashHref(workspaceId, item.trashKey!)) } } : undefined)
+    }
     toast.success(t('undo.done', { count: result.undone }), notes.length ? { description: notes.join(' ') } : undefined)
   }
 
@@ -119,7 +125,8 @@ export function useUndo() {
 }
 
 function UndoDialog({ asking, busy, impossible, onCancel, onUndo }: { asking: Asking; busy: boolean; impossible: (item: UndoPlanItemDTO) => string; onCancel: () => void; onUndo: (conflicts: 'skip' | 'force') => void }) {
-  const { t } = useTranslation(['history', 'common'])
+  const { t } = useTranslation(['history', 'common', 'trash'])
+  const { workspaceId } = useWorkspace()
   const conflicts = asking.plan.filter((p) => p.status === 'conflict')
   const blocked = asking.plan.filter((p) => p.status === 'impossible')
   const ready = asking.plan.filter((p) => p.status === 'ready')
@@ -194,7 +201,17 @@ function UndoDialog({ asking, busy, impossible, onCancel, onUndo }: { asking: As
           <h3 className="mb-1.5 text-[13px] font-medium text-ink">{t('undo.bulk.impossible', { count: blocked.length })}</h3>
           <ul className="flex flex-col gap-1 text-[13px] text-ink-2">
             {blocked.map((c) => (
-              <li key={c.entryId}>{impossible(c)}</li>
+              <li key={c.entryId}>
+                {impossible(c)}
+                {c.trashKey && (
+                  <>
+                    {' '}
+                    <Link to={trashHref(workspaceId, c.trashKey)} className="font-medium text-ink underline decoration-line-strong underline-offset-2 hover:decoration-accent">
+                      {t('trash:openInTrash')}
+                    </Link>
+                  </>
+                )}
+              </li>
             ))}
           </ul>
         </section>

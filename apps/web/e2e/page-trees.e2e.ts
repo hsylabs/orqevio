@@ -34,7 +34,11 @@ test('deep page trees are deleted with their page, project or workspace', async 
   await page.goto(`/w/${workspaceId}/trash`)
   const entry = page.getByRole('listitem', { name: 'Nivel 1' })
   await expect(entry).toContainText(`Página · Profundo · ${LEVELS - 1} páginas`)
-  await entry.getByRole('button', { name: 'Restaurar' }).click()
+  await entry.getByRole('button', { name: 'Restaurar «Nivel 1»' }).click()
+  // It holds pages: what comes back is shown first, all of it ticked.
+  const dialog = page.getByRole('dialog', { name: 'Restaurar «Nivel 1»' })
+  await expect(dialog.getByRole('checkbox', { name: 'Incluir «Nivel 2»' })).toBeChecked()
+  await dialog.getByRole('button', { name: 'Restaurar', exact: true }).click()
   await expect(page.getByText('Se ha restaurado «Nivel 1»')).toBeVisible()
   const back = await Promise.all(pages.map(async (id) => (await page.request.get(`/api/pages/${id}`)).status()))
   expect(back).toEqual(pages.map(() => 200))

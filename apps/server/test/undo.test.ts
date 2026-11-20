@@ -120,7 +120,7 @@ describe('undo', () => {
     await bot.patch(`/api/cards/${made}`, { title: 'Del agente, revisada' })
     const creation = await latest(client, 'cards', made, 'card.created')
     expect((await undo(client, { ids: [creation.id] })).plan[0]!.status).toBe('ready')
-    await client.post(`/api/trash/${(await client.get(`/api/workspaces/${workspaceId}/trash`)).body[0].id}/restore`)
+    await client.post(`/api/trash/${(await client.get(`/api/workspaces/${workspaceId}/trash`)).body[0].trashId}/restore`)
     await client.patch(`/api/cards/${made}`, { description: 'Con notas mías' })
     expect((await undo(client, { ids: [creation.id] })).plan[0]).toMatchObject({ status: 'conflict', changedBy: { kind: 'user' } })
   })
@@ -327,7 +327,10 @@ describe('undo', () => {
     const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Mudanza' })).body.id as string
     await bot.post(`/api/cards/${card}/move`, { columnId: columns[1]!.id, index: 0 })
     const moved = await latest(client, 'cards', card, 'card.moved')
-    await client.del(`/api/columns/${columns[0]!.id}`)
+    const columnTrash = (await client.del(`/api/columns/${columns[0]!.id}`)).body.trashId as string
+    // Its old column is in the trash: it says so, with where to find it there.
+    expect((await undo(client, { ids: [moved.id] })).plan[0]).toMatchObject({ status: 'impossible', reason: 'place_in_trash', trashKey: `column:${columns[0]!.id}` })
+    expect((await client.del(`/api/trash/${columnTrash}`)).status).toBe(204)
     expect((await undo(client, { ids: [moved.id] })).plan[0]).toMatchObject({ status: 'impossible', reason: 'place_gone' })
 
     const trashId = (await client.del(`/api/cards/${card}`)).body.trashId as string
@@ -634,40 +637,46 @@ describe('undo', () => {
     expect((await client.get(`/api/pages/${folder}`)).status).toBe(404)
   })
 
-  it('plans older moves from where restoring puts what comes back, when its place is gone', async () => {
+  it('never puts back anywhere else what a deletion took: it says its place is in the trash, and undoes it once that is back', async () => {
     const { client, workspaceId } = await signUp(h, 'Sitio perdido')
     const { projectId, columns } = await seedBoard(client, workspaceId)
     const bot = await agent(client, workspaceId, ['tasks:read', 'tasks:write', 'docs:read', 'docs:write', 'organize'])
 
-    // A page the agent moved and deleted, whose new parent a person deleted after: it comes back at the top.
+    // A page the agent moved and deleted, whose new parent a person deleted after.
     const first = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Primera' })).body.id as string
     const second = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Segunda' })).body.id as string
     const page = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Viajera', parentId: first })).body.id as string
     await bot.post(`/api/pages/${page}/move`, { parentId: second, index: 0 })
     const moved = await latest(client, 'pages', page, 'page.moved')
     await bot.del(`/api/pages/${page}`)
-    await client.del(`/api/pages/${second}`)
+    const secondTrash = (await client.del(`/api/pages/${second}`)).body.trashId as string
     const pagePlan = (await undo(client, { since: moved.id, dryRun: true })).plan
-    expect(pagePlan.map((p) => [p.kind, p.status, p.status === 'conflict' ? p.current : undefined])).toEqual([
-      ['page.deleted', 'ready', undefined],
-      ['page.moved', 'conflict', { projectId, parentId: null }],
+    expect(pagePlan.map((p) => [p.kind, p.status, p.reason, p.trashKey])).toEqual([
+      ['page.deleted', 'impossible', 'place_in_trash', `page:${second}`],
+      ['page.moved', 'impossible', 'gone', undefined],
     ])
-    expect(await undo(client, { since: moved.id })).toMatchObject({ applied: false, undone: 0 })
+    expect(await undo(client, { since: moved.id })).toMatchObject({ applied: true, undone: 0, failed: 2 })
     expect((await client.get(`/api/pages/${page}`)).status).toBe(404)
+    // Its parent back (the page deleted before it stays in the trash), undoing it all works.
+    expect((await client.post(`/api/trash/${secondTrash}/restore`)).status).toBe(200)
+    expect((await client.get(`/api/pages/${page}`)).status).toBe(404)
+    expect(await undo(client, { since: moved.id })).toMatchObject({ applied: true, undone: 2, failed: 0 })
+    expect((await client.get(`/api/pages/${page}`)).body.parentId).toBe(first)
 
-    // A card the agent moved and deleted, whose new column a person deleted after: it comes back in the first column.
+    // A card the agent moved and deleted, whose new column a person deleted after.
     const card = (await client.post(`/api/columns/${columns[1]!.id}/cards`, { title: 'Movida' })).body.id as string
     await bot.post(`/api/cards/${card}/move`, { columnId: columns[2]!.id, index: 0 })
     const shifted = await latest(client, 'cards', card, 'card.moved')
     await bot.del(`/api/cards/${card}`)
-    expect((await client.del(`/api/columns/${columns[2]!.id}`)).status).toBe(200)
+    const columnTrash = (await client.del(`/api/columns/${columns[2]!.id}`)).body.trashId as string
     const cardPlan = (await undo(client, { since: shifted.id, dryRun: true })).plan
-    expect(cardPlan.map((p) => [p.kind, p.status])).toEqual([
-      ['card.deleted', 'ready'],
-      ['card.moved', 'conflict'],
+    expect(cardPlan.map((p) => [p.kind, p.status, p.reason, p.trashKey])).toEqual([
+      ['card.deleted', 'impossible', 'place_in_trash', `column:${columns[2]!.id}`],
+      ['card.moved', 'impossible', 'gone', undefined],
     ])
-    expect(await undo(client, { since: shifted.id, conflicts: 'skip' })).toMatchObject({ applied: true, undone: 1, skipped: 1, failed: 0 })
-    expect((await client.get(`/api/cards/${card}`)).body.column.id).toBe(columns[0]!.id)
+    expect((await client.post(`/api/trash/${columnTrash}/restore`)).status).toBe(200)
+    expect(await undo(client, { since: shifted.id })).toMatchObject({ applied: true, undone: 2, failed: 0 })
+    expect((await client.get(`/api/cards/${card}`)).body.column.id).toBe(columns[1]!.id)
   })
 
   it('plans the labels a card gets back when undoing its move to another board', async () => {

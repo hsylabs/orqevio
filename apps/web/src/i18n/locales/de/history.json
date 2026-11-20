@@ -94,6 +94,7 @@
     "impossible": {
       "gone": "„{{title}}“ existiert nicht mehr.",
       "place_gone": "Der Ort, an dem „{{title}}“ war, existiert nicht mehr.",
+      "place_in_trash": "Der Ort, an dem „{{title}}“ war, liegt im Papierkorb.",
       "trash_gone": "„{{title}}“ wurde endgültig aus dem Papierkorb gelöscht.",
       "refused": "„{{title}}“ konnte nicht rückgängig gemacht werden."
     },

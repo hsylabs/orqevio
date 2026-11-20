@@ -47,7 +47,9 @@ export function eventSentence(e: RealtimeEvent) {
 }
 
 /** Where an activity entry leads in the app. */
-export function activityHref(workspaceId: string, a: Pick<ActivityDTO, 'entityType' | 'entityId' | 'action'>) {
+export function activityHref(workspaceId: string, a: Pick<ActivityDTO, 'entityType' | 'entityId' | 'action' | 'inTrash'>) {
+  // What is in the trash now is opened there: its own page would find nothing.
+  if (a.inTrash) return `/w/${workspaceId}/trash?item=${encodeURIComponent(a.inTrash)}`
   if (a.action.endsWith('.deleted') || a.action === 'trash.purged') return null
   if (a.entityType === 'card') return `/card/${a.entityId}`
   if (a.entityType === 'page') return `/w/${workspaceId}/d/${a.entityId}`

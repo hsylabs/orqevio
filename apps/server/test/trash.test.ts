@@ -1,4 +1,4 @@
-import { TRASH_DAYS, type TrashEntryDTO } from '@orqevio/shared'
+import { TRASH_DAYS, type TrashNodeDTO, type TrashPlanDTO } from '@orqevio/shared'
 import { eq, inArray } from 'drizzle-orm'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
@@ -15,7 +15,10 @@ beforeAll(async () => {
 })
 afterAll(async () => h.close())
 
-const listTrash = async (client: Client, workspaceId: string) => (await client.get(`/api/workspaces/${workspaceId}/trash`)).body as TrashEntryDTO[]
+const listTrash = async (client: Client, workspaceId: string) => (await client.get(`/api/workspaces/${workspaceId}/trash`)).body as TrashNodeDTO[]
+const plan = async (client: Client, workspaceId: string, body: Record<string, unknown>) =>
+  (await client.post(`/api/workspaces/${workspaceId}/trash/restore`, { ...body, dryRun: true })).body as TrashPlanDTO
+const restoreItem = (client: Client, workspaceId: string, body: Record<string, unknown>) => client.post(`/api/workspaces/${workspaceId}/trash/restore`, body)
 const storedFile = (key: string) => path.join(h.env.dataDir, 'uploads', key)
 const keyOf = (attachmentId: string) => h.db.select({ key: attachments.storageKey }).from(attachments).where(eq(attachments.id, attachmentId)).get()!.key
 
@@ -57,7 +60,8 @@ describe('the trash', () => {
 
     const [entry] = await listTrash(client, workspaceId)
     expect(entry).toMatchObject({
-      id: deleted.body.trashId,
+      key: `card:${c.cardId}`,
+      trashId: deleted.body.trashId,
       kind: 'card',
       entityId: c.cardId,
       title: 'Revisar contrato',
@@ -68,9 +72,9 @@ describe('the trash', () => {
     })
     expect(new Date(entry!.expiresAt).getTime() - new Date(entry!.deletedAt).getTime()).toBe(TRASH_DAYS * 24 * 60 * 60 * 1000)
 
-    const restored = await client.post(`/api/trash/${entry!.id}/restore`)
+    const restored = await client.post(`/api/trash/${entry!.trashId}/restore`)
     expect(restored.status).toBe(200)
-    expect(restored.body).toEqual({ kind: 'card', entityId: c.cardId, movedTo: null, path: `b/${c.boardId}` })
+    expect(restored.body).toMatchObject({ kind: 'card', entityId: c.cardId, movedTo: null, path: `b/${c.boardId}`, location: 'Lanzamiento › Producto › To do' })
     const card = (await client.get(`/api/cards/${c.cardId}`)).body
     expect(card.title).toBe('Revisar contrato')
     expect(card.labelIds).toEqual([c.labelId])
@@ -83,7 +87,7 @@ describe('the trash', () => {
     expect(card.activity.map((a: { action: string }) => a.action)).toContain('trash.restored')
   })
 
-  it('restores a card whose column is gone into the first column, and says where', async () => {
+  it('keeps a card deleted before its column inside the column, and puts nothing anywhere else', async () => {
     const { client, workspaceId } = await signUp(h, 'Columnas')
     const { boardId, columns } = await seedBoard(client, workspaceId)
     const card = await client.post(`/api/columns/${columns[1]!.id}/cards`, { title: 'Suelta' })
@@ -91,18 +95,24 @@ describe('the trash', () => {
     await client.post(`/api/cards/${kept.body.id}/archive`)
     const cardTrash = (await client.del(`/api/cards/${card.body.id}`)).body.trashId
     const columnTrash = (await client.del(`/api/columns/${columns[1]!.id}`)).body.trashId
-    expect((await listTrash(client, workspaceId)).find((e) => e.id === columnTrash)?.contents).toEqual({ cards: 1 })
+    const top = await listTrash(client, workspaceId)
+    expect(top.map((n) => n.key)).toEqual([`column:${columns[1]!.id}`])
+    expect(top[0]).toMatchObject({ trashId: columnTrash, place: 'original', contents: { cards: 2 }, earlierContents: { cards: 1 } })
+    const tree = (await client.get(`/api/workspaces/${workspaceId}/trash/card:${card.body.id}`)).body
+    expect(tree).toMatchObject({ node: { title: 'Suelta', place: 'trash', earlier: true, parentKey: `column:${columns[1]!.id}` }, ancestors: [{ key: `column:${columns[1]!.id}`, kind: 'column', title: 'In progress', trashId: columnTrash }] })
 
-    const restored = await client.post(`/api/trash/${cardTrash}/restore`)
-    expect(restored.body.movedTo).toBe('Lanzamiento › Producto › To do')
-    const board = (await client.get(`/api/boards/${boardId}`)).body
-    expect(board.cards.find((x: { id: string }) => x.id === card.body.id).columnId).toBe(columns[0]!.id)
-
-    // The column comes back with its archived card, where it was.
-    expect((await client.post(`/api/trash/${columnTrash}/restore`)).body.movedTo).toBeNull()
+    // Undoing the card's deletion can't put it anywhere else: its column comes first.
+    const early = await client.post(`/api/trash/${cardTrash}/restore`)
+    expect(early.body.error).toMatchObject({ code: 'restore_place_in_trash', details: { title: 'In progress', key: `column:${columns[1]!.id}` } })
+    // Undoing the column's brings it back as it was when it went, with its archived card; the
+    // card deleted before stays in the trash, now at the top, and goes back to its column.
+    expect((await client.post(`/api/trash/${columnTrash}/restore`)).body).toMatchObject({ movedTo: null, restored: 1, left: 1 })
     const after = (await client.get(`/api/boards/${boardId}`)).body
     expect(after.columns.map((x: { id: string }) => x.id)).toEqual(columns.map((x) => x.id))
     expect((await client.get(`/api/boards/${boardId}/archived`)).body.map((x: { id: string }) => x.id)).toEqual([kept.body.id])
+    expect((await listTrash(client, workspaceId)).map((n) => [n.key, n.place])).toEqual([[`card:${card.body.id}`, 'original']])
+    expect((await client.post(`/api/trash/${cardTrash}/restore`)).body).toMatchObject({ movedTo: null, location: 'Lanzamiento › Producto › In progress' })
+    expect((await client.get(`/api/cards/${card.body.id}`)).body.column.id).toBe(columns[1]!.id)
   })
 
   it('keeps a deep page tree with its files and links, and puts subpages at the top when their parent is gone', async () => {
@@ -123,42 +133,60 @@ describe('the trash', () => {
     expect((await client.get(`/api/cards/${card.body.id}`)).body.pages.map((p: { id: string }) => p.id)).toEqual([tree[25]])
     expect((await client.get(`/api/attachments/${file.body.id}`)).body).toBe('fondo')
 
-    // A subpage deleted on its own, then its parent: the subpage comes back at the top of the project.
+    // A subpage deleted on its own, then its parent: the subpage waits inside it. Restoring it
+    // brings back the pages above it, and only them; the rest of the tree stays in the trash.
     const sub = (await client.del(`/api/pages/${tree[10]}`)).body.trashId
     await client.del(`/api/pages/${tree[0]}`)
-    const back = await client.post(`/api/trash/${sub}/restore`)
-    expect(back.body).toMatchObject({ kind: 'page', entityId: tree[10], movedTo: 'Lanzamiento', path: `d/${tree[10]}` })
-    expect((await client.get(`/api/pages/${tree[10]}`)).body.parentId).toBeNull()
-    expect(left()).toBe(40)
+    expect((await client.post(`/api/trash/${sub}/restore`)).body.error.code).toBe('restore_place_in_trash')
+    const asked = await plan(client, workspaceId, { key: `page:${tree[10]}` })
+    expect(asked.where).toMatchObject({ place: 'trash', to: 'recreate', canRecreate: true, choose: ['project', 'page'] })
+    expect(asked.where.path.map((p) => p.key)).toEqual(tree.slice(0, 10).map((id) => `page:${id}`))
+    expect(asked.where.location).toBe(['Lanzamiento', ...Array.from({ length: 10 }, (_, i) => `Nivel ${i + 1}`)].join(' › '))
+    expect(asked.nodes).toHaveLength(41)
+    const back = await restoreItem(client, workspaceId, { key: `page:${tree[10]}` })
+    expect(back.body).toMatchObject({ kind: 'page', entityId: tree[10], movedTo: null, path: `d/${tree[10]}`, restored: 50, left: 0 })
+    expect((await client.get(`/api/pages/${tree[10]}`)).body.parentId).toBe(tree[9])
+    expect(left()).toBe(50)
+    // The parent's deletion held only the pages above it: nothing is left in the trash.
+    expect((await client.get(`/api/pages/${tree[0]}`)).status).toBe(200)
+    expect(await listTrash(client, workspaceId)).toEqual([])
   })
 
-  it('keeps a whole project, and boards and pages whose project is gone go to the first one', async () => {
+  it('keeps a whole project, and a board whose project is in the trash goes back only with it, or where it is put', async () => {
     const { client, workspaceId } = await signUp(h, 'Proyecto')
     const c = await fullCard(client, workspaceId)
     const subpage = await client.post(`/api/projects/${c.projectId}/pages`, { title: 'Anexo', parentId: c.pageId })
     const pagesOf = async () => (await client.get(`/api/cards/${c.cardId}`)).body.pages.map((p: { id: string }) => p.id)
     let boardTrash = (await client.del(`/api/boards/${c.boardId}`)).body.trashId
     let projectTrash = (await client.del(`/api/projects/${c.projectId}`)).body.trashId
-    expect((await listTrash(client, workspaceId)).find((e) => e.id === projectTrash)).toMatchObject({ kind: 'project', title: 'Lanzamiento', contents: { pages: 2 } })
+    expect(await listTrash(client, workspaceId)).toMatchObject([{ kind: 'project', title: 'Lanzamiento', contents: { boards: 1, pages: 2 }, earlierContents: { boards: 1 } }])
 
-    // The board's project is in the trash too, and there is no other: restore that first.
+    // The board's project is in the trash too: restore that first.
     const early = await client.post(`/api/trash/${boardTrash}/restore`)
     expect(early.body.error).toMatchObject({ code: 'restore_place_in_trash', details: { title: 'Lanzamiento' } })
-    expect((await client.post(`/api/trash/${projectTrash}/restore`)).status).toBe(200)
+    expect((await client.post(`/api/trash/${projectTrash}/restore`)).body).toMatchObject({ left: 1 })
     expect((await client.post(`/api/trash/${boardTrash}/restore`)).body.movedTo).toBeNull()
     expect((await client.get(`/api/pages/${subpage.body.id}`)).body.parentId).toBe(c.pageId)
     expect(await pagesOf()).toEqual([c.pageId])
 
-    // With another project around, a board whose project is gone goes there. Its link to a
-    // page still in the trash can't come back with it.
+    // With another project around, it never goes there by itself: only where it is put.
     const other = await client.post(`/api/workspaces/${workspaceId}/projects`, { name: 'Otro' })
     boardTrash = (await client.del(`/api/boards/${c.boardId}`)).body.trashId
     projectTrash = (await client.del(`/api/projects/${c.projectId}`)).body.trashId
-    expect((await client.post(`/api/trash/${boardTrash}/restore`)).body.movedTo).toBe('Otro')
+    expect((await client.post(`/api/trash/${boardTrash}/restore`)).body.error.code).toBe('restore_place_in_trash')
+    const where = { kind: 'other', parent: { kind: 'project', id: other.body.id } }
+    const asked = await plan(client, workspaceId, { key: `board:${c.boardId}`, to: where })
+    expect(asked).toMatchObject({ ready: true, where: { to: 'other', location: 'Otro' } })
+    // Its card's link to a page still in the trash waits for the page.
+    expect(asked.relations).toEqual([expect.objectContaining({ kind: 'page', title: 'Contrato', state: 'trash', count: 1, first: 'Revisar contrato', canInclude: false, included: false })])
+    const moved = await restoreItem(client, workspaceId, { key: `board:${c.boardId}`, to: where })
+    expect(moved.body).toMatchObject({ movedTo: 'Otro', location: 'Otro', path: `b/${c.boardId}` })
     expect((await client.get(`/api/boards/${c.boardId}`)).body.projectId).toBe(other.body.id)
     expect(await pagesOf()).toEqual([])
+    // The page back, the link is there again.
     expect((await client.post(`/api/trash/${projectTrash}/restore`)).status).toBe(200)
     expect((await client.get(`/api/pages/${c.pageId}`)).body.title).toBe('Contrato')
+    expect(await pagesOf()).toEqual([c.pageId])
   })
 
   it('keeps labels, checklists, items, links and files deleted on their own', async () => {
@@ -175,12 +203,12 @@ describe('the trash', () => {
     expect((await client.del(`/api/cards/${c.cardId}/pages/${c.pageId}`)).body).toEqual({ trashId: null })
     const card = await detail()
     expect([card.labelIds, card.checklists, card.pages, card.attachmentList]).toEqual([[], [], [], []])
-    expect((await listTrash(client, workspaceId)).map((e) => [e.kind, e.title, e.location])).toEqual([
-      ['attachment', 'contrato.txt', 'Lanzamiento › Producto › Revisar contrato'],
-      ['link', 'Contrato', 'Lanzamiento › Producto › Revisar contrato'],
-      ['checklist', 'Pasos', 'Lanzamiento › Producto › Revisar contrato'],
-      ['checklist_item', 'Leer', 'Lanzamiento › Producto › Revisar contrato › Pasos'],
-      ['label', 'Urgente', 'Lanzamiento › Producto'],
+    // The item went before its checklist: it waits inside it.
+    expect((await listTrash(client, workspaceId)).map((e) => [e.kind, e.title, e.location, e.contents])).toEqual([
+      ['attachment', 'contrato.txt', 'Lanzamiento › Producto › Revisar contrato', {}],
+      ['link', 'Contrato', 'Lanzamiento › Producto › Revisar contrato', {}],
+      ['checklist', 'Pasos', 'Lanzamiento › Producto › Revisar contrato', { items: 2 }],
+      ['label', 'Urgente', 'Lanzamiento › Producto', {}],
     ])
 
     // An item needs its checklist: restore that first.
@@ -195,7 +223,7 @@ describe('the trash', () => {
     expect(back.attachmentList.map((a: { id: string }) => a.id)).toEqual([c.attachmentId])
   })
 
-  it('puts a card in its column wherever that went back to, with only that board’s labels', async () => {
+  it('puts a card in its column wherever that was put, and says a label of another board does not apply', async () => {
     const { client, workspaceId } = await signUp(h, 'Orden')
     const first = await seedBoard(client, workspaceId)
     const second = (await client.post(`/api/projects/${first.projectId}/boards`, { name: 'Destino' })).body.id as string
@@ -204,49 +232,106 @@ describe('the trash', () => {
     const card = (await client.post(`/api/columns/${column}/cards`, { title: 'Viajera' })).body.id
     await client.patch(`/api/cards/${card}`, { labelIds: [label] })
     const cardTrash = (await client.del(`/api/cards/${card}`)).body.trashId
-    const columnTrash = (await client.del(`/api/columns/${column}`)).body.trashId
+    await client.del(`/api/columns/${column}`)
     const boardTrash = (await client.del(`/api/boards/${first.boardId}`)).body.trashId
 
-    // The column goes to the other board; the board comes back with its label; the card follows its column.
-    expect((await client.post(`/api/trash/${columnTrash}/restore`)).body.movedTo).toBe('Lanzamiento › Destino')
+    // The column, without the card, put on the other board; then its own board, with its label.
+    const where = { kind: 'other', parent: { kind: 'board', id: second } }
+    const asked = await plan(client, workspaceId, { key: `column:${column}`, to: where, exclude: [`card:${card}`] })
+    expect(asked.nodes.map((n) => [n.key, n.earlier, n.included])).toEqual([
+      [`column:${column}`, false, true],
+      [`card:${card}`, true, false],
+    ])
+    // The other board has an “In progress” of its own: it asks first, then keeps the name as asked.
+    expect(asked.conflicts).toEqual([{ key: `column:${column}`, kind: 'column', original: 'In progress', name: 'In progress', where: 'Destino', taken: true, kept: false }])
+    expect((await restoreItem(client, workspaceId, { key: `column:${column}`, to: where, exclude: [`card:${card}`] })).body.error).toMatchObject({ code: 'restore_incomplete', details: { missing: ['names'] } })
+    const columnBack = await restoreItem(client, workspaceId, { key: `column:${column}`, to: where, exclude: [`card:${card}`], keepNames: [`column:${column}`] })
+    expect(columnBack.body).toMatchObject({
+      movedTo: 'Lanzamiento › Destino',
+      left: 1,
+    })
     expect((await client.post(`/api/trash/${boardTrash}/restore`)).status).toBe(200)
+    // The card follows its column; its label is of the board it no longer is on.
+    const cardPlan = await plan(client, workspaceId, { key: `card:${card}` })
+    expect(cardPlan.relations).toEqual([expect.objectContaining({ kind: 'label', title: 'Roja', state: 'other_board', count: 1 })])
     const back = await client.post(`/api/trash/${cardTrash}/restore`)
-    expect(back.body).toMatchObject({ movedTo: 'Lanzamiento › Destino › In progress', path: `b/${second}` })
+    expect(back.body).toMatchObject({ location: 'Lanzamiento › Destino › In progress', path: `b/${second}` })
     const detail = (await client.get(`/api/cards/${card}`)).body
     expect([detail.board.id, detail.column.id, detail.labelIds]).toEqual([second, column, []])
     expect((await client.get(`/api/boards/${second}`)).body.cards.map((c: { id: string }) => c.id)).toEqual([card])
   })
 
-  it('puts a card whose board is gone in the first column there is, skipping boards without columns', async () => {
-    const { client, workspaceId } = await signUp(h, 'Sin columnas')
+  it('offers what lost its place for good before 1.3.0 a place to choose, or makes the one level above it anew', async () => {
+    const { client, workspaceId } = await signUp(h, 'Huérfanas')
     const gone = await seedBoard(client, workspaceId)
-    const empty = (await client.post(`/api/projects/${gone.projectId}/boards`, { name: 'Vacío' })).body.id as string
     const full = (await client.post(`/api/projects/${gone.projectId}/boards`, { name: 'Lleno' })).body.id as string
-    for (const c of (await client.get(`/api/boards/${empty}`)).body.columns) await client.del(`/api/columns/${c.id}`)
-    const card = (await client.post(`/api/columns/${gone.columns[0]!.id}/cards`, { title: 'Huérfana' })).body.id
-    const cardTrash = (await client.del(`/api/cards/${card}`)).body.trashId
-    await client.del(`/api/boards/${gone.boardId}`)
+    const target = (await client.get(`/api/boards/${full}`)).body.columns[0].id as string
+    // As 1.2.1 left it: a card deleted, then its board deleted for good, the card alone in the trash.
+    const lonely = (await client.post(`/api/columns/${gone.columns[0]!.id}/cards`, { title: 'Huérfana' })).body.id
+    const lonelyTrash = (await client.del(`/api/cards/${lonely}`)).body.trashId
+    const boardTrash = (await client.del(`/api/boards/${gone.boardId}`)).body.trashId
+    h.db.delete(trash).where(eq(trash.id, boardTrash)).run()
 
-    const back = await client.post(`/api/trash/${cardTrash}/restore`)
-    expect(back.body).toMatchObject({ movedTo: 'Lanzamiento › Lleno › To do', path: `b/${full}` })
-    expect((await client.get(`/api/cards/${card}`)).body.board.id).toBe(full)
+    expect(await listTrash(client, workspaceId)).toMatchObject([{ key: `card:${lonely}`, place: 'gone', location: 'Lanzamiento › Producto › To do' }])
+    expect((await client.post(`/api/trash/${lonelyTrash}/restore`)).body.error.code).toBe('restore_place_gone')
+    // Its board is gone too: nothing to make anew, only a place to choose.
+    const asked = await plan(client, workspaceId, { key: `card:${lonely}` })
+    expect(asked).toMatchObject({ ready: false, missing: ['place'], where: { place: 'gone', to: null, canRecreate: false, choose: ['column'], location: '' } })
+    expect((await restoreItem(client, workspaceId, { key: `card:${lonely}` })).body.error).toMatchObject({ code: 'restore_incomplete', details: { missing: ['place'] } })
+    const put = await restoreItem(client, workspaceId, { key: `card:${lonely}`, to: { kind: 'other', parent: { kind: 'column', id: target } } })
+    expect(put.body).toMatchObject({ movedTo: 'Lanzamiento › Lleno › To do', path: `b/${full}` })
+    expect((await client.get(`/api/cards/${lonely}`)).body.board.id).toBe(full)
+
+    // A card whose column went for good, on a board that is there: its column made anew, by name.
+    const column = (await client.post(`/api/boards/${full}/columns`, { name: 'Revisión' })).body.id as string
+    const card = (await client.post(`/api/columns/${column}/cards`, { title: 'Sin columna' })).body.id
+    await client.del(`/api/cards/${card}`)
+    h.db.delete(trash).where(eq(trash.id, (await client.del(`/api/columns/${column}`)).body.trashId)).run()
+    const remade = await plan(client, workspaceId, { key: `card:${card}` })
+    expect(remade.where).toMatchObject({ place: 'gone', to: 'recreate', canRecreate: true, create: [{ kind: 'column', title: 'Revisión' }], location: 'Lanzamiento › Lleno › Revisión' })
+    const back = await restoreItem(client, workspaceId, { key: `card:${card}` })
+    expect(back.body).toMatchObject({ movedTo: 'Lanzamiento › Lleno › Revisión' })
+    const detail = (await client.get(`/api/cards/${card}`)).body
+    expect([detail.board.id, detail.column.name]).toEqual([full, 'Revisión'])
+    expect(detail.column.id).not.toBe(column)
+
+    // A board whose project went for good: a project made anew with its name.
+    const project = (await client.post(`/api/workspaces/${workspaceId}/projects`, { name: 'Efímero' })).body.id as string
+    const board = (await client.post(`/api/projects/${project}/boards`, { name: 'Superviviente' })).body.id as string
+    await client.del(`/api/boards/${board}`)
+    h.db.delete(trash).where(eq(trash.id, (await client.del(`/api/projects/${project}`)).body.trashId)).run()
+    expect((await plan(client, workspaceId, { key: `board:${board}` })).where).toMatchObject({ to: 'recreate', create: [{ kind: 'project', title: 'Efímero' }], location: 'Efímero' })
+    expect((await restoreItem(client, workspaceId, { key: `board:${board}` })).status).toBe(200)
+    const restored = (await client.get(`/api/boards/${board}`)).body
+    expect(restored.projectId).not.toBe(project)
+    const projects = (await client.get(`/api/workspaces/${workspaceId}/overview`)).body.projects as { id: string; name: string }[]
+    expect(projects.find((p) => p.id === restored.projectId)?.name).toBe('Efímero')
   })
 
-  it('puts a subpage under its parent wherever that went back to', async () => {
+  it('brings a page back with its project and the subpage deleted before, or puts them where chosen', async () => {
     const { client, workspaceId } = await signUp(h, 'Ramas')
     const { projectId } = await seedBoard(client, workspaceId)
     const [parent, child] = await createPageChain(client, projectId, 2)
-    const childTrash = (await client.del(`/api/pages/${child}`)).body.trashId
-    const parentTrash = (await client.del(`/api/pages/${parent}`)).body.trashId
-    await client.del(`/api/projects/${projectId}`)
+    await client.del(`/api/pages/${child}`)
+    await client.del(`/api/pages/${parent}`)
+    const projectTrash = (await client.del(`/api/projects/${projectId}`)).body.trashId
     const other = (await client.post(`/api/workspaces/${workspaceId}/projects`, { name: 'Refugio' })).body.id
 
-    expect((await client.post(`/api/trash/${parentTrash}/restore`)).body.movedTo).toBe('Refugio')
-    expect((await client.post(`/api/trash/${childTrash}/restore`)).body.movedTo).toBe('Refugio')
+    const asked = await plan(client, workspaceId, { key: `page:${parent}` })
+    expect(asked.where).toMatchObject({ place: 'trash', to: 'recreate', path: [{ key: `project:${projectId}`, title: 'Lanzamiento' }], location: 'Lanzamiento' })
+    expect(asked.nodes.map((n) => [n.key, n.earlier])).toEqual([
+      [`page:${parent}`, false],
+      [`page:${child}`, true],
+    ])
+    // Somewhere else: the page and its subpage, there.
+    const moved = await restoreItem(client, workspaceId, { key: `page:${parent}`, to: { kind: 'other', parent: { kind: 'project', id: other } } })
+    expect(moved.body).toMatchObject({ movedTo: 'Refugio', restored: 1 })
     const page = (await client.get(`/api/pages/${child}`)).body
     expect([page.projectId, page.parentId]).toEqual([other, parent])
     const tree = (await client.get(`/api/projects/${other}/pages`)).body.map((p: { id: string; parentId: string | null }) => `${p.id}<${p.parentId}`)
     expect(tree.sort()).toEqual([`${parent}<null`, `${child}<${parent}`].sort())
+    // The project, still in the trash, holds its board.
+    expect((await listTrash(client, workspaceId)).map((n) => [n.key, n.trashId, n.contents])).toEqual([[`project:${projectId}`, projectTrash, { boards: 1, columns: 3 }]])
   })
 
   it('rebuilds mentions from what pages say now', async () => {

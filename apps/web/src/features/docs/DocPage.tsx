@@ -1,4 +1,4 @@
-import type { ActorRef, PageDTO, RealtimeEvent, TrashEntryDTO } from '@orqevio/shared'
+import type { ActorRef, PageDTO, RealtimeEvent, TrashTreeDTO } from '@orqevio/shared'
 import { MAX_MARKDOWN, extractReferences } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { EditorState } from '@tiptap/pm/state'
@@ -15,7 +15,6 @@ import { cn } from '../../lib/cn'
 import { formatNumber, relativeTime } from '../../lib/format'
 import { keys, queryClient, usePage } from '../../lib/queries'
 import { onPageEvent, refreshLive, useAgentHighlight } from '../../lib/realtime'
-import { restoreFromTrash } from '../../lib/trash'
 import { Attachments } from '../boards/Attachments'
 import { DueChip } from '../boards/CardItem'
 import { PageHeader } from '../shell/PageHeader'
@@ -26,6 +25,7 @@ import { Editor } from './editor/Editor'
 import { IconPicker } from './IconPicker'
 import { HistoryDialog } from '../history/HistoryDialog'
 import { MovePageDialog } from './MovePageDialog'
+import { useRestore } from '../trash/restore'
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error'
 
@@ -36,10 +36,13 @@ type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error'
  */
 type SaveProblem = { kind: 'too_long'; length: number } | { kind: 'retrying'; reason: string } | { kind: 'refused'; reason: string }
 
-/** The page was deleted, maybe with what holds it. `entry` is where it waits in the trash, when it can be found. */
+/**
+ * The page was deleted, maybe with what holds it. `entry` is where it waits in the trash, when it
+ * can be found: the deletion it went with, and what that deletion was of when not the page itself.
+ */
 interface Gone {
   by: ActorRef | null
-  entry: TrashEntryDTO | null
+  entry: { key: string; holder: string | null } | null
 }
 
 const isNotFound = (error: unknown) => error instanceof ApiError && error.status === 404
@@ -73,7 +76,6 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
   const [conflict, setConflict] = useState<{ by: string | null } | null>(null)
   const [problem, setProblem] = useState<SaveProblem | null>(null)
   const [gone, setGone] = useState<Gone | null>(null)
-  const [restoring, setRestoring] = useState(false)
   const [moveOpen, setMoveOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
 
@@ -192,12 +194,13 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
     report(null)
     setConflict(null)
     setGone({ by, entry: null })
-    // What holds it may be what was deleted: an ancestor page, or its project.
-    const holders = [page.id, ...page.breadcrumbs.map((b) => b.id).reverse(), page.projectId]
-    get<TrashEntryDTO[]>(`/workspaces/${workspaceId}/trash`)
-      .then((entries) => {
-        const entry = holders.map((id) => entries.find((e) => e.entityId === id)).find((e) => e !== undefined)
-        if (entry && goneRef.current) setGone({ by: entry.deletedBy, entry })
+    // It may have gone with what holds it, an ancestor page or its project: that is what is told.
+    get<TrashTreeDTO | null>(`/workspaces/${workspaceId}/trash/${encodeURIComponent(`page:${page.id}`)}`)
+      .then((tree) => {
+        if (!tree) return
+        const { node, ancestors } = tree
+        const holder = ancestors.find((a) => a.trashId === node.trashId)
+        if (goneRef.current) setGone({ by: node.deletedBy, entry: { key: node.key, holder: holder ? holder.title : null } })
       })
       .catch(() => {})
   }
@@ -223,24 +226,15 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
     }
   }, [page.id, backAgain])
 
-  async function restore(entry: TrashEntryDTO) {
-    setRestoring(true)
-    try {
-      const restored = await restoreFromTrash(entry.id)
-      if (restored.movedTo) toast.message(t('restoredElsewhere', { ns: 'trash', place: restored.movedTo }))
-      backAgain()
-    } catch (error) {
-      // Restored elsewhere meanwhile, maybe: then it is back all the same.
-      if (!isNotFound(error) || !(await recheck())) {
-        toast.error(errorMessage(error))
-        return
-      }
-    } finally {
-      setRestoring(false)
-    }
-    // The button goes away with the notice: writing goes on where it was.
-    editorRef.current?.commands.focus()
-  }
+  // Restoring brings it back with what is below it; if what holds it is in the trash too, it asks where.
+  const restoring = useRestore(workspaceId, {
+    onRestored: () => {
+      void recheck().then((back) => {
+        // The button goes away with the notice: writing goes on where it was.
+        if (back) editorRef.current?.commands.focus()
+      })
+    },
+  })
 
   // What reading the page again finds, also after a reconnection that may have missed live
   // events: a page no longer there is gone; one there again while it seemed gone may be back.
@@ -527,11 +521,11 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
               <div role="alert" className="animate-pop flex flex-wrap items-center gap-3 rounded-[12px] border border-danger/30 bg-danger-soft px-4 py-3 text-[13px] shadow-md">
                 <Trash className="size-4 shrink-0 text-danger" />
                 <span className="min-w-0 flex-1">
-                  <GoneMessage gone={gone} pageId={page.id} selfId={me.user.id} /> {gone.entry ? t('page.gone.inTrash') : ''}{' '}
+                  <GoneMessage gone={gone} selfId={me.user.id} /> {gone.entry ? t('page.gone.inTrash') : ''}{' '}
                   {dirty.current && <strong className="font-semibold">{t(gone.entry ? 'page.gone.unsaved' : 'page.gone.unsavedLost')}</strong>}
                 </span>
                 {gone.entry && (
-                  <Button size="sm" variant="primary" loading={restoring} onClick={() => void restore(gone.entry!)}>
+                  <Button size="sm" variant="primary" loading={restoring.starting !== null} onClick={() => void restoring.start(gone.entry!.key)}>
                     {t('page.gone.restore')}
                   </Button>
                 )}
@@ -608,19 +602,20 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
       </div>
       <MovePageDialog open={moveOpen} onOpenChange={setMoveOpen} pageId={page.id} projectName={page.project.name} pages={projectPages} workspaceId={workspaceId} />
       <HistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} type="page" id={page.id} name={title || t('untitled', { ns: 'common' })} />
+      {restoring.dialog}
     </div>
   )
 }
 
 /** Who deleted the page, or what holds it. */
-function GoneMessage({ gone, pageId, selfId }: { gone: Gone; pageId: string; selfId: string }) {
+function GoneMessage({ gone, selfId }: { gone: Gone; selfId: string }) {
   const { t } = useTranslation('docs')
   const strong = { strong: <strong className="font-semibold" /> }
   const by = gone.by
   if (!by) return <>{t('page.gone.unknown')}</>
   const you = by.kind === 'user' && by.id === selfId
   // Deleted with what holds it: say what that was.
-  const holder = gone.entry && gone.entry.entityId !== pageId ? gone.entry.title : null
+  const holder = gone.entry?.holder ?? null
   if (holder !== null) return <Trans t={t} i18nKey={you ? 'page.gone.withByYou' : 'page.gone.withByName'} values={{ name: by.name, title: holder }} components={strong} />
   return <Trans t={t} i18nKey={you ? 'page.gone.byYou' : 'page.gone.byName'} values={{ name: by.name }} components={strong} />
 }

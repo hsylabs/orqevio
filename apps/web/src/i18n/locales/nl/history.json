@@ -94,6 +94,7 @@
     "impossible": {
       "gone": "‘{{title}}’ bestaat niet meer.",
       "place_gone": "De plek waar ‘{{title}}’ stond, bestaat niet meer.",
+      "place_in_trash": "De plek waar ‘{{title}}’ stond, staat in de prullenbak.",
       "trash_gone": "‘{{title}}’ is definitief uit de prullenbak verwijderd.",
       "refused": "‘{{title}}’ kon niet ongedaan worden gemaakt."
     },

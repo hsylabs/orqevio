@@ -61,5 +61,6 @@
     "createdIn": "in {{column}}",
     "linkedPage": "„{{page}}“"
   },
-  "viaMcp": "über MCP"
+  "viaMcp": "über MCP",
+  "inTrash": "im Papierkorb"
 }

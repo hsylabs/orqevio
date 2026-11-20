@@ -30,6 +30,7 @@ export function ActivityList({ items, workspaceId, compact, showSummary = true }
                 components={{ actor: <span className={a.actor.kind === 'agent' ? 'font-medium text-agent' : 'font-medium text-ink'} />, target }}
               />
               {detail && <span className="text-ink-3"> · {detail}</span>}
+              {a.inTrash && <span className="ml-1.5 rounded-full bg-sunken px-1.5 py-px text-[11px] text-ink-3">{t('inTrash')}</span>}
               <span className="mt-0.5 block text-[11.5px] text-ink-3">
                 <time dateTime={a.createdAt}>{relativeTime(a.createdAt)}</time>
                 {a.actor.kind === 'agent' && ` · ${t('viaMcp')}`}

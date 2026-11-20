@@ -61,5 +61,6 @@
     "createdIn": "列：{{column}}",
     "linkedPage": "「{{page}}」"
   },
-  "viaMcp": "MCP経由"
+  "viaMcp": "MCP経由",
+  "inTrash": "ゴミ箱にあります"
 }
