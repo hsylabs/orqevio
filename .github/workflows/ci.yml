@@ -5,7 +5,9 @@ name: CI
 #   integration tests and the build, on one runner for about two minutes.
 # - Heavy, on a pull request into main (the version about to be released) and when started
 #   by hand on any branch (Actions → CI → Run workflow): the end-to-end suite in Chromium,
-#   Firefox and WebKit, against the Cloudflare package and against the Docker images.
+#   Firefox and WebKit, against the Cloudflare package and against the Docker images. An open
+#   pull request whose base changes to main gets them too: ci-retarget.yml starts this
+#   workflow on its branch.
 # Elsewhere the heavy jobs are skipped, which costs nothing and counts as passed for a
 # required check. Each runs as its own job, without a matrix, so that a skipped one still
 # reports under its own name.

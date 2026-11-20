@@ -1,0 +1,27 @@
+name: CI after a change of base
+
+# ci.yml runs its heavy jobs on pull requests into main. Changing the base of an open pull
+# request to main is an "edited" event, which ci.yml does not listen to (it also comes with
+# every change of title or description): the pull request would keep the checks of its light
+# run, with the heavy jobs skipped, and so counted as passed. This starts the whole of ci.yml
+# by hand on the pull request's branch, so the heavy checks run on that same commit.
+on:
+  pull_request:
+    types: [edited]
+    branches: [main]
+
+permissions:
+  actions: write
+
+jobs:
+  full-suite:
+    name: Start the full CI for main
+    if: github.event.changes.base
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run ci.yml on the pull request's branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$HEAD_REF"
