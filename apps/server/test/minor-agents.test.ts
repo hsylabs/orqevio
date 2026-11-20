@@ -101,6 +101,64 @@ describe('small fixes for agents', () => {
     await mcp.close()
   })
 
+  it('a token asked for with only "organize" is refused: it would read and write nothing', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const res = await client.post('/api/tokens', { name: 'Solo organizar', workspaceId, scopes: ['organize'], expiresInDays: 30 })
+    expect(res.status).toBe(400)
+    expect(res.body.error.message).toContain('organize')
+    expect((await client.get('/api/tokens')).body).toEqual([])
+    // With something to write, it is kept.
+    const ok = await client.post('/api/tokens', { name: 'Organizar tareas', workspaceId, scopes: ['tasks:write', 'organize'], expiresInDays: 30 })
+    expect(ok.status).toBe(201)
+    expect(ok.body.scopes).toEqual(['tasks:read', 'tasks:write', 'organize'])
+  })
+
+  it('upload_attachment refuses content that is not base64 instead of storing a damaged file', async () => {
+    const { client, workspaceId, mcp } = await agent(['docs:read', 'docs:write'])
+    const { projectId } = await seedBoard(client, workspaceId)
+    const page = await client.post(`/api/projects/${projectId}/pages`, { title: 'Adjuntos' })
+    const upload = (content: string) => mcp.callTool({ name: 'upload_attachment', arguments: { page_id: page.body.id, filename: 'punto.png', mime_type: 'image/png', content, encoding: 'base64' } })
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+    const dataUrl = await upload(`data:image/png;base64,${png}`)
+    expect(dataUrl.isError).toBe(true)
+    expect(JSON.stringify(dataUrl.content)).toContain('data: URL')
+    for (const bad of ['¡esto no es base64!', 'abcde', 'SGVsbG8===', 'SGV+bG8_']) {
+      const res = await upload(bad)
+      expect(res.isError, bad).toBe(true)
+      expect(JSON.stringify(res.content), bad).toContain('not valid base64')
+    }
+    expect((await client.get(`/api/pages/${page.body.id}`)).body.attachments ?? []).toEqual([])
+    // Base64 as it comes, with line breaks, or URL-safe, goes in whole.
+    const wrapped = await upload(png.replace(/(.{20})/g, '$1\n'))
+    expect(wrapped.isError).toBeFalsy()
+    const urlSafe = await upload(Buffer.from([0xfb, 0xff, 0xfe]).toString('base64url'))
+    expect(urlSafe.isError).toBeFalsy()
+    const files = (await client.get(`/api/pages/${page.body.id}`)).body.attachments as Array<{ size: number }>
+    expect(files.map((f) => f.size).sort((a, b) => a - b)).toEqual([3, Buffer.from(png, 'base64').length])
+  })
+
+  it('JSON that is not a JSON-RPC request is an invalid request (-32600), not a parse error', async () => {
+    const { rpc, mcp } = await agent(['tasks:read'])
+    for (const body of [{ hello: 1 }, [{ hello: 1 }], { jsonrpc: '1.0', id: 1, method: 'tools/list' }, 'texto']) {
+      const res = await rpc(body)
+      expect(res.error?.code, JSON.stringify(body)).toBe(-32600)
+    }
+    await mcp.close()
+  })
+
+  it('an OAuth registration with an address too long says so, not that the list is wrong', async () => {
+    const res = await h.app.request('/oauth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ redirect_uris: [`https://claude.ai/${'x'.repeat(520)}`], client_name: 'Claude' }),
+    })
+    expect(res.status).toBe(400)
+    const body = (await res.json()) as { error: string; error_description: string }
+    expect(body.error).toBe('invalid_client_metadata')
+    expect(body.error_description).toContain('at most 500 characters')
+    expect(body.error_description).not.toContain('one to five')
+  })
+
   it('an OAuth registration says which field is wrong', async () => {
     const register = async (body: unknown) => {
       const res = await h.app.request('/oauth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })

@@ -181,7 +181,10 @@ const registrationInput = z.object({
 })
 
 /** What is wrong with a registration, by the first field that is not valid. */
-function registrationProblem(field: PropertyKey | undefined) {
+function registrationProblem(path: PropertyKey[] = []) {
+  const [field] = path
+  // One address of the list, not the list.
+  if (field === 'redirect_uris' && path.length > 1) return 'Each address in redirect_uris must be text of at most 500 characters'
   switch (field) {
     case 'client_name':
       return 'client_name must be text of at most 200 characters'
@@ -217,7 +220,7 @@ export class OAuthService {
   /** Dynamic Client Registration (RFC 7591). Nothing is stored: the client_id is signed. */
   async register(input: unknown) {
     const result = registrationInput.safeParse(input)
-    if (!result.success) throw new OAuthError('invalid_client_metadata', registrationProblem(result.error.issues[0]?.path[0]))
+    if (!result.success) throw new OAuthError('invalid_client_metadata', registrationProblem(result.error.issues[0]?.path))
     const data = result.data
     const bad = data.redirect_uris.find((uri) => !validRedirectUri(uri))
     if (bad) throw new OAuthError('invalid_redirect_uri', `Not an allowed redirect URI: ${bad.slice(0, 100)}`)

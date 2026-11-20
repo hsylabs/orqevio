@@ -616,7 +616,7 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       (args) =>
         run(async () => {
           if ((args.card_id === undefined) === (args.page_id === undefined)) throw new AppError(400, 'bad_request', 'Send either card_id or page_id')
-          const bytes = args.encoding === 'base64' ? Uint8Array.from(Buffer.from(args.content, 'base64')) : new TextEncoder().encode(args.content)
+          const bytes = args.encoding === 'base64' ? fromBase64(args.content) : new TextEncoder().encode(args.content)
           if (bytes.byteLength > MCP_UPLOAD_MB * 1024 * 1024) throw new AppError(413, 'file_too_large', `Files uploaded by agents are limited to ${MCP_UPLOAD_MB} MB`)
           const type = args.mime_type ?? (args.encoding === 'text' ? 'text/plain; charset=utf-8' : 'application/octet-stream')
           const body = new Blob([bytes]).stream()
@@ -721,6 +721,20 @@ export function createMcpServer(services: Services, actor: AgentActor) {
 
   invalidParamsForMalformedRequests(server)
   return server
+}
+
+/**
+ * The bytes of base64 content, standard or URL-safe, spaces and line breaks allowed. Anything else
+ * (a `data:` URL, text that was never encoded) is refused: decoded leniently, it would be stored as
+ * a damaged file and reported uploaded.
+ */
+function fromBase64(content: string) {
+  if (/^data:[^,]*,/i.test(content)) throw new AppError(400, 'bad_request', 'content is a data: URL: send only the base64 after the comma')
+  const compact = content.replace(/\s+/g, '')
+  const unpadded = compact.replace(/={1,2}$/, '')
+  if (!/^[A-Za-z0-9+/]*$/.test(unpadded) && !/^[A-Za-z0-9_-]*$/.test(unpadded)) throw new AppError(400, 'bad_request', 'content is not valid base64')
+  if (unpadded.length % 4 === 1 || (compact.length !== unpadded.length && compact.length % 4 !== 0)) throw new AppError(400, 'bad_request', 'content is not valid base64: its length is not that of encoded bytes')
+  return Uint8Array.from(Buffer.from(unpadded, /[-_]/.test(unpadded) ? 'base64url' : 'base64'))
 }
 
 type RequestHandler = (request: unknown, extra: unknown) => Promise<unknown>
