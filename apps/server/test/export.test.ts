@@ -194,6 +194,12 @@ describe('export', () => {
     expect(upper('a ``b ` c`` d `e` f')).toBe('A ``b ` c`` D `e` F')
     // In a list item or a quote too.
     expect(upper('- ```\n  b\n  ```\n> ~~~\n> c\n> ~~~\nd')).toBe('- ```\n  b\n  ```\n> ~~~\n> c\n> ~~~\nD')
+    // Indented by four spaces or a tab after a blank line: code, blank lines inside it included.
+    expect(upper('a\n\n    b [x](/doc/1)\n\n\tc\nd\n')).toBe('A\n\n    b [x](/doc/1)\n\n\tc\nD\n')
+    expect(upper('    b\nc')).toBe('    b\nC')
+    // Not after a paragraph (it goes on), nor in a list (it is the item's).
+    expect(upper('a\n    b')).toBe('A\n    B')
+    expect(upper('- a\n\n    b\n\nc\n\n    d')).toBe('- A\n\n    B\n\nC\n\n    d')
   })
 
   it('names files so that every system takes them', () => {
@@ -209,5 +215,35 @@ describe('export', () => {
     // Names Windows keeps for devices, with an extension or not, in any case.
     expect(['CON', 'nul.txt', 'Aux', 'com1', 'LPT9.tar.gz', 'COM¹', 'conin$'].map((n) => safeName(n))).toEqual(['CON_', 'nul_.txt', 'Aux_', 'com1_', 'LPT9_.tar.gz', 'COM¹_', 'conin$_'])
     expect(['Console', 'CON2', 'nul-file', 'Comunicación'].map((n) => safeName(n))).toEqual(['Console', 'CON2', 'nul-file', 'Comunicación'])
+    // Composed, as macOS compares them, and without what shows nothing; the joiner of emoji stays.
+    expect(safeName('Cafe\u0301')).toBe('Café')
+    expect(safeName('Caf\u00e9')).toBe('Café')
+    expect(safeName('a\u200Bb\u200Ec\u2066d')).toBe('abcd')
+    expect(safeName('👩\u200D💻 Equipo')).toBe('👩\u200D💻 Equipo')
+  })
+
+  it('never gives two files names a system takes for the same, and lists a document once per card', async () => {
+    const { client, workspaceId } = await signUp(h, 'Ana Ruiz')
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    // The same title composed and decomposed, and with a zero-width space: they look the same.
+    for (const title of ['Caf\u00e9', 'Cafe\u0301', 'Caf\u200B\u00e9']) await client.post(`/api/projects/${projectId}/pages`, { title, content: title })
+    const notes = (await client.post(`/api/projects/${projectId}/pages`, { title: 'Notas' })).body.id as string
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Con notas' })).body.id as string
+    // Linked by hand, and mentioned in the page too.
+    expect((await client.post(`/api/cards/${card}/pages`, { pageId: notes })).status).toBeLessThan(300)
+    await client.patch(`/api/pages/${notes}`, { content: `Ver [Con notas](/card/${card})`, baseVersion: 1 })
+    expect([...h.sql.rows('SELECT source FROM card_page_links WHERE card_id = ? ORDER BY source', card)].map((r) => r[0])).toEqual(['manual', 'mention'])
+
+    const { files } = await download(client)
+    const names = Object.keys(files)
+    const root = names[0]!.split('/')[0]!
+    const docs = names.filter((n) => n.startsWith(`${root}/Lanzamiento/documents/`) || n.includes('/documents/Lanzamiento/')).map((n) => n.split('/').at(-1)!)
+    const cafes = docs.filter((n) => n.normalize('NFC').toLowerCase().startsWith('café'))
+    expect(cafes).toHaveLength(3)
+    expect(new Set(cafes.map((n) => n.normalize('NFC').toLowerCase())).size).toBe(3)
+    expect(cafes.every((n) => n === n.normalize('NFC') && !/\u200B/.test(n))).toBe(true)
+    const tasks = JSON.parse(strFromU8(Object.entries(files).find(([n]) => n.endsWith('/tasks.json'))![1]))
+    const exported = tasks.projects[0].boards[0].columns[0].cards.find((c: { title: string }) => c.title === 'Con notas')
+    expect(exported.documents).toHaveLength(1)
   })
 })
