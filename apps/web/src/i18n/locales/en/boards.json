@@ -165,7 +165,8 @@
     "editNamed": "Edit {{name}}",
     "editUnnamed": "Edit label",
     "create": "Create label",
-    "deleted": "Label “{{name}}” moved to the trash"
+    "deleted": "Label “{{name}}” moved to the trash",
+    "deletedUnnamed": "Unnamed label moved to the trash"
   },
   "linked": {
     "mentioned": "mentioned",

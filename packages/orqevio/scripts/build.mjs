@@ -54,7 +54,9 @@ try {
   const require = createRequire(path.join(server, 'package.json'))
   const wranglerPkg = require.resolve('wrangler/package.json')
   const wrangler = path.join(path.dirname(wranglerPkg), JSON.parse(readFileSync(wranglerPkg, 'utf8')).bin.wrangler)
-  execFileSync(process.execPath, [wrangler, 'deploy', '--dry-run', '--outdir', bundleDir], {
+  // Its own config, always: without --config, Wrangler takes a wrangler.json from any folder above
+  // before the wrangler.jsonc beside it, and would bundle that other Worker without a word.
+  execFileSync(process.execPath, [wrangler, 'deploy', '--dry-run', '--config', path.join(server, 'wrangler.jsonc'), '--outdir', bundleDir], {
     cwd: server,
     stdio: 'inherit',
     env: { WRANGLER_SEND_METRICS: 'false', ...process.env },

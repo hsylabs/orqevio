@@ -6,8 +6,11 @@ import { SCOPES } from './scopes'
 /** Input schemas shared by the REST API, the MCP tools and the web forms. */
 
 const id = z.uuid()
-/** A character that shows: not a space, a control or formatting character, or a blank filler. */
-const VISIBLE = /[^\s\p{Cc}\p{Cf}\p{Z}\u115F\u1160\u3164\uFFA0\u2800]/u
+/**
+ * A character that shows on its own: not a space, a control or formatting character, a blank
+ * filler, or a mark (an accent, an emoji variation selector), which only shows on another character.
+ */
+const VISIBLE = /[^\s\p{Cc}\p{Cf}\p{Z}\p{M}\u115F\u1160\u3164\uFFA0\u2800]/u
 /** A one-line name: control characters (line breaks, tabs) become spaces, and it must show something. */
 const name = (max = 120) =>
   z
@@ -17,6 +20,14 @@ const name = (max = 120) =>
     .min(1, { message: 'Required', abort: true })
     .max(max)
     .refine((value) => VISIBLE.test(value), 'Required')
+/** A one-line name that may be left out: cleaned as `name`, and one that shows nothing is no name. */
+const optionalName = (max: number) =>
+  z
+    .string()
+    .overwrite((value) => value.replace(/\p{Cc}+/gu, ' '))
+    .trim()
+    .overwrite((value) => (VISIBLE.test(value) ? value : ''))
+    .max(max)
 const color = z.enum(PALETTE)
 const index = z.number().int().min(0).max(100_000)
 
@@ -116,8 +127,8 @@ export const boardCreateInput = z.object({
 export const boardUpdateInput = z.object({ name: name(80) })
 export const columnCreateInput = z.object({ name: name(60), index: index.optional() })
 export const columnUpdateInput = z.object({ name: name(60).optional(), index: index.optional() })
-export const labelCreateInput = z.object({ name: z.string().trim().max(40).default(''), color })
-export const labelUpdateInput = z.object({ name: z.string().trim().max(40).optional(), color: color.optional() })
+export const labelCreateInput = z.object({ name: optionalName(40).default(''), color })
+export const labelUpdateInput = z.object({ name: optionalName(40).optional(), color: color.optional() })
 
 // ── Cards & checklists ──────────────────────────────────────────
 export const cardCreateInput = z.object({
@@ -148,13 +159,13 @@ export const linkPageInput = z.object({ pageId: id })
 
 // ── Pages ───────────────────────────────────────────────────────
 export const pageCreateInput = z.object({
-  title: z.string().trim().max(200).default(''),
+  title: optionalName(200).default(''),
   icon: z.string().max(16).nullable().optional(),
   parentId: id.nullable().optional(),
   content: z.string().max(MAX_MARKDOWN).default(''),
 })
 export const pageUpdateInput = z.object({
-  title: z.string().trim().max(200).optional(),
+  title: optionalName(200).optional(),
   icon: z.string().max(16).nullable().optional(),
   content: z.string().max(MAX_MARKDOWN).optional(),
   /** Required when `content` is sent: optimistic concurrency guard. */

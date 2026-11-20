@@ -16,7 +16,9 @@ const ZEROS = new Uint8Array(8 * 1024 * 1024)
 
 /**
  * Writes a ZIP to a file, as the export streams it. Pieces of ZEROS are skipped, not written, so
- * an archive of several GiB takes almost no disk.
+ * an archive of several GiB takes almost no disk. The other pieces are written a megabyte at a
+ * time: one write for each of the 210,000 pieces of 70,000 entries takes four times as long as
+ * making the ZIP, and left the test of 65,535 entries a second or two under its time limit.
  */
 async function zipFile(build: (zip: ZipWriter) => Promise<void>, options?: ZipOptions) {
   const dir = await mkdtemp(path.join(tmpdir(), 'orqevio-zip-'))
@@ -24,13 +26,28 @@ async function zipFile(build: (zip: ZipWriter) => Promise<void>, options?: ZipOp
   const file = path.join(dir, 'test.zip')
   const handle = await open(file, 'w')
   let at = 0
+  const pending: Uint8Array[] = []
+  let pendingBytes = 0
+  // The pieces waiting end at `at`, one after another.
+  const flush = async () => {
+    if (!pendingBytes) return
+    await handle.write(Buffer.concat(pending, pendingBytes), 0, pendingBytes, at - pendingBytes)
+    pending.length = 0
+    pendingBytes = 0
+  }
   const zip = new ZipWriter(async (chunk) => {
-    if (chunk !== ZEROS) await handle.write(chunk, 0, chunk.length, at)
+    if (chunk === ZEROS) await flush()
+    else {
+      pending.push(chunk.slice())
+      pendingBytes += chunk.length
+    }
     at += chunk.length
+    if (pendingBytes >= 1024 * 1024) await flush()
   }, options)
   try {
     await build(zip)
     await zip.end()
+    await flush()
     await handle.truncate(at)
   } finally {
     await handle.close()
