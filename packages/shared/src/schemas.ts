@@ -50,6 +50,21 @@ const dueAt = z.string().transform((value, ctx) => {
 
 export const MAX_MARKDOWN = 200_000
 
+/**
+ * How many characters a text has, as the schemas count them for their limits: an emoji or a letter
+ * from beyond the first 65,536 is one, though it takes two UTF-16 units (`.length` counts two).
+ */
+export function characters(text: string) {
+  let count = text.length
+  for (let i = 0; i < text.length - 1; i++) {
+    if ((text.charCodeAt(i) & 0xfc00) === 0xd800 && (text.charCodeAt(i + 1) & 0xfc00) === 0xdc00) {
+      count--
+      i++
+    }
+  }
+  return count
+}
+
 // ── Access & account ────────────────────────────────────────────
 // A copy of Orqevio has a single owner: it is claimed once with the setup code
 // chosen at install time, and then opened with the generated access key.

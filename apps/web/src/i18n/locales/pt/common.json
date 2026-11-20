@@ -26,6 +26,12 @@
     "title": "Não há nada aqui",
     "body": "A página não existe ou você não tem acesso a ela."
   },
+  "gone": {
+    "card": "Este cartão não existe mais",
+    "page": "Esta página não existe mais",
+    "cardBody": "Ele foi excluído para sempre ou está em um espaço ao qual você não tem acesso.",
+    "pageBody": "Ela foi excluída para sempre ou está em um espaço ao qual você não tem acesso."
+  },
   "time": {
     "justNow": "agora mesmo"
   },

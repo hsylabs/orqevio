@@ -26,6 +26,12 @@
     "title": "Nothing here",
     "body": "The page doesn’t exist or you don’t have access to it."
   },
+  "gone": {
+    "card": "This card no longer exists",
+    "page": "This page no longer exists",
+    "cardBody": "It was deleted for good, or it is in a workspace you don’t have access to.",
+    "pageBody": "It was deleted for good, or it is in a workspace you don’t have access to."
+  },
   "time": {
     "justNow": "just now"
   },
