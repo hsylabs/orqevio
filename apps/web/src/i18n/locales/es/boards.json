@@ -91,7 +91,12 @@
     "hasDescription": "Tiene descripción",
     "linkedDocs": "Documentos vinculados",
     "attachments": "Adjuntos",
-    "createdByName": "Creada por {{name}}"
+    "createdByName": "Creada por {{name}}",
+    "a11y": {
+      "labels": "Etiquetas: {{list}}",
+      "due": "Fecha límite: {{date}}",
+      "checklist": "Checklist: {{done}} de {{total}} hechos"
+    }
   },
   "sheet": {
     "fallbackTitle": "Tarjeta",

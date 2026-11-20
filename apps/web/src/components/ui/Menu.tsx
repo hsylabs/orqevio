@@ -35,11 +35,12 @@ export function MenuContent({ children, align = 'end', className, side }: { chil
   )
 }
 
-export function MenuItem({ icon, children, onSelect, danger, shortcut, disabled }: { icon?: ReactNode; children: ReactNode; onSelect?: (e: Event) => void; danger?: boolean; shortcut?: string; disabled?: boolean }) {
+export function MenuItem({ icon, children, onSelect, danger, shortcut, disabled, current }: { icon?: ReactNode; children: ReactNode; onSelect?: (e: Event) => void; danger?: boolean; shortcut?: string; disabled?: boolean; current?: boolean }) {
   return (
     <M.Item
       onSelect={onSelect}
       disabled={disabled}
+      aria-current={current ? 'true' : undefined}
       className={cn(
         'flex h-8 cursor-default items-center gap-2.5 rounded-[8px] px-2 text-[13px] outline-none select-none data-[disabled]:opacity-40 data-[highlighted]:bg-hover [&_svg]:size-[15px] [&_svg]:text-ink-3',
         danger ? 'text-danger data-[highlighted]:bg-danger-soft [&_svg]:text-danger' : 'text-ink',

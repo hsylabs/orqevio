@@ -61,19 +61,20 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
           <D.Title className="sr-only">{t('palette.title')}</D.Title>
           <D.Description className="sr-only">{t('palette.description')}</D.Description>
           <Command label={t('palette.label')} loop filter={filter} className="flex max-h-[min(70vh,560px)] flex-col">
-            <div className="flex items-center gap-3 border-b border-line px-4">
+            {/* On a phone the search takes the whole line, and "with archived" goes under it: side by side they cut each other. */}
+            <div className="flex flex-wrap items-center gap-x-3 border-b border-line px-4 pb-2.5 sm:flex-nowrap sm:pb-0">
               <Search className="size-[18px] shrink-0 text-ink-3" />
               <Command.Input
                 value={query}
                 onValueChange={setQuery}
                 placeholder={t('palette.placeholder')}
-                className="h-14 flex-1 bg-transparent text-[15.5px] outline-none placeholder:text-ink-3"
+                className="h-14 min-w-0 flex-1 bg-transparent text-[15.5px] outline-none placeholder:text-ink-3"
               />
-              <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[12px] text-ink-3 select-none">
+              <label className="flex w-full shrink-0 cursor-pointer items-center gap-1.5 pl-[30px] text-[12px] text-ink-3 select-none sm:w-auto sm:pl-0">
                 <input type="checkbox" checked={withArchived} onChange={(e) => setWithArchived(e.target.checked)} className="accent-[var(--accent)]" />
                 {t('palette.includeArchived')}
               </label>
-              <kbd className="kbd">esc</kbd>
+              <kbd className="kbd hidden sm:inline-flex">esc</kbd>
             </div>
             <Command.List className="min-h-0 flex-1 overflow-y-auto p-2 [&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pt-2.5 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:tracking-[0.08em] [&_[cmdk-group-heading]]:text-ink-3 [&_[cmdk-group-heading]]:uppercase">
               <Command.Empty className="px-4 py-10 text-center text-[13.5px] text-ink-3">
@@ -196,8 +197,11 @@ function Item({ value, icon, children, onSelect, hint, keywords }: { value: stri
       className="flex min-h-10 cursor-default items-center gap-3 rounded-[10px] px-2.5 py-1.5 text-[13.5px] text-ink outline-none select-none data-[selected=true]:bg-hover [&>svg]:size-[16px] [&>svg]:shrink-0 [&>svg]:text-ink-3"
     >
       <span className="grid size-[18px] shrink-0 place-items-center text-ink-3 [&>svg]:size-[16px]">{icon}</span>
-      <span className="min-w-0 flex-1">{children}</span>
-      {hint && <span className="max-w-[40%] shrink-0 truncate text-[12px] text-ink-3">{hint}</span>}
+      {/* On a phone the hint goes under the name, not beside it: there is no room for both on one line. */}
+      <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-3">
+        <span className="min-w-0 flex-1">{children}</span>
+        {hint && <span className="truncate text-[12px] text-ink-3 sm:max-w-[40%] sm:shrink-0">{hint}</span>}
+      </span>
     </Command.Item>
   )
 }

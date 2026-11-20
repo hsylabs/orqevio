@@ -73,7 +73,9 @@ function Entry({ entry, last, undo }: { entry: HistoryEntryDTO; last: boolean; u
           <time dateTime={entry.updatedAt}>{relativeTime(entry.updatedAt)}</time>
           {entry.actor.kind === 'agent' && <span>{t('activity:viaMcp')}</span>}
           {body && (
-            <span aria-label={t('lines', { added: entry.meta.linesAdded ?? 0, removed: entry.meta.linesRemoved ?? 0 })}>
+            <span>
+              {/* A label on a plain span is not read: the words go in text that only screen readers get. */}
+              <span className="sr-only">{t('lines', { added: entry.meta.linesAdded ?? 0, removed: entry.meta.linesRemoved ?? 0 })}</span>
               <span className="text-ok" aria-hidden="true">
                 +{String(entry.meta.linesAdded ?? 0)}
               </span>{' '}

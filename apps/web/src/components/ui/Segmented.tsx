@@ -9,7 +9,8 @@ export function Segmented<T extends string>({
 }: {
   value: T
   onChange: (value: T) => void
-  options: Array<{ value: T; label: string }>
+  /** `name`: what a screen reader says, when the label is a sign (★). */
+  options: Array<{ value: T; label: string; name?: string }>
   label: string
   size?: 'sm' | 'md'
 }) {
@@ -21,6 +22,7 @@ export function Segmented<T extends string>({
           type="button"
           role="radio"
           aria-checked={value === o.value}
+          aria-label={o.name}
           onClick={() => onChange(o.value)}
           className={cn(
             'rounded-[8px] font-medium transition-all duration-150',

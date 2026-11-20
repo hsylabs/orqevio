@@ -309,7 +309,7 @@ function Unlocked() {
               { value: 'all', label: t('list.filters.all') },
               { value: 'login', label: t('list.filters.logins') },
               { value: 'note', label: t('list.filters.notes') },
-              { value: 'favorite', label: '★' },
+              { value: 'favorite', label: '★', name: t('list.filters.favorites') },
             ]}
           />
         </div>

@@ -40,6 +40,9 @@
   --shadow-lg: 0 24px 48px -12px rgb(28 26 22 / 0.18), 0 8px 16px -8px rgb(28 26 22 / 0.1);
   --sheet-shadow: 0 0 0 1px var(--line), 0 1px 3px rgb(28 26 22 / 0.04);
   --grain-opacity: 0.035;
+  /* How much of a label's colour its text takes, the rest ink: in light mode, enough ink for 4.5:1
+     on any of the backgrounds (amber and lime were 3.9 and 4.2 at 72%). */
+  --chip-tint: 55%;
 
   --c-tomato: #e5532a;
   --c-amber: #d29a12;
@@ -84,6 +87,7 @@
   --shadow-lg: 0 24px 56px -12px rgb(0 0 0 / 0.7), 0 8px 16px -8px rgb(0 0 0 / 0.5);
   --sheet-shadow: 0 0 0 1px var(--line);
   --grain-opacity: 0.05;
+  --chip-tint: 72%;
 
   --c-tomato: #ff7650;
   --c-amber: #f0b63a;
@@ -129,6 +133,7 @@
     --shadow-lg: 0 24px 56px -12px rgb(0 0 0 / 0.7), 0 8px 16px -8px rgb(0 0 0 / 0.5);
     --sheet-shadow: 0 0 0 1px var(--line);
     --grain-opacity: 0.05;
+    --chip-tint: 72%;
     --c-tomato: #ff7650;
     --c-amber: #f0b63a;
     --c-lime: #a5cf52;
@@ -268,7 +273,7 @@
 
   .label-chip {
     @apply inline-flex h-[20px] max-w-full items-center gap-1.5 rounded-full pr-2 pl-1.5 text-[11.5px] font-medium;
-    color: color-mix(in oklab, var(--c) 72%, var(--ink));
+    color: color-mix(in oklab, var(--c) var(--chip-tint), var(--ink));
     background: color-mix(in oklab, var(--c) 13%, transparent);
   }
   .label-chip::before {
