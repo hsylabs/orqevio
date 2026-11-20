@@ -158,7 +158,8 @@
     "ofMany_many": "en {{count}} de las cosas que vuelven",
     "ofMany_other": "en {{count}} de las cosas que vuelven",
     "planFailed": "No se ha podido comprobar qué haría restaurar.",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "tooManyColumns": "El tablero «{{board}}» quedaría con {{count}} columnas, y admite {{max}} como mucho. Deja alguna fuera o ponla en otro sitio."
   },
   "picker": {
     "project": "Proyecto",

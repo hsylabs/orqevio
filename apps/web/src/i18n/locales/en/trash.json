@@ -144,7 +144,8 @@
     "ofMany_one": "on {{count}} of the things coming back",
     "ofMany_other": "on {{count}} of the things coming back",
     "planFailed": "Couldn’t check what restoring would do.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "tooManyColumns": "The board “{{board}}” would have {{count}} columns, and it holds {{max}} at most. Leave some out, or put it somewhere else."
   },
   "picker": {
     "project": "Project",

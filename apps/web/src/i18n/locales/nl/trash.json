@@ -144,7 +144,8 @@
     "ofMany_one": "op {{count}} van de onderdelen die terugkomen",
     "ofMany_other": "op {{count}} van de onderdelen die terugkomen",
     "planFailed": "Kon niet nagaan wat terugzetten zou doen.",
-    "retry": "Opnieuw proberen"
+    "retry": "Opnieuw proberen",
+    "tooManyColumns": "Het bord ‘{{board}}’ zou {{count}} kolommen hebben, en het kan er hoogstens {{max}} bevatten. Laat er een paar weg of zet het ergens anders."
   },
   "picker": {
     "project": "Project",

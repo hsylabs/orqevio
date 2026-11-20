@@ -272,68 +272,74 @@ export class CardService {
   async update(actor: Actor, cardId: string, input: unknown): Promise<CardSummaryDTO> {
     const data = parse(cardUpdateInput, input)
     const card = await this.load(actor, cardId, 'tasks:write')
-    const changed = Object.keys(data).filter((k) => k !== 'baseVersion' && data[k as keyof typeof data] !== undefined)
-    // Nothing to change: neither a write nor an entry in the activity.
-    if (changed.length === 0) {
-      const [summary] = await this.summarize([card])
-      return summary!
-    }
-    const updated = this.deps.db.transaction((tx) => {
+    const { row: updated, changed } = this.deps.db.transaction((tx) => {
       const prev = tx.select().from(cards).where(eq(cards.id, cardId)).get()
       if (!prev) throw notFound('Card')
+      // A change is what differs from what the card has now: the same value sent again changes
+      // nothing, so it neither moves the version nor shows as an edit to someone else.
+      const title = data.title !== undefined && data.title !== prev.title ? data.title : undefined
+      const description = data.description !== undefined && data.description !== prev.description ? data.description : undefined
+      const due = data.dueAt === undefined ? undefined : data.dueAt ? new Date(data.dueAt) : null
+      const dueChanged = due !== undefined && (due?.getTime() ?? null) !== (prev.dueAt?.getTime() ?? null)
+      let labels: { ids: string[]; was: string[] } | undefined
+      if (data.labelIds) {
+        const ids = this.validLabelIds(tx, card.boardId, data.labelIds)
+        const was = tx.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, cardId)).all().map((l) => l.id)
+        if ([...new Set(ids)].sort().join() !== [...was].sort().join()) labels = { ids, was }
+      }
+      const changed = [title !== undefined && 'title', description !== undefined && 'description', dueChanged && 'dueAt', labels && 'labelIds'].filter((f): f is string => Boolean(f))
+      // Nothing to change: neither a write nor an entry in the history or the activity.
+      if (changed.length === 0) return { row: prev, changed }
+
       // `version` tracks the description only, as with pages: renaming a card or
       // changing its labels never conflicts with someone editing its description.
       const patch: Record<string, unknown> = { updatedAt: new Date() }
-      if (data.title !== undefined) patch.title = data.title
-      if (data.description !== undefined) {
-        patch.description = data.description
+      if (title !== undefined) patch.title = title
+      if (description !== undefined) {
+        patch.description = description
         patch.version = sql`${cards.version} + 1`
       }
-      if (data.dueAt !== undefined) patch.dueAt = data.dueAt ? new Date(data.dueAt) : null
-      const guard =
-        data.description !== undefined && data.baseVersion !== undefined
-          ? and(eq(cards.id, cardId), eq(cards.version, data.baseVersion))
-          : eq(cards.id, cardId)
+      if (dueChanged) patch.dueAt = due
+      const guard = description !== undefined && data.baseVersion !== undefined ? and(eq(cards.id, cardId), eq(cards.version, data.baseVersion)) : eq(cards.id, cardId)
       const row = tx.update(cards).set(patch).where(guard).returning().get()
       if (!row) {
         const latest = tx.select({ version: cards.version }).from(cards).where(eq(cards.id, cardId)).get()
         throw conflict('This card was modified since you loaded it', { currentVersion: latest?.version ?? null })
       }
-      if (data.title !== undefined) this.change(tx, actor, row, { kind: 'card.title', before: prev.title, after: row.title })
-      if (data.description !== undefined) this.change(tx, actor, row, { kind: 'card.description', before: prev.description, after: row.description })
-      if (data.dueAt !== undefined) this.change(tx, actor, row, { kind: 'card.due', before: prev.dueAt?.toISOString() ?? null, after: row.dueAt?.toISOString() ?? null })
-      if (data.labelIds) {
-        const labelIds = this.validLabelIds(tx, card.boardId, data.labelIds)
-        const was = tx.select({ id: cardLabels.labelId }).from(cardLabels).where(eq(cardLabels.cardId, cardId)).all().map((l) => l.id)
+      if (title !== undefined) this.change(tx, actor, row, { kind: 'card.title', before: prev.title, after: row.title })
+      if (description !== undefined) this.change(tx, actor, row, { kind: 'card.description', before: prev.description, after: row.description })
+      if (dueChanged) this.change(tx, actor, row, { kind: 'card.due', before: prev.dueAt?.toISOString() ?? null, after: row.dueAt?.toISOString() ?? null })
+      if (labels) {
+        const { ids, was } = labels
         tx.delete(cardLabels).where(eq(cardLabels.cardId, cardId)).run()
-        if (labelIds.length) tx.insert(cardLabels).values(labelIds.map((labelId) => ({ cardId, labelId }))).run()
-        const added = labelIds.filter((id) => !was.includes(id))
-        const removed = was.filter((id) => !labelIds.includes(id))
-        if (added.length || removed.length) {
-          this.change(tx, actor, row, {
-            kind: 'card.labels',
-            before: [...was].sort(),
-            after: [...labelIds].sort(),
-            meta: { added: this.labelNames(tx, added), removed: this.labelNames(tx, removed) },
-          })
-        }
+        if (ids.length) tx.insert(cardLabels).values(ids.map((labelId) => ({ cardId, labelId }))).run()
+        const added = ids.filter((id) => !was.includes(id))
+        const removed = was.filter((id) => !ids.includes(id))
+        this.change(tx, actor, row, {
+          kind: 'card.labels',
+          before: [...was].sort(),
+          after: [...ids].sort(),
+          meta: { added: this.labelNames(tx, added), removed: this.labelNames(tx, removed) },
+        })
       }
-      return row
+      return { row, changed }
     })
-    await this.activity.record(
-      actor,
-      card.workspaceId,
-      {
-        action: 'card.updated',
-        entityType: 'card',
-        entityId: cardId,
-        summary: updated.title,
-        meta: { fields: changed.join(',') },
-        coalesce: true,
-      },
-      // Only changes to the description carry a version, so an open card refreshes its text only for those.
-      { boardId: card.boardId, cardId, ...(data.description !== undefined ? { version: updated.version } : {}) },
-    )
+    if (changed.length > 0) {
+      await this.activity.record(
+        actor,
+        card.workspaceId,
+        {
+          action: 'card.updated',
+          entityType: 'card',
+          entityId: cardId,
+          summary: updated.title,
+          meta: { fields: changed.join(',') },
+          coalesce: true,
+        },
+        // Only changes to the description carry a version, so an open card refreshes its text only for those.
+        { boardId: card.boardId, cardId, ...(changed.includes('description') ? { version: updated.version } : {}) },
+      )
+    }
     const [summary] = await this.summarize([updated])
     return summary!
   }

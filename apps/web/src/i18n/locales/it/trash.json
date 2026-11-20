@@ -158,7 +158,8 @@
     "ofMany_many": "su {{count}} delle cose che tornano",
     "ofMany_other": "su {{count}} delle cose che tornano",
     "planFailed": "Non è stato possibile verificare cosa farebbe il ripristino.",
-    "retry": "Riprova"
+    "retry": "Riprova",
+    "tooManyColumns": "La bacheca «{{board}}» avrebbe {{count}} colonne, e ne accetta al massimo {{max}}. Lasciane fuori qualcuna o mettila altrove."
   },
   "picker": {
     "project": "Progetto",

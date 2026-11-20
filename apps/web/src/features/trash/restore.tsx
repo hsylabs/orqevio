@@ -272,6 +272,14 @@ function RestoreDialog({
           )}
         </Section>
 
+        {plan.limits.length > 0 && (
+          <div role="alert" className="flex flex-col gap-1 rounded-[12px] border border-danger/30 bg-danger-soft px-3.5 py-3 text-[13px]">
+            {plan.limits.map((limit) => (
+              <p key={limit.board}>{t('restoreDialog.tooManyColumns', { board: limit.board || t('common:untitled'), count: limit.count, max: limit.max })}</p>
+            ))}
+          </div>
+        )}
+
         {plan.conflicts.length > 0 && (
           <Section title={t('restoreDialog.names')}>
             <ul className="flex flex-col gap-3">

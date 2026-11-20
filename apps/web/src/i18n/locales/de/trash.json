@@ -144,7 +144,8 @@
     "ofMany_one": "an {{count}} der zurückkommenden Elemente",
     "ofMany_other": "an {{count}} der zurückkommenden Elemente",
     "planFailed": "Es ließ sich nicht prüfen, was das Wiederherstellen bewirken würde.",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "tooManyColumns": "Das Board „{{board}}“ hätte {{count}} Spalten, es fasst aber höchstens {{max}}. Lass einige weg oder leg sie woanders ab."
   },
   "picker": {
     "project": "Projekt",

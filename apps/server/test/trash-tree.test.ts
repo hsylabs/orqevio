@@ -551,6 +551,36 @@ describe('restoring from the trash', () => {
     expect(((await s.client.get(`/api/cards/${card}`)).body.pages as { id: string }[]).map((p) => p.id)).toEqual([page])
   })
 
+  it('never leaves a board with more columns than it holds', async () => {
+    const s = await space('Límite')
+    const board = (await s.client.post(`/api/projects/${s.projectId}/boards`, { name: 'Lleno', columns: Array.from({ length: 20 }, (_, i) => `C${i + 1}`) })).body.id as string
+    const columns = (await s.client.get(`/api/boards/${board}`)).body.columns as { id: string }[]
+    const gone = columns[0]!.id
+    const trashId = await del(s.client, `/api/columns/${gone}`)
+    expect((await s.client.post(`/api/boards/${board}/columns`, { name: 'Nueva' })).status).toBe(201)
+
+    // Undoing the deletion says there is no room; the trash says why, and offers another place.
+    const undo = await s.client.post(`/api/trash/${trashId}/restore`)
+    expect([undo.status, undo.body.error.code]).toEqual([409, 'too_many_columns'])
+    const asked = await plan(s, { key: `column:${gone}` })
+    expect(asked).toMatchObject({ ready: false, missing: ['columns'], limits: [{ board: 'Lleno', count: 21, max: 20 }] })
+    expect((await restore(s, { key: `column:${gone}` })).body.error).toMatchObject({ code: 'restore_incomplete', details: { limits: [{ board: 'Lleno' }] } })
+    expect((await s.client.get(`/api/boards/${board}`)).body.columns).toHaveLength(20)
+    const elsewhere = await restore(s, { key: `column:${gone}`, to: { kind: 'other', parent: { kind: 'board', id: s.boardId } } })
+    expect(elsewhere.status).toBe(200)
+    expect((await s.client.get(`/api/boards/${s.boardId}`)).body.columns.map((c: { id: string }) => c.id)).toContain(gone)
+
+    // A board coming back with a column deleted from it before, when it had made room again.
+    const before = (await s.client.get(`/api/boards/${board}`)).body.columns as { id: string }[]
+    await del(s.client, `/api/columns/${before[1]!.id}`)
+    await s.client.post(`/api/boards/${board}/columns`, { name: 'Otra' })
+    await del(s.client, `/api/boards/${board}`)
+    expect(await plan(s, { key: `board:${board}` })).toMatchObject({ missing: ['columns'], limits: [{ board: 'Lleno', count: 21 }] })
+    const leftOut = await restore(s, { key: `board:${board}`, exclude: [`column:${before[1]!.id}`] })
+    expect(leftOut.status).toBe(200)
+    expect((await s.client.get(`/api/boards/${board}`)).body.columns).toHaveLength(20)
+  })
+
   it('belongs to people, in its workspace', async () => {
     const s = await space('Dueña del árbol')
     const card = (await s.client.post(`/api/columns/${s.columns[0]!.id}/cards`, { title: 'Mía' })).body.id as string
