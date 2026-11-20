@@ -86,8 +86,9 @@ export function VaultSetup({ userId }: { userId: string }) {
   const [created, setCreated] = useState<Awaited<ReturnType<typeof createVault>> | null>(null)
   const [saved, setSaved] = useState(false)
   // A recovery key shown here and not yet the vault's: if the vault is set up elsewhere first, it never will be.
+  // Set when the key is made and cleared once the vault is set up (here or elsewhere), never from a render:
+  // this one renders again after its own setup, before the vault's state says so.
   const pending = useRef(false)
-  pending.current = created !== null
   useEffect(
     () => () => {
       if (pending.current && queryClient.getQueryData<VaultStateDTO>(keys.vault)?.initialized) toast.error(translate('vault:gate.setup.elsewhere'), { duration: 30_000 })
@@ -102,7 +103,9 @@ export function VaultSetup({ userId }: { userId: string }) {
     setError(null)
     setBusy(true)
     try {
-      setCreated(await createVault(password, userId))
+      const made = await createVault(password, userId)
+      pending.current = true
+      setCreated(made)
     } catch {
       setError(t('gate.setup.failed'))
     } finally {

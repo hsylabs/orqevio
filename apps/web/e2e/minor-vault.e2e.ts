@@ -97,6 +97,10 @@ test('a vault set up in another tab first says the recovery key shown here opens
   await page.getByLabel('La he guardado en un lugar seguro, fuera de Orqevio.').check()
   await page.getByRole('button', { name: 'Abrir mi bóveda' }).click()
   await expect(page.getByRole('textbox', { name: 'Buscar en la bóveda' })).toBeVisible({ timeout: 30_000 })
+  // The tab that set it up is not told its own key is no good.
+  const ownWarning = page.getByText('La bóveda se configuró antes en otra pestaña o en otro dispositivo', { exact: false })
+  await page.waitForTimeout(1_000)
+  await expect(ownWarning).toHaveCount(0)
 
   // The other says its key is no good, at once or when it tries to open with it, and asks to unlock.
   const elsewhere = other.getByText('La bóveda se configuró antes en otra pestaña o en otro dispositivo', { exact: false })
@@ -116,6 +120,8 @@ test('a vault set up in another tab first says the recovery key shown here opens
 // Cancelling "Reset the vault" forgets the access key typed in it.
 test('cancelling the vault reset forgets the access key typed', async ({ page }) => {
   await vaultWith(page, [])
+  // Set up here, in a single tab: nothing says its recovery key is no good.
+  await expect(page.getByText('La bóveda se configuró antes en otra pestaña o en otro dispositivo', { exact: false })).toHaveCount(0)
   await page.getByRole('button', { name: 'Bloquear' }).click()
   await page.getByRole('button', { name: '¿Has olvidado la contraseña maestra?' }).click()
   await page.getByRole('button', { name: 'No tengo la clave' }).click()
