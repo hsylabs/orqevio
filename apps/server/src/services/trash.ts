@@ -11,8 +11,14 @@ import {
   type TrashPlanDTO,
   type TrashRestoreInput,
   type TrashTreeDTO,
+  type RestoredManyDTO,
+  type TrashPlanManyDTO,
+  type TrashPurgeSummaryDTO,
+  type TrashRestoreManyInput,
   extractReferences,
+  trashPurgeManyInput,
   trashRestoreInput,
+  trashRestoreManyInput,
 } from '@orqevio/shared'
 import { type SQL, and, eq, getTableColumns, lte, sql } from 'drizzle-orm'
 import { type SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core'
@@ -398,6 +404,57 @@ export class TrashService {
   }
 
   /**
+   * Restores several things at once, each as `restoreItem` does, in the order given and in one
+   * transaction: each is planned with what the ones before it brought back already there, so
+   * the plans say what restoring them together does. What is below another one of them comes
+   * back with it, and is not asked for twice. With `dryRun`, or when anything is still to decide
+   * for any of them, nothing is done and the plans say what.
+   */
+  async restoreMany(actor: Actor, workspaceId: string, body: unknown): Promise<TrashPlanManyDTO | RestoredManyDTO> {
+    this.access.requireUser(actor)
+    await this.access.workspace(actor, workspaceId)
+    const input: TrashRestoreManyInput = parse(trashRestoreManyInput, body)
+    let plans: TrashPlanDTO[] = []
+    const asked = new Error('only planned')
+    let done: Applied[]
+    try {
+      done = this.deps.db.transaction((tx) => {
+        plans = []
+        const applied: Applied[] = []
+        const first = TrashIndex.load(tx, workspaceId)
+        const nodes = input.items.map((item) => first.node(item.key))
+        if (nodes.some((n) => !n)) throw notFound('Trash item')
+        // Something below another item comes with it, unless that item leaves it out (or what
+        // holds it); asked for twice, it counts once.
+        const comesWith = (i: number, j: number) => {
+          const node = nodes[i]!
+          const holder = nodes[j]!
+          if (node === holder) return j < i
+          const above = first.ancestors(node)
+          const at = above.indexOf(holder)
+          return at >= 0 && ![...above.slice(at + 1), node].some((n) => input.items[j]!.exclude.includes(n.key))
+        }
+        const items = input.items.filter((_, i) => !input.items.some((__, j) => j !== i && comesWith(i, j)))
+        for (const item of items) {
+          // Read again each time: what came back before is there now.
+          const index = TrashIndex.load(tx, workspaceId)
+          const plan = planRestore(index, { ...item, dryRun: false })
+          plans.push(planDTO(index, plan))
+          if (!plan.missing.length) applied.push(this.apply(tx, actor, workspaceId, plan))
+        }
+        if (input.dryRun || plans.some((p) => !p.ready)) throw asked
+        return applied
+      })
+    } catch (error) {
+      if (error !== asked) throw error
+      if (input.dryRun) return { plans, ready: plans.every((p) => p.ready) }
+      throw new AppError(409, 'restore_incomplete', 'Say where each goes back, and what to do with names already used there, first.', { plans, ready: false } satisfies TrashPlanManyDTO)
+    }
+    for (const applied of done) await this.announce(actor, workspaceId, applied)
+    return { restored: done.map((a) => a.result) }
+  }
+
+  /**
    * Puts back exactly what one deletion took away, where it was: what was deleted before on its
    * own stays in the trash. It is what undoing a deletion does, so it never goes anywhere else:
    * when its place is not there, it says so. Names stay as they were.
@@ -656,6 +713,34 @@ export class TrashService {
     if (!erased) throw notFound('Trash item')
     const [node] = erased
     await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node!.kind), entityId: node!.id, summary: node!.title, meta: { kind: node!.kind } })
+  }
+
+  /**
+   * Deletes several things for good, with everything below them; what is below another one of
+   * them goes with it. With `dryRun`, only says how much that takes. What is no longer in the
+   * trash is skipped; the answer counts what went.
+   */
+  async purgeMany(actor: Actor, workspaceId: string, body: unknown): Promise<TrashPurgeSummaryDTO> {
+    this.access.requireUser(actor)
+    await this.access.workspace(actor, workspaceId)
+    const input = parse(trashPurgeManyInput, body)
+    const pick = (index: TrashIndex) => index.outermost(input.keys.flatMap((key) => index.node(key) ?? []))
+    const summary = (index: TrashIndex, nodes: Node[]): TrashPurgeSummaryDTO => ({ count: nodes.length, ...index.totals(nodes) })
+    if (input.dryRun) {
+      const index = TrashIndex.load(this.deps.db, workspaceId)
+      return summary(index, pick(index))
+    }
+    let went: TrashPurgeSummaryDTO | null = null
+    const erased = await this.erase(workspaceId, (index) => {
+      const picked = pick(index)
+      went = summary(index, picked)
+      return picked
+    })
+    if (!erased?.length || !went) throw notFound('Trash item')
+    for (const node of erased) {
+      await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node.kind), entityId: node.id, summary: node.title, meta: { kind: node.kind } })
+    }
+    return went
   }
 
   /** Deletes for good what one deletion took away, with everything below it. */

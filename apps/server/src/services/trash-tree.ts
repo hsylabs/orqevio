@@ -118,6 +118,7 @@ const LIVE_COLUMNS: Record<LiveKind, SQL> = {
 const RANK: Record<TrashKind, number> = { project: 0, board: 1, column: 2, label: 3, card: 4, checklist: 5, checklist_item: 6, page: 7, attachment: 8, link: 9 }
 
 const COUNTED: Partial<Record<TrashKind, keyof TrashContents>> = {
+  project: 'projects',
   board: 'boards',
   column: 'columns',
   card: 'cards',
@@ -432,6 +433,26 @@ export class TrashIndex {
     const out: Node[] = []
     for (let up = node.parent; up; up = up.parent) out.unshift(up)
     return out
+  }
+
+  /** Of `nodes`, those not below another one of them: what is below one comes with it. */
+  outermost(nodes: Node[]) {
+    const picked = new Set(nodes)
+    return [...picked].filter((node) => !this.ancestors(node).some((up) => picked.has(up)))
+  }
+
+  /** Everything `nodes` take with them, they included, by kind, and the size of its files. */
+  totals(nodes: Node[]): { contents: TrashContents; bytes: number } {
+    const all = new Map<string, Node>()
+    for (const node of nodes) for (const n of this.subtree(node)) all.set(n.key, n)
+    const contents: TrashContents = {}
+    let bytes = 0
+    for (const n of all.values()) {
+      if (n.kind === 'attachment') bytes += Number(n.row.size ?? 0)
+      const counted = COUNTED[n.kind]
+      if (counted) contents[counted] = (contents[counted] ?? 0) + 1
+    }
+    return { contents, bytes }
   }
 
   /** Whether `node` is `top` or below it. */

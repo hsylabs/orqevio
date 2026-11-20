@@ -261,3 +261,16 @@ export const trashRestoreInput = z.object({
 })
 export type TrashRestoreInput = z.infer<typeof trashRestoreInput>
 export const trashPurgeInput = z.object({ key: trashKey, dryRun: z.boolean().default(false) })
+/** The most things restored or deleted for good in one request. */
+export const MAX_TRASH_BATCH = 100
+/**
+ * Restoring several things at once, each as `trashRestoreInput` says, in the order given: each
+ * is planned with what the ones before it brought back already there. `dryRun` only plans.
+ */
+export const trashRestoreManyInput = z.object({
+  items: z.array(trashRestoreInput.omit({ dryRun: true })).min(1).max(MAX_TRASH_BATCH),
+  dryRun: z.boolean().default(false),
+})
+export type TrashRestoreManyInput = z.infer<typeof trashRestoreManyInput>
+/** Deleting several things for good, with everything below them. `dryRun` only counts. */
+export const trashPurgeManyInput = z.object({ keys: z.array(trashKey).min(1).max(MAX_TRASH_BATCH), dryRun: z.boolean().default(false) })
