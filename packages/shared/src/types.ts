@@ -104,6 +104,17 @@ export interface BackupDTO {
   newer: boolean
 }
 
+/**
+ * Why backups can't be made or read where they go: the folder (or one inside it) isn't the app's
+ * to read and write, it is read-only, or its disk is full. `user` is the server's `uid:gid`.
+ */
+export interface BackupProblemDTO {
+  code: 'access' | 'readonly' | 'full' | 'other'
+  path: string
+  user: string | null
+  detail: string
+}
+
 /** `GET /backups`: where they are and the ones kept, newest first. */
 export interface BackupsDTO {
   /** Null when this copy makes no backups (BACKUPS=off, or no backups bucket bound). */
@@ -111,6 +122,16 @@ export interface BackupsDTO {
   /** How many daily (and manual) backups are kept. */
   keep: number
   backups: BackupDTO[]
+  /** Why backups can't be made or listed where they go, when that is so. */
+  problem?: BackupProblemDTO | null
+}
+
+/** An attachment a backup lists whose kept copy can't be put back: gone, cut short, or not what was kept. */
+export interface DamagedFileDTO {
+  /** Its storage key: what restoring without it names. */
+  key: string
+  name: string
+  reason: 'missing' | 'size' | 'changed'
 }
 
 /** `GET /auth/session` for visitors without a session. */

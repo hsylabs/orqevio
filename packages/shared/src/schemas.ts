@@ -67,7 +67,11 @@ export const uninstallInput = z.object({ accessKey: secret, deleteBackups: z.boo
 /** The installer's one-time authorization to uninstall, set as a Worker secret on the copy. */
 export const installerUninstallInput = z.object({ token: z.string().min(40).max(200), deleteBackups: z.boolean().default(false) })
 /** Restoring a backup replaces everything: it is confirmed with the access key. */
-export const restoreBackupInput = z.object({ accessKey: secret })
+/**
+ * `leaveOut`: the attachments (storage keys) the person agreed to restore without, having been told
+ * their kept copy is damaged or gone. One found damaged that isn't among them stops the restore.
+ */
+export const restoreBackupInput = z.object({ accessKey: secret, leaveOut: z.array(z.string().max(200)).max(100_000).default([]) })
 export const updateAccountInput = z.object({
   name: name(80).optional(),
   theme: z.enum(['system', 'light', 'dark']).optional(),

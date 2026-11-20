@@ -90,7 +90,27 @@
     "restoreAgents": "Gli agenti a cui hai tolto l’accesso da allora non lo riottengono.",
     "accessKey": "Chiave di accesso",
     "typeName": "Scrivi «{{name}}» per confermare",
-    "restoreConfirm": "Ripristina"
+    "restoreConfirm": "Ripristina",
+    "problem": {
+      "title": "I backup non si possono fare lì",
+      "access": "Orqevio (l’utente <code>{{user}}</code> del server) non può leggere o scrivere in <code>{{path}}</code>. Restituiscigli la cartella dei backup: se è montata dal server, con <code>sudo chown -R {{user}}</code> su di essa; se è nel volume (ciò che copia <code>docker compose cp</code> resta a root), con <code>docker compose run --rm --user root app chown -R orqevio:orqevio {{root}}</code>.",
+      "readonly": "<code>{{path}}</code> è di sola lettura.",
+      "full": "Il disco di <code>{{path}}</code> è pieno.",
+      "other": "Impossibile usare <code>{{path}}</code>: {{detail}}"
+    },
+    "damaged": {
+      "title_one": "{{count}} allegato di questo backup è danneggiato o manca:",
+      "title_many": "{{count}} allegati di questo backup sono danneggiati o mancano:",
+      "title_other": "{{count}} allegati di questo backup sono danneggiati o mancano:",
+      "list": "Allegati danneggiati",
+      "reason": {
+        "missing": "manca",
+        "size": "è troncato",
+        "changed": "è cambiato"
+      },
+      "body": "Questa copia resta com’è. Se ripristini senza di essi, le schede e i documenti tornano, ma questi file no.",
+      "confirm": "Ripristina senza questi file"
+    }
   },
   "export": {
     "title": "Esportare i tuoi dati",

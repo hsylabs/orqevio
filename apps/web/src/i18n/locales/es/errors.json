@@ -20,7 +20,8 @@
     "vault_item_changed": "Este elemento ha cambiado en otra pestaña o en otro dispositivo. Ya ves cómo está ahora: vuelve a hacer tu cambio si aún hace falta.",
     "too_many_columns": "Un tablero admite hasta 20 columnas.",
     "vault_full": "La bóveda admite hasta 5.000 elementos. Borra los que ya no uses para añadir más.",
-    "unauthorized": "Tu sesión ha terminado. Vuelve a entrar."
+    "unauthorized": "Tu sesión ha terminado. Vuelve a entrar.",
+    "backup_folder": "No se ha podido hacer la copia: hay un problema con la carpeta de copias. Mira el aviso de Ajustes."
   },
   "notFound": "No se ha encontrado el elemento.",
   "server": "Algo ha fallado en el servidor. Inténtalo de nuevo.",

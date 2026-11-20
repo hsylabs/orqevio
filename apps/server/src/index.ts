@@ -4,7 +4,7 @@ import path from 'node:path'
 import { serve } from '@hono/node-server'
 import { createApp } from './app'
 import { MIN_SETUP_CODE_LENGTH, isWeakSetupCode } from './auth/crypto'
-import { FolderBackupStore } from './backups/store'
+import { FolderBackupStore, describeBackupProblem } from './backups/store'
 import { openDatabase, runMigrations } from './db/client'
 import { nodeSql } from './db/raw'
 import { configWarnings, loadEnvOrExit } from './env'
@@ -39,8 +39,12 @@ if (env.setupCode && isWeakSetupCode(env.setupCode)) {
     `SETUP_CODE has fewer than ${MIN_SETUP_CODE_LENGTH} letters A–Z or digits (other characters don't count): this copy can't be claimed or recovered with it. Set a longer one.`,
   )
 }
-if (env.backupDir) console.log(`Daily backups go to ${env.backupDir}`)
-else console.log('Backups are off (BACKUPS=off)')
+if (env.backupDir) {
+  console.log(`Daily backups go to ${env.backupDir}`)
+  // A folder that isn't this user's (mounted, or copied in by root) would fail every hour in silence.
+  const problem = await backups?.check()
+  if (problem) console.warn(describeBackupProblem(problem, env.backupDir))
+} else console.log('Backups are off (BACKUPS=off)')
 const uninstalled = await services.accounts.uninstalled()
 if (uninstalled) {
   console.log(`This copy of Orqevio was uninstalled (${uninstalled.at}). Remove its container and data to finish: it can't be claimed again.`)

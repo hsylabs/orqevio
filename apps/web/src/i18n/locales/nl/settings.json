@@ -88,7 +88,26 @@
     "restoreAgents": "Agents bij wie je sindsdien de toegang hebt ingetrokken, krijgen die niet terug.",
     "accessKey": "Toegangssleutel",
     "typeName": "Typ ‘{{name}}’ om te bevestigen",
-    "restoreConfirm": "Terugzetten"
+    "restoreConfirm": "Terugzetten",
+    "problem": {
+      "title": "Back-ups kunnen daar niet worden gemaakt",
+      "access": "Orqevio (de gebruiker <code>{{user}}</code> van de server) kan <code>{{path}}</code> niet lezen of beschrijven. Geef de map met back-ups terug: gekoppeld vanaf de server met <code>sudo chown -R {{user}}</code> erop; in het volume (wat <code>docker compose cp</code> erin kopieert, is van root) met <code>docker compose run --rm --user root app chown -R orqevio:orqevio {{root}}</code>.",
+      "readonly": "<code>{{path}}</code> is alleen-lezen.",
+      "full": "De schijf van <code>{{path}}</code> is vol.",
+      "other": "<code>{{path}}</code> kan niet worden gebruikt: {{detail}}"
+    },
+    "damaged": {
+      "title_one": "{{count}} bijlage van deze back-up is beschadigd of ontbreekt:",
+      "title_other": "{{count}} bijlagen van deze back-up zijn beschadigd of ontbreken:",
+      "list": "Beschadigde bijlagen",
+      "reason": {
+        "missing": "ontbreekt",
+        "size": "is afgekapt",
+        "changed": "is veranderd"
+      },
+      "body": "Deze kopie blijft zoals ze is. Zet je terug zonder ze, dan komen hun kaarten en documenten terug, maar deze bestanden niet.",
+      "confirm": "Terugzetten zonder deze bestanden"
+    }
   },
   "export": {
     "title": "Je gegevens exporteren",

@@ -20,7 +20,8 @@
     "vault_item_changed": "Este item mudou em outra aba ou em outro dispositivo. Agora você o vê como está: faça sua alteração de novo, se ainda for preciso.",
     "too_many_columns": "Um quadro comporta até 20 colunas.",
     "vault_full": "O cofre comporta até 5.000 itens. Exclua os que você não usa mais para adicionar outros.",
-    "unauthorized": "Sua sessão terminou. Entre novamente."
+    "unauthorized": "Sua sessão terminou. Entre novamente.",
+    "backup_folder": "Não foi possível fazer o backup: há um problema com a pasta de backups. Veja o aviso nas configurações."
   },
   "notFound": "O item não foi encontrado.",
   "server": "Algo deu errado no servidor. Tente novamente.",

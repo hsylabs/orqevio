@@ -156,10 +156,10 @@ export function createApi(env: Env) {
   api.get('/backups', async (c) => c.json(await c.get('services').backups.status(requireActor(c))))
   api.post('/backups', async (c) => c.json(await c.get('services').backups.createNow(requireActor(c)), 201))
   api.post('/backups/:id/restore', async (c) => {
-    const { session, restored } = await c.get('services').backups.restore(requireActor(c), c.req.param('id'), await json(c), c.req.header('user-agent') ?? null)
+    const { session, restored, leftOut } = await c.get('services').backups.restore(requireActor(c), c.req.param('id'), await json(c), c.req.header('user-agent') ?? null)
     // Restoring ends every session, this one too: the person who restored gets a new one.
     setSessionCookie(c, session.token, session.expiresAt)
-    return c.json({ restored })
+    return c.json({ restored, ...(leftOut && { leftOut }) })
   })
 
   // ── Export: the person's data as a ZIP to read or take elsewhere (people only) ──
