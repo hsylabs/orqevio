@@ -264,6 +264,15 @@
     "nothingNew": "Nothing new to import",
     "duplicates_one": "{{count}} item is already in your vault and will be skipped",
     "duplicates_other": "{{count}} items are already in your vault and will be skipped",
+    "room_one": "Only {{count}} of the {{total}} fits: the vault holds up to {{max}} items. The first one is imported.",
+    "room_other": "Only {{count}} of the {{total}} fit: the vault holds up to {{max}} items. The first {{count}} are imported.",
+    "full_one": "The vault filled up (it holds up to {{max}} items): {{count}} item wasn’t imported. Delete some to make room and import the file again: items already imported will be skipped.",
+    "full_other": "The vault filled up (it holds up to {{max}} items): {{count}} items weren’t imported. Delete some to make room and import the file again: items already imported will be skipped.",
+    "folders_one": "{{count}} item was in a folder: the folder’s name goes into its notes",
+    "folders_other": "{{count}} items were in folders: each one’s folder name goes into its notes",
+    "reprompt_one": "{{count}} item asked for the master password again before Bitwarden showed it; here the unlocked vault shows it",
+    "reprompt_other": "{{count}} items asked for the master password again before Bitwarden showed them; here the unlocked vault shows them",
+    "noRoom": "The vault is full: it holds up to {{max}} items. Delete some to make room.",
     "extras_one": "{{count}} item has custom fields, more addresses or older passwords: they go into its notes",
     "extras_other": "{{count}} items have custom fields, more addresses or older passwords: they go into their notes",
     "passkeys_one": "{{count}} login has a passkey, which can’t be imported; the rest of it can",
@@ -289,7 +298,8 @@
     "extra": {
       "fields": "Custom fields:",
       "uris": "Other addresses:",
-      "history": "Older passwords:"
+      "history": "Older passwords:",
+      "folder": "Folder:"
     }
   },
   "export": {

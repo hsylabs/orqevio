@@ -273,6 +273,19 @@
     "duplicates_one": "{{count}} item já está no seu cofre e será ignorado",
     "duplicates_many": "{{count}} itens já estão no seu cofre e serão ignorados",
     "duplicates_other": "{{count}} itens já estão no seu cofre e serão ignorados",
+    "room_one": "Só cabe {{count}} dos {{total}}: o cofre guarda até {{max}} itens. O primeiro é importado.",
+    "room_many": "Só cabem {{count}} dos {{total}}: o cofre guarda até {{max}} itens. Os {{count}} primeiros são importados.",
+    "room_other": "Só cabem {{count}} dos {{total}}: o cofre guarda até {{max}} itens. Os {{count}} primeiros são importados.",
+    "full_one": "O cofre ficou cheio (ele guarda até {{max}} itens): {{count}} item não foi importado. Apague alguns para abrir espaço e importe o arquivo de novo: os itens já importados serão ignorados.",
+    "full_many": "O cofre ficou cheio (ele guarda até {{max}} itens): {{count}} itens não foram importados. Apague alguns para abrir espaço e importe o arquivo de novo: os itens já importados serão ignorados.",
+    "full_other": "O cofre ficou cheio (ele guarda até {{max}} itens): {{count}} itens não foram importados. Apague alguns para abrir espaço e importe o arquivo de novo: os itens já importados serão ignorados.",
+    "folders_one": "{{count}} item estava em uma pasta: o nome da pasta vai para as notas dele",
+    "folders_many": "{{count}} itens estavam em pastas: o nome da pasta de cada um vai para as notas dele",
+    "folders_other": "{{count}} itens estavam em pastas: o nome da pasta de cada um vai para as notas dele",
+    "reprompt_one": "{{count}} item pedia de novo a senha mestra antes de o Bitwarden mostrá-lo; aqui o cofre desbloqueado o mostra",
+    "reprompt_many": "{{count}} itens pediam de novo a senha mestra antes de o Bitwarden mostrá-los; aqui o cofre desbloqueado os mostra",
+    "reprompt_other": "{{count}} itens pediam de novo a senha mestra antes de o Bitwarden mostrá-los; aqui o cofre desbloqueado os mostra",
+    "noRoom": "O cofre está cheio: ele guarda até {{max}} itens. Apague alguns para abrir espaço.",
     "extras_one": "{{count}} item tem campos personalizados, outros endereços ou senhas anteriores: eles vão para as notas dele",
     "extras_many": "{{count}} itens têm campos personalizados, outros endereços ou senhas anteriores: eles vão para as notas de cada um",
     "extras_other": "{{count}} itens têm campos personalizados, outros endereços ou senhas anteriores: eles vão para as notas de cada um",
@@ -305,7 +318,8 @@
     "extra": {
       "fields": "Campos personalizados:",
       "uris": "Outros endereços:",
-      "history": "Senhas anteriores:"
+      "history": "Senhas anteriores:",
+      "folder": "Pasta:"
     }
   },
   "export": {
