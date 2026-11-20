@@ -173,6 +173,34 @@ describe('the ZIP of an export', () => {
     10 * 60 * 1000,
   )
 
+  it('refuses a name longer than a ZIP holds instead of writing a broken one, and keeps one that just fits', async () => {
+    await expect(zipFile(async (zip) => zip.add('a'.repeat(65_536), utf8('x')))).rejects.toThrow('longer than a ZIP holds')
+    // 65,534 bytes of a name in another script: too long for the Unicode Path field as well, bit 11 says it.
+    const { file } = await zipFile(async (zip) => zip.add('ñ'.repeat(32_767), utf8('x')), { alwaysZip64: true })
+    const found = python(file)
+    expect(found.bad).toBeNull()
+    expect(found.entries[0]!.name).toBe('ñ'.repeat(32_767))
+  })
+
+  it('lets go of the file it reads when the ZIP stops half-way', async () => {
+    let cancelled: unknown = null
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.enqueue(new Uint8Array(1024))
+      },
+      cancel(reason) {
+        cancelled = reason
+      },
+    })
+    let written = 0
+    const zip = new ZipWriter(async (chunk) => {
+      written += chunk.length
+      if (written > 4096) throw new Error('the browser went away')
+    })
+    await expect(zip.addStream('grande.bin', 1_000_000, body)).rejects.toThrow('the browser went away')
+    expect(cancelled).toBeInstanceOf(Error)
+  })
+
   it('stops with an error when a file is not the size it should be', async () => {
     await expect(zipFile(async (zip) => zip.addStream('corto.bin', 10, stream(new Uint8Array(4))))).rejects.toThrow('has 4 bytes, not 10')
     await expect(zipFile(async (zip) => zip.addStream('largo.bin', 2, stream(new Uint8Array(4))))).rejects.toThrow('longer than its 2 bytes')

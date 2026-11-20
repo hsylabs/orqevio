@@ -14,6 +14,8 @@ const MAX16 = 0xffff
 /** Names in UTF-8 (bit 11), and for a file streamed, its CRC-32 and sizes after it (bit 3). */
 const UTF8 = 0x0800
 const DESCRIPTOR = 0x0008
+/** The biggest ZIP64 record in an extra field: three values of 8 bytes. */
+const ZIP64_EXTRA_MAX = 4 + 3 * 8
 const STORED = 0
 const DEFLATED = 8
 /** Version 2.0 reads deflate; 4.5 is needed for ZIP64. Made by: MS-DOS attributes (none). */
@@ -88,6 +90,10 @@ export class ZipWriter {
         crc = crc32Update(crc, value)
         await this.put(value)
       }
+    } catch (error) {
+      // Stopped half-way (the browser went away, the file was longer): the file being read is let go.
+      await reader.cancel(error).catch(() => {})
+      throw error
     } finally {
       reader.releaseLock()
     }
@@ -114,8 +120,11 @@ export class ZipWriter {
 
   private entry(name: string, date: Date, method: number, flags: number): Entry {
     const bytes = this.encoder.encode(name)
-    // Version 1, the CRC-32 of the name field it stands for, and the name in UTF-8.
-    const unicode = bytes.length === name.length ? new Uint8Array(0) : new Record(9 + bytes.length).u16(0x7075).u16(5 + bytes.length).raw(new Uint8Array([1])).u32(crc32(bytes)).raw(bytes).bytes
+    if (bytes.length > MAX16) throw new Error(`The name ${name.slice(0, 80)}… is longer than a ZIP holds (65,535 bytes)`)
+    // Version 1, the CRC-32 of the name field it stands for, and the name in UTF-8; left out when
+    // it wouldn't fit with a ZIP64 record in the extra field (bit 11 says the same).
+    const fits = 9 + bytes.length + ZIP64_EXTRA_MAX <= MAX16
+    const unicode = bytes.length === name.length || !fits ? new Uint8Array(0) : new Record(9 + bytes.length).u16(0x7075).u16(5 + bytes.length).raw(new Uint8Array([1])).u32(crc32(bytes)).raw(bytes).bytes
     const entry: Entry = { name: bytes, flags: UTF8 | flags, method, ...dos(date), crc: 0, compressed: 0, size: 0, offset: this.offset, zip64: false, unicode }
     this.entries.push(entry)
     return entry
@@ -149,6 +158,8 @@ class Record {
   }
 
   u16(value: number) {
+    // A value that doesn't fit would wrap round, and every reader would then lose its way.
+    if (value > MAX16) throw new Error(`${value} does not fit in a ZIP field of 2 bytes`)
     this.view.setUint16(this.at, value, true)
     this.at += 2
     return this
