@@ -436,7 +436,7 @@ The same suite runs against the Cloudflare runtime locally (`pnpm --filter @orqe
 E2E_BASE_URL=http://127.0.0.1:8787 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-CI runs both, and also repeats the suite against the Node server in Firefox and WebKit (Safari's engine), each with a fresh copy. Locally, install the browser and pick it with `E2E_BROWSER`, again against a freshly created copy:
+CI runs both, and also repeats the suite against the Node server in Firefox and WebKit (Safari's engine), each with a fresh copy, and against the Docker image, directly and behind a proxy that asks for a password. Together they take about an hour of runner time on each run, so they run on pull requests into `main` and when started by hand (Actions → CI → Run workflow). Pull requests into `develop` and pushes to `develop` and `main` run the typecheck, `pnpm test` and the build. Locally, install the browser and pick it with `E2E_BROWSER`, again against a freshly created copy:
 
 ```bash
 pnpm --filter @orqevio/web exec playwright install firefox
