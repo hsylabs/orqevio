@@ -129,26 +129,33 @@ export class FolderBackupStore implements BackupStore {
     } catch (error) {
       return problemOf(error, this.root)
     }
-    const dirs = [this.root]
+    // The folder itself first: what is wrong with it is what to fix.
+    const probe = async (dir: string, bytes: Uint8Array | string) => {
+      const file = path.join(dir, PROBE)
+      try {
+        await writeFile(file, bytes, { mode: PRIVATE_FILE })
+        await rm(file, { force: true })
+        return null
+      } catch (error) {
+        await rm(file, { force: true }).catch(() => {})
+        return problemOf(error, dir)
+      }
+    }
+    const root = await probe(this.root, PROBE_BYTES)
+    if (root) return root
     for (const top of ['snapshots', 'files']) {
       const dir = path.join(this.root, top)
+      let inside: string[]
       try {
-        const entries = await readdir(dir, { withFileTypes: true })
-        dirs.push(dir, ...entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(dir, entry.name)))
+        inside = (await readdir(dir, { withFileTypes: true })).filter((entry) => entry.isDirectory()).map((entry) => path.join(dir, entry.name))
       } catch (error) {
         // Not there yet: the first backup makes it.
         if (isMissing(error)) continue
         return problemOf(error, dir)
       }
-    }
-    for (const dir of dirs) {
-      const probe = path.join(dir, PROBE)
-      try {
-        await writeFile(probe, dir === this.root ? PROBE_BYTES : '', { mode: PRIVATE_FILE })
-        await rm(probe, { force: true })
-      } catch (error) {
-        await rm(probe, { force: true }).catch(() => {})
-        return problemOf(error, dir)
+      for (const folder of [dir, ...inside]) {
+        const problem = await probe(folder, '')
+        if (problem) return problem
       }
     }
     return null
