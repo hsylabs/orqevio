@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { attachments, history } from '../src/db/schema'
-import { type Client, type Harness, createHarness, seedBoard, signUp } from './harness'
+import { Client, type Harness, createHarness, seedBoard, signUp } from './harness'
 
 // The trash as a tree, and every case of something whose container or relation is in the trash
 // too, or was deleted for good. Nothing goes back anywhere else than where it was, unless the
@@ -595,5 +595,166 @@ describe('restoring from the trash', () => {
     expect([notThere.status, notThere.body]).toEqual([200, null])
     expect((await s.client.post(`/api/workspaces/${s.workspaceId}/trash/restore`, { key: 'card:nope' })).status).toBe(400)
     expect(await top(s)).toHaveLength(1)
+  })
+})
+
+describe('several at once', () => {
+  const many = ({ client, workspaceId }: Ctx, body: Record<string, unknown>) => client.post(`/api/workspaces/${workspaceId}/trash/restore-many`, body)
+  const purgeMany = ({ client, workspaceId }: Ctx, body: Record<string, unknown>) => client.post(`/api/workspaces/${workspaceId}/trash/purge`, body)
+  const card = async (s: Ctx, column: string, title: string) => (await s.client.post(`/api/columns/${column}/cards`, { title })).body.id as string
+
+  it('restores several things in one go, each planned with what the ones before it brought back, and what is inside another counts once', async () => {
+    const s = await space('Varios')
+    const [todo, doing] = s.columns
+    // Two cards with the same name, deleted one by one: together, the second finds the name taken.
+    const same = [await card(s, todo!.id, 'Igual'), await card(s, todo!.id, 'Igual')]
+    for (const id of same) await del(s.client, `/api/cards/${id}`)
+    // A card deleted before its column: inside it in the trash.
+    const early = await card(s, doing!.id, 'Antes')
+    await del(s.client, `/api/cards/${early}`)
+    await del(s.client, `/api/columns/${doing!.id}`)
+    const items = [{ key: `card:${same[0]}` }, { key: `card:${same[1]}` }, { key: `column:${doing!.id}` }, { key: `card:${early}` }]
+
+    const planned = await many(s, { items, dryRun: true })
+    expect(planned.status, JSON.stringify(planned.body)).toBe(200)
+    // The card inside the column comes with it: three plans, not four, and it says so.
+    expect(planned.body.plans.map((p: TrashPlanDTO) => p.node.key)).toEqual(items.slice(0, 3).map((i) => i.key))
+    expect(planned.body.cameWith).toEqual({ [`card:${early}`]: `column:${doing!.id}` })
+    expect(planned.body.plans[0]).toMatchObject({ ready: true, conflicts: [] })
+    expect(planned.body.plans[1]).toMatchObject({ ready: false, missing: ['names'], conflicts: [{ key: `card:${same[1]}`, original: 'Igual', taken: true }] })
+    expect(planned.body.plans[2].nodes.map((n: { key: string }) => n.key)).toEqual([`column:${doing!.id}`, `card:${early}`])
+    expect(planned.body.ready).toBe(false)
+    // Nothing changed by planning.
+    expect((await top(s)).map((n) => n.key)).toEqual(expect.arrayContaining(items.slice(0, 3).map((i) => i.key)))
+
+    // Asked to go anyway, it says what is missing and does nothing.
+    const refused = await many(s, { items })
+    expect([refused.status, refused.body.error.code]).toEqual([409, 'restore_incomplete'])
+    expect(refused.body.error.details.plans).toHaveLength(3)
+    expect((await s.client.get(`/api/boards/${s.boardId}`)).body.cards).toHaveLength(0)
+
+    // With a new name, all come back.
+    items[1] = { ...items[1]!, names: { [`card:${same[1]}`]: 'Igual (restaurado)' } } as (typeof items)[number]
+    const done = await many(s, { items })
+    expect(done.status, JSON.stringify(done.body)).toBe(200)
+    expect(done.body.restored).toHaveLength(3)
+    const board = (await s.client.get(`/api/boards/${s.boardId}`)).body
+    expect(board.cards.map((c: { title: string }) => c.title).sort()).toEqual(['Antes', 'Igual', 'Igual (restaurado)'])
+    expect(board.columns.map((c: { id: string }) => c.id)).toContain(doing!.id)
+    expect(await top(s)).toEqual([])
+  })
+
+  it('plans what is left out of one with that one already back: its place is there', async () => {
+    const s = await space('Varios, por partes')
+    const column = s.columns[1]!.id
+    const early = await card(s, column, 'Antes')
+    await del(s.client, `/api/cards/${early}`)
+    await del(s.client, `/api/columns/${column}`)
+    // Alone, the card's place is in the trash; after its column comes back, it goes straight there.
+    expect(await plan(s, { key: `card:${early}` })).toMatchObject({ where: { place: 'trash' } })
+    const items = [{ key: `column:${column}`, exclude: [`card:${early}`] }, { key: `card:${early}` }]
+    const planned = (await many(s, { items, dryRun: true })).body
+    expect(planned.plans.map((p: TrashPlanDTO) => [p.node.key, p.where.place, p.ready])).toEqual([
+      [`column:${column}`, 'original', true],
+      [`card:${early}`, 'original', true],
+    ])
+    expect((await many(s, { items })).status).toBe(200)
+    expect((await s.client.get(`/api/cards/${early}`)).body.columnId).toBe(column)
+  })
+
+  it('brings back a label two cards had once, and a picked label that comes with its card is not asked for twice', async () => {
+    const s = await space('Varios con etiqueta')
+    const label = (await s.client.post(`/api/boards/${s.boardId}/labels`, { name: 'Urgente', color: 'tomato' })).body.id as string
+    const [a, b] = [await card(s, s.columns[0]!.id, 'A'), await card(s, s.columns[0]!.id, 'B')]
+    for (const id of [a, b]) await s.client.patch(`/api/cards/${id}`, { labelIds: [label] })
+    await del(s.client, `/api/labels/${label}`)
+    for (const id of [a, b]) await del(s.client, `/api/cards/${id}`)
+
+    // Both propose bringing it back: the second finds it back already, and that is no change.
+    const both = [{ key: `card:${a}`, include: [`label:${label}`] }, { key: `card:${b}`, include: [`label:${label}`] }]
+    const planned = await many(s, { items: both, dryRun: true })
+    expect(planned.status, JSON.stringify(planned.body)).toBe(200)
+    expect(planned.body).toMatchObject({ ready: true })
+    expect((await many(s, { items: both })).status).toBe(200)
+    expect((await s.client.get(`/api/cards/${b}`)).body.labelIds).toEqual([label])
+
+    // The label picked too, and brought back by the card first: it comes with it.
+    for (const id of [a, b]) await del(s.client, `/api/cards/${id}`)
+    await del(s.client, `/api/labels/${label}`)
+    const items = [{ key: `card:${a}`, include: [`label:${label}`] }, { key: `label:${label}` }]
+    const withLabel = (await many(s, { items, dryRun: true })).body
+    expect(withLabel).toMatchObject({ ready: true, cameWith: { [`label:${label}`]: `card:${a}` } })
+    expect(withLabel.plans).toHaveLength(1)
+    expect((await many(s, { items })).status).toBe(200)
+    expect((await s.client.get(`/api/cards/${a}`)).body.labelIds).toEqual([label])
+  })
+
+  it('says what is no longer in the trash, and a plan whose relation no longer applies is still a plan', async () => {
+    const s = await space('Varios que cambian')
+    const column = s.columns[1]!.id
+    const label = (await s.client.post(`/api/boards/${s.boardId}/labels`, { name: 'Urgente', color: 'tomato' })).body.id as string
+    const tagged = await card(s, column, 'Con etiqueta')
+    await s.client.patch(`/api/cards/${tagged}`, { labelIds: [label] })
+    await del(s.client, `/api/labels/${label}`)
+    await del(s.client, `/api/columns/${column}`)
+    const alone = await card(s, s.columns[0]!.id, 'Suelta')
+    await del(s.client, `/api/cards/${alone}`)
+
+    // The column asks for the label its card had; leaving the card out, that no longer applies.
+    const left = await many(s, { items: [{ key: `column:${column}`, exclude: [`card:${tagged}`], include: [`label:${label}`] }], dryRun: true })
+    expect(left.status, JSON.stringify(left.body)).toBe(200)
+    expect(left.body.plans[0].relations).toEqual([])
+
+    // Restored meanwhile by someone else: said, and nothing is done.
+    expect((await restore(s, { key: `card:${alone}` })).status).toBe(200)
+    const items = [{ key: `card:${alone}` }, { key: `column:${column}` }]
+    expect((await many(s, { items, dryRun: true })).body).toMatchObject({ ready: false, missing: [`card:${alone}`] })
+    const refused = await many(s, { items })
+    expect([refused.status, refused.body.error.code, refused.body.error.details.missing]).toEqual([409, 'restore_incomplete', [`card:${alone}`]])
+    expect((await top(s)).map((n) => n.key)).toContain(`column:${column}`)
+  })
+
+  it('deletes several for good, counting all that goes first, and only for people', async () => {
+    const s = await space('Varios para siempre')
+    const other = (await s.client.post(`/api/projects/${s.projectId}/boards`, { name: 'Otro' })).body.id as string
+    const otherColumn = (await s.client.get(`/api/boards/${other}`)).body.columns[0].id as string
+    const inside = await card(s, otherColumn, 'Dentro')
+    await s.client.upload(`/api/cards/${inside}/attachments`, 'hola mundo', { name: 'nota.txt', type: 'text/plain' })
+    await del(s.client, `/api/boards/${other}`)
+    const alone = await card(s, s.columns[0]!.id, 'Suelta')
+    await del(s.client, `/api/cards/${alone}`)
+    const keys = [`board:${other}`, `card:${alone}`, `card:${inside}`]
+
+    const counted = await purgeMany(s, { keys, dryRun: true })
+    expect(counted.status, JSON.stringify(counted.body)).toBe(200)
+    expect(counted.body).toEqual({ count: 2, contents: { boards: 1, columns: 3, cards: 2, attachments: 1 }, bytes: 10 })
+    expect(await top(s)).toHaveLength(2)
+
+    // Agents never delete for good.
+    const token = (await s.client.post('/api/tokens', { name: 'Robot', workspaceId: s.workspaceId, scopes: ['tasks:read', 'tasks:write'], expiresInDays: 30 })).body.token as string
+    const robot = new Client(h, token)
+    expect((await robot.post(`/api/workspaces/${s.workspaceId}/trash/purge`, { keys })).status).toBe(403)
+
+    const went = await purgeMany(s, { keys })
+    expect(went.status).toBe(200)
+    expect(went.body).toEqual(counted.body)
+    expect(await top(s)).toEqual([])
+    const activity = (await s.client.get(`/api/workspaces/${s.workspaceId}/activity`)).body as ActivityDTO[]
+    expect(activity.filter((a) => a.action === 'trash.purged').map((a) => a.summary).sort()).toEqual(['Otro', 'Suelta'])
+    // Gone already: nothing to delete.
+    expect((await purgeMany(s, { keys })).status).toBe(404)
+  })
+
+  it('counts, before deleting a page for good, the link to it that waits in the trash under its card', async () => {
+    const s = await space('Enlace que se va')
+    const linked = await card(s, s.columns[0]!.id, 'Con enlace')
+    const page = (await s.client.post(`/api/projects/${s.projectId}/pages`, { title: 'Notas' })).body.id as string
+    expect((await s.client.post(`/api/cards/${linked}/pages`, { pageId: page })).status).toBe(204)
+    await del(s.client, `/api/cards/${linked}/pages/${page}`)
+    await del(s.client, `/api/pages/${page}`)
+    const counted = (await purgeMany(s, { keys: [`page:${page}`], dryRun: true })).body
+    expect(counted).toEqual({ count: 1, contents: { pages: 1, links: 1 }, bytes: 0 })
+    expect((await purgeMany(s, { keys: [`page:${page}`] })).body).toEqual(counted)
+    expect(await top(s)).toEqual([])
   })
 })

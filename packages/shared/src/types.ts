@@ -442,6 +442,7 @@ export const TRASH_DAYS = 30
 
 /** What went to the trash along with the item itself, counted when it was deleted. */
 export interface TrashContents {
+  projects?: number
   boards?: number
   columns?: number
   cards?: number
@@ -451,6 +452,29 @@ export interface TrashContents {
   items?: number
   labels?: number
   links?: number
+}
+
+/** Restoring several things at once: each one's plan, in the order asked, and whether all can go now. */
+export interface TrashPlanManyDTO {
+  plans: TrashPlanDTO[]
+  ready: boolean
+  /** Of those asked for, the ones that come back with another one (below it, or the other end of one of its relations), by key: with which. */
+  cameWith?: Record<string, string>
+  /** Of those asked for, the ones no longer in the trash. */
+  missing?: string[]
+}
+
+/** What restoring several things at once brought back, in the order asked. */
+export interface RestoredManyDTO {
+  restored: RestoredDTO[]
+}
+
+/** What deleting several things for good takes: how many were picked, and everything that goes with them. */
+export interface TrashPurgeSummaryDTO {
+  count: number
+  /** All that goes, the things picked included, by kind. */
+  contents: TrashContents
+  bytes: number
 }
 
 /** The answer to deleting something that goes to the trash. Null when there was nothing to delete. */

@@ -1,4 +1,4 @@
-import { type RestoredDTO, TRASH_DAYS, type TrashedDTO, type TrashPlanDTO } from '@orqevio/shared'
+import { type RestoredDTO, type RestoredManyDTO, TRASH_DAYS, type TrashPlanDTO, type TrashPlanManyDTO, type TrashPurgeSummaryDTO, type TrashedDTO } from '@orqevio/shared'
 import { t } from 'i18next'
 import { toast } from 'sonner'
 import { ApiError, del, errorMessage, post } from './api'
@@ -34,6 +34,26 @@ export async function restoreItem(workspaceId: string, request: RestoreRequest) 
   const restored = await post<RestoredDTO>(`/workspaces/${workspaceId}/trash/restore`, request)
   await refreshAll()
   return restored
+}
+
+/** What restoring several things together would do, each planned with the ones before it back. */
+export const planRestoreMany = (workspaceId: string, items: RestoreRequest[]) => post<TrashPlanManyDTO>(`/workspaces/${workspaceId}/trash/restore-many`, { items, dryRun: true })
+
+/** Restores several things together, as planned, and refreshes. */
+export async function restoreMany(workspaceId: string, items: RestoreRequest[]) {
+  const restored = await post<RestoredManyDTO>(`/workspaces/${workspaceId}/trash/restore-many`, { items })
+  await refreshAll()
+  return restored.restored
+}
+
+/** How much deleting several things for good takes, without deleting them. */
+export const purgeSummary = (workspaceId: string, keys: string[]) => post<TrashPurgeSummaryDTO>(`/workspaces/${workspaceId}/trash/purge`, { keys, dryRun: true })
+
+/** Deletes several things in the trash for good, with everything below them; says what went. */
+export async function purgeMany(workspaceId: string, keys: string[]) {
+  const went = await post<TrashPurgeSummaryDTO>(`/workspaces/${workspaceId}/trash/purge`, { keys })
+  await refreshAll()
+  return went
 }
 
 /** Deletes something in the trash for good, with everything below it. */
