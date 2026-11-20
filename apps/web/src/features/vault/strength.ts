@@ -2,8 +2,25 @@ import { t } from 'i18next'
 
 /** Words in many leaked passwords, in the app's languages: each counts as one character. */
 const COMMON_WORDS = ['password', 'passw0rd', 'contrasena', 'motdepasse', 'senha', 'passwort', 'wachtwoord', 'qwerty', 'azerty', 'qwertz', 'letmein', 'welcome', 'iloveyou', 'admin', 'secret', 'orqevio']
-/** Keyboard rows: four keys in a row count as one character. */
-const KEYBOARD_ROWS = ['1234567890', 'qwertyuiop', 'asdfghjkl', 'zxcvbnm', 'azertyuiop', 'qsdfghjklm', 'wxcvbn']
+const ROWS = { digits: '1234567890', qwerty: 'qwertyuiop', home: 'asdfghjkl', bottom: 'zxcvbnm', azerty: 'azertyuiop', azertyHome: 'qsdfghjklm', azertyBottom: 'wxcvbn' }
+/** One key of each row in turn, down the keyboard: `1q2w3e…`, `qawsed…`. */
+const zigzag = (a: string, b: string) => [...a.slice(0, b.length)].map((key, i) => key + b[i]).join('')
+/** Keyboard rows, and walks down two rows at once: four keys in a row count as one character. */
+const KEYBOARD_ROWS = [
+  ...Object.values(ROWS),
+  ...[
+    [ROWS.digits, ROWS.qwerty],
+    [ROWS.qwerty, ROWS.home],
+    [ROWS.home, ROWS.bottom],
+    [ROWS.digits, ROWS.azerty],
+    [ROWS.azerty, ROWS.azertyHome],
+    [ROWS.azertyHome, ROWS.azertyBottom],
+  ].flatMap(([a, b]) => [zigzag(a!, b!), zigzag(b!, a!)]),
+]
+/** The usual stand-ins for letters (`p@ssw0rd`): a common word written with them is still that word. */
+const LOOKALIKES: Record<string, string> = { a: 'a@4', e: 'e3', i: 'i1!|', l: 'l1|', o: 'o0', s: 's$5', t: 't7+' }
+const escape = (text: string) => text.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')
+const COMMON_PATTERNS = COMMON_WORDS.map((word) => new RegExp([...word].map((c) => `[${escape(LOOKALIKES[c] ?? c)}]`).join(''), 'g'))
 
 /**
  * How many characters a password is worth: common words, keyboard runs, sequences (`abc`, `4321`)
@@ -20,7 +37,9 @@ export function effectiveLength(password: string): number {
       }
     }
   }
-  for (const word of COMMON_WORDS) rest = rest.replaceAll(word, '\u0001')
+  for (const pattern of COMMON_PATTERNS) rest = rest.replace(pattern, '\u0001')
+  // A year, as in `Verano2024`: among the first things tried after a word.
+  rest = rest.replace(/(?:19|20)\d\d/g, '\u0001')
   const chars = [...rest]
   let length = 0
   for (let i = 0; i < chars.length; ) {

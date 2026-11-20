@@ -26,6 +26,7 @@ import { getSession, lockVault, sessionItemChanges, setAutoLock, useAutoLockRema
 import { type VaultBlocker, vaultBlockers } from '../../lib/browser'
 import { announceVaultChange, announceVaultItemsChange, applyItemsChange, freshVaultState, lockIfVaultChanged, reloadVaultItems } from './sync'
 import { estimateMasterPassword } from './strength'
+import { fold } from './fold'
 import { groupCode, parseTotp, totp } from './totp'
 import { ITEM_LIMITS, type VaultItem, type VaultItemType, emptyItem, tidyItem } from './types'
 import { VaultSetup, VaultUnlock } from './VaultGate'
@@ -664,10 +665,6 @@ const listOrder = (language: string | undefined) => (a: VaultItem, b: VaultItem)
 
 /** Tailwind's `md`: the list and the open item side by side. */
 const SIDE_BY_SIDE = '(min-width: 768px)'
-
-/** For searching: lower case, without accents (`Música` is found as `musica`). */
-const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
-
 function ChangeMasterDialog({ open, onOpenChange: setOpen }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { t } = useTranslation(['vault', 'common'])
   const { me } = useWorkspace()

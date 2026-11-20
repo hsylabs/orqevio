@@ -191,7 +191,8 @@
       "repeat": "Herhaal het hoofdwachtwoord",
       "busy": "Sleutels genereren…",
       "submit": "Kluis maken",
-      "ready": "Je kluis is klaar. Alleen jij kunt hem openen."
+      "ready": "Je kluis is klaar. Alleen jij kunt hem openen.",
+      "elsewhere": "De kluis is eerst in een ander tabblad of op een ander apparaat ingesteld, dus de herstelsleutel die hier staat opent niets. Gebruik die van daar, met het hoofdwachtwoord van daar."
     },
     "recoveryKey": {
       "title": "Bewaar je herstelsleutel",

@@ -11,9 +11,17 @@ describe('master password strength', () => {
   })
 
   it('does not rate guessable passwords as good', () => {
-    for (const weak of ['Password1234', 'Contraseña2026!', 'Qwerty123456', 'aaaaaaaaaaaaaaaa', 'abcdefghijklmnop']) {
+    for (const weak of ['Password1234', 'Contraseña2026!', 'Qwerty123456', 'aaaaaaaaaaaaaaaa', 'abcdefghijklmnop', 'P@ssw0rd2024!', '1q2w3e4r5t6y', 'W3lc0me!1990', 'qawsedrftgyh', 'Adm1n$ecret2023']) {
       expect(estimateMasterPassword(weak).score, weak).toBeLessThan(2)
     }
+  })
+
+  it('sees through letters written with lookalikes, years and walks down the keyboard', () => {
+    expect(effectiveLength('p@ssw0rd')).toBe(1)
+    expect(effectiveLength('P4$$w0rd')).toBe(1)
+    expect(effectiveLength('2024')).toBe(1)
+    expect(effectiveLength('1q2w3e4r5t6y')).toBe(1)
+    expect(effectiveLength('q1w2e3r4')).toBe(1)
   })
 
   it('still rates long, varied passwords well', () => {
