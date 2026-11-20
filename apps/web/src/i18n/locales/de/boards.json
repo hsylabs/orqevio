@@ -89,7 +89,12 @@
     "hasDescription": "Hat eine Beschreibung",
     "linkedDocs": "Verknüpfte Dokumente",
     "attachments": "Anhänge",
-    "createdByName": "Erstellt von {{name}}"
+    "createdByName": "Erstellt von {{name}}",
+    "a11y": {
+      "labels": "Labels: {{list}}",
+      "due": "Fällig: {{date}}",
+      "checklist": "Checkliste: {{done}} von {{total}} erledigt"
+    }
   },
   "sheet": {
     "fallbackTitle": "Karte",
@@ -165,7 +170,8 @@
     "editNamed": "{{name}} bearbeiten",
     "editUnnamed": "Label bearbeiten",
     "create": "Label erstellen",
-    "deleted": "Label „{{name}}“ in den Papierkorb verschoben"
+    "deleted": "Label „{{name}}“ in den Papierkorb verschoben",
+    "deletedUnnamed": "Label ohne Namen in den Papierkorb verschoben"
   },
   "linked": {
     "mentioned": "erwähnt",

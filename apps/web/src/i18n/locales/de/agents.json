@@ -29,7 +29,8 @@
     "titleFor": "Aktivität von „{{name}}“",
     "showAll": "Alle anzeigen",
     "loading": "Wird geladen…",
-    "empty": "Wenn ein Agent in diesem Arbeitsbereich arbeitet, siehst du es hier."
+    "empty": "Wenn ein Agent in diesem Arbeitsbereich arbeitet, siehst du es hier.",
+    "older": "Frühere Aktivität zeigen"
   },
   "tools": {
     "title": "MCP-Tools",
@@ -40,11 +41,13 @@
       "tasksRead": "Aufgaben · Lesen",
       "tasksWrite": "Aufgaben · Schreiben",
       "docsRead": "Dokumente · Lesen",
-      "docsWrite": "Dokumente · Schreiben"
+      "docsWrite": "Dokumente · Schreiben",
+      "organize": "Darf löschen und verschieben"
     },
     "descriptions": {
       "listProjects": "Projekte, Boards und Seitenstruktur",
       "search": "Suche in Karten und Seiten",
+      "readAttachments": "Text- und Bildanhänge lesen",
       "readBoards": "Spalten, Karten, Checklisten und Verknüpfungen",
       "editCards": "Karten erstellen, bearbeiten und verschieben",
       "archiveCard": "Archivieren (in der App wiederherstellbar)",
@@ -52,8 +55,13 @@
       "labels": "Labels und Checklisten",
       "readPages": "Seitenbaum und Markdown-Inhalt",
       "writePages": "Erstellen und aktualisieren, mit Versionskontrolle",
+      "movePage": "Seiten innerhalb ihres Projekts verschieben",
+      "uploadAttachment": "Dateien an Karten und Seiten anhängen",
       "linkCard": "Aufgaben und Dokumente verknüpfen",
-      "createProject": "Projekte anlegen"
+      "createProject": "Projekte anlegen",
+      "deleteTasks": "Karten, Boards, Spalten, Labels und Checklisten löschen (in den Papierkorb)",
+      "deleteDocs": "Seiten, Projekte und Anhänge löschen (in den Papierkorb)",
+      "moveElsewhere": "Anhänge verschieben und Karten von Seiten lösen"
     }
   },
   "revoke": {

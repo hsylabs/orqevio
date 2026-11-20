@@ -22,6 +22,7 @@
   "noLineChanges": "Nessuna riga è cambiata.",
   "movedTo": "Il suo posto non esisteva più, quindi è finita in {{place}}",
   "quoted": "«{{name}}»",
+  "unnamedLabel": "(senza nome)",
   "kinds": {
     "page": {
       "created": "<actor>{{actor}}</actor> ha creato questa pagina",
@@ -103,6 +104,7 @@
     "impossible": {
       "gone": "«{{title}}» non esiste più.",
       "place_gone": "Il posto in cui si trovava «{{title}}» non esiste più.",
+      "place_in_trash": "Il posto in cui si trovava «{{title}}» è nel cestino.",
       "trash_gone": "«{{title}}» è stato eliminato definitivamente dal cestino.",
       "refused": "Impossibile annullare «{{title}}»."
     },
@@ -134,7 +136,56 @@
       "force": "Annullale tutte comunque",
       "confirm_one": "Annulla {{count}} modifica",
       "confirm_many": "Annulla {{count}} modifiche",
-      "confirm_other": "Annulla {{count}} modifiche"
+      "confirm_other": "Annulla {{count}} modifiche",
+      "nothingInBatch": "Niente più da annullare in questo gruppo",
+      "next_one": "Mostra quella precedente",
+      "next_many": "Mostra le {{count}} precedenti",
+      "next_other": "Mostra le {{count}} precedenti",
+      "undoneBefore_one": "{{count}} modifica già annullata; questo è il gruppo successivo.",
+      "undoneBefore_many": "{{count}} modifiche già annullate; questo è il gruppo successivo.",
+      "undoneBefore_other": "{{count}} modifiche già annullate; questo è il gruppo successivo.",
+      "remaining_one": "Si annullano fino a 500 modifiche alla volta. Ne resta {{count}} più vecchia, quella che hai scelto: compare alla fine di questo gruppo.",
+      "remaining_many": "Si annullano fino a 500 modifiche alla volta. Ne restano {{count}} più vecchie, tra cui quella che hai scelto: compaiono alla fine di questo gruppo.",
+      "remaining_other": "Si annullano fino a 500 modifiche alla volta. Ne restano {{count}} più vecchie, tra cui quella che hai scelto: compaiono alla fine di questo gruppo."
+    },
+    "left": {
+      "title": "Non si annulla qui",
+      "body": "Progetti, bacheche, colonne ed etichette non hanno cronologia: ciò che {{name}} vi ha cambiato resta com’è.",
+      "item": {
+        "project": "Progetto «{{title}}»: {{actions}}",
+        "board": "Bacheca «{{title}}»: {{actions}}",
+        "column": "Colonna «{{title}}»: {{actions}}",
+        "label": "Etichetta «{{title}}»: {{actions}}"
+      },
+      "actions": {
+        "project": {
+          "created": "creato",
+          "updated": "modificato",
+          "moved": "spostato",
+          "deleted": "eliminato"
+        },
+        "board": {
+          "created": "creata",
+          "updated": "modificata",
+          "moved": "spostata",
+          "deleted": "eliminata"
+        },
+        "column": {
+          "created": "creata",
+          "updated": "modificata",
+          "moved": "spostata",
+          "deleted": "eliminata"
+        },
+        "label": {
+          "created": "creata",
+          "updated": "modificata",
+          "moved": "spostata",
+          "deleted": "eliminata"
+        }
+      },
+      "more_one": "E {{count}} in più.",
+      "more_many": "E {{count}} in più.",
+      "more_other": "E {{count}} in più."
     }
   }
 }

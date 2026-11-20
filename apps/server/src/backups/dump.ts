@@ -217,6 +217,36 @@ export function readHeader(data: Uint8Array): DumpHeader {
   return header
 }
 
+/**
+ * The name of each attachment a backup's data lists, by storage key, among its attachments and in
+ * its trash: for backups whose manifest doesn't say them (made before 1.3).
+ */
+export function fileNames(data: Uint8Array): Map<string, string> {
+  const names = new Map<string, string>()
+  let reading: { table: string; key: number; name: number; data: number } | null = null
+  for (const line of readLines(data)) {
+    if (Array.isArray(line)) {
+      const key = reading ? line[reading.key] : undefined
+      if (!reading || typeof key !== 'string') continue
+      if (reading.table === 'attachments') {
+        const name = line[reading.name]
+        if (typeof name === 'string') names.set(key, name)
+      } else {
+        try {
+          const row = JSON.parse(String(line[reading.data])) as { filename?: unknown }
+          if (typeof row.filename === 'string') names.set(key, row.filename)
+        } catch {
+          // Not a row of a file.
+        }
+      }
+    } else if (line && typeof line === 'object' && 'table' in line) {
+      const { table, columns } = line as { table: string; columns: string[] }
+      reading = (table === 'attachments' || table === 'trash_rows') && columns.includes('storage_key') ? { table, key: columns.indexOf('storage_key'), name: columns.indexOf('filename'), data: columns.indexOf('data') } : null
+    } else if (line && typeof line === 'object' && 'end' in line) break
+  }
+  return names
+}
+
 export class DumpError extends Error {
   constructor(readonly code: 'not_a_backup' | 'newer_format' | 'newer_version' | 'cut_short') {
     super(`This backup can't be restored: ${code}`)

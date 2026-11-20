@@ -6,8 +6,11 @@ import { SCOPES } from './scopes'
 /** Input schemas shared by the REST API, the MCP tools and the web forms. */
 
 const id = z.uuid()
-/** A character that shows: not a space, a control or formatting character, or a blank filler. */
-const VISIBLE = /[^\s\p{Cc}\p{Cf}\p{Z}\u115F\u1160\u3164\uFFA0\u2800]/u
+/**
+ * A character that shows on its own: not a space, a control or formatting character, a blank
+ * filler, or a mark (an accent, an emoji variation selector), which only shows on another character.
+ */
+const VISIBLE = /[^\s\p{Cc}\p{Cf}\p{Z}\p{M}\u115F\u1160\u3164\uFFA0\u2800]/u
 /** A one-line name: control characters (line breaks, tabs) become spaces, and it must show something. */
 const name = (max = 120) =>
   z
@@ -17,6 +20,14 @@ const name = (max = 120) =>
     .min(1, { message: 'Required', abort: true })
     .max(max)
     .refine((value) => VISIBLE.test(value), 'Required')
+/** A one-line name that may be left out: cleaned as `name`, and one that shows nothing is no name. */
+const optionalName = (max: number) =>
+  z
+    .string()
+    .overwrite((value) => value.replace(/\p{Cc}+/gu, ' '))
+    .trim()
+    .overwrite((value) => (VISIBLE.test(value) ? value : ''))
+    .max(max)
 const color = z.enum(PALETTE)
 const index = z.number().int().min(0).max(100_000)
 
@@ -50,6 +61,21 @@ const dueAt = z.string().transform((value, ctx) => {
 
 export const MAX_MARKDOWN = 200_000
 
+/**
+ * How many characters a text has, as the schemas count them for their limits: an emoji or a letter
+ * from beyond the first 65,536 is one, though it takes two UTF-16 units (`.length` counts two).
+ */
+export function characters(text: string) {
+  let count = text.length
+  for (let i = 0; i < text.length - 1; i++) {
+    if ((text.charCodeAt(i) & 0xfc00) === 0xd800 && (text.charCodeAt(i + 1) & 0xfc00) === 0xdc00) {
+      count--
+      i++
+    }
+  }
+  return count
+}
+
 // ── Access & account ────────────────────────────────────────────
 // A copy of Orqevio has a single owner: it is claimed once with the setup code
 // chosen at install time, and then opened with the generated access key.
@@ -67,7 +93,11 @@ export const uninstallInput = z.object({ accessKey: secret, deleteBackups: z.boo
 /** The installer's one-time authorization to uninstall, set as a Worker secret on the copy. */
 export const installerUninstallInput = z.object({ token: z.string().min(40).max(200), deleteBackups: z.boolean().default(false) })
 /** Restoring a backup replaces everything: it is confirmed with the access key. */
-export const restoreBackupInput = z.object({ accessKey: secret })
+/**
+ * `leaveOut`: the attachments (storage keys) the person agreed to restore without, having been told
+ * their kept copy is damaged or gone. One found damaged that isn't among them stops the restore.
+ */
+export const restoreBackupInput = z.object({ accessKey: secret, leaveOut: z.array(z.string().max(200)).max(100_000).default([]) })
 export const updateAccountInput = z.object({
   name: name(80).optional(),
   theme: z.enum(['system', 'light', 'dark']).optional(),
@@ -97,8 +127,8 @@ export const boardCreateInput = z.object({
 export const boardUpdateInput = z.object({ name: name(80) })
 export const columnCreateInput = z.object({ name: name(60), index: index.optional() })
 export const columnUpdateInput = z.object({ name: name(60).optional(), index: index.optional() })
-export const labelCreateInput = z.object({ name: z.string().trim().max(40).default(''), color })
-export const labelUpdateInput = z.object({ name: z.string().trim().max(40).optional(), color: color.optional() })
+export const labelCreateInput = z.object({ name: optionalName(40).default(''), color })
+export const labelUpdateInput = z.object({ name: optionalName(40).optional(), color: color.optional() })
 
 // ── Cards & checklists ──────────────────────────────────────────
 export const cardCreateInput = z.object({
@@ -129,13 +159,13 @@ export const linkPageInput = z.object({ pageId: id })
 
 // ── Pages ───────────────────────────────────────────────────────
 export const pageCreateInput = z.object({
-  title: z.string().trim().max(200).default(''),
+  title: optionalName(200).default(''),
   icon: z.string().max(16).nullable().optional(),
   parentId: id.nullable().optional(),
   content: z.string().max(MAX_MARKDOWN).default(''),
 })
 export const pageUpdateInput = z.object({
-  title: z.string().trim().max(200).optional(),
+  title: optionalName(200).optional(),
   icon: z.string().max(16).nullable().optional(),
   content: z.string().max(MAX_MARKDOWN).optional(),
   /** Required when `content` is sent: optimistic concurrency guard. */
@@ -226,8 +256,54 @@ export const undoInput = z
   .object({
     ids: z.array(id).min(1).max(500).optional(),
     since: id.optional(),
+    /** With `since`: only the changes older than this one, to go on after a batch that ended there. */
+    until: id.optional(),
     conflicts: z.enum(['ask', 'skip', 'force']).default('ask'),
     /** Only say what would happen: nothing is undone. */
     dryRun: z.boolean().default(false),
   })
   .refine((v) => (v.ids === undefined) !== (v.since === undefined), { message: 'Send either ids or since' })
+  .refine((v) => v.until === undefined || v.since !== undefined, { message: 'until goes with since' })
+
+// ── Trash ────────────────────────────────────────────────────────
+/** Something in the trash, by key: `kind:id`, or `link:<card id>:<page id>`. */
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+export const TRASH_KEY = new RegExp(`^(?:(?:project|board|column|card|page|attachment|label|checklist|checklist_item):${UUID}|link:${UUID}:${UUID})$`, 'i')
+export const trashKey = z.string().regex(TRASH_KEY, 'Not a trash key')
+/**
+ * Restoring something from the trash with everything below it but what is left out (`exclude`).
+ * `to` says where: where it was (`original`), with its place brought back too (`recreate`), or
+ * in another container (`other`). Names already used where things go back are changed
+ * (`names`) or kept on purpose (`keepNames`). Other ends of its relations that are in the
+ * trash come back too when in `include`. `dryRun` only plans.
+ */
+export const trashRestoreInput = z.object({
+  key: trashKey,
+  exclude: z.array(trashKey).max(10_000).default([]),
+  to: z
+    .discriminatedUnion('kind', [
+      z.object({ kind: z.literal('original') }),
+      z.object({ kind: z.literal('recreate') }),
+      z.object({ kind: z.literal('other'), parent: z.object({ kind: z.enum(['project', 'board', 'column', 'card', 'page', 'checklist']), id }) }),
+    ])
+    .optional(),
+  names: z.record(trashKey, name(300)).default({}),
+  keepNames: z.array(trashKey).max(10_000).default([]),
+  include: z.array(trashKey).max(1000).default([]),
+  dryRun: z.boolean().default(false),
+})
+export type TrashRestoreInput = z.infer<typeof trashRestoreInput>
+export const trashPurgeInput = z.object({ key: trashKey, dryRun: z.boolean().default(false) })
+/** The most things restored or deleted for good in one request. */
+export const MAX_TRASH_BATCH = 100
+/**
+ * Restoring several things at once, each as `trashRestoreInput` says, in the order given: each
+ * is planned with what the ones before it brought back already there. `dryRun` only plans.
+ */
+export const trashRestoreManyInput = z.object({
+  items: z.array(trashRestoreInput.omit({ dryRun: true })).min(1).max(MAX_TRASH_BATCH),
+  dryRun: z.boolean().default(false),
+})
+export type TrashRestoreManyInput = z.infer<typeof trashRestoreManyInput>
+/** Deleting several things for good, with everything below them. `dryRun` only counts. */
+export const trashPurgeManyInput = z.object({ keys: z.array(trashKey).min(1).max(MAX_TRASH_BATCH), dryRun: z.boolean().default(false) })

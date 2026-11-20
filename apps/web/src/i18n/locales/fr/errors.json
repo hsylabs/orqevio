@@ -20,7 +20,15 @@
     "vault_item_changed": "Cet élément a changé dans un autre onglet ou sur un autre appareil. Vous le voyez maintenant tel qu’il est : refaites votre modification si elle est toujours utile.",
     "too_many_columns": "Un tableau peut contenir jusqu’à 20 colonnes.",
     "vault_full": "Le coffre peut contenir jusqu’à 5 000 éléments. Supprimez ceux que vous n’utilisez plus pour en ajouter d’autres.",
-    "unauthorized": "Votre session a pris fin. Connectez-vous à nouveau."
+    "unauthorized": "Votre session a pris fin. Connectez-vous à nouveau.",
+    "backup_folder": "La sauvegarde n’a pas pu être faite : le dossier des sauvegardes pose problème. Voir l’avis dans les paramètres.",
+    "backup_damaged": "Cette sauvegarde est endommagée ou incomplète : elle ne peut pas être restaurée. Essayez-en une autre.",
+    "backup_newer": "Cette sauvegarde a été faite par une version plus récente d’Orqevio : mettez à jour cette copie avant de la restaurer.",
+    "backup_running": "Une sauvegarde est déjà en cours de création ou de restauration. Attendez qu’elle se termine.",
+    "backups_off": "Cette copie ne fait pas de sauvegardes.",
+    "restoring": "Une sauvegarde est en cours de restauration : envoyez à nouveau le fichier dans un instant.",
+    "file_empty": "Le fichier est vide.",
+    "uninstalled": "Cette copie d’Orqevio a été désinstallée."
   },
   "notFound": "Élément introuvable.",
   "server": "Une erreur est survenue sur le serveur. Réessayez.",

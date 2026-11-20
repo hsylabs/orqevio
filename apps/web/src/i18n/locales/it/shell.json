@@ -1,4 +1,5 @@
 {
+  "notifications": "Notifiche",
   "nav": {
     "label": "Navigazione principale",
     "search": "Cerca o vai a…",
@@ -57,7 +58,8 @@
     "hideSidebar": "Nascondi la barra laterale",
     "showSidebar": "Mostra la barra laterale",
     "toggleSidebar": "Mostra o nascondi la barra laterale",
-    "breadcrumb": "Percorso di navigazione"
+    "breadcrumb": "Percorso di navigazione",
+    "moreCrumbs": "Mostra i livelli intermedi"
   },
   "newProject": {
     "title": "Nuovo progetto",

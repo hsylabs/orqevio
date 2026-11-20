@@ -91,7 +91,12 @@
     "hasDescription": "Contient une description",
     "linkedDocs": "Documents liés",
     "attachments": "Pièces jointes",
-    "createdByName": "Créée par {{name}}"
+    "createdByName": "Créée par {{name}}",
+    "a11y": {
+      "labels": "Étiquettes : {{list}}",
+      "due": "Échéance : {{date}}",
+      "checklist": "Checklist : {{done}} sur {{total}} faits"
+    }
   },
   "sheet": {
     "fallbackTitle": "Carte",
@@ -105,7 +110,7 @@
       "byOtherSession": "<strong>Une autre session</strong> a modifié la description pendant que vous l’éditiez. Vos dernières modifications n’ont pas été enregistrées.",
       "loadTheirs": "Charger l’autre version",
       "keepMine": "Garder la mienne",
-      "notSaved": "Vos modifications de la description n’ont pas été enregistrées : quelqu’un d’autre l’a modifiée en même temps."
+      "notSaved": "Vos modifications de la description n’ont pas été enregistrées : quelqu’un d’autre l’a modifiée en même temps."
     },
     "saving": "Enregistrement…",
     "saved": "Enregistré",
@@ -167,7 +172,8 @@
     "editNamed": "Modifier {{name}}",
     "editUnnamed": "Modifier l’étiquette",
     "create": "Créer l’étiquette",
-    "deleted": "Étiquette « {{name}} » placée dans la corbeille"
+    "deleted": "Étiquette « {{name}} » placée dans la corbeille",
+    "deletedUnnamed": "Étiquette sans nom placée dans la corbeille"
   },
   "linked": {
     "mentioned": "mentionnée",

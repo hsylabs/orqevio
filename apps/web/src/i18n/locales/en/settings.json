@@ -78,8 +78,8 @@
     "missingFiles_other": "{{count}} attachments couldn’t be copied into it.",
     "newer": "Made with Orqevio {{version}}: update this copy to restore it.",
     "restore": "Restore…",
-    "keep_one": "The last daily backup is kept, and the one made before the last restore.",
-    "keep_other": "The last {{count}} daily backups are kept, and the one made before the last restore.",
+    "keep_one": "The last daily backup is kept, the last one made by you, and the one made before the last restore.",
+    "keep_other": "The last {{count}} daily backups are kept, the last {{count}} made by you, and the one made before the last restore.",
     "restoreTitle": "Restore this backup?",
     "restoreDescription": "This copy goes back to how it was on {{date}}.",
     "restoreLoses": "Everything goes back: workspaces, documents, cards, vault, agents, trash and history. What changed since is lost.",
@@ -88,7 +88,26 @@
     "restoreAgents": "Agents whose access you have taken away since then don’t get it back.",
     "accessKey": "Access key",
     "typeName": "Type “{{name}}” to confirm",
-    "restoreConfirm": "Restore"
+    "restoreConfirm": "Restore",
+    "problem": {
+      "title": "Backups can’t be made there",
+      "access": "Orqevio (the server’s user <code>{{user}}</code>) can’t read or write <code>{{path}}</code>. Give the backups folder back to it: mounted from the server, with <code>sudo chown -R {{user}}</code> on it; inside the volume (what <code>docker compose cp</code> copies in is left to root), with <code>docker compose run --rm --user root app chown -R orqevio:orqevio {{root}}</code>.",
+      "readonly": "<code>{{path}}</code> is read-only.",
+      "full": "The disk of <code>{{path}}</code> is full.",
+      "other": "<code>{{path}}</code> can’t be used: {{detail}}"
+    },
+    "damaged": {
+      "title_one": "{{count}} attachment of this backup is damaged or gone:",
+      "title_other": "{{count}} attachments of this backup are damaged or gone:",
+      "list": "Damaged attachments",
+      "reason": {
+        "missing": "gone",
+        "size": "cut short",
+        "changed": "changed"
+      },
+      "body": "This copy stays as it is. If you restore without them, their cards and documents come back, but these files don’t.",
+      "confirm": "Restore without these files"
+    }
   },
   "export": {
     "title": "Export your data",

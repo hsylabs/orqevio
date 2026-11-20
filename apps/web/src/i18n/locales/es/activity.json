@@ -61,5 +61,6 @@
     "createdIn": "en {{column}}",
     "linkedPage": "«{{page}}»"
   },
-  "viaMcp": "vía MCP"
+  "viaMcp": "vía MCP",
+  "inTrash": "en la papelera"
 }

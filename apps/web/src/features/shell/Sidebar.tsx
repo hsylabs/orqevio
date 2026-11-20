@@ -33,6 +33,7 @@ import { usePrompt } from '../../components/ui/prompt'
 import { Tooltip } from '../../components/ui/Tooltip'
 import { errorMessage, patch, post } from '../../lib/api'
 import { cn } from '../../lib/cn'
+import { monogram } from '../../lib/format'
 import { keys, useUpdates } from '../../lib/queries'
 import { useAgentLive } from '../../lib/realtime'
 import { applyTheme, localPref, setLocalPref } from '../../lib/theme'
@@ -179,7 +180,7 @@ function WorkspaceSwitcher({ live }: { live: boolean }) {
       <MenuContent align="start" className="w-[240px]">
         <MenuLabel>{t('workspace.heading')}</MenuLabel>
         {me.workspaces.map((w) => (
-          <MenuItem key={w.id} onSelect={() => navigate(`/w/${w.id}`)} icon={<span className="glyph c-slate size-5 text-[11px]">{w.name[0]?.toUpperCase()}</span>}>
+          <MenuItem key={w.id} current={w.id === workspaceId} onSelect={() => navigate(`/w/${w.id}`)} icon={<span className="glyph c-slate size-5 text-[11px]">{monogram(w.name)}</span>}>
             <span className="flex items-center justify-between gap-2">
               <span className="truncate">{w.name}</span>
               {w.id === workspaceId && <Check className="size-[14px] text-accent" />}
@@ -234,7 +235,7 @@ function ProjectItem({ project }: { project: ProjectTreeDTO }) {
           <ChevronRight className={cn('size-[13px] transition-transform duration-200', open && 'rotate-90')} />
         </button>
         <NavLink to={`${base}/p/${project.id}`} className="flex min-w-0 flex-1 items-center gap-2 py-1 text-[13.5px]">
-          <span className={cn('glyph size-[18px] text-[10.5px]', `c-${project.color}`)}>{project.name[0]?.toUpperCase()}</span>
+          <span className={cn('glyph size-[18px] text-[10.5px]', `c-${project.color}`)}>{monogram(project.name)}</span>
           <span className={cn('truncate', active ? 'font-medium text-ink' : 'text-ink-2 group-hover:text-ink')}>{project.name}</span>
         </NavLink>
         <MenuRoot>
@@ -316,6 +317,17 @@ function TreeLink({ to, icon, label, trailing, onToggle, expanded, hasChildren, 
   )
 }
 
+/**
+ * How far a page's subpages go in: the full step down to the fourth level, a narrow one down to
+ * the eighth and none past that, 78 px at most, so a title keeps room to be read however deep the
+ * tree goes. The path at the top of the page names every level.
+ */
+function nested(depth: number) {
+  if (depth < 3) return 'ml-[11px] border-l border-line pl-1.5'
+  if (depth < 7) return 'ml-[5px] border-l border-line'
+  return ''
+}
+
 function PageItem({ page, all, projectId, depth }: { page: PageNodeDTO; all: PageNodeDTO[]; projectId: string; depth: number }) {
   const { t } = useTranslation(['shell', 'common'])
   const { workspaceId } = useWorkspace()
@@ -349,8 +361,8 @@ function PageItem({ page, all, projectId, depth }: { page: PageNodeDTO; all: Pag
           </span>
         }
       />
-      {open && children.length > 0 && depth < 12 && (
-        <div className="ml-[11px] border-l border-line pl-1.5">
+      {open && children.length > 0 && (
+        <div className={nested(depth)}>
           {children.map((c) => (
             <PageItem key={c.id} page={c} all={all} projectId={projectId} depth={depth + 1} />
           ))}

@@ -6,13 +6,14 @@ import {
   type HistoryKind,
   type HistoryValue,
   type PagePlace,
+  type UndoLeftDTO,
   type UndoPlanItemDTO,
   type UndoResultDTO,
   type UndoStatus,
   dueDay,
   undoInput,
 } from '@orqevio/shared'
-import { type SQL, and, desc, eq, getTableColumns, gt, inArray, or, sql } from 'drizzle-orm'
+import { type SQL, and, desc, eq, getTableColumns, gt, inArray, lt, or, sql } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
 import { attachments, cardLabels, cardPageLinks, cards, checklistItems, checklists, columns, history, labels, pages, trash, trashRows } from '../db/schema'
 import { AppError, badRequest, notFound } from '../lib/errors'
@@ -27,8 +28,14 @@ import type { TrashService } from './trash'
 
 /** The end of a column or of a list of subpages, where something moved back goes. */
 const AT_END = 100_000
-/** The most changes one request undoes, the newest ones. */
+/** The most changes one request undoes, the newest ones: the rest wait for the next batch. */
 const MAX_CHANGES = 500
+/** The most things told apart that undoing from the history leaves as they are. */
+const MAX_LEFT = 50
+/** What has no history, so undoing from it leaves as it is: what activity says was changed. */
+const LEFT_TYPES = ['project', 'board', 'column', 'label'] as const
+const LEFT_ACTIONS = ['created', 'updated', 'moved', 'deleted'] as const
+const TRASH_TABLES = { project: 'projects', board: 'boards', column: 'board_columns', label: 'labels', page: 'pages', card: 'cards' } as const
 /** Ids per query: a Cloudflare Durable Object takes at most 100 bound values in one. */
 const CHUNK = 90
 
@@ -48,6 +55,7 @@ const LIGHT_COLUMNS = (() => {
 interface Check {
   status: UndoStatus
   reason?: UndoPlanItemDTO['reason']
+  trashKey?: string
   current?: HistoryValue
   /** For a conflict found on something else than the change itself: who made the newer change. */
   by?: ActorRef | null
@@ -100,13 +108,15 @@ export class UndoService {
   async undo(actor: Actor, input: unknown): Promise<UndoResultDTO> {
     this.access.requireUser(actor)
     const data = parse(undoInput, input)
-    const rows = await this.entries(actor, data.ids, data.since)
+    const { rows, anchor, remaining } = await this.entries(actor, data.ids, data.since, data.until)
     const undoing = new Set(rows.map((r) => r.id))
+    // From a change on: how many older ones wait for the next batch, and what this doesn't undo at all.
+    const told = anchor ? { remaining: remaining ?? 0, ...this.left(anchor) } : {}
 
     // The plan, before anything changes.
     const state = new State()
     const plan = rows.map((row) => this.planItem(row, this.check(row, undoing, state), undoing, state))
-    if (data.dryRun || (data.conflicts === 'ask' && plan.some((p) => p.status === 'conflict'))) return { applied: false, plan, undone: 0, skipped: 0, failed: 0 }
+    if (data.dryRun || (data.conflicts === 'ask' && plan.some((p) => p.status === 'conflict'))) return { applied: false, plan, undone: 0, skipped: 0, failed: 0, ...told }
 
     // Newest first, each checked again against what is true by then.
     let undone = 0
@@ -134,7 +144,7 @@ export class UndoService {
         failed++
       }
     }
-    return { applied: true, plan, undone, skipped, failed }
+    return { applied: true, plan, undone, skipped, failed, ...told }
   }
 
   /** Puts a page's content or a card's description back as it was after a change, as a new change. */
@@ -165,22 +175,69 @@ export class UndoService {
       .orderBy(desc(history.updatedAt), desc(sql`rowid`))
   }
 
-  /** The changes to undo, newest first: those asked for, or all their author did from one on. */
-  private async entries(actor: Actor, ids: string[] | undefined, since: string | undefined): Promise<Row[]> {
-    let rows: Row[] = []
+  /**
+   * The changes to undo, newest first: those asked for, or all their author did from one on (the
+   * anchor), up to MAX_CHANGES at a time. Those older than `until` are the next batch, after the
+   * one that ended there; `remaining` says how many are left beyond this one.
+   */
+  private async entries(actor: Actor, ids: string[] | undefined, since: string | undefined, until: string | undefined): Promise<{ rows: Row[]; anchor?: Row; remaining?: number }> {
     if (ids) {
+      const rows: Row[] = []
       for (let i = 0; i < ids.length; i += CHUNK) rows.push(...(await this.rows(inArray(history.id, ids.slice(i, i + CHUNK)))))
       if (rows.length !== new Set(ids).size) throw notFound('History entry')
       rows.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime() || b.seq - a.seq)
-    } else {
-      const [anchor] = await this.rows(eq(history.id, since!))
-      if (!anchor) throw notFound('History entry')
-      const author = anchor.actorKind === 'agent' ? eq(history.actorTokenId, anchor.actorTokenId ?? '') : and(eq(history.actorKind, 'user'), eq(history.actorUserId, anchor.actorUserId ?? ''))
-      const from = or(gt(history.updatedAt, anchor.updatedAt), and(eq(history.updatedAt, anchor.updatedAt), sql`rowid >= ${anchor.seq}`))
-      rows = await this.rows(and(eq(history.workspaceId, anchor.workspaceId), author, from)).limit(MAX_CHANGES)
+      for (const workspaceId of new Set(rows.map((r) => r.workspaceId))) await this.access.workspace(actor, workspaceId)
+      return { rows }
     }
-    for (const workspaceId of new Set(rows.map((r) => r.workspaceId))) await this.access.workspace(actor, workspaceId)
-    return rows
+    const [anchor] = await this.rows(eq(history.id, since!))
+    if (!anchor) throw notFound('History entry')
+    await this.access.workspace(actor, anchor.workspaceId)
+    const author = anchor.actorKind === 'agent' ? eq(history.actorTokenId, anchor.actorTokenId ?? '') : and(eq(history.actorKind, 'user'), eq(history.actorUserId, anchor.actorUserId ?? ''))
+    const from = or(gt(history.updatedAt, anchor.updatedAt), and(eq(history.updatedAt, anchor.updatedAt), sql`rowid >= ${anchor.seq}`))
+    const before = (row: Row) => or(lt(history.updatedAt, row.updatedAt), and(eq(history.updatedAt, row.updatedAt), sql`rowid < ${row.seq}`))
+    let end: Row | undefined
+    if (until) {
+      ;[end] = await this.rows(eq(history.id, until))
+      if (!end || end.workspaceId !== anchor.workspaceId) throw notFound('History entry')
+    }
+    const scope = and(eq(history.workspaceId, anchor.workspaceId), author, from, end ? before(end) : undefined)
+    const rows = await this.rows(scope).limit(MAX_CHANGES)
+    const last = rows.at(-1)
+    const remaining = rows.length < MAX_CHANGES || !last ? 0 : (this.deps.db.select({ n: sql<number>`count(*)` }).from(history).where(and(scope, before(last))).get()?.n ?? 0)
+    return { rows, anchor, remaining }
+  }
+
+  /**
+   * What the anchor's author changed from it on in projects, boards, columns and labels: these
+   * have no history, so undoing from it leaves them as they are, and says so. By what activity
+   * tells, each thing once, with its name as the latest change left it and its key in the trash.
+   */
+  private left(anchor: Row): { left: UndoLeftDTO[]; leftMore: number } {
+    const author = anchor.actorKind === 'agent' ? sql`actor_kind = 'agent' AND actor_token_id = ${anchor.actorTokenId ?? ''}` : sql`actor_kind = 'user' AND actor_user_id = ${anchor.actorUserId ?? ''}`
+    const types = JSON.stringify(LEFT_TYPES)
+    const scope = sql`workspace_id = ${anchor.workspaceId} AND ${author} AND created_at >= ${anchor.updatedAt.getTime()} AND entity_type IN (SELECT value FROM json_each(${types}))`
+    // Its name is the latest anyone gave it, as the person knows it now.
+    const found = this.deps.db.all<{ entityType: UndoLeftDTO['entityType']; entityId: string; title: string | null; actions: string }>(
+      sql`SELECT g.entityType, g.entityId, g.actions,
+            (SELECT summary FROM activity n WHERE n.workspace_id = ${anchor.workspaceId} AND n.entity_id = g.entityId ORDER BY n.created_at DESC, n.rowid DESC LIMIT 1) AS title
+          FROM (SELECT entity_type AS entityType, entity_id AS entityId, json_group_array(DISTINCT action) AS actions, min(rowid) AS first
+                FROM activity WHERE ${scope} GROUP BY entity_type, entity_id) g
+          ORDER BY g.first LIMIT ${MAX_LEFT + 1}`,
+    )
+    const total =
+      found.length > MAX_LEFT ? (this.deps.db.get<{ n: number }>(sql`SELECT count(*) AS n FROM (SELECT 1 FROM activity WHERE ${scope} GROUP BY entity_type, entity_id)`)?.n ?? found.length) : found.length
+    const left = found.slice(0, MAX_LEFT).map((r): UndoLeftDTO => {
+      const done = new Set((JSON.parse(r.actions) as string[]).map((a) => a.slice(a.indexOf('.') + 1)))
+      const trashKey = this.inTrash(anchor.workspaceId, r.entityType, r.entityId)
+      return {
+        entityType: r.entityType,
+        entityId: r.entityId,
+        title: r.title ?? '',
+        actions: LEFT_ACTIONS.filter((a) => done.has(a)),
+        ...(trashKey ? { trashKey } : {}),
+      }
+    })
+    return { left, leftMore: total - left.length }
   }
 
   private planItem(row: Row, check: Check, undoing: Set<string>, state?: State): UndoPlanItemDTO {
@@ -198,6 +255,7 @@ export class UndoService {
       entityTitle: title ?? (typeof row.meta.title === 'string' ? row.meta.title : ''),
       status: check.status,
       ...(check.reason ? { reason: check.reason } : {}),
+      ...(check.trashKey ? { trashKey: check.trashKey } : {}),
       ...(check.status === 'conflict' ? { changedBy: check.by !== undefined ? check.by : this.changedSince(row, check.exists === undefined, undoing, state), current: check.current ?? null } : {}),
     }
   }
@@ -258,15 +316,29 @@ export class UndoService {
   private laterChanges(row: Row, isValue: boolean, undoing: Set<string>, state?: State) {
     const author = (r: { kind: string; userId: string | null; tokenId: string | null }) => (r.kind === 'agent' ? `agent:${r.tokenId}` : `user:${r.userId}`)
     const own = author({ kind: row.actorKind, userId: row.actorUserId, tokenId: row.actorTokenId })
-    return this.deps.db
+    // After it: later, or in the same millisecond but recorded after it.
+    const after = () => or(gt(history.updatedAt, row.updatedAt), and(eq(history.updatedAt, row.updatedAt), sql`rowid > ${row.seq}`))
+    const later = this.deps.db
       .select({ id: history.id, kind: history.actorKind, userId: history.actorUserId, tokenId: history.actorTokenId, name: history.actorName, meta: history.meta })
       .from(history)
-      // After it: later, or in the same millisecond but recorded after it.
-      .where(and(this.sameThing(row, isValue, state), or(gt(history.updatedAt, row.updatedAt), and(eq(history.updatedAt, row.updatedAt), sql`rowid > ${row.seq}`))))
+      .where(and(this.sameThing(row, isValue, state), after()))
       .orderBy(desc(history.updatedAt), desc(sql`rowid`))
       .all()
       // Undoing the newer changes of the same batch records changes too: they don't count either.
-      .filter((r) => !undoing.has(r.id) && !undoing.has(String(r.meta.undoOf)) && (isValue || author(r) !== own))
+      .filter((r) => !undoing.has(r.id) && !undoing.has(String(r.meta.undoOf)))
+    // Nor does undoing a newer change by its own author, in an earlier batch or on its own: that
+    // puts back what this change left, as those newer changes go with it.
+    const undoneIds = [...new Set(later.map((r) => r.meta.undoOf).filter((v): v is string => typeof v === 'string'))]
+    const theirs = new Set<string>()
+    for (let i = 0; i < undoneIds.length; i += CHUNK) {
+      const undone = this.deps.db
+        .select({ id: history.id, kind: history.actorKind, userId: history.actorUserId, tokenId: history.actorTokenId })
+        .from(history)
+        .where(and(inArray(history.id, undoneIds.slice(i, i + CHUNK)), after()))
+        .all()
+      for (const r of undone) if (author(r) === own) theirs.add(r.id)
+    }
+    return later.filter((r) => !theirs.has(String(r.meta.undoOf)) && (isValue || author(r) !== own))
   }
 
   /** Who changed it after this change, besides the changes being undone with it. */
@@ -308,37 +380,45 @@ export class UndoService {
     return id !== null && Boolean(this.deps.db.select({ id: trash.id }).from(trash).where(eq(trash.id, id)).get())
   }
 
+  /** The key of `kind:id` in this workspace's trash, when it is there. */
+  private inTrash(workspaceId: string, kind: keyof typeof TRASH_TABLES, id: string | null) {
+    if (!id) return null
+    const table = TRASH_TABLES[kind]
+    const found = this.deps.db.get<{ found: number }>(
+      sql`SELECT 1 AS found FROM trash_rows r JOIN trash t ON t.id = r.trash_id WHERE t.workspace_id = ${workspaceId} AND r.table_name = ${table} AND json_extract(r.data, '$.id') = ${id} LIMIT 1`,
+    )
+    return found ? `${kind}:${id}` : null
+  }
+
   /**
-   * Where the page or card a deletion took away goes back, when that is not where it was:
-   * restoring puts it elsewhere if its place is gone by then (TrashService.place). By then, the
-   * newer changes being undone have brought back what they bring back (`state.restoring`).
-   * undefined: where it was; null: nowhere it fits.
+   * Whether the page or card a deletion took away can go back where it was: undoing never puts
+   * it anywhere else. Its place is there, or comes back with the newer changes being undone
+   * (`state.restoring`); a card follows its column if that went to another board. Otherwise:
+   * that place is in the trash (with its key there) or gone for good.
    */
-  private returnPlace(row: Row, state: State): PagePlace | CardPlace | null | undefined {
+  private returnPlace(row: Row, state: State): CardPlace | { reason: 'place_in_trash'; trashKey: string } | { reason: 'place_gone' } | undefined {
     const db = this.deps.db
     const trashId = typeof row.meta.trashId === 'string' ? row.meta.trashId : ''
     const [kept] = this.keptRows(new Set([trashId]), row.entityType === 'page' ? 'pages' : 'cards', 'id', row.entityId)
     if (!kept) return undefined
     const data = kept.data
+    const missing = (kind: 'project' | 'column' | 'page', id: string | null) => {
+      const trashKey = this.inTrash(row.workspaceId, kind, id)
+      return trashKey ? { reason: 'place_in_trash' as const, trashKey } : { reason: 'place_gone' as const }
+    }
     if (row.entityType === 'page') {
       const parentId = data.parent_id == null ? null : String(data.parent_id)
-      const parentThere = parentId !== null && (Boolean(db.get(sql`SELECT 1 AS found FROM pages WHERE id = ${parentId}`)) || this.keptRows(state.restoring, 'pages', 'id', parentId).length > 0)
-      if (parentThere) return undefined
-      // Without its parent, at the top of its project, or of the first project if that one is gone.
-      const project = db.get<{ id: string }>(sql`SELECT id FROM projects WHERE id = ${data.project_id}`)?.id ??
-        db.get<{ id: string }>(sql`SELECT id FROM projects WHERE workspace_id = ${row.workspaceId} ORDER BY position, id LIMIT 1`)?.id
-      if (!project) return null
-      return parentId === null && project === data.project_id ? undefined : { projectId: project, parentId: null }
+      if (parentId !== null) {
+        const there = Boolean(db.get(sql`SELECT 1 AS found FROM pages WHERE id = ${parentId}`)) || this.keptRows(state.restoring, 'pages', 'id', parentId).length > 0
+        return there ? undefined : missing('page', parentId)
+      }
+      const projectId = String(data.project_id)
+      return db.get(sql`SELECT 1 AS found FROM projects WHERE id = ${projectId}`) ? undefined : missing('project', projectId)
     }
-    // Its column, wherever it is now; or else the first column of its board, or of the first board.
-    const column = db.get<{ board_id: string }>(sql`SELECT board_id FROM board_columns WHERE id = ${data.column_id}`)
-    if (column) return column.board_id === data.board_id ? undefined : { boardId: column.board_id, columnId: String(data.column_id) }
-    const first = (scope: SQL) =>
-      db.get<{ id: string; board_id: string }>(
-        sql`SELECT c.id, b.id AS board_id FROM board_columns c JOIN boards b ON b.id = c.board_id JOIN projects p ON p.id = b.project_id WHERE ${scope} ORDER BY p.position, p.id, b.position, b.id, c.position, c.id LIMIT 1`,
-      )
-    const target = first(sql`c.board_id = ${data.board_id}`) ?? first(sql`c.workspace_id = ${row.workspaceId}`)
-    return target ? { boardId: target.board_id, columnId: target.id } : null
+    const columnId = String(data.column_id)
+    const column = db.get<{ board_id: string }>(sql`SELECT board_id FROM board_columns WHERE id = ${columnId}`)
+    if (!column) return missing('column', columnId)
+    return column.board_id === data.board_id ? undefined : { boardId: column.board_id, columnId }
   }
 
   /** How undoing this change stands, against `state`: now, and after the newer changes being undone. */
@@ -385,10 +465,15 @@ export class UndoService {
       place?: () => boolean,
       key = fieldKey(row),
       back: HistoryValue = before,
+      /** Where the old place is in the trash, when it is: its key there. */
+      inTrash?: () => string | null,
     ): Check => {
       const now = state.values.has(key) ? state.values.get(key)! : current
       if (same(now, back)) return { status: 'unchanged' }
-      if (place && !place()) return { status: 'impossible', reason: 'place_gone' }
+      if (place && !place()) {
+        const trashKey = inTrash?.()
+        return trashKey ? { status: 'impossible', reason: 'place_in_trash', trashKey } : { status: 'impossible', reason: 'place_gone' }
+      }
       const status = same(now, after) ? 'ready' : 'conflict'
       if (status === 'ready') state.values.set(key, back)
       return { status, current: now }
@@ -418,9 +503,9 @@ export class UndoService {
       case 'page.deleted':
       case 'card.deleted': {
         if (has(entityKey, () => entityExists)) return { status: 'unchanged' }
-        // Where it goes back: where it was, unless that place is gone by then.
+        // Where it goes back: where it was, and nowhere else.
         const place = this.returnPlace(row, state)
-        if (place === null) return { status: 'impossible', reason: 'place_gone' }
+        if (place && 'reason' in place) return { status: 'impossible', ...place }
         const check = bringBack(entityKey, () => entityExists)
         if (check.status === 'ready' && place) state.values.set(`${row.entityId}|${row.entityType}.moved|`, place)
         return check
@@ -456,7 +541,9 @@ export class UndoService {
           )
         }
         // One move, in the history of both places: keyed by the file, so undoing both entries moves it once.
-        return value({ cardId: at.cardId, pageId: at.pageId }, (a, b) => fileAt(a) === fileAt(b), there, key)
+        return value({ cardId: at.cardId, pageId: at.pageId }, (a, b) => fileAt(a) === fileAt(b), there, key, before, () =>
+          this.inTrash(row.workspaceId, back?.pageId ? 'page' : 'card', back?.pageId ?? back?.cardId ?? null),
+        )
       }
     }
 
@@ -482,6 +569,9 @@ export class UndoService {
               target === null ||
               Boolean(one(db.select({ id: pages.id }).from(pages).where(and(eq(pages.id, target ?? ''), eq(pages.projectId, page.projectId))))) ||
               kept('pages', target ?? '').some(({ data }) => data.project_id === page.projectId),
+            fieldKey(row),
+            before,
+            () => this.inTrash(row.workspaceId, 'page', target ?? null),
           )
         }
       }
@@ -552,6 +642,9 @@ export class UndoService {
             (a, b) => columnOf(a) === columnOf(b),
             // Its old column, on its board or another one of the same workspace.
             () => Boolean(one(db.select({ id: columns.id }).from(columns).where(and(eq(columns.id, target ?? ''), eq(columns.workspaceId, card.workspaceId))))),
+            key,
+            before,
+            () => this.inTrash(row.workspaceId, 'column', target ?? null),
           )
           // Back to another board, it leaves the labels it has on this one: newer labels are a conflict.
           const toOtherBoard = (before as CardPlace | null)?.boardId !== undefined && (before as CardPlace).boardId !== place.boardId

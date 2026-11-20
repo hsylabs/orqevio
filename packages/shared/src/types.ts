@@ -104,6 +104,17 @@ export interface BackupDTO {
   newer: boolean
 }
 
+/**
+ * Why backups can't be made or read where they go: the folder (or one inside it) isn't the app's
+ * to read and write, it is read-only, or its disk is full. `user` is the server's `uid:gid`.
+ */
+export interface BackupProblemDTO {
+  code: 'access' | 'readonly' | 'full' | 'other'
+  path: string
+  user: string | null
+  detail: string
+}
+
 /** `GET /backups`: where they are and the ones kept, newest first. */
 export interface BackupsDTO {
   /** Null when this copy makes no backups (BACKUPS=off, or no backups bucket bound). */
@@ -111,6 +122,16 @@ export interface BackupsDTO {
   /** How many daily (and manual) backups are kept. */
   keep: number
   backups: BackupDTO[]
+  /** Why backups can't be made or listed where they go, when that is so. */
+  problem?: BackupProblemDTO | null
+}
+
+/** An attachment a backup lists whose kept copy can't be put back: gone, cut short, or not what was kept. */
+export interface DamagedFileDTO {
+  /** Its storage key: what restoring without it names. */
+  key: string
+  name: string
+  reason: 'missing' | 'size' | 'changed'
 }
 
 /** `GET /auth/session` for visitors without a session. */
@@ -266,6 +287,8 @@ export interface ActivityDTO {
   actor: ActorRef
   meta: Record<string, string | number | boolean | null>
   createdAt: string
+  /** What it is about is in the trash now: its key there, to open it in the trash instead. */
+  inTrash?: string
 }
 
 export interface CardDetailDTO extends CardSummaryDTO {
@@ -337,6 +360,11 @@ export interface HomeDTO {
   dueCards: HomeCardDTO[]
   recentPages: Array<PageNodeDTO & { projectName: string }>
   activity: ActivityDTO[]
+}
+
+/** Whether an access still works: not revoked, and not past its expiry. */
+export function isTokenActive(token: Pick<TokenDTO, 'revokedAt' | 'expiresAt'>, now = new Date()) {
+  return !token.revokedAt && (!token.expiresAt || new Date(token.expiresAt) > now)
 }
 
 export interface TokenDTO {
@@ -440,6 +468,7 @@ export const TRASH_DAYS = 30
 
 /** What went to the trash along with the item itself, counted when it was deleted. */
 export interface TrashContents {
+  projects?: number
   boards?: number
   columns?: number
   cards?: number
@@ -448,22 +477,30 @@ export interface TrashContents {
   checklists?: number
   items?: number
   labels?: number
+  links?: number
 }
 
-export interface TrashEntryDTO {
-  id: string
-  kind: TrashKind
-  /** The id the item had, and gets back when restored. */
-  entityId: string
-  title: string
-  /** Where it was, for people: "Project › Board › Column". */
-  location: string
+/** Restoring several things at once: each one's plan, in the order asked, and whether all can go now. */
+export interface TrashPlanManyDTO {
+  plans: TrashPlanDTO[]
+  ready: boolean
+  /** Of those asked for, the ones that come back with another one (below it, or the other end of one of its relations), by key: with which. */
+  cameWith?: Record<string, string>
+  /** Of those asked for, the ones no longer in the trash. */
+  missing?: string[]
+}
+
+/** What restoring several things at once brought back, in the order asked. */
+export interface RestoredManyDTO {
+  restored: RestoredDTO[]
+}
+
+/** What deleting several things for good takes: how many were picked, and everything that goes with them. */
+export interface TrashPurgeSummaryDTO {
+  count: number
+  /** All that goes, the things picked included, by kind. */
   contents: TrashContents
-  /** Size of the attachments it holds. */
   bytes: number
-  deletedBy: ActorRef
-  deletedAt: string
-  expiresAt: string
 }
 
 /** The answer to deleting something that goes to the trash. Null when there was nothing to delete. */
@@ -474,10 +511,132 @@ export interface TrashedDTO {
 export interface RestoredDTO {
   kind: TrashKind
   entityId: string
-  /** The original place no longer exists, so it was put in the first one available. */
+  /** Where it went back when that is not where it was: a place chosen, or one made anew ("Project › Board"). */
   movedTo: string | null
   /** Where to open it in the app, relative to the workspace (`b/<id>`, `d/<id>`, `p/<id>`). */
   path: string | null
+  /** Where it is now, for people: "Project › Board › Column". */
+  location?: string
+  /** What came back with it (not counting it), and what stayed in the trash because it was left out. */
+  restored?: number
+  left?: number
+  /** It did not come back yet: a link waits in the trash for this page, and comes back with it. */
+  waitsFor?: string
+}
+
+// The trash as a tree. What was deleted hangs from what held it, also when that was deleted
+// later: a card deleted before its board shows inside the board. Nodes are keyed `kind:id`
+// (`link:<card id>:<page id>` for a link between a card and a page).
+
+/** Where something in the trash goes back: its place is there, in the trash too, or deleted for good. */
+export type TrashPlace = 'original' | 'trash' | 'gone'
+
+export interface TrashNodeDTO {
+  key: string
+  kind: TrashKind
+  entityId: string
+  title: string
+  /** What holds it in the trash; null at the top. */
+  parentKey: string | null
+  /** The deletion it went with. */
+  trashId: string
+  place: TrashPlace
+  /** At the top: where it goes back ("Project › Board"), or, when that is gone, where it was. */
+  location: string
+  /** Deleted on its own, before what holds it. */
+  earlier: boolean
+  /** Everything below it, counted; and of that, what was deleted before on its own. */
+  contents: TrashContents
+  earlierContents: TrashContents
+  /** Size of the files it holds, its own included. */
+  bytes: number
+  deletedBy: ActorRef
+  deletedAt: string
+  expiresAt: string
+}
+
+/** One thing in the trash with everything below it, and what holds it there (top first). */
+export interface TrashTreeDTO {
+  node: TrashNodeDTO
+  /** Everything below it, parents before children, each in its place. */
+  below: TrashNodeDTO[]
+  /** What holds it in the trash, top first; empty at the top. */
+  ancestors: { key: string; kind: TrashKind; title: string; trashId: string }[]
+}
+
+/** A container to put something restored in, when it goes somewhere else. */
+export type TrashPlaceKind = 'project' | 'board' | 'column' | 'card' | 'page' | 'checklist'
+
+export interface TrashPlanNodeDTO {
+  key: string
+  parentKey: string | null
+  kind: TrashKind
+  title: string
+  earlier: boolean
+  /** Comes back with this restore; left out ones stay in the trash. */
+  included: boolean
+}
+
+/**
+ * Something restored whose name is already used where it goes back (or that the person renamed
+ * because of that): its own name, the one it would have, the name of what it goes into, and
+ * whether that name is still taken there, and kept on purpose.
+ */
+export interface TrashConflictDTO {
+  key: string
+  kind: TrashKind
+  original: string
+  name: string
+  where: string
+  taken: boolean
+  kept: boolean
+}
+
+/**
+ * A relation of what comes back (a card's label, a link between a card and a page) whose other
+ * end is not there: in the trash ('trash'; it can come back too, or else the relation waits for
+ * it), deleted for good ('gone'; the relation is lost), or a label of another board than the
+ * card's now ('other_board'; it does not apply). Grouped by the other end.
+ */
+export interface TrashRelationDTO {
+  kind: 'label' | 'page' | 'card'
+  /** The other end, by name ('' when it is gone), and its key while it is in the trash. */
+  title: string
+  key: string | null
+  state: 'trash' | 'gone' | 'other_board'
+  /** How many of what comes back have it, and the first of them by name. */
+  count: number
+  first: string
+  /** For 'trash': whether it comes back too, and whether it can (where it goes is there). */
+  included: boolean
+  canInclude: boolean
+}
+
+export interface TrashPlanDTO {
+  node: TrashNodeDTO
+  /** It and everything below it, in tree order, each saying whether it comes back. */
+  nodes: TrashPlanNodeDTO[]
+  where: {
+    place: TrashPlace
+    /** How it goes back as asked: where it was, with its place recreated, or somewhere else. */
+    to: 'original' | 'recreate' | 'other' | null
+    /** What "recreate" brings back from the trash to hold it (only those, nothing else of them), top first; said whatever is asked. */
+    path: { key: string; kind: TrashKind; title: string }[]
+    /** What "recreate" makes anew because the original is deleted for good, top first. */
+    create: { kind: TrashKind; title: string }[]
+    canRecreate: boolean
+    /** What it can be put in instead; empty when it can't go anywhere else. */
+    choose: TrashPlaceKind[]
+    /** Where it ends up, as asked: "Project › Board › Column". */
+    location: string
+  }
+  conflicts: TrashConflictDTO[]
+  relations: TrashRelationDTO[]
+  /** Boards that would hold more columns than they take (MAX_COLUMNS), and how many. */
+  limits: { board: string; count: number; max: number }[]
+  /** Restoring as asked can go ahead; otherwise, what is missing: where to put it, which names, or room for columns. */
+  ready: boolean
+  missing: ('place' | 'names' | 'columns')[]
 }
 
 // ── History ──────────────────────────────────────────────────────
@@ -601,11 +760,25 @@ export interface UndoPlanItemDTO {
   /** The page or card, by name, as it is now (or was, if it is gone). */
   entityTitle: string
   status: UndoStatus
-  /** Why it can't be undone: the page or card is gone, its old place is, or the trash entry is. */
-  reason?: 'gone' | 'place_gone' | 'trash_gone' | 'refused'
+  /** Why it can't be undone: the page or card is gone, its old place is (or is in the trash), or the trash entry is. */
+  reason?: 'gone' | 'place_gone' | 'place_in_trash' | 'trash_gone' | 'refused'
+  /** For 'place_in_trash': the key of its place in the trash, to restore it from there. */
+  trashKey?: string
   /** For a conflict: who changed it since, and what it is now. */
   changedBy?: ActorRef | null
   current?: HistoryValue
+}
+
+/** Something an author changed that undoing from the history doesn't take back: it has no history. */
+export interface UndoLeftDTO {
+  entityType: 'project' | 'board' | 'column' | 'label'
+  entityId: string
+  /** Its name, as the latest of those changes left it. */
+  title: string
+  /** What they did to it, each once. */
+  actions: ('created' | 'updated' | 'moved' | 'deleted')[]
+  /** Its key in the trash, when it is there now. */
+  trashKey?: string
 }
 
 export interface UndoResultDTO {
@@ -615,4 +788,13 @@ export interface UndoResultDTO {
   undone: number
   skipped: number
   failed: number
+  /**
+   * With `since`: the changes from there on that this batch leaves for the next one, the oldest,
+   * as one batch covers up to 500. Ask again with `until` set to the plan's last entry.
+   */
+  remaining?: number
+  /** With `since`: what the author changed from there on in projects, boards, columns and labels, which this doesn't undo. */
+  left?: UndoLeftDTO[]
+  /** How many more of those there are than `left` lists. */
+  leftMore?: number
 }

@@ -30,7 +30,8 @@
     "titleFor": "Actividad de «{{name}}»",
     "showAll": "Ver todos",
     "loading": "Cargando…",
-    "empty": "Cuando un agente trabaje en este espacio, lo verás aquí."
+    "empty": "Cuando un agente trabaje en este espacio, lo verás aquí.",
+    "older": "Ver actividad anterior"
   },
   "tools": {
     "title": "Herramientas MCP",
@@ -41,11 +42,13 @@
       "tasksRead": "Tareas · lectura",
       "tasksWrite": "Tareas · escritura",
       "docsRead": "Documentos · lectura",
-      "docsWrite": "Documentos · escritura"
+      "docsWrite": "Documentos · escritura",
+      "organize": "Puede borrar y mover"
     },
     "descriptions": {
       "listProjects": "Proyectos, tableros y esquema de páginas",
       "search": "Búsqueda en tarjetas y páginas",
+      "readAttachments": "Leer adjuntos de texto e imágenes",
       "readBoards": "Columnas, tarjetas, checklists y vínculos",
       "editCards": "Crear, editar y mover tarjetas",
       "archiveCard": "Archivar (recuperable desde la app)",
@@ -53,8 +56,13 @@
       "labels": "Etiquetas y checklists",
       "readPages": "Árbol de páginas y contenido Markdown",
       "writePages": "Crear y actualizar con control de versión",
+      "movePage": "Mover páginas dentro de su proyecto",
+      "uploadAttachment": "Adjuntar archivos a tarjetas y páginas",
       "linkCard": "Relacionar tareas y documentos",
-      "createProject": "Crear proyectos"
+      "createProject": "Crear proyectos",
+      "deleteTasks": "Borrar tarjetas, tableros, columnas, etiquetas y checklists (a la papelera)",
+      "deleteDocs": "Borrar páginas, proyectos y adjuntos (a la papelera)",
+      "moveElsewhere": "Mover adjuntos y desvincular tarjetas de páginas"
     }
   },
   "revoke": {

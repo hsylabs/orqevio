@@ -13,7 +13,8 @@ import {
   type PageDTO,
   type SearchResultDTO,
   type TokenDTO,
-  type TrashEntryDTO,
+  type TrashNodeDTO,
+  type TrashTreeDTO,
   type UpdateStatusDTO,
 } from '@orqevio/shared'
 import { QueryClient, keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
@@ -127,8 +128,18 @@ export const useSearch = (wid: string, q: string, type?: 'card' | 'page', archiv
     staleTime: 10_000,
   })
 
+/** What is at the top of the trash. */
 export const useTrash = (wid: string) =>
-  useQuery({ queryKey: keys.trash(wid), queryFn: ({ signal }) => get<TrashEntryDTO[]>(`/workspaces/${wid}/trash`, signal) })
+  useQuery({ queryKey: keys.trash(wid), queryFn: ({ signal }) => get<TrashNodeDTO[]>(`/workspaces/${wid}/trash`, signal) })
+
+/** One thing in the trash with everything below it; kept under the trash's key, so changes refetch it too. */
+export const useTrashTree = (wid: string, key: string | null) =>
+  useQuery({
+    queryKey: [...keys.trash(wid), 'tree', key],
+    queryFn: ({ signal }) => get<TrashTreeDTO | null>(`/workspaces/${wid}/trash/${encodeURIComponent(key!)}`, signal),
+    enabled: key !== null,
+    retry: false,
+  })
 
 /** The changes of a page or a card, newest first, 50 at a time. */
 export const useHistory = (type: 'page' | 'card', id: string, enabled: boolean) =>
@@ -176,12 +187,18 @@ export const useUpdates = () =>
     retry: false,
   })
 
-export const useActivity = (wid: string, opts: { agentsOnly?: boolean; tokenId?: string } = {}) => {
-  const params = new URLSearchParams({ limit: '40' })
+/** The workspace's activity, newest first, `pageSize` entries at a time; only agents' with `agentsOnly`, one access's with `tokenId`. */
+export const useActivity = (wid: string, opts: { agentsOnly?: boolean; tokenId?: string; pageSize?: number } = {}) => {
+  const pageSize = opts.pageSize ?? 40
+  const params = new URLSearchParams({ limit: String(pageSize) })
   if (opts.agentsOnly) params.set('agents', '1')
   if (opts.tokenId) params.set('tokenId', opts.tokenId)
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: keys.activity(wid, params.toString()),
-    queryFn: ({ signal }) => get<ActivityDTO[]>(`/workspaces/${wid}/activity?${params}`, signal),
+    queryFn: ({ signal, pageParam }) =>
+      get<ActivityDTO[]>(`/workspaces/${wid}/activity?${params}${pageParam ? `&before=${encodeURIComponent(pageParam.createdAt)}&beforeId=${pageParam.id}` : ''}`, signal),
+    // The next page starts after the last entry: its time, and the entry itself for those of the same millisecond.
+    initialPageParam: null as Pick<ActivityDTO, 'id' | 'createdAt'> | null,
+    getNextPageParam: (last: ActivityDTO[]) => (last.length < pageSize ? undefined : { id: last.at(-1)!.id, createdAt: last.at(-1)!.createdAt }),
   })
 }

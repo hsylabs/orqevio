@@ -28,7 +28,7 @@ Y **nada de lo que hace un agente es definitivo.** Cualquier cambio se puede des
 - **Sin pisarse.** Los documentos y las descripciones de las tarjetas usan control de versiones optimista: si un agente edita una página o una tarjeta mientras escribes, Orqevio te avisa y eliges qué versión conservar.
 - **Nada se pierde por error.** Lo que borras espera 30 días en la papelera con todo lo que contenía: una página con sus subpáginas y archivos, una columna con sus tarjetas. Deshazlo al momento desde el aviso o restáuralo más tarde con un clic.
 - **Cada cambio tiene su historial y se puede deshacer.** Cada página y cada tarjeta guardan 30 días de cambios, de personas y de agentes: quién cambió qué y cuándo y, en los textos, qué cambió línea a línea, como un diff. Deshaz un cambio, vuelve a una versión anterior o deshaz todo lo que hizo un agente desde un momento dado; si alguien cambió lo mismo después, Orqevio pregunta antes.
-- **Tus datos, a salvo y tuyos.** Tu copia hace una copia de seguridad de sí misma cada día, aparte de sus datos, y restauras cualquiera de las 7 últimas desde **Ajustes**. **Exportar tus datos** te da todo en un ZIP que puedes leer sin Orqevio: tareas en JSON, documentos en Markdown y los adjuntos.
+- **Tus datos, a salvo y tuyos.** Tu copia hace una copia de seguridad de sí misma cada día, aparte de sus datos, y restauras cualquiera de las 7 últimas diarias, o de las 7 últimas que hiciste tú, desde **Ajustes**. **Exportar tus datos** te da todo en un ZIP que puedes leer sin Orqevio: tareas en JSON, documentos en Markdown y los adjuntos.
 - **Teclado primero.** `⌘K`/`Ctrl K` abre la paleta para buscar y saltar a cualquier sitio; `⌘\` oculta la barra lateral; el Kanban se puede reorganizar entero con teclado (espacio para coger, flechas, espacio para soltar), con anuncios para lector de pantalla.
 - **Identidad propia.** Papel cálido, tinta y dos señales de color: caqui para ti, ultramar para los agentes. Tipografía editorial (Fraunces) sobre una interfaz sobria (Instrument Sans). Tema claro y oscuro, con los tonos de texto ajustados a contraste WCAG AA.
 - **En tu idioma.** La app y el instalador hablan inglés, español, francés, portugués, italiano, alemán, neerlandés y japonés. Tu copia toma el idioma del navegador al reclamarla y puedes cambiarlo cuando quieras en **Ajustes**.
@@ -37,13 +37,13 @@ Y **nada de lo que hace un agente es definitivo.** Cualquier cambio se puede des
 
 Todo lo que cambian las personas y los agentes se puede recuperar durante 30 días.
 
-**Papelera.** Al borrar un proyecto, un tablero, una columna, una tarjeta, una página, un archivo, una etiqueta, una checklist o uno de sus elementos, o el enlace entre una tarjeta y una página, va a la **Papelera**, en la barra lateral, con todo lo que contenía. Justo después de borrar, **Deshacer** en el aviso lo trae de vuelta. En la **Papelera** ves qué es cada cosa, dónde estaba, quién la borró y cuándo se borrará para siempre, con **Restaurar** y **Borrar para siempre**. Restaurar lo deja todo como estaba; si su sitio ya no existe, la app dice dónde ha ido. Pasados 30 días, la papelera se vacía sola.
+**Papelera.** Al borrar un proyecto, un tablero, una columna, una tarjeta, una página, un archivo, una etiqueta, una checklist o uno de sus elementos, o el enlace entre una tarjeta y una página, va a la **Papelera**, en la barra lateral, con todo lo que contenía. Justo después de borrar, **Deshacer** en el aviso lo trae de vuelta. En la **Papelera**, una línea por cosa, ves qué es, dónde estaba y qué contiene, quién la borró y cuándo; lo que se borró dentro de otra cosa espera dentro de ella. **Restaurar** la devuelve a su sitio con lo que contiene; cuando antes hay algo que decidir (su sitio también está en la papelera o ya no existe, o allí ya hay algo con ese nombre), pregunta antes de hacer nada. Marca varias para restaurarlas juntas, viendo adónde va cada una, o para borrarlas para siempre, después de ver cuánto se va con ellas. Pasados 30 días, la papelera se vacía sola.
 
 **Historial.** **Historial**, en el menú de una tarjeta o una página, muestra sus cambios de los últimos 30 días: qué cambió, quién lo cambió (una persona, o qué agente) y cuándo. En el contenido de una página o la descripción de una tarjeta, **Ver qué cambió** muestra las líneas añadidas y quitadas.
 
 **Deshacer.** En el historial:
 - **Deshacer** devuelve lo que cambió un cambio, sin tocar lo que cambió después. Lo que añadió va a la papelera, y lo que borró vuelve.
-- **Deshacer todo lo que hizo Claude desde aquí**, en el cambio de un agente, deshace todo lo que hizo ese agente desde ese cambio, en tarjetas y páginas, después de decir qué abarca.
+- **Deshacer todo lo que hizo Claude desde aquí**, en el cambio de un agente, deshace todo lo que hizo ese agente desde ese cambio, en tarjetas y páginas, después de decir qué abarca. Más de 500 cambios se deshacen por tandas de hasta 500, empezando por los más recientes, y cada tanda se muestra antes de deshacerla. Lo que el agente cambió en proyectos, tableros, columnas y etiquetas no tiene historial: aparece en la lista como no deshecho, con un enlace a la papelera cuando está allí.
 - **Restaurar esta versión** deja el contenido de una página o la descripción de una tarjeta como estaba.
 
 Si alguien cambió lo mismo después del cambio que deshaces, Orqevio dice quién y pregunta antes. Deshacer es un cambio más, así que también se puede deshacer. Solo las personas deshacen.
@@ -107,7 +107,7 @@ clave de la bóveda ── AES-256-GCM, datos asociados = usuario + id del eleme
 - Los datos asociados de AES-GCM impiden que alguien con acceso a la base de datos intercambie elementos entre usuarios o entradas.
 - Al copiar una contraseña, una nota o un código, el portapapeles se vacía a los 30 segundos, salvo que hayas copiado otra cosa después. Los navegadores solo lo permiten con la pestaña delante (Firefox y Safari, solo justo después de un clic): si no, al volver Orqevio te ofrece vaciarlo con un clic. El generador usa aleatoriedad criptográfica sin sesgo.
 - Cambiar la contraseña maestra solo vuelve a envolver la clave: los elementos no se recifran. La clave de recuperación permite elegir una nueva contraseña maestra. Sin ninguna de las dos, los datos son irrecuperables por diseño.
-- Las rutas `/api/vault/*` rechazan cualquier petición con cabecera `Authorization` antes de leer datos, y el servidor MCP no expone ninguna herramienta de bóveda.
+- Las rutas `/api/vault/*` rechazan cualquier petición que lleve un token de agente u OAuth (`Authorization: Bearer …`) antes de leer datos, y el servidor MCP no expone ninguna herramienta de bóveda. Otras credenciales, como las de un proxy inverso que pide contraseña, dejan la petición a tu sesión.
 
 **Agentes**
 - Cada token pertenece a un único espacio y tiene permisos por área: tareas y documentos (sin acceso, lectura, o lectura y escritura). Se muestra una sola vez y se guarda su hash.
@@ -138,7 +138,7 @@ docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 
 La app queda en el puerto 3000 y aplica las migraciones al arrancar. Ponla detrás de un proxy inverso con HTTPS (Caddy, Nginx, Traefik) y, en ese caso, añade `TRUST_PROXY=true` (o el número de proxies que hay delante, como `2` para una CDN más Nginx). El proxy también puede pedir una contraseña (autenticación básica HTTP). Los agentes envían su propia cabecera `Authorization: Bearer`, con un token que Orqevio comprueba por su cuenta: si conectas alguno, deja pasar sin la contraseña las peticiones que lleven uno, y también `/mcp`, `/oauth/` y `/.well-known/`, a los que los clientes OAuth llegan antes de tener token. Deja pasar también el tiempo real (`/api/workspaces/…/live`): Safari no envía la contraseña al abrirlo, y Orqevio comprueba la sesión por su cuenta. [`apps/web/e2e/proxy/nginx.conf`](apps/web/e2e/proxy/nginx.conf) hace todo esto con Nginx. La base de datos SQLite y los adjuntos se guardan en el volumen `orqevio-data`.
 
-**Copias de seguridad.** Tu copia hace una copia de seguridad de sí misma cada día: la base de datos y los adjuntos, tal cual, en la carpeta `backups` del volumen (`/data/backups`). Conserva las 7 últimas. **Ajustes → Copias de seguridad** las muestra, hace una en el momento con **Hacer una copia ahora** y restaura cualquiera de ellas tras escribir tu clave de acceso. Antes de restaurar, hace una copia de cómo está todo, para que puedas volver. Para tenerlas también fuera del servidor, sácalas de vez en cuando o pon en `BACKUP_DIR` una carpeta que montes desde otro disco:
+**Copias de seguridad.** Tu copia hace una copia de seguridad de sí misma cada día: la base de datos y los adjuntos, tal cual, en la carpeta `backups` del volumen (`/data/backups`). Conserva las 7 últimas copias diarias y, aparte, las 7 últimas que hayas hecho con **Hacer una copia ahora**. **Ajustes → Copias de seguridad** las muestra, hace una en el momento con **Hacer una copia ahora** y restaura cualquiera de ellas tras escribir tu clave de acceso. Antes de restaurar, hace una copia de cómo está todo, para que puedas volver. Para tenerlas también fuera del servidor, sácalas de vez en cuando o pon en `BACKUP_DIR` una carpeta que montes desde otro disco:
 
 ```bash
 docker compose cp app:/data/backups ./orqevio-backups
@@ -146,7 +146,11 @@ docker compose cp app:/data/backups ./orqevio-backups
 
 En un servidor nuevo se recuperan igual: pon la carpeta en el volumen de la copia nueva (o móntala como `BACKUP_DIR`), reclama la copia y restáurala desde **Ajustes → Copias de seguridad**. `BACKUPS=off` las desactiva.
 
-**Exportación.** **Ajustes → Exportar tus datos** descarga un ZIP que puedes leer sin Orqevio: las tareas de cada espacio en JSON, sus documentos en Markdown y los adjuntos, con los enlaces entre ellos apuntando a los archivos. La bóveda tiene su propia exportación cifrada.
+La carpeta de copias tiene que poder leerla y escribirla la app, que se ejecuta como el usuario `orqevio` de la imagen (uid 100). Una carpeta que montes necesita `sudo chown -R 100:101 <carpeta>` en el servidor; lo que `docker compose cp` copia en el volumen queda a nombre de root, así que devuélveselo con `docker compose run --rm --user root app chown -R orqevio:orqevio /data/backups`. Si la carpeta no es de la app, es de solo lectura o está llena, el registro lo dice al arrancar, y **Ajustes → Copias de seguridad** dice por qué y qué hacer.
+
+Al restaurar, se comprueba cada adjunto que necesita la copia a medida que se repone, y no se cambia nada hasta que todos están bien: si alguno falta, está cortado o no es el que era al guardarlo, se nombra, y eliges restaurar sin él o dejar la copia como está.
+
+**Exportación.** **Ajustes → Exportar tus datos** descarga un ZIP que puedes leer sin Orqevio: las tareas de cada espacio en JSON, sus documentos en Markdown y los adjuntos, con los enlaces entre ellos apuntando a los archivos. Da igual lo grande que sea: pasados 4 GiB o 65.535 archivos es un ZIP64, que abren 7-Zip, unzip y bsdtar. La bóveda tiene su propia exportación cifrada.
 
 **Copias a mano.** Con la app en marcha, haz una copia en caliente de la base de datos y sácala del contenedor junto con los adjuntos, que están en la carpeta `uploads`:
 
@@ -156,7 +160,7 @@ docker compose cp app:/data/backup.db ./orqevio-copia.db
 docker compose cp app:/data/uploads ./orqevio-adjuntos
 ```
 
-Para restaurarla, para la app, vuelve a meter las dos cosas y deja que Orqevio coloque la base de datos. Guarda la que sustituye como `orqevio.db.before-restore` y devuelve los archivos al usuario de la app:
+Para restaurarla, para la app, vuelve a meter las dos cosas y deja que Orqevio coloque la base de datos. Se niega mientras la app está en marcha, porque se perdería lo que escribiera desde entonces. Guarda la que sustituye como `orqevio.db.before-restore` y devuelve los archivos al usuario de la app:
 
 ```bash
 docker compose stop app
@@ -208,7 +212,7 @@ Borra tu copia y todo lo que contiene, en un solo paso, después de que escribas
 - **Varias copias:** añade `--name <nombre>` a cualquiera de las órdenes.
 - **Varias cuentas de Cloudflare:** el instalador te pregunta cuál usar; también puedes indicarla con `--account <id>` o `CLOUDFLARE_ACCOUNT_ID`.
 - **Idioma:** el instalador habla el idioma de tu terminal; elige otro con `--lang <código>` (`en`, `es`, `fr`, `pt`, `it`, `de`, `nl` o `ja`).
-- **Copias de seguridad:** tu copia hace una copia de seguridad de sí misma cada día en su bucket de copias, y conserva las 7 últimas. **Ajustes → Copias de seguridad** las muestra, hace una en el momento y restaura cualquiera de ellas; **Ajustes → Exportar tus datos** descarga todo en un ZIP legible. Las copias instaladas antes de la 1.2.0 reciben el bucket con su siguiente actualización y hacen su primera copia antes de una hora. Una copia que vuelvas a instalar con el mismo nombre encuentra las copias de seguridad de la anterior, si las conservaste al desinstalar, y puede restaurarlas desde **Ajustes → Copias de seguridad**.
+- **Copias de seguridad:** tu copia hace una copia de seguridad de sí misma cada día en su bucket de copias, y conserva las 7 últimas copias diarias y, aparte, las 7 últimas hechas a mano. **Ajustes → Copias de seguridad** las muestra, hace una en el momento y restaura cualquiera de ellas; **Ajustes → Exportar tus datos** descarga todo en un ZIP legible. Las copias instaladas antes de la 1.2.0 reciben el bucket con su siguiente actualización y hacen su primera copia antes de una hora. Una copia que vuelvas a instalar con el mismo nombre encuentra las copias de seguridad de la anterior, si las conservaste al desinstalar, y puede restaurarlas desde **Ajustes → Copias de seguridad**.
 - **Tus ajustes se conservan:** las variables que pongas en el panel de Cloudflare (`APP_URL`, `MAX_UPLOAD_MB`) sobreviven a las actualizaciones.
 - **Privacidad:** el instalador desactiva la telemetría anónima de Wrangler, salvo que tú la hayas activado.
 - **Lo que hace exactamente:**
@@ -395,7 +399,7 @@ claude mcp add --transport http orqevio https://tu-dominio/mcp --header "Authori
 | --- | --- |
 | Cualquier lectura | `list_projects`, `search`, `read_attachment` (texto como texto, imágenes como imágenes) |
 | Tareas · lectura | `get_board`, `get_card` |
-| Tareas · escritura | `create_card`, `update_card` (con `base_version` si cambia la descripción), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
+| Tareas · escritura | `create_card`, `update_card` (con `base_version` si cambia la descripción), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `create_checklist`, `add_checklist_items`, `update_checklist_item` |
 | Documentos · lectura | `list_pages`, `read_page` |
 | Documentos · escritura | `create_page`, `update_page` (título, icono y contenido: reemplazar con `base_version`, o añadir al final), `move_page` (dentro de su proyecto) |
 | Escritura + lectura de ambas áreas | `link_card_to_page` |
@@ -432,7 +436,7 @@ La misma batería se pasa contra el runtime de Cloudflare en local (`pnpm --filt
 E2E_BASE_URL=http://127.0.0.1:8787 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-La CI ejecuta las dos y, además, repite la batería contra el servidor de Node en Firefox y en WebKit (el motor de Safari), cada uno con una copia limpia. En local, instala el navegador y elígelo con `E2E_BROWSER`, también contra una copia recién creada:
+La CI ejecuta las dos y, además, repite la batería contra el servidor de Node en Firefox y en WebKit (el motor de Safari), cada uno con una copia limpia, y contra la imagen de Docker, directamente y detrás de un proxy que pide contraseña. Juntas suman cerca de una hora de máquina en cada pasada, así que se ejecutan en los PR hacia `main` y cuando se lanzan a mano (Actions → CI → Run workflow). Los PR hacia `develop` y los envíos a `develop` y `main` pasan el typecheck, `pnpm test` y la compilación. En local, instala el navegador y elígelo con `E2E_BROWSER`, también contra una copia recién creada:
 
 ```bash
 pnpm --filter @orqevio/web exec playwright install firefox

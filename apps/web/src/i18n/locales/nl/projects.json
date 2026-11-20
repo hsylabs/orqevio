@@ -18,9 +18,7 @@
     "new": "Nieuwe pagina",
     "subpages_one": "{{count}} subpagina",
     "subpages_other": "{{count}} subpagina’s",
-    "emptyTitle": "Nog geen documenten",
-    "emptyAction": "Schrijf de eerste pagina",
-    "emptyBody": "Specificaties, besluiten, processen of vergadernotities. In Markdown en gekoppeld aan je taken."
+    "empty": "Schrijf een pagina om dit project te documenteren, zoals specificaties, besluiten of vergadernotities."
   },
   "recent": "Recent bewerkt"
 }

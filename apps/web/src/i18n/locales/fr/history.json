@@ -22,6 +22,7 @@
   "noLineChanges": "Aucune ligne n’a changé.",
   "movedTo": "Son emplacement n’existait plus, elle est donc allée dans {{place}}",
   "quoted": "« {{name}} »",
+  "unnamedLabel": "(sans nom)",
   "kinds": {
     "page": {
       "created": "<actor>{{actor}}</actor> a créé cette page",
@@ -103,6 +104,7 @@
     "impossible": {
       "gone": "« {{title}} » n’existe plus.",
       "place_gone": "L’emplacement de « {{title}} » n’existe plus.",
+      "place_in_trash": "L’emplacement de « {{title}} » est dans la corbeille.",
       "trash_gone": "« {{title}} » a été supprimé définitivement de la corbeille.",
       "refused": "Impossible d’annuler « {{title}} »."
     },
@@ -134,7 +136,56 @@
       "force": "Tout annuler quand même",
       "confirm_one": "Annuler {{count}} modification",
       "confirm_many": "Annuler {{count}} modifications",
-      "confirm_other": "Annuler {{count}} modifications"
+      "confirm_other": "Annuler {{count}} modifications",
+      "nothingInBatch": "Plus rien à annuler dans ce lot",
+      "next_one": "Voir la précédente",
+      "next_many": "Voir les {{count}} précédentes",
+      "next_other": "Voir les {{count}} précédentes",
+      "undoneBefore_one": "{{count}} modification déjà annulée ; voici le lot suivant.",
+      "undoneBefore_many": "{{count}} modifications déjà annulées ; voici le lot suivant.",
+      "undoneBefore_other": "{{count}} modifications déjà annulées ; voici le lot suivant.",
+      "remaining_one": "Les modifications s’annulent par lots de 500 au plus. Il en reste {{count}} plus ancienne, celle que vous avez choisie : elle s’affichera à la fin de ce lot.",
+      "remaining_many": "Les modifications s’annulent par lots de 500 au plus. Il en reste {{count}} plus anciennes, dont celle que vous avez choisie : elles s’afficheront à la fin de ce lot.",
+      "remaining_other": "Les modifications s’annulent par lots de 500 au plus. Il en reste {{count}} plus anciennes, dont celle que vous avez choisie : elles s’afficheront à la fin de ce lot."
+    },
+    "left": {
+      "title": "Non annulé ici",
+      "body": "Les projets, tableaux, colonnes et étiquettes n’ont pas d’historique : ce que {{name}} y a modifié reste tel quel.",
+      "item": {
+        "project": "Projet « {{title}} » : {{actions}}",
+        "board": "Tableau « {{title}} » : {{actions}}",
+        "column": "Colonne « {{title}} » : {{actions}}",
+        "label": "Étiquette « {{title}} » : {{actions}}"
+      },
+      "actions": {
+        "project": {
+          "created": "créé",
+          "updated": "modifié",
+          "moved": "déplacé",
+          "deleted": "supprimé"
+        },
+        "board": {
+          "created": "créé",
+          "updated": "modifié",
+          "moved": "déplacé",
+          "deleted": "supprimé"
+        },
+        "column": {
+          "created": "créée",
+          "updated": "modifiée",
+          "moved": "déplacée",
+          "deleted": "supprimée"
+        },
+        "label": {
+          "created": "créée",
+          "updated": "modifiée",
+          "moved": "déplacée",
+          "deleted": "supprimée"
+        }
+      },
+      "more_one": "Et {{count}} de plus.",
+      "more_many": "Et {{count}} de plus.",
+      "more_other": "Et {{count}} de plus."
     }
   }
 }

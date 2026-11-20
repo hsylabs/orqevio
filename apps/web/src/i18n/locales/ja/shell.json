@@ -1,4 +1,5 @@
 {
+  "notifications": "通知",
   "nav": {
     "label": "メインナビゲーション",
     "search": "検索または移動…",
@@ -57,7 +58,8 @@
     "hideSidebar": "サイドバーを隠す",
     "showSidebar": "サイドバーを表示",
     "toggleSidebar": "サイドバーの表示を切り替え",
-    "breadcrumb": "パンくずリスト"
+    "breadcrumb": "パンくずリスト",
+    "moreCrumbs": "途中の階層を表示"
   },
   "newProject": {
     "title": "新規プロジェクト",

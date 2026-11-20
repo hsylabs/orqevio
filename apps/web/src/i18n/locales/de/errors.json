@@ -19,7 +19,15 @@
     "vault_item_changed": "Dieser Eintrag wurde in einem anderen Tab oder auf einem anderen Gerät geändert. Du siehst ihn jetzt so, wie er ist: Nimm deine Änderung erneut vor, wenn sie noch nötig ist.",
     "too_many_columns": "Ein Board kann bis zu 20 Spalten enthalten.",
     "vault_full": "Der Tresor fasst bis zu 5.000 Einträge. Lösche die, die du nicht mehr brauchst, um weitere hinzuzufügen.",
-    "unauthorized": "Deine Sitzung ist beendet. Melde dich erneut an."
+    "unauthorized": "Deine Sitzung ist beendet. Melde dich erneut an.",
+    "backup_folder": "Das Backup konnte nicht erstellt werden: Mit dem Backup-Ordner stimmt etwas nicht. Siehe den Hinweis in den Einstellungen.",
+    "backup_damaged": "Diese Sicherung ist beschädigt oder unvollständig und lässt sich nicht wiederherstellen. Nimm eine andere.",
+    "backup_newer": "Diese Sicherung stammt von einer neueren Orqevio-Version: Aktualisiere diese Instanz, bevor du sie wiederherstellst.",
+    "backup_running": "Es wird schon eine Sicherung erstellt oder wiederhergestellt. Warte, bis sie fertig ist.",
+    "backups_off": "Diese Instanz erstellt keine Sicherungen.",
+    "restoring": "Gerade wird eine Sicherung wiederhergestellt: Lade die Datei gleich noch einmal hoch.",
+    "file_empty": "Die Datei ist leer.",
+    "uninstalled": "Diese Orqevio-Instanz wurde deinstalliert."
   },
   "notFound": "Das Element wurde nicht gefunden.",
   "server": "Auf dem Server ist etwas schiefgelaufen. Versuch es noch einmal.",

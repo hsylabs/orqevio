@@ -73,7 +73,9 @@ function Entry({ entry, last, undo }: { entry: HistoryEntryDTO; last: boolean; u
           <time dateTime={entry.updatedAt}>{relativeTime(entry.updatedAt)}</time>
           {entry.actor.kind === 'agent' && <span>{t('activity:viaMcp')}</span>}
           {body && (
-            <span aria-label={t('lines', { added: entry.meta.linesAdded ?? 0, removed: entry.meta.linesRemoved ?? 0 })}>
+            <span>
+              {/* A label on a plain span is not read: the words go in text that only screen readers get. */}
+              <span className="sr-only">{t('lines', { added: entry.meta.linesAdded ?? 0, removed: entry.meta.linesRemoved ?? 0 })}</span>
               <span className="text-ok" aria-hidden="true">
                 +{String(entry.meta.linesAdded ?? 0)}
               </span>{' '}
@@ -213,8 +215,8 @@ function describe(entry: HistoryEntryDTO): { key: KindKey; values: Record<string
   const { kind, before, after, meta } = entry
   const text = (value: unknown) => (typeof value === 'string' ? value : '')
   const names = (value: unknown) => (Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [])
-  // Each name in the quotes of the language shown.
-  const quoted = (list: string[]) => formatList(list.map((name) => t('history:quoted', { name })))
+  // Each name in the quotes of the language shown; a label without one is said so, not shown as «».
+  const quoted = (list: string[]) => formatList(list.map((name) => (name ? t('history:quoted', { name }) : t('history:unnamedLabel'))))
   switch (kind) {
     case 'page.icon':
       return after ? { key: 'kinds.page.iconSet', values: { icon: text(after) } } : { key: 'kinds.page.iconRemoved', values: {} }

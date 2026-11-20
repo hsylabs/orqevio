@@ -28,7 +28,8 @@
     "titleFor": "「{{name}}」のアクティビティ",
     "showAll": "すべて表示",
     "loading": "読み込み中…",
-    "empty": "エージェントがこのワークスペースで作業すると、ここに表示されます。"
+    "empty": "エージェントがこのワークスペースで作業すると、ここに表示されます。",
+    "older": "以前のアクティビティを表示"
   },
   "tools": {
     "title": "MCPツール",
@@ -39,11 +40,13 @@
       "tasksRead": "タスク · 読み取り",
       "tasksWrite": "タスク · 書き込み",
       "docsRead": "ドキュメント · 読み取り",
-      "docsWrite": "ドキュメント · 書き込み"
+      "docsWrite": "ドキュメント · 書き込み",
+      "organize": "削除と移動を許可"
     },
     "descriptions": {
       "listProjects": "プロジェクト、ボード、ページ構成",
       "search": "カードとページを横断検索",
+      "readAttachments": "テキストと画像の添付ファイルを読む",
       "readBoards": "列、カード、チェックリスト、リンク",
       "editCards": "カードの作成、編集、移動",
       "archiveCard": "アーカイブ（アプリから復元可能）",
@@ -51,8 +54,13 @@
       "labels": "ラベルとチェックリスト",
       "readPages": "ページツリーとMarkdownの内容",
       "writePages": "作成と更新（バージョン管理付き）",
+      "movePage": "プロジェクト内でページを移動",
+      "uploadAttachment": "カードとページにファイルを添付",
       "linkCard": "タスクとドキュメントのリンク",
-      "createProject": "プロジェクトの作成"
+      "createProject": "プロジェクトの作成",
+      "deleteTasks": "カード、ボード、列、ラベル、チェックリストの削除（ゴミ箱へ）",
+      "deleteDocs": "ページ、プロジェクト、添付ファイルの削除（ゴミ箱へ）",
+      "moveElsewhere": "添付ファイルの移動とカードとページのリンク解除"
     }
   },
   "revoke": {

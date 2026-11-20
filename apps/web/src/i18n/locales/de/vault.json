@@ -56,7 +56,8 @@
     "filters": {
       "all": "Alle",
       "logins": "Logins",
-      "notes": "Notizen"
+      "notes": "Notizen",
+      "favorites": "Favoriten"
     },
     "label": "Tresoreinträge",
     "noMatches": "Keine Treffer.",
@@ -191,7 +192,8 @@
       "repeat": "Master-Passwort wiederholen",
       "busy": "Schlüssel werden erzeugt…",
       "submit": "Tresor erstellen",
-      "ready": "Dein Tresor ist bereit. Nur du kannst ihn öffnen."
+      "ready": "Dein Tresor ist bereit. Nur du kannst ihn öffnen.",
+      "elsewhere": "Der Tresor wurde zuerst in einem anderen Tab oder auf einem anderen Gerät eingerichtet, daher öffnet der hier angezeigte Wiederherstellungsschlüssel nichts. Nimm den dort angezeigten, mit dem dortigen Master-Passwort."
     },
     "recoveryKey": {
       "title": "Speichere deinen Wiederherstellungsschlüssel",
@@ -264,6 +266,15 @@
     "nothingNew": "Nichts Neues zu importieren",
     "duplicates_one": "{{count}} Eintrag ist bereits in deinem Tresor und wird übersprungen",
     "duplicates_other": "{{count}} Einträge sind bereits in deinem Tresor und werden übersprungen",
+    "room_one": "Nur {{count}} von {{total}} passt hinein: Der Tresor fasst bis zu {{max}} Einträge. Der erste wird importiert.",
+    "room_other": "Nur {{count}} von {{total}} passen hinein: Der Tresor fasst bis zu {{max}} Einträge. Die ersten {{count}} werden importiert.",
+    "full_one": "Der Tresor ist voll (er fasst bis zu {{max}} Einträge): {{count}} Eintrag wurde nicht importiert. Lösche einige, um Platz zu schaffen, und importiere die Datei erneut: Bereits importierte Einträge werden übersprungen.",
+    "full_other": "Der Tresor ist voll (er fasst bis zu {{max}} Einträge): {{count}} Einträge wurden nicht importiert. Lösche einige, um Platz zu schaffen, und importiere die Datei erneut: Bereits importierte Einträge werden übersprungen.",
+    "folders_one": "{{count}} Eintrag war in einem Ordner: Der Name des Ordners kommt in seine Notizen",
+    "folders_other": "{{count}} Einträge waren in Ordnern: Der Name ihres Ordners kommt in ihre Notizen",
+    "reprompt_one": "{{count}} Eintrag fragte erneut nach dem Master-Passwort, bevor Bitwarden ihn anzeigte; hier zeigt ihn der entsperrte Tresor",
+    "reprompt_other": "{{count}} Einträge fragten erneut nach dem Master-Passwort, bevor Bitwarden sie anzeigte; hier zeigt sie der entsperrte Tresor",
+    "noRoom": "Der Tresor ist voll: Er fasst bis zu {{max}} Einträge. Lösche einige, um Platz zu schaffen.",
     "extras_one": "{{count}} Eintrag hat benutzerdefinierte Felder, weitere Adressen oder frühere Passwörter: Sie kommen in seine Notizen",
     "extras_other": "{{count}} Einträge haben benutzerdefinierte Felder, weitere Adressen oder frühere Passwörter: Sie kommen in ihre Notizen",
     "passkeys_one": "{{count}} Login hat einen Passkey, der nicht importiert werden kann; der Rest des Logins schon",
@@ -289,7 +300,8 @@
     "extra": {
       "fields": "Benutzerdefinierte Felder:",
       "uris": "Weitere Adressen:",
-      "history": "Frühere Passwörter:"
+      "history": "Frühere Passwörter:",
+      "folder": "Ordner:"
     }
   },
   "export": {

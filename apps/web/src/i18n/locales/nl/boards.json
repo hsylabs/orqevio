@@ -89,7 +89,12 @@
     "hasDescription": "Heeft een beschrijving",
     "linkedDocs": "Gekoppelde documenten",
     "attachments": "Bijlagen",
-    "createdByName": "Aangemaakt door {{name}}"
+    "createdByName": "Aangemaakt door {{name}}",
+    "a11y": {
+      "labels": "Labels: {{list}}",
+      "due": "Deadline: {{date}}",
+      "checklist": "Checklist: {{done}} van {{total}} gedaan"
+    }
   },
   "sheet": {
     "fallbackTitle": "Kaart",
@@ -165,7 +170,8 @@
     "editNamed": "{{name}} bewerken",
     "editUnnamed": "Label bewerken",
     "create": "Label maken",
-    "deleted": "Label ‘{{name}}’ naar de prullenbak verplaatst"
+    "deleted": "Label ‘{{name}}’ naar de prullenbak verplaatst",
+    "deletedUnnamed": "Label zonder naam naar de prullenbak verplaatst"
   },
   "linked": {
     "mentioned": "vermeld",

@@ -23,11 +23,14 @@ test('importing from Bitwarden keeps custom fields, every address and older pass
 
     const bitwarden = {
       encrypted: false,
+      folders: [{ id: 'f1', name: 'Finanzas' }],
       items: [
         {
           type: 1,
           name: 'Banco',
           notes: 'Cuenta nómina',
+          folderId: 'f1',
+          reprompt: 1,
           login: { uris: [{ uri: 'https://banco.es' }, { uri: 'https://app.banco.es' }], username: 'ana', password: 'nueva', fido2Credentials: [{ credentialId: 'x' }] },
           fields: [{ name: 'PIN', value: '1234', type: 1 }],
           passwordHistory: [{ password: 'anterior', lastUsedDate: '2025-05-01T10:00:00.000Z' }],
@@ -47,6 +50,8 @@ test('importing from Bitwarden keeps custom fields, every address and older pass
     await expect(status).toContainText('1 credencial nueva')
     await expect(status).toContainText('1 elemento trae campos personalizados, más direcciones o contraseñas anteriores: se guardan en sus notas')
     await expect(status).toContainText('1 credencial tiene una llave de acceso (passkey), que no se puede importar; el resto de la credencial, sí')
+    await expect(status).toContainText('1 elemento estaba en una carpeta: el nombre de la carpeta se guarda en sus notas')
+    await expect(status).toContainText('1 elemento pedía otra vez la contraseña maestra para verlo en Bitwarden; aquí se ve con la bóveda desbloqueada')
     await expect(status).toContainText('1 elemento no es compatible (tarjetas, identidades o claves SSH) y no se importa')
     await expect(status).toContainText('1 elemento es más grande de lo que admite la bóveda y no se importa: Enorme')
     await dialog.screenshot({ path: testInfo.outputPath('1-revision-bitwarden.png'), animations: 'disabled' })
@@ -59,7 +64,21 @@ test('importing from Bitwarden keeps custom fields, every address and older pass
     await expect(page.getByText('PIN: 1234')).toBeVisible()
     await expect(page.getByText('https://app.banco.es')).toBeVisible()
     await expect(page.getByText('anterior (2025-05-01)')).toBeVisible()
+    await expect(page.getByText('Carpeta:')).toBeVisible()
+    await expect(page.getByText('Finanzas')).toBeVisible()
     await page.screenshot({ path: testInfo.outputPath('2-notas-con-lo-importado.png'), animations: 'disabled' })
+
+    // The same file again: nothing new, and nothing said about what it would have brought.
+    await page.getByRole('button', { name: 'Opciones de la bóveda' }).click()
+    await page.getByRole('menuitem', { name: 'Importar…' }).click()
+    const again = page.waitForEvent('filechooser')
+    await dialog.getByRole('button', { name: 'Elegir archivo' }).click()
+    await (await again).setFiles({ name: 'bitwarden.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(bitwarden)) })
+    await expect(status).toContainText('Nada nuevo que importar')
+    await expect(status).toContainText('1 elemento ya estaba en tu bóveda y se omite')
+    for (const said of ['campos personalizados', 'llave de acceso', 'carpeta', 'contraseña maestra']) await expect(status).not.toContainText(said)
+    await expect(dialog.getByRole('button', { name: /^Importar/ })).toBeDisabled()
+    await dialog.screenshot({ path: testInfo.outputPath('3-otra-vez-nada-nuevo.png'), animations: 'disabled' })
   } finally {
     await reset()
   }

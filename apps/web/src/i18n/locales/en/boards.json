@@ -89,7 +89,12 @@
     "hasDescription": "Has a description",
     "linkedDocs": "Linked documents",
     "attachments": "Attachments",
-    "createdByName": "Created by {{name}}"
+    "createdByName": "Created by {{name}}",
+    "a11y": {
+      "labels": "Labels: {{list}}",
+      "due": "Due: {{date}}",
+      "checklist": "Checklist: {{done}} of {{total}} done"
+    }
   },
   "sheet": {
     "fallbackTitle": "Card",
@@ -165,7 +170,8 @@
     "editNamed": "Edit {{name}}",
     "editUnnamed": "Edit label",
     "create": "Create label",
-    "deleted": "Label “{{name}}” moved to the trash"
+    "deleted": "Label “{{name}}” moved to the trash",
+    "deletedUnnamed": "Unnamed label moved to the trash"
   },
   "linked": {
     "mentioned": "mentioned",

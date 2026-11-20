@@ -1,4 +1,5 @@
 {
+  "notifications": "Notifications",
   "nav": {
     "label": "Main navigation",
     "search": "Search or jump to…",
@@ -57,7 +58,8 @@
     "hideSidebar": "Hide sidebar",
     "showSidebar": "Show sidebar",
     "toggleSidebar": "Toggle sidebar",
-    "breadcrumb": "Breadcrumb"
+    "breadcrumb": "Breadcrumb",
+    "moreCrumbs": "Show the levels in between"
   },
   "newProject": {
     "title": "New project",

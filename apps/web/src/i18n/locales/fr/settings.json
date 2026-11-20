@@ -79,9 +79,9 @@
     "missingFiles_other": "{{count}} pièces jointes n’ont pas pu y être copiées.",
     "newer": "Faite avec Orqevio {{version}} : mettez cette copie à jour pour la restaurer.",
     "restore": "Restaurer…",
-    "keep_one": "La dernière sauvegarde quotidienne est conservée, ainsi que celle faite avant la dernière restauration.",
-    "keep_many": "Les {{count}} dernières sauvegardes quotidiennes sont conservées, ainsi que celle faite avant la dernière restauration.",
-    "keep_other": "Les {{count}} dernières sauvegardes quotidiennes sont conservées, ainsi que celle faite avant la dernière restauration.",
+    "keep_one": "La dernière sauvegarde quotidienne est conservée, la dernière faite par vous, et celle faite avant la dernière restauration.",
+    "keep_many": "Les {{count}} dernières sauvegardes quotidiennes sont conservées, les {{count}} dernières faites par vous, et celle faite avant la dernière restauration.",
+    "keep_other": "Les {{count}} dernières sauvegardes quotidiennes sont conservées, les {{count}} dernières faites par vous, et celle faite avant la dernière restauration.",
     "restoreTitle": "Restaurer cette sauvegarde ?",
     "restoreDescription": "Cette copie redevient telle qu’elle était le {{date}}.",
     "restoreLoses": "Tout revient en arrière : espaces, documents, cartes, coffre-fort, agents, corbeille et historique. Ce qui a changé depuis est perdu.",
@@ -90,7 +90,27 @@
     "restoreAgents": "Les agents dont vous avez retiré l’accès depuis ne le récupèrent pas.",
     "accessKey": "Clé d’accès",
     "typeName": "Saisissez « {{name}} » pour confirmer",
-    "restoreConfirm": "Restaurer"
+    "restoreConfirm": "Restaurer",
+    "problem": {
+      "title": "Les sauvegardes ne peuvent pas être faites là",
+      "access": "Orqevio (l’utilisateur <code>{{user}}</code> du serveur) ne peut pas lire ou écrire dans <code>{{path}}</code>. Rendez-lui le dossier des sauvegardes : monté depuis le serveur, avec <code>sudo chown -R {{user}}</code> dessus ; dans le volume (ce que copie <code>docker compose cp</code> appartient à root), avec <code>docker compose run --rm --user root app chown -R orqevio:orqevio {{root}}</code>.",
+      "readonly": "<code>{{path}}</code> est en lecture seule.",
+      "full": "Le disque de <code>{{path}}</code> est plein.",
+      "other": "Impossible d’utiliser <code>{{path}}</code> : {{detail}}"
+    },
+    "damaged": {
+      "title_one": "{{count}} pièce jointe de cette sauvegarde est endommagée ou manque :",
+      "title_many": "{{count}} pièces jointes de cette sauvegarde sont endommagées ou manquent :",
+      "title_other": "{{count}} pièces jointes de cette sauvegarde sont endommagées ou manquent :",
+      "list": "Pièces jointes endommagées",
+      "reason": {
+        "missing": "manquante",
+        "size": "tronquée",
+        "changed": "modifiée"
+      },
+      "body": "Cette copie reste telle quelle. Si vous restaurez sans elles, leurs cartes et documents reviennent, mais pas ces fichiers.",
+      "confirm": "Restaurer sans ces fichiers"
+    }
   },
   "export": {
     "title": "Exporter vos données",

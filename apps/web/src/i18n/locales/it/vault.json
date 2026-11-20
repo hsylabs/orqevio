@@ -58,7 +58,8 @@
     "filters": {
       "all": "Tutti",
       "logins": "Login",
-      "notes": "Note"
+      "notes": "Note",
+      "favorites": "Preferiti"
     },
     "label": "Elementi della cassaforte",
     "noMatches": "Nessun risultato.",
@@ -196,7 +197,8 @@
       "repeat": "Ripeti la password principale",
       "busy": "Generazione delle chiavi…",
       "submit": "Crea cassaforte",
-      "ready": "La tua cassaforte è pronta. Solo tu puoi aprirla."
+      "ready": "La tua cassaforte è pronta. Solo tu puoi aprirla.",
+      "elsewhere": "La cassaforte è stata configurata prima in un’altra scheda o su un altro dispositivo, quindi la chiave di recupero mostrata qui non apre nulla. Usa quella mostrata lì, con la sua password principale."
     },
     "recoveryKey": {
       "title": "Salva la tua chiave di recupero",
@@ -273,6 +275,19 @@
     "duplicates_one": "{{count}} elemento è già nella tua cassaforte e verrà saltato",
     "duplicates_many": "{{count}} elementi sono già nella tua cassaforte e verranno saltati",
     "duplicates_other": "{{count}} elementi sono già nella tua cassaforte e verranno saltati",
+    "room_one": "Ci sta solo {{count}} dei {{total}}: la cassaforte contiene al massimo {{max}} elementi. Viene importato il primo.",
+    "room_many": "Ci stanno solo {{count}} dei {{total}}: la cassaforte contiene al massimo {{max}} elementi. Vengono importati i primi {{count}}.",
+    "room_other": "Ci stanno solo {{count}} dei {{total}}: la cassaforte contiene al massimo {{max}} elementi. Vengono importati i primi {{count}}.",
+    "full_one": "La cassaforte si è riempita (contiene al massimo {{max}} elementi): {{count}} elemento non è stato importato. Eliminane alcuni per fare spazio e importa di nuovo il file: gli elementi già importati verranno saltati.",
+    "full_many": "La cassaforte si è riempita (contiene al massimo {{max}} elementi): {{count}} elementi non sono stati importati. Eliminane alcuni per fare spazio e importa di nuovo il file: gli elementi già importati verranno saltati.",
+    "full_other": "La cassaforte si è riempita (contiene al massimo {{max}} elementi): {{count}} elementi non sono stati importati. Eliminane alcuni per fare spazio e importa di nuovo il file: gli elementi già importati verranno saltati.",
+    "folders_one": "{{count}} elemento era in una cartella: il nome della cartella viene salvato nelle sue note",
+    "folders_many": "{{count}} elementi erano in cartelle: il nome della loro cartella viene salvato nelle loro note",
+    "folders_other": "{{count}} elementi erano in cartelle: il nome della loro cartella viene salvato nelle loro note",
+    "reprompt_one": "{{count}} elemento chiedeva di nuovo la password principale prima che Bitwarden lo mostrasse; qui lo mostra la cassaforte sbloccata",
+    "reprompt_many": "{{count}} elementi chiedevano di nuovo la password principale prima che Bitwarden li mostrasse; qui li mostra la cassaforte sbloccata",
+    "reprompt_other": "{{count}} elementi chiedevano di nuovo la password principale prima che Bitwarden li mostrasse; qui li mostra la cassaforte sbloccata",
+    "noRoom": "La cassaforte è piena: contiene al massimo {{max}} elementi. Eliminane alcuni per fare spazio.",
     "extras_one": "{{count}} elemento ha campi personalizzati, altri indirizzi o password precedenti: vengono salvati nelle sue note",
     "extras_many": "{{count}} elementi hanno campi personalizzati, altri indirizzi o password precedenti: vengono salvati nelle loro note",
     "extras_other": "{{count}} elementi hanno campi personalizzati, altri indirizzi o password precedenti: vengono salvati nelle loro note",
@@ -305,7 +320,8 @@
     "extra": {
       "fields": "Campi personalizzati:",
       "uris": "Altri indirizzi:",
-      "history": "Password precedenti:"
+      "history": "Password precedenti:",
+      "folder": "Cartella:"
     }
   },
   "export": {

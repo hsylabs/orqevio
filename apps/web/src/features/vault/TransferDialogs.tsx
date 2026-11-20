@@ -1,3 +1,4 @@
+import { MAX_VAULT_ITEMS } from '@orqevio/shared'
 import { Download, FileUp, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { type FormEvent, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -7,11 +8,11 @@ import { Dialog } from '../../components/ui/Dialog'
 import { Field } from '../../components/ui/Field'
 import { Segmented } from '../../components/ui/Segmented'
 import { errorMessage } from '../../lib/api'
-import { formatList } from '../../lib/format'
+import { formatList, formatNumber } from '../../lib/format'
 import { type EncryptedExport, WrongSecretError, openExport, sealExport, unlockWithPassword } from './crypto'
 import { getSession } from './session'
 import { freshVaultState, lockIfVaultChanged } from './sync'
-import { type ImportSource, type ImportedItems, MAX_IMPORT_BYTES, decodeImport, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from './transfer'
+import { type ImportSource, type ImportedItems, MAX_IMPORT_BYTES, decodeImport, marked, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from './transfer'
 import type { VaultItem } from './types'
 import { VaultLockedError, importItems } from './upload'
 
@@ -104,9 +105,12 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     const { key } = getSession()
     setBusy(true)
     try {
-      const { saved, failed } = await importItems(review.fresh, setProgress)
-      if (failed) toast.error(t('import.failed', { count: failed }))
+      const { saved, failed, full, left } = await importItems(toImport, setProgress)
+      // What went in first: the last one said shows on top, and what didn't go in matters more.
       if (saved) toast.success(t('import.done', { count: saved }))
+      // Full meanwhile (another tab, an agent): said as such, with what didn't go in.
+      if (full) toast.error(t('import.full', { count: left, max: formatNumber(MAX_VAULT_ITEMS) }))
+      else if (failed) toast.error(t('import.failed', { count: failed }))
       onOpenChange(false)
       reset()
     } catch (err) {
@@ -119,6 +123,11 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
   const logins = review?.fresh.filter((i) => i.type === 'login').length ?? 0
   const notes = (review?.fresh.length ?? 0) - logins
+  // The vault holds up to MAX_VAULT_ITEMS: the first ones that fit are imported, and the summary says so.
+  const room = Math.max(0, MAX_VAULT_ITEMS - getSession().items.length)
+  const toImport = review ? review.fresh.slice(0, room) : []
+  // What the summary tells is about what is imported, not the duplicates left out.
+  const counts = review ? marked(toImport, review.marks) : null
   return (
     <Dialog
       open={open}
@@ -170,8 +179,15 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                     t('import.nothingNew')}
                 </li>
                 {review.duplicates > 0 && <li>{t('import.duplicates', { count: review.duplicates })}</li>}
-                {review.extras > 0 && <li>{t('import.extras', { count: review.extras })}</li>}
-                {review.passkeys > 0 && <li>{t('import.passkeys', { count: review.passkeys })}</li>}
+                {review.fresh.length > room && (
+                  <li className="text-danger">
+                    {room === 0 ? t('import.noRoom', { max: formatNumber(MAX_VAULT_ITEMS) }) : t('import.room', { count: room, total: review.fresh.length, max: formatNumber(MAX_VAULT_ITEMS) })}
+                  </li>
+                )}
+                {counts!.extras > 0 && <li>{t('import.extras', { count: counts!.extras })}</li>}
+                {counts!.folders > 0 && <li>{t('import.folders', { count: counts!.folders })}</li>}
+                {counts!.reprompts > 0 && <li>{t('import.reprompt', { count: counts!.reprompts })}</li>}
+                {counts!.passkeys > 0 && <li>{t('import.passkeys', { count: counts!.passkeys })}</li>}
                 {review.unsupported > 0 && <li>{t('import.unsupported', { count: review.unsupported })}</li>}
                 {review.tooLong.length > 0 && (
                   <li>{t('import.tooLong', { count: review.tooLong.length, titles: formatList(review.tooLong.slice(0, 3)) + (review.tooLong.length > 3 ? ' …' : '') })}</li>
@@ -189,8 +205,8 @@ export function ImportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               <Button variant="ghost" onClick={reset} disabled={busy}>
                 {t('import.chooseAnother')}
               </Button>
-              <Button variant="primary" icon={<ShieldCheck />} loading={busy} disabled={!review.fresh.length} onClick={() => void run()}>
-                {busy ? t('import.progress', { done: progress, total: review.fresh.length }) : t('import.submit', { count: review.fresh.length })}
+              <Button variant="primary" icon={<ShieldCheck />} loading={busy} disabled={!toImport.length} onClick={() => void run()}>
+                {busy ? t('import.progress', { done: progress, total: toImport.length }) : t('import.submit', { count: toImport.length })}
               </Button>
             </div>
           </>

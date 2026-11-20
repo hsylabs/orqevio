@@ -77,7 +77,7 @@
     "missingFiles_other": "{{count}}件の添付ファイルをコピーできませんでした。",
     "newer": "Orqevio {{version}}で作成されました。復元するには、このOrqevioを更新してください。",
     "restore": "復元…",
-    "keep_other": "直近{{count}}件の毎日のバックアップと、最後の復元の前に作成したバックアップを保管します。",
+    "keep_other": "直近{{count}}件の毎日のバックアップ、手動で作成した直近{{count}}件、最後の復元の前に作成したバックアップを保管します。",
     "restoreTitle": "このバックアップを復元しますか？",
     "restoreDescription": "このOrqevioは{{date}}の状態に戻ります。",
     "restoreLoses": "ワークスペース、ドキュメント、カード、保管庫、エージェント、ゴミ箱、履歴のすべてが戻ります。それ以降の変更は失われます。",
@@ -86,7 +86,25 @@
     "restoreAgents": "それ以降にアクセスを取り消したエージェントは、アクセスを取り戻しません。",
     "accessKey": "アクセスキー",
     "typeName": "確認のため「{{name}}」と入力してください",
-    "restoreConfirm": "復元"
+    "restoreConfirm": "復元",
+    "problem": {
+      "title": "その場所にはバックアップを作成できません",
+      "access": "Orqevio（サーバーのユーザー <code>{{user}}</code>）が <code>{{path}}</code> を読み書きできません。バックアップ用フォルダーをこのユーザーに戻してください。サーバーからマウントしている場合は <code>sudo chown -R {{user}}</code>、ボリューム内の場合（<code>docker compose cp</code> でコピーしたものは root の所有になります）は <code>docker compose run --rm --user root app chown -R orqevio:orqevio {{root}}</code> を実行します。",
+      "readonly": "<code>{{path}}</code> は読み取り専用です。",
+      "full": "<code>{{path}}</code> のディスクがいっぱいです。",
+      "other": "<code>{{path}}</code> を使用できません：{{detail}}"
+    },
+    "damaged": {
+      "title_other": "このバックアップの添付ファイル{{count}}件が破損しているか、見つかりません：",
+      "list": "破損した添付ファイル",
+      "reason": {
+        "missing": "見つかりません",
+        "size": "途中で切れています",
+        "changed": "内容が変わっています"
+      },
+      "body": "このコピーはそのままです。これらを除いて復元すると、カードやドキュメントは戻りますが、これらのファイルは戻りません。",
+      "confirm": "これらのファイルを除いて復元"
+    }
   },
   "export": {
     "title": "データのエクスポート",

@@ -4,12 +4,13 @@ import path from 'node:path'
 import { serve } from '@hono/node-server'
 import { createApp } from './app'
 import { MIN_SETUP_CODE_LENGTH, isWeakSetupCode } from './auth/crypto'
-import { FolderBackupStore } from './backups/store'
+import { FolderBackupStore, describeBackupProblem } from './backups/store'
 import { openDatabase, runMigrations } from './db/client'
 import { nodeSql } from './db/raw'
 import { configWarnings, loadEnvOrExit } from './env'
 import { RealtimeBus } from './lib/realtime'
 import { LocalStorage } from './lib/storage-local'
+import { keepConnectionsOpen } from './node/keep-alive'
 import { attachLiveUpdates } from './node/live'
 import { nodePlatform } from './node/platform'
 import { publicFetch } from './node/public-fetch'
@@ -32,6 +33,7 @@ const app = createApp(env, services, nodePlatform(env))
 const server = serve({ fetch: app.fetch, port: env.port, hostname: env.host }, (info) => {
   console.log(`Orqevio listening on http://${info.address}:${info.port} (public URL ${env.appUrls[0]})`)
 })
+keepConnectionsOpen(server as Server)
 const live = attachLiveUpdates(server as Server, env, services, bus)
 
 if (env.setupCode && isWeakSetupCode(env.setupCode)) {
@@ -39,8 +41,12 @@ if (env.setupCode && isWeakSetupCode(env.setupCode)) {
     `SETUP_CODE has fewer than ${MIN_SETUP_CODE_LENGTH} letters A–Z or digits (other characters don't count): this copy can't be claimed or recovered with it. Set a longer one.`,
   )
 }
-if (env.backupDir) console.log(`Daily backups go to ${env.backupDir}`)
-else console.log('Backups are off (BACKUPS=off)')
+if (env.backupDir) {
+  console.log(`Daily backups go to ${env.backupDir}`)
+  // A folder that isn't this user's (mounted, or copied in by root) would fail every hour in silence.
+  const problem = await backups?.check()
+  if (problem) console.warn(describeBackupProblem(problem, env.backupDir))
+} else console.log('Backups are off (BACKUPS=off)')
 const uninstalled = await services.accounts.uninstalled()
 if (uninstalled) {
   console.log(`This copy of Orqevio was uninstalled (${uninstalled.at}). Remove its container and data to finish: it can't be claimed again.`)

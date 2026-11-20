@@ -1,5 +1,5 @@
 import type { ActorRef, LinkedCardDTO, PageDTO, PageNodeDTO, PaletteColor } from '@orqevio/shared'
-import { MAX_MARKDOWN, extractReferences, pageCreateInput, pageMoveInput, pageUpdateInput } from '@orqevio/shared'
+import { MAX_MARKDOWN, characters, extractReferences, pageCreateInput, pageMoveInput, pageUpdateInput } from '@orqevio/shared'
 import { type SQL, and, asc, eq, isNull, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
@@ -221,13 +221,14 @@ export class PageService {
     return null
   }
 
+  /** Every page above it, the top one first, however deep it is. */
   private async breadcrumbs(page: PageRow) {
     if (!page.parentId) return []
     const rows = this.deps.db.all<{ id: string; title: string; icon: string | null; depth: number }>(sql`
       WITH RECURSIVE chain AS (
         SELECT id, parent_id, title, icon, 1 AS depth FROM pages WHERE id = ${page.parentId}
         UNION ALL
-        SELECT p.id, p.parent_id, p.title, p.icon, c.depth + 1 FROM pages p JOIN chain c ON p.id = c.parent_id WHERE c.depth < 32
+        SELECT p.id, p.parent_id, p.title, p.icon, c.depth + 1 FROM pages p JOIN chain c ON p.id = c.parent_id WHERE c.depth < ${MAX_TREE_DEPTH}
       )
       SELECT id, title, icon, depth FROM chain ORDER BY depth DESC`)
     return rows.map((r) => ({ id: r.id, title: r.title, icon: r.icon }))
@@ -257,8 +258,9 @@ export class PageService {
       if (data.icon !== undefined) patch.icon = data.icon
       if (data.content !== undefined) {
         // Each part fits, but together they may not: a page too long to save again from the editor.
-        const length = opts.append && prev.content !== '' ? prev.content.length + 2 + data.content.length : 0
-        if (length > MAX_MARKDOWN) throw pageTooLong(prev.content.length, length)
+        // Counted as the schemas count, so an emoji is one character here too.
+        const length = opts.append && prev.content !== '' ? characters(prev.content) + 2 + characters(data.content) : 0
+        if (length > MAX_MARKDOWN) throw pageTooLong(characters(prev.content), length)
         patch.content = opts.append
           ? sql`CASE WHEN ${pages.content} = '' THEN ${data.content} ELSE ${pages.content} || ${'\n\n'} || ${data.content} END`
           : data.content

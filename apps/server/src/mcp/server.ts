@@ -273,11 +273,11 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       'create_card',
       {
         title: 'Create card',
-        description: 'Creates a card in a column. Description is Markdown.',
+        description: `Creates a card in a column. description is Markdown, up to ${MAX_MARKDOWN} characters.`,
         inputSchema: {
           column_id: uuid,
           title: z.string().min(1).max(300),
-          description: z.string().max(50_000).optional(),
+          description: z.string().max(MAX_MARKDOWN).optional(),
           due_date: dueDate.optional(),
           label_ids: z.array(uuid).max(20).optional(),
           position: z.enum(['top', 'bottom']).default('bottom'),
@@ -302,11 +302,11 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       {
         title: 'Update card',
         description:
-          'Updates a card. Only the fields you send change. label_ids replaces the full label set. With a description, send base_version (the version from get_card) to avoid overwriting newer edits.',
+          `Updates a card. Only the fields you send change. label_ids replaces the full label set. description is Markdown, up to ${MAX_MARKDOWN} characters; with it, send base_version (the version from get_card) to avoid overwriting newer edits.`,
         inputSchema: {
           card_id: uuid,
           title: z.string().min(1).max(300).optional(),
-          description: z.string().max(50_000).optional(),
+          description: z.string().max(MAX_MARKDOWN).optional(),
           base_version: z.number().int().min(1).optional(),
           due_date: dueDate.nullable().optional(),
           label_ids: z.array(uuid).max(20).optional(),
@@ -420,11 +420,26 @@ export function createMcpServer(services: Services, actor: AgentActor) {
     )
 
     server.registerTool(
+      'create_checklist',
+      {
+        title: 'Create checklist',
+        description: 'Creates an empty checklist on a card. To create one with items, use add_checklist_items with checklist_title instead.',
+        inputSchema: { card_id: uuid, title: z.string().min(1).max(120) },
+        annotations: WRITE,
+      },
+      ({ card_id, title }) =>
+        run(async () => {
+          const checklist = await services.cards.createChecklist(actor, card_id, { title })
+          return { created: true, checklist_id: checklist.id, title: checklist.title }
+        }),
+    )
+
+    server.registerTool(
       'add_checklist_items',
       {
         title: 'Add checklist items',
         description:
-          'Adds items to a checklist of a card. Pass checklist_id to use an existing checklist; otherwise a new checklist is created with checklist_title.',
+          'Adds items to a checklist of a card. Pass checklist_id to use an existing checklist; otherwise a new checklist is created with checklist_title. For an empty checklist, use create_checklist.',
         inputSchema: {
           card_id: uuid,
           items: z.array(z.string().min(1).max(500)).min(1).max(50),
@@ -601,7 +616,7 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       (args) =>
         run(async () => {
           if ((args.card_id === undefined) === (args.page_id === undefined)) throw new AppError(400, 'bad_request', 'Send either card_id or page_id')
-          const bytes = args.encoding === 'base64' ? Uint8Array.from(Buffer.from(args.content, 'base64')) : new TextEncoder().encode(args.content)
+          const bytes = args.encoding === 'base64' ? fromBase64(args.content) : new TextEncoder().encode(args.content)
           if (bytes.byteLength > MCP_UPLOAD_MB * 1024 * 1024) throw new AppError(413, 'file_too_large', `Files uploaded by agents are limited to ${MCP_UPLOAD_MB} MB`)
           const type = args.mime_type ?? (args.encoding === 'text' ? 'text/plain; charset=utf-8' : 'application/octet-stream')
           const body = new Blob([bytes]).stream()
@@ -706,6 +721,20 @@ export function createMcpServer(services: Services, actor: AgentActor) {
 
   invalidParamsForMalformedRequests(server)
   return server
+}
+
+/**
+ * The bytes of base64 content, standard or URL-safe, spaces and line breaks allowed. Anything else
+ * (a `data:` URL, text that was never encoded) is refused: decoded leniently, it would be stored as
+ * a damaged file and reported uploaded.
+ */
+function fromBase64(content: string) {
+  if (/^data:[^,]*,/i.test(content)) throw new AppError(400, 'bad_request', 'content is a data: URL: send only the base64 after the comma')
+  const compact = content.replace(/\s+/g, '')
+  const unpadded = compact.replace(/={1,2}$/, '')
+  if (!/^[A-Za-z0-9+/]*$/.test(unpadded) && !/^[A-Za-z0-9_-]*$/.test(unpadded)) throw new AppError(400, 'bad_request', 'content is not valid base64')
+  if (unpadded.length % 4 === 1 || (compact.length !== unpadded.length && compact.length % 4 !== 0)) throw new AppError(400, 'bad_request', 'content is not valid base64: its length is not that of encoded bytes')
+  return Uint8Array.from(Buffer.from(unpadded, /[-_]/.test(unpadded) ? 'base64url' : 'base64'))
 }
 
 type RequestHandler = (request: unknown, extra: unknown) => Promise<unknown>

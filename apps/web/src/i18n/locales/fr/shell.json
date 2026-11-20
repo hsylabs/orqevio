@@ -1,4 +1,5 @@
 {
+  "notifications": "Notifications",
   "nav": {
     "label": "Navigation principale",
     "search": "Rechercher ou aller à…",
@@ -57,7 +58,8 @@
     "hideSidebar": "Masquer la barre latérale",
     "showSidebar": "Afficher la barre latérale",
     "toggleSidebar": "Afficher ou masquer la barre latérale",
-    "breadcrumb": "Fil d’Ariane"
+    "breadcrumb": "Fil d’Ariane",
+    "moreCrumbs": "Voir les niveaux intermédiaires"
   },
   "newProject": {
     "title": "Nouveau projet",

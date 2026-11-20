@@ -126,7 +126,7 @@
       },
       "image": {
         "title": "Imagen",
-        "subtitle": "Sube PNG, JPG, GIF o WebP",
+        "subtitle": "Sube PNG, JPG, GIF, WebP o AVIF",
         "keywords": "imagen image foto"
       },
       "file": {

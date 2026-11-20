@@ -3,9 +3,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { Button } from '../../components/ui/Button'
-import { EmptyState } from '../../components/ui/EmptyState'
 import { cn } from '../../lib/cn'
-import { relativeTime } from '../../lib/format'
+import { monogram, relativeTime } from '../../lib/format'
 import { PageHeader } from '../shell/PageHeader'
 import { ProjectSettingsDialog } from '../shell/ProjectSettingsDialog'
 import { useStructureActions } from '../shell/actions'
@@ -43,7 +42,7 @@ export function ProjectPage() {
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[1040px] px-6 py-10 sm:px-10">
           <div className="animate-rise flex items-start gap-4">
-            <span className={cn('glyph size-12 rounded-[12px] text-[22px]', `c-${project.color}`)}>{project.name[0]?.toUpperCase()}</span>
+            <span className={cn('glyph size-12 rounded-[12px] text-[22px]', `c-${project.color}`)}>{monogram(project.name)}</span>
             <div className="min-w-0">
               <h1 className="font-display text-[34px] leading-tight font-medium tracking-[-0.02em]">{project.name}</h1>
               <p className="mt-1 text-[14px] text-ink-2">
@@ -88,49 +87,48 @@ export function ProjectPage() {
             )}
           </section>
 
-          <section className="mt-10 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-            <div>
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('docs.title')}</h2>
-                <Button size="sm" variant="ghost" icon={<FilePlus />} onClick={() => void actions.createPage(project.id)}>
-                  {t('docs.new')}
-                </Button>
-              </div>
-              {roots.length ? (
-                <ul className="overflow-hidden rounded-[14px] border border-line bg-surface shadow-sm">
-                  {roots.map((p) => (
-                    <li key={p.id} className="border-b border-line last:border-b-0">
-                      <Link to={`/w/${workspaceId}/d/${p.id}`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-hover">
-                        <span className="w-5 text-center text-[16px]">{p.icon ?? <FileText className="size-4 text-ink-3" />}</span>
-                        <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{p.title || t('untitled', { ns: 'common' })}</span>
-                        {childCount(p.id) > 0 && <span className="text-[12px] text-ink-3">{t('docs.subpages', { count: childCount(p.id) })}</span>}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <EmptyState icon={<FileText />} title={t('docs.emptyTitle')} action={<Button variant="primary" icon={<FilePlus />} onClick={() => void actions.createPage(project.id)}>{t('docs.emptyAction')}</Button>}>
-                  {t('docs.emptyBody')}
-                </EmptyState>
-              )}
+          <section className="mt-10">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('docs.title')}</h2>
+              <Button size="sm" variant="ghost" icon={<FilePlus />} onClick={() => void actions.createPage(project.id)}>
+                {t('docs.new')}
+              </Button>
             </div>
-            {recent.length > 0 && (
-              <div>
-                <h2 className="mb-3 text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('recent')}</h2>
-                <ul className="flex flex-col gap-1">
-                  {recent.map((p) => (
-                    <li key={p.id}>
-                      <Link to={`/w/${workspaceId}/d/${p.id}`} className="flex items-center gap-2.5 rounded-[9px] px-2 py-1.5 hover:bg-hover">
-                        <span className="w-4 text-center text-[13px]">{p.icon ?? <FileText className="size-3.5 text-ink-3" />}</span>
-                        <span className="min-w-0 flex-1 truncate text-[13.5px]">{p.title || t('untitled', { ns: 'common' })}</span>
-                        <span className="text-[11.5px] text-ink-3">{relativeTime(p.updatedAt)}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            {roots.length ? (
+              <ul className="overflow-hidden rounded-[14px] border border-line bg-surface shadow-sm">
+                {roots.map((p) => (
+                  <li key={p.id} className="border-b border-line last:border-b-0">
+                    <Link to={`/w/${workspaceId}/d/${p.id}`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-hover">
+                      <span className="w-5 text-center text-[16px]">{p.icon ?? <FileText className="size-4 text-ink-3" />}</span>
+                      <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{p.title || t('untitled', { ns: 'common' })}</span>
+                      {childCount(p.id) > 0 && <span className="text-[12px] text-ink-3">{t('docs.subpages', { count: childCount(p.id) })}</span>}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <button type="button" onClick={() => void actions.createPage(project.id)} className="w-full rounded-[14px] border border-dashed border-line-strong px-5 py-8 text-center text-[13.5px] text-ink-3 transition-colors hover:border-ink-3 hover:text-ink-2">
+                {t('docs.empty')}
+              </button>
             )}
           </section>
+
+          {recent.length > 0 && (
+            <section className="mt-10">
+              <h2 className="mb-3 text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('recent')}</h2>
+              <ul className="overflow-hidden rounded-[14px] border border-line bg-surface shadow-sm">
+                {recent.map((p) => (
+                  <li key={p.id} className="border-b border-line last:border-b-0">
+                    <Link to={`/w/${workspaceId}/d/${p.id}`} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-hover">
+                      <span className="w-5 text-center text-[15px]">{p.icon ?? <FileText className="size-4 text-ink-3" />}</span>
+                      <span className="min-w-0 flex-1 truncate text-[13.5px]">{p.title || t('untitled', { ns: 'common' })}</span>
+                      <span className="shrink-0 text-[12px] text-ink-3">{relativeTime(p.updatedAt)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       </div>
       <ProjectSettingsDialog project={project} open={settingsOpen} onOpenChange={setSettingsOpen} />

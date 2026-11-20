@@ -1,7 +1,7 @@
 import i18next from 'i18next'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { WrongSecretError, encryptItem, itemEnvelopeLength, openExport, sealExport } from '../src/features/vault/crypto'
-import { MAX_IMPORT_BYTES, UnclosedQuoteError, decodeImport, parseCsv, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from '../src/features/vault/transfer'
+import { MAX_IMPORT_BYTES, UnclosedQuoteError, decodeImport, marked, parseCsv, readDecryptedExport, readImport, toBitwardenJson, withoutDuplicates } from '../src/features/vault/transfer'
 import { ITEM_LIMITS, type VaultItem, emptyItem, tidyItem } from '../src/features/vault/types'
 import vault from '../src/i18n/locales/es/vault.json'
 import { MAX_ENVELOPE_LENGTH, MAX_VAULT_ITEMS } from '@orqevio/shared'
@@ -89,9 +89,50 @@ describe('importing', () => {
     )
     expect(result.source).toBe('Bitwarden (CSV)')
     expect(result.items.map(fields)).toEqual([
-      { type: 'login', title: 'Twitter', url: 'twitter.com', username: 'me@example.com', password: 'password123', notes: '', totp: 'JBSWY3DPEHPK3PXP', favorite: true },
+      // Its folder isn't lost: it goes into its notes, and the summary says so.
+      { type: 'login', title: 'Twitter', url: 'twitter.com', username: 'me@example.com', password: 'password123', notes: 'Carpeta:\nSocial', totp: 'JBSWY3DPEHPK3PXP', favorite: true },
       { type: 'note', title: 'Códigos de respaldo', url: '', username: '', password: '', notes: '1111\n2222', totp: '', favorite: false },
     ])
+    expect(marked(result.items, result.marks)).toEqual({ extras: 0, passkeys: 0, folders: 1, reprompts: 0 })
+  })
+
+  it("keeps Bitwarden's folders in the notes and tells the items that asked for the master password again", () => {
+    const json = {
+      encrypted: false,
+      folders: [{ id: 'f1', name: 'Trabajo' }],
+      items: [
+        { type: 1, name: 'Correo', notes: 'Cuenta del equipo', folderId: 'f1', reprompt: 1, login: { username: 'ana', password: 'x' } },
+        { type: 2, name: 'Wi-Fi', notes: 'clave: abc', folderId: null, reprompt: 0, secureNote: { type: 0 } },
+        { type: 1, name: 'Banco', folderId: 'gone', reprompt: 1, login: { username: 'ana', password: 'y' } },
+      ],
+    }
+    const csv = 'folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp\nTrabajo,0,login,Correo,,,1,,ana,x,\n'
+    const result = items(JSON.stringify(json))
+    expect(result.items.map((i) => i.notes)).toEqual(['Cuenta del equipo\n\nCarpeta:\nTrabajo', 'clave: abc', ''])
+    expect(marked(result.items, result.marks)).toEqual({ extras: 0, passkeys: 0, folders: 1, reprompts: 2 })
+    const fromCsv = items(csv)
+    expect(marked(fromCsv.items, fromCsv.marks)).toMatchObject({ folders: 1, reprompts: 1 })
+  })
+
+  it('counts what the summary tells only on the items that are imported, not on the duplicates left out', () => {
+    const json = {
+      encrypted: false,
+      folders: [{ id: 'f1', name: 'Trabajo' }],
+      items: [
+        { type: 1, name: 'Correo', folderId: 'f1', reprompt: 1, login: { username: 'ana', password: 'x', fido2Credentials: [{}] }, fields: [{ name: 'PIN', value: '1234', type: 0 }] },
+        { type: 1, name: 'Banco', login: { username: 'ana', password: 'y' }, fields: [{ name: 'PIN', value: '9', type: 0 }] },
+      ],
+    }
+    const first = items(JSON.stringify(json))
+    // Imported once: the same file again brings nothing new, and nothing to tell.
+    const again = items(JSON.stringify(json))
+    const { fresh } = withoutDuplicates(again.items, first.items)
+    expect(fresh).toEqual([])
+    expect(marked(fresh, again.marks)).toEqual({ extras: 0, passkeys: 0, folders: 0, reprompts: 0 })
+    // Half of it already there: only the other half counts.
+    const half = withoutDuplicates(again.items, first.items.slice(1))
+    expect(half.fresh.map((i) => i.title)).toEqual(['Correo'])
+    expect(marked(half.fresh, again.marks)).toEqual({ extras: 1, passkeys: 1, folders: 1, reprompts: 1 })
   })
 
   it("reads Bitwarden's unencrypted JSON and counts what it cannot keep", () => {

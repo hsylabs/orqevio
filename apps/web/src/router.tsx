@@ -1,8 +1,10 @@
 import { Navigate, createBrowserRouter, useParams } from 'react-router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
-import type { CardDetailDTO, PageDTO } from '@orqevio/shared'
-import { get } from './lib/api'
+import { toast } from 'sonner'
+import type { CardDetailDTO, MeDTO, PageDTO } from '@orqevio/shared'
+import { ApiError, errorMessage, get } from './lib/api'
 import { localPref } from './lib/theme'
 import { useMe } from './lib/queries'
 import { AuthPage } from './features/auth/AuthPage'
@@ -22,7 +24,10 @@ function RootRedirect() {
 function ReferenceRedirect({ type }: { type: 'card' | 'doc' }) {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t } = useTranslation()
+  const [gone, setGone] = useState(false)
   useEffect(() => {
+    setGone(false)
     let cancelled = false
     const load = async () => {
       try {
@@ -33,8 +38,29 @@ function ReferenceRedirect({ type }: { type: 'card' | 'doc' }) {
           const page = await get<PageDTO>(`/pages/${id}`)
           if (!cancelled) navigate(`/w/${page.workspaceId}/d/${page.id}`, { replace: true })
         }
-      } catch {
-        if (!cancelled) navigate('/', { replace: true })
+      } catch (error) {
+        // Not an answer about it (offline, the server failing): say so, and go home.
+        if (!(error instanceof ApiError) || (error.status !== 404 && error.status !== 403)) {
+          if (!cancelled) {
+            toast.error(errorMessage(error))
+            navigate('/', { replace: true })
+          }
+          return
+        }
+        // In the trash, it is shown there; deleted for good, that is said here.
+        const key = `${type === 'card' ? 'card' : 'page'}:${id}`
+        const workspaces = (await get<MeDTO>('/auth/me').catch(() => null))?.workspaces ?? []
+        for (const w of workspaces) {
+          const found = await get<unknown>(`/workspaces/${w.id}/trash/${encodeURIComponent(key)}`).then(
+            (tree) => tree !== null,
+            () => false,
+          )
+          if (found) {
+            if (!cancelled) navigate(`/w/${w.id}/trash?item=${encodeURIComponent(key)}`, { replace: true })
+            return
+          }
+        }
+        if (!cancelled) setGone(true)
       }
     }
     void load()
@@ -42,6 +68,7 @@ function ReferenceRedirect({ type }: { type: 'card' | 'doc' }) {
       cancelled = true
     }
   }, [id, type, navigate])
+  if (gone) return <NotFound standalone title={t(type === 'card' ? 'gone.card' : 'gone.page')} body={t(type === 'card' ? 'gone.cardBody' : 'gone.pageBody')} />
   return <FullScreenLoader />
 }
 

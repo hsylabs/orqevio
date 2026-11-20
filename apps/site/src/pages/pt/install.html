@@ -55,7 +55,7 @@
     <p>Edite o <code>.env</code>: coloque em <code>APP_URL</code> o endereço público da sua cópia (por exemplo, <code>https://orqevio.seu-dominio.com</code>) e, se quiser, um <code>SETUP_CODE</code> próprio, com pelo menos 12 letras ou dígitos. Depois:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
     <p>A cópia escuta na porta 3000. Coloque-a atrás de um proxy reverso com HTTPS (Caddy, Nginx ou Traefik) e adicione <code>TRUST_PROXY=true</code> ao <code>.env</code>.</p>
-    <p><strong>Backups:</strong> sua cópia faz um backup de si mesma todos os dias na pasta <code>backups</code> do volume e mantém os 7 mais recentes (veja <a href="#backups">Backups e exportação</a>). Para tê-los também fora do servidor, copie-os de vez em quando:</p>
+    <p><strong>Backups:</strong> sua cópia faz um backup de si mesma todos os dias na pasta <code>backups</code> do volume e mantém os 7 backups diários mais recentes e, à parte, os 7 mais recentes feitos à mão (veja <a href="#backups">Backups e exportação</a>). Para tê-los também fora do servidor, copie-os de vez em quando:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backups ./orqevio-backups</code></pre></div>
     <p>Para fazer um backup manual, com a cópia em execução, faça um backup a quente do banco de dados e copie-o para fora do contêiner junto com os anexos da pasta <code>uploads</code>:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose exec app node dist/cli.js backup /data/backup.db</code></pre></div>
@@ -73,7 +73,7 @@
     <p class="note"><strong>Seus dados, sua responsabilidade.</strong> O Orqevio é fornecido como está, sem garantias. Guarde bem sua chave de acesso e a chave de recuperação do seu cofre, guarde seus backups também em outro lugar e exporte seu cofre de vez em quando.</p>
 
     <h2 id="backups">Backups e exportação</h2>
-    <p>Sua cópia faz um backup de si mesma todos os dias, com o cofre, a lixeira, o histórico e os anexos, e mantém os 7 mais recentes: com Docker, na pasta <code>backups</code> do volume; na Cloudflare, no bucket R2 <code>&lt;nome&gt;-backups</code> da sua conta. Em <strong>Configurações → Backups</strong> você os vê, faz um com <strong>Fazer backup agora</strong> e restaura qualquer um deles depois de digitar sua chave de acesso. Antes de restaurar, sua cópia faz um backup de como está, para que você possa voltar.</p>
+    <p>Sua cópia faz um backup de si mesma todos os dias, com o cofre, a lixeira, o histórico e os anexos, e mantém os 7 backups diários mais recentes e, à parte, os 7 mais recentes feitos à mão: com Docker, na pasta <code>backups</code> do volume; na Cloudflare, no bucket R2 <code>&lt;nome&gt;-backups</code> da sua conta. Em <strong>Configurações → Backups</strong> você os vê, faz um com <strong>Fazer backup agora</strong> e restaura qualquer um deles depois de digitar sua chave de acesso. Antes de restaurar, sua cópia faz um backup de como está, para que você possa voltar.</p>
     <p><strong>Configurações → Exportar seus dados</strong> baixa um ZIP que você pode ler sem o Orqevio: as tarefas de cada espaço em JSON, os documentos em Markdown e os anexos. O cofre tem sua própria exportação criptografada.</p>
     <p>As cópias instaladas na Cloudflare antes da versão 1.2.0 recebem o bucket de backups na próxima atualização.</p>
 

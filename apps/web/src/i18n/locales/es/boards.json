@@ -91,7 +91,12 @@
     "hasDescription": "Tiene descripción",
     "linkedDocs": "Documentos vinculados",
     "attachments": "Adjuntos",
-    "createdByName": "Creada por {{name}}"
+    "createdByName": "Creada por {{name}}",
+    "a11y": {
+      "labels": "Etiquetas: {{list}}",
+      "due": "Fecha límite: {{date}}",
+      "checklist": "Checklist: {{done}} de {{total}} hechos"
+    }
   },
   "sheet": {
     "fallbackTitle": "Tarjeta",
@@ -167,7 +172,8 @@
     "editNamed": "Editar {{name}}",
     "editUnnamed": "Editar etiqueta",
     "create": "Crear etiqueta",
-    "deleted": "Etiqueta «{{name}}» movida a la papelera"
+    "deleted": "Etiqueta «{{name}}» movida a la papelera",
+    "deletedUnnamed": "Etiqueta sin nombre movida a la papelera"
   },
   "linked": {
     "mentioned": "mencionada",

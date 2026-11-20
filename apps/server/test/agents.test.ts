@@ -1,8 +1,10 @@
 import { Client as McpClient } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { type AccessLevel, type ActivityDTO, type HistoryEntryDTO, MAX_MARKDOWN, MCP_TOOL_GROUPS, type McpToolNeed, scopesFromLevels } from '@orqevio/shared'
+import { strFromU8, unzipSync } from 'fflate'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { VERSION } from '../src/version'
-import { Client, type Harness, createHarness, seedBoard, signUp } from './harness'
+import { Client, type Harness, ORIGIN, createHarness, seedBoard, signUp } from './harness'
 
 let h: Harness
 beforeAll(async () => {
@@ -112,11 +114,17 @@ describe('agent tokens', () => {
 
     // Only people see the trash and bring things back.
     expect((await organizer.get(`/api/workspaces/${workspaceId}/trash`)).status).toBe(403)
-    const trash = (await client.get(`/api/workspaces/${workspaceId}/trash`)).body as Array<{ id: string; kind: string }>
-    expect(trash.map((t) => t.kind).sort()).toEqual(['attachment', 'checklist', 'checklist_item', 'label', 'link'])
-    expect((await organizer.post(`/api/trash/${trash[0]!.id}/restore`)).status).toBe(403)
-    expect((await organizer.del(`/api/trash/${trash[0]!.id}`)).status).toBe(403)
-    for (const entry of trash) expect((await client.post(`/api/trash/${entry.id}/restore`)).status).toBe(200)
+    const listed = async () => (await client.get(`/api/workspaces/${workspaceId}/trash`)).body as Array<{ trashId: string; key: string; kind: string }>
+    const trash = await listed()
+    // The item, deleted before its checklist, waits inside it.
+    expect(trash.map((t) => t.kind).sort()).toEqual(['attachment', 'checklist', 'label', 'link'])
+    expect((await organizer.post(`/api/trash/${trash[0]!.trashId}/restore`)).status).toBe(403)
+    expect((await organizer.del(`/api/trash/${trash[0]!.trashId}`)).status).toBe(403)
+    expect((await organizer.post(`/api/workspaces/${workspaceId}/trash/restore`, { key: trash[0]!.key })).status).toBe(403)
+    expect((await organizer.del(`/api/workspaces/${workspaceId}/trash/${trash[0]!.key}`)).status).toBe(403)
+    for (const entry of trash) expect((await client.post(`/api/trash/${entry.trashId}/restore`)).status).toBe(200)
+    for (const entry of await listed()) expect((await client.post(`/api/trash/${entry.trashId}/restore`)).status).toBe(200)
+    expect(await listed()).toEqual([])
     const back = await client.get(`/api/cards/${card.body.id}`)
     expect(back.body.checklists[0].items).toHaveLength(1)
     expect(back.body.pages.map((p: { id: string }) => p.id)).toEqual([page.body.id])
@@ -280,6 +288,94 @@ describe('MCP server', () => {
     expect(names2).not.toContain('delete_page')
     expect(names2).not.toContain('delete_project')
     expect(names2).not.toContain('unlink_card_from_page')
+  })
+
+  it('gives the activity a page at a time, without skipping what happened in the same millisecond', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-20T10:00:00.000Z') })
+    try {
+      for (let i = 1; i <= 7; i++) await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: `Tarjeta ${i}` })
+    } finally {
+      vi.useRealTimers()
+    }
+    // «See more» asks for what comes after the last entry it has: its time and the entry itself.
+    const seen: ActivityDTO[] = []
+    let after = ''
+    for (let pages = 0; pages < 10; pages++) {
+      const page = (await client.get(`/api/workspaces/${workspaceId}/activity?limit=3${after}`)).body as ActivityDTO[]
+      seen.push(...page)
+      if (page.length < 3) break
+      after = `&before=${encodeURIComponent(page.at(-1)!.createdAt)}&beforeId=${page.at(-1)!.id}`
+    }
+    expect(seen.filter((e) => e.action === 'card.created').map((e) => e.summary)).toEqual([7, 6, 5, 4, 3, 2, 1].map((i) => `Tarjeta ${i}`))
+    expect(new Set(seen.map((e) => e.id)).size).toBe(seen.length)
+  })
+
+  it('keeps its place in the activity when the last entry it got merges with a later one', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const agent = new Client(h, (await createToken(client, workspaceId, ['tasks:read', 'tasks:write'])).token)
+    const cards: string[] = []
+    for (let i = 1; i <= 7; i++) cards.push((await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: `Tarjeta ${i}` })).body.id)
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-20T10:00:00.000Z') })
+    try {
+      // Seven renames by the agent in the same millisecond.
+      for (const [i, id] of cards.entries()) expect((await agent.patch(`/api/cards/${id}`, { title: `Renombrada ${i + 1}` })).status).toBe(200)
+      const first = (await client.get(`/api/workspaces/${workspaceId}/activity?agents=1&limit=3`)).body as ActivityDTO[]
+      expect(first.map((e) => e.summary)).toEqual(['Renombrada 7', 'Renombrada 6', 'Renombrada 5'])
+      // The agent renames the last one it got again: its entry takes the new time and goes to the top.
+      vi.setSystemTime(new Date('2026-11-20T10:00:05.000Z'))
+      expect((await agent.patch(`/api/cards/${cards[4]}`, { title: 'Renombrada 5 otra vez' })).status).toBe(200)
+      const last = first.at(-1)!
+      const next = (await client.get(`/api/workspaces/${workspaceId}/activity?agents=1&limit=3&before=${encodeURIComponent(last.createdAt)}&beforeId=${last.id}`)).body as ActivityDTO[]
+      expect(next.map((e) => e.summary)).toEqual(['Renombrada 4', 'Renombrada 3', 'Renombrada 2'])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('has every tool in the Agents page catalog, each with what it needs to be seen', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const seen = async (tasks: AccessLevel, docs: AccessLevel, organize = false) => {
+      const mcp = await connect((await createToken(client, workspaceId, scopesFromLevels({ tasks, docs, organize }))).token)
+      const names = (await mcp.listTools()).tools.map((t) => t.name)
+      await mcp.close()
+      return names
+    }
+    const catalog = MCP_TOOL_GROUPS.flatMap((group) => group.tools.map((tool) => ({ tool, need: group.need as McpToolNeed })))
+
+    // The same tools, each once: one the server adds shows on the page, or this fails.
+    const everything = await seen('write', 'write', true)
+    expect(catalog.map((t) => t.tool).sort()).toEqual([...everything].sort())
+
+    // «Can delete and move» marks exactly the tools that need it.
+    const withoutOrganize = await seen('write', 'write')
+    expect(catalog.filter((t) => !withoutOrganize.includes(t.tool)).map((t) => t.tool)).toEqual(catalog.filter((t) => t.need === 'organize').map((t) => t.tool))
+
+    // The least that each need names is enough to see the tools.
+    const least: Record<Exclude<McpToolNeed, 'organize'>, Array<[AccessLevel, AccessLevel]>> = {
+      read: [
+        ['read', 'none'],
+        ['none', 'read'],
+      ],
+      // Writing in one area, reading the other: link_card_to_page joins the two.
+      write: [
+        ['write', 'read'],
+        ['read', 'write'],
+      ],
+      tasksRead: [['read', 'none']],
+      tasksWrite: [['write', 'none']],
+      docsRead: [['none', 'read']],
+      docsWrite: [['none', 'write']],
+    }
+    for (const [need, accesses] of Object.entries(least)) {
+      for (const [tasks, docs] of accesses) {
+        const names = await seen(tasks, docs)
+        const missing = catalog.filter((t) => t.need === need && !names.includes(t.tool)).map((t) => t.tool)
+        expect(missing, `${need} with tasks ${tasks}, docs ${docs}`).toEqual([])
+      }
+    }
   })
 
   it('lets an agent organise a board and document it through the shared services', async () => {
@@ -503,6 +599,73 @@ describe('MCP server', () => {
     const full = await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: 'c', mode: 'append' } })
     expect(full.isError).toBe(true)
     expect(text(full)).toContain('at most 0 more fit')
+  })
+
+  it('counts an emoji as one character when appending, as the limit of a page does', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { projectId } = await seedBoard(client, workspaceId)
+    const mcp = await connect((await createToken(client, workspaceId, ['docs:write'])).token)
+    // 100,000 emoji: 100,000 characters, though 200,000 UTF-16 units.
+    const page = data(await mcp.callTool({ name: 'create_page', arguments: { project_id: projectId, title: 'Emoji', content: '🦤'.repeat(100_000) } }))
+    const more = await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: 'Y algo más', mode: 'append' } })
+    expect(more.isError, text(more)).toBeFalsy()
+    expect(data(more).version).toBe(2)
+    // Over the limit, it is said in characters too.
+    const over = await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: '🦤'.repeat(99_990), mode: 'append' } })
+    expect(over.isError).toBe(true)
+    expect(text(over)).toContain(`${100_012 + 2 + 99_990} characters long, over the limit of 200000`)
+    expect(text(over)).toContain('at most 99986 more fit')
+  })
+
+  it('takes a card description as long as the app does, and refuses a longer one without touching the card', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const mcp = await connect((await createToken(client, workspaceId, ['tasks:read', 'tasks:write'])).token)
+    // As a card copied from Trello with its comments: lines of Markdown, letters from other scripts included.
+    // The limit counts characters, so an emoji is one, as for a person, though it takes two UTF-16 units.
+    const characters = (text: string) => [...text].length
+    const markdown = (who: string, length: number) => {
+      const line = `- **${who}**: comentario copiado de Trello — ñandú, 日本 🦤\n`
+      const lines = line.repeat(Math.floor(length / characters(line)))
+      return lines + '.'.repeat(length - characters(lines))
+    }
+    const first = markdown('Ana', MAX_MARKDOWN)
+    const second = markdown('Luis', MAX_MARKDOWN)
+    expect([characters(first), characters(second)]).toEqual([200_000, 200_000])
+    expect(first.length).toBeGreaterThan(200_000)
+
+    const card = data(await mcp.callTool({ name: 'create_card', arguments: { column_id: columns[0]!.id, title: 'Copiada de Trello', description: first } }))
+    const updated = data(await mcp.callTool({ name: 'update_card', arguments: { card_id: card.card_id, description: second, base_version: 1 } }))
+    expect(updated.version).toBe(2)
+    expect(data(await mcp.callTool({ name: 'get_card', arguments: { card_id: card.card_id } })).description).toBe(second)
+
+    // One character more is refused, on create and on update, saying the limit.
+    const tooLong = await mcp.callTool({ name: 'create_card', arguments: { column_id: columns[0]!.id, title: 'Demasiado larga', description: `${first}!` } })
+    expect(tooLong.isError).toBe(true)
+    expect(text(tooLong)).toContain('200000')
+    const refused = await mcp.callTool({ name: 'update_card', arguments: { card_id: card.card_id, description: `${second}!`, base_version: 2 } })
+    expect(refused.isError).toBe(true)
+    expect(text(refused)).toContain('200000')
+    const board = data(await mcp.callTool({ name: 'get_board', arguments: { board_id: (await client.get(`/api/cards/${card.card_id}`)).body.boardId } }))
+    expect(JSON.stringify(board)).not.toContain('Demasiado larga')
+
+    // The app has it whole, its history keeps both versions whole, and the export carries it.
+    const kept = await client.get(`/api/cards/${card.card_id}`)
+    expect(kept.body).toMatchObject({ version: 2 })
+    expect(kept.body.description).toBe(second)
+    const history = ((await client.get(`/api/cards/${card.card_id}/history`)).body as HistoryEntryDTO[]).filter((e) => e.kind === 'card.description')
+    expect(history).toHaveLength(2)
+    const versions = await Promise.all(history.map(async (e) => (await client.get(`/api/history/${e.id}`)).body))
+    expect(versions.map((v) => [v.before, v.after])).toEqual([
+      [first, second],
+      ['', first],
+    ])
+    const res = await h.app.request('/api/export', { headers: { Cookie: client.cookie, Origin: ORIGIN } })
+    expect(res.status).toBe(200)
+    const files = unzipSync(new Uint8Array(await res.arrayBuffer()))
+    const tasks = Object.entries(files).find(([name]) => name.endsWith('/tasks.json'))!
+    const exported = JSON.parse(strFromU8(tasks[1])).projects[0].boards[0].columns[0].cards
+    expect(exported.find((c: { title: string }) => c.title === 'Copiada de Trello').description).toBe(second)
   })
 
   it('reports permission errors as tool errors', async () => {

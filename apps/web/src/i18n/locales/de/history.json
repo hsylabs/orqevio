@@ -19,6 +19,7 @@
   "noLineChanges": "Keine Zeile hat sich geändert.",
   "movedTo": "Ihr Platz existierte nicht mehr, deshalb kam sie nach {{place}}",
   "quoted": "„{{name}}“",
+  "unnamedLabel": "(ohne Namen)",
   "kinds": {
     "page": {
       "created": "<actor>{{actor}}</actor> hat diese Seite erstellt",
@@ -94,6 +95,7 @@
     "impossible": {
       "gone": "„{{title}}“ existiert nicht mehr.",
       "place_gone": "Der Ort, an dem „{{title}}“ war, existiert nicht mehr.",
+      "place_in_trash": "Der Ort, an dem „{{title}}“ war, liegt im Papierkorb.",
       "trash_gone": "„{{title}}“ wurde endgültig aus dem Papierkorb gelöscht.",
       "refused": "„{{title}}“ konnte nicht rückgängig gemacht werden."
     },
@@ -120,7 +122,52 @@
       "skip_other": "{{count}} rückgängig machen, Rest überspringen",
       "force": "Trotzdem alle rückgängig machen",
       "confirm_one": "{{count}} Änderung rückgängig machen",
-      "confirm_other": "{{count}} Änderungen rückgängig machen"
+      "confirm_other": "{{count}} Änderungen rückgängig machen",
+      "nothingInBatch": "In diesem Durchgang gibt es nichts mehr rückgängig zu machen",
+      "next_one": "Die frühere anzeigen",
+      "next_other": "Die {{count}} früheren anzeigen",
+      "undoneBefore_one": "{{count}} Änderung schon rückgängig gemacht; das ist der nächste Durchgang.",
+      "undoneBefore_other": "{{count}} Änderungen schon rückgängig gemacht; das ist der nächste Durchgang.",
+      "remaining_one": "Es werden bis zu 500 Änderungen auf einmal rückgängig gemacht. {{count}} ältere bleibt, die gewählte: Sie erscheint nach diesem Durchgang.",
+      "remaining_other": "Es werden bis zu 500 Änderungen auf einmal rückgängig gemacht. {{count}} ältere bleiben, darunter die gewählte: Sie erscheinen nach diesem Durchgang."
+    },
+    "left": {
+      "title": "Hier nicht rückgängig",
+      "body": "Projekte, Boards, Spalten und Labels haben keinen Verlauf: Was {{name}} daran geändert hat, bleibt, wie es ist.",
+      "item": {
+        "project": "Projekt „{{title}}“: {{actions}}",
+        "board": "Board „{{title}}“: {{actions}}",
+        "column": "Spalte „{{title}}“: {{actions}}",
+        "label": "Label „{{title}}“: {{actions}}"
+      },
+      "actions": {
+        "project": {
+          "created": "erstellt",
+          "updated": "geändert",
+          "moved": "verschoben",
+          "deleted": "gelöscht"
+        },
+        "board": {
+          "created": "erstellt",
+          "updated": "geändert",
+          "moved": "verschoben",
+          "deleted": "gelöscht"
+        },
+        "column": {
+          "created": "erstellt",
+          "updated": "geändert",
+          "moved": "verschoben",
+          "deleted": "gelöscht"
+        },
+        "label": {
+          "created": "erstellt",
+          "updated": "geändert",
+          "moved": "verschoben",
+          "deleted": "gelöscht"
+        }
+      },
+      "more_one": "Und {{count}} weiteres.",
+      "more_other": "Und {{count}} weitere."
     }
   }
 }

@@ -1,4 +1,4 @@
-import { type TrashedDTO, UPLOAD_NAME_HEADER, withoutBidiControls } from '@orqevio/shared'
+import { TRASH_KEY, type TrashedDTO, UPLOAD_NAME_HEADER, withoutBidiControls } from '@orqevio/shared'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { AppError, badRequest } from '../lib/errors'
@@ -22,6 +22,12 @@ function decodeFileName(header: string | undefined) {
 function limit(limiter: RateLimiter, key: string) {
   const wait = limiter.hit(key)
   if (wait > 0) throw new AppError(429, 'rate_limited', `Too many attempts. Try again in ${Math.ceil(wait / 60)} min.`, undefined, { 'Retry-After': String(wait) })
+}
+
+/** Something in the trash, by the key in the path: `kind:id`. */
+function trashItemKey(value: string) {
+  if (!TRASH_KEY.test(value)) throw badRequest('Not a trash key')
+  return value
 }
 
 async function json(c: { req: { json: () => Promise<unknown> } }) {
@@ -150,10 +156,10 @@ export function createApi(env: Env) {
   api.get('/backups', async (c) => c.json(await c.get('services').backups.status(requireActor(c))))
   api.post('/backups', async (c) => c.json(await c.get('services').backups.createNow(requireActor(c)), 201))
   api.post('/backups/:id/restore', async (c) => {
-    const { session, restored } = await c.get('services').backups.restore(requireActor(c), c.req.param('id'), await json(c), c.req.header('user-agent') ?? null)
+    const { session, restored, leftOut } = await c.get('services').backups.restore(requireActor(c), c.req.param('id'), await json(c), c.req.header('user-agent') ?? null)
     // Restoring ends every session, this one too: the person who restored gets a new one.
     setSessionCookie(c, session.token, session.expiresAt)
-    return c.json({ restored })
+    return c.json({ restored, ...(leftOut && { leftOut }) })
   })
 
   // ── Export: the person's data as a ZIP to read or take elsewhere (people only) ──
@@ -182,6 +188,16 @@ export function createApi(env: Env) {
 
   // ── Trash (people only) ─────────────────────────────────────────
   api.get('/workspaces/:id/trash', async (c) => c.json(await c.get('services').trash.list(requireActor(c), c.req.param('id'))))
+  api.post('/workspaces/:id/trash/restore', async (c) =>
+    c.json(await c.get('services').trash.restoreItem(requireActor(c), c.req.param('id'), await json(c))),
+  )
+  api.post('/workspaces/:id/trash/restore-many', async (c) => c.json(await c.get('services').trash.restoreMany(requireActor(c), c.req.param('id'), await json(c))))
+  api.post('/workspaces/:id/trash/purge', async (c) => c.json(await c.get('services').trash.purgeMany(requireActor(c), c.req.param('id'), await json(c))))
+  api.get('/workspaces/:id/trash/:key', async (c) => c.json(await c.get('services').trash.tree(requireActor(c), c.req.param('id'), trashItemKey(c.req.param('key')))))
+  api.delete('/workspaces/:id/trash/:key', async (c) => {
+    await c.get('services').trash.purgeItem(requireActor(c), c.req.param('id'), trashItemKey(c.req.param('key')))
+    return c.body(null, 204)
+  })
   api.post('/trash/:id/restore', async (c) => c.json(await c.get('services').trash.restore(requireActor(c), c.req.param('id'))))
   api.delete('/trash/:id', async (c) => {
     await c.get('services').trash.purge(requireActor(c), c.req.param('id'))
@@ -205,6 +221,7 @@ export function createApi(env: Env) {
       await services.activity.list(c.req.param('id'), {
         limit: limitParam(c),
         before: beforeParam(c),
+        beforeId: c.req.query('beforeId') || undefined,
         tokenId: c.req.query('tokenId') || undefined,
         agentsOnly: c.req.query('agents') === '1',
       }),

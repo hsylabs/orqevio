@@ -28,7 +28,7 @@ And **nothing an agent does is final.** Every change can be undone for 30 days, 
 - **No stepping on each other's toes.** Documents and card descriptions use optimistic versioning: if an agent edits a page or a card while you're writing, Orqevio lets you know and you choose which version to keep.
 - **Nothing is lost by mistake.** What you delete waits 30 days in the trash with everything it held: a page with its subpages and files, a column with its cards. Undo it right away from the notice, or restore it later with one click.
 - **Every change has its history, and can be undone.** Each page and card keeps 30 days of changes, by people and by agents: who changed what and when, and for texts what changed line by line, like a diff. Undo one change, put back an earlier version, or take back everything an agent did from a point on; if someone changed the same thing since, Orqevio asks first.
-- **Your data, safe and yours.** Your copy backs itself up every day, apart from its data, and you restore any of the last 7 backups from **Settings**. **Export your data** gives you everything as a ZIP you can read without Orqevio: tasks in JSON, documents in Markdown and the attachments.
+- **Your data, safe and yours.** Your copy backs itself up every day, apart from its data, and you restore any of the last 7 daily ones, or of the last 7 you made, from **Settings**. **Export your data** gives you everything as a ZIP you can read without Orqevio: tasks in JSON, documents in Markdown and the attachments.
 - **Keyboard first.** `⌘K`/`Ctrl K` opens the command palette to search and jump anywhere; `⌘\` hides the sidebar; and you can rearrange the whole Kanban board from the keyboard (space to pick up, arrow keys to move, space to drop), with screen reader announcements.
 - **A look of its own.** Warm paper, ink and two signal colors: khaki for you, ultramarine for your agents. Editorial type (Fraunces) over a restrained interface (Instrument Sans). Light and dark themes, with text colors tuned to WCAG AA contrast.
 - **In your language.** The app and the installer speak English, Spanish, French, Portuguese, Italian, German, Dutch and Japanese. Your copy takes your browser's language when you claim it, and you can change it anytime in **Settings**.
@@ -37,13 +37,13 @@ And **nothing an agent does is final.** Every change can be undone for 30 days, 
 
 Everything people and agents change can be taken back for 30 days.
 
-**Trash.** Deleting a project, a board, a column, a card, a page, a file, a label, a checklist or one of its items, or the link between a card and a page, sends it to **Trash**, in the sidebar, with everything it held. Right after deleting, **Undo** in the notice brings it back. In **Trash** you see what each item is, where it was, who deleted it and when it goes for good, with **Restore** and **Delete for good**. Restoring puts everything back as it was; if its place is gone, the app says where it went instead. After 30 days, the trash empties itself.
+**Trash.** Deleting a project, a board, a column, a card, a page, a file, a label, a checklist or one of its items, or the link between a card and a page, sends it to **Trash**, in the sidebar, with everything it held. Right after deleting, **Undo** in the notice brings it back. In **Trash**, one line each, you see what each item is, where it was and what it holds, who deleted it and when; what was deleted inside something else waits inside it. **Restore** brings it back where it was with what it holds; when there is something to decide first (its place is in the trash too, or gone, or a name is taken there), it asks before doing anything. Pick several to restore them together, each with where it goes in sight, or to delete them for good, after seeing how much goes with them. After 30 days, the trash empties itself.
 
 **History.** **History**, in the menu of a card or a page, lists its changes of the last 30 days: what changed, who changed it (a person, or which agent) and when. For a page's content or a card's description, **See what changed** shows the lines added and removed.
 
 **Undo.** In the history:
 - **Undo** puts back what one change changed, without touching what changed after it. What it added goes to the trash, and what it deleted comes back.
-- **Undo everything Claude did from here**, on an agent's change, takes back all that agent did from that change on, across cards and pages, after saying what that covers.
+- **Undo everything Claude did from here**, on an agent's change, takes back all that agent did from that change on, across cards and pages, after saying what that covers. More than 500 changes go back in batches of up to 500, the newest first, each shown before it is undone. What the agent changed in projects, boards, columns and labels has no history: it is listed as not undone, with a link to it in the trash when it is there.
 - **Restore this version** puts a page's content or a card's description back as it was.
 
 If someone changed the same thing after the change you undo, Orqevio says who and asks first. Undoing is a change of its own, so it can be undone too. Only people undo.
@@ -107,7 +107,7 @@ vault key ── AES-256-GCM, associated data = user + item id ──► encrypt
 - AES-GCM associated data keeps anyone with access to the database from swapping items between users or entries.
 - When you copy a password, a note or a code, the clipboard is cleared after 30 seconds, unless you've copied something else since. Browsers only allow it while the tab is in front (Firefox and Safari, only right after a click): otherwise, when you come back, Orqevio offers to clear it with one click. The password generator uses unbiased cryptographic randomness.
 - Changing your master password only rewraps the vault key: items aren't re-encrypted. The recovery key lets you choose a new master password. Without either of them, your data can't be recovered, by design.
-- The `/api/vault/*` routes reject any request with an `Authorization` header before reading any data, and the MCP server has no vault tools.
+- The `/api/vault/*` routes reject any request that carries an agent or OAuth token (`Authorization: Bearer …`) before reading any data, and the MCP server has no vault tools. Other credentials, such as those of a reverse proxy that asks for a password, leave the request to your session.
 
 **Agents**
 - Each token belongs to a single workspace and has permissions per area, for tasks and for docs: no access, read, or read and write. It's shown only once, and only its hash is stored.
@@ -138,7 +138,7 @@ docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 
 The app listens on port 3000 and applies its migrations on startup. Put it behind a reverse proxy with HTTPS (Caddy, Nginx, Traefik) and, if you do, add `TRUST_PROXY=true` (or the number of proxies in front, such as `2` for a CDN plus Nginx). The proxy may also ask for a password (HTTP basic auth). Agents send their own `Authorization: Bearer` header, with a token Orqevio checks itself: if you connect any, let requests carrying one through without the password, and also `/mcp`, `/oauth/` and `/.well-known/`, which OAuth clients reach before they have a token. Let the live updates (`/api/workspaces/…/live`) through too: Safari does not send the password when it opens them, and Orqevio checks the session itself. [`apps/web/e2e/proxy/nginx.conf`](apps/web/e2e/proxy/nginx.conf) does all this with Nginx. The SQLite database and the attachments are stored in the `orqevio-data` volume.
 
-**Backups.** Your copy backs itself up every day: the database and the attachments, as they are, in the `backups` folder of the volume (`/data/backups`). It keeps the 7 newest. **Settings → Backups** lists them, makes one on the spot with **Back up now**, and restores any of them after you type your access key. Before restoring, it backs up the copy as it is, so you can go back. To keep the backups off the server too, copy them out from time to time, or set `BACKUP_DIR` to a folder you mount from another disk:
+**Backups.** Your copy backs itself up every day: the database and the attachments, as they are, in the `backups` folder of the volume (`/data/backups`). It keeps the 7 newest daily backups, and apart from them the 7 newest you made with **Back up now**. **Settings → Backups** lists them, makes one on the spot with **Back up now**, and restores any of them after you type your access key. Before restoring, it backs up the copy as it is, so you can go back. To keep the backups off the server too, copy them out from time to time, or set `BACKUP_DIR` to a folder you mount from another disk:
 
 ```bash
 docker compose cp app:/data/backups ./orqevio-backups
@@ -146,7 +146,11 @@ docker compose cp app:/data/backups ./orqevio-backups
 
 On a new server, a backup comes back the same way: put the folder in the new copy's volume (or mount it as `BACKUP_DIR`), claim the copy and restore it from **Settings → Backups**. `BACKUPS=off` turns them off.
 
-**Export.** **Settings → Export your data** downloads a ZIP you can read without Orqevio: each workspace's tasks in JSON, its documents in Markdown and the attachments, with the links between them pointing at the files. The vault has its own encrypted export.
+The backups folder must be the app's to read and write: the app runs as the user `orqevio` of the image (uid 100). A folder you mount needs `sudo chown -R 100:101 <folder>` on the server; what `docker compose cp` copies into the volume is left to root, so give it back with `docker compose run --rm --user root app chown -R orqevio:orqevio /data/backups`. If the folder isn't the app's, read-only or full, the log says so when the app starts, and **Settings → Backups** says why and what to do.
+
+Restoring checks every attachment the backup needs as it puts it back, and changes nothing until they are all right: one that is gone, cut short or not what it was when kept is named, and you choose to restore without it or to keep the copy as it is.
+
+**Export.** **Settings → Export your data** downloads a ZIP you can read without Orqevio: each workspace's tasks in JSON, its documents in Markdown and the attachments, with the links between them pointing at the files. However big it gets: past 4 GiB or 65,535 files it is a ZIP64, which 7-Zip, unzip and bsdtar open. The vault has its own encrypted export.
 
 **Backups by hand.** With the app running, make a live backup of the database, then copy it out of the container together with the attachments, in the `uploads` folder:
 
@@ -156,7 +160,7 @@ docker compose cp app:/data/backup.db ./orqevio-backup.db
 docker compose cp app:/data/uploads ./orqevio-uploads
 ```
 
-To restore it, stop the app, copy both back in and let Orqevio put the database in place. It keeps the database it replaces as `orqevio.db.before-restore`, and gives the files back to the app's user:
+To restore it, stop the app, copy both back in and let Orqevio put the database in place. It refuses while the app is running, as what the app wrote from then on would be lost. It keeps the database it replaces as `orqevio.db.before-restore`, and gives the files back to the app's user:
 
 ```bash
 docker compose stop app
@@ -208,7 +212,7 @@ Deletes your copy and everything in it, in one step, after you type its name: se
 - **Several copies:** add `--name <name>` to any of these commands.
 - **Several Cloudflare accounts:** the installer asks which one to use; you can also pass it with `--account <id>` or `CLOUDFLARE_ACCOUNT_ID`.
 - **Language:** the installer speaks your terminal's language; pick another with `--lang <code>` (`en`, `es`, `fr`, `pt`, `it`, `de`, `nl` or `ja`).
-- **Backups:** your copy backs itself up every day to its backups bucket, and keeps the 7 newest. **Settings → Backups** lists them, makes one on the spot and restores any of them; **Settings → Export your data** downloads everything as a readable ZIP. Copies installed before 1.2.0 get the bucket with their next update, and make their first backup within the hour. A copy installed again with the same name finds the backups of the one before, if you kept them when uninstalling, and can restore them from **Settings → Backups**.
+- **Backups:** your copy backs itself up every day to its backups bucket, and keeps the 7 newest daily backups, and apart from them the 7 newest made by hand. **Settings → Backups** lists them, makes one on the spot and restores any of them; **Settings → Export your data** downloads everything as a readable ZIP. Copies installed before 1.2.0 get the bucket with their next update, and make their first backup within the hour. A copy installed again with the same name finds the backups of the one before, if you kept them when uninstalling, and can restore them from **Settings → Backups**.
 - **Your settings are kept:** the variables you set in the Cloudflare dashboard (`APP_URL`, `MAX_UPLOAD_MB`) survive updates.
 - **Privacy:** the installer turns off Wrangler's anonymous telemetry, unless you turned it on yourself.
 - **What it does, exactly:**
@@ -395,7 +399,7 @@ claude mcp add --transport http orqevio https://your-domain/mcp --header "Author
 | --- | --- |
 | Any read permission | `list_projects`, `search`, `read_attachment` (text files as text, images as images) |
 | Tasks · read | `get_board`, `get_card` |
-| Tasks · write | `create_card`, `update_card` (with `base_version` when it changes the description), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `add_checklist_items`, `update_checklist_item` |
+| Tasks · write | `create_card`, `update_card` (with `base_version` when it changes the description), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `create_checklist`, `add_checklist_items`, `update_checklist_item` |
 | Docs · read | `list_pages`, `read_page` |
 | Docs · write | `create_page`, `update_page` (title, icon and content: replace with `base_version`, or append to the end), `move_page` (within its project) |
 | Read and write on both areas | `link_card_to_page` |
@@ -432,7 +436,7 @@ The same suite runs against the Cloudflare runtime locally (`pnpm --filter @orqe
 E2E_BASE_URL=http://127.0.0.1:8787 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-CI runs both, and also repeats the suite against the Node server in Firefox and WebKit (Safari's engine), each with a fresh copy. Locally, install the browser and pick it with `E2E_BROWSER`, again against a freshly created copy:
+CI runs both, and also repeats the suite against the Node server in Firefox and WebKit (Safari's engine), each with a fresh copy, and against the Docker image, directly and behind a proxy that asks for a password. Together they take about an hour of runner time on each run, so they run on pull requests into `main` and when started by hand (Actions → CI → Run workflow). Pull requests into `develop` and pushes to `develop` and `main` run the typecheck, `pnpm test` and the build. Locally, install the browser and pick it with `E2E_BROWSER`, again against a freshly created copy:
 
 ```bash
 pnpm --filter @orqevio/web exec playwright install firefox

@@ -79,9 +79,9 @@
     "missingFiles_other": "No se han podido copiar {{count}} adjuntos en ella.",
     "newer": "Hecha con Orqevio {{version}}: actualiza esta copia para restaurarla.",
     "restore": "Restaurar…",
-    "keep_one": "Se conserva la última copia diaria, y la hecha antes de la última restauración.",
-    "keep_many": "Se conservan las {{count}} últimas copias diarias, y la hecha antes de la última restauración.",
-    "keep_other": "Se conservan las {{count}} últimas copias diarias, y la hecha antes de la última restauración.",
+    "keep_one": "Se conservan la última copia diaria, la última hecha por ti y la hecha antes de la última restauración.",
+    "keep_many": "Se conservan las {{count}} últimas copias diarias, las {{count}} últimas hechas por ti y la hecha antes de la última restauración.",
+    "keep_other": "Se conservan las {{count}} últimas copias diarias, las {{count}} últimas hechas por ti y la hecha antes de la última restauración.",
     "restoreTitle": "¿Restaurar esta copia de seguridad?",
     "restoreDescription": "Esta copia vuelve a estar como el {{date}}.",
     "restoreLoses": "Todo vuelve atrás: espacios, documentos, tarjetas, bóveda, agentes, papelera e historial. Lo que haya cambiado desde entonces se pierde.",
@@ -90,7 +90,27 @@
     "restoreAgents": "Los agentes a los que hayas quitado el acceso desde entonces no lo recuperan.",
     "accessKey": "Clave de acceso",
     "typeName": "Escribe «{{name}}» para confirmar",
-    "restoreConfirm": "Restaurar"
+    "restoreConfirm": "Restaurar",
+    "problem": {
+      "title": "Las copias no se pueden hacer ahí",
+      "access": "Orqevio (el usuario <code>{{user}}</code> del servidor) no puede leer o escribir en <code>{{path}}</code>. Devuélvele la carpeta de copias: si la montas desde el servidor, con <code>sudo chown -R {{user}}</code> sobre ella; si está dentro del volumen (lo copiado con <code>docker compose cp</code> queda de root), con <code>docker compose run --rm --user root app chown -R orqevio:orqevio {{root}}</code>.",
+      "readonly": "<code>{{path}}</code> es de solo lectura.",
+      "full": "No queda espacio en el disco de <code>{{path}}</code>.",
+      "other": "No se puede usar <code>{{path}}</code>: {{detail}}"
+    },
+    "damaged": {
+      "title_one": "{{count}} adjunto de esta copia está dañado o falta:",
+      "title_many": "{{count}} adjuntos de esta copia están dañados o faltan:",
+      "title_other": "{{count}} adjuntos de esta copia están dañados o faltan:",
+      "list": "Adjuntos dañados",
+      "reason": {
+        "missing": "falta",
+        "size": "está cortado",
+        "changed": "ha cambiado"
+      },
+      "body": "Esta copia sigue como está. Si restauras sin ellos, sus tarjetas y documentos vuelven, pero estos archivos no.",
+      "confirm": "Restaurar sin estos archivos"
+    }
   },
   "export": {
     "title": "Exportar tus datos",

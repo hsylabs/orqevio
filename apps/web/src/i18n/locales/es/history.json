@@ -22,6 +22,7 @@
   "noLineChanges": "No cambió ninguna línea.",
   "movedTo": "Su sitio ya no existía, así que fue a {{place}}",
   "quoted": "«{{name}}»",
+  "unnamedLabel": "(sin nombre)",
   "kinds": {
     "page": {
       "created": "<actor>{{actor}}</actor> creó esta página",
@@ -103,6 +104,7 @@
     "impossible": {
       "gone": "«{{title}}» ya no existe.",
       "place_gone": "El sitio donde estaba «{{title}}» ya no existe.",
+      "place_in_trash": "El sitio donde estaba «{{title}}» está en la papelera.",
       "trash_gone": "«{{title}}» se borró para siempre de la papelera.",
       "refused": "No se ha podido deshacer «{{title}}»."
     },
@@ -134,7 +136,56 @@
       "force": "Deshacerlos todos igualmente",
       "confirm_one": "Deshacer {{count}} cambio",
       "confirm_many": "Deshacer {{count}} cambios",
-      "confirm_other": "Deshacer {{count}} cambios"
+      "confirm_other": "Deshacer {{count}} cambios",
+      "nothingInBatch": "En esta tanda no queda nada por deshacer",
+      "next_one": "Ver el anterior",
+      "next_many": "Ver los {{count}} anteriores",
+      "next_other": "Ver los {{count}} anteriores",
+      "undoneBefore_one": "Ya se ha deshecho {{count}} cambio; esta es la tanda siguiente.",
+      "undoneBefore_many": "Ya se han deshecho {{count}} cambios; esta es la tanda siguiente.",
+      "undoneBefore_other": "Ya se han deshecho {{count}} cambios; esta es la tanda siguiente.",
+      "remaining_one": "Se deshacen hasta 500 cambios cada vez. Queda {{count}} más antiguo, el que elegiste: se muestra al terminar esta tanda.",
+      "remaining_many": "Se deshacen hasta 500 cambios cada vez. Quedan {{count}} más antiguos, entre ellos el que elegiste: se muestran al terminar esta tanda.",
+      "remaining_other": "Se deshacen hasta 500 cambios cada vez. Quedan {{count}} más antiguos, entre ellos el que elegiste: se muestran al terminar esta tanda."
+    },
+    "left": {
+      "title": "No se deshacen aquí",
+      "body": "Los proyectos, tableros, columnas y etiquetas no tienen historial: lo que {{name}} cambió en ellos se queda como está.",
+      "item": {
+        "project": "Proyecto «{{title}}»: {{actions}}",
+        "board": "Tablero «{{title}}»: {{actions}}",
+        "column": "Columna «{{title}}»: {{actions}}",
+        "label": "Etiqueta «{{title}}»: {{actions}}"
+      },
+      "actions": {
+        "project": {
+          "created": "creado",
+          "updated": "cambiado",
+          "moved": "movido",
+          "deleted": "borrado"
+        },
+        "board": {
+          "created": "creado",
+          "updated": "cambiado",
+          "moved": "movido",
+          "deleted": "borrado"
+        },
+        "column": {
+          "created": "creada",
+          "updated": "cambiada",
+          "moved": "movida",
+          "deleted": "borrada"
+        },
+        "label": {
+          "created": "creada",
+          "updated": "cambiada",
+          "moved": "movida",
+          "deleted": "borrada"
+        }
+      },
+      "more_one": "Y {{count}} más.",
+      "more_many": "Y {{count}} más.",
+      "more_other": "Y {{count}} más."
     }
   }
 }

@@ -1,14 +1,14 @@
 import type { VaultItemRecordDTO, VaultSetupDTO, VaultStateDTO } from '@orqevio/shared'
 import { t as translate } from 'i18next'
 import { Check, Copy, Download, Eye, EyeOff, KeyRound, ShieldCheck } from 'lucide-react'
-import { type FormEvent, type ReactNode, useState } from 'react'
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
 import { copyText } from '../../components/ui/CopyButton'
 import { Dialog } from '../../components/ui/Dialog'
 import { Field } from '../../components/ui/Field'
-import { errorMessage, get, post, put } from '../../lib/api'
+import { ApiError, errorMessage, get, post, put } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { keys, queryClient } from '../../lib/queries'
 import { WrongSecretError, createVault, decryptItem, recoverVault, unlockWithPassword } from './crypto'
@@ -85,6 +85,16 @@ export function VaultSetup({ userId }: { userId: string }) {
   const [busy, setBusy] = useState(false)
   const [created, setCreated] = useState<Awaited<ReturnType<typeof createVault>> | null>(null)
   const [saved, setSaved] = useState(false)
+  // A recovery key shown here and not yet the vault's: if the vault is set up elsewhere first, it never will be.
+  // Set when the key is made and cleared once the vault is set up (here or elsewhere), never from a render:
+  // this one renders again after its own setup, before the vault's state says so.
+  const pending = useRef(false)
+  useEffect(
+    () => () => {
+      if (pending.current && queryClient.getQueryData<VaultStateDTO>(keys.vault)?.initialized) toast.error(translate('vault:gate.setup.elsewhere'), { duration: 30_000 })
+    },
+    [],
+  )
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -93,7 +103,9 @@ export function VaultSetup({ userId }: { userId: string }) {
     setError(null)
     setBusy(true)
     try {
-      setCreated(await createVault(password, userId))
+      const made = await createVault(password, userId)
+      pending.current = true
+      setCreated(made)
     } catch {
       setError(t('gate.setup.failed'))
     } finally {
@@ -107,12 +119,19 @@ export function VaultSetup({ userId }: { userId: string }) {
     try {
       // The version of this key, as the setup gave it: read later, it could be another tab's new vault.
       const { keyVersion, autoLockMinutes } = await post<VaultSetupDTO>('/vault/setup', created.keys)
+      pending.current = false
       announceVaultChange()
       unlockSession(created.vaultKey, keyVersion, userId, [], autoLockMinutes)
       await queryClient.invalidateQueries({ queryKey: keys.vault })
       toast.success(t('gate.setup.ready'))
     } catch (err) {
-      toast.error(errorMessage(err))
+      if (err instanceof ApiError && err.status === 409) {
+        // Set up in another tab or on another device meanwhile: this key opens nothing. Say so, and go on to unlock.
+        pending.current = false
+        toast.error(t('gate.setup.elsewhere'), { duration: 30_000 })
+        setCreated(null)
+        await queryClient.invalidateQueries({ queryKey: keys.vault })
+      } else toast.error(errorMessage(err))
     } finally {
       setBusy(false)
     }
@@ -274,10 +293,15 @@ function VaultRecover({ userId, onBack }: { userId: string; onBack: () => void }
   )
 }
 
-function ResetVaultDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+function ResetVaultDialog({ open, onOpenChange: setOpen }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { t } = useTranslation(['vault', 'common'])
   const [accessKey, setAccessKey] = useState('')
   const [busy, setBusy] = useState(false)
+  // Closed, it forgets the access key typed: it doesn't wait in a hidden form.
+  const onOpenChange = (o: boolean) => {
+    if (!o) setAccessKey('')
+    setOpen(o)
+  }
   async function reset(e: FormEvent) {
     e.preventDefault()
     setBusy(true)

@@ -22,6 +22,7 @@ const saveToServer: Save = (id, data, keyVersion) => put<VaultItemRecordDTO>(`/v
  * accepted to the vault session. Stops as soon as that session is locked:
  * nothing it decrypted stays in memory after the lock. When the vault no longer
  * has this session's key (reset in another tab), it locks it and stops with that error.
+ * When the vault is full, it stops there too: `full` says so, and `left` how many didn't go in.
  */
 export async function importItems(items: VaultItem[], onProgress: (done: number) => void, save: Save = saveToServer) {
   const { key, keyVersion, userId } = getSession()
@@ -31,9 +32,10 @@ export async function importItems(items: VaultItem[], onProgress: (done: number)
   const saved: VaultItem[] = []
   const revisions: Record<string, string> = {}
   let failed = 0
+  let full = false
   let next = 0
   async function worker() {
-    while (next < items.length && unlocked()) {
+    while (next < items.length && unlocked() && !full) {
       const item = items[next++]!
       try {
         const record = await save(item.id, await encryptItem(key!, userId!, item), keyVersion!)
@@ -45,6 +47,11 @@ export async function importItems(items: VaultItem[], onProgress: (done: number)
           if (unlocked()) lockVault()
           throw error
         }
+        // No room left: the rest would be refused too. Nothing more is sent.
+        if (error instanceof ApiError && error.code === 'vault_full') {
+          full = true
+          continue
+        }
         failed++
       }
       if (unlocked()) onProgress(saved.length + failed)
@@ -55,5 +62,5 @@ export async function importItems(items: VaultItem[], onProgress: (done: number)
   const ids = new Set(saved.map((i) => i.id))
   if (!applyItemsChange(key, before, (current) => [...current.filter((i) => !ids.has(i.id)), ...saved], revisions)) throw new VaultLockedError()
   if (saved.length) announceVaultItemsChange()
-  return { saved: saved.length, failed }
+  return { saved: saved.length, failed, full, left: items.length - saved.length }
 }

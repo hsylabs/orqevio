@@ -56,7 +56,8 @@
     "filters": {
       "all": "Alle",
       "logins": "Logins",
-      "notes": "Notities"
+      "notes": "Notities",
+      "favorites": "Favorieten"
     },
     "label": "Kluisitems",
     "noMatches": "Geen resultaten.",
@@ -191,7 +192,8 @@
       "repeat": "Herhaal het hoofdwachtwoord",
       "busy": "Sleutels genereren…",
       "submit": "Kluis maken",
-      "ready": "Je kluis is klaar. Alleen jij kunt hem openen."
+      "ready": "Je kluis is klaar. Alleen jij kunt hem openen.",
+      "elsewhere": "De kluis is eerst in een ander tabblad of op een ander apparaat ingesteld, dus de herstelsleutel die hier staat opent niets. Gebruik die van daar, met het hoofdwachtwoord van daar."
     },
     "recoveryKey": {
       "title": "Bewaar je herstelsleutel",
@@ -264,6 +266,15 @@
     "nothingNew": "Niets nieuws om te importeren",
     "duplicates_one": "{{count}} item staat al in je kluis en wordt overgeslagen",
     "duplicates_other": "{{count}} items staan al in je kluis en worden overgeslagen",
+    "room_one": "Er past maar {{count}} van de {{total}} in: de kluis bevat maximaal {{max}} items. Het eerste wordt geïmporteerd.",
+    "room_other": "Er passen maar {{count}} van de {{total}} in: de kluis bevat maximaal {{max}} items. De eerste {{count}} worden geïmporteerd.",
+    "full_one": "De kluis is vol (hij bevat maximaal {{max}} items): {{count}} item is niet geïmporteerd. Verwijder er een paar om ruimte te maken en importeer het bestand opnieuw: items die al zijn geïmporteerd, worden overgeslagen.",
+    "full_other": "De kluis is vol (hij bevat maximaal {{max}} items): {{count}} items zijn niet geïmporteerd. Verwijder er een paar om ruimte te maken en importeer het bestand opnieuw: items die al zijn geïmporteerd, worden overgeslagen.",
+    "folders_one": "{{count}} item stond in een map: de naam van de map komt in de notities",
+    "folders_other": "{{count}} items stonden in mappen: de naam van hun map komt in hun notities",
+    "reprompt_one": "{{count}} item vroeg opnieuw om het hoofdwachtwoord voordat Bitwarden het liet zien; hier toont de ontgrendelde kluis het",
+    "reprompt_other": "{{count}} items vroegen opnieuw om het hoofdwachtwoord voordat Bitwarden ze liet zien; hier toont de ontgrendelde kluis ze",
+    "noRoom": "De kluis is vol: hij bevat maximaal {{max}} items. Verwijder er een paar om ruimte te maken.",
     "extras_one": "{{count}} item heeft aangepaste velden, meer adressen of eerdere wachtwoorden: die komen in de notities ervan",
     "extras_other": "{{count}} items hebben aangepaste velden, meer adressen of eerdere wachtwoorden: die komen in hun notities",
     "passkeys_one": "{{count}} login heeft een passkey, die niet kan worden geïmporteerd; de rest van de login wel",
@@ -289,7 +300,8 @@
     "extra": {
       "fields": "Aangepaste velden:",
       "uris": "Andere adressen:",
-      "history": "Eerdere wachtwoorden:"
+      "history": "Eerdere wachtwoorden:",
+      "folder": "Map:"
     }
   },
   "export": {

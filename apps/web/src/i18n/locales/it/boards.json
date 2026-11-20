@@ -91,7 +91,12 @@
     "hasDescription": "Ha una descrizione",
     "linkedDocs": "Documenti collegati",
     "attachments": "Allegati",
-    "createdByName": "Creata da {{name}}"
+    "createdByName": "Creata da {{name}}",
+    "a11y": {
+      "labels": "Etichette: {{list}}",
+      "due": "Scadenza: {{date}}",
+      "checklist": "Checklist: {{done}} su {{total}} fatti"
+    }
   },
   "sheet": {
     "fallbackTitle": "Scheda",
@@ -167,7 +172,8 @@
     "editNamed": "Modifica {{name}}",
     "editUnnamed": "Modifica etichetta",
     "create": "Crea etichetta",
-    "deleted": "Etichetta «{{name}}» spostata nel cestino"
+    "deleted": "Etichetta «{{name}}» spostata nel cestino",
+    "deletedUnnamed": "Etichetta senza nome spostata nel cestino"
   },
   "linked": {
     "mentioned": "menzionata",

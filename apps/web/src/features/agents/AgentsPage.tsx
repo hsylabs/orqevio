@@ -1,5 +1,6 @@
+import { MCP_TOOL_GROUPS, isTokenActive } from '@orqevio/shared'
 import { Bot, LockKeyhole, Plus, ShieldCheck } from 'lucide-react'
-import { useState } from 'react'
+import { useId, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ActivityList } from '../../components/ActivityList'
@@ -12,34 +13,42 @@ import { CreateTokenDialog } from './CreateTokenDialog'
 import { mcpUrl } from './ConnectKit'
 import { TokenCard, useRevokeToken } from './TokenCard'
 
-/** The MCP tools, with the scope each needs; `id` names its description in the catalog. */
-const TOOLS = [
-  { id: 'listProjects', name: 'list_projects', scope: 'read' },
-  { id: 'search', name: 'search', scope: 'read' },
-  { id: 'readBoards', name: 'get_board · get_card', scope: 'tasksRead' },
-  { id: 'editCards', name: 'create_card · update_card · move_card', scope: 'tasksWrite' },
-  { id: 'archiveCard', name: 'archive_card', scope: 'tasksWrite' },
-  { id: 'organizeBoards', name: 'create_board · create_column · update_column', scope: 'tasksWrite' },
-  { id: 'labels', name: 'create_label · add_checklist_items · update_checklist_item', scope: 'tasksWrite' },
-  { id: 'readPages', name: 'list_pages · read_page', scope: 'docsRead' },
-  { id: 'writePages', name: 'create_page · update_page', scope: 'docsWrite' },
-  { id: 'linkCard', name: 'link_card_to_page', scope: 'write' },
-  { id: 'createProject', name: 'create_project', scope: 'write' },
-] as const
+/** Wide enough for activity and tools side by side (Tailwind's `lg`). */
+const WIDE = '(min-width: 1024px)'
+
+function useWide() {
+  return useSyncExternalStore(
+    (changed) => {
+      const media = window.matchMedia(WIDE)
+      media.addEventListener('change', changed)
+      return () => media.removeEventListener('change', changed)
+    },
+    () => window.matchMedia(WIDE).matches,
+  )
+}
 
 export function AgentsPage() {
   const { t } = useTranslation('agents')
   const { workspaceId } = useWorkspace()
   const tokens = useTokens()
   const [createOpen, setCreateOpen] = useState(false)
-  const [tokenFilter, setTokenFilter] = useState<string | undefined>()
-  const activity = useActivity(workspaceId, { agentsOnly: true, tokenId: tokenFilter })
+  // The access whose activity is shown, in the workspace it belongs to: another workspace starts with all of its own.
+  const [filter, setFilter] = useState<{ workspaceId: string; tokenId: string } | undefined>()
+  const tokenFilter = filter?.workspaceId === workspaceId ? filter.tokenId : undefined
+  const setTokenFilter = (tokenId: string | undefined) => setFilter(tokenId ? { workspaceId, tokenId } : undefined)
+  // Side by side, the activity scrolls in its own box, 40 at a time; on a phone the page is the only
+  // scroll, so it shows 10 and asks for more.
+  const wide = useWide()
+  const activity = useActivity(workspaceId, { agentsOnly: true, tokenId: tokenFilter, pageSize: wide ? 40 : 10 })
+  // An entry merged with a later one moves to the top, so it can come in two pages.
+  const entries = [...new Map((activity.data?.pages.flat() ?? []).map((entry) => [entry.id, entry])).values()]
+  const activityTitle = useId()
 
-  // The accesses of this workspace; those of the others are each on their own page.
+  // The accesses of this workspace; those of the others are each on their own page, counted if they still work.
   const here = (tokens.data ?? []).filter((token) => token.workspaceId === workspaceId)
   const elsewhere = [
     ...(tokens.data ?? [])
-      .filter((token) => token.workspaceId !== workspaceId)
+      .filter((token) => token.workspaceId !== workspaceId && isTokenActive(token))
       .reduce((spaces, token) => {
         const space = spaces.get(token.workspaceId) ?? { id: token.workspaceId, name: token.workspaceName, count: 0 }
         space.count += 1
@@ -47,7 +56,7 @@ export function AgentsPage() {
       }, new Map<string, { id: string; name: string; count: number }>())
       .values(),
   ]
-  const active = here.filter((token) => !token.revokedAt && (!token.expiresAt || new Date(token.expiresAt) > new Date()))
+  const active = here.filter((token) => isTokenActive(token))
   const inactive = here.filter((token) => !active.includes(token))
 
   const revoke = useRevokeToken()
@@ -143,7 +152,7 @@ export function AgentsPage() {
           <section className="mt-12 grid gap-8 lg:grid-cols-[1.3fr_1fr]">
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">
+                <h2 id={activityTitle} className="text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">
                   {tokenFilter ? t('activity.titleFor', { name: tokens.data?.find((token) => token.id === tokenFilter)?.name ?? '' }) : t('activity.title')}
                 </h2>
                 {tokenFilter && (
@@ -152,9 +161,24 @@ export function AgentsPage() {
                   </button>
                 )}
               </div>
-              <div className="rounded-[16px] border border-line bg-surface p-4 shadow-sm">
-                {activity.data?.length ? (
-                  <ActivityList items={activity.data} workspaceId={workspaceId} />
+              <div
+                key={tokenFilter ?? 'all'}
+                role="region"
+                aria-labelledby={activityTitle}
+                tabIndex={wide ? 0 : undefined}
+                className="rounded-[16px] border border-line bg-surface p-4 shadow-sm lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto lg:overscroll-contain"
+              >
+                {entries.length ? (
+                  <>
+                    <ActivityList items={entries} workspaceId={workspaceId} />
+                    {activity.hasNextPage && (
+                      <div className="mt-3 flex justify-center">
+                        <Button variant="ghost" size="sm" loading={activity.isFetchingNextPage} onClick={() => void activity.fetchNextPage()}>
+                          {t('activity.older')}
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <p className="py-8 text-center text-[13px] text-ink-3">{activity.isPending ? t('activity.loading') : t('activity.empty')}</p>
                 )}
@@ -163,11 +187,11 @@ export function AgentsPage() {
             <div>
               <h2 className="mb-3 text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('tools.title')}</h2>
               <ul className="overflow-hidden rounded-[16px] border border-line bg-surface shadow-sm">
-                {TOOLS.map((tool) => (
-                  <li key={tool.id} className="border-b border-line px-4 py-2.5 last:border-b-0">
-                    <p className="font-mono text-[11.5px] text-ink [overflow-wrap:anywhere]">{tool.name}</p>
+                {MCP_TOOL_GROUPS.map((group) => (
+                  <li key={group.id} className="border-b border-line px-4 py-2.5 last:border-b-0">
+                    <p className="font-mono text-[11.5px] text-ink [overflow-wrap:anywhere]">{group.tools.join(' · ')}</p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-ink-3">
-                      <span className="font-medium text-agent">{t(`tools.scopes.${tool.scope}`)}</span>· {t(`tools.descriptions.${tool.id}`)}
+                      <span className="font-medium text-agent">{t(`tools.scopes.${group.need}`)}</span>· {t(`tools.descriptions.${group.id}`)}
                     </p>
                   </li>
                 ))}

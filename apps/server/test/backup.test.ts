@@ -113,3 +113,23 @@ describe('backups with Node', () => {
     expect(existsSync(`${live.file}.before-restore`)).toBe(false)
   })
 })
+
+describe('restoring by hand while the app runs', () => {
+  it('refuses while the app has the database open, and says how to stop it; restores once it is closed', async () => {
+    const live = copy()
+    live.sqlite.prepare('INSERT INTO notes (body) VALUES (?)').run('in the backup')
+    const backup = await backupDatabase(live.file, path.join(live.dir, 'backup.db'))
+    live.sqlite.prepare('INSERT INTO notes (body) VALUES (?)').run('written while running')
+
+    await expect(restoreDatabase(backup.path, live.file, path.join(live.dir, 'uploads'))).rejects.toThrow(/app is running.*docker compose stop app/)
+    // Untouched: the app goes on with its database.
+    expect(existsSync(`${live.file}.before-restore`)).toBe(false)
+    live.sqlite.prepare('INSERT INTO notes (body) VALUES (?)').run('still writing')
+    expect(count(live.file)).toBe(3)
+
+    live.close()
+    const done = await restoreDatabase(backup.path, live.file, path.join(live.dir, 'uploads'))
+    expect(count(live.file)).toBe(1)
+    expect(count(done.kept!)).toBe(3)
+  })
+})

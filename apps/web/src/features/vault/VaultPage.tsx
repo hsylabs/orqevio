@@ -15,7 +15,7 @@ import { Segmented } from '../../components/ui/Segmented'
 import { useConfirm } from '../../components/ui/confirm'
 import { ApiError, del, errorMessage, get, patch, put } from '../../lib/api'
 import { cn } from '../../lib/cn'
-import { relativeTime } from '../../lib/format'
+import { monogram, relativeTime } from '../../lib/format'
 import { keys, queryClient } from '../../lib/queries'
 import { PageHeader } from '../shell/PageHeader'
 import { useWorkspace } from '../shell/workspace'
@@ -26,6 +26,7 @@ import { getSession, lockVault, sessionItemChanges, setAutoLock, useAutoLockRema
 import { type VaultBlocker, vaultBlockers } from '../../lib/browser'
 import { announceVaultChange, announceVaultItemsChange, applyItemsChange, freshVaultState, lockIfVaultChanged, reloadVaultItems } from './sync'
 import { estimateMasterPassword } from './strength'
+import { fold } from './fold'
 import { groupCode, parseTotp, totp } from './totp'
 import { ITEM_LIMITS, type VaultItem, type VaultItemType, emptyItem, tidyItem } from './types'
 import { VaultSetup, VaultUnlock } from './VaultGate'
@@ -308,7 +309,7 @@ function Unlocked() {
               { value: 'all', label: t('list.filters.all') },
               { value: 'login', label: t('list.filters.logins') },
               { value: 'note', label: t('list.filters.notes') },
-              { value: 'favorite', label: '★' },
+              { value: 'favorite', label: '★', name: t('list.filters.favorites') },
             ]}
           />
         </div>
@@ -387,7 +388,7 @@ function Unlocked() {
 function Monogram({ item, size = 34 }: { item: VaultItem; size?: number }) {
   return (
     <span className={cn('glyph rounded-[9px]', `c-${item.type === 'note' ? 'slate' : monogramColor(item.title)}`)} style={{ width: size, height: size, fontSize: size * 0.42 }}>
-      {item.type === 'note' ? <StickyNote style={{ width: size * 0.45, height: size * 0.45 }} /> : (item.title[0] ?? '·').toUpperCase()}
+      {item.type === 'note' ? <StickyNote style={{ width: size * 0.45, height: size * 0.45 }} /> : monogram(item.title)}
     </span>
   )
 }
@@ -664,10 +665,6 @@ const listOrder = (language: string | undefined) => (a: VaultItem, b: VaultItem)
 
 /** Tailwind's `md`: the list and the open item side by side. */
 const SIDE_BY_SIDE = '(min-width: 768px)'
-
-/** For searching: lower case, without accents (`Música` is found as `musica`). */
-const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
-
 function ChangeMasterDialog({ open, onOpenChange: setOpen }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { t } = useTranslation(['vault', 'common'])
   const { me } = useWorkspace()

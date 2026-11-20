@@ -32,3 +32,31 @@ test('replace the access key from Settings', async ({ page }) => {
   expect(attempt.status()).toBe(200)
   await fresh.close()
 })
+
+// What Backups says is kept is what is kept, and errors of backups and uploads come in the app's language.
+test('Backups says the ones made by hand are kept apart, and an empty file is said in Spanish', async ({ page, consoleErrors }, testInfo) => {
+  const workspaceId = await openNewWorkspace(page, 'Mensajes E2E')
+  const project = (await (await page.request.post(`/api/workspaces/${workspaceId}/projects`, { data: { name: 'Avisos' } })).json()) as { id: string }
+  const board = (await (await page.request.post(`/api/projects/${project.id}/boards`, { data: { name: 'Tareas' } })).json()) as { id: string }
+  const { columns } = (await (await page.request.get(`/api/boards/${board.id}`)).json()) as { columns: Array<{ id: string }> }
+  await page.request.post(`/api/columns/${columns[0]!.id}/cards`, { data: { title: 'Con un archivo vacío' } })
+
+  await page.getByRole('button', { name: /Lucía Martín/ }).click()
+  await page.getByRole('menuitem', { name: 'Ajustes' }).click()
+  await expect(page.getByText('Se conservan las 7 últimas copias diarias, las 7 últimas hechas por ti y la hecha antes de la última restauración.')).toBeVisible()
+
+  // To the board in the app, as a link does: a new load here races the requests still in flight in WebKit.
+  await page.evaluate((to) => {
+    window.history.pushState(null, '', to)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }, `/w/${workspaceId}/b/${board.id}`)
+  await page.getByRole('button', { name: 'Con un archivo vacío' }).click()
+  const chooser = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Adjuntar archivo' }).click()
+  await (await chooser).setFiles({ name: 'vacio.txt', mimeType: 'text/plain', buffer: Buffer.alloc(0) })
+  await expect(page.getByText('vacio.txt: El archivo está vacío.')).toBeVisible()
+  await page.screenshot({ path: testInfo.outputPath('3-archivo-vacio-en-castellano.png'), animations: 'disabled' })
+  // The browser logs the refused upload itself.
+  const refused = /status of 400/
+  consoleErrors.splice(0, consoleErrors.length, ...consoleErrors.filter((e) => !refused.test(e)))
+})

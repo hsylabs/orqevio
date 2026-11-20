@@ -51,6 +51,17 @@ describe('documents', () => {
     expect(after.body.pages[0].sources).toEqual(['manual'])
   })
 
+  it('names every page above a deep one, the top first', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { projectId } = await seedBoard(client, workspaceId)
+    let parentId: string | null = null
+    for (let i = 1; i <= 40; i++) parentId = (await client.post(`/api/projects/${projectId}/pages`, { title: `Nivel ${i}`, parentId })).body.id
+    const deepest = await client.get(`/api/pages/${parentId}`)
+    expect(deepest.body.title).toBe('Nivel 40')
+    // It used to stop at 32: the 7 at the top were missing.
+    expect(deepest.body.breadcrumbs.map((b: { title: string }) => b.title)).toEqual(Array.from({ length: 39 }, (_, i) => `Nivel ${i + 1}`))
+  })
+
   it('prevents moving a page inside its own subtree', async () => {
     const { client, workspaceId } = await signUp(h)
     const { projectId } = await seedBoard(client, workspaceId)
@@ -139,7 +150,7 @@ describe('documents', () => {
     // about a second by itself; a lookup per page that scanned a table would take far longer.
     const [entry] = (await client.get(`/api/workspaces/${workspaceId}/trash`)).body
     const restoring = Date.now()
-    expect((await client.post(`/api/trash/${entry.id}/restore`)).status).toBe(200)
+    expect((await client.post(`/api/trash/${entry.trashId}/restore`)).status).toBe(200)
     expect(Date.now() - restoring).toBeLessThan(5000)
     expect((await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent('nota 7999')}&type=page`)).body).toHaveLength(1)
   })

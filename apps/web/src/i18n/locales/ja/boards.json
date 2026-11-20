@@ -87,7 +87,12 @@
     "hasDescription": "説明あり",
     "linkedDocs": "リンクされたドキュメント",
     "attachments": "添付ファイル",
-    "createdByName": "作成者：{{name}}"
+    "createdByName": "作成者：{{name}}",
+    "a11y": {
+      "labels": "ラベル: {{list}}",
+      "due": "期限: {{date}}",
+      "checklist": "チェックリスト: {{total}}件中{{done}}件完了"
+    }
   },
   "sheet": {
     "fallbackTitle": "カード",
@@ -163,7 +168,8 @@
     "editNamed": "{{name}}を編集",
     "editUnnamed": "ラベルを編集",
     "create": "ラベルを作成",
-    "deleted": "ラベル「{{name}}」をゴミ箱に移動しました"
+    "deleted": "ラベル「{{name}}」をゴミ箱に移動しました",
+    "deletedUnnamed": "名前のないラベルをゴミ箱に移動しました"
   },
   "linked": {
     "mentioned": "メンション",

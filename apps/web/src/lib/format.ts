@@ -32,9 +32,12 @@ export function shortDate(iso: string) {
   return new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'short', ...(thisYear ? {} : { year: 'numeric' }) }).format(date)
 }
 
-/** "Friday, November 13, 2026, 03:12": a moment people pick among others, such as a backup. */
+/**
+ * "Friday, November 13, 2026 at 3:12 AM": a moment people pick among others, such as a backup. The
+ * time as the language writes it (no "03:12 AM" in English, "03:12" in German).
+ */
 export function dateTime(iso: string) {
-  return new Intl.DateTimeFormat(currentLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
+  return new Intl.DateTimeFormat(currentLocale(), { dateStyle: 'full', timeStyle: 'short' }).format(new Date(iso))
 }
 
 /** "Friday, November 13" */
@@ -79,9 +82,29 @@ export function greeting(date = new Date()) {
   return t('greeting.evening')
 }
 
+const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+
+/** The first character as people see it: a whole emoji or a letter with its accent, never half of one. */
+function firstCharacter(text: string) {
+  for (const { segment } of graphemes.segment(text.trim())) return segment
+  return ''
+}
+
+/** In capitals, unless that makes it more than one character (ß would become SS). */
+function capital(character: string) {
+  const upper = character.toUpperCase()
+  return [...upper].length === [...character].length ? upper : character
+}
+
+/** The letter on a project's, workspace's or vault item's tile: its first character, in capitals. */
+export function monogram(name: string, fallback = '·') {
+  return capital(firstCharacter(name)) || fallback
+}
+
+/** "Ana Ruiz" → "AR": the first character of the first and last words. */
 export function initials(name: string) {
   const parts = name.trim().split(/\s+/)
-  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts.at(-1)?.[0] ?? '') : '')).toUpperCase() || '·'
+  return (capital(firstCharacter(parts[0] ?? '')) + (parts.length > 1 ? capital(firstCharacter(parts.at(-1) ?? '')) : '')) || '·'
 }
 
 /** "12 B", "340 kB", "1.5 MB", with the units and separators of the language. */

@@ -1,8 +1,9 @@
 import { Dialog as D } from 'radix-ui'
 import { X } from 'lucide-react'
-import { type ReactNode, useLayoutEffect, useRef } from 'react'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../lib/cn'
+import { useReturnFocus } from './return-focus'
 
 interface DialogProps {
   open: boolean
@@ -17,16 +18,7 @@ interface DialogProps {
 
 export function Dialog({ open, onOpenChange, title, description, children, footer, width = 'max-w-[460px]', hideClose }: DialogProps) {
   const { t } = useTranslation()
-  // Where the focus goes back to on closing: what had it, or, when that was an item of a menu (gone
-  // by then), the menu's button.
-  const opener = useRef<{ element: Element | null; menuButton: HTMLElement | null }>({ element: null, menuButton: null })
-  useLayoutEffect(() => {
-    if (!open) return
-    const element = document.activeElement
-    const menu = element?.closest('[role="menu"]')
-    const menuButton = menu?.id ? document.querySelector<HTMLElement>(`[aria-controls="${CSS.escape(menu.id)}"]`) : null
-    opener.current = { element, menuButton }
-  }, [open])
+  const returnFocus = useReturnFocus(open)
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
@@ -41,12 +33,7 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
             field.focus()
           }}
           // Closing, the focus goes back to what had it; opened from a menu, to the menu's button.
-          onCloseAutoFocus={(e) => {
-            const { element, menuButton } = opener.current
-            if (element?.isConnected || !menuButton?.isConnected) return
-            e.preventDefault()
-            menuButton.focus()
-          }}
+          onCloseAutoFocus={returnFocus}
           className={cn(
             'fixed top-1/2 left-1/2 z-50 flex max-h-[min(88dvh,760px)] w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[18px] border border-line bg-sheet shadow-lg outline-none data-[state=open]:animate-[dialog-in_0.26s_var(--ease-out-quint)]',
             width,

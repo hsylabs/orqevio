@@ -58,7 +58,8 @@
     "filters": {
       "all": "Tout",
       "logins": "Identifiants",
-      "notes": "Notes"
+      "notes": "Notes",
+      "favorites": "Favoris"
     },
     "label": "Éléments du coffre-fort",
     "noMatches": "Aucun résultat.",
@@ -196,7 +197,8 @@
       "repeat": "Répétez le mot de passe principal",
       "busy": "Génération des clés…",
       "submit": "Créer le coffre-fort",
-      "ready": "Votre coffre-fort est prêt. Personne d’autre que vous ne peut l’ouvrir."
+      "ready": "Votre coffre-fort est prêt. Personne d’autre que vous ne peut l’ouvrir.",
+      "elsewhere": "Le coffre-fort a d’abord été configuré dans un autre onglet ou sur un autre appareil : la clé de récupération affichée ici n’ouvre rien. Utilisez celle affichée là-bas, avec son mot de passe principal."
     },
     "recoveryKey": {
       "title": "Enregistrez votre clé de récupération",
@@ -273,6 +275,19 @@
     "duplicates_one": "{{count}} élément figure déjà dans votre coffre-fort et sera ignoré",
     "duplicates_many": "{{count}} éléments figurent déjà dans votre coffre-fort et seront ignorés",
     "duplicates_other": "{{count}} éléments figurent déjà dans votre coffre-fort et seront ignorés",
+    "room_one": "Seul {{count}} élément sur {{total}} peut entrer : le coffre-fort contient au plus {{max}} éléments. Le premier est importé.",
+    "room_many": "Seuls {{count}} éléments sur {{total}} peuvent entrer : le coffre-fort contient au plus {{max}} éléments. Les {{count}} premiers sont importés.",
+    "room_other": "Seuls {{count}} éléments sur {{total}} peuvent entrer : le coffre-fort contient au plus {{max}} éléments. Les {{count}} premiers sont importés.",
+    "full_one": "Le coffre-fort est plein (il contient au plus {{max}} éléments) : {{count}} élément n’a pas été importé. Supprimez-en pour faire de la place et importez à nouveau le fichier : les éléments déjà importés seront ignorés.",
+    "full_many": "Le coffre-fort est plein (il contient au plus {{max}} éléments) : {{count}} éléments n’ont pas été importés. Supprimez-en pour faire de la place et importez à nouveau le fichier : les éléments déjà importés seront ignorés.",
+    "full_other": "Le coffre-fort est plein (il contient au plus {{max}} éléments) : {{count}} éléments n’ont pas été importés. Supprimez-en pour faire de la place et importez à nouveau le fichier : les éléments déjà importés seront ignorés.",
+    "folders_one": "{{count}} élément était dans un dossier : le nom du dossier est ajouté à ses notes",
+    "folders_many": "{{count}} éléments étaient dans des dossiers : le nom de leur dossier est ajouté à leurs notes",
+    "folders_other": "{{count}} éléments étaient dans des dossiers : le nom de leur dossier est ajouté à leurs notes",
+    "reprompt_one": "{{count}} élément redemandait le mot de passe principal avant que Bitwarden ne l’affiche ; ici, le coffre-fort déverrouillé l’affiche",
+    "reprompt_many": "{{count}} éléments redemandaient le mot de passe principal avant que Bitwarden ne les affiche ; ici, le coffre-fort déverrouillé les affiche",
+    "reprompt_other": "{{count}} éléments redemandaient le mot de passe principal avant que Bitwarden ne les affiche ; ici, le coffre-fort déverrouillé les affiche",
+    "noRoom": "Le coffre-fort est plein : il contient au plus {{max}} éléments. Supprimez-en pour faire de la place.",
     "extras_one": "{{count}} élément contient des champs personnalisés, d’autres adresses ou d’anciens mots de passe : ils sont ajoutés à ses notes",
     "extras_many": "{{count}} éléments contiennent des champs personnalisés, d’autres adresses ou d’anciens mots de passe : ils sont ajoutés à leurs notes",
     "extras_other": "{{count}} éléments contiennent des champs personnalisés, d’autres adresses ou d’anciens mots de passe : ils sont ajoutés à leurs notes",
@@ -305,7 +320,8 @@
     "extra": {
       "fields": "Champs personnalisés :",
       "uris": "Autres adresses :",
-      "history": "Anciens mots de passe :"
+      "history": "Anciens mots de passe :",
+      "folder": "Dossier :"
     }
   },
   "export": {

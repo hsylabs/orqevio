@@ -30,7 +30,8 @@
     "titleFor": "Attività di «{{name}}»",
     "showAll": "Mostra tutto",
     "loading": "Caricamento…",
-    "empty": "Quando un agente lavorerà in questo spazio, lo vedrai qui."
+    "empty": "Quando un agente lavorerà in questo spazio, lo vedrai qui.",
+    "older": "Mostra attività precedente"
   },
   "tools": {
     "title": "Strumenti MCP",
@@ -41,11 +42,13 @@
       "tasksRead": "Attività · lettura",
       "tasksWrite": "Attività · scrittura",
       "docsRead": "Documenti · lettura",
-      "docsWrite": "Documenti · scrittura"
+      "docsWrite": "Documenti · scrittura",
+      "organize": "Può eliminare e spostare"
     },
     "descriptions": {
       "listProjects": "Progetti, bacheche e struttura delle pagine",
       "search": "Ricerca in schede e pagine",
+      "readAttachments": "Leggere allegati di testo e immagini",
       "readBoards": "Colonne, schede, checklist e collegamenti",
       "editCards": "Creare, modificare e spostare schede",
       "archiveCard": "Archiviare (ripristinabile dall’app)",
@@ -53,8 +56,13 @@
       "labels": "Etichette e checklist",
       "readPages": "Albero delle pagine e contenuto Markdown",
       "writePages": "Creare e aggiornare, con controllo delle versioni",
+      "movePage": "Spostare pagine nel loro progetto",
+      "uploadAttachment": "Allegare file a schede e pagine",
       "linkCard": "Collegare attività e documenti",
-      "createProject": "Creare progetti"
+      "createProject": "Creare progetti",
+      "deleteTasks": "Eliminare schede, bacheche, colonne, etichette e checklist (nel cestino)",
+      "deleteDocs": "Eliminare pagine, progetti e allegati (nel cestino)",
+      "moveElsewhere": "Spostare allegati e scollegare schede dalle pagine"
     }
   },
   "revoke": {

@@ -1,0 +1,31 @@
+import { createHash } from 'node:crypto'
+
+/**
+ * A stream that lets bytes through as they come and, once they all have, says how many there were
+ * and their SHA-256: a file is checked while it is copied, without holding it in memory.
+ */
+export function measure() {
+  const hash = createHash('sha256')
+  let bytes = 0
+  let digest: string | null = null
+  const stream = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      hash.update(chunk)
+      bytes += chunk.length
+      controller.enqueue(chunk)
+    },
+    flush() {
+      digest = hash.digest('hex')
+    },
+  })
+  return {
+    stream,
+    /** What went through, once all of it has. */
+    result: () => {
+      if (digest === null) throw new Error('Not measured yet')
+      return { bytes, sha256: digest }
+    },
+    /** How much has gone through so far, and whether that was all (the stream ended). */
+    sofar: () => ({ bytes, ended: digest !== null }),
+  }
+}

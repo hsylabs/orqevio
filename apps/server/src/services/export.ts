@@ -1,7 +1,7 @@
-import { Zip, ZipDeflate, ZipPassThrough, strToU8 } from 'fflate'
 import { asc, eq } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { attachments, boards, cardLabels, cardPageLinks, cards, checklistItems, checklists, columns, labels, pages, projects, workspaceMembers, workspaces } from '../db/schema'
+import { ZipWriter } from '../lib/zip'
 import { VERSION } from '../version'
 import type { Access } from './access'
 import type { Deps } from './deps'
@@ -22,8 +22,15 @@ const utf8 = new TextEncoder()
 /** Names Windows keeps for devices, even with an extension after them (NUL.txt, con.tar.gz). */
 const DEVICE = /^(?:con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³]|conin\$|conout\$)(?=\.|$)/i
 
+/**
+ * Characters that show nothing (zero-width spaces, direction marks, blank fillers): two names that
+ * differ only by them look the same, and some systems drop them. The joiner of emoji (U+200D) stays.
+ */
+const INVISIBLE = /(?!\u200D)[\p{Cf}\u115F\u1160\u3164\uFFA0]/gu
+
 function cleanName(name: string, maxBytes: number) {
-  const clean = name.replace(UNSAFE, '-').replace(/\s+/g, ' ').trim().replace(/^\.+/, '').replace(/[. ]+$/, '')
+  // Composed, as Windows and Linux keep it: macOS takes "é" and "e" + accent as the same name.
+  const clean = name.normalize('NFC').replace(INVISIBLE, '').replace(UNSAFE, '-').replace(/\s+/g, ' ').trim().replace(/^\.+/, '').replace(/[. ]+$/, '')
   let cut = ''
   let bytes = 0
   for (const char of clean) {
@@ -49,13 +56,15 @@ export function safeName(name: string, fallback = 'Untitled', maxBytes = NAME_BY
  * go through the same namer, so that no file and no folder takes another's name.
  */
 function namer(reserved: string[] = []) {
-  const taken = new Set(reserved.map((name) => name.toLowerCase()))
-  const free = (stem: string, endings: string[]) => endings.every((ending) => !taken.has(`${stem}${ending}`.toLowerCase()))
+  // Compared as a file system that ignores case and normalization (macOS, Windows) would.
+  const same = (name: string) => name.normalize('NFC').toLowerCase()
+  const taken = new Set(reserved.map(same))
+  const free = (stem: string, endings: string[]) => endings.every((ending) => !taken.has(same(`${stem}${ending}`)))
   /** The first free stem for every one of `endings` (just the name, by default), which it then takes. */
   return (name: string, endings = ['']) => {
     let stem = name
     for (let n = 2; !free(stem, endings); n++) stem = `${name} (${n})`
-    for (const ending of endings) taken.add(`${stem}${ending}`.toLowerCase())
+    for (const ending of endings) taken.add(same(`${stem}${ending}`))
     return stem
   }
 }
@@ -84,9 +93,15 @@ const REFERENCE = new RegExp(String.raw`${DESTINATION}\/(doc|card)\/(${UUID})(?=
 /** A fence that opens or closes a code block, also inside a quote or a list item. */
 const FENCE = /^[ \t]*(?:>[ \t]?)*[ \t]*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?(`{3,}|~{3,})(.*)$/
 
+/** A line indented as code: four spaces or a tab. */
+const INDENTED = /^(?: {4}|\t)/
+/** A list item, whose own lines are indented as much without being code. */
+const LIST_ITEM = /^[ \t]{0,3}(?:>[ \t]?)*(?:[-*+]|\d{1,9}[.)])(?:[ \t]|$)/
+
 /**
- * Applies `change` to a Markdown text but not to its code, fenced blocks and inline spans, which
- * are kept exactly as they are: a link written in an example is part of the example.
+ * Applies `change` to a Markdown text but not to its code (fenced blocks, blocks indented by four
+ * spaces after a blank line, and inline spans), which is kept exactly as it is: a link written in
+ * an example is part of the example.
  */
 export function outsideCode(markdown: string, change: (text: string) => string) {
   const out: string[] = []
@@ -96,18 +111,41 @@ export function outsideCode(markdown: string, change: (text: string) => string) 
     text = ''
   }
   let fence: { char: string; size: number } | null = null
+  let indented = false
+  // A blank line before (or the start), outside a list: what an indented code block needs to begin.
+  let blank = true
+  let inList = false
   for (const line of markdown.split(/(?<=\n)/)) {
-    const match = FENCE.exec(line.replace(/\r?\n$/, ''))
+    const bare = line.replace(/\r?\n$/, '')
+    const match = FENCE.exec(bare)
     if (fence) {
       out.push(line)
       if (match && match[1]![0] === fence.char && match[1]!.length >= fence.size && !match[2]!.trim()) fence = null
-    } else if (match && !(match[1]![0] === '`' && match[2]!.includes('`'))) {
+      continue
+    }
+    if (indented) {
+      if (!bare.trim() || INDENTED.test(bare)) {
+        out.push(line)
+        blank = !bare.trim()
+        continue
+      }
+      indented = false
+    }
+    if (match && !(match[1]![0] === '`' && match[2]!.includes('`'))) {
       flush()
       out.push(line)
       fence = { char: match[1]![0]!, size: match[1]!.length }
+    } else if (blank && !inList && INDENTED.test(bare) && bare.trim()) {
+      flush()
+      out.push(line)
+      indented = true
     } else {
       text += line
+      if (LIST_ITEM.test(bare)) inList = true
+      // Text back at the margin, after a blank line, ends the list.
+      else if (bare.trim() && !/^[ \t]/.test(bare) && blank) inList = false
     }
+    blank = !bare.trim()
   }
   flush()
   return out.join('')
@@ -165,20 +203,9 @@ export class ExportService {
 
     const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>()
     const writer = writable.getWriter()
-    let failed: unknown = null
-    const zip = new Zip((error, chunk, final) => {
-      if (error) {
-        failed = error
-        void writer.abort(error).catch(() => {})
-        return
-      }
-      void writer.write(chunk).catch(() => {})
-      if (final) void writer.close().catch(() => {})
-    })
-    const add = (entry: ZipDeflate, data: Uint8Array) => {
-      zip.add(entry)
-      entry.push(data, true)
-    }
+    // Each piece waits for the browser to take the last one: memory stays flat whatever the size.
+    const zip = new ZipWriter((chunk) => writer.write(chunk))
+    const text = (value: string) => new TextEncoder().encode(value)
 
     void (async () => {
       try {
@@ -186,25 +213,14 @@ export class ExportService {
         const missing = new Set<string>()
         for (const file of files) if (!(await this.deps.storage.exists(file.storageKey))) missing.add(file.path)
         const about = { format: EXPORT_FORMAT, version: 1, app: VERSION, exportedAt: now.toISOString(), workspaces: summary, missingAttachments: [...missing].map((path) => path.slice(root.length + 1)) }
-        add(new ZipDeflate(`${root}/export.json`, { level: 6 }), strToU8(`${JSON.stringify(about, null, 2)}\n`))
-        for (const [path, text] of texts) add(new ZipDeflate(path, { level: 6 }), strToU8(text))
+        await zip.add(`${root}/export.json`, text(`${JSON.stringify(about, null, 2)}\n`), now)
+        for (const [path, content] of texts) await zip.add(path, text(content), now)
         for (const file of files) {
           const body = missing.has(file.path) ? null : await this.deps.storage.stream(file.storageKey)
-          if (!body) continue
-          const entry = new ZipPassThrough(file.path)
-          zip.add(entry)
-          const reader = (body as ReadableStream<Uint8Array>).getReader()
-          for (;;) {
-            // Backpressure: the next piece of a file is read once the browser took the last one.
-            await writer.ready
-            const { value, done } = await reader.read()
-            if (done) break
-            if (failed) throw failed
-            entry.push(value)
-          }
-          entry.push(new Uint8Array(0), true)
+          if (body) await zip.addStream(file.path, file.size, body as ReadableStream<Uint8Array>, now)
         }
-        zip.end()
+        await zip.end()
+        await writer.close()
       } catch (error) {
         console.error('[export] failed', error)
         await writer.abort(error).catch(() => {})
@@ -366,9 +382,8 @@ export class ExportService {
                 due: day(card.dueAt),
                 archived: card.archivedAt !== null,
                 checklists: checklistsOf(card.id).map((list) => ({ title: list.title, items: itemsOf(list.id).map((i) => ({ text: i.text, done: i.done })) })),
-                documents: linksOf(card.id)
-                  .map((link) => pagePath.get(link.pageId))
-                  .filter(Boolean),
+                // A document linked by hand and mentioned too is one document.
+                documents: [...new Set(linksOf(card.id).map((link) => pagePath.get(link.pageId)))].filter(Boolean),
                 attachments: filesOf(card.id).map((f) => filePath.get(f.id)),
                 createdAt: iso(card.createdAt),
                 updatedAt: iso(card.updatedAt),

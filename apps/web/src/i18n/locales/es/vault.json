@@ -58,7 +58,8 @@
     "filters": {
       "all": "Todo",
       "logins": "Credenciales",
-      "notes": "Notas"
+      "notes": "Notas",
+      "favorites": "Favoritos"
     },
     "label": "Elementos de la bóveda",
     "noMatches": "Sin coincidencias.",
@@ -196,7 +197,8 @@
       "repeat": "Repite la contraseña maestra",
       "busy": "Generando claves…",
       "submit": "Crear bóveda",
-      "ready": "Bóveda lista. Solo tú puedes abrirla."
+      "ready": "Bóveda lista. Solo tú puedes abrirla.",
+      "elsewhere": "La bóveda se configuró antes en otra pestaña o en otro dispositivo, así que la clave de recuperación de esta pantalla no sirve. Usa la que se mostró allí, con su contraseña maestra."
     },
     "recoveryKey": {
       "title": "Guarda tu clave de recuperación",
@@ -273,6 +275,19 @@
     "duplicates_one": "{{count}} elemento ya estaba en tu bóveda y se omite",
     "duplicates_many": "{{count}} elementos ya estaban en tu bóveda y se omiten",
     "duplicates_other": "{{count}} elementos ya estaban en tu bóveda y se omiten",
+    "room_one": "Solo cabe {{count}} de los {{total}}: la bóveda guarda hasta {{max}} elementos. Se importa el primero.",
+    "room_many": "Solo caben {{count}} de los {{total}}: la bóveda guarda hasta {{max}} elementos. Se importan los {{count}} primeros.",
+    "room_other": "Solo caben {{count}} de los {{total}}: la bóveda guarda hasta {{max}} elementos. Se importan los {{count}} primeros.",
+    "full_one": "La bóveda se ha llenado (guarda hasta {{max}} elementos): {{count}} elemento no se ha importado. Borra algunos para hacer sitio y vuelve a importar el archivo: los ya importados se omitirán.",
+    "full_many": "La bóveda se ha llenado (guarda hasta {{max}} elementos): {{count}} elementos no se han importado. Borra algunos para hacer sitio y vuelve a importar el archivo: los ya importados se omitirán.",
+    "full_other": "La bóveda se ha llenado (guarda hasta {{max}} elementos): {{count}} elementos no se han importado. Borra algunos para hacer sitio y vuelve a importar el archivo: los ya importados se omitirán.",
+    "folders_one": "{{count}} elemento estaba en una carpeta: el nombre de la carpeta se guarda en sus notas",
+    "folders_many": "{{count}} elementos estaban en carpetas: el nombre de su carpeta se guarda en sus notas",
+    "folders_other": "{{count}} elementos estaban en carpetas: el nombre de su carpeta se guarda en sus notas",
+    "reprompt_one": "{{count}} elemento pedía otra vez la contraseña maestra para verlo en Bitwarden; aquí se ve con la bóveda desbloqueada",
+    "reprompt_many": "{{count}} elementos pedían otra vez la contraseña maestra para verlos en Bitwarden; aquí se ven con la bóveda desbloqueada",
+    "reprompt_other": "{{count}} elementos pedían otra vez la contraseña maestra para verlos en Bitwarden; aquí se ven con la bóveda desbloqueada",
+    "noRoom": "La bóveda está llena: guarda hasta {{max}} elementos. Borra algunos para hacer sitio.",
     "extras_one": "{{count}} elemento trae campos personalizados, más direcciones o contraseñas anteriores: se guardan en sus notas",
     "extras_many": "{{count}} elementos traen campos personalizados, más direcciones o contraseñas anteriores: se guardan en sus notas",
     "extras_other": "{{count}} elementos traen campos personalizados, más direcciones o contraseñas anteriores: se guardan en sus notas",
@@ -305,7 +320,8 @@
     "extra": {
       "fields": "Campos personalizados:",
       "uris": "Otras direcciones:",
-      "history": "Contraseñas anteriores:"
+      "history": "Contraseñas anteriores:",
+      "folder": "Carpeta:"
     }
   },
   "export": {

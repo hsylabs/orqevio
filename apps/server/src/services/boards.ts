@@ -252,9 +252,13 @@ export class BoardService {
   async updateLabel(actor: Actor, labelId: string, input: unknown) {
     const data = parse(labelUpdateInput, input)
     const label = await this.loadLabel(actor, labelId)
-    // Nothing to change: neither a write nor an entry in the activity.
-    if (data.name === undefined && data.color === undefined) return toLabelDTO(label)
-    const [row] = await this.deps.db.update(labels).set(data).where(eq(labels.id, labelId)).returning()
+    // Only what differs is a change: the same name or colour sent again is nothing to write or tell.
+    const patch = {
+      ...(data.name !== undefined && data.name !== label.name ? { name: data.name } : {}),
+      ...(data.color !== undefined && data.color !== label.color ? { color: data.color } : {}),
+    }
+    if (Object.keys(patch).length === 0) return toLabelDTO(label)
+    const [row] = await this.deps.db.update(labels).set(patch).where(eq(labels.id, labelId)).returning()
     await this.activity.record(
       actor,
       label.workspaceId,

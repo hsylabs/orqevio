@@ -26,6 +26,12 @@
     "title": "Qui non c’è niente",
     "body": "La pagina non esiste o non hai accesso."
   },
+  "gone": {
+    "card": "Questa scheda non esiste più",
+    "page": "Questa pagina non esiste più",
+    "cardBody": "È stata eliminata definitivamente o si trova in uno spazio a cui non hai accesso.",
+    "pageBody": "È stata eliminata definitivamente o si trova in uno spazio a cui non hai accesso."
+  },
   "time": {
     "justNow": "proprio ora"
   },

@@ -20,7 +20,15 @@
     "vault_item_changed": "Este elemento ha cambiado en otra pestaña o en otro dispositivo. Ya ves cómo está ahora: vuelve a hacer tu cambio si aún hace falta.",
     "too_many_columns": "Un tablero admite hasta 20 columnas.",
     "vault_full": "La bóveda admite hasta 5.000 elementos. Borra los que ya no uses para añadir más.",
-    "unauthorized": "Tu sesión ha terminado. Vuelve a entrar."
+    "unauthorized": "Tu sesión ha terminado. Vuelve a entrar.",
+    "backup_folder": "No se ha podido hacer la copia: hay un problema con la carpeta de copias. Mira el aviso de Ajustes.",
+    "backup_damaged": "Esta copia de seguridad está dañada o incompleta, así que no se puede restaurar. Prueba con otra.",
+    "backup_newer": "Esta copia de seguridad la hizo una versión más nueva de Orqevio: actualiza esta copia antes de restaurarla.",
+    "backup_running": "Ya se está haciendo o restaurando una copia de seguridad. Espera a que termine.",
+    "backups_off": "Esta copia no hace copias de seguridad.",
+    "restoring": "Se está restaurando una copia de seguridad: vuelve a subir el archivo dentro de un momento.",
+    "file_empty": "El archivo está vacío.",
+    "uninstalled": "Esta copia de Orqevio se ha desinstalado."
   },
   "notFound": "No se ha encontrado el elemento.",
   "server": "Algo ha fallado en el servidor. Inténtalo de nuevo.",

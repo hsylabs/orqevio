@@ -19,7 +19,15 @@
     "vault_item_changed": "This item changed in another tab or on another device. You now see it as it is: make your change again if it is still needed.",
     "too_many_columns": "A board holds up to 20 columns.",
     "vault_full": "The vault holds up to 5,000 items. Delete the ones you no longer use to add more.",
-    "unauthorized": "Your session has ended. Sign in again."
+    "unauthorized": "Your session has ended. Sign in again.",
+    "backup_folder": "The backup couldn’t be made: there is a problem with the backups folder. See the notice in Settings.",
+    "backup_damaged": "This backup is damaged or incomplete, so it can’t be restored. Try another one.",
+    "backup_newer": "This backup was made by a newer version of Orqevio: update this copy before restoring it.",
+    "backup_running": "A backup is already being made or restored. Wait for it to finish.",
+    "backups_off": "This copy makes no backups.",
+    "restoring": "A backup is being restored: upload the file again in a moment.",
+    "file_empty": "The file is empty.",
+    "uninstalled": "This copy of Orqevio was uninstalled."
   },
   "notFound": "The item couldn’t be found.",
   "server": "Something went wrong on the server. Try again.",
