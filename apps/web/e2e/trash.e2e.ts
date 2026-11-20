@@ -65,7 +65,10 @@ test('deleted things wait in the trash, to undo, restore or delete for good', as
   const truck = list.getByRole('listitem', { name: 'Contratar camión' })
   await expect(truck).toContainText('Tarjeta · Mudanza › Tareas › Por hacer')
   await expect(truck).toContainText('Borrado por Lucía Martín')
-  await expect(truck).toContainText('Se borrará para siempre dentro de 30 días')
+  // When, exactly, and when it goes for good: on its time, not repeated in every row.
+  await truck.locator('time').first().hover()
+  await expect(page.getByRole('tooltip')).toContainText(/^Borrado el .+\. Se borrará para siempre el .+\.$/)
+  await page.mouse.move(0, 0)
 
   // Restored, it goes back to its column, and says where.
   await truck.getByRole('button', { name: 'Restaurar «Contratar camión»' }).click()
