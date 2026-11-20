@@ -1,8 +1,10 @@
 import { Client as McpClient } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import { type HistoryEntryDTO, MAX_MARKDOWN } from '@orqevio/shared'
+import { strFromU8, unzipSync } from 'fflate'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { VERSION } from '../src/version'
-import { Client, type Harness, createHarness, seedBoard, signUp } from './harness'
+import { Client, type Harness, ORIGIN, createHarness, seedBoard, signUp } from './harness'
 
 let h: Harness
 beforeAll(async () => {
@@ -509,6 +511,57 @@ describe('MCP server', () => {
     const full = await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: 'c', mode: 'append' } })
     expect(full.isError).toBe(true)
     expect(text(full)).toContain('at most 0 more fit')
+  })
+
+  it('takes a card description as long as the app does, and refuses a longer one without touching the card', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const mcp = await connect((await createToken(client, workspaceId, ['tasks:read', 'tasks:write'])).token)
+    // As a card copied from Trello with its comments: lines of Markdown, letters from other scripts included.
+    // The limit counts characters, so an emoji is one, as for a person, though it takes two UTF-16 units.
+    const characters = (text: string) => [...text].length
+    const markdown = (who: string, length: number) => {
+      const line = `- **${who}**: comentario copiado de Trello — ñandú, 日本 🦤\n`
+      const lines = line.repeat(Math.floor(length / characters(line)))
+      return lines + '.'.repeat(length - characters(lines))
+    }
+    const first = markdown('Ana', MAX_MARKDOWN)
+    const second = markdown('Luis', MAX_MARKDOWN)
+    expect([characters(first), characters(second)]).toEqual([200_000, 200_000])
+    expect(first.length).toBeGreaterThan(200_000)
+
+    const card = data(await mcp.callTool({ name: 'create_card', arguments: { column_id: columns[0]!.id, title: 'Copiada de Trello', description: first } }))
+    const updated = data(await mcp.callTool({ name: 'update_card', arguments: { card_id: card.card_id, description: second, base_version: 1 } }))
+    expect(updated.version).toBe(2)
+    expect(data(await mcp.callTool({ name: 'get_card', arguments: { card_id: card.card_id } })).description).toBe(second)
+
+    // One character more is refused, on create and on update, saying the limit.
+    const tooLong = await mcp.callTool({ name: 'create_card', arguments: { column_id: columns[0]!.id, title: 'Demasiado larga', description: `${first}!` } })
+    expect(tooLong.isError).toBe(true)
+    expect(text(tooLong)).toContain('200000')
+    const refused = await mcp.callTool({ name: 'update_card', arguments: { card_id: card.card_id, description: `${second}!`, base_version: 2 } })
+    expect(refused.isError).toBe(true)
+    expect(text(refused)).toContain('200000')
+    const board = data(await mcp.callTool({ name: 'get_board', arguments: { board_id: (await client.get(`/api/cards/${card.card_id}`)).body.boardId } }))
+    expect(JSON.stringify(board)).not.toContain('Demasiado larga')
+
+    // The app has it whole, its history keeps both versions whole, and the export carries it.
+    const kept = await client.get(`/api/cards/${card.card_id}`)
+    expect(kept.body).toMatchObject({ version: 2 })
+    expect(kept.body.description).toBe(second)
+    const history = ((await client.get(`/api/cards/${card.card_id}/history`)).body as HistoryEntryDTO[]).filter((e) => e.kind === 'card.description')
+    expect(history).toHaveLength(2)
+    const versions = await Promise.all(history.map(async (e) => (await client.get(`/api/history/${e.id}`)).body))
+    expect(versions.map((v) => [v.before, v.after])).toEqual([
+      [first, second],
+      ['', first],
+    ])
+    const res = await h.app.request('/api/export', { headers: { Cookie: client.cookie, Origin: ORIGIN } })
+    expect(res.status).toBe(200)
+    const files = unzipSync(new Uint8Array(await res.arrayBuffer()))
+    const tasks = Object.entries(files).find(([name]) => name.endsWith('/tasks.json'))!
+    const exported = JSON.parse(strFromU8(tasks[1])).projects[0].boards[0].columns[0].cards
+    expect(exported.find((c: { title: string }) => c.title === 'Copiada de Trello').description).toBe(second)
   })
 
   it('reports permission errors as tool errors', async () => {

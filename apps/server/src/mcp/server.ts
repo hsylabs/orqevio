@@ -273,11 +273,11 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       'create_card',
       {
         title: 'Create card',
-        description: 'Creates a card in a column. Description is Markdown.',
+        description: `Creates a card in a column. description is Markdown, up to ${MAX_MARKDOWN} characters.`,
         inputSchema: {
           column_id: uuid,
           title: z.string().min(1).max(300),
-          description: z.string().max(50_000).optional(),
+          description: z.string().max(MAX_MARKDOWN).optional(),
           due_date: dueDate.optional(),
           label_ids: z.array(uuid).max(20).optional(),
           position: z.enum(['top', 'bottom']).default('bottom'),
@@ -302,11 +302,11 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       {
         title: 'Update card',
         description:
-          'Updates a card. Only the fields you send change. label_ids replaces the full label set. With a description, send base_version (the version from get_card) to avoid overwriting newer edits.',
+          `Updates a card. Only the fields you send change. label_ids replaces the full label set. description is Markdown, up to ${MAX_MARKDOWN} characters; with it, send base_version (the version from get_card) to avoid overwriting newer edits.`,
         inputSchema: {
           card_id: uuid,
           title: z.string().min(1).max(300).optional(),
-          description: z.string().max(50_000).optional(),
+          description: z.string().max(MAX_MARKDOWN).optional(),
           base_version: z.number().int().min(1).optional(),
           due_date: dueDate.nullable().optional(),
           label_ids: z.array(uuid).max(20).optional(),
