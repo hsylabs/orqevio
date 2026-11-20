@@ -172,7 +172,8 @@
     "editNamed": "Modifica {{name}}",
     "editUnnamed": "Modifica etichetta",
     "create": "Crea etichetta",
-    "deleted": "Etichetta «{{name}}» spostata nel cestino"
+    "deleted": "Etichetta «{{name}}» spostata nel cestino",
+    "deletedUnnamed": "Etichetta senza nome spostata nel cestino"
   },
   "linked": {
     "mentioned": "menzionata",

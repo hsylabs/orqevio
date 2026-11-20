@@ -22,6 +22,7 @@
   "noLineChanges": "Aucune ligne n’a changé.",
   "movedTo": "Son emplacement n’existait plus, elle est donc allée dans {{place}}",
   "quoted": "« {{name}} »",
+  "unnamedLabel": "(sans nom)",
   "kinds": {
     "page": {
       "created": "<actor>{{actor}}</actor> a créé cette page",

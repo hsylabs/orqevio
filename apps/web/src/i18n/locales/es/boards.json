@@ -172,7 +172,8 @@
     "editNamed": "Editar {{name}}",
     "editUnnamed": "Editar etiqueta",
     "create": "Crear etiqueta",
-    "deleted": "Etiqueta «{{name}}» movida a la papelera"
+    "deleted": "Etiqueta «{{name}}» movida a la papelera",
+    "deletedUnnamed": "Etiqueta sin nombre movida a la papelera"
   },
   "linked": {
     "mentioned": "mencionada",
