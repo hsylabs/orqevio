@@ -89,7 +89,12 @@
     "hasDescription": "Has a description",
     "linkedDocs": "Linked documents",
     "attachments": "Attachments",
-    "createdByName": "Created by {{name}}"
+    "createdByName": "Created by {{name}}",
+    "a11y": {
+      "labels": "Labels: {{list}}",
+      "due": "Due: {{date}}",
+      "checklist": "Checklist: {{done}} of {{total}} done"
+    }
   },
   "sheet": {
     "fallbackTitle": "Card",

@@ -56,7 +56,8 @@
     "filters": {
       "all": "Alle",
       "logins": "Logins",
-      "notes": "Notizen"
+      "notes": "Notizen",
+      "favorites": "Favoriten"
     },
     "label": "Tresoreinträge",
     "noMatches": "Keine Treffer.",

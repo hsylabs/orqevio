@@ -56,7 +56,8 @@
     "filters": {
       "all": "All",
       "logins": "Logins",
-      "notes": "Notes"
+      "notes": "Notes",
+      "favorites": "Favorites"
     },
     "label": "Vault items",
     "noMatches": "No matches.",

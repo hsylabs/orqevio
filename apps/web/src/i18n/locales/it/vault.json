@@ -58,7 +58,8 @@
     "filters": {
       "all": "Tutti",
       "logins": "Login",
-      "notes": "Note"
+      "notes": "Note",
+      "favorites": "Preferiti"
     },
     "label": "Elementi della cassaforte",
     "noMatches": "Nessun risultato.",

@@ -89,7 +89,12 @@
     "hasDescription": "Hat eine Beschreibung",
     "linkedDocs": "Verknüpfte Dokumente",
     "attachments": "Anhänge",
-    "createdByName": "Erstellt von {{name}}"
+    "createdByName": "Erstellt von {{name}}",
+    "a11y": {
+      "labels": "Labels: {{list}}",
+      "due": "Fällig: {{date}}",
+      "checklist": "Checkliste: {{done}} von {{total}} erledigt"
+    }
   },
   "sheet": {
     "fallbackTitle": "Karte",

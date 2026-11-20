@@ -25,7 +25,7 @@ export function PageHeader({ crumbs, actions, className }: { crumbs: Crumb[]; ac
     <header className={cn('flex h-[52px] shrink-0 items-center gap-2 border-b border-line px-3 sm:px-4', className)}>
       <div className={cn(sidebarOpen && 'min-[900px]:hidden')}>
         <Tooltip label={sidebarOpen ? t('header.hideSidebar') : t('header.showSidebar')} keys={['mod', '\\']}>
-          <button type="button" onClick={toggleSidebar} className="grid size-8 place-items-center rounded-[8px] text-ink-3 hover:bg-hover hover:text-ink" aria-label={t('header.toggleSidebar')}>
+          <button type="button" onClick={toggleSidebar} className="grid size-8 place-items-center rounded-[8px] text-ink-3 hover:bg-hover hover:text-ink" aria-label={t('header.toggleSidebar')} aria-expanded={sidebarOpen}>
             <PanelLeft className="size-[17px]" />
           </button>
         </Tooltip>

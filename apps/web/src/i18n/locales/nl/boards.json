@@ -89,7 +89,12 @@
     "hasDescription": "Heeft een beschrijving",
     "linkedDocs": "Gekoppelde documenten",
     "attachments": "Bijlagen",
-    "createdByName": "Aangemaakt door {{name}}"
+    "createdByName": "Aangemaakt door {{name}}",
+    "a11y": {
+      "labels": "Labels: {{list}}",
+      "due": "Deadline: {{date}}",
+      "checklist": "Checklist: {{done}} van {{total}} gedaan"
+    }
   },
   "sheet": {
     "fallbackTitle": "Kaart",

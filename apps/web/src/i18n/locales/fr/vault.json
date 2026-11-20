@@ -58,7 +58,8 @@
     "filters": {
       "all": "Tout",
       "logins": "Identifiants",
-      "notes": "Notes"
+      "notes": "Notes",
+      "favorites": "Favoris"
     },
     "label": "Éléments du coffre-fort",
     "noMatches": "Aucun résultat.",

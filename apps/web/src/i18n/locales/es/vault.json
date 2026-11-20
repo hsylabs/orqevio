@@ -58,7 +58,8 @@
     "filters": {
       "all": "Todo",
       "logins": "Credenciales",
-      "notes": "Notas"
+      "notes": "Notas",
+      "favorites": "Favoritos"
     },
     "label": "Elementos de la bóveda",
     "noMatches": "Sin coincidencias.",

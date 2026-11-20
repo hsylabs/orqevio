@@ -32,9 +32,12 @@ export function shortDate(iso: string) {
   return new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'short', ...(thisYear ? {} : { year: 'numeric' }) }).format(date)
 }
 
-/** "Friday, November 13, 2026, 03:12": a moment people pick among others, such as a backup. */
+/**
+ * "Friday, November 13, 2026 at 3:12 AM": a moment people pick among others, such as a backup. The
+ * time as the language writes it (no "03:12 AM" in English, "03:12" in German).
+ */
 export function dateTime(iso: string) {
-  return new Intl.DateTimeFormat(currentLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
+  return new Intl.DateTimeFormat(currentLocale(), { dateStyle: 'full', timeStyle: 'short' }).format(new Date(iso))
 }
 
 /** "Friday, November 13" */

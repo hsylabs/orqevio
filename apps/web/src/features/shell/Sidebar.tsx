@@ -179,7 +179,7 @@ function WorkspaceSwitcher({ live }: { live: boolean }) {
       <MenuContent align="start" className="w-[240px]">
         <MenuLabel>{t('workspace.heading')}</MenuLabel>
         {me.workspaces.map((w) => (
-          <MenuItem key={w.id} onSelect={() => navigate(`/w/${w.id}`)} icon={<span className="glyph c-slate size-5 text-[11px]">{w.name[0]?.toUpperCase()}</span>}>
+          <MenuItem key={w.id} current={w.id === workspaceId} onSelect={() => navigate(`/w/${w.id}`)} icon={<span className="glyph c-slate size-5 text-[11px]">{w.name[0]?.toUpperCase()}</span>}>
             <span className="flex items-center justify-between gap-2">
               <span className="truncate">{w.name}</span>
               {w.id === workspaceId && <Check className="size-[14px] text-accent" />}

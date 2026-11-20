@@ -48,6 +48,8 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
       className={cn('flex max-h-full w-[288px] shrink-0 flex-col rounded-[14px] bg-sunken shadow-[inset_0_0_0_1px_var(--line)]', isDragging && 'opacity-40')}
     >
       <header className="flex h-10 shrink-0 items-center gap-1.5 pt-1 pr-1.5 pl-3">
+        {/* A heading to go from column to column with a screen reader; the name shows in the handle. */}
+        <h2 className="sr-only">{column.name}</h2>
         {renaming ? (
           <input
             autoFocus
@@ -105,7 +107,8 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
       </header>
 
       <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-        <ol className="flex min-h-[8px] flex-col gap-2 overflow-y-auto px-2 pt-3 pb-2" aria-label={t('column.cards', { name: column.name })}>
+        {/* role="list": Safari drops the list a list-style of none hides, and its items with it. */}
+        <ol role="list" className="flex min-h-[8px] flex-col gap-2 overflow-y-auto px-2 pt-3 pb-2" aria-label={t('column.cards', { name: column.name })}>
           {cards.map((card) => (
             <SortableCard key={card.id} card={card} labels={labels} onOpen={onOpenCard} disabled={dragDisabled} />
           ))}

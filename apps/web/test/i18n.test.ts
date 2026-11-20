@@ -62,6 +62,17 @@ describe('catalogs', () => {
   }
 })
 
+describe('French typography', () => {
+  // A narrow no-break space (U+202F) before : ; ! ? and » and after «, never a plain one: it would let the sign start a line.
+  it('keeps the signs that take a space with their word', () => {
+    for (const ns of namespaces) {
+      for (const [key, text] of Object.entries(flatten(load('fr', ns)))) {
+        expect(text, `fr/${ns}.json: ${key}`).not.toMatch(/\S [:;!?»]|« /)
+      }
+    }
+  })
+})
+
 /** Words that read the same in every language. */
 const UNTRANSLATED = new Set(['esc', 'Orqevio', 'MCP', 'OAuth', 'Claude', 'GitHub', 'Bitwarden', 'Markdown', 'Ctrl', 'Esc', 'TOTP', 'URL', 'API', 'JSON', 'CSV', 'HSY Labs'])
 /** Attributes and props whose text people read. */

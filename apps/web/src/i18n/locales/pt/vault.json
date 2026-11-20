@@ -58,7 +58,8 @@
     "filters": {
       "all": "Todos",
       "logins": "Logins",
-      "notes": "Notas"
+      "notes": "Notas",
+      "favorites": "Favoritos"
     },
     "label": "Itens do cofre",
     "noMatches": "Nenhuma correspondência.",

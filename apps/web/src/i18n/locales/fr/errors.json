@@ -21,7 +21,7 @@
     "too_many_columns": "Un tableau peut contenir jusqu’à 20 colonnes.",
     "vault_full": "Le coffre peut contenir jusqu’à 5 000 éléments. Supprimez ceux que vous n’utilisez plus pour en ajouter d’autres.",
     "unauthorized": "Votre session a pris fin. Connectez-vous à nouveau.",
-    "backup_folder": "La sauvegarde n’a pas pu être faite : le dossier des sauvegardes pose problème. Voir l’avis dans les paramètres."
+    "backup_folder": "La sauvegarde n’a pas pu être faite : le dossier des sauvegardes pose problème. Voir l’avis dans les paramètres."
   },
   "notFound": "Élément introuvable.",
   "server": "Une erreur est survenue sur le serveur. Réessayez.",
