@@ -28,7 +28,9 @@ test('undo an agent’s changes from the history, and put back an earlier versio
   await page.request.patch(`/api/pages/${doc.id}`, { data: { content: 'Uno\n\nDos\n\nTres', baseVersion: (await pageNow()).version } })
 
   // Everything the agent did since renaming the card: the notes are skipped, as a person changed them since.
-  await page.getByRole('button', { name: 'Nota de prensa (borrador IA)' }).click()
+  // The card is clicked where the move puts it: its new name comes live before the move, and a click
+  // while it moves to the other column lands where it no longer is.
+  await page.getByRole('region', { name: 'Columna En curso' }).getByRole('button', { name: 'Nota de prensa (borrador IA)' }).click()
   await page.getByRole('button', { name: 'Acciones de la tarjeta' }).click()
   await page.getByRole('menuitem', { name: 'Historial' }).click()
   const history = page.getByRole('dialog', { name: /^Historial de/ })
