@@ -138,7 +138,7 @@ docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 
 The app listens on port 3000 and applies its migrations on startup. Put it behind a reverse proxy with HTTPS (Caddy, Nginx, Traefik) and, if you do, add `TRUST_PROXY=true` (or the number of proxies in front, such as `2` for a CDN plus Nginx). The proxy may also ask for a password (HTTP basic auth). Agents send their own `Authorization: Bearer` header, with a token Orqevio checks itself: if you connect any, let requests carrying one through without the password, and also `/mcp`, `/oauth/` and `/.well-known/`, which OAuth clients reach before they have a token. Let the live updates (`/api/workspaces/…/live`) through too: Safari does not send the password when it opens them, and Orqevio checks the session itself. [`apps/web/e2e/proxy/nginx.conf`](apps/web/e2e/proxy/nginx.conf) does all this with Nginx. The SQLite database and the attachments are stored in the `orqevio-data` volume.
 
-**Backups.** Your copy backs itself up every day: the database and the attachments, as they are, in the `backups` folder of the volume (`/data/backups`). It keeps the 7 newest. **Settings → Backups** lists them, makes one on the spot with **Back up now**, and restores any of them after you type your access key. Before restoring, it backs up the copy as it is, so you can go back. To keep the backups off the server too, copy them out from time to time, or set `BACKUP_DIR` to a folder you mount from another disk:
+**Backups.** Your copy backs itself up every day: the database and the attachments, as they are, in the `backups` folder of the volume (`/data/backups`). It keeps the 7 newest daily backups, and apart from them the 7 newest you made with **Back up now**. **Settings → Backups** lists them, makes one on the spot with **Back up now**, and restores any of them after you type your access key. Before restoring, it backs up the copy as it is, so you can go back. To keep the backups off the server too, copy them out from time to time, or set `BACKUP_DIR` to a folder you mount from another disk:
 
 ```bash
 docker compose cp app:/data/backups ./orqevio-backups
@@ -212,7 +212,7 @@ Deletes your copy and everything in it, in one step, after you type its name: se
 - **Several copies:** add `--name <name>` to any of these commands.
 - **Several Cloudflare accounts:** the installer asks which one to use; you can also pass it with `--account <id>` or `CLOUDFLARE_ACCOUNT_ID`.
 - **Language:** the installer speaks your terminal's language; pick another with `--lang <code>` (`en`, `es`, `fr`, `pt`, `it`, `de`, `nl` or `ja`).
-- **Backups:** your copy backs itself up every day to its backups bucket, and keeps the 7 newest. **Settings → Backups** lists them, makes one on the spot and restores any of them; **Settings → Export your data** downloads everything as a readable ZIP. Copies installed before 1.2.0 get the bucket with their next update, and make their first backup within the hour. A copy installed again with the same name finds the backups of the one before, if you kept them when uninstalling, and can restore them from **Settings → Backups**.
+- **Backups:** your copy backs itself up every day to its backups bucket, and keeps the 7 newest daily backups, and apart from them the 7 newest made by hand. **Settings → Backups** lists them, makes one on the spot and restores any of them; **Settings → Export your data** downloads everything as a readable ZIP. Copies installed before 1.2.0 get the bucket with their next update, and make their first backup within the hour. A copy installed again with the same name finds the backups of the one before, if you kept them when uninstalling, and can restore them from **Settings → Backups**.
 - **Your settings are kept:** the variables you set in the Cloudflare dashboard (`APP_URL`, `MAX_UPLOAD_MB`) survive updates.
 - **Privacy:** the installer turns off Wrangler's anonymous telemetry, unless you turned it on yourself.
 - **What it does, exactly:**
@@ -436,7 +436,7 @@ The same suite runs against the Cloudflare runtime locally (`pnpm --filter @orqe
 E2E_BASE_URL=http://127.0.0.1:8787 SETUP_CODE=e2e-setup-code-1234 pnpm test:e2e
 ```
 
-CI runs both, and also repeats the suite against the Node server in Firefox and WebKit (Safari's engine), each with a fresh copy. Locally, install the browser and pick it with `E2E_BROWSER`, again against a freshly created copy:
+CI runs both, and also repeats the suite against the Node server in Firefox and WebKit (Safari's engine), each with a fresh copy, and against the Docker image, directly and behind a proxy that asks for a password. Together they take about an hour of runner time on each run, so they run on pull requests into `main` and when started by hand (Actions → CI → Run workflow). Pull requests into `develop` and pushes to `develop` and `main` run the typecheck, `pnpm test` and the build. Locally, install the browser and pick it with `E2E_BROWSER`, again against a freshly created copy:
 
 ```bash
 pnpm --filter @orqevio/web exec playwright install firefox

@@ -1,7 +1,8 @@
-import { randomBytes, randomUUID } from 'node:crypto'
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { gunzipSync, gzipSync } from 'node:zlib'
 import type { BackupDTO } from '@orqevio/shared'
 import { afterAll, afterEach, describe, expect, it, vi } from 'vitest'
 import { FolderBackupStore } from '../src/backups/store'
@@ -525,6 +526,121 @@ describe('backups and their attachments', () => {
 })
 
 describe('attachments on disk', () => {
+  it('keeps the 7 newest daily backups whatever the ones made by hand, and 7 of those apart', async () => {
+    const h = await copy()
+    const { client, workspaceId } = await signUp(h)
+    await seedBoard(client, workspaceId)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    const day = 24 * 60 * 60 * 1000
+    const start = Date.parse('2026-11-01T03:00:00.000Z')
+    for (let i = 0; i < 7; i++) {
+      vi.setSystemTime(start + i * day)
+      expect(await h.services.backups.runIfDue(), `day ${i}`).not.toBeNull()
+    }
+    // Then nine by hand in a day: the week of daily ones stays.
+    for (let i = 0; i < 9; i++) {
+      vi.setSystemTime(start + 6 * day + (i + 1) * 60_000)
+      expect((await client.post('/api/backups')).status).toBe(201)
+    }
+    const backups = (await client.get('/api/backups')).body.backups as BackupDTO[]
+    expect(backups.filter((b) => b.kind === 'daily')).toHaveLength(7)
+    expect(backups.filter((b) => b.kind === 'manual')).toHaveLength(7)
+    expect(backups.filter((b) => b.kind === 'daily').at(-1)!.createdAt).toBe(new Date(start).toISOString())
+  })
+
+  it('a restore that fails keeps the backup made before the last restore, and makes none of its own', async () => {
+    const h = await copy()
+    const { client, workspaceId, accessKey } = await signUp(h)
+    await seedBoard(client, workspaceId)
+    const first = (await client.post('/api/backups')).body as BackupDTO
+    expect((await client.post(`/api/backups/${first.id}/restore`, { accessKey })).status).toBe(200)
+    const listed = async () => (await client.get('/api/backups')).body.backups as BackupDTO[]
+    const previous = (await listed()).find((b) => b.kind === 'before-restore')!
+    expect(previous).toBeTruthy()
+
+    // A backup whose data checks out but stops before its end: found only while putting it back.
+    const broken = (await client.post('/api/backups')).body as BackupDTO
+    const lines = new TextDecoder().decode(gunzipSync((await h.backups!.read(`snapshots/${broken.id}/data.ndjson.gz`))!)).trimEnd().split('\n')
+    const data = new Uint8Array(gzipSync(`${lines.slice(0, -1).join('\n')}\n`))
+    await h.backups!.write(`snapshots/${broken.id}/data.ndjson.gz`, data)
+    const manifestKey = `snapshots/${broken.id}/manifest.json`
+    const manifest = JSON.parse(new TextDecoder().decode((await h.backups!.read(manifestKey))!))
+    manifest.data = { bytes: data.length, sha256: createHash('sha256').update(data).digest('hex') }
+    await h.backups!.write(manifestKey, new TextEncoder().encode(JSON.stringify(manifest)))
+    const before = everything(h.sql)
+    const failed = await client.post(`/api/backups/${broken.id}/restore`, { accessKey })
+    expect(failed.status).toBe(422)
+    expect(failed.body.error.code).toBe('backup_damaged')
+    expect(everything(h.sql)).toEqual(before)
+    const after = (await listed()).filter((b) => b.kind === 'before-restore')
+    expect(after.map((b) => b.id)).toEqual([previous.id])
+  })
+
+  it('uploads wait while a backup is put back: one still running goes into the backup made before, a new one is told why', async () => {
+    const h = await copy()
+    const { client, workspaceId, accessKey } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Con archivos' })).body.id as string
+    const backup = (await client.post('/api/backups')).body as BackupDTO
+
+    // An upload half-way when the restore starts.
+    let push!: (bytes: Uint8Array | null) => void
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        push = (bytes) => (bytes ? controller.enqueue(bytes) : controller.close())
+      },
+    })
+    const uploading = client.request('POST', `/api/cards/${card}/attachments`, body, { 'Content-Type': 'text/plain', 'Content-Length': '8', 'X-File-Name': 'tarde.txt' })
+    push(new TextEncoder().encode('sub'))
+    const restoring = client.post(`/api/backups/${backup.id}/restore`, { accessKey })
+    // Once the restore has stopped the uploads, a new one is told a backup is being restored.
+    let refused: Awaited<ReturnType<Client['upload']>> | null = null
+    for (let i = 0; i < 200 && !refused; i++) {
+      await new Promise((r) => setTimeout(r, 5))
+      const res = await client.upload(`/api/cards/${card}/attachments`, 'otra', { name: 'otra.txt', type: 'text/plain' })
+      if (res.status === 409) refused = res
+      else expect(res.status).toBe(201)
+    }
+    expect(refused?.body.error.code).toBe('restoring')
+    push(new TextEncoder().encode('ido 1'))
+    push(null)
+    expect((await uploading).status).toBe(201)
+    expect((await restoring).status).toBe(200)
+    const made = ((await client.get('/api/backups')).body.backups as BackupDTO[]).find((b) => b.kind === 'before-restore')!
+    const kept = JSON.parse(new TextDecoder().decode((await h.backups!.read(`snapshots/${made.id}/manifest.json`))!)) as { files: Array<{ name?: string }> }
+    expect(kept.files.map((f) => f.name)).toContain('tarde.txt')
+  })
+
+  it('removes what an interrupted write left in the backups folder, once it is old', async () => {
+    const h = await copy()
+    const { client, workspaceId } = await signUp(h)
+    await seedBoard(client, workspaceId)
+    const made = (await client.post('/api/backups')).body as BackupDTO
+    const root = (h.backups as FolderBackupStore).where.name
+    const old = path.join(root, 'snapshots', made.id, 'data.ndjson.gz.partial')
+    const fresh = path.join(root, 'snapshots', made.id, 'manifest.json.partial')
+    const mine = path.join(root, 'snapshots', made.id, 'notas.partial')
+    for (const file of [old, fresh, mine]) await writeFile(file, 'a medias')
+    const long = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    for (const file of [old, mine]) await utimes(file, long, long)
+    expect((await client.post('/api/backups')).status).toBe(201)
+    const left = await readdir(path.join(root, 'snapshots', made.id))
+    expect(left).not.toContain('data.ndjson.gz.partial')
+    // One that may still be being written stays, and so does what isn't the app's.
+    expect(left).toContain('manifest.json.partial')
+    expect(left).toContain('notas.partial')
+  })
+
+  it('an empty file is told as such, with its own code', async () => {
+    const h = await copy()
+    const { client, workspaceId } = await signUp(h)
+    const { columns } = await seedBoard(client, workspaceId)
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Vacía' })).body.id as string
+    const res = await client.upload(`/api/cards/${card}/attachments`, '', { name: 'vacio.txt', type: 'text/plain' })
+    expect(res.status).toBe(400)
+    expect(res.body.error.code).toBe('file_empty')
+  })
+
   it('are written whole or not at all, and what a write stopped half-way left goes with the sweep', async () => {
     const dir = await mkdtemp(path.join(tmpdir(), 'orqevio-uploads-'))
     folders.push(dir)

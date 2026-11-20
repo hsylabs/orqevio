@@ -63,7 +63,7 @@ En este orden; cada paso depende del anterior (comprobado el 13-11-2026):
    ```bash
    pnpm install
    ```
-3. Abre un PR hacia `develop` y, cuando esté fusionado, otro de `develop` a `main`.
+3. Abre un PR hacia `develop` y, cuando esté fusionado, otro de `develop` a `main`. El PR hacia `develop` solo pasa las pruebas ligeras (typecheck, `pnpm test` y compilación). El de `main` pasa además las de extremo a extremo en los tres motores, contra el paquete de Cloudflare y contra las imágenes de Docker: no lo fusiones hasta que estén en verde. Si cambias a `main` la base de un PR ya abierto, la batería completa se lanza sola cuando su rama está en este repositorio; si viene de un fork, con su siguiente envío.
 4. Con el cambio ya en `main`, crea y sube la etiqueta:
 
    ```bash

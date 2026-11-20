@@ -20,7 +20,14 @@
     "too_many_columns": "Een bord bevat maximaal 20 kolommen.",
     "vault_full": "De kluis bevat maximaal 5.000 items. Verwijder items die je niet meer gebruikt om er meer toe te voegen.",
     "unauthorized": "Je sessie is beëindigd. Log opnieuw in.",
-    "backup_folder": "De back-up kon niet worden gemaakt: er is een probleem met de map voor back-ups. Zie de melding in de instellingen."
+    "backup_folder": "De back-up kon niet worden gemaakt: er is een probleem met de map voor back-ups. Zie de melding in de instellingen.",
+    "backup_damaged": "Deze back-up is beschadigd of onvolledig en kan niet worden teruggezet. Probeer een andere.",
+    "backup_newer": "Deze back-up is gemaakt door een nieuwere versie van Orqevio: werk deze installatie bij voordat je hem terugzet.",
+    "backup_running": "Er wordt al een back-up gemaakt of teruggezet. Wacht tot die klaar is.",
+    "backups_off": "Deze installatie maakt geen back-ups.",
+    "restoring": "Er wordt een back-up teruggezet: upload het bestand zo meteen opnieuw.",
+    "file_empty": "Het bestand is leeg.",
+    "uninstalled": "Deze installatie van Orqevio is verwijderd."
   },
   "notFound": "Het item is niet gevonden.",
   "server": "Er ging iets mis op de server. Probeer het opnieuw.",
