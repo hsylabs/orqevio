@@ -191,6 +191,8 @@ export function createApi(env: Env) {
   api.post('/workspaces/:id/trash/restore', async (c) =>
     c.json(await c.get('services').trash.restoreItem(requireActor(c), c.req.param('id'), await json(c))),
   )
+  api.post('/workspaces/:id/trash/restore-many', async (c) => c.json(await c.get('services').trash.restoreMany(requireActor(c), c.req.param('id'), await json(c))))
+  api.post('/workspaces/:id/trash/purge', async (c) => c.json(await c.get('services').trash.purgeMany(requireActor(c), c.req.param('id'), await json(c))))
   api.get('/workspaces/:id/trash/:key', async (c) => c.json(await c.get('services').trash.tree(requireActor(c), c.req.param('id'), trashItemKey(c.req.param('key')))))
   api.delete('/workspaces/:id/trash/:key', async (c) => {
     await c.get('services').trash.purgeItem(requireActor(c), c.req.param('id'), trashItemKey(c.req.param('key')))

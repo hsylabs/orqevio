@@ -11,8 +11,14 @@ import {
   type TrashPlanDTO,
   type TrashRestoreInput,
   type TrashTreeDTO,
+  type RestoredManyDTO,
+  type TrashPlanManyDTO,
+  type TrashPurgeSummaryDTO,
+  type TrashRestoreManyInput,
   extractReferences,
+  trashPurgeManyInput,
   trashRestoreInput,
+  trashRestoreManyInput,
 } from '@orqevio/shared'
 import { type SQL, and, eq, getTableColumns, lte, sql } from 'drizzle-orm'
 import { type SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core'
@@ -398,6 +404,58 @@ export class TrashService {
   }
 
   /**
+   * Restores several things at once, each as `restoreItem` does, in one transaction: what holds
+   * others first, each planned with what the ones before it brought back already there, so the
+   * plans say what restoring them together does. One that came back with another (below it, or
+   * as the other end of one of its relations) is not asked for twice: `cameWith` says with
+   * which. One no longer in the trash is in `missing`. With `dryRun`, or when anything is still to
+   * decide for any of them, or one went missing, nothing is done and the plans say what.
+   */
+  async restoreMany(actor: Actor, workspaceId: string, body: unknown): Promise<TrashPlanManyDTO | RestoredManyDTO> {
+    this.access.requireUser(actor)
+    await this.access.workspace(actor, workspaceId)
+    const input: TrashRestoreManyInput = parse(trashRestoreManyInput, body)
+    let answer: TrashPlanManyDTO = { plans: [], ready: false }
+    const asked = new Error('only planned')
+    let done: Applied[]
+    try {
+      done = this.deps.db.transaction((tx) => {
+        const plans: TrashPlanDTO[] = []
+        const cameWith: Record<string, string> = {}
+        const applied: Applied[] = []
+        const first = TrashIndex.load(tx, workspaceId)
+        const missing = input.items.filter((item) => !first.node(item.key)).map((item) => item.key)
+        // What holds others first: what is below it comes with it, unless it is left out.
+        const depth = (key: string) => first.ancestors(first.node(key)!).length
+        const items = input.items.filter((item) => first.node(item.key)).sort((a, b) => depth(a.key) - depth(b.key))
+        for (const item of items) {
+          // Read again each time: what came back before is there now. Only this batch restores
+          // in this transaction, so what was in the trash at first and isn't now came back with it.
+          const index = TrashIndex.load(tx, workspaceId)
+          const back = (key: string) => first.node(key) !== undefined && !index.node(key)
+          if (back(item.key)) continue
+          // The other end of a relation that came back already needs no asking for.
+          const plan = planRestore(index, { ...item, include: item.include.filter((key) => !back(key)), dryRun: input.dryRun })
+          plans.push(planDTO(index, plan))
+          if (plan.missing.length) continue
+          applied.push(this.apply(tx, actor, workspaceId, plan))
+          const after = TrashIndex.load(tx, workspaceId)
+          for (const other of items) if (other !== item && index.node(other.key) && !after.node(other.key)) cameWith[other.key] ??= item.key
+        }
+        answer = { plans, ready: missing.length === 0 && plans.every((p) => p.ready), ...(Object.keys(cameWith).length && { cameWith }), ...(missing.length && { missing }) }
+        if (input.dryRun || !answer.ready) throw asked
+        return applied
+      })
+    } catch (error) {
+      if (error !== asked) throw error
+      if (input.dryRun) return answer
+      throw new AppError(409, 'restore_incomplete', 'Say where each goes back, and what to do with names already used there, first.', answer)
+    }
+    for (const applied of done) await this.announce(actor, workspaceId, applied)
+    return { restored: done.map((a) => a.result) }
+  }
+
+  /**
    * Puts back exactly what one deletion took away, where it was: what was deleted before on its
    * own stays in the trash. It is what undoing a deletion does, so it never goes anywhere else:
    * when its place is not there, it says so. Names stay as they were.
@@ -658,6 +716,34 @@ export class TrashService {
     await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node!.kind), entityId: node!.id, summary: node!.title, meta: { kind: node!.kind } })
   }
 
+  /**
+   * Deletes several things for good, with everything below them; what is below another one of
+   * them goes with it. With `dryRun`, only says how much that takes. What is no longer in the
+   * trash is skipped; the answer counts what went.
+   */
+  async purgeMany(actor: Actor, workspaceId: string, body: unknown): Promise<TrashPurgeSummaryDTO> {
+    this.access.requireUser(actor)
+    await this.access.workspace(actor, workspaceId)
+    const input = parse(trashPurgeManyInput, body)
+    const pick = (index: TrashIndex) => index.outermost(input.keys.flatMap((key) => index.node(key) ?? []))
+    const summary = (index: TrashIndex, nodes: Node[]): TrashPurgeSummaryDTO => ({ count: nodes.length, ...index.totals(nodes) })
+    if (input.dryRun) {
+      const index = TrashIndex.load(this.deps.db, workspaceId)
+      return summary(index, pick(index))
+    }
+    let went: TrashPurgeSummaryDTO | null = null
+    const erased = await this.erase(workspaceId, (index) => {
+      const picked = pick(index)
+      went = summary(index, picked)
+      return picked
+    })
+    if (!erased?.length || !went) throw notFound('Trash item')
+    for (const node of erased) {
+      await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node.kind), entityId: node.id, summary: node.title, meta: { kind: node.kind } })
+    }
+    return went
+  }
+
   /** Deletes for good what one deletion took away, with everything below it. */
   async purge(actor: Actor, trashId: string) {
     const entry = await this.load(actor, trashId)
@@ -698,9 +784,8 @@ export class TrashService {
     const done = this.deps.db.transaction((tx) => {
       const index = TrashIndex.load(tx, workspaceId)
       const picked = pick(index)
-      const gone = new Map<string, Node>()
-      for (const node of picked) for (const n of index.subtree(node)) gone.set(n.key, n)
-      for (const n of index.nodes.values()) if (n.kind === 'link' && gone.has(`page:${n.row.pageId}`)) for (const m of index.subtree(n)) gone.set(m.key, m)
+      // The same as the count shown before: see TrashIndex.goneWith.
+      const gone = index.goneWith(picked)
       const has = (kind: string, id: string | null) => gone.has(`${kind}:${id}`)
       const touches = (r: IndexRow) => has('card', r.cardId) || (r.table === 'card_labels' ? has('label', r.labelId) : has('page', r.pageId))
       const rows = [...[...gone.values()].map((n) => n.row), ...index.relations.filter(touches), ...index.mentions.filter(touches)]

@@ -118,6 +118,7 @@ const LIVE_COLUMNS: Record<LiveKind, SQL> = {
 const RANK: Record<TrashKind, number> = { project: 0, board: 1, column: 2, label: 3, card: 4, checklist: 5, checklist_item: 6, page: 7, attachment: 8, link: 9 }
 
 const COUNTED: Partial<Record<TrashKind, keyof TrashContents>> = {
+  project: 'projects',
   board: 'boards',
   column: 'columns',
   card: 'cards',
@@ -432,6 +433,36 @@ export class TrashIndex {
     const out: Node[] = []
     for (let up = node.parent; up; up = up.parent) out.unshift(up)
     return out
+  }
+
+  /** Of `nodes`, those not below another one of them: what is below one comes with it. */
+  outermost(nodes: Node[]) {
+    const picked = new Set(nodes)
+    return [...picked].filter((node) => !this.ancestors(node).some((up) => picked.has(up)))
+  }
+
+  /**
+   * What deleting `nodes` for good takes: everything below them, and the links to a page that goes
+   * (with what is below them), wherever those wait in the trash.
+   */
+  goneWith(nodes: Node[]) {
+    const gone = new Map<string, Node>()
+    for (const node of nodes) for (const n of this.subtree(node)) gone.set(n.key, n)
+    for (const n of this.nodes.values()) if (n.kind === 'link' && gone.has(`page:${n.row.pageId}`)) for (const m of this.subtree(n)) gone.set(m.key, m)
+    return gone
+  }
+
+  /** Everything deleting `nodes` for good takes (see goneWith), by kind, and the size of its files. */
+  totals(nodes: Node[]): { contents: TrashContents; bytes: number } {
+    const all = this.goneWith(nodes)
+    const contents: TrashContents = {}
+    let bytes = 0
+    for (const n of all.values()) {
+      if (n.kind === 'attachment') bytes += Number(n.row.size ?? 0)
+      const counted = COUNTED[n.kind]
+      if (counted) contents[counted] = (contents[counted] ?? 0) + 1
+    }
+    return { contents, bytes }
   }
 
   /** Whether `node` is `top` or below it. */
