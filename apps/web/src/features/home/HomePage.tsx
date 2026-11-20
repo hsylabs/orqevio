@@ -92,7 +92,8 @@ export function HomePage() {
             </section>
           )}
 
-          <div className="mt-10 grid gap-6 lg:grid-cols-[1.25fr_1fr]">
+          {/* Its columns can shrink below their content: a long title is cut, not the page widened. */}
+          <div className="mt-10 grid gap-6 lg:grid-cols-[1.25fr_1fr] [&>*]:min-w-0">
             <Panel title={t('due.title')} delay={120} empty={home.data && home.data.dueCards.length === 0 ? t('due.empty') : null}>
               <ul className="flex flex-col">
                 {home.data?.dueCards.map((c) => (

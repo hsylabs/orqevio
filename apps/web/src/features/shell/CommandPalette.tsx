@@ -4,6 +4,7 @@ import { Bot, FileText, FolderOpen, House, LockKeyhole, Moon, Plus, Search, Sett
 import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
+import { useReturnFocus } from '../../components/ui/return-focus'
 import { patch } from '../../lib/api'
 import { useSearch } from '../../lib/queries'
 import { applyTheme } from '../../lib/theme'
@@ -15,6 +16,7 @@ const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLo
 const filter = (value: string, search: string, keywords?: string[]) => defaultFilter(fold(value), fold(search), keywords?.map(fold))
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const returnFocus = useReturnFocus(open)
   const { t } = useTranslation(['shell', 'common'])
   const { workspaceId, overview, openNewProject } = useWorkspace()
   const navigate = useNavigate()
@@ -53,6 +55,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         <D.Overlay className="fixed inset-0 z-40 bg-[rgb(20_18_14/0.28)] backdrop-blur-[2px] data-[state=open]:animate-[overlay-in_0.15s_ease-out]" />
         <D.Content
           aria-label={t('palette.label')}
+          onCloseAutoFocus={returnFocus}
           className="fixed top-[14vh] left-1/2 z-50 w-[calc(100vw-32px)] max-w-[620px] -translate-x-1/2 overflow-hidden rounded-[18px] border border-line bg-sheet shadow-lg outline-none data-[state=open]:animate-[pop_0.18s_var(--ease-out-quint)]"
         >
           <D.Title className="sr-only">{t('palette.title')}</D.Title>
