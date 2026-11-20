@@ -192,7 +192,8 @@
       "repeat": "Master-Passwort wiederholen",
       "busy": "Schlüssel werden erzeugt…",
       "submit": "Tresor erstellen",
-      "ready": "Dein Tresor ist bereit. Nur du kannst ihn öffnen."
+      "ready": "Dein Tresor ist bereit. Nur du kannst ihn öffnen.",
+      "elsewhere": "Der Tresor wurde zuerst in einem anderen Tab oder auf einem anderen Gerät eingerichtet, daher öffnet der hier angezeigte Wiederherstellungsschlüssel nichts. Nimm den dort angezeigten, mit dem dortigen Master-Passwort."
     },
     "recoveryKey": {
       "title": "Speichere deinen Wiederherstellungsschlüssel",

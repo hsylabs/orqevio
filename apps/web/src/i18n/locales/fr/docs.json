@@ -126,7 +126,7 @@
       },
       "image": {
         "title": "Image",
-        "subtitle": "Importer un PNG, JPG, GIF ou WebP",
+        "subtitle": "Importer un PNG, JPG, GIF, WebP ou AVIF",
         "keywords": "image photo illustration"
       },
       "file": {

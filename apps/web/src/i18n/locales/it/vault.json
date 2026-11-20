@@ -197,7 +197,8 @@
       "repeat": "Ripeti la password principale",
       "busy": "Generazione delle chiavi…",
       "submit": "Crea cassaforte",
-      "ready": "La tua cassaforte è pronta. Solo tu puoi aprirla."
+      "ready": "La tua cassaforte è pronta. Solo tu puoi aprirla.",
+      "elsewhere": "La cassaforte è stata configurata prima in un’altra scheda o su un altro dispositivo, quindi la chiave di recupero mostrata qui non apre nulla. Usa quella mostrata lì, con la sua password principale."
     },
     "recoveryKey": {
       "title": "Salva la tua chiave di recupero",

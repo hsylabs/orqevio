@@ -197,7 +197,8 @@
       "repeat": "Repita a senha mestra",
       "busy": "Gerando chaves…",
       "submit": "Criar cofre",
-      "ready": "Seu cofre está pronto. Só você pode abri-lo."
+      "ready": "Seu cofre está pronto. Só você pode abri-lo.",
+      "elsewhere": "O cofre foi configurado antes em outra aba ou em outro dispositivo, então a chave de recuperação mostrada aqui não abre nada. Use a que foi mostrada lá, com a senha mestra de lá."
     },
     "recoveryKey": {
       "title": "Guarde sua chave de recuperação",

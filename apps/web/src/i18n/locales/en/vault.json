@@ -192,7 +192,8 @@
       "repeat": "Repeat the master password",
       "busy": "Generating keys…",
       "submit": "Create vault",
-      "ready": "Your vault is ready. Only you can open it."
+      "ready": "Your vault is ready. Only you can open it.",
+      "elsewhere": "The vault was set up in another tab or on another device first, so the recovery key shown here opens nothing. Use the one shown there, with its master password."
     },
     "recoveryKey": {
       "title": "Save your recovery key",

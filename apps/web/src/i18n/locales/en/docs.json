@@ -126,7 +126,7 @@
       },
       "image": {
         "title": "Image",
-        "subtitle": "Upload a PNG, JPG, GIF or WebP",
+        "subtitle": "Upload a PNG, JPG, GIF, WebP or AVIF",
         "keywords": "image photo picture"
       },
       "file": {
