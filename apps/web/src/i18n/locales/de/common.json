@@ -26,6 +26,12 @@
     "title": "Hier ist nichts",
     "body": "Die Seite existiert nicht oder du hast keinen Zugriff darauf."
   },
+  "gone": {
+    "card": "Diese Karte gibt es nicht mehr",
+    "page": "Diese Seite gibt es nicht mehr",
+    "cardBody": "Sie wurde endgültig gelöscht oder liegt in einem Arbeitsbereich, auf den du keinen Zugriff hast.",
+    "pageBody": "Sie wurde endgültig gelöscht oder liegt in einem Arbeitsbereich, auf den du keinen Zugriff hast."
+  },
   "time": {
     "justNow": "gerade eben"
   },

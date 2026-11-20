@@ -1,5 +1,5 @@
 import type { ActorRef, LinkedCardDTO, PageDTO, PageNodeDTO, PaletteColor } from '@orqevio/shared'
-import { MAX_MARKDOWN, extractReferences, pageCreateInput, pageMoveInput, pageUpdateInput } from '@orqevio/shared'
+import { MAX_MARKDOWN, characters, extractReferences, pageCreateInput, pageMoveInput, pageUpdateInput } from '@orqevio/shared'
 import { type SQL, and, asc, eq, isNull, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
@@ -258,8 +258,9 @@ export class PageService {
       if (data.icon !== undefined) patch.icon = data.icon
       if (data.content !== undefined) {
         // Each part fits, but together they may not: a page too long to save again from the editor.
-        const length = opts.append && prev.content !== '' ? prev.content.length + 2 + data.content.length : 0
-        if (length > MAX_MARKDOWN) throw pageTooLong(prev.content.length, length)
+        // Counted as the schemas count, so an emoji is one character here too.
+        const length = opts.append && prev.content !== '' ? characters(prev.content) + 2 + characters(data.content) : 0
+        if (length > MAX_MARKDOWN) throw pageTooLong(characters(prev.content), length)
         patch.content = opts.append
           ? sql`CASE WHEN ${pages.content} = '' THEN ${data.content} ELSE ${pages.content} || ${'\n\n'} || ${data.content} END`
           : data.content
