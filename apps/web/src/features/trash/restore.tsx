@@ -223,8 +223,36 @@ function RestoreDialog({
         )}
 
         <Section title={t('restoreDialog.where')}>
-          {where.place === 'original' ? (
+          {where.place === 'original' && where.choose.length === 0 ? (
             <p className="text-ink-2">{where.location ? t('restoreDialog.backTo', { place: where.location }) : t('restoreDialog.backToTop')}</p>
+          ) : where.place === 'original' ? (
+            // Where it was is there; somewhere else is offered all the same (a full board, say).
+            <div className="flex flex-col gap-2" role="radiogroup" aria-label={t('restoreDialog.where')}>
+              <Choice
+                checked={to === 'original'}
+                onSelect={() => {
+                  setChoice('original')
+                  set({ to: { kind: 'original' } })
+                }}
+                title={t('restoreDialog.whereWas')}
+              >
+                {where.location ? t('restoreDialog.backTo', { place: where.location }) : t('restoreDialog.backToTop')}
+              </Choice>
+              <Choice
+                checked={to === 'other'}
+                onSelect={() => {
+                  setChoice('other')
+                  set({ to: otherParent ? { kind: 'other', parent: otherParent } : undefined })
+                }}
+                title={t('restoreDialog.elsewhere')}
+              >
+                {to === 'other' ? (
+                  <PlacePicker workspaceId={workspaceId} choose={where.choose} value={otherParent} onChange={(parent) => set({ to: parent ? { kind: 'other', parent } : undefined })} />
+                ) : (
+                  t('restoreDialog.elsewhereHint')
+                )}
+              </Choice>
+            </div>
           ) : blocked ? (
             <p className="text-danger">{t('restoreDialog.nowhere')}</p>
           ) : (
@@ -271,6 +299,15 @@ function RestoreDialog({
             </div>
           )}
         </Section>
+
+        {plan.limits.length > 0 && (
+          <div role="alert" className="flex flex-col gap-1 rounded-[12px] border border-danger/30 bg-danger-soft px-3.5 py-3 text-[13px]">
+            {plan.limits.map((limit) => (
+              <p key={limit.board}>{t('restoreDialog.tooManyColumns', { board: limit.board || t('common:untitled'), count: limit.count, max: limit.max })}</p>
+            ))}
+            <p>{t(plan.nodes.filter((n) => n.kind === 'column').length > 1 ? 'restoreDialog.roomHintMany' : 'restoreDialog.roomHint')}</p>
+          </div>
+        )}
 
         {plan.conflicts.length > 0 && (
           <Section title={t('restoreDialog.names')}>

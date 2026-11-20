@@ -1,5 +1,6 @@
 import {
   type EntityType,
+  MAX_COLUMNS,
   type HistoryMeta,
   type RealtimeEvent,
   type RestoredDTO,
@@ -431,6 +432,7 @@ export class TrashService {
           include: [],
           dryRun: false,
         })
+        if (plan.missing.includes('columns')) throw new AppError(409, 'too_many_columns', `A board holds up to ${MAX_COLUMNS} columns: there is no room to put it back.`)
         if (plan.missing.length) throw restoreError('restore_place_gone', 'What it belonged to no longer exists.')
         // A link goes back between a card and a page: both must be there.
         const waiting = top.kind === 'link' ? plan.wait.find((w) => w.row === top.row) : undefined

@@ -2,18 +2,34 @@ import path from 'node:path'
 import { type APIRequestContext, type Page, test as base, expect } from '@playwright/test'
 
 /**
- * Firefox sometimes loses the commit of a new tab's first navigation, the one that
- * moves it from about:blank to another process: Juggler reports the navigation as
- * started (twice) and the page loads and renders, but Page.navigationCommitted never
- * arrives, so page.goto waits until the test times out. Every new page therefore
- * first opens a tiny page of the copy, and checks that one through the document;
- * the navigations of the tests are then ordinary, fully tracked ones.
+ * A new tab's first navigation, the one that moves it from about:blank to another process,
+ * is sometimes lost by the browser. Firefox loses its commit: Juggler reports the
+ * navigation as started (twice) and the page loads and renders, but
+ * Page.navigationCommitted never arrives, so page.goto waits until the test times out.
+ * WebKit, now and then, does not start it at all: the tab stays on about:blank. Every new
+ * page therefore first opens a tiny page of the copy, checks that one through the
+ * document, and asks again when it is not there; the navigations of the tests are then
+ * ordinary, fully tracked ones.
  */
 export async function settle(page: Page, baseURL: string) {
-  await Promise.race([
-    page.goto(`${baseURL}/healthz`, { waitUntil: 'commit' }),
-    expect.poll(() => page.evaluate(() => location.pathname).catch(() => ''), { timeout: 15_000 }).toBe('/healthz'),
-  ])
+  const there = () => page.evaluate(() => location.pathname).catch(() => '')
+  for (let attempt = 1; ; attempt++) {
+    const arrived = await Promise.race([
+      page.goto(`${baseURL}/healthz`, { waitUntil: 'commit', timeout: 10_000 }).then(
+        () => true,
+        () => false,
+      ),
+      expect
+        .poll(there, { timeout: 10_000 })
+        .toBe('/healthz')
+        .then(
+          () => true,
+          () => false,
+        ),
+    ])
+    if (arrived || (await there()) === '/healthz') return
+    if (attempt === 3) throw new Error(`A new page never reached ${baseURL}/healthz in three tries`)
+  }
 }
 
 /**

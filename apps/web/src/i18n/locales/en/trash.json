@@ -144,7 +144,11 @@
     "ofMany_one": "on {{count}} of the things coming back",
     "ofMany_other": "on {{count}} of the things coming back",
     "planFailed": "Couldn’t check what restoring would do.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "tooManyColumns": "The board “{{board}}” would have {{count}} columns, and it holds {{max}} at most.",
+    "whereWas": "Where it was",
+    "roomHint": "Choose somewhere else, or make room on that board first.",
+    "roomHintMany": "Leave out some column, choose somewhere else, or make room on that board first."
   },
   "picker": {
     "project": "Project",

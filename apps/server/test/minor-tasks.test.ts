@@ -48,6 +48,39 @@ describe('small fixes in tasks', () => {
     expect(entriesFor(activity.body, label.body.id, 'label.updated')).toHaveLength(0)
   })
 
+  it('an edit with the values a card or a label already has changes nothing: no version, no conflict, no entry', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { boardId, columns } = await seedBoard(client, workspaceId)
+    const label = (await client.post(`/api/boards/${boardId}/labels`, { name: 'Urgente', color: 'tomato' })).body.id as string
+    const card = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Igual', description: 'Texto', dueAt: '2026-12-24', labelIds: [label] })).body.id as string
+    const before = (await client.get(`/api/cards/${card}`)).body
+    const history = async () => ((await client.get(`/api/cards/${card}/history`)).body as unknown[]).length
+    const kept = await history()
+
+    // An agent sends everything again, as it is.
+    const same = await client.patch(`/api/cards/${card}`, { title: 'Igual', description: 'Texto', dueAt: '2026-12-24T12:00:00.000Z', labelIds: [label] })
+    expect(same.status).toBe(200)
+    const after = (await client.get(`/api/cards/${card}`)).body
+    expect([after.version, after.updatedAt]).toEqual([before.version, before.updatedAt])
+    expect(await history()).toBe(kept)
+    // The person's save from the version they had still goes through: nobody changed the text.
+    const mine = await client.patch(`/api/cards/${card}`, { description: 'Texto mío', baseVersion: before.version })
+    expect(mine.status).toBe(200)
+    expect((await client.get(`/api/cards/${card}`)).body.version).toBe(before.version + 1)
+    // The same text from an older version is no conflict either: there is nothing to save.
+    expect((await client.patch(`/api/cards/${card}`, { description: 'Texto mío', baseVersion: before.version })).status).toBe(200)
+    // Only what differs is told.
+    expect((await client.patch(`/api/cards/${card}`, { title: 'Igual', description: 'Texto mío', dueAt: '2026-12-31' })).status).toBe(200)
+
+    expect((await client.patch(`/api/labels/${label}`, { name: 'Urgente', color: 'tomato' })).status).toBe(200)
+    const activity = (await client.get(`/api/workspaces/${workspaceId}/activity`)).body
+    const [edits] = entriesFor(activity, card, 'card.updated')
+    expect(String(edits!.meta.fields).split(',').sort()).toEqual(['description', 'dueAt'])
+    expect(entriesFor(activity, label, 'label.updated')).toHaveLength(0)
+    expect((await client.patch(`/api/labels/${label}`, { name: 'Muy urgente', color: 'tomato' })).status).toBe(200)
+    expect(entriesFor((await client.get(`/api/workspaces/${workspaceId}/activity`)).body, label, 'label.updated')).toHaveLength(1)
+  })
+
   it('edits folded into one entry list every field edited, and a page linked twice is told once', async () => {
     const { client, workspaceId } = await signUp(h)
     const { projectId, columns } = await seedBoard(client, workspaceId)
