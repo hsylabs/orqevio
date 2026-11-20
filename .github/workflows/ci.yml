@@ -1,9 +1,21 @@
 name: CI
 
+# Two levels, to spend runner minutes where they matter:
+# - Light, on every pull request and on pushes to develop and main: typecheck, unit and
+#   integration tests and the build, on one runner for about two minutes.
+# - Heavy, on a pull request into main (the version about to be released) and when started
+#   by hand on any branch (Actions → CI → Run workflow): the end-to-end suite in Chromium,
+#   Firefox and WebKit, against the Cloudflare package and against the Docker images. An open
+#   pull request whose base changes to main gets them too: ci-retarget.yml starts this
+#   workflow on its branch.
+# Elsewhere the heavy jobs are skipped, which costs nothing and counts as passed for a
+# required check. Each runs as its own job, without a matrix, so that a skipped one still
+# reports under its own name.
 on:
   push:
     branches: [main, develop]
   pull_request:
+  workflow_dispatch:
 
 # A newer push to the same branch or PR cancels the run in progress.
 concurrency:
@@ -33,6 +45,7 @@ jobs:
 
   e2e:
     name: End-to-end tests
+    if: github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -78,22 +91,19 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  e2e-browsers:
-    # The same suite in Firefox and Safari's engine (WebKit), each against a fresh copy.
-    name: End-to-end tests (${{ matrix.browser }})
+  # The same suite in Firefox and in Safari's engine (WebKit), each against a fresh copy.
+  e2e-firefox:
+    name: End-to-end tests (firefox)
+    if: github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # Installing a browser's system packages takes a minute, but up to 12 when the package
     # mirror is slow: the suite still gets its ten minutes after that.
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [firefox, webkit]
     env:
       APP_URL: http://localhost:3000
       DATA_DIR: ${{ github.workspace }}/.e2e-data
       SETUP_CODE: e2e-setup-code-1234
-      E2E_BROWSER: ${{ matrix.browser }}
+      E2E_BROWSER: firefox
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -103,9 +113,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - name: Install ${{ matrix.browser }} for Playwright
+      - name: Install firefox for Playwright
         timeout-minutes: 15
-        run: pnpm --filter @orqevio/web exec playwright install --with-deps ${{ matrix.browser }}
+        run: pnpm --filter @orqevio/web exec playwright install --with-deps firefox
       - name: Start the production server
         run: |
           nohup pnpm start > "$RUNNER_TEMP/server.log" 2>&1 &
@@ -123,18 +133,66 @@ jobs:
       - name: Show server log
         if: failure()
         run: cat "$RUNNER_TEMP/server.log"
-      # Playwright's page snapshot and diagnostics of every failed test.
       - name: Keep the results of failed tests
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-results-${{ matrix.browser }}
+          name: e2e-results-firefox
+          path: apps/web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  e2e-webkit:
+    name: End-to-end tests (webkit)
+    if: github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      APP_URL: http://localhost:3000
+      DATA_DIR: ${{ github.workspace }}/.e2e-data
+      SETUP_CODE: e2e-setup-code-1234
+      E2E_BROWSER: webkit
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Install webkit for Playwright
+        timeout-minutes: 15
+        run: pnpm --filter @orqevio/web exec playwright install --with-deps webkit
+      - name: Start the production server
+        run: |
+          nohup pnpm start > "$RUNNER_TEMP/server.log" 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -fsS http://localhost:3000/healthz > /dev/null; then
+              echo "Server is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become ready in 60 seconds"
+          cat "$RUNNER_TEMP/server.log"
+          exit 1
+      - run: pnpm test:e2e
+      - name: Show server log
+        if: failure()
+        run: cat "$RUNNER_TEMP/server.log"
+      - name: Keep the results of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-results-webkit
           path: apps/web/test-results
           if-no-files-found: ignore
           retention-days: 7
 
   e2e-cloudflare:
     name: End-to-end tests (Cloudflare package)
+    if: github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -194,23 +252,14 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  docker:
-    # The image that releases publish, built natively on each architecture as release.yml
-    # does, and started: a Dockerfile that no longer builds shows up here, not on release day.
-    # On amd64 the whole end-to-end suite then runs against it, as people install it.
-    name: Docker image (${{ matrix.platform }})
-    runs-on: ${{ matrix.runner }}
+  # The image that releases publish, built natively on each architecture as release.yml
+  # does, and started: a Dockerfile that no longer builds shows up here, not on release day.
+  # On amd64 the whole end-to-end suite then runs against it, as people install it.
+  docker-amd64:
+    name: Docker image (linux/amd64)
+    if: github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      matrix:
-        include:
-          - platform: linux/amd64
-            runner: ubuntu-latest
-            e2e: true
-          # GitHub has no "latest" label for its Arm runners.
-          - platform: linux/arm64
-            runner: ubuntu-24.04-arm
-            e2e: false
     env:
       APP_URL: http://localhost:3000
       SETUP_CODE: e2e-setup-code-1234
@@ -222,7 +271,7 @@ jobs:
       - uses: docker/build-push-action@v7
         with:
           context: .
-          platforms: ${{ matrix.platform }}
+          platforms: linux/amd64
           load: true
           tags: orqevio:ci
       - name: Start the image and check that it answers
@@ -235,23 +284,17 @@ jobs:
           docker logs orqevio
           exit 1
       - uses: pnpm/action-setup@v6
-        if: matrix.e2e
       - uses: actions/setup-node@v7
-        if: matrix.e2e
         with:
           node-version: 22
           cache: pnpm
-      - if: matrix.e2e
-        run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - name: Install Chromium for Playwright
-        if: matrix.e2e
         run: pnpm --filter @orqevio/web exec playwright install --with-deps chromium
       - name: Run the end-to-end tests against the image
-        if: matrix.e2e
         run: pnpm test:e2e
       # The same image, fresh, behind a reverse proxy that asks for a password, as many put it.
       - name: Start a fresh copy behind a proxy that asks for a password
-        if: matrix.e2e
         run: |
           docker network create proxied
           docker run -d --name orqevio-proxied --network proxied --network-alias orqevio \
@@ -272,22 +315,49 @@ jobs:
           docker logs proxy
           exit 1
       - name: Run the end-to-end tests through the proxy
-        if: matrix.e2e
         env:
           E2E_BASE_URL: http://localhost:8080
           E2E_BASIC_AUTH: orqevio:${{ env.PROXY_PASSWORD }}
         run: pnpm test:e2e
       - name: Show the container log
-        if: failure() && matrix.e2e
+        if: failure()
         run: |
           docker logs orqevio
           docker logs orqevio-proxied || true
           docker logs proxy || true
       - name: Keep the results of failed tests
-        if: failure() && matrix.e2e
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-results-docker
           path: apps/web/test-results
           if-no-files-found: ignore
           retention-days: 7
+
+  docker-arm64:
+    name: Docker image (linux/arm64)
+    if: github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
+    # GitHub has no "latest" label for its Arm runners.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    env:
+      APP_URL: http://localhost:3000
+      SETUP_CODE: e2e-setup-code-1234
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/arm64
+          load: true
+          tags: orqevio:ci
+      - name: Start the image and check that it answers
+        run: |
+          docker run -d --name orqevio -p 3000:3000 -e SETUP_CODE -e APP_URL orqevio:ci
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/healthz; then exit 0; fi
+            sleep 1
+          done
+          docker logs orqevio
+          exit 1
