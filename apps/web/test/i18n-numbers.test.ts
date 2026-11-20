@@ -26,4 +26,12 @@ describe('numbers in texts', () => {
     // A text naming its format keeps it.
     expect(en.t('named', { n: 1234.5 })).toBe('1,234.5')
   })
+
+  // <Trans> without values translates with its own delimiters: i18next sets its interpolator up
+  // for that call and back again afterwards, which must leave the number format in place.
+  it('stay written so after a text translated with its own interpolation options', async () => {
+    const de = await instance('de')
+    expect(de.t('size', { interpolation: { prefix: '#$?', suffix: '?$#' } })).toBe('Up to {{max}} and {{name}}')
+    expect(de.t('items', { count: 5000 })).toBe('5.000 items')
+  })
 })
