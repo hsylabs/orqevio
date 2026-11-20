@@ -1,4 +1,4 @@
-import { MCP_TOOL_GROUPS } from '@orqevio/shared'
+import { MCP_TOOL_GROUPS, isTokenActive } from '@orqevio/shared'
 import { Bot, LockKeyhole, Plus, ShieldCheck } from 'lucide-react'
 import { useId, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -32,7 +32,10 @@ export function AgentsPage() {
   const { workspaceId } = useWorkspace()
   const tokens = useTokens()
   const [createOpen, setCreateOpen] = useState(false)
-  const [tokenFilter, setTokenFilter] = useState<string | undefined>()
+  // The access whose activity is shown, in the workspace it belongs to: another workspace starts with all of its own.
+  const [filter, setFilter] = useState<{ workspaceId: string; tokenId: string } | undefined>()
+  const tokenFilter = filter?.workspaceId === workspaceId ? filter.tokenId : undefined
+  const setTokenFilter = (tokenId: string | undefined) => setFilter(tokenId ? { workspaceId, tokenId } : undefined)
   // Side by side, the activity scrolls in its own box, 40 at a time; on a phone the page is the only
   // scroll, so it shows 10 and asks for more.
   const wide = useWide()
@@ -41,11 +44,11 @@ export function AgentsPage() {
   const entries = [...new Map((activity.data?.pages.flat() ?? []).map((entry) => [entry.id, entry])).values()]
   const activityTitle = useId()
 
-  // The accesses of this workspace; those of the others are each on their own page.
+  // The accesses of this workspace; those of the others are each on their own page, counted if they still work.
   const here = (tokens.data ?? []).filter((token) => token.workspaceId === workspaceId)
   const elsewhere = [
     ...(tokens.data ?? [])
-      .filter((token) => token.workspaceId !== workspaceId)
+      .filter((token) => token.workspaceId !== workspaceId && isTokenActive(token))
       .reduce((spaces, token) => {
         const space = spaces.get(token.workspaceId) ?? { id: token.workspaceId, name: token.workspaceName, count: 0 }
         space.count += 1
@@ -53,7 +56,7 @@ export function AgentsPage() {
       }, new Map<string, { id: string; name: string; count: number }>())
       .values(),
   ]
-  const active = here.filter((token) => !token.revokedAt && (!token.expiresAt || new Date(token.expiresAt) > new Date()))
+  const active = here.filter((token) => isTokenActive(token))
   const inactive = here.filter((token) => !active.includes(token))
 
   const revoke = useRevokeToken()

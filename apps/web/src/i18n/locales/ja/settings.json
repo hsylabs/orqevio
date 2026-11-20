@@ -77,7 +77,7 @@
     "missingFiles_other": "{{count}}件の添付ファイルをコピーできませんでした。",
     "newer": "Orqevio {{version}}で作成されました。復元するには、このOrqevioを更新してください。",
     "restore": "復元…",
-    "keep_other": "直近{{count}}件の毎日のバックアップと、最後の復元の前に作成したバックアップを保管します。",
+    "keep_other": "直近{{count}}件の毎日のバックアップ、手動で作成した直近{{count}}件、最後の復元の前に作成したバックアップを保管します。",
     "restoreTitle": "このバックアップを復元しますか？",
     "restoreDescription": "このOrqevioは{{date}}の状態に戻ります。",
     "restoreLoses": "ワークスペース、ドキュメント、カード、保管庫、エージェント、ゴミ箱、履歴のすべてが戻ります。それ以降の変更は失われます。",

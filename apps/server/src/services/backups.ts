@@ -252,14 +252,15 @@ export class BackupService {
   }
 
   /**
-   * Keeps the KEEP_BACKUPS newest daily or manual backups and the newest one made before a
-   * restore, removes the rest and the unfinished ones, then the attachments none of those kept lists.
+   * Keeps the KEEP_BACKUPS newest daily backups, as many of those made by hand (which never push
+   * out a daily one) and the newest one made before a restore; removes the rest, the unfinished
+   * ones and what interrupted writes left, then the attachments none of those kept lists.
    */
   private async prune(now: number) {
     const store = this.deps.backups!
     const manifests = await this.manifests()
-    const regular = manifests.filter((m) => m.kind !== 'before-restore')
-    const kept = [...regular.slice(0, KEEP_BACKUPS), ...manifests.filter((m) => m.kind === 'before-restore').slice(0, 1)]
+    const newest = (kind: BackupKind, count: number) => manifests.filter((m) => m.kind === kind).slice(0, count)
+    const kept = [...newest('daily', KEEP_BACKUPS), ...newest('manual', KEEP_BACKUPS), ...newest('before-restore', 1)]
     const keptIds = new Set(kept.map((m) => m.id))
     const listed = await store.list('snapshots/')
     const withManifest = new Set(manifests.map((m) => m.id))
@@ -279,6 +280,8 @@ export class BackupService {
     const needed = new Set(kept.flatMap((m) => m.files.map((f) => fileKey(f.key))))
     const unused = (await store.list('files/')).map((f) => f.key).filter((key) => !needed.has(key))
     if (unused.length) await store.delete(unused)
+    // A write cut short (the server stopped half-way) leaves its part behind, which no listing shows.
+    await store.removeLeftovers?.(now - UNFINISHED_AFTER_MS)
   }
 
   /**
@@ -358,6 +361,10 @@ export class BackupService {
       const spoilt: string[] = []
       const undo = () => Promise.all(copied.map((key) => this.deps.storage.delete(key).catch(() => {})))
       let ownerId = ''
+      let before: Manifest | null = null
+      // From here uploads wait: one that finished after the backup made before restoring would be in
+      // neither that backup nor the one restored. The running ones end first, and go into it.
+      await this.attachments.close('restoring')
       try {
         for (const file of wanted) {
           const body = await store.stream(fileKey(file.key)).catch((error) => {
@@ -390,14 +397,14 @@ export class BackupService {
 
         // Not pruned yet: the backup being restored (an older one made before a restore, say) and the
         // attachments only it lists must stay until it is back.
-        await this.create('before-restore', { prune: false }).catch((error) => {
+        before = await this.create('before-restore', { prune: false }).catch((error) => {
           throw this.folderError(error)
         })
       } catch (error) {
         await undo()
+        this.attachments.reopen()
         throw error
       }
-      await this.attachments.close()
       let restored = false
       try {
         // Read before the restore takes it away: what must stay as it is now.
@@ -422,7 +429,12 @@ export class BackupService {
         }
         await this.deps.migrate?.()
       } catch (error) {
-        if (!restored) await undo()
+        if (!restored) {
+          await undo()
+          // Nothing changed, so the backup made just now is the copy as it still is: kept, it would push
+          // out the one made before the last restore, which may be the one wanted.
+          if (before) await store.delete([manifestKey(before.id), dataKey(before.id)]).catch((e) => console.error('[backups] could not remove the backup made before a failed restore', e))
+        }
         throw error
       } finally {
         this.attachments.reopen()

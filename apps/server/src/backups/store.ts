@@ -25,6 +25,8 @@ export interface BackupStore {
   check?(): Promise<BackupProblemDTO | null>
   /** Whether a failed file operation was about this folder, not about the copy's own files being read. */
   failedHere?(error: unknown): boolean
+  /** Removes what writes cut short left behind, if older than `before` (ms): never one being written. */
+  removeLeftovers?(before: number): Promise<void>
 }
 
 /** What a failed file operation means for backups, and where. */
@@ -72,6 +74,9 @@ const LAYOUT = /^(?:snapshots|files)\/(?:[^/]+\/)?$/
 /** Made and removed to check a folder can be written; not empty, since a full disk still takes an empty file. */
 const PROBE = '.orqevio-check'
 const PROBE_BYTES = new Uint8Array(64 * 1024)
+
+/** What a file is written as until it is whole, then renamed to its name. */
+const PARTIAL = '.partial'
 
 const isMissing = (error: unknown) => (error as NodeJS.ErrnoException | undefined)?.code === 'ENOENT'
 
@@ -181,9 +186,32 @@ export class FolderBackupStore implements BackupStore {
   async write(key: string, data: Uint8Array) {
     const file = this.file(key)
     await mkdir(path.dirname(file), { recursive: true, mode: PRIVATE_DIR })
-    const partial = `${file}.partial`
-    await writeFile(partial, data, { mode: PRIVATE_FILE })
-    await rename(partial, file)
+    const partial = `${file}${PARTIAL}`
+    try {
+      await writeFile(partial, data, { mode: PRIVATE_FILE })
+      await rename(partial, file)
+    } catch (error) {
+      await rm(partial, { force: true }).catch(() => {})
+      throw error
+    }
+  }
+
+  /** The `.partial` files a write cut short left in the backups' own folders (a server stopped half-way). */
+  async removeLeftovers(before: number) {
+    const sweep = async (dir: string, key: string): Promise<void> => {
+      const entries = await readdir(dir, { withFileTypes: true }).catch(() => [])
+      for (const entry of entries) {
+        const child = `${key}${entry.name}`
+        if (entry.isDirectory()) {
+          if (LAYOUT.test(`${child}/`)) await sweep(path.join(dir, entry.name), `${child}/`)
+        } else if (entry.isFile() && entry.name.endsWith(PARTIAL) && BACKUP_KEY.test(child.slice(0, -PARTIAL.length))) {
+          const file = path.join(dir, entry.name)
+          const info = await stat(file).catch(() => null)
+          if (info && info.mtimeMs < before) await rm(file, { force: true }).catch(() => {})
+        }
+      }
+    }
+    await sweep(this.root, '')
   }
 
   async stream(key: string) {
@@ -201,7 +229,7 @@ export class FolderBackupStore implements BackupStore {
   async writeStream(key: string, body: ReadableStream<Uint8Array>, size: number) {
     const file = this.file(key)
     await mkdir(path.dirname(file), { recursive: true, mode: PRIVATE_DIR })
-    const partial = `${file}.partial`
+    const partial = `${file}${PARTIAL}`
     let written = 0
     const counter = new TransformStream<Uint8Array, Uint8Array>({
       transform(chunk, controller) {
