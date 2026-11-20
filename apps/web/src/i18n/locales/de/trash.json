@@ -228,6 +228,13 @@
     "confirm_one": "Alle wiederherstellen ({{count}})",
     "confirm_other": "Alle wiederherstellen ({{count}})",
     "restored_one": "{{count}} Element wiederhergestellt",
-    "restored_other": "{{count}} Elemente wiederhergestellt"
-  }
+    "restored_other": "{{count}} Elemente wiederhergestellt",
+    "gone": "Nicht mehr im Papierkorb",
+    "comesWith": "Kommt mit „{{name}}“ zurück",
+    "alsoBrings": "bringt auch {{list}} zurück",
+    "quoted": "„{{name}}“",
+    "lost_one": "{{count}} Verknüpfung geht verloren",
+    "lost_other": "{{count}} Verknüpfungen gehen verloren"
+  },
+  "selectLimit": "Es lassen sich bis zu {{count}} auf einmal auswählen."
 }

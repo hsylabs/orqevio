@@ -404,51 +404,52 @@ export class TrashService {
   }
 
   /**
-   * Restores several things at once, each as `restoreItem` does, in the order given and in one
-   * transaction: each is planned with what the ones before it brought back already there, so
-   * the plans say what restoring them together does. What is below another one of them comes
-   * back with it, and is not asked for twice. With `dryRun`, or when anything is still to decide
-   * for any of them, nothing is done and the plans say what.
+   * Restores several things at once, each as `restoreItem` does, in one transaction: what holds
+   * others first, each planned with what the ones before it brought back already there, so the
+   * plans say what restoring them together does. One that came back with another (below it, or
+   * as the other end of one of its relations) is not asked for twice: `cameWith` says with
+   * which. One no longer in the trash is in `missing`. With `dryRun`, or when anything is still to
+   * decide for any of them, or one went missing, nothing is done and the plans say what.
    */
   async restoreMany(actor: Actor, workspaceId: string, body: unknown): Promise<TrashPlanManyDTO | RestoredManyDTO> {
     this.access.requireUser(actor)
     await this.access.workspace(actor, workspaceId)
     const input: TrashRestoreManyInput = parse(trashRestoreManyInput, body)
-    let plans: TrashPlanDTO[] = []
+    let answer: TrashPlanManyDTO = { plans: [], ready: false }
     const asked = new Error('only planned')
     let done: Applied[]
     try {
       done = this.deps.db.transaction((tx) => {
-        plans = []
+        const plans: TrashPlanDTO[] = []
+        const cameWith: Record<string, string> = {}
         const applied: Applied[] = []
         const first = TrashIndex.load(tx, workspaceId)
-        const nodes = input.items.map((item) => first.node(item.key))
-        if (nodes.some((n) => !n)) throw notFound('Trash item')
-        // Something below another item comes with it, unless that item leaves it out (or what
-        // holds it); asked for twice, it counts once.
-        const comesWith = (i: number, j: number) => {
-          const node = nodes[i]!
-          const holder = nodes[j]!
-          if (node === holder) return j < i
-          const above = first.ancestors(node)
-          const at = above.indexOf(holder)
-          return at >= 0 && ![...above.slice(at + 1), node].some((n) => input.items[j]!.exclude.includes(n.key))
-        }
-        const items = input.items.filter((_, i) => !input.items.some((__, j) => j !== i && comesWith(i, j)))
+        const missing = input.items.filter((item) => !first.node(item.key)).map((item) => item.key)
+        // What holds others first: what is below it comes with it, unless it is left out.
+        const depth = (key: string) => first.ancestors(first.node(key)!).length
+        const items = input.items.filter((item) => first.node(item.key)).sort((a, b) => depth(a.key) - depth(b.key))
         for (const item of items) {
-          // Read again each time: what came back before is there now.
+          // Read again each time: what came back before is there now. Only this batch restores
+          // in this transaction, so what was in the trash at first and isn't now came back with it.
           const index = TrashIndex.load(tx, workspaceId)
-          const plan = planRestore(index, { ...item, dryRun: false })
+          const back = (key: string) => first.node(key) !== undefined && !index.node(key)
+          if (back(item.key)) continue
+          // The other end of a relation that came back already needs no asking for.
+          const plan = planRestore(index, { ...item, include: item.include.filter((key) => !back(key)), dryRun: input.dryRun })
           plans.push(planDTO(index, plan))
-          if (!plan.missing.length) applied.push(this.apply(tx, actor, workspaceId, plan))
+          if (plan.missing.length) continue
+          applied.push(this.apply(tx, actor, workspaceId, plan))
+          const after = TrashIndex.load(tx, workspaceId)
+          for (const other of items) if (other !== item && index.node(other.key) && !after.node(other.key)) cameWith[other.key] ??= item.key
         }
-        if (input.dryRun || plans.some((p) => !p.ready)) throw asked
+        answer = { plans, ready: missing.length === 0 && plans.every((p) => p.ready), ...(Object.keys(cameWith).length && { cameWith }), ...(missing.length && { missing }) }
+        if (input.dryRun || !answer.ready) throw asked
         return applied
       })
     } catch (error) {
       if (error !== asked) throw error
-      if (input.dryRun) return { plans, ready: plans.every((p) => p.ready) }
-      throw new AppError(409, 'restore_incomplete', 'Say where each goes back, and what to do with names already used there, first.', { plans, ready: false } satisfies TrashPlanManyDTO)
+      if (input.dryRun) return answer
+      throw new AppError(409, 'restore_incomplete', 'Say where each goes back, and what to do with names already used there, first.', answer)
     }
     for (const applied of done) await this.announce(actor, workspaceId, applied)
     return { restored: done.map((a) => a.result) }

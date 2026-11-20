@@ -617,8 +617,9 @@ describe('several at once', () => {
 
     const planned = await many(s, { items, dryRun: true })
     expect(planned.status, JSON.stringify(planned.body)).toBe(200)
-    // The card inside the column comes with it: three plans, not four.
+    // The card inside the column comes with it: three plans, not four, and it says so.
     expect(planned.body.plans.map((p: TrashPlanDTO) => p.node.key)).toEqual(items.slice(0, 3).map((i) => i.key))
+    expect(planned.body.cameWith).toEqual({ [`card:${early}`]: `column:${doing!.id}` })
     expect(planned.body.plans[0]).toMatchObject({ ready: true, conflicts: [] })
     expect(planned.body.plans[1]).toMatchObject({ ready: false, missing: ['names'], conflicts: [{ key: `card:${same[1]}`, original: 'Igual', taken: true }] })
     expect(planned.body.plans[2].nodes.map((n: { key: string }) => n.key)).toEqual([`column:${doing!.id}`, `card:${early}`])
@@ -659,6 +660,58 @@ describe('several at once', () => {
     ])
     expect((await many(s, { items })).status).toBe(200)
     expect((await s.client.get(`/api/cards/${early}`)).body.columnId).toBe(column)
+  })
+
+  it('brings back a label two cards had once, and a picked label that comes with its card is not asked for twice', async () => {
+    const s = await space('Varios con etiqueta')
+    const label = (await s.client.post(`/api/boards/${s.boardId}/labels`, { name: 'Urgente', color: 'tomato' })).body.id as string
+    const [a, b] = [await card(s, s.columns[0]!.id, 'A'), await card(s, s.columns[0]!.id, 'B')]
+    for (const id of [a, b]) await s.client.patch(`/api/cards/${id}`, { labelIds: [label] })
+    await del(s.client, `/api/labels/${label}`)
+    for (const id of [a, b]) await del(s.client, `/api/cards/${id}`)
+
+    // Both propose bringing it back: the second finds it back already, and that is no change.
+    const both = [{ key: `card:${a}`, include: [`label:${label}`] }, { key: `card:${b}`, include: [`label:${label}`] }]
+    const planned = await many(s, { items: both, dryRun: true })
+    expect(planned.status, JSON.stringify(planned.body)).toBe(200)
+    expect(planned.body).toMatchObject({ ready: true })
+    expect((await many(s, { items: both })).status).toBe(200)
+    expect((await s.client.get(`/api/cards/${b}`)).body.labelIds).toEqual([label])
+
+    // The label picked too, and brought back by the card first: it comes with it.
+    for (const id of [a, b]) await del(s.client, `/api/cards/${id}`)
+    await del(s.client, `/api/labels/${label}`)
+    const items = [{ key: `card:${a}`, include: [`label:${label}`] }, { key: `label:${label}` }]
+    const withLabel = (await many(s, { items, dryRun: true })).body
+    expect(withLabel).toMatchObject({ ready: true, cameWith: { [`label:${label}`]: `card:${a}` } })
+    expect(withLabel.plans).toHaveLength(1)
+    expect((await many(s, { items })).status).toBe(200)
+    expect((await s.client.get(`/api/cards/${a}`)).body.labelIds).toEqual([label])
+  })
+
+  it('says what is no longer in the trash, and a plan whose relation no longer applies is still a plan', async () => {
+    const s = await space('Varios que cambian')
+    const column = s.columns[1]!.id
+    const label = (await s.client.post(`/api/boards/${s.boardId}/labels`, { name: 'Urgente', color: 'tomato' })).body.id as string
+    const tagged = await card(s, column, 'Con etiqueta')
+    await s.client.patch(`/api/cards/${tagged}`, { labelIds: [label] })
+    await del(s.client, `/api/labels/${label}`)
+    await del(s.client, `/api/columns/${column}`)
+    const alone = await card(s, s.columns[0]!.id, 'Suelta')
+    await del(s.client, `/api/cards/${alone}`)
+
+    // The column asks for the label its card had; leaving the card out, that no longer applies.
+    const left = await many(s, { items: [{ key: `column:${column}`, exclude: [`card:${tagged}`], include: [`label:${label}`] }], dryRun: true })
+    expect(left.status, JSON.stringify(left.body)).toBe(200)
+    expect(left.body.plans[0].relations).toEqual([])
+
+    // Restored meanwhile by someone else: said, and nothing is done.
+    expect((await restore(s, { key: `card:${alone}` })).status).toBe(200)
+    const items = [{ key: `card:${alone}` }, { key: `column:${column}` }]
+    expect((await many(s, { items, dryRun: true })).body).toMatchObject({ ready: false, missing: [`card:${alone}`] })
+    const refused = await many(s, { items })
+    expect([refused.status, refused.body.error.code, refused.body.error.details.missing]).toEqual([409, 'restore_incomplete', [`card:${alone}`]])
+    expect((await top(s)).map((n) => n.key)).toContain(`column:${column}`)
   })
 
   it('deletes several for good, counting all that goes first, and only for people', async () => {

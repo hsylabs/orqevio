@@ -202,6 +202,12 @@
     "withInside_other": "中の{{count}}件も一緒に",
     "pending_other": "未決定：{{count}}件",
     "confirm_other": "すべて復元（{{count}}件）",
-    "restored_other": "{{count}}件を復元しました"
-  }
+    "restored_other": "{{count}}件を復元しました",
+    "gone": "ゴミ箱にはもうありません",
+    "comesWith": "「{{name}}」と一緒に戻ります",
+    "alsoBrings": "{{list}}も一緒に戻します",
+    "quoted": "「{{name}}」",
+    "lost_other": "関連{{count}}件は失われます"
+  },
+  "selectLimit": "一度に選べるのは{{count}}件までです。"
 }

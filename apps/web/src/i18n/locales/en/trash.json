@@ -228,6 +228,13 @@
     "confirm_one": "Restore all ({{count}})",
     "confirm_other": "Restore all ({{count}})",
     "restored_one": "{{count}} item restored",
-    "restored_other": "{{count}} items restored"
-  }
+    "restored_other": "{{count}} items restored",
+    "gone": "No longer in the trash",
+    "comesWith": "Comes back with “{{name}}”",
+    "alsoBrings": "also brings back {{list}}",
+    "quoted": "“{{name}}”",
+    "lost_one": "{{count}} relation is lost",
+    "lost_other": "{{count}} relations are lost"
+  },
+  "selectLimit": "Up to {{count}} can be picked at a time."
 }

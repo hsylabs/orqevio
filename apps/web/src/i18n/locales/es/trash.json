@@ -254,6 +254,14 @@
     "confirm_other": "Restaurar todo ({{count}})",
     "restored_one": "Se ha restaurado {{count}} elemento",
     "restored_many": "Se han restaurado {{count}} elementos",
-    "restored_other": "Se han restaurado {{count}} elementos"
-  }
+    "restored_other": "Se han restaurado {{count}} elementos",
+    "gone": "Ya no está en la papelera",
+    "comesWith": "Vuelve con «{{name}}»",
+    "alsoBrings": "trae también {{list}}",
+    "quoted": "«{{name}}»",
+    "lost_one": "se pierde {{count}} relación",
+    "lost_many": "se pierden {{count}} relaciones",
+    "lost_other": "se pierden {{count}} relaciones"
+  },
+  "selectLimit": "Se pueden elegir hasta {{count}} a la vez."
 }

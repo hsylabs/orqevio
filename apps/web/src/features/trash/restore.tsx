@@ -101,7 +101,7 @@ interface ManyItem {
  */
 export function useRestoreMany(workspaceId: string, options: { onRestored?: (restored: RestoredDTO[]) => void } = {}) {
   const { t } = useTranslation(['trash', 'common'])
-  const [asking, setAsking] = useState<{ items: ManyItem[]; plans: TrashPlanDTO[] } | null>(null)
+  const [asking, setAsking] = useState<{ items: ManyItem[]; planned: TrashPlanManyDTO } | null>(null)
   const [starting, setStarting] = useState(false)
 
   async function start(nodes: TrashNodeDTO[]) {
@@ -110,12 +110,15 @@ export function useRestoreMany(workspaceId: string, options: { onRestored?: (res
       const pattern = t('restoreDialog.suggested', { name: '{{name}}' })
       const first = await planRestoreMany(workspaceId, nodes.map((n) => ({ key: n.key })))
       const byKey = new Map(first.plans.map((p) => [p.node.key, p]))
-      const items = nodes.flatMap((node): ManyItem[] => {
+      // The other end of a relation is proposed once, and never one picked itself: it comes on its own line.
+      const asked = new Set(nodes.map((n) => n.key))
+      const items = nodes.map((node): ManyItem => {
         const plan = byKey.get(node.key)
-        return plan ? [{ node, request: proposedRequest(plan, node.key, pattern), choice: plan.where.to, on: true }] : []
+        const request = plan ? proposedRequest(plan, node.key, pattern, asked) : { key: node.key }
+        for (const key of request.include ?? []) asked.add(key)
+        return { node, request, choice: plan?.where.to ?? null, on: !first.missing?.includes(node.key) }
       })
-      const planned = await planRestoreMany(workspaceId, items.map((i) => i.request))
-      setAsking({ items, plans: planned.plans })
+      setAsking({ items, planned: await planRestoreMany(workspaceId, items.filter((i) => i.on).map((i) => i.request)) })
     } catch (error) {
       toast.error(errorMessage(error))
     } finally {
@@ -139,8 +142,8 @@ export function useRestoreMany(workspaceId: string, options: { onRestored?: (res
 }
 
 /** The plans of a refused restore of several things, when what was shown no longer holds. */
-function plansOf(error: unknown): TrashPlanDTO[] | null {
-  return error instanceof ApiError && error.code === 'restore_incomplete' && Array.isArray((error.details as TrashPlanManyDTO | undefined)?.plans) ? (error.details as TrashPlanManyDTO).plans : null
+function plansOf(error: unknown): TrashPlanManyDTO | null {
+  return error instanceof ApiError && error.code === 'restore_incomplete' && Array.isArray((error.details as TrashPlanManyDTO | undefined)?.plans) ? (error.details as TrashPlanManyDTO) : null
 }
 
 function RestoreManyDialog({
@@ -150,14 +153,14 @@ function RestoreManyDialog({
   onDone,
 }: {
   workspaceId: string
-  initial: { items: ManyItem[]; plans: TrashPlanDTO[] }
+  initial: { items: ManyItem[]; planned: TrashPlanManyDTO }
   onCancel: () => void
   onDone: (restored: RestoredDTO[]) => void
 }) {
   const { t } = useTranslation(['trash', 'common'])
   const [items, setItems] = useState(initial.items)
   // The plans shown are those for `planned`: restoring is only possible while that is what would be sent.
-  const [shown, setShown] = useState({ plans: initial.plans, planned: initial.items })
+  const [shown, setShown] = useState({ result: initial.planned, planned: initial.items })
   const [open, setOpen] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -165,7 +168,10 @@ function RestoreManyDialog({
   const latest = useRef(0)
   const stale = shown.planned !== items
   const active = items.filter((i) => i.on)
-  const planFor = new Map(shown.plans.map((p) => [p.node.key, p]))
+  const planFor = new Map(shown.result.plans.map((p) => [p.node.key, p]))
+  const cameWith = shown.result.cameWith ?? {}
+  const missing = new Set(shown.result.missing ?? [])
+  const titleOf = (key: string) => items.find((i) => i.node.key === key)?.node.title || t('common:untitled')
 
   // Every change is planned again, together, the last one winning; typing a name waits for a pause.
   useEffect(() => {
@@ -176,7 +182,7 @@ function RestoreManyDialog({
     const on = asked.filter((i) => i.on)
     const timer = setTimeout(() => {
       if (on.length === 0) {
-        setShown({ plans: [], planned: asked })
+        setShown({ result: { plans: [], ready: false }, planned: asked })
         return setAttempt(0)
       }
       planRestoreMany(
@@ -185,7 +191,7 @@ function RestoreManyDialog({
       )
         .then((fresh) => {
           if (n !== latest.current) return
-          setShown({ plans: fresh.plans, planned: asked })
+          setShown({ result: fresh, planned: asked })
           setAttempt(0)
         })
         .catch(() => n === latest.current && setFailed(true))
@@ -199,6 +205,11 @@ function RestoreManyDialog({
     const pattern = t('restoreDialog.suggested', { name: '{{name}}' })
     let changed = false
     const next = items.map((item) => {
+      // No longer in the trash (restored meanwhile, say): it can't come back, and is left out.
+      if (item.on && missing.has(item.node.key)) {
+        changed = true
+        return { ...item, on: false }
+      }
       const plan = planFor.get(item.node.key)
       if (!item.on || !plan) return item
       let request = item.request
@@ -214,7 +225,11 @@ function RestoreManyDialog({
   })
 
   const update = (key: string, patch: (item: ManyItem) => ManyItem) => setItems((all) => all.map((i) => (i.node.key === key ? patch(i) : i)))
+  // Unticked, it stays in the trash: no other one brings it back as the other end of a relation.
+  const tick = (key: string, on: boolean) =>
+    setItems((all) => all.map((i) => (i.node.key === key ? { ...i, on } : on || !i.request.include?.includes(key) ? i : { ...i, request: { ...i.request, include: i.request.include.filter((k) => k !== key) } })))
   const pending = active.filter((i) => {
+    if (cameWith[i.node.key]) return false
     const plan = planFor.get(i.node.key)
     return !plan || undecided(plan, i.request, i.choice)
   })
@@ -226,7 +241,7 @@ function RestoreManyDialog({
     } catch (error) {
       // Something changed meanwhile: the dialog shows how things stand now, to decide again.
       const changed = plansOf(error)
-      if (changed) setShown({ plans: changed, planned: items })
+      if (changed) setShown({ result: changed, planned: items })
       else if (error instanceof ApiError && error.code === 'restore_changed') setAttempt((a) => a + 1)
       toast.error(errorMessage(error))
     } finally {
@@ -270,13 +285,13 @@ function RestoreManyDialog({
           return (
             <li key={item.node.key} aria-label={name} className={cn('rounded-[12px] border border-line', expanded && 'border-line-strong')}>
               <div className="flex min-h-11 items-center gap-2.5 px-2.5 py-1.5">
-                <Checkbox checked={item.on} onChange={(on) => update(item.node.key, (i) => ({ ...i, on }))} label={t('many.include', { name })} size={16} />
+                <Checkbox checked={item.on} disabled={missing.has(item.node.key)} onChange={(on) => tick(item.node.key, on)} label={t('many.include', { name })} size={16} />
                 <span className="text-ink-3 [&_svg]:size-4">
                   <TrashIcon kind={item.node.kind} />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className={cn('truncate text-[13.5px] font-medium', !item.on && 'text-ink-3 line-through decoration-ink-4')}>{name}</p>
-                  <ManySummary item={item} plan={plan} stale={stale} />
+                  <ManySummary item={item} plan={plan} stale={stale} gone={missing.has(item.node.key)} comesWith={cameWith[item.node.key] ? titleOf(cameWith[item.node.key]!) : null} />
                 </div>
                 {item.on && plan && (
                   <Button size="xs" variant="ghost" aria-expanded={expanded} onClick={() => setOpen(expanded ? null : item.node.key)} aria-label={t(expanded ? 'many.doneChanging' : 'many.change', { name })}>
@@ -305,16 +320,18 @@ function RestoreManyDialog({
 }
 
 /** Where one of several goes, and what was decided for it, in one line under its name. */
-function ManySummary({ item, plan, stale }: { item: ManyItem; plan: TrashPlanDTO | undefined; stale: boolean }) {
+function ManySummary({ item, plan, stale, gone, comesWith }: { item: ManyItem; plan: TrashPlanDTO | undefined; stale: boolean; gone: boolean; comesWith: string | null }) {
   const { t } = useTranslation(['trash', 'common'])
-  if (!item.on) return <p className="truncate text-[12.5px] text-ink-3">{t('many.stays')}</p>
+  if (gone) return <p className="text-[12.5px] text-warn">{t('many.gone')}</p>
+  if (!item.on) return <p className="text-[12.5px] text-ink-3">{t('many.stays')}</p>
+  if (comesWith) return <p className="text-[12.5px] text-ink-3">{t('many.comesWith', { name: comesWith })}</p>
   if (!plan) return <p className="skeleton mt-1 h-3 w-40 rounded" />
   const where = plan.where
   const to = item.choice ?? where.to
   const blocked = where.place !== 'original' && !where.canRecreate && where.choose.length === 0
   const notes: { text: string; tone?: 'warn' | 'danger' }[] = []
   if (blocked) notes.push({ text: t('restoreDialog.nowhere'), tone: 'danger' })
-  else if (waitsForPlace(to, item.request)) notes.push({ text: t('many.choosePlace'), tone: 'warn' })
+  else if (waitsForPlace(to, item.request) || plan.missing.includes('place')) notes.push({ text: t('many.choosePlace'), tone: 'warn' })
   else if (to === 'recreate') notes.push({ text: t('many.recreate', { place: where.location || t('common:untitled') }) })
   else if (to === 'other') notes.push({ text: t('many.other', { place: where.location }) })
   else notes.push({ text: where.location ? t('many.original', { place: where.location }) : t('many.originalTop') })
@@ -325,6 +342,11 @@ function ManySummary({ item, plan, stale }: { item: ManyItem; plan: TrashPlanDTO
   else if (renamed.length > 1) notes.push({ text: t('many.renamedMany', { count: renamed.length }) })
   const inside = plan.nodes.filter((n) => n.included).length - 1
   if (inside > 0) notes.push({ text: t('many.withInside', { count: inside }) })
+  // What else comes back from the trash with it, and what of its relations can't come back.
+  const brings = plan.relations.filter((r) => r.state === 'trash' && r.included).map((r) => t('many.quoted', { name: r.title || t('common:untitled') }))
+  if (brings.length) notes.push({ text: t('many.alsoBrings', { list: formatList(brings) }) })
+  const lost = plan.relations.filter((r) => r.state === 'gone' || r.state === 'other_board').reduce((sum, r) => sum + r.count, 0)
+  if (lost) notes.push({ text: t('many.lost', { count: lost }), tone: 'warn' })
   return (
     <p className={cn('text-[12.5px] text-pretty text-ink-3', stale && 'opacity-60')}>
       {notes.map((n, i) => (
@@ -370,12 +392,15 @@ function stillIncluded(plan: TrashPlanDTO, request: RestoreRequest) {
   return still.length === request.include.length ? null : still
 }
 
-/** The request a plan's first look proposes: where it says, a new name for each taken one, and the other ends of its relations. */
-function proposedRequest(plan: TrashPlanDTO, key: string, pattern: string): RestoreRequest {
+/**
+ * The request a plan's first look proposes: where it says, a new name for each taken one, and the
+ * other ends of its relations, but those in `skip` (asked for already, or picked themselves).
+ */
+function proposedRequest(plan: TrashPlanDTO, key: string, pattern: string, skip: ReadonlySet<string> = new Set()): RestoreRequest {
   const where = plan.where
   const to = where.to && where.to !== 'other' ? { kind: where.to } : undefined
   const names = proposedNames(plan, { key }, pattern)
-  const include = plan.relations.filter((r) => r.state === 'trash' && r.canInclude && r.key).map((r) => r.key!)
+  const include = plan.relations.filter((r) => r.state === 'trash' && r.canInclude && r.key && !skip.has(r.key)).map((r) => r.key!)
   return { key, ...(to && { to }), ...(Object.keys(names).length && { names }), ...(include.length && { include }) }
 }
 

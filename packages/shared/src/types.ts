@@ -458,6 +458,10 @@ export interface TrashContents {
 export interface TrashPlanManyDTO {
   plans: TrashPlanDTO[]
   ready: boolean
+  /** Of those asked for, the ones that come back with another one (below it, or the other end of one of its relations), by key: with which. */
+  cameWith?: Record<string, string>
+  /** Of those asked for, the ones no longer in the trash. */
+  missing?: string[]
 }
 
 /** What restoring several things at once brought back, in the order asked. */

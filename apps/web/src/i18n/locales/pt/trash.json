@@ -254,6 +254,14 @@
     "confirm_other": "Restaurar tudo ({{count}})",
     "restored_one": "{{count}} item restaurado",
     "restored_many": "{{count}} itens restaurados",
-    "restored_other": "{{count}} itens restaurados"
-  }
+    "restored_other": "{{count}} itens restaurados",
+    "gone": "Já não está na lixeira",
+    "comesWith": "Volta com “{{name}}”",
+    "alsoBrings": "traz também {{list}}",
+    "quoted": "“{{name}}”",
+    "lost_one": "{{count}} relação se perde",
+    "lost_many": "{{count}} relações se perdem",
+    "lost_other": "{{count}} relações se perdem"
+  },
+  "selectLimit": "É possível escolher até {{count}} de cada vez."
 }

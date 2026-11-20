@@ -111,6 +111,40 @@ test('the trash is used by keyboard', async ({ page }) => {
   await page.keyboard.press('Space')
   await expect(box('Archivo')).toBeChecked()
   await expect(page.getByRole('status').or(page.locator('[aria-live="polite"]')).filter({ hasText: '1 seleccionado' })).toHaveCount(1)
+  // Picked, what it holds goes with it: those boxes are skipped on the way down.
+  await page.keyboard.press('ArrowRight')
+  await expect(box('Por hacer')).toBeDisabled()
+  await page.keyboard.press('ArrowDown')
+  await expect(box('Dos')).toBeFocused()
+})
+
+// Two cards that had a label deleted before them: restoring both brings it back once, said on one line.
+test('two cards that had the same deleted label come back together with it', async ({ page }) => {
+  const workspaceId = await openNewWorkspace(page, 'Etiqueta compartida E2E')
+  const boardId = await createProject(page, 'Mudanza')
+  const tasks = await board(page.request, boardId)
+  const label = ((await (await page.request.post(`/api/boards/${boardId}/labels`, { data: { name: 'Urgente', color: 'tomato' } })).json()) as { id: string }).id
+  const cards: string[] = []
+  for (const title of ['Uno', 'Dos']) {
+    const id = ((await (await page.request.post(`/api/columns/${tasks.columns[0]!.id}/cards`, { data: { title } })).json()) as { id: string }).id
+    await page.request.patch(`/api/cards/${id}`, { data: { labelIds: [label] } })
+    cards.push(id)
+  }
+  await page.getByRole('navigation').getByRole('link', { name: 'Papelera' }).click()
+  await expect(page).toHaveURL(`/w/${workspaceId}/trash`)
+  await remove(page.request, `/api/labels/${label}`)
+  for (const id of cards) await remove(page.request, `/api/cards/${id}`)
+
+  for (const name of ['Uno', 'Dos']) await page.getByRole('checkbox', { name: `Seleccionar «${name}»` }).click()
+  await page.getByRole('toolbar', { name: 'Seleccionar todo' }).getByRole('button', { name: 'Restaurar' }).click()
+  const items = page.getByRole('dialog', { name: 'Restaurar 2 elementos' }).getByRole('list', { name: 'Lo que se restaura' })
+  // Proposed by the first one picked, and only by it.
+  await expect(items.getByRole('listitem', { name: 'Uno' })).toContainText('trae también «Urgente»')
+  await expect(items.getByRole('listitem', { name: 'Dos' })).not.toContainText('Urgente')
+  await page.getByRole('button', { name: 'Restaurar todo (2)' }).click()
+  await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'Se han restaurado 2 elementos' })).toBeVisible()
+  for (const id of cards) expect(((await (await page.request.get(`/api/cards/${id}`)).json()) as { labelIds: string[] }).labelIds).toEqual([label])
+  await expect(page.getByRole('heading', { name: 'La papelera está vacía' })).toBeVisible()
 })
 
 // On a phone: two lines a row, the actions in a menu, and what is picked in a bar at the bottom.

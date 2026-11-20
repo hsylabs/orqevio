@@ -228,6 +228,13 @@
     "confirm_one": "Alles terugzetten ({{count}})",
     "confirm_other": "Alles terugzetten ({{count}})",
     "restored_one": "{{count}} item teruggezet",
-    "restored_other": "{{count}} items teruggezet"
-  }
+    "restored_other": "{{count}} items teruggezet",
+    "gone": "Staat niet meer in de prullenbak",
+    "comesWith": "Komt terug met ‘{{name}}’",
+    "alsoBrings": "brengt ook {{list}} terug",
+    "quoted": "‘{{name}}’",
+    "lost_one": "{{count}} relatie gaat verloren",
+    "lost_other": "{{count}} relaties gaan verloren"
+  },
+  "selectLimit": "Er kunnen er maximaal {{count}} tegelijk worden gekozen."
 }

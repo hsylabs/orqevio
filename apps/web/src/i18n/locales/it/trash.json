@@ -254,6 +254,14 @@
     "confirm_other": "Ripristina tutto ({{count}})",
     "restored_one": "{{count}} elemento ripristinato",
     "restored_many": "{{count}} elementi ripristinati",
-    "restored_other": "{{count}} elementi ripristinati"
-  }
+    "restored_other": "{{count}} elementi ripristinati",
+    "gone": "Non è più nel cestino",
+    "comesWith": "Torna con «{{name}}»",
+    "alsoBrings": "riporta anche {{list}}",
+    "quoted": "«{{name}}»",
+    "lost_one": "si perde {{count}} relazione",
+    "lost_many": "si perdono {{count}} relazioni",
+    "lost_other": "si perdono {{count}} relazioni"
+  },
+  "selectLimit": "Se ne possono scegliere fino a {{count}} alla volta."
 }

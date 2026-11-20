@@ -1,4 +1,4 @@
-import { TRASH_DAYS, type TrashContents, type TrashNodeDTO } from '@orqevio/shared'
+import { MAX_TRASH_BATCH, TRASH_DAYS, type TrashContents, type TrashNodeDTO } from '@orqevio/shared'
 import { ChevronRight, MoreHorizontal, RotateCcw, Trash2, X } from 'lucide-react'
 import { type KeyboardEvent, type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -62,7 +62,9 @@ export function TrashPage() {
   const confirm = useConfirm()
   const [selected, setSelected] = useState<Map<string, RowInfo>>(() => new Map())
   const clear = useCallback(() => setSelected(new Map()), [])
-  const restore = useRestore(workspaceId)
+  // Gone from the trash by its own row: no longer picked, nor is anything below it.
+  const drop = useCallback((key: string) => setSelected((s) => new Map([...s].filter(([k, i]) => k !== key && !i.path.includes(key)))), [])
+  const restore = useRestore(workspaceId, { onRestored: (r) => drop(`${r.kind}:${r.entityId}`) })
   const restoreMany = useRestoreMany(workspaceId, { onRestored: clear })
   const [params, setParams] = useSearchParams()
   const item = params.get('item')
@@ -108,7 +110,8 @@ export function TrashPage() {
 
   // What is picked, without what is inside something else picked: that comes with it.
   const picked = [...selected.values()].filter((i) => !i.path.some((k) => selected.has(k)))
-  const allTop = nodes.length > 0 && nodes.every((n) => selected.has(n.key))
+  // All there is, or as many as can go at once.
+  const allTop = nodes.length > 0 && (nodes.every((n) => selected.has(n.key)) || selected.size >= MAX_TRASH_BATCH)
 
   function select(info: RowInfo, on: boolean, range: boolean) {
     const rows = [...(list.current?.querySelectorAll<HTMLElement>('[data-trash-row]') ?? [])].map((el) => el.dataset.trashRow!)
@@ -120,6 +123,11 @@ export function TrashPage() {
       for (const key of keys) {
         const row = key === info.node.key ? info : seen.get(key)
         if (!row) continue
+        // Restoring or deleting goes up to MAX_TRASH_BATCH at a time: picking stops there, and says so.
+        if (on && !next.has(key) && next.size >= MAX_TRASH_BATCH) {
+          toast(t('selectLimit', { count: MAX_TRASH_BATCH }))
+          break
+        }
         if (on) next.set(key, row)
         else next.delete(key)
       }
@@ -140,6 +148,7 @@ export function TrashPage() {
     setPurging(node.key)
     try {
       await purgeItem(workspaceId, node.key)
+      drop(node.key)
       toast.success(t('purge.done', { name }))
     } catch (error) {
       toast.error(errorMessage(error))
@@ -220,7 +229,11 @@ export function TrashPage() {
                 <Checkbox
                   checked={allTop}
                   mixed={count > 0 && !allTop}
-                  onChange={() => (allTop ? clear() : setSelected(new Map(nodes.map((n) => [n.key, { node: n, path: [] }]))))}
+                  onChange={() => {
+                    if (allTop) return clear()
+                    if (nodes.length > MAX_TRASH_BATCH) toast(t('selectLimit', { count: MAX_TRASH_BATCH }))
+                    setSelected(new Map(nodes.slice(0, MAX_TRASH_BATCH).map((n) => [n.key, { node: n, path: [] }])))
+                  }}
                   label={t('selectAll')}
                   size={16}
                 />
@@ -346,7 +359,10 @@ function Row({ info, depth, expandable, covered, actions }: { info: RowInfo; dep
 
   // The tree by keyboard, from a row's box: up and down move between rows, right opens, left closes.
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    const boxes = [...(e.currentTarget.closest('ul[aria-label]')?.ownerDocument.querySelectorAll<HTMLElement>('[data-trash-row] [role="checkbox"]') ?? [])]
+    // Keys pressed in its menu (drawn elsewhere, but inside it for React) are the menu's.
+    if (!e.currentTarget.contains(e.target as Node)) return
+    // What can take the focus: a row picked with what holds it has its box disabled.
+    const boxes = [...document.querySelectorAll<HTMLElement>('[data-trash-row] [role="checkbox"]:not(:disabled)')]
     const at = boxes.indexOf(document.activeElement as HTMLElement)
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       if (at < 0) return
