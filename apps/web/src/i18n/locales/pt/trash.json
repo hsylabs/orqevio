@@ -159,7 +159,10 @@
     "ofMany_other": "em {{count}} das coisas que voltam",
     "planFailed": "Não foi possível verificar o que a restauração faria.",
     "retry": "Tentar de novo",
-    "tooManyColumns": "O quadro “{{board}}” ficaria com {{count}} colunas, e aceita no máximo {{max}}. Deixe alguma de fora ou coloque-a em outro lugar."
+    "tooManyColumns": "O quadro “{{board}}” ficaria com {{count}} colunas, e aceita no máximo {{max}}.",
+    "whereWas": "Onde estava",
+    "roomHint": "Escolha outro lugar ou abra espaço antes nesse quadro.",
+    "roomHintMany": "Deixe alguma coluna de fora, escolha outro lugar ou abra espaço antes nesse quadro."
   },
   "picker": {
     "project": "Projeto",

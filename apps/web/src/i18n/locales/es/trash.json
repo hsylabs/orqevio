@@ -159,7 +159,10 @@
     "ofMany_other": "en {{count}} de las cosas que vuelven",
     "planFailed": "No se ha podido comprobar qué haría restaurar.",
     "retry": "Reintentar",
-    "tooManyColumns": "El tablero «{{board}}» quedaría con {{count}} columnas, y admite {{max}} como mucho. Deja alguna fuera o ponla en otro sitio."
+    "tooManyColumns": "El tablero «{{board}}» quedaría con {{count}} columnas, y admite {{max}} como mucho.",
+    "whereWas": "Donde estaba",
+    "roomHint": "Elige otro sitio o haz sitio antes en ese tablero.",
+    "roomHintMany": "Deja fuera alguna columna, elige otro sitio o haz sitio antes en ese tablero."
   },
   "picker": {
     "project": "Proyecto",

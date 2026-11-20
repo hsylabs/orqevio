@@ -159,7 +159,10 @@
     "ofMany_other": "sur {{count}} des éléments qui reviennent",
     "planFailed": "Impossible de vérifier ce que ferait la restauration.",
     "retry": "Réessayer",
-    "tooManyColumns": "Le tableau « {{board}} » aurait {{count}} colonnes, et il en accepte {{max}} au plus. Laissez-en de côté, ou mettez-la ailleurs."
+    "tooManyColumns": "Le tableau « {{board}} » aurait {{count}} colonnes, et il en accepte {{max}} au plus.",
+    "whereWas": "Là où il était",
+    "roomHint": "Choisissez un autre endroit, ou faites d’abord de la place sur ce tableau.",
+    "roomHintMany": "Laissez de côté une colonne, choisissez un autre endroit, ou faites d’abord de la place sur ce tableau."
   },
   "picker": {
     "project": "Projet",

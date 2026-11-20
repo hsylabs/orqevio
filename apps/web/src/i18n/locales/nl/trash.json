@@ -145,7 +145,10 @@
     "ofMany_other": "op {{count}} van de onderdelen die terugkomen",
     "planFailed": "Kon niet nagaan wat terugzetten zou doen.",
     "retry": "Opnieuw proberen",
-    "tooManyColumns": "Het bord ‘{{board}}’ zou {{count}} kolommen hebben, en het kan er hoogstens {{max}} bevatten. Laat er een paar weg of zet het ergens anders."
+    "tooManyColumns": "Het bord ‘{{board}}’ zou {{count}} kolommen hebben, en het kan er hoogstens {{max}} bevatten.",
+    "whereWas": "Waar het stond",
+    "roomHint": "Kies een andere plek of maak eerst ruimte op dat bord.",
+    "roomHintMany": "Laat een kolom weg, kies een andere plek of maak eerst ruimte op dat bord."
   },
   "picker": {
     "project": "Project",
