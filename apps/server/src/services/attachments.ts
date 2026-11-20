@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { type AttachmentDTO, attachmentMoveInput, withoutBidiControls } from '@orqevio/shared'
+import { type AttachmentDTO, attachmentMoveInput, clip, withoutBidiControls } from '@orqevio/shared'
 import { eq, sql } from 'drizzle-orm'
 import { type Actor, actorRef } from '../auth/actor'
 import { attachments, cards, pages } from '../db/schema'
@@ -37,12 +37,15 @@ export interface IncomingFile {
 
 const MAX_FILENAME = 180
 
-/** A name safe to store and send back, at most 180 characters, keeping its extension when cut. */
+/**
+ * A name safe to store and send back, at most 180 characters, keeping its extension when cut. It is
+ * cut between characters as people see them, never inside an emoji: half of one would show as �.
+ */
 export function safeFilename(name: string) {
   const cleaned = withoutBidiControls(name).replace(/[\\/\u0000-\u001f\u007f"]/g, '_').trim()
   if (cleaned.length <= MAX_FILENAME) return cleaned || 'file'
   const ext = /\.[^.\s]{1,16}$/.exec(cleaned)?.[0] ?? ''
-  return cleaned.slice(0, MAX_FILENAME - ext.length).trimEnd() + ext
+  return clip(cleaned, MAX_FILENAME - ext.length).trimEnd() + ext
 }
 
 /** Detects common formats from magic bytes so the stored type does not trust the browser blindly. */

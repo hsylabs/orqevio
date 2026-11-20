@@ -107,7 +107,7 @@ vault key ── AES-256-GCM, associated data = user + item id ──► encrypt
 - AES-GCM associated data keeps anyone with access to the database from swapping items between users or entries.
 - When you copy a password, a note or a code, the clipboard is cleared after 30 seconds, unless you've copied something else since. Browsers only allow it while the tab is in front (Firefox and Safari, only right after a click): otherwise, when you come back, Orqevio offers to clear it with one click. The password generator uses unbiased cryptographic randomness.
 - Changing your master password only rewraps the vault key: items aren't re-encrypted. The recovery key lets you choose a new master password. Without either of them, your data can't be recovered, by design.
-- The `/api/vault/*` routes reject any request with an `Authorization` header before reading any data, and the MCP server has no vault tools.
+- The `/api/vault/*` routes reject any request that carries an agent or OAuth token (`Authorization: Bearer …`) before reading any data, and the MCP server has no vault tools. Other credentials, such as those of a reverse proxy that asks for a password, leave the request to your session.
 
 **Agents**
 - Each token belongs to a single workspace and has permissions per area, for tasks and for docs: no access, read, or read and write. It's shown only once, and only its hash is stored.

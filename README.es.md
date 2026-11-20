@@ -107,7 +107,7 @@ clave de la bóveda ── AES-256-GCM, datos asociados = usuario + id del eleme
 - Los datos asociados de AES-GCM impiden que alguien con acceso a la base de datos intercambie elementos entre usuarios o entradas.
 - Al copiar una contraseña, una nota o un código, el portapapeles se vacía a los 30 segundos, salvo que hayas copiado otra cosa después. Los navegadores solo lo permiten con la pestaña delante (Firefox y Safari, solo justo después de un clic): si no, al volver Orqevio te ofrece vaciarlo con un clic. El generador usa aleatoriedad criptográfica sin sesgo.
 - Cambiar la contraseña maestra solo vuelve a envolver la clave: los elementos no se recifran. La clave de recuperación permite elegir una nueva contraseña maestra. Sin ninguna de las dos, los datos son irrecuperables por diseño.
-- Las rutas `/api/vault/*` rechazan cualquier petición con cabecera `Authorization` antes de leer datos, y el servidor MCP no expone ninguna herramienta de bóveda.
+- Las rutas `/api/vault/*` rechazan cualquier petición que lleve un token de agente u OAuth (`Authorization: Bearer …`) antes de leer datos, y el servidor MCP no expone ninguna herramienta de bóveda. Otras credenciales, como las de un proxy inverso que pide contraseña, dejan la petición a tu sesión.
 
 **Agentes**
 - Cada token pertenece a un único espacio y tiene permisos por área: tareas y documentos (sin acceso, lectura, o lectura y escritura). Se muestra una sola vez y se guarda su hash.

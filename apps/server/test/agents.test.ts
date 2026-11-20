@@ -601,6 +601,22 @@ describe('MCP server', () => {
     expect(text(full)).toContain('at most 0 more fit')
   })
 
+  it('counts an emoji as one character when appending, as the limit of a page does', async () => {
+    const { client, workspaceId } = await signUp(h)
+    const { projectId } = await seedBoard(client, workspaceId)
+    const mcp = await connect((await createToken(client, workspaceId, ['docs:write'])).token)
+    // 100,000 emoji: 100,000 characters, though 200,000 UTF-16 units.
+    const page = data(await mcp.callTool({ name: 'create_page', arguments: { project_id: projectId, title: 'Emoji', content: '🦤'.repeat(100_000) } }))
+    const more = await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: 'Y algo más', mode: 'append' } })
+    expect(more.isError, text(more)).toBeFalsy()
+    expect(data(more).version).toBe(2)
+    // Over the limit, it is said in characters too.
+    const over = await mcp.callTool({ name: 'update_page', arguments: { page_id: page.page_id, content: '🦤'.repeat(99_990), mode: 'append' } })
+    expect(over.isError).toBe(true)
+    expect(text(over)).toContain(`${100_012 + 2 + 99_990} characters long, over the limit of 200000`)
+    expect(text(over)).toContain('at most 99986 more fit')
+  })
+
   it('takes a card description as long as the app does, and refuses a longer one without touching the card', async () => {
     const { client, workspaceId } = await signUp(h)
     const { columns } = await seedBoard(client, workspaceId)
