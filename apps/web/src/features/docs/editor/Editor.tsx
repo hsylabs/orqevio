@@ -97,7 +97,8 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
         onUploadedRef.current?.(attachment)
         toast.success(t('editor.uploaded'), { id })
       } catch (error) {
-        toast.error(errorMessage(error), { id })
+        // By name, as on a card: with several files dropped, which one did not go up.
+        toast.error(`${file.name}: ${errorMessage(error)}`, { id })
       }
     }
     return true
@@ -266,7 +267,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
         }}
         accept={undefined}
         onClick={(e) => {
-          ;(e.target as HTMLInputElement).accept = pendingUploadKind.current === 'image' ? 'image/png,image/jpeg,image/gif,image/webp' : ''
+          ;(e.target as HTMLInputElement).accept = pendingUploadKind.current === 'image' ? 'image/png,image/jpeg,image/gif,image/webp,image/avif' : ''
         }}
       />
     </div>

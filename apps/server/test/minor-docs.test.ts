@@ -38,6 +38,20 @@ describe('small fixes in documents and attachments', () => {
     expect(up.body.filename.endsWith('.pdf')).toBe(true)
   })
 
+  it('a long name cut where an emoji is keeps the emoji whole or leaves it out, never half of it', async () => {
+    const { client, url } = await newPage('Nombres con emoji')
+    // 175 letters, then emoji: the cut at 176 UTF-16 units falls inside the first one.
+    const up = await client.upload(url, 'png', { name: `${'a'.repeat(175)}🦤🦤🦤🦤.png` })
+    expect(up.status).toBe(201)
+    const name = up.body.filename as string
+    expect(name.length).toBeLessThanOrEqual(180)
+    expect(name.endsWith('.png')).toBe(true)
+    expect(name).not.toMatch(/\uFFFD|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/)
+    expect(name).toBe(`${'a'.repeat(175)}.png`)
+    const kept = await client.upload(url, 'png', { name: `${'b'.repeat(172)}🦤🦤.png` })
+    expect(kept.body.filename).toBe(`${'b'.repeat(172)}🦤🦤.png`)
+  })
+
   it('names with quotes and brackets download with that name, and with a plain one for older clients', async () => {
     const { client, url } = await newPage('Descargas')
     const up = await client.upload(url, 'texto', { name: "l'informe (v2) ñ*.txt", type: 'text/plain' })
