@@ -150,7 +150,7 @@ The backups folder must be the app's to read and write: the app runs as the user
 
 Restoring checks every attachment the backup needs as it puts it back, and changes nothing until they are all right: one that is gone, cut short or not what it was when kept is named, and you choose to restore without it or to keep the copy as it is.
 
-**Export.** **Settings → Export your data** downloads a ZIP you can read without Orqevio: each workspace's tasks in JSON, its documents in Markdown and the attachments, with the links between them pointing at the files. The vault has its own encrypted export.
+**Export.** **Settings → Export your data** downloads a ZIP you can read without Orqevio: each workspace's tasks in JSON, its documents in Markdown and the attachments, with the links between them pointing at the files. However big it gets: past 4 GiB or 65,535 files it is a ZIP64, which 7-Zip, unzip and bsdtar open. The vault has its own encrypted export.
 
 **Backups by hand.** With the app running, make a live backup of the database, then copy it out of the container together with the attachments, in the `uploads` folder:
 

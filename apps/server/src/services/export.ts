@@ -1,7 +1,7 @@
-import { Zip, ZipDeflate, ZipPassThrough, strToU8 } from 'fflate'
 import { asc, eq } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
 import { attachments, boards, cardLabels, cardPageLinks, cards, checklistItems, checklists, columns, labels, pages, projects, workspaceMembers, workspaces } from '../db/schema'
+import { ZipWriter } from '../lib/zip'
 import { VERSION } from '../version'
 import type { Access } from './access'
 import type { Deps } from './deps'
@@ -165,20 +165,9 @@ export class ExportService {
 
     const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>()
     const writer = writable.getWriter()
-    let failed: unknown = null
-    const zip = new Zip((error, chunk, final) => {
-      if (error) {
-        failed = error
-        void writer.abort(error).catch(() => {})
-        return
-      }
-      void writer.write(chunk).catch(() => {})
-      if (final) void writer.close().catch(() => {})
-    })
-    const add = (entry: ZipDeflate, data: Uint8Array) => {
-      zip.add(entry)
-      entry.push(data, true)
-    }
+    // Each piece waits for the browser to take the last one: memory stays flat whatever the size.
+    const zip = new ZipWriter((chunk) => writer.write(chunk))
+    const text = (value: string) => new TextEncoder().encode(value)
 
     void (async () => {
       try {
@@ -186,25 +175,14 @@ export class ExportService {
         const missing = new Set<string>()
         for (const file of files) if (!(await this.deps.storage.exists(file.storageKey))) missing.add(file.path)
         const about = { format: EXPORT_FORMAT, version: 1, app: VERSION, exportedAt: now.toISOString(), workspaces: summary, missingAttachments: [...missing].map((path) => path.slice(root.length + 1)) }
-        add(new ZipDeflate(`${root}/export.json`, { level: 6 }), strToU8(`${JSON.stringify(about, null, 2)}\n`))
-        for (const [path, text] of texts) add(new ZipDeflate(path, { level: 6 }), strToU8(text))
+        await zip.add(`${root}/export.json`, text(`${JSON.stringify(about, null, 2)}\n`), now)
+        for (const [path, content] of texts) await zip.add(path, text(content), now)
         for (const file of files) {
           const body = missing.has(file.path) ? null : await this.deps.storage.stream(file.storageKey)
-          if (!body) continue
-          const entry = new ZipPassThrough(file.path)
-          zip.add(entry)
-          const reader = (body as ReadableStream<Uint8Array>).getReader()
-          for (;;) {
-            // Backpressure: the next piece of a file is read once the browser took the last one.
-            await writer.ready
-            const { value, done } = await reader.read()
-            if (done) break
-            if (failed) throw failed
-            entry.push(value)
-          }
-          entry.push(new Uint8Array(0), true)
+          if (body) await zip.addStream(file.path, file.size, body as ReadableStream<Uint8Array>, now)
         }
-        zip.end()
+        await zip.end()
+        await writer.close()
       } catch (error) {
         console.error('[export] failed', error)
         await writer.abort(error).catch(() => {})
