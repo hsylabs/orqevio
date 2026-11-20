@@ -41,3 +41,35 @@ test('an MCP agent works on the board in real time, without vault access', async
   await page.getByRole('link', { name: 'Agentes' }).click()
   await expect(page.getByText('creó la tarjeta').first()).toBeVisible()
 })
+
+// On a phone the page is the only scroll: the agents' activity shows the last 10 and the earlier
+// ones on request, also for one access.
+test('the agents activity comes 10 at a time on a phone, the earlier ones on request', async ({ page, request, baseURL }) => {
+  const workspaceId = await openNewWorkspace(page, 'Actividad E2E')
+  const boardId = await createProject(page, 'Copia de Trello')
+  const board = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string }> }
+  const created = await page.request.post('/api/tokens', { data: { name: 'Claude', workspaceId, scopes: ['tasks:read', 'tasks:write'], expiresInDays: 30 } })
+  expect(created.status(), await created.text()).toBe(201)
+  const { token } = (await created.json()) as { token: string }
+  for (let i = 1; i <= 12; i++) {
+    const res = await request.post(`${baseURL}/api/columns/${board.columns[0]!.id}/cards`, { headers: { Authorization: `Bearer ${token}` }, data: { title: `Copiada ${i}` } })
+    expect(res.status(), await res.text()).toBe(201)
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto(`/w/${workspaceId}/agents`)
+  const activity = page.getByRole('region', { name: 'Actividad de los agentes' })
+  await expect(activity.getByRole('listitem')).toHaveCount(10)
+  await expect(activity.getByRole('listitem').first()).toContainText('Copiada 12')
+  await activity.getByRole('button', { name: 'Ver actividad anterior' }).click()
+  await expect(activity.getByRole('listitem')).toHaveCount(12)
+  await expect(activity.getByRole('listitem').last()).toContainText('Copiada 1»')
+  await expect(activity.getByRole('button', { name: 'Ver actividad anterior' })).toHaveCount(0)
+
+  // The same, for one access.
+  await page.getByRole('button', { name: 'Ver su actividad' }).click()
+  const own = page.getByRole('region', { name: 'Actividad de «Claude»' })
+  await expect(own.getByRole('listitem')).toHaveCount(10)
+  await own.getByRole('button', { name: 'Ver actividad anterior' }).click()
+  await expect(own.getByRole('listitem')).toHaveCount(12)
+})

@@ -221,6 +221,7 @@ export function createApi(env: Env) {
       await services.activity.list(c.req.param('id'), {
         limit: limitParam(c),
         before: beforeParam(c),
+        beforeId: c.req.query('beforeId') || undefined,
         tokenId: c.req.query('tokenId') || undefined,
         agentsOnly: c.req.query('agents') === '1',
       }),

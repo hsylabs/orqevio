@@ -29,7 +29,8 @@
     "titleFor": "Activiteit van ‘{{name}}’",
     "showAll": "Alles tonen",
     "loading": "Laden…",
-    "empty": "Als een agent in deze werkruimte werkt, zie je dat hier."
+    "empty": "Als een agent in deze werkruimte werkt, zie je dat hier.",
+    "older": "Eerdere activiteit tonen"
   },
   "tools": {
     "title": "MCP-tools",
@@ -40,11 +41,13 @@
       "tasksRead": "Taken · lezen",
       "tasksWrite": "Taken · schrijven",
       "docsRead": "Documenten · lezen",
-      "docsWrite": "Documenten · schrijven"
+      "docsWrite": "Documenten · schrijven",
+      "organize": "Mag verwijderen en verplaatsen"
     },
     "descriptions": {
       "listProjects": "Projecten, borden en paginaoverzicht",
       "search": "Zoeken in kaarten en pagina’s",
+      "readAttachments": "Tekst- en afbeeldingsbijlagen lezen",
       "readBoards": "Kolommen, kaarten, checklists en koppelingen",
       "editCards": "Kaarten maken, bewerken en verplaatsen",
       "archiveCard": "Archiveren (te herstellen vanuit de app)",
@@ -52,8 +55,13 @@
       "labels": "Labels en checklists",
       "readPages": "Paginastructuur en Markdown-inhoud",
       "writePages": "Maken en bijwerken, met versiebeheer",
+      "movePage": "Pagina’s binnen hun project verplaatsen",
+      "uploadAttachment": "Bestanden toevoegen aan kaarten en pagina’s",
       "linkCard": "Taken en documenten koppelen",
-      "createProject": "Projecten aanmaken"
+      "createProject": "Projecten aanmaken",
+      "deleteTasks": "Kaarten, borden, kolommen, labels en checklists verwijderen (naar de prullenbak)",
+      "deleteDocs": "Pagina’s, projecten en bijlagen verwijderen (naar de prullenbak)",
+      "moveElsewhere": "Bijlagen verplaatsen en kaarten van pagina’s ontkoppelen"
     }
   },
   "revoke": {
