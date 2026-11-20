@@ -45,12 +45,18 @@ test('an MCP agent works on the board in real time, without vault access', async
 // On a phone the page is the only scroll: the agents' activity shows the last 10 and the earlier
 // ones on request, also for one access.
 test('the agents activity comes 10 at a time on a phone, the earlier ones on request', async ({ page, request, baseURL }) => {
-  const workspaceId = await openNewWorkspace(page, 'Actividad E2E')
-  const boardId = await createProject(page, 'Copia de Trello')
+  // Everything through the API before the app opens, so the page loads once, with all of it there
+  // and nothing of another page still on its way (which WebKit reports as refused).
+  const created = async (path: string, data: unknown) => {
+    const res = await page.request.post(path, { data })
+    expect(res.status(), await res.text()).toBe(201)
+    return (await res.json()) as { id: string; token?: string }
+  }
+  const workspaceId = (await created('/api/workspaces', { name: 'Actividad E2E' })).id
+  const projectId = (await created(`/api/workspaces/${workspaceId}/projects`, { name: 'Copia de Trello' })).id
+  const boardId = (await created(`/api/projects/${projectId}/boards`, { name: 'Tablero', columns: ['Por hacer'] })).id
   const board = (await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string }> }
-  const created = await page.request.post('/api/tokens', { data: { name: 'Claude', workspaceId, scopes: ['tasks:read', 'tasks:write'], expiresInDays: 30 } })
-  expect(created.status(), await created.text()).toBe(201)
-  const { token } = (await created.json()) as { token: string }
+  const { token } = await created('/api/tokens', { name: 'Claude', workspaceId, scopes: ['tasks:read', 'tasks:write'], expiresInDays: 30 })
   for (let i = 1; i <= 12; i++) {
     const res = await request.post(`${baseURL}/api/columns/${board.columns[0]!.id}/cards`, { headers: { Authorization: `Bearer ${token}` }, data: { title: `Copiada ${i}` } })
     expect(res.status(), await res.text()).toBe(201)

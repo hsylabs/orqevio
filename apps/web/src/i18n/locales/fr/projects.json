@@ -22,9 +22,7 @@
     "subpages_one": "{{count}} sous-page",
     "subpages_many": "{{count}} sous-pages",
     "subpages_other": "{{count}} sous-pages",
-    "emptyTitle": "Aucun document pour l’instant",
-    "emptyAction": "Écrire la première page",
-    "emptyBody": "Spécifications, décisions, processus ou comptes rendus de réunion. En Markdown et liés à vos tâches."
+    "empty": "Écrivez une page pour documenter ce projet, comme des spécifications, des décisions ou des comptes rendus de réunion."
   },
   "recent": "Modifiés récemment"
 }

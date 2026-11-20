@@ -22,9 +22,7 @@
     "subpages_one": "{{count}} sottopagina",
     "subpages_many": "{{count}} sottopagine",
     "subpages_other": "{{count}} sottopagine",
-    "emptyTitle": "Ancora nessun documento",
-    "emptyAction": "Scrivi la prima pagina",
-    "emptyBody": "Specifiche, decisioni, processi o note delle riunioni. In Markdown e collegati alle tue attività."
+    "empty": "Scrivi una pagina per documentare questo progetto, come specifiche, decisioni o note delle riunioni."
   },
   "recent": "Modificati di recente"
 }
