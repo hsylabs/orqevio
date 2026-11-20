@@ -16,6 +16,7 @@ import type { DbOrTx } from '../db/client'
 import { inList } from '../db/in-list'
 import * as schema from '../db/schema'
 import { AppError, badRequest, notFound } from '../lib/errors'
+import { safeFilename } from './attachments'
 import type { TableName } from './trash'
 
 /**
@@ -663,12 +664,16 @@ export function planRestore(index: TrashIndex, input: TrashRestoreInput): Plan {
       if (n && canInclude(n)) otherEnds.set(key, n)
     }
   }
+  // What comes back from the rest of the trash besides. One that no longer applies (what had it
+  // was left out meanwhile) is left out of a plan, and refused when restoring: it was shown.
   const extraRoots: Node[] = []
   for (const key of new Set(input.include)) {
     const n = otherEnds.get(key)
-    if (!n) throw restoreError('restore_changed', 'Something in the trash changed meanwhile: look again before restoring.')
-    extraRoots.push(n)
+    if (n) extraRoots.push(n)
+    else if (!input.dryRun) throw restoreError('restore_changed', 'Something in the trash changed meanwhile: look again before restoring.')
   }
+  /** What comes back by itself, not as the other end of a relation. */
+  const own = new Set(comingKeys)
   const extras: Node[] = []
   for (const n of extraRoots) for (const below of index.subtree(n)) if (!comingKeys.has(below.key)) extras.push(below)
   for (const n of extras) add(n)
@@ -778,8 +783,9 @@ export function planRestore(index: TrashIndex, input: TrashRestoreInput): Plan {
       { kind: otherKind, id: otherId, state: state(otherKind, otherId) },
     ]
     const isLinkNode = r.table === 'card_page_links' && index.node(`link:${cardId}:${otherId}`)?.row === r
-    // A link coming back is the card's: its page is the other end.
-    const near = isLinkNode ? ends[0] : ends.find((e) => e.state === 'coming')
+    // A link coming back is the card's: its page is the other end. Otherwise the near end is what
+    // comes back as asked, so that the other end, brought along, is still shown as such.
+    const near = isLinkNode ? ends[0] : (ends.find((e) => own.has(keyOf(e.kind, e.id))) ?? ends.find((e) => e.state === 'coming'))
     if (!near) continue
     const far = ends.find((e) => e !== near)!
     const shown = extraKeys.has(keyOf(far.kind, far.id))
@@ -812,7 +818,9 @@ export function planRestore(index: TrashIndex, input: TrashRestoreInput): Plan {
     if (!n || !comingKeys.has(key) || !NAMED.has(n.kind)) continue
     const max = NAME_MAX[n.kind] ?? 300
     if (value.length > max) throw badRequest(`A ${n.kind} name has at most ${max} characters`)
-    if (value !== n.title) names.set(key, value)
+    // A file's name is compared as it will be stored.
+    const stored = n.kind === 'attachment' ? safeFilename(value) : value
+    if (stored !== n.title) names.set(key, stored)
   }
   const keep = new Set(input.keepNames)
   const conflicts: TrashConflictDTO[] = []
@@ -838,10 +846,10 @@ export function planRestore(index: TrashIndex, input: TrashRestoreInput): Plan {
     const isLive = container === null || (!comingKeys.has(refKey(container)) && !madeIds.has(container.id))
     const taken = new Set((isLive ? live.siblingNames(kind, container) : []).map(norm).filter(Boolean))
     // What was deleted last was there last: something deleted before it is what repeats a name.
-    const order = [...nodes].sort((a, b) => b.entry.deletedAt.getTime() - a.entry.deletedAt.getTime())
-    for (let i = 0; i < order.length; ) {
-      const batch = order.filter((n) => n.entry.id === order[i]!.entry.id)
-      i += batch.length
+    const batches = new Map<string, Node[]>()
+    for (const n of nodes) batches.set(n.entry.id, [...(batches.get(n.entry.id) ?? []), n])
+    const order = [...batches.values()].sort((a, b) => b[0]!.entry.deletedAt.getTime() - a[0]!.entry.deletedAt.getTime() || (a[0]!.entry.id < b[0]!.entry.id ? -1 : 1))
+    for (const batch of order) {
       for (const n of batch) {
         const renamed = names.get(n.key)
         const originalTaken = Boolean(norm(n.title)) && taken.has(norm(n.title))

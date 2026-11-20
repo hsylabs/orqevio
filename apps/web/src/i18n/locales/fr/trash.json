@@ -156,7 +156,9 @@
     "confirm": "Restaurer",
     "ofMany_one": "sur {{count}} des éléments qui reviennent",
     "ofMany_many": "sur {{count}} des éléments qui reviennent",
-    "ofMany_other": "sur {{count}} des éléments qui reviennent"
+    "ofMany_other": "sur {{count}} des éléments qui reviennent",
+    "planFailed": "Impossible de vérifier ce que ferait la restauration.",
+    "retry": "Réessayer"
   },
   "picker": {
     "project": "Projet",
@@ -176,5 +178,6 @@
     "results": "Cartes trouvées",
     "noCards": "Aucune carte trouvée.",
     "in": "Le mettre dans"
-  }
+  },
+  "linkWaits": "Le lien reviendra quand vous restaurerez « {{name}} » : la page est dans la corbeille."
 }

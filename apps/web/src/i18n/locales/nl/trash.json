@@ -142,7 +142,9 @@
     "ofOne": "op ‘{{name}}’",
     "confirm": "Terugzetten",
     "ofMany_one": "op {{count}} van de onderdelen die terugkomen",
-    "ofMany_other": "op {{count}} van de onderdelen die terugkomen"
+    "ofMany_other": "op {{count}} van de onderdelen die terugkomen",
+    "planFailed": "Kon niet nagaan wat terugzetten zou doen.",
+    "retry": "Opnieuw proberen"
   },
   "picker": {
     "project": "Project",
@@ -162,5 +164,6 @@
     "results": "Gevonden kaarten",
     "noCards": "Geen kaart gevonden.",
     "in": "Plaatsen in"
-  }
+  },
+  "linkWaits": "De koppeling komt terug als je ‘{{name}}’ terugzet: de pagina staat in de prullenbak."
 }

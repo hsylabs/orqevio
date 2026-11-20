@@ -156,7 +156,9 @@
     "confirm": "Restaurar",
     "ofMany_one": "en {{count}} de las cosas que vuelven",
     "ofMany_many": "en {{count}} de las cosas que vuelven",
-    "ofMany_other": "en {{count}} de las cosas que vuelven"
+    "ofMany_other": "en {{count}} de las cosas que vuelven",
+    "planFailed": "No se ha podido comprobar qué haría restaurar.",
+    "retry": "Reintentar"
   },
   "picker": {
     "project": "Proyecto",
@@ -176,5 +178,6 @@
     "results": "Tarjetas encontradas",
     "noCards": "No se ha encontrado ninguna tarjeta.",
     "in": "Ponerlo en"
-  }
+  },
+  "linkWaits": "El enlace volverá cuando restaures «{{name}}»: la página está en la papelera."
 }

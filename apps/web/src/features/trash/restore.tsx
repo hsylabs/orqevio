@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { Button } from '../../components/ui/Button'
 import { Checkbox } from '../../components/ui/Checkbox'
 import { Dialog } from '../../components/ui/Dialog'
-import { errorMessage } from '../../lib/api'
+import { ApiError, errorMessage } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { formatList } from '../../lib/format'
 import { useBoard, useCard, useOverview, useSearch } from '../../lib/queries'
@@ -32,6 +32,11 @@ export function useRestore(workspaceId: string, options: { onRestored?: (restore
   const [starting, setStarting] = useState<string | null>(null)
 
   function done(restored: RestoredDTO, name: string) {
+    // A link whose page is in the trash waits for it: nothing came back yet.
+    if (restored.waitsFor !== undefined) {
+      toast.message(t('linkWaits', { name: restored.waitsFor || t('common:untitled') }))
+      return options.onRestored?.(restored)
+    }
     const notes = [restored.location ? t('restoredAt', { place: restored.location }) : '', restored.left ? t('leftInTrash', { count: restored.left }) : ''].filter(Boolean)
     toast.success(t('restored', { name: name || t('common:untitled') }), {
       ...(notes.length && { description: notes.join(' ') }),
@@ -44,12 +49,22 @@ export function useRestore(workspaceId: string, options: { onRestored?: (restore
     setStarting(key)
     try {
       const plan = await planRestore(workspaceId, { key })
-      if (isPlain(plan)) return done(await restoreItem(workspaceId, { key }), plan.node.title)
+      // Where it goes is always said: if that changed meanwhile, the server asks instead of deciding.
+      const to = plan.where.to && plan.where.to !== 'other' ? { kind: plan.where.to } : undefined
+      if (isPlain(plan)) {
+        try {
+          return done(await restoreItem(workspaceId, { key, to }), plan.node.title)
+        } catch (error) {
+          const changed = planOf(error)
+          if (!changed) throw error
+          return setAsking({ plan: changed, request: { key, to } })
+        }
+      }
       // Proposed to begin with: a new name for each one taken, and the other ends of its relations.
       const names: Record<string, string> = {}
       for (const c of plan.conflicts) if (c.taken && !c.kept) names[c.key] = suggestName(c, t('restoreDialog.suggested', { name: '{{name}}' }))
       const include = plan.relations.filter((r) => r.state === 'trash' && r.canInclude && r.key).map((r) => r.key!)
-      const request: RestoreRequest = { key, ...(Object.keys(names).length && { names }), ...(include.length && { include }) }
+      const request: RestoreRequest = { key, ...(to && { to }), ...(Object.keys(names).length && { names }), ...(include.length && { include }) }
       setAsking({ plan: request.names || request.include ? await planRestore(workspaceId, request) : plan, request })
     } catch (error) {
       toast.error(errorMessage(error))
@@ -70,6 +85,11 @@ export function useRestore(workspaceId: string, options: { onRestored?: (restore
     />
   )
   return { start, starting, dialog }
+}
+
+/** The plan a refused restore answers with, when what was shown no longer holds. */
+function planOf(error: unknown): TrashPlanDTO | null {
+  return error instanceof ApiError && error.code === 'restore_incomplete' ? (error.details as TrashPlanDTO) : null
 }
 
 /** "Tareas (restaurado)", within the length its kind takes, before a file's extension. */
@@ -95,29 +115,41 @@ function RestoreDialog({
   onDone: (restored: RestoredDTO, name: string) => void
 }) {
   const { t } = useTranslation(['trash', 'common'])
-  const [plan, setPlan] = useState(initial.plan)
+  // What is shown is the plan for `planned`: restoring is only possible while that is what would be sent.
+  const [shown, setShown] = useState({ plan: initial.plan, planned: initial.request })
+  const plan = shown.plan
   const [request, setRequest] = useState(initial.request)
   const [busy, setBusy] = useState(false)
-  const [planning, setPlanning] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
   const latest = useRef(0)
-  const first = useRef(true)
+  const stale = shown.planned !== request
 
   // Every change is planned again, the last one winning; typing a name waits for a pause.
   useEffect(() => {
-    if (first.current) {
-      first.current = false
-      return
-    }
+    if (!stale && attempt === 0) return
     const n = ++latest.current
-    setPlanning(true)
+    setFailed(false)
     const timer = setTimeout(() => {
       planRestore(workspaceId, request)
-        .then((fresh) => n === latest.current && setPlan(fresh))
-        .catch((error) => n === latest.current && toast.error(errorMessage(error)))
-        .finally(() => n === latest.current && setPlanning(false))
+        .then((fresh) => {
+          if (n !== latest.current) return
+          setShown({ plan: fresh, planned: request })
+          setAttempt(0)
+        })
+        .catch(() => n === latest.current && setFailed(true))
     }, 250)
     return () => clearTimeout(timer)
-  }, [workspaceId, request])
+  }, [workspaceId, request, stale, attempt])
+
+  // What comes back from the rest of the trash besides follows the plan: one that no longer
+  // applies (what had it was left out) is no longer asked for.
+  useEffect(() => {
+    if (stale || !request.include?.length) return
+    const included = new Set(plan.relations.filter((r) => r.included && r.key).map((r) => r.key!))
+    const still = request.include.filter((key) => included.has(key))
+    if (still.length !== request.include.length) setRequest((r) => ({ ...r, include: still }))
+  }, [plan, request.include, stale])
 
   // A name found taken later (somewhere else chosen, say) gets a new one proposed too.
   useEffect(() => {
@@ -143,6 +175,10 @@ function RestoreDialog({
     try {
       onDone(await restoreItem(workspaceId, request), plan.node.title)
     } catch (error) {
+      // Something changed meanwhile: the dialog shows how things stand now, to decide again.
+      const changed = planOf(error)
+      if (changed) setShown({ plan: changed, planned: request })
+      else if (error instanceof ApiError && error.code === 'restore_changed') setAttempt((a) => a + 1)
       toast.error(errorMessage(error))
     } finally {
       setBusy(false)
@@ -160,11 +196,20 @@ function RestoreDialog({
       width="max-w-[560px]"
       footer={
         <>
-          {to && where.location && !blocked && !waitingPlace && <p className="mr-auto min-w-0 truncate text-[12.5px] text-ink-3">{t('restoreDialog.goesTo', { place: where.location })}</p>}
+          {failed ? (
+            <p className="mr-auto flex min-w-0 items-center gap-2 text-[12.5px] text-danger" role="alert">
+              {t('restoreDialog.planFailed')}
+              <Button size="xs" variant="ghost" onClick={() => setAttempt((a) => a + 1)}>
+                {t('restoreDialog.retry')}
+              </Button>
+            </p>
+          ) : (
+            to && where.location && !blocked && !waitingPlace && <p className="mr-auto min-w-0 truncate text-[12.5px] text-ink-3">{t('restoreDialog.goesTo', { place: where.location })}</p>
+          )}
           <Button variant="ghost" onClick={onCancel}>
             {t('common:actions.cancel')}
           </Button>
-          <Button variant="primary" loading={busy} disabled={!plan.ready || planning || emptyName || blocked || waitingPlace} onClick={() => void confirm()}>
+          <Button variant="primary" loading={busy} disabled={!plan.ready || stale || failed || emptyName || blocked || waitingPlace} onClick={() => void confirm()}>
             {t('restoreDialog.confirm')}
           </Button>
         </>
@@ -194,9 +239,12 @@ function RestoreDialog({
                   }}
                   title={t('restoreDialog.recreate')}
                 >
-                  {where.create.length > 0
-                    ? t('restoreDialog.recreateCreate', { what: formatList(where.create.map((c) => t(`kindA.${c.kind}`, { name: c.title }))) })
-                    : t('restoreDialog.recreatePath', { list: formatList(where.path.map((p) => t(`kindNamed.${p.kind}`, { name: p.title || t('common:untitled') }))) })}
+                  {[
+                    where.create.length > 0 ? t('restoreDialog.recreateCreate', { what: formatList(where.create.map((c) => t(`kindA.${c.kind}`, { name: c.title }))) }) : '',
+                    where.path.length > 0 ? t('restoreDialog.recreatePath', { list: formatList(where.path.map((p) => t(`kindNamed.${p.kind}`, { name: p.title || t('common:untitled') }))) }) : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 </Choice>
               )}
               {where.choose.length > 0 && (

@@ -128,7 +128,9 @@
     "otherBoard": "{{what}}は別のボードのものなので、{{of}}には付きません。",
     "ofOne": "「{{name}}」",
     "confirm": "復元",
-    "ofMany_other": "戻るもののうち{{count}}件"
+    "ofMany_other": "戻るもののうち{{count}}件",
+    "planFailed": "復元した場合の結果を確認できませんでした。",
+    "retry": "再試行"
   },
   "picker": {
     "project": "プロジェクト",
@@ -148,5 +150,6 @@
     "results": "見つかったカード",
     "noCards": "カードが見つかりません。",
     "in": "置き場所"
-  }
+  },
+  "linkWaits": "ページがゴミ箱にあるため、「{{name}}」を復元するとリンクも戻ります。"
 }

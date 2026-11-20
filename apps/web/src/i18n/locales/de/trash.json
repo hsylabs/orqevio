@@ -142,7 +142,9 @@
     "ofOne": "an „{{name}}“",
     "confirm": "Wiederherstellen",
     "ofMany_one": "an {{count}} der zurückkommenden Elemente",
-    "ofMany_other": "an {{count}} der zurückkommenden Elemente"
+    "ofMany_other": "an {{count}} der zurückkommenden Elemente",
+    "planFailed": "Es ließ sich nicht prüfen, was das Wiederherstellen bewirken würde.",
+    "retry": "Erneut versuchen"
   },
   "picker": {
     "project": "Projekt",
@@ -162,5 +164,6 @@
     "results": "Gefundene Karten",
     "noCards": "Keine Karte gefunden.",
     "in": "Ablegen in"
-  }
+  },
+  "linkWaits": "Die Verknüpfung kommt zurück, wenn du „{{name}}“ wiederherstellst: Die Seite liegt im Papierkorb."
 }

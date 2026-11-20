@@ -493,6 +493,64 @@ describe('restoring from the trash', () => {
     expect(await top(s)).toEqual([])
   })
 
+  it('shows what comes back from the rest of the trash, also a card brought by its label, and drops what no longer applies', async () => {
+    const s = await space('Traídas')
+    const label = (await s.client.post(`/api/boards/${s.boardId}/labels`, { name: 'Urgente', color: 'tomato' })).body.id as string
+    const card = (await s.client.post(`/api/columns/${s.columns[0]!.id}/cards`, { title: 'Etiquetada', labelIds: [label] })).body.id as string
+    await s.client.post(`/api/cards/${card}/checklists`, { title: 'Pasos' })
+    await del(s.client, `/api/cards/${card}`)
+    await del(s.client, `/api/labels/${label}`)
+    const before = await plan(s, { key: `label:${label}` })
+    expect(before.relations).toEqual([expect.objectContaining({ kind: 'card', key: `card:${card}`, state: 'trash', included: false, canInclude: true })])
+    // Brought along, it is still listed, ticked: what comes back is what is shown.
+    const after = await plan(s, { key: `label:${label}`, include: [`card:${card}`] })
+    expect(after.relations).toEqual([expect.objectContaining({ kind: 'card', key: `card:${card}`, state: 'trash', included: true })])
+
+    // A card whose label was brought along, left out afterwards: the label no longer applies.
+    const column = s.columns[1]!.id
+    const other = (await s.client.post(`/api/boards/${s.boardId}/labels`, { name: 'Lenta', color: 'jade' })).body.id as string
+    const inColumn = (await s.client.post(`/api/columns/${column}/cards`, { title: 'En columna', labelIds: [other] })).body.id as string
+    await del(s.client, `/api/labels/${other}`)
+    await del(s.client, `/api/columns/${column}`)
+    const asked = { key: `column:${column}`, include: [`label:${other}`], exclude: [`card:${inColumn}`] }
+    expect((await plan(s, asked)).relations).toEqual([])
+    expect((await restore(s, asked)).body.error.code).toBe('restore_changed')
+    expect((await restore(s, { ...asked, include: [] })).status).toBe(200)
+  })
+
+  it('restores where it was shown going, or asks again when that changed meanwhile', async () => {
+    const s = await space('Cambió')
+    const card = (await s.client.post(`/api/columns/${s.columns[0]!.id}/cards`, { title: 'Sola' })).body.id as string
+    await del(s.client, `/api/cards/${card}`)
+    expect((await plan(s, { key: `card:${card}` })).where).toMatchObject({ place: 'original', to: 'original' })
+    await del(s.client, `/api/columns/${s.columns[0]!.id}`)
+    const refused = await restore(s, { key: `card:${card}`, to: { kind: 'original' } })
+    expect(refused.body.error).toMatchObject({ code: 'restore_incomplete', details: { missing: ['place'], where: { place: 'trash' } } })
+    expect(await treeOf(s, `column:${s.columns[0]!.id}`)).toMatchObject({ node: { kind: 'column' } })
+  })
+
+  it('compares file names as they are stored, and says a link waits for its page instead of claiming it is back', async () => {
+    const s = await space('Archivos')
+    const card = (await s.client.post(`/api/columns/${s.columns[0]!.id}/cards`, { title: 'Con archivos' })).body.id as string
+    const file = (await s.client.upload(`/api/cards/${card}/attachments`, 'uno', { name: 'nota.txt', type: 'text/plain' })).body.id as string
+    await s.client.upload(`/api/cards/${card}/attachments`, 'dos', { name: 'a_b.txt', type: 'text/plain' })
+    await s.client.upload(`/api/cards/${card}/attachments`, 'tres', { name: 'nota.txt', type: 'text/plain' })
+    await del(s.client, `/api/attachments/${file}`)
+    const renamed = await plan(s, { key: `attachment:${file}`, names: { [`attachment:${file}`]: 'a/b.txt' } })
+    expect(renamed.conflicts).toMatchObject([{ name: 'a_b.txt', taken: true }])
+
+    const page = (await s.client.post(`/api/projects/${s.projectId}/pages`, { title: 'Destino' })).body.id as string
+    await s.client.post(`/api/cards/${card}/pages`, { pageId: page })
+    await del(s.client, `/api/cards/${card}/pages/${page}`)
+    await del(s.client, `/api/pages/${page}`)
+    const waits = await restore(s, { key: `link:${card}:${page}` })
+    expect(waits.body).toMatchObject({ waitsFor: 'Destino' })
+    const activity = (await s.client.get(`/api/workspaces/${s.workspaceId}/activity`)).body as ActivityDTO[]
+    expect(activity.filter((a) => a.action === 'trash.restored')).toEqual([])
+    expect((await s.client.post(`/api/workspaces/${s.workspaceId}/trash/restore`, { key: `page:${page}` })).status).toBe(200)
+    expect(((await s.client.get(`/api/cards/${card}`)).body.pages as { id: string }[]).map((p) => p.id)).toEqual([page])
+  })
+
   it('belongs to people, in its workspace', async () => {
     const s = await space('Dueña del árbol')
     const card = (await s.client.post(`/api/columns/${s.columns[0]!.id}/cards`, { title: 'Mía' })).body.id as string

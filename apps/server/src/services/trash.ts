@@ -15,7 +15,7 @@ import {
 } from '@orqevio/shared'
 import { type SQL, and, eq, getTableColumns, lte, sql } from 'drizzle-orm'
 import { type SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core'
-import type { Actor } from '../auth/actor'
+import { type Actor, actorRef } from '../auth/actor'
 import type { DbOrTx } from '../db/client'
 import * as schema from '../db/schema'
 import { AppError, notFound } from '../lib/errors'
@@ -560,8 +560,16 @@ export class TrashService {
       restored: Math.max(0, plan.coming.length - (data.has(root.key) ? 1 : 0)),
       left: plan.subtree.filter((n) => plan.excluded.has(n.key) && !(n.parent && plan.excluded.has(n.parent.key))).length,
     }
+    // A link whose page is in the trash did not come back: it waits for the page, and says so.
+    const waiting = root.kind === 'link' && !data.has(root.key)
+    if (waiting) result.waitsFor = root.title
     const structure = plan.path.length > 0 || plan.create.length > 0
-    return { result, targets: targets.map((t) => ({ ...t, event: structure ? { ...t.event, structure: true } : t.event })), movedTo }
+    return {
+      result,
+      targets: targets.map((t) => ({ ...t, event: structure ? { ...t.event, structure: true } : t.event })),
+      movedTo,
+      waiting,
+    }
   }
 
   /** Deletes the entries left with nothing of their own; what else they kept goes with them. */
@@ -613,7 +621,13 @@ export class TrashService {
 
   /** Records and announces what came back. */
   private async announce(actor: Actor, workspaceId: string, applied: Applied) {
+    // Nothing came back of a link that waits for its page: only the trash changed.
+    if (applied.waiting && applied.targets.length === 1) {
+      await this.activity.emit(workspaceId, { action: 'trash.changed', actor: actorRef(actor), ...applied.targets[0]!.event })
+      return
+    }
     for (const [i, target] of applied.targets.entries()) {
+      if (i === 0 && applied.waiting) continue
       await this.activity.record(
         actor,
         workspaceId,
@@ -714,6 +728,8 @@ export class TrashService {
 
 interface Applied {
   result: RestoredDTO
+  /** The item itself waits in the trash for the other end it needs (a link, for its page). */
+  waiting: boolean
   targets: { node: Node; entityType: EntityType; entityId: string; path: string | null; event: Omit<RealtimeEvent, 'action' | 'actor' | 'summary'> }[]
   movedTo: string | null
 }

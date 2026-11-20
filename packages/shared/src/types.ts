@@ -470,6 +470,8 @@ export interface RestoredDTO {
   /** What came back with it (not counting it), and what stayed in the trash because it was left out. */
   restored?: number
   left?: number
+  /** It did not come back yet: a link waits in the trash for this page, and comes back with it. */
+  waitsFor?: string
 }
 
 // The trash as a tree. What was deleted hangs from what held it, also when that was deleted

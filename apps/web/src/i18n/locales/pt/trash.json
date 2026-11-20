@@ -156,7 +156,9 @@
     "confirm": "Restaurar",
     "ofMany_one": "em {{count}} das coisas que voltam",
     "ofMany_many": "em {{count}} das coisas que voltam",
-    "ofMany_other": "em {{count}} das coisas que voltam"
+    "ofMany_other": "em {{count}} das coisas que voltam",
+    "planFailed": "Não foi possível verificar o que a restauração faria.",
+    "retry": "Tentar de novo"
   },
   "picker": {
     "project": "Projeto",
@@ -176,5 +178,6 @@
     "results": "Cartões encontrados",
     "noCards": "Nenhum cartão encontrado.",
     "in": "Colocar em"
-  }
+  },
+  "linkWaits": "O link voltará quando você restaurar “{{name}}”: a página está na lixeira."
 }

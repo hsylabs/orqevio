@@ -142,7 +142,9 @@
     "ofOne": "on “{{name}}”",
     "confirm": "Restore",
     "ofMany_one": "on {{count}} of the things coming back",
-    "ofMany_other": "on {{count}} of the things coming back"
+    "ofMany_other": "on {{count}} of the things coming back",
+    "planFailed": "Couldn’t check what restoring would do.",
+    "retry": "Try again"
   },
   "picker": {
     "project": "Project",
@@ -162,5 +164,6 @@
     "results": "Cards found",
     "noCards": "No card found.",
     "in": "Put it in"
-  }
+  },
+  "linkWaits": "The link comes back when you restore “{{name}}”: the page is in the trash."
 }
