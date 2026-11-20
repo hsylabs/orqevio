@@ -57,7 +57,8 @@
     "hideSidebar": "Zijbalk verbergen",
     "showSidebar": "Zijbalk tonen",
     "toggleSidebar": "Zijbalk tonen of verbergen",
-    "breadcrumb": "Kruimelpad"
+    "breadcrumb": "Kruimelpad",
+    "moreCrumbs": "Tussenliggende niveaus tonen"
   },
   "newProject": {
     "title": "Nieuw project",

@@ -221,13 +221,14 @@ export class PageService {
     return null
   }
 
+  /** Every page above it, the top one first, however deep it is. */
   private async breadcrumbs(page: PageRow) {
     if (!page.parentId) return []
     const rows = this.deps.db.all<{ id: string; title: string; icon: string | null; depth: number }>(sql`
       WITH RECURSIVE chain AS (
         SELECT id, parent_id, title, icon, 1 AS depth FROM pages WHERE id = ${page.parentId}
         UNION ALL
-        SELECT p.id, p.parent_id, p.title, p.icon, c.depth + 1 FROM pages p JOIN chain c ON p.id = c.parent_id WHERE c.depth < 32
+        SELECT p.id, p.parent_id, p.title, p.icon, c.depth + 1 FROM pages p JOIN chain c ON p.id = c.parent_id WHERE c.depth < ${MAX_TREE_DEPTH}
       )
       SELECT id, title, icon, depth FROM chain ORDER BY depth DESC`)
     return rows.map((r) => ({ id: r.id, title: r.title, icon: r.icon }))
