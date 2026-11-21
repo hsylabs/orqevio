@@ -25,6 +25,15 @@
     "subpages": "Subpagina’s",
     "attachments": "Bijlagen",
     "history": "Geschiedenis",
+    "download": "Downloaden als Markdown",
+    "print": "Afdrukken of opslaan als pdf",
+    "downloadUnsaved": "Downloaden kan pas als je laatste wijzigingen zijn opgeslagen.",
+    "downloadAsk": {
+      "title": "‘{{title}}’ downloaden",
+      "description": "Deze pagina heeft subpagina’s. Wil je ze meenemen in de download?",
+      "only": "Alleen deze pagina",
+      "withSubpages": "Met subpagina’s"
+    },
     "gone": {
       "byName": "<strong>{{name}}</strong> heeft deze pagina verwijderd.",
       "byYou": "Je hebt deze pagina in een ander tabblad of een andere sessie verwijderd.",

@@ -25,6 +25,15 @@
     "subpages": "Unterseiten",
     "attachments": "Anhänge",
     "history": "Verlauf",
+    "download": "Als Markdown herunterladen",
+    "print": "Drucken oder als PDF speichern",
+    "downloadUnsaved": "Herunterladen geht erst, wenn deine letzten Änderungen gespeichert sind.",
+    "downloadAsk": {
+      "title": "„{{title}}“ herunterladen",
+      "description": "Diese Seite hat Unterseiten. Sollen sie mit heruntergeladen werden?",
+      "only": "Nur diese Seite",
+      "withSubpages": "Mit Unterseiten"
+    },
     "gone": {
       "byName": "<strong>{{name}}</strong> hat diese Seite gelöscht.",
       "byYou": "Du hast diese Seite in einem anderen Tab oder einer anderen Sitzung gelöscht.",

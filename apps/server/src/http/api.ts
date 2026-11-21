@@ -317,6 +317,14 @@ export function createApi(env: Env) {
 
   // ── Pages ───────────────────────────────────────────────────────
   api.get('/pages/:id', async (c) => c.json(await c.get('services').pages.get(requireActor(c), c.req.param('id'))))
+  // A page to take elsewhere, in Markdown, alone or in a ZIP with its files and, when asked, its subpages (people only).
+  api.get('/pages/:id/download', async (c) => {
+    const origin = endpointFor(c.get('config'), c.req.url).issuer
+    const { body, filename, type } = await c.get('services').export.page(requireActor(c), c.req.param('id'), { subpages: c.req.query('subpages') === '1', origin })
+    return new Response(body, {
+      headers: { 'Content-Type': type, 'Content-Disposition': contentDisposition('attachment', filename), 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
+    })
+  })
   api.get('/pages/:id/history', async (c) => c.json(await c.get('services').history.list(requireActor(c), 'page', c.req.param('id'), historyPage(c))))
   api.patch('/pages/:id', async (c) => c.json(await c.get('services').pages.update(requireActor(c), c.req.param('id'), await json(c))))
   api.post('/pages/:id/move', async (c) => {

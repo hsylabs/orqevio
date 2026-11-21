@@ -25,6 +25,15 @@
     "subpages": "Subpages",
     "attachments": "Attachments",
     "history": "History",
+    "download": "Download as Markdown",
+    "print": "Print or save as PDF",
+    "downloadUnsaved": "Can’t download until your latest changes are saved.",
+    "downloadAsk": {
+      "title": "Download “{{title}}”",
+      "description": "This page has subpages. Include them in the download?",
+      "only": "Only this page",
+      "withSubpages": "With its subpages"
+    },
     "gone": {
       "byName": "<strong>{{name}}</strong> deleted this page.",
       "byYou": "You deleted this page in another tab or session.",
