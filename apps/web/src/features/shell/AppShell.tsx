@@ -15,7 +15,9 @@ import { Sidebar } from './Sidebar'
 import { FullScreenLoader, NotFound } from './States'
 import { WorkspaceContext } from './workspace'
 
-const isDesktop = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches
+/** Wide enough for the side panel next to the page; narrower, it is a drawer over it. */
+const DESKTOP = '(min-width: 900px)'
+const isDesktop = () => typeof window !== 'undefined' && window.matchMedia(DESKTOP).matches
 
 export function AppShell() {
   const { t } = useTranslation()
@@ -48,6 +50,15 @@ export function AppShell() {
   useEffect(() => {
     if (!isDesktop()) setSidebarOpen(false)
   }, [location.pathname])
+
+  // Crossing the line: narrowing closes the drawer, as a phone opens with it closed, and widening
+  // brings the side panel back as it was left on a wide window.
+  useEffect(() => {
+    const media = window.matchMedia(DESKTOP)
+    const changed = () => setSidebarOpen(media.matches ? localPref('sidebar', true) : false)
+    media.addEventListener('change', changed)
+    return () => media.removeEventListener('change', changed)
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -179,8 +179,7 @@ test('the sidebar button says if it is open, the current workspace is marked, no
   await page.keyboard.press('Escape')
 
   await page.setViewportSize({ width: 390, height: 844 })
-  // At this width the sidebar starts closed, or is closed with Escape (it stays open as an overlay after a resize).
-  if (await page.getByRole('navigation', { name: 'Navegación principal' }).isVisible()) await page.keyboard.press('Escape')
+  // Narrowing the window closed the side panel, as a phone opens it.
   const toggle = page.getByRole('button', { name: 'Alternar barra lateral' })
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
   await toggle.click()
