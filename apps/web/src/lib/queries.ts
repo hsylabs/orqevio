@@ -41,8 +41,8 @@ export const keys = {
   board: (id: string) => ['board', id] as const,
   archived: (id: string) => ['archived', id] as const,
   card: (id: string) => ['card', id] as const,
-  /** Under the card's key: whatever refreshes the card refreshes its comments too. */
-  comments: (id: string) => ['card', id, 'comments'] as const,
+  /** Apart from the card's: its other changes (the description saving as it is typed) never fetch them again. */
+  comments: (id: string) => ['comments', id] as const,
   page: (id: string) => ['page', id] as const,
   search: (wid: string, q: string) => ['search', wid, q] as const,
   tokens: ['tokens'] as const,

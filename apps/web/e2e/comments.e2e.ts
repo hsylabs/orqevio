@@ -38,8 +38,10 @@ test('comments on a card: written, edited, live from an agent, deleted to the tr
   await expect(mine).toBeVisible()
   await expect(mine.locator('strong')).toHaveText('dos empresas')
   await expect(sheet.getByText('Comentarios · 1')).toBeVisible()
-  // The box is empty again, ready for the next one.
+  // The box is empty again and keeps the focus, ready for the next one: Ctrl+Enter left no line break.
   await expect(box).toHaveText('')
+  await expect(box).toBeFocused()
+  await expect(box.locator('br:not(.ProseMirror-trailingBreak)')).toHaveCount(0)
 
   // An agent's comment shows up by itself, signed with its name.
   expect((await agentComments(request, baseURL!, token, cardId, 'He comparado tres presupuestos: el más barato es de **320 €**.')).status()).toBe(201)
@@ -68,20 +70,31 @@ test('comments on a card: written, edited, live from an agent, deleted to the tr
   const edited = list.getByRole('listitem').filter({ hasText: 'Pedir presupuesto a tres empresas' })
   await expect(edited).toBeVisible()
   await expect(edited).toContainText('(editado)')
+  // The focus goes back to the comment's menu, not to the top of the sheet.
+  await expect(edited.getByRole('button', { name: /Acciones del comentario/ })).toBeFocused()
 
-  // The agent's, deleted to the trash, and back with the toast's undo.
+  // The agent's, deleted to the trash, and back from where it was, by keyboard too.
   await theirs.getByRole('button', { name: 'Acciones del comentario' }).click()
   await page.getByRole('menuitem', { name: 'Eliminar' }).click()
   await expect(theirs).toHaveCount(0)
   await expect(sheet.getByText('Comentarios · 1')).toBeVisible()
-  // The toast is outside the sheet, as the trash's toasts always are.
-  const toast = page.locator('[data-sonner-toast]').filter({ hasText: 'Comentario movido a la papelera' })
-  await toast.getByRole('button', { name: 'Deshacer' }).click()
+  const removed = sheet.getByRole('status').filter({ hasText: 'Comentario movido a la papelera' })
+  await expect(removed.getByRole('button', { name: 'Deshacer' })).toBeFocused()
+  await page.keyboard.press('Enter')
   await expect(theirs).toBeVisible()
   await expect(sheet.getByText('Comentarios · 2')).toBeVisible()
+  await expect(removed).toHaveCount(0)
+
+  // What is written and not sent waits for the card to open again, also when it is closed with Escape.
+  await box.click()
+  await page.keyboard.type('Un borrador sin enviar')
+  await page.keyboard.press('Escape')
+  await expect(sheet).toHaveCount(0)
+  await page.getByRole('button', { name: 'Contratar la furgoneta' }).click()
+  await expect(sheet.getByRole('textbox', { name: 'Nuevo comentario' })).toHaveText('Un borrador sin enviar')
+  await page.keyboard.press('Escape')
 
   // The board counts them on the card.
-  await page.keyboard.press('Escape')
   await expect(sheet).toHaveCount(0)
   await expect(page.getByRole('region', { name: 'Columna Por hacer' }).getByTitle('Comentarios')).toHaveText('2')
 })
@@ -89,7 +102,11 @@ test('comments on a card: written, edited, live from an agent, deleted to the tr
 test('on a phone, a comment is written with the button and earlier ones come on request', async ({ page, request, baseURL }) => {
   const { cardId, token } = await setup(page, 'Comentarios móvil E2E')
   // More than a page of them, so the earlier ones wait.
-  for (let i = 1; i <= 52; i++) expect((await agentComments(request, baseURL!, token, cardId, `Paso ${i}`)).status()).toBe(201)
+  // Each in a millisecond of its own, so their order is that of their numbers.
+  for (let i = 1; i <= 52; i++) {
+    expect((await agentComments(request, baseURL!, token, cardId, `Paso ${i}`)).status()).toBe(201)
+    await new Promise((resolve) => setTimeout(resolve, 3))
+  }
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto(`/card/${cardId}`)
   const sheet = page.getByRole('dialog')

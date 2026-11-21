@@ -88,7 +88,9 @@ function handle(workspaceId: string, event: RealtimeEvent, selfId: string | unde
   if (event.cardId) {
     // A deleted card can't be fetched again; an open one says it is gone (see CardSheet).
     if (event.action !== 'card.deleted') live.refresh(keys.card(event.cardId))
-    else for (const key of [keys.card(event.cardId), keys.history('card', event.cardId)]) live.forget(key)
+    else for (const key of [keys.card(event.cardId), keys.history('card', event.cardId), keys.comments(event.cardId)]) live.forget(key)
+    // Its comments, when one was written, changed, deleted or brought back (on its own or with the card).
+    if (event.action.startsWith('card.comment') || event.action === 'trash.restored') live.refresh(keys.comments(event.cardId))
     for (const l of cardListeners) l(event)
   }
   // An open page also hears of its project, which may be deleted or restored with it inside.
