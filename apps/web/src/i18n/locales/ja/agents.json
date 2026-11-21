@@ -33,6 +33,8 @@
   },
   "tools": {
     "title": "MCPツール",
+    "show_other": "{{count}}個のツールを表示",
+    "hide": "ツールを隠す",
     "footnote": "各エージェントには、権限で許可されたツールだけが表示されます。",
     "scopes": {
       "read": "読み取り",

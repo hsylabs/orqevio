@@ -35,6 +35,10 @@
   },
   "tools": {
     "title": "Outils MCP",
+    "show_one": "Afficher {{count}} outil",
+    "show_many": "Afficher les {{count}} outils",
+    "show_other": "Afficher les {{count}} outils",
+    "hide": "Masquer les outils",
     "footnote": "Chaque agent ne voit que les outils autorisés par ses permissions.",
     "scopes": {
       "read": "Lecture",

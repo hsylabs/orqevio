@@ -1,5 +1,5 @@
 import { MCP_TOOL_GROUPS, isTokenActive } from '@orqevio/shared'
-import { Bot, LockKeyhole, Plus, ShieldCheck } from 'lucide-react'
+import { Bot, ChevronDown, LockKeyhole, Plus, ShieldCheck } from 'lucide-react'
 import { useId, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -13,8 +13,13 @@ import { CreateTokenDialog } from './CreateTokenDialog'
 import { mcpUrl } from './ConnectKit'
 import { TokenCard, useRevokeToken } from './TokenCard'
 
-/** Wide enough for activity and tools side by side (Tailwind's `lg`). */
-const WIDE = '(min-width: 1024px)'
+/** Wide enough for activity and tools side by side: Tailwind's `lg`, in rem as it is, so both agree with a larger default font. */
+const WIDE = '(min-width: 64rem)'
+/** Side by side, activity and tools end at the same height and each scrolls in its own box. */
+const PANEL = 'rounded-[16px] border border-line bg-surface shadow-sm lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto lg:overscroll-contain'
+/** The same height for both titles, so both boxes start on the same line. */
+const PANEL_HEADING = 'mb-3 flex min-h-5 items-center justify-between gap-3'
+const TOOL_COUNT = MCP_TOOL_GROUPS.reduce((count, group) => count + group.tools.length, 0)
 
 function useWide() {
   return useSyncExternalStore(
@@ -43,6 +48,19 @@ export function AgentsPage() {
   // An entry merged with a later one moves to the top, so it can come in two pages.
   const entries = [...new Map((activity.data?.pages.flat() ?? []).map((entry) => [entry.id, entry])).values()]
   const activityTitle = useId()
+  const toolsTitle = useId()
+  const toolList = (
+    <ul>
+      {MCP_TOOL_GROUPS.map((group) => (
+        <li key={group.id} className="border-b border-line px-4 py-2.5 last:border-b-0">
+          <p className="font-mono text-[11.5px] text-ink [overflow-wrap:anywhere]">{group.tools.join(' · ')}</p>
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-ink-3">
+            <span className="font-medium text-agent">{t(`tools.scopes.${group.need}`)}</span>· {t(`tools.descriptions.${group.id}`)}
+          </p>
+        </li>
+      ))}
+    </ul>
+  )
 
   // The accesses of this workspace; those of the others are each on their own page, counted if they still work.
   const here = (tokens.data ?? []).filter((token) => token.workspaceId === workspaceId)
@@ -151,7 +169,7 @@ export function AgentsPage() {
 
           <section className="mt-12 grid gap-8 lg:grid-cols-[1.3fr_1fr]">
             <div>
-              <div className="mb-3 flex items-center justify-between">
+              <div className={PANEL_HEADING}>
                 <h2 id={activityTitle} className="text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">
                   {tokenFilter ? t('activity.titleFor', { name: tokens.data?.find((token) => token.id === tokenFilter)?.name ?? '' }) : t('activity.title')}
                 </h2>
@@ -166,7 +184,7 @@ export function AgentsPage() {
                 role="region"
                 aria-labelledby={activityTitle}
                 tabIndex={wide ? 0 : undefined}
-                className="rounded-[16px] border border-line bg-surface p-4 shadow-sm lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto lg:overscroll-contain"
+                className={`${PANEL} p-4`}
               >
                 {entries.length ? (
                   <>
@@ -185,17 +203,26 @@ export function AgentsPage() {
               </div>
             </div>
             <div>
-              <h2 className="mb-3 text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{t('tools.title')}</h2>
-              <ul className="overflow-hidden rounded-[16px] border border-line bg-surface shadow-sm">
-                {MCP_TOOL_GROUPS.map((group) => (
-                  <li key={group.id} className="border-b border-line px-4 py-2.5 last:border-b-0">
-                    <p className="font-mono text-[11.5px] text-ink [overflow-wrap:anywhere]">{group.tools.join(' · ')}</p>
-                    <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-ink-3">
-                      <span className="font-medium text-agent">{t(`tools.scopes.${group.need}`)}</span>· {t(`tools.descriptions.${group.id}`)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+              <div className={PANEL_HEADING}>
+                <h2 id={toolsTitle} className="text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">
+                  {t('tools.title')}
+                </h2>
+              </div>
+              {wide ? (
+                <div role="region" aria-labelledby={toolsTitle} tabIndex={0} className={PANEL}>
+                  {toolList}
+                </div>
+              ) : (
+                // Stacked under the activity, the list waits folded, so the page does not end in 35 tools.
+                <details className="group rounded-[16px] border border-line bg-surface shadow-sm">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-[16px] px-4 py-3 text-[13px] font-medium text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
+                    <span className="group-open:hidden">{t('tools.show', { count: TOOL_COUNT })}</span>
+                    <span className="hidden group-open:inline">{t('tools.hide')}</span>
+                    <ChevronDown aria-hidden className="size-4 shrink-0 text-ink-3 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="border-t border-line">{toolList}</div>
+                </details>
+              )}
               <p className="mt-2 px-1 text-[12px] text-ink-3">{t('tools.footnote')}</p>
             </div>
           </section>

@@ -35,6 +35,10 @@
   },
   "tools": {
     "title": "Herramientas MCP",
+    "show_one": "Ver {{count}} herramienta",
+    "show_many": "Ver las {{count}} herramientas",
+    "show_other": "Ver las {{count}} herramientas",
+    "hide": "Ocultar las herramientas",
     "footnote": "Cada agente solo ve las herramientas que sus permisos permiten.",
     "scopes": {
       "read": "Lectura",
