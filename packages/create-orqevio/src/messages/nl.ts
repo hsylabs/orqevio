@@ -119,7 +119,7 @@ opent je browser, zodat je kunt inloggen.`,
       'Laat het antwoord leeg als je het liever anders doet.',
     ].join('\n'),
   askDeleteBackups: (bucket) =>
-    `Ook de back-ups verwijderen? De bucket ‘${bucket}’ bewaart de laatste 7 dagelijkse back-ups: als je hem houdt, kan een installatie met dezelfde naam ze terugzetten.`,
+    `Ook de back-ups verwijderen? De bucket ‘${bucket}’ bewaart de laatste 7 dagelijkse back-ups, de laatste 7 die je zelf maakte en die van voor het laatste terugzetten: als je hem houdt, kan een installatie met dezelfde naam ze terugzetten.`,
   emptyingBackupsThroughCopy: (bucket) =>
     [
       '',

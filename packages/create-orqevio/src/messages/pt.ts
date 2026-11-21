@@ -119,7 +119,7 @@ navegador abre para você fazer login.`,
       'Deixe a resposta em branco se preferir fazer de outra forma.',
     ].join('\n'),
   askDeleteBackups: (bucket) =>
-    `Apagar também os backups? O bucket “${bucket}” guarda os 7 últimos backups diários: se você o mantiver, uma cópia instalada de novo com o mesmo nome poderá restaurá-los.`,
+    `Apagar também os backups? O bucket “${bucket}” guarda os 7 últimos backups diários, os 7 últimos feitos por você e o feito antes da última restauração: se você o mantiver, uma cópia instalada de novo com o mesmo nome poderá restaurá-los.`,
   emptyingBackupsThroughCopy: (bucket) =>
     [
       '',

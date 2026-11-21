@@ -20,7 +20,7 @@
         "description": "R2 bucket for the files attached to cards and documents."
       },
       "BACKUPS": {
-        "description": "R2 bucket for the daily backups of your copy, kept apart from it: the last 7."
+        "description": "R2 bucket for the backups of your copy, kept apart from it: the last 7 daily ones, the last 7 made by you and the one made before the last restore."
       },
       "COPY": {
         "description": "Durable Object that keeps your data in its own SQLite database."

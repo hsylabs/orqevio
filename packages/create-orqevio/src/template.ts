@@ -36,7 +36,7 @@ export function templatePackageJson(installerVersion: string) {
             'One-off code to claim your copy the first time: at least 12 letters A–Z or digits (other characters don’t count), for example from `openssl rand -hex 8`. Keep it until you open your copy; to recover access later, set a new one here and use **Lost your key?** on the sign-in screen.',
         },
         UPLOADS: { description: 'R2 bucket for the files attached to cards and documents.' },
-        BACKUPS: { description: 'R2 bucket for the daily backups of your copy, kept apart from it: the last 7.' },
+        BACKUPS: { description: 'R2 bucket for the backups of your copy, kept apart from it: the last 7 daily ones, the last 7 made by you and the one made before the last restore.' },
         COPY: { description: 'Durable Object that keeps your data in its own SQLite database.' },
       },
     },
