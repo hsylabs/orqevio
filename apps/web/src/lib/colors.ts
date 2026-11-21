@@ -1,13 +1,6 @@
 import { CUSTOM_COLOR, type CustomColor, isPaletteColor, type PaletteColor, type ProjectColor } from '@orqevio/shared'
 import type { CSSProperties } from 'react'
 
-/**
- * A colour of one's own, drawn as the palette is: a tone for the light theme and a lighter one for
- * the dark theme. Each stays within the luminance of the palette's own tones (`--c-*` in app.css),
- * so it stands out from the page and carries a white monogram as well as the palette's weakest do.
- * Only its lightness moves (OKLCH): hue stays, and chroma gives way only as much as the screen's
- * colours (sRGB) need.
- */
 /** The palette's tones for the light theme, as `--c-*` in app.css has them (a test keeps them the same). */
 export const PALETTE_LIGHT: Record<PaletteColor, CustomColor> = {
   tomato: '#e5532a',
@@ -21,6 +14,13 @@ export const PALETTE_LIGHT: Record<PaletteColor, CustomColor> = {
   slate: '#6b7180',
 }
 
+/**
+ * A colour of one's own, drawn as the palette is: a tone for the light theme and a lighter one for
+ * the dark theme. Each stays within the luminance of the palette's own tones (`--c-*` in app.css),
+ * so it stands out from the page and carries a white monogram as well as the palette's weakest do.
+ * Only its lightness moves (OKLCH): hue stays, and chroma gives way only as much as the screen's
+ * colours (sRGB) need.
+ */
 const BOUNDS = {
   /** No lighter than amber, the palette's lightest tone for the light theme; as dark as one likes. */
   light: { min: 0, max: PALETTE_LIGHT.amber },

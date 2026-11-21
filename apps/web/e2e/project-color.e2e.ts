@@ -21,16 +21,25 @@ test('a project takes a colour of its own, kept on reload, in both themes, and c
   // From the keyboard, the swatch opens it too, starting from the colour chosen as the light theme has it (cobalt),
   // whatever the theme: that is the colour kept.
   await page.emulateMedia({ colorScheme: 'dark' })
+  type Opened = { value: string; focused: boolean }
+  const opened = () => page.evaluate(() => (window as unknown as { opened?: Opened[] }).opened)
   await page.evaluate(() => {
     const click = HTMLInputElement.prototype.click
     HTMLInputElement.prototype.click = function (this: HTMLInputElement) {
-      if (this.type === 'color') (window as unknown as { opened: string[] }).opened = [...((window as unknown as { opened?: string[] }).opened ?? []), this.value]
+      const win = window as unknown as { opened?: Opened[] }
+      if (this.type === 'color') win.opened = [...(win.opened ?? []), { value: this.value, focused: document.activeElement === this }]
       else click.call(this)
     }
   })
   await custom.focus()
   await page.keyboard.press('Enter')
-  expect(await page.evaluate(() => (window as unknown as { opened?: string[] }).opened)).toEqual(['#3a6ae0'])
+  expect(await opened()).toEqual([{ value: '#3a6ae0', focused: false }])
+  await expect(custom).toBeFocused()
+  // On a touch screen (VoiceOver, an iPad's keyboard) it is focus that opens it: the picker takes it first.
+  await page.evaluate(() => Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 5 }))
+  await custom.focus()
+  await page.keyboard.press('Enter')
+  expect((await opened())?.[1]).toEqual({ value: '#3a6ae0', focused: true })
   await page.emulateMedia({ colorScheme: 'light' })
 
   // The browser's own picker is outside the page: what it hands back lands in its input.

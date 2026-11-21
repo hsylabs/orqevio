@@ -61,11 +61,17 @@ function CustomSwatch({ value, onChange }: { value: ProjectColor; onChange: (col
         role="radio"
         aria-checked={chosen}
         aria-label={name}
-        // Keyboards and screen readers reach the swatch, which opens the picker as a tap on it does.
-        onClick={() => input.current?.click()}
+        // Keyboards and screen readers reach the swatch, which opens the picker as a tap on it does. On a
+        // touch screen (VoiceOver, an iPad's keyboard) it is focus that opens it.
+        onClick={() => {
+          if (navigator.maxTouchPoints > 0) input.current?.focus({ preventScroll: true })
+          input.current?.click()
+        }}
         className={cn(
           look?.className,
           'grid size-7 place-items-center rounded-full transition-transform duration-150 group-hover:scale-110',
+          // Focus on the picker, which can't be seen, shows on the swatch.
+          'group-has-[input:focus-visible]:outline-2 group-has-[input:focus-visible]:outline-offset-2 group-has-[input:focus-visible]:outline-accent',
           chosen && 'ring-2 ring-[var(--c)] ring-offset-2 ring-offset-sheet',
         )}
         style={chosen ? { ...look?.style, background: 'var(--c)' } : { background: RAINBOW }}
