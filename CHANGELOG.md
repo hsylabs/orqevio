@@ -6,6 +6,27 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-21
+
+### Added
+- **Comments on cards.** People and agents talk on a card in Markdown, up to 20,000 characters each, in a **Comments** section above **Activity**; the board shows how many comments each card has.
+  - Send with the button or with Ctrl/⌘+Enter. What you were writing waits while the tab is open, even if you close the card.
+  - Each author edits and deletes only their own. The workspace's owner can also delete anyone's, to the trash, but never change what it says.
+  - Comments go to the trash and come back with their card, are in the card's history and can be undone, also with everything an agent did. Search finds a card by its comments, and the export and the backups keep them.
+- **MCP:** `add_comment`, `update_comment` and `list_comments`, and with **Can delete and move**, `delete_comment`. An agent changes and deletes only the comments it wrote. `get_card` shows the latest ten.
+- **A color of its own for a project**, besides the nine of the palette: **Custom color** opens the browser's color picker. It is drawn lighter or darker for each theme, so it stands out as the palette's colors do. The API and the MCP `create_project` take `#rrggbb` too; labels keep to the palette.
+- **Download a page as Markdown**, from its menu: alone as a `.md` file, or as a ZIP with its files next to it and, if you want, its subpages in folders. Links to what doesn't go with it point at your copy. What you just wrote, title included, is saved first.
+- **Print a page or save it as PDF:** its title and its text alone, dark on white whatever the theme, with the ticks of done tasks and the address of each link, without cutting tables, code or pictures across pages. Ctrl+P prints it the same way.
+
+### Changed
+- **Japanese titles** break between phrases in Safari and Firefox too, as in Chromium, never in the middle of a word: titles of cards and pages, names of projects and boards, the greeting on Home, a printed page and a vault item. Safari and Firefox download a small Japanese dictionary (BudouX, 15.5 KB) when the app is in Japanese; nothing changes in other languages or in Chromium.
+- **The side panel** closes when the window gets narrower than 900 px, and comes back as it was when it widens.
+- **Agents:** side by side, the MCP tools and the activity are as tall as each other, each scrolling in its own box. On a phone the tools wait folded under the activity.
+- **Backups:** **Settings → Backups**, the Deploy to Cloudflare template and the uninstall prompt say which backups are kept: the last 7 daily ones, the last 7 made by you and the one made before the last restore.
+
+### Fixed
+- **Undo** on a notice could not be clicked while a card was open, for instance after deleting a checklist item.
+
 ## [1.3.0] - 2026-11-20
 
 ### Added
