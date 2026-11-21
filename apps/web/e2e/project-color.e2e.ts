@@ -1,5 +1,5 @@
 import type { Locator } from '@playwright/test'
-import { expect, openNewWorkspace, test } from './helpers'
+import { apiRequests, expect, openNewWorkspace, test } from './helpers'
 
 /** The colour an element is drawn with, as the theme resolves it. */
 const tone = (element: Locator) => element.evaluate((el) => getComputedStyle(el).getPropertyValue('--c').trim())
@@ -7,6 +7,7 @@ const tone = (element: Locator) => element.evaluate((el) => getComputedStyle(el)
 // A project's colour can be one of its own, besides the palette's nine: chosen with the browser's
 // picker, kept as it was chosen, and drawn with a tone for each theme that stands out as theirs do.
 test('a project takes a colour of its own, kept on reload, in both themes, and chosen again from the palette', async ({ page }) => {
+  const api = apiRequests(page)
   await openNewWorkspace(page, 'Color E2E')
   await page.getByRole('button', { name: 'Nuevo proyecto' }).first().click()
   const dialog = page.getByRole('dialog')
@@ -53,7 +54,9 @@ test('a project takes a colour of its own, kept on reload, in both themes, and c
   // A colour the palette could have shows as chosen in the light theme.
   const glyph = page.getByRole('navigation').getByRole('link', { name: 'M Mudanza', exact: true }).locator('.glyph')
   await expect.poll(() => tone(glyph)).toBe('#8b4513')
-  await page.reload()
+  // Reloaded once the new board has loaded, not in the middle (see apiRequests).
+  await expect(page.getByRole('region', { name: 'Columna Por hacer' })).toBeVisible()
+  await api.reload()
   await expect.poll(() => tone(glyph)).toBe('#8b4513')
 
   // The dark theme draws it lighter, both when it follows the system and when it is chosen.
@@ -93,6 +96,6 @@ test('a project takes a colour of its own, kept on reload, in both themes, and c
   await expect(dialog.getByRole('radio', { name: 'Color personalizado' })).toHaveAttribute('aria-checked', 'false')
   await dialog.getByRole('button', { name: 'Guardar' }).click()
   await expect(glyph).toHaveClass(/\bc-jade\b/)
-  await page.reload()
+  await api.reload()
   await expect(glyph).toHaveClass(/\bc-jade\b/)
 })
