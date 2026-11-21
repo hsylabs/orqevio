@@ -11,7 +11,7 @@ describe('a Japanese title split into phrases', () => {
   it('is split where BudouX splits it, every character kept', () => {
     const title = '来週の打ち合わせまでに見積書を三社から取り寄せて比較する'
     expect(splitPhrases(title, budoux)).toEqual(['来週の', '打ち合わせまでに', '見積書を', '三社から', '取り寄せて', '比較する'])
-    for (const text of ['引っ越し 2026年11月 第2週のまとめ 📦', 'GitHubとSlackの通知を整理する', '❤️家族👨‍👩‍👧の予定を共有する', 'ユーザーへ送信するメールの文面']) {
+    for (const text of ['引っ越し 2026年11月 第2週のまとめ 📦', 'GitHubとSlackの通知を整理する', '❤\ufe0f家族👨\u200d👩\u200d👧の予定を共有する', 'ユーザーへ送信するメールの文面']) {
       expect(splitPhrases(text, budoux).join(''), text).toBe(text)
     }
   })
@@ -25,9 +25,9 @@ describe('a Japanese title split into phrases', () => {
   })
 
   it('never breaks a character drawn from several code points', () => {
-    expect(splitPhrases('引❤️っ越しの', given(['引❤', '️っ越しの']))).toEqual(['引❤️っ越しの'])
+    expect(splitPhrases('引❤\ufe0fっ越しの', given(['引❤', '\ufe0fっ越しの']))).toEqual(['引❤\ufe0fっ越しの'])
     // Before the family it may break; inside it, never.
-    expect(splitPhrases('まと👨‍👩‍👧めた', given(['まと', '👨‍👩‍', '👧めた']))).toEqual(['まと', '👨‍👩‍👧めた'])
+    expect(splitPhrases('まと👨\u200d👩\u200d👧めた', given(['まと', '👨\u200d👩\u200d', '👧めた']))).toEqual(['まと', '👨\u200d👩\u200d👧めた'])
     expect(splitPhrases('手👍🏽です', given(['手👍', '🏽です']))).toEqual(['手👍🏽です'])
   })
 })

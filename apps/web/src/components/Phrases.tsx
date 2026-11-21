@@ -1,71 +1,37 @@
+import i18n from 'i18next'
 import { Fragment, type MouseEvent, type PointerEvent, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
-import i18n from 'i18next'
 import { cn } from '../lib/cn'
+import { type Parse, loadPhrases, nativePhrases, onPhraseParser, phraseParser, phrasesCache } from '../lib/phrases'
 
 /**
- * Japanese has no spaces: a title breaks between phrases, never inside a word ("ござい|ます").
- * Chromium tells phrases apart itself (`word-break: auto-phrase`, see `.orq-phrases` in app.css).
- * Elsewhere BudouX does, the same model Chromium's is based on: the title is split into its phrases,
- * with a place to break (<wbr>) between them. It loads only where the app is in Japanese and the
- * browser can't tell phrases apart.
+ * Japanese titles broken between their phrases, never inside a word ("ござい|ます"). Chromium tells
+ * phrases apart itself (`word-break: auto-phrase`, see `.orq-phrases` in app.css). Elsewhere BudouX
+ * does (see lib/phrases.ts): the title is split into its phrases, with a place to break (<wbr>)
+ * between them.
  */
-const native = typeof CSS !== 'undefined' && CSS.supports('word-break', 'auto-phrase')
-/** Hiragana, katakana and the common kanji. */
-const JAPANESE = /[぀-ヿ㐀-䶿一-鿿]/
 
-type Parse = (text: string) => string[]
-let parse: Parse | null = null
-let loading: Promise<void> | null = null
-const waiting = new Set<() => void>()
-const cache = new Map<string, string[]>()
-const CACHED = 2000
-
-function load() {
-  if (native || parse) return
-  loading ??= import('budoux')
-    .then(({ Parser, jaModel }) => {
-      const parser = new Parser(jaModel)
-      parse = (text) => parser.parse(text)
-      for (const done of waiting) done()
-    })
-    // Without it, titles break as the browser breaks them; a later title tries again.
-    .catch(() => {
-      loading = null
-    })
-}
-// As soon as the app is in Japanese, so the first board doesn't wait for it.
-if (i18n.resolvedLanguage === 'ja') load()
-i18n.on('languageChanged', (language) => language === 'ja' && load())
-
-const subscribe = (done: () => void) => {
-  waiting.add(done)
-  return () => waiting.delete(done)
-}
-
+/** Japanese letters: a title with any of them is split into phrases. */
+const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー]/u
 /** Letters and digits of scripts that put spaces between words: BudouX's places to break between two of them fall inside a word or a number ("202|6年"). */
 const SPACED = /[\p{L}\p{N}]/u
-const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー]/u
 const spaced = (char: string | undefined) => char !== undefined && SPACED.test(char) && !CJK.test(char)
-/** What can't start a character of its own: marks, the zero-width joiner, variation selectors, keycaps, skin tones. */
-const ATTACHED = /^[\p{M}‍︎️⃣\u{1f3fb}-\u{1f3ff}]/u
-const graphemes = typeof Intl !== 'undefined' && 'Segmenter' in Intl ? new Intl.Segmenter('ja', { granularity: 'grapheme' }) : null
+/** Characters as people see them: an emoji family, a heart with its style or a letter with its accent is one. */
+const graphemes = new Intl.Segmenter('ja', { granularity: 'grapheme' })
+const CACHED = 2000
 
 /**
  * The phrases BudouX finds in `text`, joined again where its place to break would cut a word or a
- * number written in a spaced script, or a character drawn from several code points (an emoji family,
- * a heart with its style). Every character stays, in order.
+ * number written in a spaced script, or a character drawn from several code points. Every
+ * character stays, in order.
  */
 export function splitPhrases(text: string, parse: Parse): string[] {
-  const starts = graphemes ? new Set([...graphemes.segment(text)].map((g) => g.index)) : null
+  const starts = new Set(Array.from(graphemes.segment(text), (g) => g.index))
   const phrases: string[] = []
   let offset = 0
   for (const phrase of parse(text)) {
     const last = phrases.at(-1)
-    const inside =
-      last !== undefined &&
-      (starts ? !starts.has(offset) : ATTACHED.test(phrase) || last.endsWith('‍') || (/[\ud800-\udbff]$/.test(last) && /^[\udc00-\udfff]/.test(phrase)))
-    if (last !== undefined && (inside || (spaced([...last].at(-1)) && spaced([...phrase][0])))) phrases[phrases.length - 1] = last + phrase
+    if (last !== undefined && (!starts.has(offset) || (spaced([...last].at(-1)) && spaced([...phrase][0])))) phrases[phrases.length - 1] = last + phrase
     else phrases.push(phrase)
     offset += phrase.length
   }
@@ -73,11 +39,11 @@ export function splitPhrases(text: string, parse: Parse): string[] {
 }
 
 function phrasesOf(text: string, parse: Parse) {
-  let phrases = cache.get(text)
+  let phrases = phrasesCache.get(text)
   if (!phrases) {
     phrases = splitPhrases(text, parse)
-    if (cache.size >= CACHED) cache.delete(cache.keys().next().value!)
-    cache.set(text, phrases)
+    if (phrasesCache.size >= CACHED) phrasesCache.delete(phrasesCache.keys().next().value!)
+    phrasesCache.set(text, phrases)
   }
   return phrases
 }
@@ -88,56 +54,79 @@ function phrasesOf(text: string, parse: Parse) {
  * as the browser breaks it until then). With `cache: false` its phrases are not kept once shown
  * (a title from the vault, which must not outlive it).
  */
-export function usePhrases(text: string, { cache = true }: { cache?: boolean } = {}): 'native' | string[] | null {
+function usePhrases(text: string, { cache = true }: { cache?: boolean } = {}): 'native' | string[] | null {
   // Shown again in another language, it is read again.
   useTranslation()
-  const japanese = i18n.resolvedLanguage === 'ja' && JAPANESE.test(text)
-  const ready = useSyncExternalStore(subscribe, () => parse !== null)
+  const japanese = i18n.resolvedLanguage === 'ja' && CJK.test(text)
+  const parse = useSyncExternalStore(onPhraseParser, phraseParser, phraseParser)
   useEffect(() => {
-    if (japanese) load()
+    if (japanese) loadPhrases()
   }, [japanese])
   if (!japanese) return null
-  if (native) return 'native'
-  if (!ready || !parse) return null
+  if (nativePhrases) return 'native'
+  if (!parse) return null
   return cache ? phrasesOf(text, parse) : splitPhrases(text, parse)
 }
 
-const withBreaks = (phrases: string[]) =>
-  phrases.map((phrase, i) => (
-    // The phrases of one text, always in the same order.
-    <Fragment key={i}>
-      {i > 0 && <wbr />}
-      {phrase}
-    </Fragment>
-  ))
+/** Part of a text, or nothing for none of it. */
+const part = (text: string, from: number, to?: number) => text.slice(from, to) || null
 
-/** A title that breaks between its phrases when it is Japanese; any other text as it is. */
-export function Phrases({ text, cache }: { text: string; cache?: boolean }) {
-  const phrases = usePhrases(text, { cache })
-  if (phrases === null) return text
-  return <span className="orq-phrases">{phrases === 'native' ? text : withBreaks(phrases)}</span>
+/** A text as its phrases (or whole), with a place to break (<wbr>) between them and the part `italic` slanted. */
+function pieces(text: string, phrases: string[] | null, italic?: readonly [number, number]) {
+  let offset = 0
+  return (phrases ?? [text]).map((phrase, i) => {
+    const start = offset
+    offset += phrase.length
+    const from = Math.max(italic?.[0] ?? 0, start) - start
+    const to = Math.min(italic?.[1] ?? 0, offset) - start
+    return (
+      // The phrases of one text, always in the same order.
+      <Fragment key={i}>
+        {i > 0 && <wbr />}
+        {from < to ? (
+          <>
+            {part(phrase, 0, from)}
+            <span className="italic">{phrase.slice(from, to)}</span>
+            {part(phrase, to)}
+          </>
+        ) : (
+          phrase
+        )}
+      </Fragment>
+    )
+  })
 }
 
-/** The place in `root`'s text nearest to a point on screen, counted in characters. */
+/**
+ * A title that breaks between its phrases when it is Japanese; any other text as it is. `italic`
+ * slants a part of it (from, to), as a name in a sentence.
+ */
+export function Phrases({ text, cache, italic }: { text: string; cache?: boolean; italic?: readonly [number, number] }) {
+  const phrases = usePhrases(text, { cache })
+  if (phrases === null) return italic ? pieces(text, null, italic) : text
+  return <span className="orq-phrases">{pieces(text, phrases === 'native' ? null : phrases, italic)}</span>
+}
+
+/** The place in `root`'s text nearest to a point on screen, counted in UTF-16 units, never inside a character. */
 function offsetAt(root: HTMLElement, x: number, y: number) {
   let best = { offset: 0, distance: Infinity }
   let offset = 0
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
   const range = document.createRange()
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    const length = node.textContent?.length ?? 0
-    for (let i = 0; i < length; i++) {
-      range.setStart(node, i)
-      range.setEnd(node, i + 1)
+    const text = node.textContent ?? ''
+    for (const { index, segment } of graphemes.segment(text)) {
+      range.setStart(node, index)
+      range.setEnd(node, index + segment.length)
       const rect = range.getBoundingClientRect()
       if (rect.width === 0 && rect.height === 0) continue
       const dx = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0
       const dy = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0
       // On the line first, then along it.
       const distance = dy * 10_000 + dx
-      if (distance < best.distance) best = { offset: offset + i + (x > rect.left + rect.width / 2 ? 1 : 0), distance }
+      if (distance < best.distance) best = { offset: offset + index + (x > rect.left + rect.width / 2 ? segment.length : 0), distance }
     }
-    offset += length
+    offset += text.length
   }
   return best.offset
 }
@@ -190,7 +179,7 @@ export function usePhrasedField(text: string, className: string) {
     },
     overlay: phrased ? (
       <div ref={drawn} aria-hidden="true" className={cn('pointer-events-none orq-phrases whitespace-pre-wrap [grid-area:1/1]', className, editing !== null && 'invisible')}>
-        {withBreaks(phrases)}
+        {pieces(editing ?? text, phrases)}
       </div>
     ) : null,
   }

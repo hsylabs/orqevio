@@ -2,10 +2,10 @@ import { type VaultStateDTO, isTokenActive } from '@orqevio/shared'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowUpRight, Bot, Check, FileText, FolderPlus, LockKeyhole, SquareKanban, X } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
-import { Trans, useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ActivityList } from '../../components/ActivityList'
-import { Phrases, usePhrases } from '../../components/Phrases'
+import { Phrases } from '../../components/Phrases'
 import { get } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { greeting, longDate, relativeTime } from '../../lib/format'
@@ -15,6 +15,15 @@ import { DueChip } from '../boards/CardItem'
 import { PageHeader } from '../shell/PageHeader'
 import { useWorkspace } from '../shell/workspace'
 
+/** The greeting as it reads, and where the name marked in it (<name>…</name>) is: it is written in italics. */
+function withoutMarks(greeting: string): [string, [number, number] | undefined] {
+  const open = greeting.indexOf('<name>')
+  const close = greeting.lastIndexOf('</name>')
+  if (open < 0 || close < open) return [greeting, undefined]
+  const name = greeting.slice(open + '<name>'.length, close)
+  return [greeting.slice(0, open) + name + greeting.slice(close + '</name>'.length), [open, open + name.length]]
+}
+
 export function HomePage() {
   const { t } = useTranslation('home')
   const { workspaceId, me, overview, openNewProject } = useWorkspace()
@@ -23,8 +32,7 @@ export function HomePage() {
   const vault = useQuery({ queryKey: keys.vault, queryFn: ({ signal }) => get<VaultStateDTO>('/vault', signal) })
   const [dismissed, setDismissed] = useState(() => localPref('onboarding-dismissed', false))
   const firstName = me.user.name.split(/\s+/)[0]
-  const sentence = t('greeting', { greeting: greeting(), name: firstName }).replace(/<\/?name>/g, '')
-  const phrasedGreeting = usePhrases(sentence)
+  const [sentence, name] = withoutMarks(t('greeting', { greeting: greeting(), name: firstName }))
   const base = `/w/${workspaceId}`
 
   const projects = overview?.projects ?? []
@@ -44,12 +52,7 @@ export function HomePage() {
         <div className="mx-auto w-full max-w-[1080px] px-6 py-10 sm:px-10 sm:py-14">
           <p className="animate-rise font-mono text-[11.5px] tracking-[0.14em] text-ink-3 uppercase first-letter:uppercase">{longDate()}</p>
           <h1 className="animate-rise mt-2 font-display text-[40px] leading-[1.05] font-medium tracking-[-0.03em] sm:text-[48px]" style={{ animationDelay: '40ms' }}>
-            {Array.isArray(phrasedGreeting) ? (
-              // Broken between its phrases where only BudouX can tell them apart; the name in it isn't slanted there.
-              <Phrases text={sentence} />
-            ) : (
-              <Trans t={t} i18nKey="greeting" values={{ greeting: greeting(), name: firstName }} components={{ name: <span className="italic" /> }} />
-            )}
+            <Phrases text={sentence} italic={name} />
           </h1>
 
           {showSteps && (

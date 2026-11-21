@@ -13,6 +13,7 @@ import { applyLocale } from '../../i18n'
 import { LanguageSelect } from '../../i18n/LanguageSelect'
 import { del, errorMessage, patch, post } from '../../lib/api'
 import { downloadFrom } from '../../lib/download'
+import { clearPhrases } from '../../lib/phrases'
 import { keys, queryClient } from '../../lib/queries'
 import { applyTheme } from '../../lib/theme'
 import { AccessKeyReveal } from '../auth/AccessKeyReveal'
@@ -230,6 +231,7 @@ export function SettingsPage() {
             if (await run('delete', () => post('/account/delete', { accessKey: deleteKey }), t('erase.done'))) {
               lockVaultEverywhere()
               queryClient.clear()
+              clearPhrases()
               navigate('/setup', { replace: true })
             }
           }}

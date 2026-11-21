@@ -1,9 +1,9 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
+import { Phrases } from '../../components/Phrases'
 import { Button } from '../../components/ui/Button'
 import { Dialog } from '../../components/ui/Dialog'
-import { Phrases } from '../../components/Phrases'
 import { downloadFrom } from '../../lib/download'
 import { markdownToHtml } from './editor/markdown-html'
 

@@ -48,6 +48,65 @@ const plainStarts = async (page: Page, element: Locator) => {
   return starts
 }
 
+/** Where on screen a character of `root`'s text is: a quarter into it, halfway down. */
+const pointAt = (root: Locator, at: number) =>
+  root.evaluate((el, at) => {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+    let offset = 0
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const length = node.textContent?.length ?? 0
+      if (at < offset + length) {
+        const range = document.createRange()
+        range.setStart(node, at - offset)
+        range.setEnd(node, at - offset + 1)
+        const rect = range.getBoundingClientRect()
+        return { x: rect.left + rect.width / 4, y: rect.top + rect.height / 2 }
+      }
+      offset += length
+    }
+    throw new Error(`no character ${at}`)
+  }, at)
+
+/**
+ * A title edited in place (a page's, a card's), holding TITLE: where only BudouX tells phrases
+ * apart, it is drawn broken between them over its field until it is edited. The field, unseen,
+ * fills the drawn title, so a click on any of its lines edits the field from the character clicked,
+ * and the title doesn't move once edited.
+ */
+async function checkEditedInPlace(page: Page, field: Locator, native: boolean, shot: (name: string) => Promise<unknown>) {
+  const drawn = field.locator('xpath=../div[@aria-hidden="true"]')
+  const cell = field.locator('xpath=..')
+  await field.blur()
+  if (native) {
+    await expect(drawn).toHaveCount(0)
+    await shot('sin-editar')
+    return
+  }
+  await expect(drawn).toBeVisible()
+  await expect(drawn.locator('wbr')).toHaveCount(PHRASES.length - 1)
+  await expect(field).toHaveCSS('opacity', '0')
+  const starts = await lineStarts(drawn)
+  expect(starts.length).toBeGreaterThan(0)
+  for (const start of starts) expect(BOUNDARIES, `a line starts at «${TITLE.slice(start)}»`).toContain(start)
+  const height = (await cell.boundingBox())!.height
+  expect((await field.boundingBox())!.height).toBeCloseTo(height, 0)
+  await shot('sin-editar')
+  // The first character of each line and one inside a phrase: the field's own lines break
+  // elsewhere, so left to itself it would put the caret at other characters.
+  for (const at of [0, ...starts, TITLE.indexOf('書')]) {
+    await field.blur()
+    await expect(drawn).toBeVisible()
+    const point = await pointAt(drawn, at)
+    await page.mouse.click(point.x, point.y)
+    await expect(field).toBeFocused()
+    expect(await field.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd]), `clicked on «${TITLE.slice(at)}»`).toEqual([at, at])
+    await expect(drawn).toBeHidden()
+    await expect(field).toHaveCSS('opacity', '1')
+    expect((await cell.boundingBox())!.height).toBeCloseTo(height, 0)
+  }
+  await shot('editando')
+}
+
 // Japanese has no spaces: a title breaks between its phrases, never inside a word. Chromium tells
 // them apart itself; Firefox and Safari are told by BudouX, loaded only for them.
 test('Japanese titles break between their phrases in every browser', async ({ page, browserName }, testInfo) => {
@@ -66,7 +125,9 @@ test('Japanese titles break between their phrases in every browser', async ({ pa
     const title = page.locator('.orq-phrases', { hasText: TITLE })
     await expect(title).toBeVisible()
     const native = await page.evaluate(() => CSS.supports('word-break', 'auto-phrase'))
-    expect(native).toBe(browserName === 'chromium')
+    // Chromium tells phrases apart itself; the day another browser does too, BudouX isn't loaded there.
+    if (browserName === 'chromium') expect(native).toBe(true)
+    else if (native) testInfo.annotations.push({ type: 'native', description: `${browserName} tells phrases apart itself` })
     if (native) await expect(title.locator('wbr')).toHaveCount(0)
     else await expect(title.locator('wbr')).toHaveCount(PHRASES.length - 1)
 
@@ -114,6 +175,15 @@ test('Japanese titles break between their phrases in every browser', async ({ pa
     }
     await page.screenshot({ path: testInfo.outputPath('1-tablero.png'), animations: 'disabled' })
 
+    // A card's title in its sheet, edited in place.
+    await title.click()
+    const cardField = page.getByRole('textbox', { name: 'カードのタイトル' })
+    await expect(cardField).toHaveValue(TITLE)
+    await checkEditedInPlace(page, cardField, native, (name) => page.screenshot({ path: testInfo.outputPath(`2-ficha-${name}.png`), animations: 'disabled' }))
+    await cardField.blur()
+    await page.keyboard.press('Escape')
+    await expect(cardField).toBeHidden()
+
     // The project's name on its page, as wide as the window, breaks the same way (at widths where its
     // longest phrase fits on a line: narrower, that phrase breaks too, so as not to run out).
     await page.goto(`/w/${workspaceId}/p/${project.id}`)
@@ -125,62 +195,19 @@ test('Japanese titles break between their phrases in every browser', async ({ pa
       for (const start of await lineStarts(name)) expect(BOUNDARIES, `${width}px: «${TITLE.slice(start)}»`).toContain(start)
     }
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.screenshot({ path: testInfo.outputPath('2-proyecto.png'), animations: 'disabled' })
+    await page.screenshot({ path: testInfo.outputPath('3-proyecto.png'), animations: 'disabled' })
 
-    // A page's title, which is edited in place: drawn broken between phrases until it is edited.
+    // A page's title, edited in place too; typed into, it is drawn again with what was typed once left.
     await page.goto(`/w/${workspaceId}/d/${doc.id}`)
     const field = page.getByRole('textbox', { name: 'ページのタイトル' })
     await expect(field).toHaveValue(TITLE)
-    const cell = field.locator('xpath=..')
-    const drawn = page.locator('.orq-phrases[aria-hidden="true"]', { hasText: TITLE })
-    if (native) await expect(drawn).toHaveCount(0)
-    else {
-      await expect(drawn.locator('wbr')).toHaveCount(PHRASES.length - 1)
-      const starts = await lineStarts(drawn)
-      for (const start of starts) expect(BOUNDARIES).toContain(start)
-      await expect(field).toHaveCSS('opacity', '0')
-      // The field, unseen, takes all the place of the title drawn over it.
-      const [fieldBox, cellBox] = [await field.boundingBox(), await cell.boundingBox()]
-      expect(fieldBox!.height).toBeCloseTo(cellBox!.height, 0)
-      await page.screenshot({ path: testInfo.outputPath('3-pagina.png'), animations: 'disabled' })
-
-      // Clicked on its last line, it is the field that is edited, from the character clicked, and
-      // the title stays where it was.
-      const last = starts.at(-1)!
-      const point = await drawn.evaluate((root, at) => {
-        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
-        let offset = 0
-        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-          const length = node.textContent?.length ?? 0
-          if (at < offset + length) {
-            const range = document.createRange()
-            range.setStart(node, at - offset)
-            range.setEnd(node, at - offset + 1)
-            const rect = range.getBoundingClientRect()
-            return { x: rect.left + rect.width / 4, y: rect.top + rect.height / 2 }
-          }
-          offset += length
-        }
-        throw new Error('no such character')
-      }, last)
-      await page.mouse.click(point.x, point.y)
-      await expect(field).toBeFocused()
-      expect(await field.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd])).toEqual([last, last])
-      await expect(drawn).toBeHidden()
-      await expect(field).toHaveCSS('opacity', '1')
-      expect((await cell.boundingBox())!.height).toBeCloseTo(cellBox!.height, 0)
-      await page.screenshot({ path: testInfo.outputPath('4-pagina-editando.png'), animations: 'disabled' })
-    }
-    if (native) {
-      await page.screenshot({ path: testInfo.outputPath('3-pagina.png'), animations: 'disabled' })
-      await field.click()
-      await expect(field).toBeFocused()
-    }
+    await checkEditedInPlace(page, field, native, (name) => page.screenshot({ path: testInfo.outputPath(`4-pagina-${name}.png`), animations: 'disabled' }))
+    await field.focus()
     await field.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(el.value.length, el.value.length))
     await page.keyboard.type('！')
     await expect(field).toHaveValue(`${TITLE}！`)
     await page.keyboard.press('Tab')
-    if (!native) await expect(page.locator('.orq-phrases[aria-hidden="true"]', { hasText: `${TITLE}！` })).toBeVisible()
+    if (!native) await expect(field.locator('xpath=../div[@aria-hidden="true"]')).toHaveText(`${TITLE}！`)
   } finally {
     // The other tests share this copy and expect it in Spanish.
     await page.request.patch('/api/account', { data: { locale: 'es' } })
