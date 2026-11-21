@@ -39,7 +39,7 @@ export const projectColor = z.union([
     .string()
     .trim()
     .toLowerCase()
-    .regex(CUSTOM_COLOR, 'A colour is one of the palette or #rrggbb')
+    .regex(CUSTOM_COLOR, 'A color is one of the palette or #rrggbb')
     .transform((value) => value as CustomColor),
 ])
 const index = z.number().int().min(0).max(100_000)
