@@ -91,17 +91,22 @@ export const test = base.extend<{ consoleErrors: string[] }>({
 export { expect }
 
 /**
- * Follows the page's requests to the API, so that a test can wait until none is in flight before
- * it reloads or leaves the page: WebKit reports a request cut short that way as an error («… due
- * to access control checks»), which fails the test. Live updates can start one at any moment, so
- * what is on screen does not tell.
+ * Follows the page's requests to the API, so that a test can reload the page once none is in
+ * flight: WebKit reports a request cut short by a reload as an error («… due to access control
+ * checks»), which fails the test. Live updates can start one at any moment, so what is on screen
+ * does not tell.
  */
 export function apiRequests(page: Page) {
-  const pending = new Set<Request>()
+  /** Each request in flight, with the number of documents the page had loaded when it started. */
+  const pending = new Map<Request, number>()
+  let documents = 0
   let lastSeen = Date.now()
+  page.on('framenavigated', (frame) => {
+    if (frame === page.mainFrame()) documents++
+  })
   page.on('request', (request) => {
     if (!new URL(request.url()).pathname.startsWith('/api/')) return
-    pending.add(request)
+    pending.set(request, documents)
     lastSeen = Date.now()
   })
   const done = (request: Request) => {
@@ -109,13 +114,29 @@ export function apiRequests(page: Page) {
   }
   page.on('requestfinished', done)
   page.on('requestfailed', done)
+  /**
+   * Waits until none of them is in flight, and none has started or ended for half a second: a
+   * change announced live is refetched a moment later (GATHER_MS in lib/live-refresh.ts), with
+   * nothing in flight meanwhile.
+   */
+  const settled = () =>
+    expect
+      .poll(() => (pending.size === 0 && Date.now() - lastSeen >= 500 ? 'settled' : [...pending.keys()].map((request) => `${request.method()} ${request.url()}`).join(', ') || 'just finished'), {
+        message: 'requests to the API in flight or still starting',
+      })
+      .toBe('settled')
   return {
+    settled,
     /**
-     * Waits until none of them is in flight, and none has started or ended for half a second: a
-     * change announced live is refetched a moment later (GATHER_MS in lib/live-refresh.ts), with
-     * nothing in flight meanwhile.
+     * Reloads the page once its requests have settled. One the old page starts in the meantime is
+     * cut short and then forgotten: Chromium never reports it as ended.
      */
-    settled: () => expect.poll(() => pending.size === 0 && Date.now() - lastSeen >= 500, { message: 'requests to the API in flight or still starting' }).toBe(true),
+    reload: async () => {
+      await settled()
+      const before = documents
+      await page.reload()
+      for (const [request, loaded] of pending) if (loaded <= before) pending.delete(request)
+    },
   }
 }
 

@@ -56,8 +56,7 @@ test('a project takes a colour of its own, kept on reload, in both themes, and c
   await expect.poll(() => tone(glyph)).toBe('#8b4513')
   // Reloaded once the new board has loaded, not in the middle (see apiRequests).
   await expect(page.getByRole('region', { name: 'Columna Por hacer' })).toBeVisible()
-  await api.settled()
-  await page.reload()
+  await api.reload()
   await expect.poll(() => tone(glyph)).toBe('#8b4513')
 
   // The dark theme draws it lighter, both when it follows the system and when it is chosen.
@@ -97,7 +96,6 @@ test('a project takes a colour of its own, kept on reload, in both themes, and c
   await expect(dialog.getByRole('radio', { name: 'Color personalizado' })).toHaveAttribute('aria-checked', 'false')
   await dialog.getByRole('button', { name: 'Guardar' }).click()
   await expect(glyph).toHaveClass(/\bc-jade\b/)
-  await api.settled()
-  await page.reload()
+  await api.reload()
   await expect(glyph).toHaveClass(/\bc-jade\b/)
 })
