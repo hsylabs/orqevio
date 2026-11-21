@@ -85,7 +85,16 @@ export function Comments({ card }: { card: CardDetailDTO }) {
   return (
     <div className="flex flex-col gap-4">
       <Composer card={card} onSent={() => setRemoved(null)} />
-      {removed && <Removed trashId={removed} card={card} onDone={() => (setRemoved(null), setFocusList(true))} />}
+      {removed && (
+        <Removed
+          trashId={removed}
+          card={card}
+          onDone={(back) => {
+            setRemoved(null)
+            if (back) setFocusList(true)
+          }}
+        />
+      )}
       {shown.length > 0 ? (
         <ol ref={list} tabIndex={-1} className="flex flex-col gap-4 outline-none" aria-label={t('sheet.comments.list')}>
           {shown.map((comment) => (
@@ -108,7 +117,7 @@ export function Comments({ card }: { card: CardDetailDTO }) {
 }
 
 /** Where a deleted comment was told of, with a way to bring it back. */
-function Removed({ trashId, card, onDone }: { trashId: string; card: CardDetailDTO; onDone: () => void }) {
+function Removed({ trashId, card, onDone }: { trashId: string; card: CardDetailDTO; onDone: (back: boolean) => void }) {
   const { t } = useTranslation(['boards', 'trash'])
   const undo = useRef<HTMLButtonElement>(null)
   const said = useId()
@@ -126,10 +135,11 @@ function Removed({ trashId, card, onDone }: { trashId: string; card: CardDetailD
           try {
             await restoreFromTrash(trashId)
             await refresh(card.id, card.boardId)
+            onDone(true)
           } catch (error) {
             toast.error(errorMessage(error))
+            onDone(false)
           }
-          onDone()
         }}
       >
         {t('trash:toast.undo')}

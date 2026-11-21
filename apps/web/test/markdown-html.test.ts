@@ -21,6 +21,15 @@ describe('a comment shown as HTML', () => {
     expect(markdownToHtml('```"><b>\nx\n```')).not.toContain('<b>')
   })
 
+  it('leaves what people wrote as it is, also when it talks of HTML', () => {
+    const markdown = 'Escribe `<a href="">` y class="language-xyz abc" o href="" tal cual\n\n```html\n<code class="language-js x">\n```'
+    const html = markdownToHtml(markdown)
+    expect(html).toContain('&lt;a href=""&gt;')
+    expect(html).toContain('class="language-xyz abc" o href="" tal cual')
+    expect(html).toContain('&lt;code class="language-js x"&gt;')
+    expect(html).toContain('<code class="language-html">')
+  })
+
   it('shows raw HTML as text', () => {
     const html = markdownToHtml('<img src=x onerror=alert(1)>\n\nY <b onclick="x()">esto</b>')
     expect(html).not.toMatch(/<img|<b /)
@@ -29,7 +38,7 @@ describe('a comment shown as HTML', () => {
 
   it('shows task boxes that cannot be ticked, and leaves no empty paragraph at the end', () => {
     const html = markdownToHtml('- [ ] llamar\n- [x] hecho')
-    expect(html.match(/<input type="checkbox" disabled/g)).toHaveLength(2)
+    expect(html.match(/<input type="checkbox"[^>]*disabled/g)).toHaveLength(2)
     expect(html).not.toMatch(/<p><\/p>$/)
   })
 
