@@ -25,6 +25,13 @@ export function Sheet({ open, onOpenChange, title, children, width = 'max-w-[640
             if (e.currentTarget instanceof HTMLElement) e.currentTarget.focus()
           }}
           onCloseAutoFocus={returnFocus}
+          // A notice's action (undo what was just deleted in it) leaves the sheet open.
+          onPointerDownOutside={(e) => {
+            if (e.target instanceof Element && e.target.closest('[data-sonner-toaster]')) e.preventDefault()
+          }}
+          onFocusOutside={(e) => {
+            if (e.target instanceof Element && e.target.closest('[data-sonner-toaster]')) e.preventDefault()
+          }}
         >
           <D.Title className="sr-only">{title}</D.Title>
           <D.Description className="sr-only">{t('dialog.details')}</D.Description>
