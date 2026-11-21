@@ -67,6 +67,9 @@ test('the agents activity comes 10 at a time on a phone, the earlier ones on req
   const activity = page.getByRole('region', { name: 'Actividad de los agentes' })
   await expect(activity.getByRole('listitem')).toHaveCount(10)
   await expect(activity.getByRole('listitem').first()).toContainText('Copiada 12')
+  // A page that opens this narrow shows the MCP tools folded from the start.
+  await expect(page.getByText(/^Ver las \d+ herramientas$/)).toBeVisible()
+  await expect(page.getByText('list_projects')).toBeHidden()
   await activity.getByRole('button', { name: 'Ver actividad anterior' }).click()
   await expect(activity.getByRole('listitem')).toHaveCount(12)
   await expect(activity.getByRole('listitem').last()).toContainText('Copiada 1»')
@@ -109,7 +112,8 @@ test('the MCP tools end at the height of the activity side by side, and wait fol
   await expect(tools).toHaveCount(0)
   await expect(activity).toContainText('Cuando un agente trabaje en este espacio')
   // The side panel opened on the wide page stays open over this one: close it, as on a phone.
-  if (await page.getByRole('navigation', { name: 'Navegación principal' }).isVisible()) await page.keyboard.press('Escape')
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('button', { name: 'Alternar barra lateral' })).toHaveAttribute('aria-expanded', 'false')
   const show = page.getByText(/^Ver las \d+ herramientas$/)
   await expect(show).toBeVisible()
   await expect(page.getByText('list_projects')).toBeHidden()
