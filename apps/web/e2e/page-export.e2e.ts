@@ -99,6 +99,26 @@ test('a page downloads as Markdown, alone or in a ZIP with its files and subpage
   expect(await address('el inventario')).toBe(` (${new URL(`/doc/${list}`, page.url()).href})`)
   // Dark on white, though the screen is dark.
   expect(await printed.evaluate((el) => getComputedStyle(el).color)).toBe('rgb(28, 26, 22)')
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(255, 255, 255)')
+  // A done task keeps its tick on paper, where backgrounds are left out unless the page asks for them.
+  const adjust = await printed.locator('input[type="checkbox"]').first().evaluate((box) => {
+    const style = getComputedStyle(box)
+    return style.getPropertyValue('print-color-adjust') || style.getPropertyValue('-webkit-print-color-adjust')
+  })
+  expect(adjust).toBe('exact')
   await page.screenshot({ path: testInfo.outputPath('2-impresion.png'), fullPage: true })
   if (browserName === 'chromium') await page.pdf({ path: testInfo.outputPath('pagina.pdf') })
+
+  // Done printing, the page is as it was; printing from the browser's own menu (Ctrl+P) prints it the same way.
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
+  await expect(page.locator('.orq-print-root')).toHaveCount(0)
+  await expect(page.locator('html')).not.toHaveClass(/orq-printing/)
+  await expect(page.getByRole('navigation')).toBeHidden()
+  await page.emulateMedia({ media: 'screen', colorScheme: 'light' })
+  await expect(page.getByRole('navigation')).toBeVisible()
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')))
+  await page.emulateMedia({ media: 'print' })
+  await expect(printed.getByRole('heading', { level: 1, name: 'Plan de mudanza' })).toBeVisible()
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
+  await expect(page.locator('.orq-print-root')).toHaveCount(0)
 })

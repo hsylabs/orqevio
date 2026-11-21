@@ -102,9 +102,11 @@ describe('downloading a page', () => {
     const lost = (await client.upload(`/api/pages/${notes}/attachments`, 'perdido', { name: 'perdido.txt', type: 'text/plain' })).body.id as string
     const [row] = [...h.sql.rows('SELECT storage_key FROM attachments WHERE id = ?', lost)]
     await rm(path.join(h.env.dataDir, 'uploads', String(row![0])))
-    await write(client, notes, `[perdido](/api/attachments/${lost})`)
+    // A link that already has an address of its own stays as it was.
+    const elsewhere = `https://otra.example/api/attachments/${lost.replace(/^.{8}/, '00000000')}`
+    await write(client, notes, `[perdido](/api/attachments/${lost}) [fuera](${elsewhere})`)
     const { text } = await download(client, notes)
-    expect(text).toBe(`[perdido](${ORIGIN}/api/attachments/${lost})`)
+    expect(text).toBe(`[perdido](${ORIGIN}/api/attachments/${lost}) [fuera](${elsewhere})`)
   })
 
   it('is only for people who can read the page: never another workspace, never an agent, and no file from elsewhere', async () => {

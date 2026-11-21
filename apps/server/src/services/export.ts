@@ -176,6 +176,9 @@ const iso = (date: Date | null) => (date ? date.toISOString() : null)
 /** Due dates are calendar days: the day, without the hour they are stored at. */
 const day = (date: Date | null) => (date ? date.toISOString().slice(0, 10) : null)
 
+/** How many files a page's download checks in storage at once. */
+const EXISTS_AT_ONCE = 8
+
 interface FileEntry {
   path: string
   storageKey: string
@@ -325,18 +328,19 @@ export class ExportService {
     const [root] = await db.select().from(pages).where(eq(pages.id, pageId))
     if (!root) throw notFound('Page')
     await this.access.workspace(actor, root.workspaceId)
-    const projectPages = await db.select().from(pages).where(eq(pages.projectId, root.projectId)).orderBy(asc(pages.position), asc(pages.id))
-    const childrenOf = group(projectPages, (page) => page.parentId)
     // The page, and the pages under it when asked: walked without recursion, a tree has no depth limit.
     const included = [root]
     const seen = new Set([root.id])
-    if (options.subpages)
+    if (options.subpages) {
+      const projectPages = await db.select().from(pages).where(eq(pages.projectId, root.projectId)).orderBy(asc(pages.position), asc(pages.id))
+      const childrenOf = group(projectPages, (page) => page.parentId)
       for (let i = 0; i < included.length; i++)
         for (const child of childrenOf(included[i]!.id))
           if (!seen.has(child.id)) {
             seen.add(child.id)
             included.push(child)
           }
+    }
 
     // Its own attachments go next to each page; one it links to from elsewhere in the workspace, next
     // to the first page that does. One whose file is gone from storage stays a link to this copy.
@@ -346,7 +350,12 @@ export class ExportService {
     const nextTo = new Map<string, string>()
     for (const file of fileRows) if (file.pageId && seen.has(file.pageId)) nextTo.set(file.id, file.pageId)
     for (const page of included) for (const id of linkedAttachments(page.content)) if (fileById.has(id) && !nextTo.has(id)) nextTo.set(id, page.id)
-    for (const id of [...nextTo.keys()]) if (!(await this.deps.storage.exists(fileById.get(id)!.storageKey))) nextTo.delete(id)
+    const ids = [...nextTo.keys()]
+    for (let i = 0; i < ids.length; i += EXISTS_AT_ONCE) {
+      const batch = ids.slice(i, i + EXISTS_AT_ONCE)
+      const there = await Promise.all(batch.map((id) => this.deps.storage.exists(fileById.get(id)!.storageKey)))
+      batch.forEach((id, k) => !there[k] && nextTo.delete(id))
+    }
 
     const namesIn = folderNamers()
     const layout = pageLayout(included, new Set(nextTo.values()), namesIn)

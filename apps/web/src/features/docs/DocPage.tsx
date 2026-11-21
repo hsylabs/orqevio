@@ -94,6 +94,8 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
   const titleFocused = useRef(false)
   /** A title written and not saved yet. */
   const titleDue = useRef<string | null>(null)
+  /** The last title sent to be saved: whether it was. */
+  const titleSaving = useRef<Promise<boolean> | null>(null)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const conflictRef = useRef(false)
   conflictRef.current = conflict !== null
@@ -371,14 +373,21 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
     await save()
   }
 
+  /** Saves the title or the icon; says whether it was saved. */
   function saveMeta(patchBody: { title?: string; icon?: string | null }) {
     if (patchBody.title !== undefined && titleDue.current === patchBody.title) titleDue.current = null
-    return patch<{ version: number }>(`/pages/${page.id}`, patchBody)
-      .then((res) => {
+    const saved = patch<{ version: number }>(`/pages/${page.id}`, patchBody)
+      .then(async (res) => {
         version.current = Math.max(version.current, res.version)
-        return queryClient.invalidateQueries({ queryKey: keys.overview(workspaceId) })
+        await queryClient.invalidateQueries({ queryKey: keys.overview(workspaceId) })
+        return true
       })
-      .catch(lost)
+      .catch((error: unknown) => {
+        lost(error)
+        return false
+      })
+    if (patchBody.title !== undefined) titleSaving.current = saved
+    return saved
   }
 
   const projectPages = overview?.projects.find((p) => p.id === page.projectId)?.pages ?? []
@@ -387,19 +396,31 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
   async function savedNow() {
     if (titleDue.current !== null) {
       clearTimeout(titleTimer.current)
-      await saveMeta({ title: titleDue.current })
+      void saveMeta({ title: titleDue.current })
     }
+    // The title on its way too: the file is named after it.
+    if (titleSaving.current && !(await titleSaving.current)) return false
+    let tried = false
     for (let tries = 0; tries < 200 && (dirty.current || saving.current); tries++) {
-      // Nothing more to do here when what is written can't be saved now (a conflict, the page gone, too long).
-      if (conflictRef.current || goneRef.current || problemRef.current) break
+      // Nothing more to do here when what is written can't be saved now (a conflict, the page gone),
+      // or failed again just now (too long, refused): an older failure is tried once more, as what is written may have changed.
+      if (conflictRef.current || goneRef.current || (tried && problemRef.current)) break
       if (saving.current) await new Promise((resolve) => setTimeout(resolve, 50))
-      else await save()
+      else {
+        tried = true
+        await save()
+      }
     }
     return !dirty.current
   }
 
   /** The page as Markdown, saved first: what is downloaded is what is on screen. With subpages, it asks whether to take them. */
   async function download(subpages?: boolean) {
+    // Gone, there is nothing to download: the banner says why.
+    if (goneRef.current) {
+      toast.error(t('page.gone.unknown'))
+      return
+    }
     if (!(await savedNow())) {
       toast.error(t('page.downloadUnsaved'))
       return
@@ -408,10 +429,14 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
     await downloadPage(page.id, Boolean(subpages))
   }
 
-  /** Prints the page, or saves it as PDF, once its pictures are ready. */
+  /**
+   * Prints the page, or saves it as PDF, once its pictures are ready: at once when they already are
+   * (Safari only prints what follows a click without waiting).
+   */
   async function print() {
     flushSync(() => setPrinting(latest.current))
-    await picturesReady(document.querySelector('.orq-print-root'))
+    const view = document.querySelector('.orq-print-root')
+    if (![...(view?.querySelectorAll('img') ?? [])].every((img) => img.complete)) await picturesReady(view)
     window.print()
   }
   const statusLabel = status === 'idle' ? '' : t(`page.status.${status}`)

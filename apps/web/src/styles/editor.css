@@ -337,7 +337,8 @@
   display: none;
 }
 @media print {
-  @page {
+  /* Margins for this page only: printing anything else is as before. */
+  @page orq-print {
     margin: 16mm 15mm;
   }
   html.orq-printing,
@@ -350,7 +351,12 @@
   }
   html.orq-printing .orq-print-root {
     display: block;
+    page: orq-print;
     color-scheme: light;
+    /* As on screen: printers leave backgrounds out, and a done task's box, a table's header and a
+       block of code are drawn with them. All of them are light. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
     /* The light theme's tones, so a page written in the dark one prints the same. */
     --ink: #1c1a16;
     --ink-2: #57524a;
@@ -386,10 +392,15 @@
     color: inherit;
     text-decoration: underline;
   }
+  /* References to pages and tasks stay on one line on screen; on paper, with their address, they wrap. */
+  .orq-print a {
+    white-space: normal;
+  }
   .orq-print a[data-address]::after {
     content: ' (' attr(data-address) ')';
     font-size: 0.85em;
     color: var(--ink-3);
+    white-space: normal;
     overflow-wrap: anywhere;
   }
   /* Page breaks never cut a table, a block of code, a picture or a quote, nor leave a heading alone. */
@@ -399,11 +410,17 @@
   .orq-print :is(h1, h2, h3, h4, h5, h6) {
     break-after: avoid;
   }
+  /* A picture taller than a page is made to fit one: no break can keep it whole otherwise. */
   .orq-print img {
     max-width: 100%;
+    max-height: 24cm;
     height: auto;
+    object-fit: contain;
   }
-  /* Code is kept whole on paper: long lines wrap instead of running off it. */
+  /* Code is kept whole on paper: long lines wrap instead of running off it, framed even where backgrounds don't print. */
+  .orq-print pre {
+    border: 1px solid var(--line);
+  }
   .orq-print pre,
   .orq-print pre code {
     white-space: pre-wrap;
