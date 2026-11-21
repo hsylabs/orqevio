@@ -337,8 +337,9 @@ export class TrashIndex {
         json_extract(r.data, '$.label_id') AS labelId,
         json_extract(r.data, '$.size') AS size,
         json_extract(r.data, '$.source') AS source,
-        -- Comments have no place of their own: they go in the order they were written.
-        coalesce(json_extract(r.data, '$.position'), CASE WHEN r.table_name = 'card_comments' THEN printf('%015d', json_extract(r.data, '$.created_at')) END) AS position,
+        -- Comments have no place of their own: they go in the order they were written (and, within
+        -- a millisecond, in the order they were kept, which is that of their rows).
+        coalesce(json_extract(r.data, '$.position'), CASE WHEN r.table_name = 'card_comments' THEN printf('%015d%012d', json_extract(r.data, '$.created_at'), r.id) END) AS position,
         r.storage_key AS storageKey
       FROM trash_rows r JOIN trash t ON t.id = r.trash_id
       WHERE t.workspace_id = ${workspaceId}
