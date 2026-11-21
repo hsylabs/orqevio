@@ -75,7 +75,7 @@ test('a page downloads as Markdown, alone or in a ZIP with its files and subpage
   await fromMenu(page, 'Descargar en Markdown')
   const md = await alone
   expect(md.suggestedFilename()).toBe('Inventario.md')
-  expect((await read(md)).toString('utf8')).toBe('Pendiente: las lámparas.\n')
+  expect((await read(md)).toString('utf8')).toBe('Pendiente: las lámparas.')
 
   // Printing (or saving as PDF) gives the page alone, dark on white, each link with its address.
   await page.goto(`/w/${workspaceId}/d/${plan}`)
