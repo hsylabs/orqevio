@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/Button'
 import { Dialog } from '../../components/ui/Dialog'
+import { Phrases } from '../../components/Phrases'
 import { downloadFrom } from '../../lib/download'
 import { markdownToHtml } from './editor/markdown-html'
 
@@ -75,7 +76,7 @@ export function PrintView({ title, icon, markdown }: { title: string; icon: stri
       <article className="orq-print">
         <h1 className="orq-print-title">
           {icon ? `${icon} ` : ''}
-          {title}
+          <Phrases text={title} />
         </h1>
         <div ref={text} className="orq-prose" dangerouslySetInnerHTML={{ __html: html }} />
       </article>

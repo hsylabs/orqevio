@@ -8,6 +8,7 @@ import { ActivityList } from '../../components/ActivityList'
 import { get } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { greeting, longDate, relativeTime } from '../../lib/format'
+import { Phrases, usePhrases } from '../../components/Phrases'
 import { keys, useHome, useTokens } from '../../lib/queries'
 import { localPref, setLocalPref } from '../../lib/theme'
 import { DueChip } from '../boards/CardItem'
@@ -22,6 +23,8 @@ export function HomePage() {
   const vault = useQuery({ queryKey: keys.vault, queryFn: ({ signal }) => get<VaultStateDTO>('/vault', signal) })
   const [dismissed, setDismissed] = useState(() => localPref('onboarding-dismissed', false))
   const firstName = me.user.name.split(/\s+/)[0]
+  const sentence = t('greeting', { greeting: greeting(), name: firstName }).replace(/<\/?name>/g, '')
+  const phrasedGreeting = usePhrases(sentence)
   const base = `/w/${workspaceId}`
 
   const projects = overview?.projects ?? []
@@ -41,7 +44,12 @@ export function HomePage() {
         <div className="mx-auto w-full max-w-[1080px] px-6 py-10 sm:px-10 sm:py-14">
           <p className="animate-rise font-mono text-[11.5px] tracking-[0.14em] text-ink-3 uppercase first-letter:uppercase">{longDate()}</p>
           <h1 className="animate-rise mt-2 font-display text-[40px] leading-[1.05] font-medium tracking-[-0.03em] sm:text-[48px]" style={{ animationDelay: '40ms' }}>
-            <Trans t={t} i18nKey="greeting" values={{ greeting: greeting(), name: firstName }} components={{ name: <span className="italic" /> }} />
+            {Array.isArray(phrasedGreeting) ? (
+              // Broken between its phrases where only BudouX can tell them apart; the name in it isn't slanted there.
+              <Phrases text={sentence} />
+            ) : (
+              <Trans t={t} i18nKey="greeting" values={{ greeting: greeting(), name: firstName }} components={{ name: <span className="italic" /> }} />
+            )}
           </h1>
 
           {showSteps && (

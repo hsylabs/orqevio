@@ -5,10 +5,10 @@ import { Bot, Calendar, FileText, MessageSquare, Paperclip, TextAlignStart } fro
 import { memo, useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { currentLocale } from '../../i18n'
+import { Phrases } from '../../components/Phrases'
 import { cn } from '../../lib/cn'
 import { dueLabel, dueState } from '../../lib/format'
 import { useAgentHighlight } from '../../lib/realtime'
-import { Phrases } from '../../components/Phrases'
 
 export function DueChip({ dueAt, className }: { dueAt: string; className?: string }) {
   // Renders again when the language changes, as the label and date follow it.
@@ -97,8 +97,8 @@ export const CardView = memo(function CardView({ card, labels, overlay, ghost }:
         </div>
       )}
       <p className="text-[13.5px] leading-snug font-[520] text-ink [overflow-wrap:anywhere]">
-            <Phrases text={card.title} />
-          </p>
+        <Phrases text={card.title} />
+      </p>
       {hasMeta ? (
         <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-ink-3">
           {card.dueAt && <DueChip dueAt={card.dueAt} />}
