@@ -67,6 +67,9 @@ test('the agents activity comes 10 at a time on a phone, the earlier ones on req
   const activity = page.getByRole('region', { name: 'Actividad de los agentes' })
   await expect(activity.getByRole('listitem')).toHaveCount(10)
   await expect(activity.getByRole('listitem').first()).toContainText('Copiada 12')
+  // A page that opens this narrow shows the MCP tools folded from the start.
+  await expect(page.getByText(/^Ver las \d+ herramientas$/)).toBeVisible()
+  await expect(page.getByText('list_projects')).toBeHidden()
   await activity.getByRole('button', { name: 'Ver actividad anterior' }).click()
   await expect(activity.getByRole('listitem')).toHaveCount(12)
   await expect(activity.getByRole('listitem').last()).toContainText('Copiada 1»')
@@ -83,24 +86,38 @@ test('the agents activity comes 10 at a time on a phone, the earlier ones on req
 // Side by side, the activity and the MCP tools end at the same height and each scrolls in its own
 // box. Stacked, the page is the only scroll, and the tools wait folded under the activity.
 test('the MCP tools end at the height of the activity side by side, and wait folded on a phone', async ({ page }) => {
-  const workspaceId = await openNewWorkspace(page, 'Herramientas E2E')
+  // The workspace through the API, so the app opens once: nothing of another page is still on its
+  // way when it opens, which WebKit reports as refused.
+  const res = await page.request.post('/api/workspaces', { data: { name: 'Herramientas E2E' } })
+  expect(res.status(), await res.text()).toBe(201)
+  const { id: workspaceId } = (await res.json()) as { id: string }
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto(`/w/${workspaceId}/agents`)
   const activity = page.getByRole('region', { name: 'Actividad de los agentes' })
   const tools = page.getByRole('region', { name: 'Herramientas MCP' })
+  await expect(activity).toContainText('Cuando un agente trabaje en este espacio')
   await expect(tools.getByText('list_projects')).toBeVisible()
-  const box = (region: typeof tools) =>
-    region.evaluate((el) => ({ top: Math.round(el.getBoundingClientRect().top), maxHeight: getComputedStyle(el).maxHeight, scrolls: el.scrollHeight > el.clientHeight }))
-  const [side, other] = [await box(activity), await box(tools)]
-  expect(other.maxHeight).not.toBe('none')
-  expect(other).toEqual({ top: side.top, maxHeight: side.maxHeight, scrolls: true })
+  // Both boxes in the same moment: the accesses listed above them can still arrive and move them.
+  const [side, other] = await activity.evaluate(
+    (one, two) =>
+      [one, two].map((el) => ({ top: Math.round(el.getBoundingClientRect().top), maxHeight: getComputedStyle(el).maxHeight, scrolls: el.scrollHeight > el.clientHeight })),
+    await tools.elementHandle(),
+  )
+  expect(other!.maxHeight).not.toBe('none')
+  expect(other).toEqual({ top: side!.top, maxHeight: side!.maxHeight, scrolls: true })
 
-  // Narrowing the window folds them; on a phone the page opens with the side panel closed.
+  // Narrowing the window folds them, without leaving the page. The same render asks for the
+  // activity 10 at a time: its answer arrives before anything else is done.
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(tools).toHaveCount(0)
-  await page.reload()
+  await expect(activity).toContainText('Cuando un agente trabaje en este espacio')
+  // The side panel opened on the wide page stays open over this one: close it, as on a phone.
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('button', { name: 'Alternar barra lateral' })).toHaveAttribute('aria-expanded', 'false')
+  const show = page.getByText(/^Ver las \d+ herramientas$/)
+  await expect(show).toBeVisible()
   await expect(page.getByText('list_projects')).toBeHidden()
-  await page.getByText(/^Ver las \d+ herramientas$/).click()
+  await show.click()
   await expect(page.getByText('list_projects')).toBeVisible()
   await page.getByText('Ocultar las herramientas').click()
   await expect(page.getByText('list_projects')).toBeHidden()
