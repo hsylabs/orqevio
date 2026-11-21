@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
+import { Phrases } from '../../components/Phrases'
 import { Button } from '../../components/ui/Button'
 import { Dialog } from '../../components/ui/Dialog'
 import { downloadFrom } from '../../lib/download'
@@ -75,7 +76,7 @@ export function PrintView({ title, icon, markdown }: { title: string; icon: stri
       <article className="orq-print">
         <h1 className="orq-print-title">
           {icon ? `${icon} ` : ''}
-          {title}
+          <Phrases text={title} />
         </h1>
         <div ref={text} className="orq-prose" dangerouslySetInnerHTML={{ __html: html }} />
       </article>

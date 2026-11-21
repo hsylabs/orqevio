@@ -8,6 +8,7 @@ import { Dialog } from '../../components/ui/Dialog'
 import { Field } from '../../components/ui/Field'
 import { errorMessage, post } from '../../lib/api'
 import { cn } from '../../lib/cn'
+import { clearPhrases } from '../../lib/phrases'
 import { useBackups, useUpdates } from '../../lib/queries'
 import { BackupPlace } from './BackupsSection'
 import { lockVaultEverywhere } from '../vault/session'
@@ -45,6 +46,7 @@ export function UninstallSection() {
       await post('/account/uninstall', { accessKey, deleteBackups: where ? deleteBackups === true : false })
       lockVaultEverywhere()
       queryClient.clear()
+      clearPhrases()
       navigate('/login', { replace: true })
     } catch (error) {
       toast.error(errorMessage(error))

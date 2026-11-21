@@ -1,6 +1,7 @@
 import { DEFAULT_LOCALE, LOCALES, type Locale, isLocale, matchLocale } from '@orqevio/shared'
 import i18n, { type BackendModule, type FormatFunction, type ResourceKey } from 'i18next'
 import { initReactI18next } from 'react-i18next'
+import { followLanguageForPhrases } from '../lib/phrases'
 import { NAMESPACES, en } from './resources'
 
 /** Every language but English is loaded on demand, as one small chunk per catalog. */
@@ -68,6 +69,7 @@ export async function setupI18n() {
       react: { useSuspense: false },
     })
   numbersAsWritten(i18n)
+  followLanguageForPhrases()
 }
 
 /**

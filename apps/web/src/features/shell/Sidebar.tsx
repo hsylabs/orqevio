@@ -35,6 +35,7 @@ import { Tooltip } from '../../components/ui/Tooltip'
 import { errorMessage, patch, post } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { monogram } from '../../lib/format'
+import { clearPhrases } from '../../lib/phrases'
 import { keys, useUpdates } from '../../lib/queries'
 import { useAgentLive } from '../../lib/realtime'
 import { applyTheme, localPref, setLocalPref } from '../../lib/theme'
@@ -400,6 +401,7 @@ function UserMenu() {
     await post('/auth/logout').catch(() => {})
     lockVaultEverywhere()
     queryClient.clear()
+    clearPhrases()
     navigate('/login', { replace: true })
   }
 

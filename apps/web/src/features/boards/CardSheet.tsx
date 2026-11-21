@@ -6,6 +6,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { ActivityList } from '../../components/ActivityList'
+import { fitTitle, usePhrasedField } from '../../components/Phrases'
 import { Avatar } from '../../components/ui/Avatar'
 import { Button } from '../../components/ui/Button'
 import { useConfirm } from '../../components/ui/confirm'
@@ -38,6 +39,9 @@ onCardEvent((e) => {
   // Back from the trash: deleting it again later, here or elsewhere, counts as usual.
   if (e.action === 'trash.restored') deletingHere.delete(e.cardId)
 })
+
+/** The card title's type: the field and, in Japanese where only BudouX tells phrases apart, the title drawn over it. */
+const TITLE_TYPE = 'font-display text-[26px] leading-[1.18] font-medium tracking-[-0.02em]'
 
 export function CardSheet({ cardId, board, onClose }: { cardId: string | null; board: BoardDTO; onClose: () => void }) {
   const { t } = useTranslation(['boards', 'common'])
@@ -131,6 +135,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
   const sentTitle = useRef<string | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const titleRef = useRef<HTMLTextAreaElement>(null)
+  const phrasedTitle = usePhrasedField(title, TITLE_TYPE)
   const descTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   /** Description typed but not saved yet. */
   const pendingDesc = useRef<string | null>(null)
@@ -148,13 +153,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
   const mounted = useRef(true)
 
   useEffect(() => setTitle(card.title), [card.title])
-  useEffect(() => {
-    const el = titleRef.current
-    if (el) {
-      el.style.height = '0'
-      el.style.height = `${el.scrollHeight}px`
-    }
-  }, [title])
+  useEffect(() => fitTitle(titleRef.current), [title])
 
   const refresh = () =>
     Promise.all([
@@ -405,28 +404,35 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="px-6 pt-6 pb-5 sm:px-8">
-          <textarea
-            ref={titleRef}
-            value={title}
-            rows={1}
-            maxLength={300}
-            aria-label={t('card.title')}
-            onChange={(e) => setTitle(e.target.value.replace(/\n/g, ''))}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                e.currentTarget.blur()
-              }
-            }}
-            onBlur={() => {
-              const next = title.trim()
-              if (next && next !== card.title) {
-                sentTitle.current = next
-                void update({ title: next })
-              } else setTitle(card.title)
-            }}
-            className="block w-full resize-none overflow-hidden bg-transparent font-display text-[26px] leading-[1.18] font-medium tracking-[-0.02em] outline-none"
-          />
+          <div className="grid">
+            <textarea
+              ref={titleRef}
+              value={title}
+              rows={1}
+              maxLength={300}
+              aria-label={t('card.title')}
+              onFocus={phrasedTitle.onFocus}
+              onPointerDown={phrasedTitle.onPointerDown}
+              onClick={phrasedTitle.onClick}
+              onChange={(e) => setTitle(e.target.value.replace(/\n/g, ''))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  e.currentTarget.blur()
+                }
+              }}
+              onBlur={() => {
+                phrasedTitle.onBlur()
+                const next = title.trim()
+                if (next && next !== card.title) {
+                  sentTitle.current = next
+                  void update({ title: next })
+                } else setTitle(card.title)
+              }}
+              className={cn('orq-title block w-full resize-none self-stretch overflow-hidden bg-transparent outline-none [grid-area:1/1]', TITLE_TYPE, phrasedTitle.hidden && 'opacity-0')}
+            />
+            {phrasedTitle.overlay}
+          </div>
           <div className="mt-5 flex flex-col gap-1">
             <Row icon={<Tag />} label={t('sheet.labels')}>
               <LabelPicker

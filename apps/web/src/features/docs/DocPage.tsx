@@ -8,6 +8,7 @@ import { flushSync } from 'react-dom'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link, useBlocker, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
+import { fitTitle, usePhrasedField } from '../../components/Phrases'
 import { Button } from '../../components/ui/Button'
 import { useConfirm } from '../../components/ui/confirm'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from '../../components/ui/Menu'
@@ -30,6 +31,9 @@ import { DownloadDialog, PrintView, downloadPage, picturesReady } from './PageEx
 import { useRestore } from '../trash/restore'
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error'
+
+/** The page title's type: the field and, in Japanese where only BudouX tells phrases apart, the title drawn over it. */
+const TITLE_TYPE = 'font-display text-[40px] leading-[1.1] font-medium tracking-[-0.025em] sm:text-[44px]'
 
 /**
  * Why the editor is not saving what was written. Only a network failure (or a server that does
@@ -80,6 +84,7 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
   const [gone, setGone] = useState<Gone | null>(null)
   const [moveOpen, setMoveOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const phrasedTitle = usePhrasedField(title, TITLE_TYPE)
   const [downloadAsk, setDownloadAsk] = useState(false)
   /** The Markdown being printed, while it is. */
   const [printing, setPrinting] = useState<string | null>(null)
@@ -109,13 +114,7 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
   const mentions = useRef(extractReferences(page.content).cards.sort().join(','))
 
   // Autosize the title.
-  useEffect(() => {
-    const el = titleRef.current
-    if (el) {
-      el.style.height = '0'
-      el.style.height = `${el.scrollHeight}px`
-    }
-  }, [title])
+  useEffect(() => fitTitle(titleRef.current), [title])
 
   useEffect(() => {
     if ((location.state as { focusTitle?: boolean } | null)?.focusTitle) titleRef.current?.focus()
@@ -516,35 +515,46 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
                 void saveMeta({ icon: next })
               }}
             />
-            <textarea
-              ref={titleRef}
-              value={title}
-              rows={1}
-              maxLength={200}
-              placeholder={t('untitled', { ns: 'common' })}
-              aria-label={t('page.titleLabel')}
-              onFocus={() => (titleFocused.current = true)}
-              onBlur={() => (titleFocused.current = false)}
-              onChange={(e) => {
-                const next = e.target.value.replace(/\n/g, '')
-                setTitle(next)
-                clearTimeout(titleTimer.current)
-                titleDue.current = next.trim()
-                titleTimer.current = setTimeout(() => void saveMeta({ title: next.trim() }), 500)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || (e.key === 'ArrowDown' && e.currentTarget.selectionStart === title.length)) {
-                  e.preventDefault()
-                  const editor = editorRef.current
-                  if (editor) {
-                    // Synchronous focus so fast typing continues in the body, not the title.
-                    editor.view.focus()
-                    editor.commands.setTextSelection(1)
+            <div className="mt-2 grid">
+              <textarea
+                ref={titleRef}
+                value={title}
+                rows={1}
+                maxLength={200}
+                placeholder={t('untitled', { ns: 'common' })}
+                aria-label={t('page.titleLabel')}
+                onFocus={() => {
+                  titleFocused.current = true
+                  phrasedTitle.onFocus()
+                }}
+                onBlur={() => {
+                  titleFocused.current = false
+                  phrasedTitle.onBlur()
+                }}
+                onPointerDown={phrasedTitle.onPointerDown}
+                onClick={phrasedTitle.onClick}
+                onChange={(e) => {
+                  const next = e.target.value.replace(/\n/g, '')
+                  setTitle(next)
+                  clearTimeout(titleTimer.current)
+                  titleDue.current = next.trim()
+                  titleTimer.current = setTimeout(() => void saveMeta({ title: next.trim() }), 500)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || (e.key === 'ArrowDown' && e.currentTarget.selectionStart === title.length)) {
+                    e.preventDefault()
+                    const editor = editorRef.current
+                    if (editor) {
+                      // Synchronous focus so fast typing continues in the body, not the title.
+                      editor.view.focus()
+                      editor.commands.setTextSelection(1)
+                    }
                   }
-                }
-              }}
-              className="mt-2 block w-full resize-none overflow-hidden bg-transparent font-display text-[40px] leading-[1.1] font-medium tracking-[-0.025em] outline-none placeholder:text-ink-3 sm:text-[44px]"
-            />
+                }}
+                className={cn('orq-title block w-full resize-none self-stretch overflow-hidden bg-transparent outline-none placeholder:text-ink-3 [grid-area:1/1]', TITLE_TYPE, phrasedTitle.hidden && 'opacity-0')}
+              />
+              {phrasedTitle.overlay}
+            </div>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[12.5px] text-ink-3">

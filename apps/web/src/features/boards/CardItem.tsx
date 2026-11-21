@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { Bot, Calendar, FileText, MessageSquare, Paperclip, TextAlignStart } from 'lucide-react'
 import { memo, useId } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Phrases } from '../../components/Phrases'
 import { currentLocale } from '../../i18n'
 import { cn } from '../../lib/cn'
 import { dueLabel, dueState } from '../../lib/format'
@@ -95,7 +96,9 @@ export const CardView = memo(function CardView({ card, labels, overlay, ghost }:
           )}
         </div>
       )}
-      <p className="text-[13.5px] leading-snug font-[520] text-ink [overflow-wrap:anywhere]">{card.title}</p>
+      <p className="text-[13.5px] leading-snug font-[520] text-ink [overflow-wrap:anywhere]">
+        <Phrases text={card.title} />
+      </p>
       {hasMeta ? (
         <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-ink-3">
           {card.dueAt && <DueChip dueAt={card.dueAt} />}
