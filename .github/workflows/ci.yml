@@ -11,6 +11,11 @@ name: CI
 # Elsewhere the heavy jobs are skipped, which costs nothing and counts as passed for a
 # required check. Each runs as its own job, without a matrix, so that a skipped one still
 # reports under its own name.
+#
+# The end-to-end jobs run inside Playwright's own image, which already has its browsers and
+# the system packages they need: installing those from Ubuntu's package mirror once took more
+# than the job's time. The image goes with @playwright/test's version, as the browsers in it
+# are the ones that version drives; apps/web/test/ci-playwright.test.ts checks that they match.
 on:
   push:
     branches: [main, develop]
@@ -47,11 +52,14 @@ jobs:
     name: End-to-end tests
     if: github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      # The runner's own user, who owns the checkout; Chromium needs the host's shared memory.
+      options: --user 1001 --ipc=host
     timeout-minutes: 20
     env:
       APP_URL: http://localhost:3000
-      # A fresh SQLite copy in a temporary folder; the setup test claims it with this code.
-      DATA_DIR: ${{ github.workspace }}/.e2e-data
+      # The setup test claims a fresh copy with this code.
       SETUP_CODE: e2e-setup-code-1234
     steps:
       - uses: actions/checkout@v7
@@ -60,13 +68,16 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      # Without the packages' own build steps: better-sqlite3 brings its binary built for
+      # each platform, but its fallback build would still look for a compiler, which the
+      # image has none of; the binaries of esbuild and workerd come as packages too.
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm build
-      - name: Install Chromium for Playwright
-        run: pnpm --filter @orqevio/web exec playwright install --with-deps chromium
+      # A fresh SQLite copy in a folder of the checkout. Inside the container the checkout is
+      # at $GITHUB_WORKSPACE; `github.workspace` would name the runner's own path to it.
       - name: Start the production server
         run: |
-          nohup pnpm start > "$RUNNER_TEMP/server.log" 2>&1 &
+          DATA_DIR="$GITHUB_WORKSPACE/.e2e-data" nohup pnpm start > "$RUNNER_TEMP/server.log" 2>&1 &
           for _ in $(seq 1 60); do
             if curl -fsS http://localhost:3000/healthz > /dev/null; then
               echo "Server is ready"
@@ -96,12 +107,13 @@ jobs:
     name: End-to-end tests (firefox)
     if: github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    # Installing a browser's system packages takes a minute, but up to 12 when the package
-    # mirror is slow: the suite still gets its ten minutes after that.
-    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      # The runner's own user, who owns the checkout.
+      options: --user 1001
+    timeout-minutes: 20
     env:
       APP_URL: http://localhost:3000
-      DATA_DIR: ${{ github.workspace }}/.e2e-data
       SETUP_CODE: e2e-setup-code-1234
       E2E_BROWSER: firefox
     steps:
@@ -111,14 +123,16 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      # Without the packages' own build steps: better-sqlite3 brings its binary built for
+      # each platform, but its fallback build would still look for a compiler, which the
+      # image has none of; the binaries of esbuild and workerd come as packages too.
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm build
-      - name: Install firefox for Playwright
-        timeout-minutes: 15
-        run: pnpm --filter @orqevio/web exec playwright install --with-deps firefox
+      # A fresh SQLite copy in a folder of the checkout. Inside the container the checkout is
+      # at $GITHUB_WORKSPACE; `github.workspace` would name the runner's own path to it.
       - name: Start the production server
         run: |
-          nohup pnpm start > "$RUNNER_TEMP/server.log" 2>&1 &
+          DATA_DIR="$GITHUB_WORKSPACE/.e2e-data" nohup pnpm start > "$RUNNER_TEMP/server.log" 2>&1 &
           for _ in $(seq 1 60); do
             if curl -fsS http://localhost:3000/healthz > /dev/null; then
               echo "Server is ready"
@@ -146,10 +160,13 @@ jobs:
     name: End-to-end tests (webkit)
     if: github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      # The runner's own user, who owns the checkout.
+      options: --user 1001
+    timeout-minutes: 20
     env:
       APP_URL: http://localhost:3000
-      DATA_DIR: ${{ github.workspace }}/.e2e-data
       SETUP_CODE: e2e-setup-code-1234
       E2E_BROWSER: webkit
     steps:
@@ -159,14 +176,16 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      # Without the packages' own build steps: better-sqlite3 brings its binary built for
+      # each platform, but its fallback build would still look for a compiler, which the
+      # image has none of; the binaries of esbuild and workerd come as packages too.
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm build
-      - name: Install webkit for Playwright
-        timeout-minutes: 15
-        run: pnpm --filter @orqevio/web exec playwright install --with-deps webkit
+      # A fresh SQLite copy in a folder of the checkout. Inside the container the checkout is
+      # at $GITHUB_WORKSPACE; `github.workspace` would name the runner's own path to it.
       - name: Start the production server
         run: |
-          nohup pnpm start > "$RUNNER_TEMP/server.log" 2>&1 &
+          DATA_DIR="$GITHUB_WORKSPACE/.e2e-data" nohup pnpm start > "$RUNNER_TEMP/server.log" 2>&1 &
           for _ in $(seq 1 60); do
             if curl -fsS http://localhost:3000/healthz > /dev/null; then
               echo "Server is ready"
@@ -194,6 +213,10 @@ jobs:
     name: End-to-end tests (Cloudflare package)
     if: github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      # The runner's own user, who owns the checkout; Chromium needs the host's shared memory.
+      options: --user 1001 --ipc=host
     timeout-minutes: 20
     env:
       # The same suite against what `npx create-orqevio` deploys: the packaged
@@ -209,7 +232,10 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      # Without the packages' own build steps: better-sqlite3 brings its binary built for
+      # each platform, but its fallback build would still look for a compiler, which the
+      # image has none of; the binaries of esbuild and workerd come as packages too.
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm build:cloudflare
       - name: Generate the configuration of a copy and check its deploy bundle
         run: |
@@ -223,8 +249,6 @@ jobs:
           cd "$RUNNER_TEMP/template"
           npm install --no-audit --no-fund "$RUNNER_TEMP"/packs/orqevio-*.tgz "$RUNNER_TEMP"/packs/create-orqevio-*.tgz
           npm run deploy -- --dry-run
-      - name: Install Chromium for Playwright
-        run: pnpm --filter @orqevio/web exec playwright install --with-deps chromium
       - name: Start the copy locally
         run: |
           nohup pnpm --filter create-orqevio exec wrangler dev --config "$RUNNER_TEMP/wrangler.json" --local --port 8787 --ip 127.0.0.1 --var "SETUP_CODE:$SETUP_CODE" > "$RUNNER_TEMP/worker.log" 2>&1 &
@@ -289,6 +313,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # This job builds and runs Docker images, so it runs on the runner itself, not in
+      # Playwright's image: Chromium and its system packages are installed here.
       - name: Install Chromium for Playwright
         run: pnpm --filter @orqevio/web exec playwright install --with-deps chromium
       - name: Run the end-to-end tests against the image
