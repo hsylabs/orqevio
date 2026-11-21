@@ -319,7 +319,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # This job builds and runs Docker images, so it runs on the runner itself, not in
       # Playwright's image: Chromium and its system packages are installed here, from the
-      # package mirror. A minute is usual; a slow mirror fails the step rather than the job.
+      # package mirror. A minute is usual; a slow mirror fails here in 10 minutes instead of
+      # using up the job's time.
       - name: Install Chromium for Playwright
         timeout-minutes: 10
         run: pnpm --filter @orqevio/web exec playwright install --with-deps chromium

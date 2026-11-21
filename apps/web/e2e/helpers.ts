@@ -115,7 +115,7 @@ export function apiRequests(page: Page) {
      * change announced live is refetched a moment later (GATHER_MS in lib/live-refresh.ts), with
      * nothing in flight meanwhile.
      */
-    settled: () => expect.poll(() => pending.size === 0 && Date.now() - lastSeen >= 500, { message: 'requests to the API still in flight' }).toBe(true),
+    settled: () => expect.poll(() => pending.size === 0 && Date.now() - lastSeen >= 500, { message: 'requests to the API in flight or still starting' }).toBe(true),
   }
 }
 
