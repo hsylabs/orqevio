@@ -54,7 +54,7 @@ test('Japanese titles break between their phrases in every browser', async ({ pa
   const workspaceId = await openNewWorkspace(page, '日本語 E2E')
   await page.request.patch('/api/account', { data: { locale: 'ja' } })
   try {
-    const project = (await (await page.request.post(`/api/workspaces/${workspaceId}/projects`, { data: { name: '引っ越しの準備と手続きをまとめたプロジェクト' } })).json()) as { id: string }
+    const project = (await (await page.request.post(`/api/workspaces/${workspaceId}/projects`, { data: { name: TITLE } })).json()) as { id: string }
     const board = (await (await page.request.post(`/api/projects/${project.id}/boards`, { data: { name: 'タスク' } })).json()) as { id: string }
     const columns = ((await (await page.request.get(`/api/boards/${board.id}`)).json()) as { columns: Array<{ id: string }> }).columns
     for (const title of [TITLE, DATED, LONG]) await page.request.post(`/api/columns/${columns[0]!.id}/cards`, { data: { title } })
@@ -72,51 +72,110 @@ test('Japanese titles break between their phrases in every browser', async ({ pa
 
     // At every width, each line starts where a phrase does; where only BudouX tells them apart, the
     // browser alone breaks inside a word at one of them at least (or this proves nothing).
+    const card = title.locator('xpath=ancestor::p[1]')
+    const widths = Array.from({ length: 14 }, (_, i) => 260 - i * 10)
     let plainMisses = 0
-    for (const width of [390, 360, 330, 300]) {
-      await page.setViewportSize({ width, height: 844 })
+    for (const width of widths) {
+      await card.evaluate((p, w) => (p.style.width = `${w}px`), width)
       const starts = await lineStarts(title)
       expect(starts.length, `${width}px`).toBeGreaterThan(0)
       for (const start of starts) expect(BOUNDARIES, `${width}px: a line starts at «${TITLE.slice(start)}»`).toContain(start)
       if (!native) plainMisses += (await plainStarts(page, title)).filter((start) => !BOUNDARIES.includes(start)).length
     }
     if (!native) expect(plainMisses).toBeGreaterThan(0)
+    await card.evaluate((p) => p.style.removeProperty('width'))
 
-    // A year stays whole; a word too long for its line still breaks, and nothing runs out of its card.
+    // A year stays whole at every width: BudouX's places to break inside it are taken away.
     const dated = page.locator('.orq-phrases', { hasText: DATED })
     const year = DATED.indexOf('2026')
-    for (const start of await lineStarts(dated)) expect(start <= year || start >= year + 4, `«${DATED.slice(start)}»`).toBe(true)
-    for (const text of [TITLE, DATED, LONG]) {
-      const card = page.locator('.orq-phrases', { hasText: text }).locator('xpath=ancestor::p[1]')
-      expect(await card.evaluate((p) => p.scrollWidth <= p.clientWidth), text).toBe(true)
+    if (!native) {
+      const breaks = await dated.evaluate((el) => {
+        const at: number[] = []
+        let offset = 0
+        for (const node of el.childNodes) {
+          if (node.nodeName === 'WBR') at.push(offset)
+          else offset += node.textContent?.length ?? 0
+        }
+        return at
+      })
+      expect(breaks.length).toBeGreaterThan(0)
+      for (const at of breaks) expect(at <= year || at >= year + 4, `a place to break at «${DATED.slice(at)}»`).toBe(true)
     }
-    await page.setViewportSize({ width: 390, height: 844 })
+    const datedCard = dated.locator('xpath=ancestor::p[1]')
+    for (const width of widths) {
+      await datedCard.evaluate((p, w) => (p.style.width = `${w}px`), width)
+      for (const start of await lineStarts(dated)) expect(start <= year || start >= year + 4, `${width}px: «${DATED.slice(start)}»`).toBe(true)
+    }
+    await datedCard.evaluate((p) => p.style.removeProperty('width'))
+    // A word too long for its line still breaks, and nothing runs out of its card.
+    for (const text of [TITLE, DATED, LONG]) {
+      const p = page.locator('.orq-phrases', { hasText: text }).locator('xpath=ancestor::p[1]')
+      expect(await p.evaluate((el) => el.scrollWidth <= el.clientWidth), text).toBe(true)
+    }
     await page.screenshot({ path: testInfo.outputPath('1-tablero.png'), animations: 'disabled' })
 
-    // The project's name on its page breaks the same way.
+    // The project's name on its page, as wide as the window, breaks the same way (at widths where its
+    // longest phrase fits on a line: narrower, that phrase breaks too, so as not to run out).
     await page.goto(`/w/${workspaceId}/p/${project.id}`)
     const name = page.getByRole('heading', { level: 1 }).locator('.orq-phrases')
-    await expect(name).toBeVisible()
-    if (!native) await expect(name.locator('wbr')).not.toHaveCount(0)
+    await expect(name).toHaveText(TITLE)
+    if (!native) await expect(name.locator('wbr')).toHaveCount(PHRASES.length - 1)
+    for (const width of [720, 640, 560, 480, 420, 390]) {
+      await page.setViewportSize({ width, height: 844 })
+      for (const start of await lineStarts(name)) expect(BOUNDARIES, `${width}px: «${TITLE.slice(start)}»`).toContain(start)
+    }
+    await page.setViewportSize({ width: 390, height: 844 })
     await page.screenshot({ path: testInfo.outputPath('2-proyecto.png'), animations: 'disabled' })
 
     // A page's title, which is edited in place: drawn broken between phrases until it is edited.
     await page.goto(`/w/${workspaceId}/d/${doc.id}`)
     const field = page.getByRole('textbox', { name: 'ページのタイトル' })
     await expect(field).toHaveValue(TITLE)
+    const cell = field.locator('xpath=..')
     const drawn = page.locator('.orq-phrases[aria-hidden="true"]', { hasText: TITLE })
     if (native) await expect(drawn).toHaveCount(0)
     else {
       await expect(drawn.locator('wbr')).toHaveCount(PHRASES.length - 1)
-      for (const start of await lineStarts(drawn)) expect(BOUNDARIES).toContain(start)
+      const starts = await lineStarts(drawn)
+      for (const start of starts) expect(BOUNDARIES).toContain(start)
       await expect(field).toHaveCSS('opacity', '0')
+      // The field, unseen, takes all the place of the title drawn over it.
+      const [fieldBox, cellBox] = [await field.boundingBox(), await cell.boundingBox()]
+      expect(fieldBox!.height).toBeCloseTo(cellBox!.height, 0)
+      await page.screenshot({ path: testInfo.outputPath('3-pagina.png'), animations: 'disabled' })
+
+      // Clicked on its last line, it is the field that is edited, from the character clicked, and
+      // the title stays where it was.
+      const last = starts.at(-1)!
+      const point = await drawn.evaluate((root, at) => {
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+        let offset = 0
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          const length = node.textContent?.length ?? 0
+          if (at < offset + length) {
+            const range = document.createRange()
+            range.setStart(node, at - offset)
+            range.setEnd(node, at - offset + 1)
+            const rect = range.getBoundingClientRect()
+            return { x: rect.left + rect.width / 4, y: rect.top + rect.height / 2 }
+          }
+          offset += length
+        }
+        throw new Error('no such character')
+      }, last)
+      await page.mouse.click(point.x, point.y)
+      await expect(field).toBeFocused()
+      expect(await field.evaluate((el: HTMLTextAreaElement) => [el.selectionStart, el.selectionEnd])).toEqual([last, last])
+      await expect(drawn).toBeHidden()
+      await expect(field).toHaveCSS('opacity', '1')
+      expect((await cell.boundingBox())!.height).toBeCloseTo(cellBox!.height, 0)
+      await page.screenshot({ path: testInfo.outputPath('4-pagina-editando.png'), animations: 'disabled' })
     }
-    await page.screenshot({ path: testInfo.outputPath('3-pagina.png'), animations: 'disabled' })
-    // Clicked, it is the field itself that is edited.
-    await field.click()
-    await expect(field).toBeFocused()
-    await expect(drawn).toHaveCount(0)
-    await expect(field).toHaveCSS('opacity', '1')
+    if (native) {
+      await page.screenshot({ path: testInfo.outputPath('3-pagina.png'), animations: 'disabled' })
+      await field.click()
+      await expect(field).toBeFocused()
+    }
     await field.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(el.value.length, el.value.length))
     await page.keyboard.type('！')
     await expect(field).toHaveValue(`${TITLE}！`)

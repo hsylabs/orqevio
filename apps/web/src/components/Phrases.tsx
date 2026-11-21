@@ -1,4 +1,4 @@
-import { Children, Fragment, type ReactNode, useEffect, useState, useSyncExternalStore } from 'react'
+import { Fragment, type MouseEvent, type PointerEvent, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n from 'i18next'
 import { cn } from '../lib/cn'
@@ -11,6 +11,7 @@ import { cn } from '../lib/cn'
  * browser can't tell phrases apart.
  */
 const native = typeof CSS !== 'undefined' && CSS.supports('word-break', 'auto-phrase')
+/** Hiragana, katakana and the common kanji. */
 const JAPANESE = /[぀-ヿ㐀-䶿一-鿿]/
 
 type Parse = (text: string) => string[]
@@ -46,7 +47,7 @@ const subscribe = (done: () => void) => {
 const SPACED = /[\p{L}\p{N}]/u
 const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー]/u
 const spaced = (char: string | undefined) => char !== undefined && SPACED.test(char) && !CJK.test(char)
-/** What can't start a character of its own: marks, variation selectors, joiners, keycaps, skin tones. */
+/** What can't start a character of its own: marks, the zero-width joiner, variation selectors, keycaps, skin tones. */
 const ATTACHED = /^[\p{M}‍︎️⃣\u{1f3fb}-\u{1f3ff}]/u
 const graphemes = typeof Intl !== 'undefined' && 'Segmenter' in Intl ? new Intl.Segmenter('ja', { granularity: 'grapheme' }) : null
 
@@ -84,9 +85,10 @@ function phrasesOf(text: string, parse: Parse) {
 /**
  * How a title shows here: `native` when the browser breaks it between phrases itself, its phrases
  * when BudouX has found them, and null when it is not Japanese, or BudouX isn't there yet (it breaks
- * as the browser breaks it until then).
+ * as the browser breaks it until then). With `cache: false` its phrases are not kept once shown
+ * (a title from the vault, which must not outlive it).
  */
-export function usePhrases(text: string): 'native' | string[] | null {
+export function usePhrases(text: string, { cache = true }: { cache?: boolean } = {}): 'native' | string[] | null {
   // Shown again in another language, it is read again.
   useTranslation()
   const japanese = i18n.resolvedLanguage === 'ja' && JAPANESE.test(text)
@@ -96,7 +98,8 @@ export function usePhrases(text: string): 'native' | string[] | null {
   }, [japanese])
   if (!japanese) return null
   if (native) return 'native'
-  return ready && parse ? phrasesOf(text, parse) : null
+  if (!ready || !parse) return null
+  return cache ? phrasesOf(text, parse) : splitPhrases(text, parse)
 }
 
 const withBreaks = (phrases: string[]) =>
@@ -109,34 +112,84 @@ const withBreaks = (phrases: string[]) =>
   ))
 
 /** A title that breaks between its phrases when it is Japanese; any other text as it is. */
-export function Phrases({ text }: { text: string }) {
-  const phrases = usePhrases(text)
+export function Phrases({ text, cache }: { text: string; cache?: boolean }) {
+  const phrases = usePhrases(text, { cache })
   if (phrases === null) return text
   return <span className="orq-phrases">{phrases === 'native' ? text : withBreaks(phrases)}</span>
 }
 
-/** Phrases for a text that comes as children (a part of a translated sentence). */
-export function PhrasesOf({ children }: { children?: ReactNode }) {
-  return <Phrases text={Children.toArray(children).join('')} />
+/** The place in `root`'s text nearest to a point on screen, counted in characters. */
+function offsetAt(root: HTMLElement, x: number, y: number) {
+  let best = { offset: 0, distance: Infinity }
+  let offset = 0
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  const range = document.createRange()
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const length = node.textContent?.length ?? 0
+    for (let i = 0; i < length; i++) {
+      range.setStart(node, i)
+      range.setEnd(node, i + 1)
+      const rect = range.getBoundingClientRect()
+      if (rect.width === 0 && rect.height === 0) continue
+      const dx = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0
+      const dy = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0
+      // On the line first, then along it.
+      const distance = dy * 10_000 + dx
+      if (distance < best.distance) best = { offset: offset + i + (x > rect.left + rect.width / 2 ? 1 : 0), distance }
+    }
+    offset += length
+  }
+  return best.offset
+}
+
+/**
+ * Sizes a title's textarea to its text. It is a floor (`min-height`), not a height, so the textarea
+ * still fills its grid cell when the title drawn over it (`usePhrasedField`) takes more lines.
+ */
+export function fitTitle(el: HTMLTextAreaElement | null) {
+  if (!el) return
+  el.style.minHeight = '0'
+  el.style.height = '0'
+  const needed = el.scrollHeight
+  el.style.height = ''
+  el.style.minHeight = `${needed}px`
 }
 
 /**
  * An editable title (a textarea) that, while it isn't being edited, shows broken between phrases
  * where only BudouX can tell them apart: the textarea stays in its place, unseen, so it is still
  * what is clicked, focused and read; the title drawn over it is for the eyes only. Both go in the
- * same grid cell, `[grid-area:1/1]`, with the same typography (`className`).
+ * same grid cell, `[grid-area:1/1]`, with the same typography (`className`); the textarea fills the
+ * cell (see `fitTitle`), so a click anywhere on the drawn title lands in it, at the character clicked.
+ * While it is edited, the drawn title stays, unseen, as it was when editing began: the title keeps
+ * its place on screen, and nothing is split while typing.
  */
 export function usePhrasedField(text: string, className: string) {
-  const phrases = usePhrases(text)
-  const [editing, setEditing] = useState(false)
-  const shown = Array.isArray(phrases) && !editing
+  /** The title as it was when editing began, while it is edited. */
+  const [editing, setEditing] = useState<string | null>(null)
+  const phrases = usePhrases(editing ?? text)
+  const drawn = useRef<HTMLDivElement>(null)
+  /** Where the drawn title was clicked, for the caret to go there. */
+  const clicked = useRef<number | null>(null)
+  const phrased = Array.isArray(phrases)
+  const shown = phrased && editing === null
   return {
     /** Whether the textarea is hidden under the title drawn over it. */
     hidden: shown,
-    onFocus: () => setEditing(true),
-    onBlur: () => setEditing(false),
-    overlay: shown ? (
-      <div aria-hidden="true" className={cn('pointer-events-none orq-phrases [grid-area:1/1]', className)}>
+    onFocus: () => setEditing(text),
+    onBlur: () => setEditing(null),
+    onPointerDown: (e: PointerEvent<HTMLTextAreaElement>) => {
+      clicked.current = shown && drawn.current ? offsetAt(drawn.current, e.clientX, e.clientY) : null
+    },
+    onClick: (e: MouseEvent<HTMLTextAreaElement>) => {
+      const el = e.currentTarget
+      const at = clicked.current
+      clicked.current = null
+      // Not when the click chose some text.
+      if (at !== null && el.selectionStart === el.selectionEnd) el.setSelectionRange(at, at)
+    },
+    overlay: phrased ? (
+      <div ref={drawn} aria-hidden="true" className={cn('pointer-events-none orq-phrases whitespace-pre-wrap [grid-area:1/1]', className, editing !== null && 'invisible')}>
         {withBreaks(phrases)}
       </div>
     ) : null,
