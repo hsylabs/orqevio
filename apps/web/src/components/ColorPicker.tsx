@@ -55,7 +55,7 @@ function CustomSwatch({ value, onChange }: { value: ProjectColor; onChange: (col
   const start = isPaletteColor(value) ? PALETTE_LIGHT[value] : value
 
   return (
-    <span className="group relative grid size-7">
+    <span className="group/swatch relative grid size-7">
       <button
         type="button"
         role="radio"
@@ -69,9 +69,9 @@ function CustomSwatch({ value, onChange }: { value: ProjectColor; onChange: (col
         }}
         className={cn(
           look?.className,
-          'grid size-7 place-items-center rounded-full transition-transform duration-150 group-hover:scale-110',
+          'grid size-7 place-items-center rounded-full transition-transform duration-150 group-hover/swatch:scale-110',
           // Focus on the picker, which can't be seen, shows on the swatch.
-          'group-has-[input:focus-visible]:outline-2 group-has-[input:focus-visible]:outline-offset-2 group-has-[input:focus-visible]:outline-accent',
+          'group-has-[input:focus-visible]/swatch:outline-2 group-has-[input:focus-visible]/swatch:outline-offset-2 group-has-[input:focus-visible]/swatch:outline-accent',
           chosen && 'ring-2 ring-[var(--c)] ring-offset-2 ring-offset-sheet',
         )}
         style={chosen ? { ...look?.style, background: 'var(--c)' } : { background: RAINBOW }}
