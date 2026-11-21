@@ -34,6 +34,9 @@
   },
   "tools": {
     "title": "MCP-Tools",
+    "show_one": "{{count}} Tool anzeigen",
+    "show_other": "Alle {{count}} Tools anzeigen",
+    "hide": "Tools ausblenden",
     "footnote": "Jeder Agent sieht nur die Tools, die seine Berechtigungen zulassen.",
     "scopes": {
       "read": "Lesen",

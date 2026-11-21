@@ -34,6 +34,9 @@
   },
   "tools": {
     "title": "MCP tools",
+    "show_one": "Show {{count}} tool",
+    "show_other": "Show all {{count}} tools",
+    "hide": "Hide tools",
     "footnote": "Each agent only sees the tools its permissions allow.",
     "scopes": {
       "read": "Read",

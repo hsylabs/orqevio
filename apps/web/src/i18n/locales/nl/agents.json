@@ -34,6 +34,9 @@
   },
   "tools": {
     "title": "MCP-tools",
+    "show_one": "{{count}} tool tonen",
+    "show_other": "Alle {{count}} tools tonen",
+    "hide": "Tools verbergen",
     "footnote": "Elke agent ziet alleen de tools die zijn rechten toestaan.",
     "scopes": {
       "read": "Lezen",
