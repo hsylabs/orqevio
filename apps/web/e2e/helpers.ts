@@ -98,15 +98,24 @@ export { expect }
  */
 export function apiRequests(page: Page) {
   const pending = new Set<Request>()
+  let lastSeen = Date.now()
   page.on('request', (request) => {
-    if (new URL(request.url()).pathname.startsWith('/api/')) pending.add(request)
+    if (!new URL(request.url()).pathname.startsWith('/api/')) return
+    pending.add(request)
+    lastSeen = Date.now()
   })
-  const done = (request: Request) => pending.delete(request)
+  const done = (request: Request) => {
+    if (pending.delete(request)) lastSeen = Date.now()
+  }
   page.on('requestfinished', done)
   page.on('requestfailed', done)
   return {
-    /** Waits until none of them is in flight. */
-    settled: () => expect.poll(() => pending.size, { message: 'requests to the API still in flight' }).toBe(0),
+    /**
+     * Waits until none of them is in flight, and none has started or ended for half a second: a
+     * change announced live is refetched a moment later (GATHER_MS in lib/live-refresh.ts), with
+     * nothing in flight meanwhile.
+     */
+    settled: () => expect.poll(() => pending.size === 0 && Date.now() - lastSeen >= 500, { message: 'requests to the API still in flight' }).toBe(true),
   }
 }
 

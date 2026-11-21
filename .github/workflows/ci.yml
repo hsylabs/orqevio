@@ -69,8 +69,9 @@ jobs:
           node-version: 22
           cache: pnpm
       # Without the packages' own build steps: better-sqlite3 brings its binary built for
-      # each platform, but its fallback build would still look for a compiler, which the
-      # image has none of; the binaries of esbuild and workerd come as packages too.
+      # each platform, but pnpm would still run its node-gyp build, which needs make even when
+      # it builds nothing, and the image has no make; esbuild and workerd find their binaries
+      # in packages of their own.
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm build
       # A fresh SQLite copy in a folder of the checkout. Inside the container the checkout is
@@ -124,8 +125,9 @@ jobs:
           node-version: 22
           cache: pnpm
       # Without the packages' own build steps: better-sqlite3 brings its binary built for
-      # each platform, but its fallback build would still look for a compiler, which the
-      # image has none of; the binaries of esbuild and workerd come as packages too.
+      # each platform, but pnpm would still run its node-gyp build, which needs make even when
+      # it builds nothing, and the image has no make; esbuild and workerd find their binaries
+      # in packages of their own.
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm build
       # A fresh SQLite copy in a folder of the checkout. Inside the container the checkout is
@@ -177,8 +179,9 @@ jobs:
           node-version: 22
           cache: pnpm
       # Without the packages' own build steps: better-sqlite3 brings its binary built for
-      # each platform, but its fallback build would still look for a compiler, which the
-      # image has none of; the binaries of esbuild and workerd come as packages too.
+      # each platform, but pnpm would still run its node-gyp build, which needs make even when
+      # it builds nothing, and the image has no make; esbuild and workerd find their binaries
+      # in packages of their own.
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm build
       # A fresh SQLite copy in a folder of the checkout. Inside the container the checkout is
@@ -233,8 +236,9 @@ jobs:
           node-version: 22
           cache: pnpm
       # Without the packages' own build steps: better-sqlite3 brings its binary built for
-      # each platform, but its fallback build would still look for a compiler, which the
-      # image has none of; the binaries of esbuild and workerd come as packages too.
+      # each platform, but pnpm would still run its node-gyp build, which needs make even when
+      # it builds nothing, and the image has no make; esbuild and workerd find their binaries
+      # in packages of their own.
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm build:cloudflare
       - name: Generate the configuration of a copy and check its deploy bundle
@@ -314,8 +318,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # This job builds and runs Docker images, so it runs on the runner itself, not in
-      # Playwright's image: Chromium and its system packages are installed here.
+      # Playwright's image: Chromium and its system packages are installed here, from the
+      # package mirror. A minute is usual; a slow mirror fails the step rather than the job.
       - name: Install Chromium for Playwright
+        timeout-minutes: 10
         run: pnpm --filter @orqevio/web exec playwright install --with-deps chromium
       - name: Run the end-to-end tests against the image
         run: pnpm test:e2e

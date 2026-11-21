@@ -9,9 +9,11 @@ const { devDependencies } = JSON.parse(readFileSync(new URL('../package.json', i
 // the image too.
 describe("CI's end-to-end jobs", () => {
   it('run in the Playwright image of the version the tests use', () => {
-    const images = [...workflow.matchAll(/mcr\.microsoft\.com\/playwright:v([^\s-]+)-/g)].map((match) => match[1])
-    expect(images.length).toBeGreaterThan(0)
-    expect(devDependencies['@playwright/test']).toMatch(/^\d+\.\d+\.\d+$/)
-    for (const version of images) expect(version, 'the image in ci.yml and @playwright/test in apps/web/package.json').toBe(devDependencies['@playwright/test'])
+    const version = devDependencies['@playwright/test']
+    expect(version, 'an exact version, as the image has one').toMatch(/^\d+\.\d+\.\d+$/)
+    // Every tag the image is named with, written in any way: each must be that version (and its Ubuntu, if named).
+    const tags = [...workflow.matchAll(/mcr\.microsoft\.com\/playwright:([^\s"'@]+)/g)].map((match) => match[1])
+    expect(tags.length).toBeGreaterThan(0)
+    for (const tag of tags) expect(tag, 'the image in ci.yml and @playwright/test in apps/web/package.json').toMatch(new RegExp(`^v${version.replaceAll('.', '\\.')}(-[a-z]+)?$`))
   })
 })
