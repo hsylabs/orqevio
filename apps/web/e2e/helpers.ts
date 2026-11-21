@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { type APIRequestContext, type Page, test as base, expect } from '@playwright/test'
+import { type APIRequestContext, type Page, type Request, test as base, expect } from '@playwright/test'
 
 /**
  * A new tab's first navigation, the one that moves it from about:blank to another process,
@@ -89,6 +89,26 @@ export const test = base.extend<{ consoleErrors: string[] }>({
   ],
 })
 export { expect }
+
+/**
+ * Follows the page's requests to the API, so that a test can wait until none is in flight before
+ * it reloads or leaves the page: WebKit reports a request cut short that way as an error («… due
+ * to access control checks»), which fails the test. Live updates can start one at any moment, so
+ * what is on screen does not tell.
+ */
+export function apiRequests(page: Page) {
+  const pending = new Set<Request>()
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname.startsWith('/api/')) pending.add(request)
+  })
+  const done = (request: Request) => pending.delete(request)
+  page.on('requestfinished', done)
+  page.on('requestfailed', done)
+  return {
+    /** Waits until none of them is in flight. */
+    settled: () => expect.poll(() => pending.size, { message: 'requests to the API still in flight' }).toBe(0),
+  }
+}
 
 /**
  * For contexts a test opens itself, which do not take the configuration's options: the
