@@ -151,7 +151,7 @@
       "delete": "Delete",
       "deleted": "Comment moved to the trash",
       "edited": "(edited)",
-      "actions": "Actions for {{name}}'s comment",
+      "actions": "Actions for {{name}}’s comment",
       "older": "Show earlier comments",
       "tooLong_one": "{{count}} character over the limit of {{max}}.",
       "tooLong_other": "{{count}} characters over the limit of {{max}}."

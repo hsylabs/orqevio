@@ -18,13 +18,21 @@ import { markdownToHtml } from '../docs/editor/markdown-html'
 import { useWorkspace } from '../shell/workspace'
 
 /**
- * Text written and not sent yet, by card (a new comment) and by comment (one being edited). It
- * outlives the sheet: closing the card, or following a link in it, loses none of it.
+ * Text written and not sent yet, by person and card (a new comment) or comment (one being edited,
+ * with the version it was edited from). It outlives the sheet: closing the card, or following a
+ * link in it, loses none of it; another account signing in on this tab never sees it.
  */
-const drafts = new Map<string, string>()
-const newDraft = (cardId: string) => `new:${cardId}`
-const editDraft = (commentId: string) => `edit:${commentId}`
-const keep = (key: string, text: string) => (text.trim() ? drafts.set(key, text) : drafts.delete(key))
+const drafts = new Map<string, { text: string; base?: string }>()
+const newDraft = (userId: string, cardId: string) => `${userId}:new:${cardId}`
+const editDraft = (userId: string, commentId: string) => `${userId}:edit:${commentId}`
+const keep = (key: string, text: string, base?: string) => (text.trim() ? drafts.set(key, { text, base }) : drafts.delete(key))
+/** An edit still to finish, if the comment is still as it was when it began and its author's to change. */
+function pendingEdit(key: string, comment: CommentDTO) {
+  const draft = drafts.get(key)
+  if (draft && draft.base === comment.updatedAt && comment.canEdit) return draft.text
+  drafts.delete(key)
+  return undefined
+}
 
 /** The card's comments, its count and its board's, as they are now. */
 const refresh = (cardId: string, boardId: string) =>
@@ -55,15 +63,29 @@ export function Comments({ card }: { card: CardDetailDTO }) {
   const list = useRef<HTMLOListElement>(null)
   // The last one deleted here, to bring it back without leaving the sheet (the notices are out of reach of the keyboard).
   const [removed, setRemoved] = useState<string | null>(null)
+  // Back from the trash, the focus goes to the list once it shows again.
+  const [focusList, setFocusList] = useState(false)
   const shown = useMemo(() => {
     const seen = new Set<string>()
     return (comments.data?.pages.flatMap((page) => page.comments) ?? []).filter((c) => !seen.has(c.id) && Boolean(seen.add(c.id)))
   }, [comments.data])
+  useEffect(() => {
+    if (!focusList || !list.current) return
+    list.current.focus()
+    setFocusList(false)
+  }, [focusList, shown])
+
+  // During a refetch (a comment arrived), the earlier page waits for it and is then asked for again.
+  async function older() {
+    const pages = comments.data?.pages.length ?? 0
+    const result = await comments.fetchNextPage({ cancelRefetch: false })
+    if ((result.data?.pages.length ?? 0) <= pages && result.hasNextPage) await comments.fetchNextPage({ cancelRefetch: false })
+  }
 
   return (
     <div className="flex flex-col gap-4">
       <Composer card={card} onSent={() => setRemoved(null)} />
-      {removed && <Removed trashId={removed} card={card} onDone={() => (setRemoved(null), list.current?.focus())} />}
+      {removed && <Removed trashId={removed} card={card} onDone={() => (setRemoved(null), setFocusList(true))} />}
       {shown.length > 0 ? (
         <ol ref={list} tabIndex={-1} className="flex flex-col gap-4 outline-none" aria-label={t('sheet.comments.list')}>
           {shown.map((comment) => (
@@ -77,8 +99,7 @@ export function Comments({ card }: { card: CardDetailDTO }) {
       )}
       {comments.isFetchNextPageError && <p className="text-[13px] text-danger">{errorMessage(comments.error)}</p>}
       {comments.hasNextPage && (
-        // While the list is being fetched again (a comment arrived), it waits instead of cancelling that.
-        <Button size="sm" variant="ghost" className="self-start" loading={comments.isFetchingNextPage} onClick={() => void comments.fetchNextPage({ cancelRefetch: false })}>
+        <Button size="sm" variant="ghost" className="self-start" loading={comments.isFetchingNextPage} onClick={() => void older()}>
           {t('sheet.comments.older')}
         </Button>
       )}
@@ -90,13 +111,16 @@ export function Comments({ card }: { card: CardDetailDTO }) {
 function Removed({ trashId, card, onDone }: { trashId: string; card: CardDetailDTO; onDone: () => void }) {
   const { t } = useTranslation(['boards', 'trash'])
   const undo = useRef<HTMLButtonElement>(null)
+  const said = useId()
   useEffect(() => undo.current?.focus(), [trashId])
   return (
     <p role="status" className="flex items-center gap-3 rounded-[10px] bg-sunken px-3 py-2 text-[13px] text-ink-2">
-      {t('sheet.comments.deleted')}
+      <span id={said}>{t('sheet.comments.deleted')}</span>
       <button
         ref={undo}
         type="button"
+        // Said with it when it takes the focus: the message above it may not be read when it appears.
+        aria-describedby={said}
         className="ml-auto rounded-[8px] bg-ink px-2.5 py-1 text-[12px] font-medium text-sheet"
         onClick={async () => {
           try {
@@ -116,9 +140,9 @@ function Removed({ trashId, card, onDone }: { trashId: string; card: CardDetailD
 
 function Composer({ card, onSent }: { card: CardDetailDTO; onSent: () => void }) {
   const { t } = useTranslation('boards')
-  const { workspaceId } = useWorkspace()
-  const draftKey = newDraft(card.id)
-  const [text, setText] = useState(() => drafts.get(draftKey) ?? '')
+  const { workspaceId, me } = useWorkspace()
+  const draftKey = newDraft(me.user.id, card.id)
+  const [text, setText] = useState(() => drafts.get(draftKey)?.text ?? '')
   const [sending, setSending] = useState(false)
   const editor = useRef<TiptapEditor | null>(null)
   const hint = useId()
@@ -140,8 +164,10 @@ function Composer({ card, onSent }: { card: CardDetailDTO; onSent: () => void })
       await refresh(card.id, card.boardId)
     } catch (error) {
       toast.error(errorMessage(error))
-    } finally {
+      // Back in the box, as it was, to try again.
       editor.current?.setEditable(true)
+      editor.current?.commands.focus()
+    } finally {
       setSending(false)
     }
   }
@@ -149,7 +175,7 @@ function Composer({ card, onSent }: { card: CardDetailDTO; onSent: () => void })
   return (
     <div onKeyDownCapture={sendOn(() => void send())}>
       <Editor
-        content={drafts.get(draftKey) ?? ''}
+        content={drafts.get(draftKey)?.text ?? ''}
         workspaceId={workspaceId}
         compact
         upload={{ type: 'card', id: card.id }}
@@ -213,8 +239,12 @@ function Body({ markdown }: { markdown: string }) {
 
 const CommentItem = memo(function CommentItem({ comment, cardId, boardId, onRemoved }: { comment: CommentDTO; cardId: string; boardId: string; onRemoved: (trashId: string) => void }) {
   const { t } = useTranslation(['boards', 'activity'])
-  // Still being edited when the card was closed: it opens as it was left.
-  const [editing, setEditing] = useState(() => drafts.has(editDraft(comment.id)))
+  const { me } = useWorkspace()
+  const draftKey = editDraft(me.user.id, comment.id)
+  // Still being edited when the card was closed, and the comment unchanged since: it opens as it was left.
+  const [editing, setEditing] = useState(() => pendingEdit(draftKey, comment) !== undefined)
+  // Begun now from its menu: the box takes the focus (one left from before doesn't, as the sheet opens).
+  const [begun, setBegun] = useState(false)
   const actions = useRef<HTMLButtonElement>(null)
   const returnFocus = useRef(false)
   const agent = comment.author.kind === 'agent'
@@ -228,6 +258,7 @@ const CommentItem = memo(function CommentItem({ comment, cardId, boardId, onRemo
 
   const stopEditing = () => {
     returnFocus.current = true
+    setBegun(false)
     setEditing(false)
   }
 
@@ -271,7 +302,13 @@ const CommentItem = memo(function CommentItem({ comment, cardId, boardId, onRemo
               </MenuTrigger>
               <MenuContent>
                 {comment.canEdit && (
-                  <MenuItem icon={<Pencil />} onSelect={() => setEditing(true)}>
+                  <MenuItem
+                    icon={<Pencil />}
+                    onSelect={() => {
+                      setBegun(true)
+                      setEditing(true)
+                    }}
+                  >
                     {t('sheet.comments.edit')}
                   </MenuItem>
                 )}
@@ -284,17 +321,19 @@ const CommentItem = memo(function CommentItem({ comment, cardId, boardId, onRemo
             </MenuRoot>
           )}
         </div>
-        {editing ? <EditComment comment={comment} cardId={cardId} boardId={boardId} onDone={stopEditing} /> : <Body markdown={comment.body} />}
+        {editing ? <EditComment comment={comment} draftKey={draftKey} focus={begun} cardId={cardId} boardId={boardId} onDone={stopEditing} /> : <Body markdown={comment.body} />}
       </div>
     </li>
   )
 })
 
-function EditComment({ comment, cardId, boardId, onDone }: { comment: CommentDTO; cardId: string; boardId: string; onDone: () => void }) {
+function EditComment({ comment, draftKey, focus, cardId, boardId, onDone }: { comment: CommentDTO; draftKey: string; focus: boolean; cardId: string; boardId: string; onDone: () => void }) {
   const { t } = useTranslation('boards')
   const { workspaceId } = useWorkspace()
-  const draftKey = editDraft(comment.id)
-  const [text, setText] = useState(() => drafts.get(draftKey) ?? comment.body)
+  const [initial] = useState(() => pendingEdit(draftKey, comment) ?? comment.body)
+  // The version the edit began from: changed since, the edit left on closing the card is dropped.
+  const [base] = useState(comment.updatedAt)
+  const [text, setText] = useState(initial)
   const [saving, setSaving] = useState(false)
   const editor = useRef<TiptapEditor | null>(null)
   const { empty, tooLong, over } = measure(text)
@@ -311,6 +350,7 @@ function EditComment({ comment, cardId, boardId, onDone }: { comment: CommentDTO
     } catch (error) {
       toast.error(errorMessage(error))
       editor.current?.setEditable(true)
+      editor.current?.commands.focus()
     } finally {
       setSaving(false)
     }
@@ -319,17 +359,17 @@ function EditComment({ comment, cardId, boardId, onDone }: { comment: CommentDTO
   return (
     <div className="mt-1" onKeyDownCapture={sendOn(() => void save())}>
       <Editor
-        content={drafts.get(draftKey) ?? comment.body}
+        content={initial}
         workspaceId={workspaceId}
         compact
-        autofocus
+        autofocus={focus}
         upload={{ type: 'card', id: cardId }}
         onUploaded={() => void refresh(cardId, boardId)}
         onReady={(instance) => (editor.current = instance)}
         ariaLabel={t('sheet.comments.editLabel')}
         onChange={(markdown) => {
           setText(markdown)
-          keep(draftKey, markdown)
+          keep(draftKey, markdown, base)
         }}
         className="orq-comment-input rounded-[10px] border border-line bg-surface px-3 py-2 focus-within:border-ink-4"
       />

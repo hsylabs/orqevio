@@ -11,7 +11,14 @@ describe('a comment shown as HTML', () => {
     expect(html).toContain('href="mailto:a@b.test"')
     expect(html).toContain('href="/card/x"')
     expect(html).not.toMatch(/javascript:|data:text/)
-    expect(html.match(/href=""/g)).toHaveLength(3)
+    // The others are no links: no address, nothing to follow or to tab to.
+    expect(html).not.toContain('href=""')
+    expect(html.match(/<a rel="[^"]*">/g)).toHaveLength(3)
+  })
+
+  it("keeps only a code block's language as its class", () => {
+    expect(markdownToHtml('```js fixed inset-0 z-50\nx\n```')).toContain('<code class="language-js">')
+    expect(markdownToHtml('```"><b>\nx\n```')).not.toContain('<b>')
   })
 
   it('shows raw HTML as text', () => {

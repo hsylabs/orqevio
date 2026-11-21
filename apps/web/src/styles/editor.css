@@ -17,7 +17,6 @@
 /* A comment shown hugs its text; the box to write one starts at three lines. */
 .orq-prose--note {
   min-height: 0;
-  padding-bottom: 0;
 }
 .orq-comment-input .orq-prose--compact {
   min-height: calc(3 * 1.62em);
