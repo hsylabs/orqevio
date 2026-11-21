@@ -60,7 +60,7 @@
   },
   "backups": {
     "title": "Backups",
-    "description": "Every day this copy backs itself up: everything as it is, the encrypted vault, the trash, the history and the attachments included. They are kept apart from its data.",
+    "description": "Every day this copy backs itself up: everything as it is, the encrypted vault, the trash, the history and the attachments included. The backups are kept apart from its data.",
     "whereFolder": "They’re in the server’s folder <code>{{name}}</code>. To keep them on another disk or volume, set BACKUP_DIR.",
     "whereBucket": "They’re in the R2 bucket <code>{{name}}</code> of your Cloudflare account, apart from the attachments.",
     "off": "This copy makes no backups (BACKUPS=off).",
