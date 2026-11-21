@@ -56,7 +56,9 @@
     "cobalt": "Cobalto",
     "iris": "Iris",
     "rose": "Rosa",
-    "slate": "Pizarra"
+    "slate": "Pizarra",
+    "custom": "Color personalizado",
+    "customValue": "Color personalizado ({{value}})"
   },
   "untitled": "Sin título",
   "quoted": "«{{text}}»"

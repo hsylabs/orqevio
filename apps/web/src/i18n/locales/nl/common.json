@@ -56,7 +56,9 @@
     "cobalt": "Kobalt",
     "iris": "Iris",
     "rose": "Roze",
-    "slate": "Leisteen"
+    "slate": "Leisteen",
+    "custom": "Eigen kleur",
+    "customValue": "Eigen kleur ({{value}})"
   },
   "untitled": "Naamloos",
   "quoted": "‘{{text}}’"

@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next'
 import { NavLink, useLocation, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { LogoMark } from '../../components/Logo'
+import { ProjectGlyph } from '../../components/ProjectGlyph'
 import { Avatar } from '../../components/ui/Avatar'
 import { Kbd } from '../../components/ui/Kbd'
 import { MenuContent, MenuItem, MenuLabel, MenuRadioGroup, MenuRadioItem, MenuRoot, MenuSeparator, MenuTrigger } from '../../components/ui/Menu'
@@ -235,7 +236,7 @@ function ProjectItem({ project }: { project: ProjectTreeDTO }) {
           <ChevronRight className={cn('size-[13px] transition-transform duration-200', open && 'rotate-90')} />
         </button>
         <NavLink to={`${base}/p/${project.id}`} className="flex min-w-0 flex-1 items-center gap-2 py-1 text-[13.5px]">
-          <span className={cn('glyph size-[18px] text-[10.5px]', `c-${project.color}`)}>{monogram(project.name)}</span>
+          <ProjectGlyph color={project.color} className="size-[18px] text-[10.5px]">{monogram(project.name)}</ProjectGlyph>
           <span className={cn('truncate', active ? 'font-medium text-ink' : 'text-ink-2 group-hover:text-ink')}>{project.name}</span>
         </NavLink>
         <MenuRoot>

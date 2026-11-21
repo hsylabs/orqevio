@@ -1,4 +1,4 @@
-import type { HomeDTO, OverviewDTO, PaletteColor, WorkspaceDTO } from '@orqevio/shared'
+import type { HomeDTO, OverviewDTO, ProjectColor, WorkspaceDTO } from '@orqevio/shared'
 import { projectCreateInput, projectUpdateInput, workspaceInput } from '@orqevio/shared'
 import { and, asc, count, desc, eq, isNotNull, isNull, lte, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
@@ -25,7 +25,7 @@ export const toProjectDTO = (p: typeof projects.$inferSelect) => ({
   id: p.id,
   workspaceId: p.workspaceId,
   name: p.name,
-  color: p.color as PaletteColor,
+  color: p.color as ProjectColor,
   description: p.description,
   position: p.position,
   createdAt: p.createdAt.toISOString(),

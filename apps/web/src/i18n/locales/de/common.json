@@ -56,7 +56,9 @@
     "cobalt": "Kobalt",
     "iris": "Iris",
     "rose": "Pink",
-    "slate": "Schiefer"
+    "slate": "Schiefer",
+    "custom": "Eigene Farbe",
+    "customValue": "Eigene Farbe ({{value}})"
   },
   "untitled": "Unbenannt",
   "quoted": "„{{text}}“"

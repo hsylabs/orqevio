@@ -206,7 +206,10 @@ export function createMcpServer(services: Services, actor: AgentActor) {
         inputSchema: {
           name: z.string().min(1).max(80),
           description: z.string().max(500).optional(),
-          color: z.enum(PALETTE).optional(),
+          color: z
+            .union([z.enum(PALETTE), z.string().regex(/^#[0-9a-fA-F]{6}$/)])
+            .optional()
+            .describe(`One of ${PALETTE.join(', ')}, or a colour of its own as #rrggbb (to keep a colour from another tool). Cobalt if left out.`),
         },
         annotations: WRITE,
       },

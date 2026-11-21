@@ -1,5 +1,5 @@
 import type { Locale } from './locales'
-import type { PaletteColor } from './colors'
+import type { PaletteColor, ProjectColor } from './colors'
 import type { KdfParams } from './schemas'
 import type { Scope } from './scopes'
 
@@ -153,7 +153,7 @@ export interface ProjectDTO {
   id: string
   workspaceId: string
   name: string
-  color: PaletteColor
+  color: ProjectColor
   description: string | null
   position: string
   createdAt: string
@@ -267,7 +267,7 @@ export interface BoardDTO {
   projectId: string
   workspaceId: string
   name: string
-  project: { id: string; name: string; color: PaletteColor }
+  project: { id: string; name: string; color: ProjectColor }
   columns: BoardColumnDTO[]
   cards: CardSummaryDTO[]
   labels: LabelDTO[]
@@ -360,7 +360,7 @@ export interface PageDTO {
   createdAt: string
   updatedAt: string
   updatedBy: ActorRef | null
-  project: { id: string; name: string; color: PaletteColor }
+  project: { id: string; name: string; color: ProjectColor }
   breadcrumbs: Array<{ id: string; title: string; icon: string | null }>
   children: PageNodeDTO[]
   cards: LinkedCardDTO[]

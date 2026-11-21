@@ -1,4 +1,4 @@
-import type { BoardRefDTO, PaletteColor, ProjectDTO } from '@orqevio/shared'
+import type { BoardRefDTO, ProjectColor, ProjectDTO } from '@orqevio/shared'
 import { DEFAULT_COLUMNS } from '@orqevio/shared'
 import { type FormEvent, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -20,7 +20,7 @@ export function NewProjectDialog({ open, onOpenChange }: { open: boolean; onOpen
   const { workspaceId } = useWorkspace()
   const navigate = useNavigate()
   const [name, setName] = useState('')
-  const [color, setColor] = useState<PaletteColor>('cobalt')
+  const [color, setColor] = useState<ProjectColor>('cobalt')
   const [withBoard, setWithBoard] = useState(true)
   const [busy, setBusy] = useState(false)
 
@@ -52,7 +52,7 @@ export function NewProjectDialog({ open, onOpenChange }: { open: boolean; onOpen
         <Field label={t('newProject.name')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('newProject.namePlaceholder')} maxLength={80} autoFocus />
         <div className="flex flex-col gap-2">
           <span className="text-[12.5px] font-medium text-ink-2">{t('newProject.color')}</span>
-          <ColorPicker value={color} onChange={setColor} />
+          <ColorPicker value={color} onChange={setColor} custom />
         </div>
         <label className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-line bg-surface p-3">
           <Checkbox checked={withBoard} onChange={setWithBoard} label={t('newProject.withBoard')} className="mt-0.5" />
