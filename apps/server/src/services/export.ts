@@ -1,6 +1,6 @@
 import { asc, eq } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
-import { attachments, boards, cardLabels, cardPageLinks, cards, checklistItems, checklists, columns, labels, pages, projects, workspaceMembers, workspaces } from '../db/schema'
+import { attachments, boards, cardComments, cardLabels, cardPageLinks, cards, checklistItems, checklists, columns, labels, pages, projects, workspaceMembers, workspaces } from '../db/schema'
 import { ZipWriter } from '../lib/zip'
 import { VERSION } from '../version'
 import type { Access } from './access'
@@ -258,6 +258,7 @@ export class ExportService {
       const itemRows = db.select().from(checklistItems).where(eq(checklistItems.workspaceId, workspace.id)).orderBy(asc(checklistItems.position), asc(checklistItems.id)).all()
       const pageRows = db.select().from(pages).where(eq(pages.workspaceId, workspace.id)).orderBy(asc(pages.position), asc(pages.id)).all()
       const fileRows = db.select().from(attachments).where(eq(attachments.workspaceId, workspace.id)).orderBy(asc(attachments.createdAt), asc(attachments.id)).all()
+      const commentRows = db.select().from(cardComments).where(eq(cardComments.workspaceId, workspace.id)).orderBy(asc(cardComments.createdAt), asc(cardComments.id)).all()
       // Joined rather than listed by id: a Durable Object takes at most 100 bound values in a query.
       const cardLabelRows = db.select({ cardId: cardLabels.cardId, labelId: cardLabels.labelId }).from(cardLabels).innerJoin(cards, eq(cards.id, cardLabels.cardId)).where(eq(cards.workspaceId, workspace.id)).all()
       const linkRows = db.select({ cardId: cardPageLinks.cardId, pageId: cardPageLinks.pageId }).from(cardPageLinks).innerJoin(cards, eq(cards.id, cardPageLinks.cardId)).where(eq(cards.workspaceId, workspace.id)).all()
@@ -281,6 +282,7 @@ export class ExportService {
       const itemsOf = group(itemRows, (i) => i.checklistId)
       const linksOf = group(linkRows, (l) => l.cardId)
       const filesOf = group(fileRows, (f) => f.cardId)
+      const commentsOf = group(commentRows, (c) => c.cardId)
 
       // Documents: each project a folder, each page a Markdown file, its subpages in a folder of the
       // same name, its attachments in "<name> (files)". Walked without recursion: a tree has no depth limit.
@@ -385,6 +387,14 @@ export class ExportService {
                 // A document linked by hand and mentioned too is one document.
                 documents: [...new Set(linksOf(card.id).map((link) => pagePath.get(link.pageId)))].filter(Boolean),
                 attachments: filesOf(card.id).map((f) => filePath.get(f.id)),
+                // Oldest first, as a conversation reads.
+                comments: commentsOf(card.id).map((c) => ({
+                  author: c.authorName,
+                  by: c.authorKind === 'agent' ? 'agent' : 'person',
+                  body: relink(c.body, ''),
+                  createdAt: iso(c.createdAt),
+                  editedAt: c.editedAt ? iso(c.editedAt) : null,
+                })),
                 createdAt: iso(card.createdAt),
                 updatedAt: iso(card.updatedAt),
               })),

@@ -20,7 +20,13 @@
       "linked": "<actor>{{actor}}</actor> heeft een document aan <target>‘{{target}}’</target> gekoppeld",
       "linked_self": "<actor>{{actor}}</actor> heeft een document gekoppeld",
       "unlinked": "<actor>{{actor}}</actor> heeft een document losgekoppeld van <target>‘{{target}}’</target>",
-      "unlinked_self": "<actor>{{actor}}</actor> heeft een document losgekoppeld"
+      "unlinked_self": "<actor>{{actor}}</actor> heeft een document losgekoppeld",
+      "commented": "<actor>{{actor}}</actor> heeft een opmerking geplaatst bij de kaart <target>‘{{target}}’</target>",
+      "commented_self": "<actor>{{actor}}</actor> heeft een opmerking geplaatst",
+      "comment_edited": "<actor>{{actor}}</actor> heeft een opmerking bij <target>‘{{target}}’</target> bewerkt",
+      "comment_edited_self": "<actor>{{actor}}</actor> heeft een opmerking bewerkt",
+      "comment_deleted": "<actor>{{actor}}</actor> heeft een opmerking bij <target>‘{{target}}’</target> verwijderd",
+      "comment_deleted_self": "<actor>{{actor}}</actor> heeft een opmerking verwijderd"
     },
     "column": {
       "created": "<actor>{{actor}}</actor> heeft de kolom <target>‘{{target}}’</target> aangemaakt",
@@ -51,7 +57,9 @@
     },
     "trash": {
       "restored": "<actor>{{actor}}</actor> heeft <target>‘{{target}}’</target> uit de prullenbak teruggezet",
-      "purged": "<actor>{{actor}}</actor> heeft <target>‘{{target}}’</target> definitief verwijderd"
+      "purged": "<actor>{{actor}}</actor> heeft <target>‘{{target}}’</target> definitief verwijderd",
+      "restoredComment": "<actor>{{actor}}</actor> heeft een opmerking bij <target>‘{{target}}’</target> uit de prullenbak teruggezet",
+      "purgedComment": "<actor>{{actor}}</actor> heeft een opmerking bij <target>‘{{target}}’</target> definitief verwijderd"
     },
     "other": "<actor>{{actor}}</actor> heeft iets gewijzigd"
   },

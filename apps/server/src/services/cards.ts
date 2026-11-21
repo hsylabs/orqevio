@@ -19,6 +19,7 @@ import {
   attachments,
   boards,
   cardLabels,
+  cardComments,
   cardPageLinks,
   cards,
   checklistItems,
@@ -81,7 +82,7 @@ export class CardService {
   async summarize(rows: CardRow[], db: DbOrTx = this.deps.db): Promise<CardSummaryDTO[]> {
     if (rows.length === 0) return []
     const ids = rows.map((r) => r.id)
-    const [labelRows, checklistRows, linkRows, attachmentRows, creators] = await Promise.all([
+    const [labelRows, checklistRows, linkRows, attachmentRows, commentRows, creators] = await Promise.all([
       db.select().from(cardLabels).where(inList(cardLabels.cardId, ids)),
       db
         .select({
@@ -103,6 +104,11 @@ export class CardService {
         .from(attachments)
         .where(inList(attachments.cardId, ids))
         .groupBy(attachments.cardId),
+      db
+        .select({ cardId: cardComments.cardId, total: sql<number>`count(*)` })
+        .from(cardComments)
+        .where(inList(cardComments.cardId, ids))
+        .groupBy(cardComments.cardId),
       this.creatorNames(rows, db),
     ])
     return rows.map((card) => {
@@ -120,6 +126,7 @@ export class CardService {
         checklist: { done: progress?.done ?? 0, total: progress?.total ?? 0 },
         linkedPages: linkRows.find((l) => l.cardId === card.id)?.total ?? 0,
         attachments: attachmentRows.find((a) => a.cardId === card.id)?.total ?? 0,
+        comments: commentRows.find((c) => c.cardId === card.id)?.total ?? 0,
         createdBy: creators.get(card.id) ?? null,
         createdAt: card.createdAt.toISOString(),
         updatedAt: card.updatedAt.toISOString(),
@@ -192,6 +199,7 @@ export class CardService {
       checklists: checklistData,
       pages: [...linked.values()],
       attachmentList: files.map(toAttachmentDTO),
+      commentCount: summary!.comments,
       // Without docs:read, not even the titles of the pages it was linked to.
       activity: hasScope(actor, 'docs:read') ? history : history.map((entry) => ({ ...entry, meta: Object.fromEntries(Object.entries(entry.meta).filter(([key]) => key !== 'page')) })),
     }
@@ -418,7 +426,7 @@ export class CardService {
     )
   }
 
-  /** Moves the card to the trash, with its checklists, labels, links and attachments. */
+  /** Moves the card to the trash, with its checklists, comments, labels, links and attachments. */
   async remove(actor: Actor, cardId: string) {
     this.access.requireScope(actor, 'organize')
     const card = await this.load(actor, cardId, 'tasks:write')

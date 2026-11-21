@@ -11,6 +11,7 @@ import {
   type TrashRelationDTO,
   type TrashRestoreInput,
   type TrashTreeDTO,
+  commentExcerpt,
 } from '@orqevio/shared'
 import { type SQL, eq, sql } from 'drizzle-orm'
 import type { DbOrTx } from '../db/client'
@@ -85,6 +86,7 @@ const NODE_KIND: Partial<Record<TableName, LiveKind>> = {
   cards: 'card',
   checklists: 'checklist',
   checklist_items: 'checklist_item',
+  card_comments: 'comment',
   pages: 'page',
   attachments: 'attachment',
 }
@@ -97,6 +99,7 @@ const LIVE_TABLE: Record<LiveKind, string> = {
   card: 'cards',
   checklist: 'checklists',
   checklist_item: 'checklist_items',
+  comment: 'card_comments',
   page: 'pages',
   attachment: 'attachments',
 }
@@ -110,12 +113,13 @@ const LIVE_COLUMNS: Record<LiveKind, SQL> = {
   card: sql`id, title AS name, column_id, board_id`,
   checklist: sql`id, title AS name, card_id`,
   checklist_item: sql`id, text AS name, checklist_id`,
+  comment: sql`id, substr(body, 1, 400) AS name, card_id`,
   page: sql`id, title AS name, project_id, parent_id`,
   attachment: sql`id, filename AS name, card_id, page_id`,
 }
 
 /** The order things show in, under what holds them. */
-const RANK: Record<TrashKind, number> = { project: 0, board: 1, column: 2, label: 3, card: 4, checklist: 5, checklist_item: 6, page: 7, attachment: 8, link: 9 }
+const RANK: Record<TrashKind, number> = { project: 0, board: 1, column: 2, label: 3, card: 4, checklist: 5, checklist_item: 6, comment: 7, page: 8, attachment: 9, link: 10 }
 
 const COUNTED: Partial<Record<TrashKind, keyof TrashContents>> = {
   project: 'projects',
@@ -128,6 +132,7 @@ const COUNTED: Partial<Record<TrashKind, keyof TrashContents>> = {
   checklist_item: 'items',
   label: 'labels',
   link: 'links',
+  comment: 'comments',
 }
 
 /** Where something can be put instead of its own place, by kind. */
@@ -139,6 +144,7 @@ export const CHOOSE: Record<TrashKind, TrashPlaceKind[]> = {
   card: ['column'],
   checklist: ['card'],
   checklist_item: ['checklist'],
+  comment: ['card'],
   page: ['project', 'page'],
   attachment: ['card', 'page'],
   link: [],
@@ -222,6 +228,8 @@ export class Live {
         return [...up('card', row.card_id), name]
       case 'checklist_item':
         return [...up('checklist', row.checklist_id), name]
+      case 'comment':
+        return [...up('card', row.card_id), commentExcerpt(name)]
       case 'page':
         return [...(row.parent_id ? up('page', row.parent_id) : up('project', row.project_id)), name]
       case 'attachment':
@@ -281,6 +289,8 @@ function parentRef(kind: TrashKind, row: IndexRow): Ref | null {
       return ref('card', row.cardId)
     case 'checklist_item':
       return ref('checklist', row.checklistId)
+    case 'comment':
+      return ref('card', row.cardId)
     case 'page':
       return row.parentId ? ref('page', row.parentId) : ref('project', row.projectId)
     case 'attachment':
@@ -316,7 +326,7 @@ export class TrashIndex {
     const rows = db.all<Omit<IndexRow, 'table'> & { tableName: TableName }>(sql`
       SELECT r.id AS rowId, r.trash_id AS trashId, r.table_name AS tableName,
         json_extract(r.data, '$.id') AS id,
-        coalesce(json_extract(r.data, '$.name'), json_extract(r.data, '$.title'), json_extract(r.data, '$.filename'), json_extract(r.data, '$.text')) AS name,
+        coalesce(json_extract(r.data, '$.name'), json_extract(r.data, '$.title'), json_extract(r.data, '$.filename'), json_extract(r.data, '$.text'), substr(json_extract(r.data, '$.body'), 1, 400)) AS name,
         json_extract(r.data, '$.project_id') AS projectId,
         json_extract(r.data, '$.board_id') AS boardId,
         json_extract(r.data, '$.column_id') AS columnId,
@@ -327,7 +337,9 @@ export class TrashIndex {
         json_extract(r.data, '$.label_id') AS labelId,
         json_extract(r.data, '$.size') AS size,
         json_extract(r.data, '$.source') AS source,
-        json_extract(r.data, '$.position') AS position,
+        -- Comments have no place of their own: they go in the order they were written (and, within
+        -- a millisecond, in the order they were kept, which is that of their rows).
+        coalesce(json_extract(r.data, '$.position'), CASE WHEN r.table_name = 'card_comments' THEN printf('%015d%012d', json_extract(r.data, '$.created_at'), r.id) END) AS position,
         r.storage_key AS storageKey
       FROM trash_rows r JOIN trash t ON t.id = r.trash_id
       WHERE t.workspace_id = ${workspaceId}
@@ -360,7 +372,8 @@ export class TrashIndex {
       id,
       row,
       entry,
-      title: row.name ?? '',
+      // A comment shows as a line of its text, without the Markdown.
+      title: kind === 'comment' ? commentExcerpt(row.name ?? '') : (row.name ?? ''),
       ref: parentRef(kind, row),
       parent: null,
       children: [],
@@ -766,6 +779,7 @@ export function planRestore(index: TrashIndex, input: TrashRestoreInput): Plan {
         break
       }
       case 'checklist':
+      case 'comment':
         sets.card_id = container.id
         break
       case 'checklist_item':

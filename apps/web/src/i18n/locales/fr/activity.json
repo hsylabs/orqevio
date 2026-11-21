@@ -20,7 +20,13 @@
       "linked": "<actor>{{actor}}</actor> a lié un document à <target>« {{target}} »</target>",
       "linked_self": "<actor>{{actor}}</actor> a lié un document",
       "unlinked": "<actor>{{actor}}</actor> a dissocié un document de <target>« {{target}} »</target>",
-      "unlinked_self": "<actor>{{actor}}</actor> a dissocié un document"
+      "unlinked_self": "<actor>{{actor}}</actor> a dissocié un document",
+      "commented": "<actor>{{actor}}</actor> a commenté la carte <target>« {{target}} »</target>",
+      "commented_self": "<actor>{{actor}}</actor> a commenté",
+      "comment_edited": "<actor>{{actor}}</actor> a modifié un commentaire de <target>« {{target}} »</target>",
+      "comment_edited_self": "<actor>{{actor}}</actor> a modifié un commentaire",
+      "comment_deleted": "<actor>{{actor}}</actor> a supprimé un commentaire de <target>« {{target}} »</target>",
+      "comment_deleted_self": "<actor>{{actor}}</actor> a supprimé un commentaire"
     },
     "column": {
       "created": "<actor>{{actor}}</actor> a créé la colonne <target>« {{target}} »</target>",
@@ -51,7 +57,9 @@
     },
     "trash": {
       "restored": "<actor>{{actor}}</actor> a restauré <target>« {{target}} »</target> depuis la corbeille",
-      "purged": "<actor>{{actor}}</actor> a supprimé définitivement <target>« {{target}} »</target>"
+      "purged": "<actor>{{actor}}</actor> a supprimé définitivement <target>« {{target}} »</target>",
+      "restoredComment": "<actor>{{actor}}</actor> a restauré un commentaire de <target>« {{target}} »</target> depuis la corbeille",
+      "purgedComment": "<actor>{{actor}}</actor> a supprimé définitivement un commentaire de <target>« {{target}} »</target>"
     },
     "other": "<actor>{{actor}}</actor> a effectué une modification"
   },

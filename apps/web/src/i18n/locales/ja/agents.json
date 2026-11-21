@@ -49,9 +49,10 @@
       "listProjects": "プロジェクト、ボード、ページ構成",
       "search": "カードとページを横断検索",
       "readAttachments": "テキストと画像の添付ファイルを読む",
-      "readBoards": "列、カード、チェックリスト、リンク",
+      "readBoards": "列、カード、コメント、チェックリスト、リンク",
       "editCards": "カードの作成、編集、移動",
       "archiveCard": "アーカイブ（アプリから復元可能）",
+      "comments": "カードへのコメントと自分のコメントの編集",
       "organizeBoards": "ボードの整理",
       "labels": "ラベルとチェックリスト",
       "readPages": "ページツリーとMarkdownの内容",
@@ -60,7 +61,7 @@
       "uploadAttachment": "カードとページにファイルを添付",
       "linkCard": "タスクとドキュメントのリンク",
       "createProject": "プロジェクトの作成",
-      "deleteTasks": "カード、ボード、列、ラベル、チェックリストの削除（ゴミ箱へ）",
+      "deleteTasks": "カード、ボード、列、ラベル、チェックリスト、自分のコメントの削除（ゴミ箱へ）",
       "deleteDocs": "ページ、プロジェクト、添付ファイルの削除（ゴミ箱へ）",
       "moveElsewhere": "添付ファイルの移動とカードとページのリンク解除"
     }

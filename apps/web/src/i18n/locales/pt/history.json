@@ -73,6 +73,12 @@
       "deleted": "<actor>{{actor}}</actor> mandou o item “{{text}}” para a lixeira",
       "restored": "<actor>{{actor}}</actor> trouxe de volta o item “{{text}}”"
     },
+    "comment": {
+      "created": "<actor>{{actor}}</actor> comentou “{{text}}”",
+      "body": "<actor>{{actor}}</actor> editou o comentário, que agora diz “{{text}}”",
+      "deleted": "<actor>{{actor}}</actor> mandou o comentário “{{text}}” para a lixeira",
+      "restored": "<actor>{{actor}}</actor> trouxe de volta o comentário “{{text}}”"
+    },
     "attachment": {
       "created": "<actor>{{actor}}</actor> anexou “{{name}}”",
       "deleted": "<actor>{{actor}}</actor> mandou o arquivo “{{name}}” para a lixeira",

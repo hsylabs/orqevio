@@ -273,6 +273,7 @@ describe('MCP server', () => {
       'delete_checklist',
       'delete_checklist_item',
       'delete_column',
+      'delete_comment',
       'delete_label',
       'delete_page',
       'delete_project',

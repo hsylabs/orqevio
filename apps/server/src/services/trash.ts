@@ -19,6 +19,7 @@ import {
   trashPurgeManyInput,
   trashRestoreInput,
   trashRestoreManyInput,
+  commentExcerpt,
 } from '@orqevio/shared'
 import { type SQL, and, eq, getTableColumns, lte, sql } from 'drizzle-orm'
 import { type SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core'
@@ -49,6 +50,7 @@ const TABLES = {
   card_labels: schema.cardLabels,
   checklists: schema.checklists,
   checklist_items: schema.checklistItems,
+  card_comments: schema.cardComments,
   pages: schema.pages,
   card_page_links: schema.cardPageLinks,
   attachments: schema.attachments,
@@ -68,6 +70,7 @@ const ROOT_TABLE: Record<TrashKind, TableName> = {
   checklist: 'checklists',
   checklist_item: 'checklist_items',
   link: 'card_page_links',
+  comment: 'card_comments',
 }
 
 const COUNTED: Partial<Record<TableName, keyof TrashContents>> = {
@@ -79,6 +82,7 @@ const COUNTED: Partial<Record<TableName, keyof TrashContents>> = {
   checklists: 'checklists',
   checklist_items: 'items',
   labels: 'labels',
+  card_comments: 'comments',
 }
 
 type Row = Record<string, unknown>
@@ -120,6 +124,7 @@ class Snapshot {
     this.where('card_labels', sql`card_id IN (${scope})`)
     this.where('checklists', sql`card_id IN (${scope})`)
     this.where('checklist_items', sql`checklist_id IN (SELECT id FROM checklists WHERE card_id IN (${scope}))`)
+    this.where('card_comments', sql`card_id IN (${scope})`)
     this.where('card_page_links', sql`card_id IN (${scope})`)
     this.where('attachments', sql`card_id IN (${scope})`)
   }
@@ -180,6 +185,8 @@ export class TrashService {
         const page = tx.get<{ title: string }>(sql`SELECT title FROM pages WHERE id = ${text(data.page_id)}`)
         return { entityType: 'card', entityId: text(data.card_id), kind: 'card.linked', subjectId: text(data.page_id), meta: { ...meta, page: page?.title ?? '' } }
       }
+      case 'comment':
+        return { entityType: 'card', entityId: text(data.card_id), kind: 'comment.restored', subjectId: id, meta: { ...meta, text: commentExcerpt(text(data.body)) } }
       default:
         return null
     }
@@ -317,6 +324,12 @@ export class TrashService {
         snapshot.where('checklist_items', sql`id = ${target.id}`)
         const list = db.get<{ card_id: string; title: string }>(sql`SELECT card_id, title FROM checklists WHERE id = ${row.checklist_id}`)
         return { data: snapshot.rows[0]!.data, title: String(row.text), location: list ? path(cardPath(list.card_id), list.title) : '' }
+      }
+      case 'comment': {
+        const row = one('card_comments', target.id)
+        if (!row) return null
+        snapshot.where('card_comments', sql`id = ${target.id}`)
+        return { data: snapshot.rows[0]!.data, title: commentExcerpt(String(row.body)), location: cardPath(row.card_id) }
       }
       case 'link': {
         snapshot.where('card_page_links', sql`card_id = ${target.cardId} AND page_id = ${target.pageId} AND source = 'manual'`)
@@ -676,7 +689,19 @@ export class TrashService {
       }
       case 'link':
         return onCard(text(row.card_id), { pageId: text(row.page_id) })
+      case 'comment':
+        return onCard(text(row.card_id))
     }
+  }
+
+  /**
+   * What the activity calls something from the trash: its name, but a comment by the title of its
+   * card, never by what it says, as the activity outlives it (see `meta.kind`).
+   */
+  private activityName(node: Node) {
+    if (node.kind !== 'comment') return node.title
+    if (node.parent?.kind === 'card') return node.parent.title
+    return this.deps.db.get<{ title: string }>(sql`SELECT title FROM cards WHERE id = ${node.row.cardId}`)?.title ?? ''
   }
 
   /** Records and announces what came back. */
@@ -695,7 +720,7 @@ export class TrashService {
           action: 'trash.restored',
           entityType: target.entityType,
           entityId: target.entityId,
-          summary: target.node.title,
+          summary: target.node.kind === 'comment' ? (this.deps.db.get<{ title: string }>(sql`SELECT title FROM cards WHERE id = ${target.entityId}`)?.title ?? '') : target.node.title,
           meta: { kind: target.node.kind, ...(i === 0 && applied.movedTo ? { movedTo: applied.movedTo } : {}) },
         },
         target.event,
@@ -713,7 +738,7 @@ export class TrashService {
     })
     if (!erased) throw notFound('Trash item')
     const [node] = erased
-    await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node!.kind), entityId: node!.id, summary: node!.title, meta: { kind: node!.kind } })
+    await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node!.kind), entityId: node!.id, summary: this.activityName(node!), meta: { kind: node!.kind } })
   }
 
   /**
@@ -739,7 +764,7 @@ export class TrashService {
     })
     if (!erased?.length || !went) throw notFound('Trash item')
     for (const node of erased) {
-      await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node.kind), entityId: node.id, summary: node.title, meta: { kind: node.kind } })
+      await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node.kind), entityId: node.id, summary: this.activityName(node), meta: { kind: node.kind } })
     }
     return went
   }
@@ -750,11 +775,12 @@ export class TrashService {
     // Restored meanwhile: there is nothing left to delete.
     const erased = await this.erase(entry.workspaceId, (index) => [...index.nodes.values()].filter((n) => n.entry.id === trashId), [trashId])
     if (!erased) throw notFound('Trash entry')
+    const root = erased.find((node) => node.entryRoot)
     await this.activity.record(actor, entry.workspaceId, {
       action: 'trash.purged',
       entityType: purgedEntityType(entry.kind),
       entityId: entry.entityId,
-      summary: entry.title,
+      summary: root ? this.activityName(root) : entry.kind === 'comment' ? '' : entry.title,
       meta: { kind: entry.kind },
     })
   }

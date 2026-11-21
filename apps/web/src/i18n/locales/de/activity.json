@@ -20,7 +20,13 @@
       "linked": "<actor>{{actor}}</actor> hat ein Dokument mit <target>„{{target}}“</target> verknüpft",
       "linked_self": "<actor>{{actor}}</actor> hat ein Dokument verknüpft",
       "unlinked": "<actor>{{actor}}</actor> hat die Verknüpfung eines Dokuments mit <target>„{{target}}“</target> aufgehoben",
-      "unlinked_self": "<actor>{{actor}}</actor> hat die Verknüpfung eines Dokuments aufgehoben"
+      "unlinked_self": "<actor>{{actor}}</actor> hat die Verknüpfung eines Dokuments aufgehoben",
+      "commented": "<actor>{{actor}}</actor> hat die Karte <target>„{{target}}“</target> kommentiert",
+      "commented_self": "<actor>{{actor}}</actor> hat kommentiert",
+      "comment_edited": "<actor>{{actor}}</actor> hat einen Kommentar zu <target>„{{target}}“</target> bearbeitet",
+      "comment_edited_self": "<actor>{{actor}}</actor> hat einen Kommentar bearbeitet",
+      "comment_deleted": "<actor>{{actor}}</actor> hat einen Kommentar zu <target>„{{target}}“</target> gelöscht",
+      "comment_deleted_self": "<actor>{{actor}}</actor> hat einen Kommentar gelöscht"
     },
     "column": {
       "created": "<actor>{{actor}}</actor> hat die Spalte <target>„{{target}}“</target> erstellt",
@@ -51,7 +57,9 @@
     },
     "trash": {
       "restored": "<actor>{{actor}}</actor> hat <target>„{{target}}“</target> aus dem Papierkorb wiederhergestellt",
-      "purged": "<actor>{{actor}}</actor> hat <target>„{{target}}“</target> endgültig gelöscht"
+      "purged": "<actor>{{actor}}</actor> hat <target>„{{target}}“</target> endgültig gelöscht",
+      "restoredComment": "<actor>{{actor}}</actor> hat einen Kommentar zu <target>„{{target}}“</target> aus dem Papierkorb wiederhergestellt",
+      "purgedComment": "<actor>{{actor}}</actor> hat einen Kommentar zu <target>„{{target}}“</target> endgültig gelöscht"
     },
     "other": "<actor>{{actor}}</actor> hat etwas geändert"
   },

@@ -67,6 +67,12 @@
       "deleted": "<actor>{{actor}}</actor> heeft het punt ‘{{text}}’ naar de prullenbak verplaatst",
       "restored": "<actor>{{actor}}</actor> heeft het punt ‘{{text}}’ teruggezet"
     },
+    "comment": {
+      "created": "<actor>{{actor}}</actor> heeft de opmerking ‘{{text}}’ geplaatst",
+      "body": "<actor>{{actor}}</actor> heeft de opmerking bewerkt, nu: ‘{{text}}’",
+      "deleted": "<actor>{{actor}}</actor> heeft de opmerking ‘{{text}}’ naar de prullenbak verplaatst",
+      "restored": "<actor>{{actor}}</actor> heeft de opmerking ‘{{text}}’ teruggezet"
+    },
     "attachment": {
       "created": "<actor>{{actor}}</actor> heeft ‘{{name}}’ bijgevoegd",
       "deleted": "<actor>{{actor}}</actor> heeft het bestand ‘{{name}}’ naar de prullenbak verplaatst",

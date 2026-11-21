@@ -1,6 +1,7 @@
 import type { SearchResultDTO } from '@orqevio/shared'
 import { markdownToPlainText } from '@orqevio/shared'
 import { sql } from 'drizzle-orm'
+import { inList } from '../db/in-list'
 import type { Actor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
 import type { Access } from './access'
@@ -39,7 +40,7 @@ export class SearchService {
     private readonly access: Access,
   ) {}
 
-  /** Full-text search over card and page titles and bodies (FTS5), titles ranked first. */
+  /** Full-text search over card and page titles and bodies (FTS5), titles ranked first, and card comments after them. */
   /** `archived`: archived cards are found too, and say so; otherwise only those on their boards. */
   async search(actor: Actor, workspaceId: string, rawQuery: string, opts: { types?: Array<'card' | 'page'>; limit?: number; archived?: boolean } = {}) {
     await this.access.workspace(actor, workspaceId)
@@ -90,6 +91,61 @@ export class SearchService {
           columnName: r.columnName,
           ...(r.archivedAt !== null ? { archived: true } : {}),
         })
+      }
+
+      // Cards found by what a comment on them says, after those found by their own text: one
+      // result each, with the comment that matches best, while there is room for more cards. Each
+      // card's best comment is picked in SQLite, so many matching comments on a few cards never
+      // leave another card out.
+      const room = limit - results.length
+      if (room > 0) {
+        const comments = this.deps.db.all<{
+          id: string
+          body: string
+          authorName: string
+          cardId: string
+          title: string
+          boardId: string
+          boardName: string
+          columnName: string
+          projectId: string
+          projectName: string
+          archivedAt: number | null
+        }>(sql`
+          SELECT id, body, authorName, cardId, title, boardId, boardName, columnName, projectId, projectName, archivedAt FROM (
+            SELECT cm.id, cm.body, cm.author_name AS authorName, c.id AS cardId, c.title, b.id AS boardId, b.name AS boardName,
+                   col.name AS columnName, p.id AS projectId, p.name AS projectName, c.archived_at AS archivedAt,
+                   f.rank, cm.created_at AS createdAt,
+                   row_number() OVER (PARTITION BY cm.card_id ORDER BY f.rank, cm.created_at DESC, cm.id) AS place
+            FROM (SELECT rowid, bm25(card_comments_fts) AS rank FROM card_comments_fts WHERE card_comments_fts MATCH ${match}) f
+            JOIN card_comments_fts_map m ON m.id = f.rowid
+            JOIN card_comments cm ON cm.id = m.entity_id
+            JOIN cards c ON c.id = cm.card_id
+            JOIN boards b ON b.id = c.board_id
+            JOIN board_columns col ON col.id = c.column_id
+            JOIN projects p ON p.id = b.project_id
+            WHERE cm.workspace_id = ${workspaceId} AND (${opts.archived ? 1 : 0} OR c.archived_at IS NULL)
+              AND NOT ${inList(sql`c.id`, results.map((r) => r.id))}
+          )
+          WHERE place = 1
+          ORDER BY rank, createdAt DESC
+          LIMIT ${room}`)
+        for (const r of comments) {
+          results.push({
+            type: 'card',
+            id: r.cardId,
+            title: r.title,
+            excerpt: excerpt(r.body, terms),
+            icon: null,
+            projectId: r.projectId,
+            projectName: r.projectName,
+            boardId: r.boardId,
+            boardName: r.boardName,
+            columnName: r.columnName,
+            comment: { id: r.id, author: r.authorName },
+            ...(r.archivedAt !== null ? { archived: true } : {}),
+          })
+        }
       }
     }
 

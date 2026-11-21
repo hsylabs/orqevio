@@ -20,7 +20,13 @@
       "linked": "<actor>{{actor}}</actor> linked a document to <target>“{{target}}”</target>",
       "linked_self": "<actor>{{actor}}</actor> linked a document",
       "unlinked": "<actor>{{actor}}</actor> unlinked a document from <target>“{{target}}”</target>",
-      "unlinked_self": "<actor>{{actor}}</actor> unlinked a document"
+      "unlinked_self": "<actor>{{actor}}</actor> unlinked a document",
+      "commented": "<actor>{{actor}}</actor> commented on the card <target>“{{target}}”</target>",
+      "commented_self": "<actor>{{actor}}</actor> commented",
+      "comment_edited": "<actor>{{actor}}</actor> edited a comment on <target>“{{target}}”</target>",
+      "comment_edited_self": "<actor>{{actor}}</actor> edited a comment",
+      "comment_deleted": "<actor>{{actor}}</actor> deleted a comment on <target>“{{target}}”</target>",
+      "comment_deleted_self": "<actor>{{actor}}</actor> deleted a comment"
     },
     "column": {
       "created": "<actor>{{actor}}</actor> created the column <target>“{{target}}”</target>",
@@ -51,7 +57,9 @@
     },
     "trash": {
       "restored": "<actor>{{actor}}</actor> restored <target>“{{target}}”</target> from the trash",
-      "purged": "<actor>{{actor}}</actor> deleted <target>“{{target}}”</target> for good"
+      "purged": "<actor>{{actor}}</actor> deleted <target>“{{target}}”</target> for good",
+      "restoredComment": "<actor>{{actor}}</actor> restored a comment on <target>“{{target}}”</target> from the trash",
+      "purgedComment": "<actor>{{actor}}</actor> deleted a comment on <target>“{{target}}”</target> for good"
     },
     "other": "<actor>{{actor}}</actor> made a change"
   },

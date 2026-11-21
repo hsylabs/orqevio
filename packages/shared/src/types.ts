@@ -221,6 +221,8 @@ export interface CardSummaryDTO {
   checklist: { done: number; total: number }
   linkedPages: number
   attachments: number
+  /** How many comments it has. */
+  comments: number
   createdBy: ActorRef | null
   createdAt: string
   updatedAt: string
@@ -230,6 +232,35 @@ export interface CardSummaryDTO {
 
 /** Archived cards come a page at a time, the most recently archived first. */
 export const ARCHIVED_PAGE = 50
+
+/** A comment on a card, by the person or by an agent. */
+export interface CommentDTO {
+  id: string
+  cardId: string
+  /** Markdown, up to MAX_COMMENT characters. */
+  body: string
+  /** Who wrote it, with the name they had then (an agent: its access). The id is empty once that access is gone. */
+  author: ActorRef
+  createdAt: string
+  updatedAt: string
+  /** When its text last changed; null while it is as written. */
+  editedAt: string | null
+  /** Whether the one asking may change its text: only its author can. */
+  canEdit: boolean
+  /** Whether the one asking may delete it: its author, and the workspace's owner. */
+  canDelete: boolean
+}
+
+/** A card's comments come a page at a time, the newest first. */
+export const COMMENTS_PAGE = 50
+
+export interface CommentPageDTO {
+  comments: CommentDTO[]
+  /** How many the card has in all. */
+  total: number
+  /** Whether there are older ones than the last of this page. */
+  hasMore: boolean
+}
 
 export interface BoardDTO {
   id: string
@@ -301,6 +332,8 @@ export interface CardDetailDTO extends CardSummaryDTO {
   checklists: ChecklistDTO[]
   pages: LinkedPageDTO[]
   attachmentList: AttachmentDTO[]
+  /** How many comments it has: the same as `comments`, for the sheet. */
+  commentCount: number
   activity: ActivityDTO[]
 }
 
@@ -347,6 +380,8 @@ export interface SearchResultDTO {
   columnName: string | null
   /** A card found among the archived ones (only when asked to include them). */
   archived?: boolean
+  /** Set when what matched is a comment on the card: which, and who wrote it. */
+  comment?: { id: string; author: string }
 }
 
 export interface HomeCardDTO extends CardSummaryDTO {
@@ -460,7 +495,7 @@ export interface OAuthDecisionDTO {
 
 // ── Trash ────────────────────────────────────────────────────────
 /** What can be in the trash. Each entry holds one of these, with everything that was inside it. */
-export const TRASH_KINDS = ['project', 'board', 'column', 'card', 'page', 'attachment', 'label', 'checklist', 'checklist_item', 'link'] as const
+export const TRASH_KINDS = ['project', 'board', 'column', 'card', 'page', 'attachment', 'label', 'checklist', 'checklist_item', 'link', 'comment'] as const
 export type TrashKind = (typeof TRASH_KINDS)[number]
 
 /** Days a deleted item stays in the trash before it is deleted for good. */
@@ -478,6 +513,7 @@ export interface TrashContents {
   items?: number
   labels?: number
   links?: number
+  comments?: number
 }
 
 /** Restoring several things at once: each one's plan, in the order asked, and whether all can go now. */
@@ -672,6 +708,10 @@ export const HISTORY_KINDS = [
   'item.done',
   'item.deleted',
   'item.restored',
+  'comment.created',
+  'comment.body',
+  'comment.deleted',
+  'comment.restored',
   'attachment.created',
   'attachment.deleted',
   'attachment.restored',
@@ -689,10 +729,18 @@ export const HISTORY_TEXT_KINDS: ReadonlySet<HistoryKind> = new Set([
   'card.due',
   'checklist.title',
   'item.text',
+  'comment.body',
 ])
 
 /** Kinds whose values are long texts: lists leave them out, and the entry itself has them. */
 export const HISTORY_BODY_KINDS: ReadonlySet<HistoryKind> = new Set(['page.content', 'card.description'])
+
+/**
+ * Kinds whose values can be long: the bodies, and a comment's text (up to MAX_COMMENT). History
+ * lists and undoing many changes at once leave them out; the entry itself has them. Only the
+ * bodies have versions to compare and restore.
+ */
+export const HISTORY_LONG_KINDS: ReadonlySet<HistoryKind> = new Set([...HISTORY_BODY_KINDS, 'comment.body'])
 
 /** Days the history keeps each change, as the trash keeps what is deleted. */
 export const HISTORY_DAYS = 30
@@ -725,7 +773,7 @@ export interface HistoryEntryDTO {
   /** The page or card whose history this is. */
   entityId: string
   kind: HistoryKind
-  /** The checklist, item, attachment or linked page the change is about, if not the page or card itself. */
+  /** The checklist, item, comment, attachment or linked page the change is about, if not the page or card itself. */
   subjectId: string | null
   /** Left out (null) for long texts in lists; `GET /api/history/:id` has them. */
   before: HistoryValue
