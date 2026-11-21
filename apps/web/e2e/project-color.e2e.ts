@@ -17,8 +17,13 @@ test('a project takes a colour of its own, kept on reload, in both themes, and c
   const picker = dialog.locator('input[type="color"]')
 
   // A tap or a click on the swatch lands on the browser's own picker, which every browser opens, iPhone included.
-  const box = (await custom.boundingBox())!
-  expect(await page.evaluate(({ x, y }) => (document.elementFromPoint(x, y) as HTMLInputElement | null)?.type, { x: box.x + box.width / 2, y: box.y + box.height / 2 })).toBe('color')
+  // Measured again until the dialog has come in: it moves while it does, so a point taken then may miss.
+  await expect
+    .poll(async () => {
+      const box = (await custom.boundingBox())!
+      return page.evaluate(({ x, y }) => (document.elementFromPoint(x, y) as HTMLInputElement | null)?.type, { x: box.x + box.width / 2, y: box.y + box.height / 2 })
+    })
+    .toBe('color')
   // From the keyboard, the swatch opens it too, starting from the colour chosen as the light theme has it (cobalt),
   // whatever the theme: that is the colour kept.
   await page.emulateMedia({ colorScheme: 'dark' })
