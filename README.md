@@ -24,8 +24,8 @@ And **nothing an agent does is final.** Every change can be undone for 30 days, 
 ## Highlights
 
 - **Tasks and documents, linked both ways.** Type `@` in a document to link a task, and the link shows up on both sides. You can also link documents from the card.
-- **Comments on cards.** People and agents talk on a card in Markdown. Each author edits and deletes only their own, and the board shows how many comments each card has.
-- **Pages you can take with you.** Download a page as Markdown, with its files and its subpages if you want, or print it or save it as PDF, dark on white.
+- **Comments on cards.** You and your agents talk on a card in Markdown. Each edits only their own comments; you can delete any, an agent only its own. The board shows how many each card has.
+- **Pages you can take with you.** Download a page as Markdown, with its files and, if you want, its subpages, or print it or save it as PDF, dark on white.
 - **Watch your agents work.** When an agent creates or moves a card, you see it appear with a blue halo and the agent's name, and you get a notification. The dot in the logo turns blue while they work.
 - **No stepping on each other's toes.** Documents and card descriptions use optimistic versioning: if an agent edits a page or a card while you're writing, Orqevio lets you know and you choose which version to keep.
 - **Nothing is lost by mistake.** What you delete waits 30 days in the trash with everything it held: a page with its subpages and files, a column with its cards. Undo it right away from the notice, or restore it later with one click.
@@ -39,7 +39,7 @@ And **nothing an agent does is final.** Every change can be undone for 30 days, 
 
 Everything people and agents change can be taken back for 30 days.
 
-**Trash.** Deleting a project, a board, a column, a card, a page, a file, a label, a checklist or one of its items, or the link between a card and a page, sends it to **Trash**, in the sidebar, with everything it held. Right after deleting, **Undo** in the notice brings it back. In **Trash**, one line each, you see what each item is, where it was and what it holds, who deleted it and when; what was deleted inside something else waits inside it. **Restore** brings it back where it was with what it holds; when there is something to decide first (its place is in the trash too, or gone, or a name is taken there), it asks before doing anything. Pick several to restore them together, each with where it goes in sight, or to delete them for good, after seeing how much goes with them. After 30 days, the trash empties itself.
+**Trash.** Deleting a project, a board, a column, a card or one of its comments, a page, a file, a label, a checklist or one of its items, or the link between a card and a page, sends it to **Trash**, in the sidebar, with everything it held. Right after deleting, **Undo** in the notice brings it back. In **Trash**, one line each, you see what each item is, where it was and what it holds, who deleted it and when; what was deleted inside something else waits inside it. **Restore** brings it back where it was with what it holds; when there is something to decide first (its place is in the trash too, or gone, or a name is taken there), it asks before doing anything. Pick several to restore them together, each with where it goes in sight, or to delete them for good, after seeing how much goes with them. After 30 days, the trash empties itself.
 
 **History.** **History**, in the menu of a card or a page, lists its changes of the last 30 days: what changed, who changed it (a person, or which agent) and when. For a page's content or a card's description, **See what changed** shows the lines added and removed.
 
@@ -81,7 +81,7 @@ packages/shared zod schemas, permissions and types shared by the API, MCP and cl
   - **Your own server (Docker or Node):** a single file (`DATA_DIR/orqevio.db`) plus the attachments folder.
   - **Cloudflare:** a Worker serves the web app and sends `/api` and `/mcp` to a single Durable Object, which keeps the data in its own SQLite database; attachments go to R2.
 - **Streamed attachments.** The browser sends the file as is (not as a form), and the server streams it straight to disk or R2, checking its size and its real type. Memory and CPU use don't grow with the size of the file.
-- **Full-text search.** FTS5 indexes over the titles and contents of cards and documents, ignoring case and accents ("cafe" finds "Café"), with title matches ranked first.
+- **Full-text search.** FTS5 indexes over the titles and contents of cards and documents, and the comments on cards, ignoring case and accents ("cafe" finds "Café"), with title matches ranked first.
 - **Real time without extra infrastructure.** Every change goes out to connected browsers over WebSocket (`/api/workspaces/:id/live`). The connection is only accepted with a session and from the app's origins; the browser sends a heartbeat every 25 s and reconnects on its own.
   - **On Node,** every heartbeat checks the session again. If you run Orqevio behind a reverse proxy, the proxy must allow WebSocket (Caddy and Traefik do by default; in Nginx, add the `Upgrade` and `Connection` headers).
   - **On Cloudflare,** connections hibernate: the platform answers the heartbeat without waking the Durable Object, so an idle copy uses no resources. Access is checked when a browser connects, before each change is delivered, and right after you sign out, change your access key or recover access.
@@ -140,7 +140,7 @@ docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 
 The app listens on port 3000 and applies its migrations on startup. Put it behind a reverse proxy with HTTPS (Caddy, Nginx, Traefik) and, if you do, add `TRUST_PROXY=true` (or the number of proxies in front, such as `2` for a CDN plus Nginx). The proxy may also ask for a password (HTTP basic auth). Agents send their own `Authorization: Bearer` header, with a token Orqevio checks itself: if you connect any, let requests carrying one through without the password, and also `/mcp`, `/oauth/` and `/.well-known/`, which OAuth clients reach before they have a token. Let the live updates (`/api/workspaces/…/live`) through too: Safari does not send the password when it opens them, and Orqevio checks the session itself. [`apps/web/e2e/proxy/nginx.conf`](apps/web/e2e/proxy/nginx.conf) does all this with Nginx. The SQLite database and the attachments are stored in the `orqevio-data` volume.
 
-**Backups.** Your copy backs itself up every day: the database and the attachments, as they are, in the `backups` folder of the volume (`/data/backups`). It keeps the 7 newest daily backups, apart from them the 7 newest you made with **Back up now**, and the one it made before the last restore. **Settings → Backups** lists them, makes one on the spot with **Back up now**, and restores any of them after you type your access key. Before restoring, it backs up the copy as it is, so you can go back. To keep the backups off the server too, copy them out from time to time, or set `BACKUP_DIR` to a folder you mount from another disk:
+**Backups.** Your copy backs itself up every day: the database and the attachments, as they are, in the `backups` folder of the volume (`/data/backups`). It keeps the 7 newest daily backups, the 7 newest you made with **Back up now** and the one it made before the last restore. **Settings → Backups** lists them, makes one on the spot with **Back up now**, and restores any of them after you type your access key. Before restoring, it backs up the copy as it is, so you can go back. To keep the backups off the server too, copy them out from time to time, or set `BACKUP_DIR` to a folder you mount from another disk:
 
 ```bash
 docker compose cp app:/data/backups ./orqevio-backups
@@ -214,7 +214,7 @@ Deletes your copy and everything in it, in one step, after you type its name: se
 - **Several copies:** add `--name <name>` to any of these commands.
 - **Several Cloudflare accounts:** the installer asks which one to use; you can also pass it with `--account <id>` or `CLOUDFLARE_ACCOUNT_ID`.
 - **Language:** the installer speaks your terminal's language; pick another with `--lang <code>` (`en`, `es`, `fr`, `pt`, `it`, `de`, `nl` or `ja`).
-- **Backups:** your copy backs itself up every day to its backups bucket, and keeps the 7 newest daily backups, apart from them the 7 newest made by hand, and the one made before the last restore. **Settings → Backups** lists them, makes one on the spot and restores any of them; **Settings → Export your data** downloads everything as a readable ZIP. Copies installed before 1.2.0 get the bucket with their next update, and make their first backup within the hour. A copy installed again with the same name finds the backups of the one before, if you kept them when uninstalling, and can restore them from **Settings → Backups**.
+- **Backups:** your copy backs itself up every day to its backups bucket, and keeps the 7 newest daily backups, the 7 newest made by hand and the one made before the last restore. **Settings → Backups** lists them, makes one on the spot and restores any of them; **Settings → Export your data** downloads everything as a readable ZIP. Copies installed before 1.2.0 get the bucket with their next update, and make their first backup within the hour. A copy installed again with the same name finds the backups of the one before, if you kept them when uninstalling, and can restore them from **Settings → Backups**.
 - **Your settings are kept:** the variables you set in the Cloudflare dashboard (`APP_URL`, `MAX_UPLOAD_MB`) survive updates.
 - **Privacy:** the installer turns off Wrangler's anonymous telemetry, unless you turned it on yourself.
 - **What it does, exactly:**
@@ -401,12 +401,12 @@ claude mcp add --transport http orqevio https://your-domain/mcp --header "Author
 | --- | --- |
 | Any read permission | `list_projects`, `search`, `read_attachment` (text files as text, images as images) |
 | Tasks · read | `get_board`, `get_card` (with its latest ten comments), `list_comments` |
-| Tasks · write | `create_card`, `update_card` (with `base_version` when it changes the description), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `create_checklist`, `add_checklist_items`, `update_checklist_item`, `add_comment`, `update_comment` (its own comments) |
+| Tasks · write | `create_card`, `update_card` (with `base_version` when it changes the description), `move_card`, `archive_card`, `create_board`, `create_column`, `update_column`, `create_label`, `create_checklist`, `add_checklist_items`, `update_checklist_item`, `add_comment`, `update_comment` (only the comments written with its own access) |
 | Docs · read | `list_pages`, `read_page` |
 | Docs · write | `create_page`, `update_page` (title, icon and content: replace with `base_version`, or append to the end), `move_page` (within its project) |
 | Read and write on both areas | `link_card_to_page` |
 | Write on either area | `create_project` (a palette color or `#rrggbb`; renaming projects stays in the app), `upload_attachment` (text or base64, up to 5 MB) |
-| **Can delete and move**, with write on tasks | `delete_card`, `delete_board`, `delete_column`, `delete_label`, `delete_checklist`, `delete_checklist_item`, `delete_comment` (its own comments), and `move_card` to another board (the card loses the old board's labels) |
+| **Can delete and move**, with write on tasks | `delete_card`, `delete_board`, `delete_column`, `delete_label`, `delete_checklist`, `delete_checklist_item`, `delete_comment` (only the comments written with its own access), and `move_card` to another board (the card loses the old board's labels) |
 | **Can delete and move**, with write on docs | `delete_page` |
 | **Can delete and move**, with write on either area | `delete_attachment`, `move_attachment`; `unlink_card_from_page` with read on both areas; `delete_project` with write on both |
 

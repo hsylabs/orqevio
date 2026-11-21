@@ -209,7 +209,7 @@ export function createMcpServer(services: Services, actor: AgentActor) {
           color: z
             .union([z.enum(PALETTE), z.string().regex(/^#[0-9a-fA-F]{6}$/)])
             .optional()
-            .describe(`One of ${PALETTE.join(', ')}, or a colour of its own as #rrggbb (to keep a colour from another tool). Cobalt if left out.`),
+            .describe(`One of ${PALETTE.join(', ')}, or a color of its own as #rrggbb (to keep a color from another tool). Cobalt if left out.`),
         },
         annotations: WRITE,
       },

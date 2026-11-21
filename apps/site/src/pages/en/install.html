@@ -55,7 +55,7 @@
     <p>Edit <code>.env</code>: set <code>APP_URL</code> to your copy’s public address (for example, <code>https://orqevio.your-domain.com</code>) and, if you like, a <code>SETUP_CODE</code> of your own with at least 12 letters or digits. Then:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose up -d</code></pre></div>
     <p>The copy listens on port 3000. Put it behind a reverse proxy with HTTPS (Caddy, Nginx or Traefik) and add <code>TRUST_PROXY=true</code> to <code>.env</code>.</p>
-    <p><strong>Backups:</strong> your copy backs itself up every day to the <code>backups</code> folder of its volume and keeps the 7 newest daily backups, apart from them the 7 newest made by hand, and the one made before the last restore (see <a href="#backups">Backups and export</a>). To keep them off the server too, copy them out from time to time:</p>
+    <p><strong>Backups:</strong> your copy backs itself up every day to the <code>backups</code> folder of its volume and keeps the 7 newest daily backups, the 7 newest made by hand and the one made before the last restore (see <a href="#backups">Backups and export</a>). To keep them off the server too, copy them out from time to time:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose cp app:/data/backups ./orqevio-backups</code></pre></div>
     <p>To back up by hand, with the copy running, make a live backup of the database and copy it out of the container, together with the attachments in the <code>uploads</code> folder:</p>
     <div class="command"><pre><code><span class="prompt">$ </span>docker compose exec app node dist/cli.js backup /data/backup.db</code></pre></div>
@@ -73,7 +73,7 @@
     <p class="note"><strong>Your data, your responsibility.</strong> Orqevio is provided as is, without warranty. Keep your access key and your vault’s recovery key safe, keep your backups somewhere else too, and export your vault from time to time.</p>
 
     <h2 id="backups">Backups and export</h2>
-    <p>Your copy backs itself up every day, with the vault, the trash, the history and the attachments, and keeps the 7 newest daily backups, apart from them the 7 newest made by hand, and the one made before the last restore: with Docker, in the <code>backups</code> folder of its volume; on Cloudflare, in the R2 bucket <code>&lt;name&gt;-backups</code> of your account. In <strong>Settings → Backups</strong> you see them, make one with <strong>Back up now</strong> and restore any of them after typing your access key. Before restoring, your copy backs itself up as it is, so you can go back.</p>
+    <p>Your copy backs itself up every day, with the vault, the trash, the history and the attachments, and keeps the 7 newest daily backups, the 7 newest made by hand and the one made before the last restore: with Docker, in the <code>backups</code> folder of its volume; on Cloudflare, in the R2 bucket <code>&lt;name&gt;-backups</code> of your account. In <strong>Settings → Backups</strong> you see them, make one with <strong>Back up now</strong> and restore any of them after typing your access key. Before restoring, your copy backs itself up as it is, so you can go back.</p>
     <p><strong>Settings → Export your data</strong> downloads a ZIP you can read without Orqevio: each workspace’s tasks in JSON, its documents in Markdown and the attachments. The vault has its own encrypted export.</p>
     <p>Copies installed on Cloudflare before version 1.2.0 get their backups bucket with their next update.</p>
 
