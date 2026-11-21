@@ -90,7 +90,8 @@ test('a page downloads as Markdown, alone or in a ZIP with its files and subpage
   await expect(printed.getByRole('heading', { level: 1, name: 'Plan de mudanza' })).toBeVisible()
   await expect(printed.getByRole('img', { name: 'Salón' })).toBeVisible()
   await expect(printed.locator('table')).toBeVisible()
-  await expect(page.getByRole('navigation')).toBeHidden()
+  const sidebar = page.getByRole('navigation', { name: 'Navegación principal' })
+  await expect(sidebar).toBeHidden()
   await expect(page.getByRole('button', { name: 'Acciones de la página' })).toBeHidden()
   // What follows each link on paper; Firefox and Safari give it in pieces ("(" "https://…" ")"), Chromium in one.
   const address = async (name: string) =>
@@ -113,9 +114,9 @@ test('a page downloads as Markdown, alone or in a ZIP with its files and subpage
   await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
   await expect(page.locator('.orq-print-root')).toHaveCount(0)
   await expect(page.locator('html')).not.toHaveClass(/orq-printing/)
-  await expect(page.getByRole('navigation')).toBeHidden()
+  // Printing anything else prints the app as before.
+  await expect(sidebar).toBeVisible()
   await page.emulateMedia({ media: 'screen', colorScheme: 'light' })
-  await expect(page.getByRole('navigation')).toBeVisible()
   await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')))
   await page.emulateMedia({ media: 'print' })
   await expect(printed.getByRole('heading', { level: 1, name: 'Plan de mudanza' })).toBeVisible()

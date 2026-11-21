@@ -393,7 +393,7 @@
     text-decoration: underline;
   }
   /* References to pages and tasks stay on one line on screen; on paper, with their address, they wrap. */
-  .orq-print a {
+  .orq-print .orq-prose a {
     white-space: normal;
   }
   .orq-print a[data-address]::after {
@@ -420,6 +420,7 @@
   /* Code is kept whole on paper: long lines wrap instead of running off it, framed even where backgrounds don't print. */
   .orq-print pre {
     border: 1px solid var(--line);
+    box-shadow: none;
   }
   .orq-print pre,
   .orq-print pre code {

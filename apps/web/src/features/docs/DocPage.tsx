@@ -384,6 +384,8 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
       })
       .catch((error: unknown) => {
         lost(error)
+        // Not saved: it is sent again before a download, unless a newer one is already waiting.
+        if (patchBody.title !== undefined) titleDue.current ??= patchBody.title
         return false
       })
     if (patchBody.title !== undefined) titleSaving.current = saved
