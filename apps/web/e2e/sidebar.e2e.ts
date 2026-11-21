@@ -25,13 +25,17 @@ test('the side panel closes when the window narrows and comes back as it was whe
   await page.setViewportSize({ width: 1280, height: 800 })
   await expect.poll(closed).toBe(false)
 
-  // Closed on the wide window, then opened on a narrow one: wide again, it is closed, as the wide window had it.
+  // Closed on the wide window, then opened on a narrow one with focus in it: wide again, it is
+  // closed, as the wide window had it, and focus moves to the page as well.
   await page.keyboard.press('ControlOrMeta+Backslash')
   await expect.poll(closed).toBe(true)
   await page.setViewportSize({ width: 390, height: 844 })
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-expanded', 'true')
   await expect.poll(closed).toBe(false)
+  await nav.getByRole('link').first().focus()
+  await expect.poll(focused).not.toBe('main')
   await page.setViewportSize({ width: 1280, height: 800 })
   await expect.poll(closed).toBe(true)
+  await expect.poll(focused).toBe('main')
 })

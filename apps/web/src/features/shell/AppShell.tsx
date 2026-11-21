@@ -57,9 +57,10 @@ export function AppShell() {
   useEffect(() => {
     const media = window.matchMedia(DESKTOP)
     const changed = () => {
-      // Closing it makes it inert: focus inside it would fall to nowhere, so it moves to the page.
-      if (!media.matches && sidebar.current?.contains(document.activeElement)) document.getElementById('main')?.focus({ preventScroll: true })
-      setSidebarOpen(media.matches ? localPref('sidebar', true) : false)
+      const open = media.matches ? localPref('sidebar', true) : false
+      // Closing it makes it inert, either way: focus inside it would fall to nowhere, so it moves to the page.
+      if (!open && sidebar.current?.contains(document.activeElement)) document.getElementById('main')?.focus({ preventScroll: true })
+      setSidebarOpen(open)
     }
     media.addEventListener('change', changed)
     return () => media.removeEventListener('change', changed)
