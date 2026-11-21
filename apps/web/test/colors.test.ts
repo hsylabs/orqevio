@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs'
+import { PALETTE, type ProjectColor } from '@orqevio/shared'
 import { describe, expect, it } from 'vitest'
-import { colorStyle, customTones } from '../src/lib/colors'
+import { colorStyle, customTones, PALETTE_LIGHT } from '../src/lib/colors'
 
 const channel = (hex: string, i: number) => {
   const c = Number.parseInt(hex.slice(i, i + 2), 16) / 255
@@ -53,6 +55,18 @@ describe("a project's own colour", () => {
       // Still a yellow: red and green well above blue.
       expect(Math.min(r, g), tone).toBeGreaterThan(b + 40)
     }
+  })
+
+  it('is told apart from the palette by the same light tones the theme draws them with', () => {
+    const css = readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8')
+    for (const name of PALETTE) {
+      // The first time a palette colour is set is the light theme's.
+      expect(PALETTE_LIGHT[name], name).toBe(new RegExp(`--c-${name}:\\s*(#[0-9a-f]{6})`).exec(css)?.[1])
+    }
+  })
+
+  it('is drawn as an unknown colour always was, in slate, if what is stored is no colour', () => {
+    for (const stored of ['#abc', 'Jade', '#zzzzzz', '']) expect(colorStyle(stored as ProjectColor)).toEqual({ className: 'c-slate' })
   })
 
   it('is drawn with both tones inline, a palette colour with its class', () => {

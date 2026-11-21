@@ -1,4 +1,4 @@
-import { type CustomColor, isPaletteColor, type ProjectColor } from '@orqevio/shared'
+import { CUSTOM_COLOR, type CustomColor, isPaletteColor, type PaletteColor, type ProjectColor } from '@orqevio/shared'
 import type { CSSProperties } from 'react'
 
 /**
@@ -8,9 +8,22 @@ import type { CSSProperties } from 'react'
  * Only its lightness moves (OKLCH): hue stays, and chroma gives way only as much as the screen's
  * colours (sRGB) need.
  */
+/** The palette's tones for the light theme, as `--c-*` in app.css has them (a test keeps them the same). */
+export const PALETTE_LIGHT: Record<PaletteColor, CustomColor> = {
+  tomato: '#e5532a',
+  amber: '#d29a12',
+  lime: '#7fa82d',
+  jade: '#2a9668',
+  teal: '#1b93a6',
+  cobalt: '#3a6ae0',
+  iris: '#7657e0',
+  rose: '#d4468a',
+  slate: '#6b7180',
+}
+
 const BOUNDS = {
   /** No lighter than amber, the palette's lightest tone for the light theme; as dark as one likes. */
-  light: { min: 0, max: '#d29a12' },
+  light: { min: 0, max: PALETTE_LIGHT.amber },
   /** Between cobalt and lime, the palette's darkest and lightest tones for the dark theme. */
   dark: { min: '#6f95ff', max: '#a5cf52' },
 } as const
@@ -107,6 +120,8 @@ export function customTones(hex: CustomColor): { light: string; dark: string } {
  */
 export function colorStyle(color: ProjectColor): { className: string; style?: CSSProperties } {
   if (isPaletteColor(color)) return { className: `c-${color}` }
+  // Anything else that might be stored is drawn as an unknown colour always was, in slate.
+  if (!CUSTOM_COLOR.test(color)) return { className: 'c-slate' }
   const { light, dark } = customTones(color)
   return { className: 'c-custom', style: { '--c-custom-light': light, '--c-custom-dark': dark } as CSSProperties }
 }

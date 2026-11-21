@@ -11,9 +11,30 @@ test('a project takes a colour of its own, kept on reload, in both themes, and c
   await page.getByRole('button', { name: 'Nuevo proyecto' }).first().click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('Nombre').fill('Mudanza')
-  await expect(dialog.getByRole('radio', { name: 'Color personalizado' })).toHaveAttribute('aria-checked', 'false')
-  // The browser's own picker is outside the page: what it hands back lands in the input under the swatch.
-  await dialog.locator('input[type="color"]').fill('#8b4513')
+  const custom = dialog.getByRole('radio', { name: 'Color personalizado' })
+  await expect(custom).toHaveAttribute('aria-checked', 'false')
+  const picker = dialog.locator('input[type="color"]')
+
+  // A tap or a click on the swatch lands on the browser's own picker, which every browser opens, iPhone included.
+  const box = (await custom.boundingBox())!
+  expect(await page.evaluate(({ x, y }) => (document.elementFromPoint(x, y) as HTMLInputElement | null)?.type, { x: box.x + box.width / 2, y: box.y + box.height / 2 })).toBe('color')
+  // From the keyboard, the swatch opens it too, starting from the colour chosen as the light theme has it (cobalt),
+  // whatever the theme: that is the colour kept.
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.evaluate(() => {
+    const click = HTMLInputElement.prototype.click
+    HTMLInputElement.prototype.click = function (this: HTMLInputElement) {
+      if (this.type === 'color') (window as unknown as { opened: string[] }).opened = [...((window as unknown as { opened?: string[] }).opened ?? []), this.value]
+      else click.call(this)
+    }
+  })
+  await custom.focus()
+  await page.keyboard.press('Enter')
+  expect(await page.evaluate(() => (window as unknown as { opened?: string[] }).opened)).toEqual(['#3a6ae0'])
+  await page.emulateMedia({ colorScheme: 'light' })
+
+  // The browser's own picker is outside the page: what it hands back lands in its input.
+  await picker.fill('#8b4513')
   const chosen = dialog.getByRole('radio', { name: 'Color personalizado (#8b4513)' })
   await expect(chosen).toHaveAttribute('aria-checked', 'true')
   await expect(dialog.getByRole('radio', { name: 'Cobalto' })).toHaveAttribute('aria-checked', 'false')
@@ -33,6 +54,11 @@ test('a project takes a colour of its own, kept on reload, in both themes, and c
   await page.emulateMedia({ colorScheme: 'light' })
   await page.evaluate(() => (document.documentElement.dataset.theme = 'dark'))
   await expect.poll(() => tone(glyph)).toBe(dark)
+  // And chosen light while the system is dark, the light tone.
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.evaluate(() => (document.documentElement.dataset.theme = 'light'))
+  await expect.poll(() => tone(glyph)).toBe('#8b4513')
+  await page.emulateMedia({ colorScheme: 'light' })
   await page.evaluate(() => delete document.documentElement.dataset.theme)
 
   // Too light to stand out from the page: the project page draws it darker, and the dialog shows it as it will look.
@@ -40,7 +66,7 @@ test('a project takes a colour of its own, kept on reload, in both themes, and c
   await page.waitForURL(/\/p\/[0-9a-f-]{36}$/)
   await page.getByRole('button', { name: 'Editar' }).click()
   await expect(dialog.getByRole('radio', { name: 'Color personalizado (#8b4513)' })).toHaveAttribute('aria-checked', 'true')
-  await dialog.locator('input[type="color"]').fill('#fafafa')
+  await picker.fill('#fafafa')
   const pale = dialog.getByRole('radio', { name: 'Color personalizado (#fafafa)' })
   await expect(pale).toHaveAttribute('aria-checked', 'true')
   const shown = await tone(pale)

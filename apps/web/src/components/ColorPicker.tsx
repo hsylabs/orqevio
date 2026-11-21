@@ -1,17 +1,15 @@
 import { isPaletteColor, PALETTE, type PaletteColor, type ProjectColor } from '@orqevio/shared'
 import { t } from 'i18next'
 import { Check } from 'lucide-react'
-import { type MouseEvent, useRef } from 'react'
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/cn'
-import { colorStyle } from '../lib/colors'
+import { colorStyle, PALETTE_LIGHT } from '../lib/colors'
 
 export const colorName = (color: PaletteColor) => t(`colors.${color}`)
 
 /** The palette's hues around a ring: what the custom swatch shows until a colour is chosen. */
-const RAINBOW = 'conic-gradient(from 210deg, #e5532a, #d29a12, #7fa82d, #2a9668, #1b93a6, #3a6ae0, #7657e0, #d4468a, #e5532a)'
-/** Where the browser's colour picker starts when nothing else says, the default project colour. */
-const START = '#3a6ae0'
+const RAINBOW = `conic-gradient(from 210deg, ${[...PALETTE.filter((c) => c !== 'slate'), 'tomato' as const].map((c) => PALETTE_LIGHT[c]).join(', ')})`
 
 type Props =
   | { value: PaletteColor; onChange: (color: PaletteColor) => void; label?: string; custom?: false }
@@ -53,47 +51,37 @@ function CustomSwatch({ value, onChange }: { value: ProjectColor; onChange: (col
   const chosen = !isPaletteColor(value)
   const look = chosen ? colorStyle(value) : null
   const name = chosen ? t('colors.customValue', { value }) : t('colors.custom')
-
-  function open(event: MouseEvent<HTMLButtonElement>) {
-    const picker = input.current
-    if (!picker) return
-    // It starts from the colour chosen now, as shown: closing it unchanged changes nothing.
-    const shown = getComputedStyle(event.currentTarget.closest('[role="radiogroup"]')?.querySelector('[aria-checked="true"]') ?? event.currentTarget)
-      .getPropertyValue('--c')
-      .trim()
-    picker.value = chosen ? value : /^#[0-9a-f]{6}$/i.test(shown) ? shown : START
-    try {
-      picker.showPicker()
-    } catch {
-      picker.click()
-    }
-  }
+  // The picker starts from the colour chosen now, as the light theme has it (what is kept): closing it unchanged changes nothing.
+  const start = isPaletteColor(value) ? PALETTE_LIGHT[value] : value
 
   return (
-    <span className="relative grid size-7">
+    <span className="group relative grid size-7">
       <button
         type="button"
         role="radio"
         aria-checked={chosen}
         aria-label={name}
-        title={name}
-        onClick={open}
+        // Keyboards and screen readers reach the swatch, which opens the picker as a tap on it does.
+        onClick={() => input.current?.click()}
         className={cn(
           look?.className,
-          'grid size-7 place-items-center rounded-full transition-transform duration-150 hover:scale-110',
+          'grid size-7 place-items-center rounded-full transition-transform duration-150 group-hover:scale-110',
           chosen && 'ring-2 ring-[var(--c)] ring-offset-2 ring-offset-sheet',
         )}
         style={chosen ? { ...look?.style, background: 'var(--c)' } : { background: RAINBOW }}
       >
         {chosen ? <Check className="size-3.5 text-white" strokeWidth={3} /> : <span className="size-[18px] rounded-full bg-sheet" />}
       </button>
-      {/* The browser's own picker, under the swatch so it opens next to it; the swatch is what is focused and read. */}
+      {/* The browser's own picker, unseen over the swatch: a tap or a click lands on it, which opens it in every
+          browser (iPhone's Safari opens no picker it is asked for from script). The swatch is what is focused and read. */}
       <input
         ref={input}
         type="color"
+        value={start}
         tabIndex={-1}
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 size-full opacity-0"
+        title={name}
+        className="absolute inset-0 size-full cursor-pointer rounded-full opacity-0"
         onChange={(event) => onChange(event.currentTarget.value.toLowerCase() as ProjectColor)}
       />
     </span>
