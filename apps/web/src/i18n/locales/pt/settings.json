@@ -60,7 +60,7 @@
   },
   "backups": {
     "title": "Backups",
-    "description": "Todo dia, esta cópia faz um backup de si mesma: de tudo como está, incluindo o cofre criptografado, a lixeira, o histórico e os anexos. Os 7 últimos são mantidos, separados dos dados dela.",
+    "description": "Todo dia, esta cópia faz um backup de si mesma: de tudo como está, incluindo o cofre criptografado, a lixeira, o histórico e os anexos. Os backups ficam separados dos dados dela.",
     "whereFolder": "Eles ficam na pasta <code>{{name}}</code> do servidor. Para guardá-los em outro disco ou volume, defina BACKUP_DIR.",
     "whereBucket": "Eles ficam no bucket do R2 <code>{{name}}</code> da sua conta da Cloudflare, separados dos anexos.",
     "off": "Esta cópia não faz backups (BACKUPS=off).",
