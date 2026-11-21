@@ -79,7 +79,7 @@ test('a page downloads as Markdown, alone or in a ZIP with its files and subpage
 
   // Printing (or saving as PDF) gives the page alone, dark on white, each link with its address.
   await page.goto(`/w/${workspaceId}/d/${plan}`)
-  await expect(page.locator('.orq-prose img')).toBeVisible()
+  await expect(page.getByRole('img', { name: 'Salón' })).toBeVisible()
   await page.evaluate(() => {
     window.print = () => {}
   })
@@ -88,7 +88,7 @@ test('a page downloads as Markdown, alone or in a ZIP with its files and subpage
   const printed = page.locator('.orq-print')
   await expect(printed).toBeVisible()
   await expect(printed.getByRole('heading', { level: 1, name: 'Plan de mudanza' })).toBeVisible()
-  await expect(printed.locator('img')).toBeVisible()
+  await expect(printed.getByRole('img', { name: 'Salón' })).toBeVisible()
   await expect(printed.locator('table')).toBeVisible()
   await expect(page.getByRole('navigation')).toBeHidden()
   await expect(page.getByRole('button', { name: 'Acciones de la página' })).toBeHidden()

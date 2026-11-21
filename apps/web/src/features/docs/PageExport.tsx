@@ -71,7 +71,7 @@ export function PrintView({ title, icon, markdown }: { title: string; icon: stri
     }
   }, [html])
   return createPortal(
-    <div className="orq-print-root" aria-hidden="true">
+    <div className="orq-print-root">
       <article className="orq-print">
         <h1 className="orq-print-title">
           {icon ? `${icon} ` : ''}
