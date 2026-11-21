@@ -92,9 +92,11 @@ test('a page downloads as Markdown, alone or in a ZIP with its files and subpage
   await expect(printed.locator('table')).toBeVisible()
   await expect(page.getByRole('navigation')).toBeHidden()
   await expect(page.getByRole('button', { name: 'Acciones de la página' })).toBeHidden()
-  const address = (name: string) => printed.getByRole('link', { name }).evaluate((a) => getComputedStyle(a, '::after').content)
-  expect(await address('la web')).toBe('" (https://example.com/mudanza)"')
-  expect(await address('el inventario')).toBe(`" (${new URL(`/doc/${list}`, page.url()).href})"`)
+  // What follows each link on paper; Firefox and Safari give it in pieces ("(" "https://…" ")"), Chromium in one.
+  const address = async (name: string) =>
+    (await printed.getByRole('link', { name }).evaluate((a) => getComputedStyle(a, '::after').content)).replace(/"\s*"/g, '').replace(/^"|"$/g, '')
+  expect(await address('la web')).toBe(' (https://example.com/mudanza)')
+  expect(await address('el inventario')).toBe(` (${new URL(`/doc/${list}`, page.url()).href})`)
   // Dark on white, though the screen is dark.
   expect(await printed.evaluate((el) => getComputedStyle(el).color)).toBe('rgb(28, 26, 22)')
   await page.screenshot({ path: testInfo.outputPath('2-impresion.png'), fullPage: true })
