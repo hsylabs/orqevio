@@ -68,7 +68,7 @@
       "restored": "<actor>{{actor}}</actor> heeft het punt ‘{{text}}’ teruggezet"
     },
     "comment": {
-      "created": "<actor>{{actor}}</actor> plaatste de opmerking ‘{{text}}’",
+      "created": "<actor>{{actor}}</actor> heeft de opmerking ‘{{text}}’ geplaatst",
       "body": "<actor>{{actor}}</actor> heeft de opmerking bewerkt, nu: ‘{{text}}’",
       "deleted": "<actor>{{actor}}</actor> heeft de opmerking ‘{{text}}’ naar de prullenbak verplaatst",
       "restored": "<actor>{{actor}}</actor> heeft de opmerking ‘{{text}}’ teruggezet"

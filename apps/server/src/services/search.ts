@@ -1,6 +1,7 @@
 import type { SearchResultDTO } from '@orqevio/shared'
 import { markdownToPlainText } from '@orqevio/shared'
 import { sql } from 'drizzle-orm'
+import { inList } from '../db/in-list'
 import type { Actor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
 import type { Access } from './access'
@@ -93,10 +94,11 @@ export class SearchService {
       }
 
       // Cards found by what a comment on them says, after those found by their own text: one
-      // result each, the comment that matches best, while there is room for more cards.
+      // result each, with the comment that matches best, while there is room for more cards. Each
+      // card's best comment is picked in SQLite, so many matching comments on a few cards never
+      // leave another card out.
       const room = limit - results.length
       if (room > 0) {
-        const found = new Set(results.map((r) => r.id))
         const comments = this.deps.db.all<{
           id: string
           body: string
@@ -110,22 +112,25 @@ export class SearchService {
           projectName: string
           archivedAt: number | null
         }>(sql`
-          SELECT cm.id, cm.body, cm.author_name AS authorName, c.id AS cardId, c.title, b.id AS boardId, b.name AS boardName,
-                 col.name AS columnName, p.id AS projectId, p.name AS projectName, c.archived_at AS archivedAt
-          FROM card_comments_fts
-          JOIN card_comments_fts_map m ON m.id = card_comments_fts.rowid
-          JOIN card_comments cm ON cm.id = m.entity_id
-          JOIN cards c ON c.id = cm.card_id
-          JOIN boards b ON b.id = c.board_id
-          JOIN board_columns col ON col.id = c.column_id
-          JOIN projects p ON p.id = b.project_id
-          WHERE card_comments_fts MATCH ${match} AND cm.workspace_id = ${workspaceId} AND (${opts.archived ? 1 : 0} OR c.archived_at IS NULL)
-          ORDER BY bm25(card_comments_fts), cm.created_at DESC
-          LIMIT ${(limit + room) * 3}`)
+          SELECT id, body, authorName, cardId, title, boardId, boardName, columnName, projectId, projectName, archivedAt FROM (
+            SELECT cm.id, cm.body, cm.author_name AS authorName, c.id AS cardId, c.title, b.id AS boardId, b.name AS boardName,
+                   col.name AS columnName, p.id AS projectId, p.name AS projectName, c.archived_at AS archivedAt,
+                   f.rank, cm.created_at AS createdAt,
+                   row_number() OVER (PARTITION BY cm.card_id ORDER BY f.rank, cm.created_at DESC, cm.id) AS place
+            FROM (SELECT rowid, bm25(card_comments_fts) AS rank FROM card_comments_fts WHERE card_comments_fts MATCH ${match}) f
+            JOIN card_comments_fts_map m ON m.id = f.rowid
+            JOIN card_comments cm ON cm.id = m.entity_id
+            JOIN cards c ON c.id = cm.card_id
+            JOIN boards b ON b.id = c.board_id
+            JOIN board_columns col ON col.id = c.column_id
+            JOIN projects p ON p.id = b.project_id
+            WHERE cm.workspace_id = ${workspaceId} AND (${opts.archived ? 1 : 0} OR c.archived_at IS NULL)
+              AND NOT ${inList(sql`c.id`, results.map((r) => r.id))}
+          )
+          WHERE place = 1
+          ORDER BY rank, createdAt DESC
+          LIMIT ${room}`)
         for (const r of comments) {
-          if (results.length >= limit) break
-          if (found.has(r.cardId)) continue
-          found.add(r.cardId)
           results.push({
             type: 'card',
             id: r.cardId,

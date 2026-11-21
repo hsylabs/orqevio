@@ -13,13 +13,17 @@ const ACTIONS = {
 
 type Known = { [E in keyof typeof ACTIONS]: `actions.${E}.${(typeof ACTIONS)[E][number]}` }[keyof typeof ACTIONS]
 type AboutThisCard = `actions.card.${(typeof ACTIONS)['card'][number]}_self`
+/** A comment restored or deleted for good is named by its card, never by what it said. */
+type AboutAComment = 'actions.trash.restoredComment' | 'actions.trash.purgedComment'
 
 /**
  * The catalog key of a whole sentence for an activity entry, with <actor> and
  * <target> tags, so each language can put the words in its own order. On the
  * card itself (`self`), card entries read "created this card".
  */
-export function activityKey(action: string, self = false): Known | AboutThisCard | 'actions.other' {
+export function activityKey(action: string, self = false, meta?: ActivityDTO['meta']): Known | AboutThisCard | AboutAComment | 'actions.other' {
+  if (meta?.kind === 'comment' && action === 'trash.restored') return 'actions.trash.restoredComment'
+  if (meta?.kind === 'comment' && action === 'trash.purged') return 'actions.trash.purgedComment'
   const [entity, verb] = action.split('.') as [string, string]
   const verbs = (ACTIONS as Record<string, readonly string[]>)[entity]
   if (!verbs?.includes(verb)) return 'actions.other'

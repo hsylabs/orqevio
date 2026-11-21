@@ -298,15 +298,20 @@ export function createMcpServer(services: Services, actor: AgentActor) {
         description: 'Lists the comments on a card, newest first, a page at a time. For the next (older) page, pass the next_before of this one as before.',
         inputSchema: {
           card_id: uuid,
-          before: uuid.optional().describe('A comment id: list the ones written before it (the next_before of the previous page).'),
+          before: z.string().max(100).optional().describe('The next_before of the previous page: list the comments written before its last one.'),
           limit: z.number().int().min(1).max(50).default(20),
         },
         annotations: READ,
       },
       ({ card_id, before, limit }) =>
         run(async () => {
-          const page = await services.comments.list(actor, card_id, { beforeId: before, limit })
-          return { total: page.total, comments: page.comments.map(commentSummary), next_before: page.hasMore ? (page.comments.at(-1)?.id ?? null) : null }
+          // When and which: a page goes on from there even if that comment was deleted since.
+          const cursor = before === undefined ? undefined : /^(.+)\|([0-9a-f-]{36})$/i.exec(before)
+          const at = cursor ? new Date(cursor[1]!) : undefined
+          if (before !== undefined && (!cursor || Number.isNaN(at!.getTime()))) throw new AppError(400, 'bad_request', 'before must be the next_before of a previous page.')
+          const page = await services.comments.list(actor, card_id, { before: at, beforeId: cursor?.[2], limit })
+          const last = page.comments.at(-1)
+          return { total: page.total, comments: page.comments.map(commentSummary), next_before: page.hasMore && last ? `${last.createdAt}|${last.id}` : null }
         }),
     )
   }

@@ -735,6 +735,13 @@ export const HISTORY_TEXT_KINDS: ReadonlySet<HistoryKind> = new Set([
 /** Kinds whose values are long texts: lists leave them out, and the entry itself has them. */
 export const HISTORY_BODY_KINDS: ReadonlySet<HistoryKind> = new Set(['page.content', 'card.description'])
 
+/**
+ * Kinds whose values can be long: the bodies, and a comment's text (up to MAX_COMMENT). History
+ * lists and undoing many changes at once leave them out; the entry itself has them. Only the
+ * bodies have versions to compare and restore.
+ */
+export const HISTORY_LONG_KINDS: ReadonlySet<HistoryKind> = new Set([...HISTORY_BODY_KINDS, 'comment.body'])
+
 /** Days the history keeps each change, as the trash keeps what is deleted. */
 export const HISTORY_DAYS = 30
 

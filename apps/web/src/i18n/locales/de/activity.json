@@ -57,7 +57,9 @@
     },
     "trash": {
       "restored": "<actor>{{actor}}</actor> hat <target>„{{target}}“</target> aus dem Papierkorb wiederhergestellt",
-      "purged": "<actor>{{actor}}</actor> hat <target>„{{target}}“</target> endgültig gelöscht"
+      "purged": "<actor>{{actor}}</actor> hat <target>„{{target}}“</target> endgültig gelöscht",
+      "restoredComment": "<actor>{{actor}}</actor> hat einen Kommentar zu <target>„{{target}}“</target> aus dem Papierkorb wiederhergestellt",
+      "purgedComment": "<actor>{{actor}}</actor> hat einen Kommentar zu <target>„{{target}}“</target> endgültig gelöscht"
     },
     "other": "<actor>{{actor}}</actor> hat etwas geändert"
   },

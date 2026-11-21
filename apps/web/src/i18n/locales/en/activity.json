@@ -57,7 +57,9 @@
     },
     "trash": {
       "restored": "<actor>{{actor}}</actor> restored <target>“{{target}}”</target> from the trash",
-      "purged": "<actor>{{actor}}</actor> deleted <target>“{{target}}”</target> for good"
+      "purged": "<actor>{{actor}}</actor> deleted <target>“{{target}}”</target> for good",
+      "restoredComment": "<actor>{{actor}}</actor> restored a comment on <target>“{{target}}”</target> from the trash",
+      "purgedComment": "<actor>{{actor}}</actor> deleted a comment on <target>“{{target}}”</target> for good"
     },
     "other": "<actor>{{actor}}</actor> made a change"
   },

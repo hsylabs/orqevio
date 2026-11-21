@@ -68,7 +68,7 @@
       "restored": "<actor>{{actor}}</actor> hat den Punkt „{{text}}“ zurückgeholt"
     },
     "comment": {
-      "created": "<actor>{{actor}}</actor> hat „{{text}}“ kommentiert",
+      "created": "<actor>{{actor}}</actor> hat kommentiert: „{{text}}“",
       "body": "<actor>{{actor}}</actor> hat den Kommentar bearbeitet, jetzt: „{{text}}“",
       "deleted": "<actor>{{actor}}</actor> hat den Kommentar „{{text}}“ in den Papierkorb gelegt",
       "restored": "<actor>{{actor}}</actor> hat den Kommentar „{{text}}“ zurückgeholt"

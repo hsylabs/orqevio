@@ -3,6 +3,7 @@ import {
   type AttachmentPlace,
   type CardPlace,
   HISTORY_BODY_KINDS,
+  HISTORY_LONG_KINDS,
   type HistoryKind,
   type HistoryValue,
   type PagePlace,
@@ -44,7 +45,7 @@ type Row = HistoryRow & { seq: number }
 
 /** An entry without its long texts: a bulk undo never holds hundreds of them in memory at once. */
 const LIGHT_COLUMNS = (() => {
-  const body = inArray(history.kind, [...HISTORY_BODY_KINDS])
+  const body = inArray(history.kind, [...HISTORY_LONG_KINDS])
   return {
     ...getTableColumns(history),
     before: sql<string | null>`CASE WHEN ${body} THEN NULL ELSE ${history.before} END`,
@@ -367,7 +368,7 @@ export class UndoService {
     const found: { trashId: string; data: Record<string, unknown> }[] = []
     for (let i = 0; i < ids.length; i += CHUNK) {
       const rows = this.deps.db
-        .select({ trashId: trashRows.trashId, data: sql<string>`json_remove(${trashRows.data}, '$.content', '$.description')` })
+        .select({ trashId: trashRows.trashId, data: sql<string>`json_remove(${trashRows.data}, '$.content', '$.description', '$.body')` })
         .from(trashRows)
         .where(and(inArray(trashRows.trashId, ids.slice(i, i + CHUNK)), eq(trashRows.tableName, table), sql`json_extract(${trashRows.data}, ${`$.${column}`}) = ${value}`))
         .all()
@@ -481,15 +482,16 @@ export class UndoService {
     }
 
     // A long text, compared in SQLite with the change's texts, which stay out of memory. For
-    // something coming back from the trash, the text kept there.
-    const body = (table: 'pages' | 'cards', column: 'content' | 'description', trashId?: string): Check => {
+    // something coming back from the trash, the text kept there. `id`: whose text, the page or card
+    // itself unless said.
+    const body = (table: 'pages' | 'cards' | 'card_comments', column: 'content' | 'description' | 'body', trashId?: string, id = row.entityId): Check => {
       const key = fieldKey(row)
       const ref = state.bodies.get(key)
       const now = ref
         ? sql`(SELECT "before" FROM history WHERE id = ${ref})`
         : trashId
-          ? sql`(SELECT json_extract(data, ${`$.${column}`}) FROM trash_rows WHERE trash_id = ${trashId} AND table_name = ${table} AND json_extract(data, '$.id') = ${row.entityId})`
-          : sql`(SELECT ${sql.identifier(column)} FROM ${sql.identifier(table)} WHERE id = ${row.entityId})`
+          ? sql`(SELECT json_extract(data, ${`$.${column}`}) FROM trash_rows WHERE trash_id = ${trashId} AND table_name = ${table} AND json_extract(data, '$.id') = ${id})`
+          : sql`(SELECT ${sql.identifier(column)} FROM ${sql.identifier(table)} WHERE id = ${id})`
       const found = db.get<{ isBefore: number; isAfter: number; current: string | null }>(
         sql`SELECT ${now} IS h."before" AS isBefore, ${now} IS h."after" AS isAfter, substr(${now}, 1, 200) AS current FROM history h WHERE h.id = ${row.id}`,
       )
@@ -679,9 +681,10 @@ export class UndoService {
       const item = () =>
         one(db.select({ text: checklistItems.text, done: checklistItems.done }).from(checklistItems).where(eq(checklistItems.id, subject))) ??
         kept('checklist_items', subject).map(({ data }) => ({ text: String(data.text), done: Boolean(data.done) }))[0]
+      // On this card: there, or coming back from the trash with the newer changes being undone (where its text is kept).
       const comment = () =>
-        one(db.select({ body: cardComments.body }).from(cardComments).where(and(eq(cardComments.id, subject), eq(cardComments.cardId, card.id)))) ??
-        kept('card_comments', subject).filter(({ data }) => data.card_id === card.id).map(({ data }) => ({ body: String(data.body) }))[0]
+        one(db.select({ id: cardComments.id }).from(cardComments).where(and(eq(cardComments.id, subject), eq(cardComments.cardId, card.id)))) ??
+        kept('card_comments', subject).find(({ data }) => data.card_id === card.id)
       switch (kind) {
         case 'checklist.created':
         case 'checklist.restored':
@@ -709,7 +712,8 @@ export class UndoService {
           return bringBack(`comment:${subject}`, () => Boolean(comment()))
         case 'comment.body': {
           const it = comment()
-          return it ? value(it.body) : { status: 'impossible', reason: 'gone' }
+          if (!it && !state.bodies.has(fieldKey(row))) return { status: 'impossible', reason: 'gone' }
+          return body('card_comments', 'body', it && 'trashId' in it ? it.trashId : undefined, subject)
         }
       }
     }
@@ -721,7 +725,7 @@ export class UndoService {
     const { cards: cardService, pages: pageService, attachments: attachmentService, trash: trashService, comments: commentService } = this.services
     const kind: HistoryKind = row.kind
     // Long texts are read one at a time, as each is undone.
-    const raw = HISTORY_BODY_KINDS.has(kind) ? (this.deps.db.get<{ text: string | null }>(sql`SELECT "before" AS text FROM history WHERE id = ${row.id}`)?.text ?? null) : row.before
+    const raw = HISTORY_LONG_KINDS.has(kind) ? (this.deps.db.get<{ text: string | null }>(sql`SELECT "before" AS text FROM history WHERE id = ${row.id}`)?.text ?? null) : row.before
     const before = decode(kind, raw)
     const subject = row.subjectId ?? ''
     const trashId = typeof row.meta.trashId === 'string' ? row.meta.trashId : ''

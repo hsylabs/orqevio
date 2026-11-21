@@ -2,6 +2,7 @@ import {
   type AttachmentPlace,
   HISTORY_BODY_KINDS,
   HISTORY_DAYS,
+  HISTORY_LONG_KINDS,
   HISTORY_TEXT_KINDS,
   type HistoryEntryDTO,
   type HistoryKind,
@@ -43,7 +44,7 @@ type Row = HistoryRow
 
 /** A list's columns: long texts read as null, so listing never loads them. */
 const LIST_COLUMNS = (() => {
-  const body = inArray(history.kind, [...HISTORY_BODY_KINDS])
+  const body = inArray(history.kind, [...HISTORY_LONG_KINDS])
   return {
     ...getTableColumns(history),
     before: sql<string | null>`CASE WHEN ${body} THEN NULL ELSE ${history.before} END`,
@@ -64,7 +65,7 @@ const bodyMeta = (kind: HistoryKind, before: string | null, after: string | null
 }
 
 export function toHistoryEntryDTO(row: Row, withBodies: boolean): HistoryEntryDTO {
-  const hidden = !withBodies && HISTORY_BODY_KINDS.has(row.kind)
+  const hidden = !withBodies && HISTORY_LONG_KINDS.has(row.kind)
   return {
     id: row.id,
     entityType: row.entityType,

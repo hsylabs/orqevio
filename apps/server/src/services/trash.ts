@@ -694,6 +694,16 @@ export class TrashService {
     }
   }
 
+  /**
+   * What the activity calls something from the trash: its name, but a comment by the title of its
+   * card, never by what it says, as the activity outlives it (see `meta.kind`).
+   */
+  private activityName(node: Node) {
+    if (node.kind !== 'comment') return node.title
+    if (node.parent?.kind === 'card') return node.parent.title
+    return this.deps.db.get<{ title: string }>(sql`SELECT title FROM cards WHERE id = ${node.row.cardId}`)?.title ?? ''
+  }
+
   /** Records and announces what came back. */
   private async announce(actor: Actor, workspaceId: string, applied: Applied) {
     // Nothing came back of a link that waits for its page: only the trash changed.
@@ -710,7 +720,7 @@ export class TrashService {
           action: 'trash.restored',
           entityType: target.entityType,
           entityId: target.entityId,
-          summary: target.node.title,
+          summary: target.node.kind === 'comment' ? (this.deps.db.get<{ title: string }>(sql`SELECT title FROM cards WHERE id = ${target.entityId}`)?.title ?? '') : target.node.title,
           meta: { kind: target.node.kind, ...(i === 0 && applied.movedTo ? { movedTo: applied.movedTo } : {}) },
         },
         target.event,
@@ -728,7 +738,7 @@ export class TrashService {
     })
     if (!erased) throw notFound('Trash item')
     const [node] = erased
-    await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node!.kind), entityId: node!.id, summary: node!.title, meta: { kind: node!.kind } })
+    await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node!.kind), entityId: node!.id, summary: this.activityName(node!), meta: { kind: node!.kind } })
   }
 
   /**
@@ -754,7 +764,7 @@ export class TrashService {
     })
     if (!erased?.length || !went) throw notFound('Trash item')
     for (const node of erased) {
-      await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node.kind), entityId: node.id, summary: node.title, meta: { kind: node.kind } })
+      await this.activity.record(actor, workspaceId, { action: 'trash.purged', entityType: purgedEntityType(node.kind), entityId: node.id, summary: this.activityName(node), meta: { kind: node.kind } })
     }
     return went
   }
@@ -765,11 +775,12 @@ export class TrashService {
     // Restored meanwhile: there is nothing left to delete.
     const erased = await this.erase(entry.workspaceId, (index) => [...index.nodes.values()].filter((n) => n.entry.id === trashId), [trashId])
     if (!erased) throw notFound('Trash entry')
+    const root = erased.find((node) => node.entryRoot)
     await this.activity.record(actor, entry.workspaceId, {
       action: 'trash.purged',
       entityType: purgedEntityType(entry.kind),
       entityId: entry.entityId,
-      summary: entry.title,
+      summary: root ? this.activityName(root) : entry.kind === 'comment' ? '' : entry.title,
       meta: { kind: entry.kind },
     })
   }

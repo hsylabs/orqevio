@@ -57,7 +57,9 @@
     },
     "trash": {
       "restored": "<actor>{{actor}}</actor> a restauré <target>« {{target}} »</target> depuis la corbeille",
-      "purged": "<actor>{{actor}}</actor> a supprimé définitivement <target>« {{target}} »</target>"
+      "purged": "<actor>{{actor}}</actor> a supprimé définitivement <target>« {{target}} »</target>",
+      "restoredComment": "<actor>{{actor}}</actor> a restauré un commentaire de <target>« {{target}} »</target> depuis la corbeille",
+      "purgedComment": "<actor>{{actor}}</actor> a supprimé définitivement un commentaire de <target>« {{target}} »</target>"
     },
     "other": "<actor>{{actor}}</actor> a effectué une modification"
   },

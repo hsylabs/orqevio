@@ -81,8 +81,10 @@ describe('comments on cards', () => {
 
     const kinds = (await historyOf(client, card)).map((e) => e.kind)
     expect(kinds).toEqual(expect.arrayContaining(['comment.created', 'comment.body', 'comment.deleted', 'comment.restored']))
+    // Lists leave a comment's texts out, as a description's; the entry itself has them.
     const body = (await historyOf(client, card)).find((e) => e.kind === 'comment.body')!
-    expect(body).toMatchObject({ subjectId: second.id, before: 'Hecho: firmado.', after: 'Hecho: firmado por las dos partes.' })
+    expect(body).toMatchObject({ subjectId: second.id, before: null, after: null, meta: { text: 'Hecho: firmado por las dos partes.' } })
+    expect((await client.get(`/api/history/${body.id}`)).body).toMatchObject({ before: 'Hecho: firmado.', after: 'Hecho: firmado por las dos partes.' })
   })
 
   it('refuses an empty comment and one over the limit, counting an emoji as one character', async () => {
@@ -216,7 +218,7 @@ describe('comments on cards', () => {
     expect(all.sort()).toEqual(Array.from({ length: 150 }, (_, i) => `Comentario ${i + 1}`).sort())
   })
 
-  it('shows in the trash tree under its card, comes back with it, or goes to another card', async () => {
+  it('shows in the trash tree under its card, and can go to another card instead', async () => {
     const { client, card, workspaceId, columns } = await setup()
     const id = (await client.post(`/api/cards/${card}/comments`, { body: 'Una nota *suelta*' })).body.id as string
     const commentTrash = (await client.del(`/api/comments/${id}`)).body.trashId as string
@@ -261,10 +263,12 @@ describe('comments on cards', () => {
     expect((await undo({ ids: [entries.find((e) => e.kind === 'comment.deleted')!.id] })).undone).toBe(1)
     expect((await comments(client, card)).comments.map((c) => c.id)).toContain(gone)
 
-    // Everything the agent did, from its first change on: no comment of its is left.
+    // Everything the agent did, from its first change on, nothing in the way: no comment of its is left.
     const first = (await historyOf(client, card)).filter((e) => e.actor.kind === 'agent').at(-1)!
-    const all = await undo({ since: first.id, conflicts: 'force' })
-    expect(all.failed).toBe(0)
+    const plan = await undo({ since: first.id, dryRun: true })
+    expect(plan.plan.map((p) => p.status).filter((s) => s !== 'unchanged').every((s) => s === 'ready')).toBe(true)
+    const all = await undo({ since: first.id })
+    expect(all).toMatchObject({ applied: true, failed: 0, skipped: 0 })
     expect((await comments(client, card)).total).toBe(0)
   })
 
@@ -324,6 +328,82 @@ describe('comments on cards', () => {
       { author: 'Ana López', by: 'person', body: 'Primero', editedAt: null },
       { author: 'Asistente', by: 'agent', body: `Segundo, con [enlace](tasks.json#${card})` },
     ])
+  })
+})
+
+describe('comments, edge cases', () => {
+  it('leaves no trace of what a comment said once it is deleted for good, after a restore too', async () => {
+    const { client, card, workspaceId } = await setup()
+    const secret = 'SECRETO cuenta 1234'
+    const id = (await client.post(`/api/cards/${card}/comments`, { body: `${secret} y algo más` })).body.id as string
+    await client.patch(`/api/comments/${id}`, { body: `${secret} cambiado` })
+    const once = (await client.del(`/api/comments/${id}`)).body.trashId as string
+    expect((await client.post(`/api/trash/${once}/restore`)).status).toBe(200)
+    const again = (await client.del(`/api/comments/${id}`)).body.trashId as string
+    expect((await client.del(`/api/trash/${again}`)).status).toBeLessThan(300)
+    // Named by its card in the activity, and gone from the history and the trash.
+    const activity = await client.get(`/api/workspaces/${workspaceId}/activity?limit=100`)
+    expect(JSON.stringify(activity.body)).not.toContain('SECRETO')
+    expect(activity.body).toEqual(expect.arrayContaining([expect.objectContaining({ action: 'trash.purged', summary: 'Contrato de alquiler', meta: expect.objectContaining({ kind: 'comment' }) })]))
+    expect(JSON.stringify((await client.get(`/api/cards/${card}`)).body)).not.toContain('SECRETO')
+    expect(JSON.stringify(await historyOf(client, card))).not.toContain('SECRETO')
+    expect(JSON.stringify([...h.sql.rows('SELECT * FROM history')])).not.toContain('SECRETO')
+    expect(JSON.stringify([...h.sql.rows('SELECT * FROM activity')])).not.toContain('SECRETO')
+  })
+
+  it('finds a card by its one comment even when another card has many that match', async () => {
+    const { client, card, columns, workspaceId } = await setup()
+    const busy = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Informes diarios' })).body.id as string
+    for (let i = 0; i < 130; i++) await client.post(`/api/cards/${busy}/comments`, { body: 'Despliegue hecho' })
+    await client.post(`/api/cards/${card}/comments`, { body: 'Pendiente del despliegue' })
+    const found = (await client.get(`/api/workspaces/${workspaceId}/search?q=despliegue`)).body as Array<{ id: string }>
+    expect(found.map((r) => r.id).sort()).toEqual([busy, card].sort())
+  })
+
+  it('goes on paging over MCP when the last comment of a page is deleted meanwhile', async () => {
+    const { client, card, workspaceId } = await setup()
+    const agent = await connect((await token(client, workspaceId, ['tasks:read', 'tasks:write', 'organize'])).token)
+    for (let i = 1; i <= 5; i++) await agent.callTool({ name: 'add_comment', arguments: { card_id: card, body: `Paso ${i}` } })
+    const page = data(await agent.callTool({ name: 'list_comments', arguments: { card_id: card, limit: 2 } }))
+    await agent.callTool({ name: 'delete_comment', arguments: { comment_id: page.comments[1].id } })
+    const next = data(await agent.callTool({ name: 'list_comments', arguments: { card_id: card, limit: 2, before: page.next_before } }))
+    expect(next.comments.map((c: { body: string }) => c.body)).toEqual(['Paso 3', 'Paso 2'])
+    expect(failed(await agent.callTool({ name: 'list_comments', arguments: { card_id: card, before: 'cualquier cosa' } }))).toBe(true)
+  })
+
+  it('asks before undoing an edit of a comment changed again since, and undoes the newer edits first', async () => {
+    const { client, card, workspaceId } = await setup()
+    const bot = new Client(h, (await token(client, workspaceId, ['tasks:read', 'tasks:write'], 'Asistente')).token)
+    const id = (await bot.post(`/api/cards/${card}/comments`, { body: 'Versión 1' })).body.id as string
+    await bot.patch(`/api/comments/${id}`, { body: 'Versión 2' })
+    await bot.patch(`/api/comments/${id}`, { body: 'Versión 3' })
+    const edits = (await historyOf(client, card)).filter((e) => e.kind === 'comment.body')
+    const older = edits.at(-1)!
+    const asked = (await client.post('/api/history/undo', { ids: [older.id] })).body as UndoResultDTO
+    expect(asked.applied).toBe(false)
+    expect(asked.plan[0]).toMatchObject({ status: 'conflict', current: 'Versión 3' })
+    // Both edits at once: the newer first, then the older one, back to the first words.
+    const both = (await client.post('/api/history/undo', { ids: edits.map((e) => e.id) })).body as UndoResultDTO
+    expect(both).toMatchObject({ applied: true, undone: 2 })
+    expect((await comments(client, card)).comments[0]!.body).toBe('Versión 1')
+  })
+
+  it('lists comments in the trash in the order they were written', async () => {
+    const { client, card, workspaceId } = await setup()
+    for (const body of ['Zeta', 'Alfa', 'Media']) await client.post(`/api/cards/${card}/comments`, { body })
+    await client.del(`/api/cards/${card}`)
+    const tree = (await client.get(`/api/workspaces/${workspaceId}/trash/card:${card}`)).body as TrashTreeDTO
+    expect(tree.below.map((n) => n.title)).toEqual(['Zeta', 'Alfa', 'Media'])
+  })
+
+  it('refuses an agent without leave to delete, over REST too', async () => {
+    const { client, card, workspaceId } = await setup()
+    const bot = new Client(h, (await token(client, workspaceId, ['tasks:read', 'tasks:write'])).token)
+    const id = (await bot.post(`/api/cards/${card}/comments`, { body: 'Mío' })).body.id as string
+    const refused = await bot.del(`/api/comments/${id}`)
+    expect(refused.status).toBe(403)
+    expect(refused.body.error.code).toBe('missing_scope')
+    expect((await comments(client, card)).comments[0]).toMatchObject({ id, canDelete: true })
   })
 })
 
