@@ -46,11 +46,20 @@ export function followLanguageForPhrases() {
   i18n.on('languageChanged', (language) => language === 'ja' && loadPhrases())
 }
 
-/** The phrases of the titles shown lately, so each is split once. */
-export const phrasesCache = new Map<string, string[]>()
+/** The phrases of the titles shown lately, so each is split once: the last 2000. */
+const cache = new Map<string, string[]>()
+const CACHED = 2000
+
+export const cachedPhrases = (text: string) => cache.get(text)
+
+export function rememberPhrases(text: string, phrases: string[]) {
+  if (cache.size >= CACHED) cache.delete(cache.keys().next().value!)
+  cache.set(text, phrases)
+  return phrases
+}
 
 /** Forgets the titles shown: what the person signed in saw goes with their session. */
 export function clearPhrases() {
-  phrasesCache.clear()
+  cache.clear()
 }
 onSessionEnded(clearPhrases)

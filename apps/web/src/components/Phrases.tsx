@@ -2,9 +2,9 @@ import i18n from 'i18next'
 import { Fragment, type MouseEvent, type PointerEvent, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../lib/cn'
-import { type Parse, loadPhrases, nativePhrases, onPhraseParser, phraseParser, phrasesCache } from '../lib/phrases'
+import { type Parse, cachedPhrases, loadPhrases, nativePhrases, onPhraseParser, phraseParser, rememberPhrases } from '../lib/phrases'
 
-/**
+/*
  * Japanese titles broken between their phrases, never inside a word ("ござい|ます"). Chromium tells
  * phrases apart itself (`word-break: auto-phrase`, see `.orq-phrases` in app.css). Elsewhere BudouX
  * does (see lib/phrases.ts): the title is split into its phrases, with a place to break (<wbr>)
@@ -18,7 +18,6 @@ const SPACED = /[\p{L}\p{N}]/u
 const spaced = (char: string | undefined) => char !== undefined && SPACED.test(char) && !CJK.test(char)
 /** Characters as people see them: an emoji family, a heart with its style or a letter with its accent is one. */
 const graphemes = new Intl.Segmenter('ja', { granularity: 'grapheme' })
-const CACHED = 2000
 
 /**
  * The phrases BudouX finds in `text`, joined again where its place to break would cut a word or a
@@ -38,15 +37,7 @@ export function splitPhrases(text: string, parse: Parse): string[] {
   return phrases
 }
 
-function phrasesOf(text: string, parse: Parse) {
-  let phrases = phrasesCache.get(text)
-  if (!phrases) {
-    phrases = splitPhrases(text, parse)
-    if (phrasesCache.size >= CACHED) phrasesCache.delete(phrasesCache.keys().next().value!)
-    phrasesCache.set(text, phrases)
-  }
-  return phrases
-}
+const phrasesOf = (text: string, parse: Parse) => cachedPhrases(text) ?? rememberPhrases(text, splitPhrases(text, parse))
 
 /**
  * How a title shows here: `native` when the browser breaks it between phrases itself, its phrases
@@ -99,12 +90,25 @@ function pieces(text: string, phrases: string[] | null, italic?: readonly [numbe
 
 /**
  * A title that breaks between its phrases when it is Japanese; any other text as it is. `italic`
- * slants a part of it (from, to), as a name in a sentence.
+ * slants a part of it (from, to), as a name in a sentence (see `withoutMarks`).
  */
 export function Phrases({ text, cache, italic }: { text: string; cache?: boolean; italic?: readonly [number, number] }) {
   const phrases = usePhrases(text, { cache })
   if (phrases === null) return italic ? pieces(text, null, italic) : text
   return <span className="orq-phrases">{pieces(text, phrases === 'native' ? null : phrases, italic)}</span>
+}
+
+/**
+ * A translated sentence without the tag marking a part of it ("Good morning, <name>Ana</name>."),
+ * and where that part is, to slant it with `Phrases`.
+ */
+export function withoutMarks(sentence: string, tag = 'name'): [string, [number, number] | undefined] {
+  const [open, close] = [`<${tag}>`, `</${tag}>`]
+  const start = sentence.indexOf(open)
+  const end = sentence.lastIndexOf(close)
+  if (start < 0 || end < start + open.length) return [sentence, undefined]
+  const part = sentence.slice(start + open.length, end)
+  return [sentence.slice(0, start) + part + sentence.slice(end + close.length), [start, start + part.length]]
 }
 
 /** The place in `root`'s text nearest to a point on screen, counted in UTF-16 units, never inside a character. */

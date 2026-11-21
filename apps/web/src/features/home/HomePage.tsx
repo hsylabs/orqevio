@@ -5,7 +5,7 @@ import { type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ActivityList } from '../../components/ActivityList'
-import { Phrases } from '../../components/Phrases'
+import { Phrases, withoutMarks } from '../../components/Phrases'
 import { get } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { greeting, longDate, relativeTime } from '../../lib/format'
@@ -14,15 +14,6 @@ import { localPref, setLocalPref } from '../../lib/theme'
 import { DueChip } from '../boards/CardItem'
 import { PageHeader } from '../shell/PageHeader'
 import { useWorkspace } from '../shell/workspace'
-
-/** The greeting as it reads, and where the name marked in it (<name>…</name>) is: it is written in italics. */
-function withoutMarks(greeting: string): [string, [number, number] | undefined] {
-  const open = greeting.indexOf('<name>')
-  const close = greeting.lastIndexOf('</name>')
-  if (open < 0 || close < open) return [greeting, undefined]
-  const name = greeting.slice(open + '<name>'.length, close)
-  return [greeting.slice(0, open) + name + greeting.slice(close + '</name>'.length), [open, open + name.length]]
-}
 
 export function HomePage() {
   const { t } = useTranslation('home')
