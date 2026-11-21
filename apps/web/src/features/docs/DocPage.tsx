@@ -543,7 +543,7 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
                   }
                 }
               }}
-              className="mt-2 block w-full resize-none overflow-hidden bg-transparent font-display text-[40px] leading-[1.1] font-medium tracking-[-0.025em] outline-none placeholder:text-ink-3 sm:text-[44px]"
+              className="orq-title mt-2 block w-full resize-none overflow-hidden bg-transparent font-display text-[40px] leading-[1.1] font-medium tracking-[-0.025em] outline-none placeholder:text-ink-3 sm:text-[44px]"
             />
           </div>
 

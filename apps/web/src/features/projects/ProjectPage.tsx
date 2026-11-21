@@ -2,6 +2,7 @@ import { FilePlus, FileText, Pencil, Plus, SquareKanban, Trash } from 'lucide-re
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
+import { Phrases } from '../../components/Phrases'
 import { ProjectGlyph } from '../../components/ProjectGlyph'
 import { Button } from '../../components/ui/Button'
 import { cn } from '../../lib/cn'
@@ -47,7 +48,9 @@ export function ProjectPage() {
           <div className="animate-rise flex items-start gap-4">
             <ProjectGlyph color={project.color} className="size-12 rounded-[12px] text-[22px]">{monogram(project.name)}</ProjectGlyph>
             <div className="min-w-0">
-              <h1 className="font-display text-[34px] leading-tight font-medium tracking-[-0.02em]">{project.name}</h1>
+              <h1 className="font-display text-[34px] leading-tight font-medium tracking-[-0.02em]">
+                <Phrases text={project.name} />
+              </h1>
               <p className="mt-1 text-[14px] text-ink-2">
                 {project.description || t('summary', { boards: t('boardCount', { count: project.boards.length }), pages: t('pageCount', { count: project.pages.length }) })}
               </p>
@@ -76,8 +79,10 @@ export function ProjectPage() {
                       ))}
                     </div>
                     <p className="flex items-center gap-2 text-[14.5px] font-semibold">
-                      <SquareKanban className="size-4 text-ink-3" />
-                      {b.name}
+                      <SquareKanban className="size-4 shrink-0 text-ink-3" />
+                      <span className="min-w-0">
+                        <Phrases text={b.name} />
+                      </span>
                     </p>
                     <p className="mt-0.5 text-[12.5px] text-ink-3">{t('boards.openCards', { count: b.cardCount })}</p>
                   </Link>

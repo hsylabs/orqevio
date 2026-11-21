@@ -425,7 +425,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
                 void update({ title: next })
               } else setTitle(card.title)
             }}
-            className="block w-full resize-none overflow-hidden bg-transparent font-display text-[26px] leading-[1.18] font-medium tracking-[-0.02em] outline-none"
+            className="orq-title block w-full resize-none overflow-hidden bg-transparent font-display text-[26px] leading-[1.18] font-medium tracking-[-0.02em] outline-none"
           />
           <div className="mt-5 flex flex-col gap-1">
             <Row icon={<Tag />} label={t('sheet.labels')}>
