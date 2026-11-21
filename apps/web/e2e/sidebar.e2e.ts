@@ -1,8 +1,8 @@
 import { expect, openNewWorkspace, test } from './helpers'
 
 // Crossing 900 px: narrowing the window closes the side panel, as a phone opens with it closed, and
-// widening brings it back as it was left on a wide window. Each step changes the panel's state, so
-// each one needs the window's change to be heard.
+// widening brings it back as it was left on a wide window. Each crossing checked here changes the
+// panel's state, so each one needs the window's change to be heard.
 test('the side panel closes when the window narrows and comes back as it was when it widens', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await openNewWorkspace(page, 'Panel lateral E2E')
@@ -34,7 +34,7 @@ test('the side panel closes when the window narrows and comes back as it was whe
   await expect(toggle).toHaveAttribute('aria-expanded', 'true')
   await expect.poll(closed).toBe(false)
   await nav.getByRole('link').first().focus()
-  await expect.poll(focused).not.toBe('main')
+  await expect(nav.getByRole('link').first()).toBeFocused()
   await page.setViewportSize({ width: 1280, height: 800 })
   await expect.poll(closed).toBe(true)
   await expect.poll(focused).toBe('main')
