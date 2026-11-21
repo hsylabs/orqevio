@@ -282,7 +282,7 @@ describe('create-orqevio', () => {
     setState({ exists: true, bucket: 'empty', backups: 'full' })
     const kept = await run(['uninstall', '--name', 'ana'], ['', 'ana'])
     expect(kept.code).toBe(0)
-    expect(kept.asked).toContain('¿Borrar también sus copias de seguridad? El bucket «ana-backups» guarda sus 7 últimas copias diarias')
+    expect(kept.asked).toContain('El bucket «ana-backups» guarda sus 7 últimas copias diarias, las 7 últimas hechas por ti y la hecha antes de la última restauración; si lo conservas, una copia que vuelvas a instalar con el mismo nombre podrá restaurarlas. ¿Borrar también sus copias de seguridad? [s/N]')
     expect(kept.asked).toContain('[s/N]')
     expect(kept.out).toContain('Sus copias de seguridad siguen en el bucket «ana-backups»')
     expect(kept.out).toContain('npx create-orqevio@latest --name ana')
