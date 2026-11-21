@@ -1,4 +1,4 @@
-import type { ActorRef, LinkedCardDTO, PageDTO, PageNodeDTO, PaletteColor } from '@orqevio/shared'
+import type { ActorRef, LinkedCardDTO, PageDTO, PageNodeDTO, ProjectColor } from '@orqevio/shared'
 import { MAX_MARKDOWN, characters, extractReferences, pageCreateInput, pageMoveInput, pageUpdateInput } from '@orqevio/shared'
 import { type SQL, and, asc, eq, isNull, sql } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
@@ -201,7 +201,7 @@ export class PageService {
       createdAt: page.createdAt.toISOString(),
       updatedAt: page.updatedAt.toISOString(),
       updatedBy,
-      project: { id: project!.id, name: project!.name, color: project!.color as PaletteColor },
+      project: { id: project!.id, name: project!.name, color: project!.color as ProjectColor },
       breadcrumbs,
       children: children.map(toNode),
       cards: [...linked.values()],

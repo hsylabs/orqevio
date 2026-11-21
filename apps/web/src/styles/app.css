@@ -325,6 +325,12 @@
   .c-iris { --c: var(--c-iris); }
   .c-rose { --c: var(--c-rose); }
   .c-slate { --c: var(--c-slate); }
+  /* A project's own colour: both tones come inline (lib/colors.ts), the theme picks one. */
+  .c-custom { --c: var(--c-custom-light); }
+  :root[data-theme='dark'] .c-custom { --c: var(--c-custom-dark); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']):not([data-theme='dark']) .c-custom { --c: var(--c-custom-dark); }
+  }
 
   .scroll-fade-x {
     mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);

@@ -1,4 +1,4 @@
-import { ARCHIVED_PAGE, MAX_COLUMNS, type BoardDTO, type CardSummaryDTO, type ColumnDTO, type PaletteColor } from '@orqevio/shared'
+import { ARCHIVED_PAGE, MAX_COLUMNS, type BoardDTO, type CardSummaryDTO, type ColumnDTO, type ProjectColor } from '@orqevio/shared'
 import {
   DEFAULT_COLUMNS,
   DEFAULT_LOCALE,
@@ -105,7 +105,7 @@ export class BoardService {
       projectId: board.projectId,
       workspaceId: board.workspaceId,
       name: board.name,
-      project: { id: project!.id, name: project!.name, color: project!.color as PaletteColor },
+      project: { id: project!.id, name: project!.name, color: project!.color as ProjectColor },
       columns: columnRows.map((c) => ({ ...toColumnDTO(c), archivedCards: archived.get(c.id) ?? 0 })),
       cards: await this.cards.summarize(cardRows),
       labels: labelRows.map(toLabelDTO),

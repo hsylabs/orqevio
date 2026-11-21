@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { PALETTE } from './colors'
+import { CUSTOM_COLOR, type CustomColor, PALETTE } from './colors'
 import { LOCALES } from './locales'
 import { SCOPES } from './scopes'
 
@@ -29,6 +29,19 @@ const optionalName = (max: number) =>
     .overwrite((value) => (VISIBLE.test(value) ? value : ''))
     .max(max)
 const color = z.enum(PALETTE)
+/**
+ * A project's colour: one of the palette, or one of its own as `#rrggbb`, in either case and kept
+ * in lower case, so the same colour is always written the same way.
+ */
+export const projectColor = z.union([
+  color,
+  z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(CUSTOM_COLOR, 'A colour is one of the palette or #rrggbb')
+    .transform((value) => value as CustomColor),
+])
 const index = z.number().int().min(0).max(100_000)
 
 /** Due dates are calendar days, stored at 12:00 UTC so that every time zone shows the same day. */
@@ -110,12 +123,12 @@ export const updateAccountInput = z.object({
 export const workspaceInput = z.object({ name: name(60) })
 export const projectCreateInput = z.object({
   name: name(80),
-  color: color.default('cobalt'),
+  color: projectColor.default('cobalt'),
   description: z.string().trim().max(500).optional(),
 })
 export const projectUpdateInput = z.object({
   name: name(80).optional(),
-  color: color.optional(),
+  color: projectColor.optional(),
   description: z.string().trim().max(500).optional(),
 })
 

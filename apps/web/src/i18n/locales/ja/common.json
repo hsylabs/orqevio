@@ -56,7 +56,9 @@
     "cobalt": "コバルト",
     "iris": "アイリス",
     "rose": "ピンク",
-    "slate": "スレート"
+    "slate": "スレート",
+    "custom": "カスタムカラー",
+    "customValue": "カスタムカラー（{{value}}）"
   },
   "untitled": "無題",
   "quoted": "「{{text}}」"

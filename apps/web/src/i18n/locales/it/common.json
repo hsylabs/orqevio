@@ -56,7 +56,9 @@
     "cobalt": "Cobalto",
     "iris": "Iris",
     "rose": "Rosa",
-    "slate": "Ardesia"
+    "slate": "Ardesia",
+    "custom": "Colore personalizzato",
+    "customValue": "Colore personalizzato ({{value}})"
   },
   "untitled": "Senza titolo",
   "quoted": "«{{text}}»"
