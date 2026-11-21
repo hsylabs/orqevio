@@ -97,16 +97,16 @@ export { expect }
  * does not tell.
  */
 export function apiRequests(page: Page) {
-  /** Each request in flight, with the number of documents the page had loaded when it started. */
+  /** Each request in flight, with the number of navigations of the page when it started. */
   const pending = new Map<Request, number>()
-  let documents = 0
+  let navigations = 0
   let lastSeen = Date.now()
   page.on('framenavigated', (frame) => {
-    if (frame === page.mainFrame()) documents++
+    if (frame === page.mainFrame()) navigations++
   })
   page.on('request', (request) => {
     if (!new URL(request.url()).pathname.startsWith('/api/')) return
-    pending.set(request, documents)
+    pending.set(request, navigations)
     lastSeen = Date.now()
   })
   const done = (request: Request) => {
@@ -126,14 +126,14 @@ export function apiRequests(page: Page) {
       })
       .toBe('settled')
   return {
-    settled,
     /**
      * Reloads the page once its requests have settled. One the old page starts in the meantime is
-     * cut short and then forgotten: Chromium never reports it as ended.
+     * cut short and then forgotten: Chromium never reports it as ended, so waiting on requests
+     * after a page is left any other way (a goto, a link that loads a whole page) would never end.
      */
     reload: async () => {
       await settled()
-      const before = documents
+      const before = navigations
       await page.reload()
       for (const [request, loaded] of pending) if (loaded <= before) pending.delete(request)
     },
