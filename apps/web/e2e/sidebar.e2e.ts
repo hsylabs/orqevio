@@ -6,10 +6,11 @@ import { expect, openNewWorkspace, test } from './helpers'
 test('the side panel closes when the window narrows and comes back as it was when it widens', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await openNewWorkspace(page, 'Panel lateral E2E')
-  const nav = page.getByRole('navigation', { name: 'Navegación principal' })
+  // Closed on a wide window it is hidden as well, so the locator has to find it hidden too.
+  const nav = page.getByRole('navigation', { name: 'Navegación principal', includeHidden: true })
   // Closed, the side panel is inert (off the screen on a phone, folded away on a wide window).
   const closed = () => nav.evaluate((el) => Boolean(el.closest('[inert]')))
-  const focused = () => page.evaluate(() => document.activeElement?.id ?? document.activeElement?.tagName)
+  const focused = () => page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName)
   const toggle = page.getByRole('button', { name: 'Alternar barra lateral' })
   await expect.poll(closed).toBe(false)
 
