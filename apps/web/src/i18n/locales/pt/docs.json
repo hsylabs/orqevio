@@ -25,6 +25,15 @@
     "subpages": "Subpáginas",
     "attachments": "Anexos",
     "history": "Histórico",
+    "download": "Baixar em Markdown",
+    "print": "Imprimir ou salvar em PDF",
+    "downloadUnsaved": "Não é possível baixar até que suas últimas alterações sejam salvas.",
+    "downloadAsk": {
+      "title": "Baixar “{{title}}”",
+      "description": "Esta página tem subpáginas. Incluí-las no download?",
+      "only": "Só esta página",
+      "withSubpages": "Com suas subpáginas"
+    },
     "gone": {
       "byName": "<strong>{{name}}</strong> excluiu esta página.",
       "byYou": "Você excluiu esta página em outra aba ou sessão.",

@@ -25,6 +25,15 @@
     "subpages": "Sottopagine",
     "attachments": "Allegati",
     "history": "Cronologia",
+    "download": "Scarica in Markdown",
+    "print": "Stampa o salva in PDF",
+    "downloadUnsaved": "Non puoi scaricare finché le tue ultime modifiche non sono salvate.",
+    "downloadAsk": {
+      "title": "Scarica «{{title}}»",
+      "description": "Questa pagina ha delle sottopagine. Includerle nel download?",
+      "only": "Solo questa pagina",
+      "withSubpages": "Con le sue sottopagine"
+    },
     "gone": {
       "byName": "<strong>{{name}}</strong> ha eliminato questa pagina.",
       "byYou": "Hai eliminato questa pagina in un’altra scheda o sessione.",

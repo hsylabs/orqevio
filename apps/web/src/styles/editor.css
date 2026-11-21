@@ -330,3 +330,107 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* A page printed or saved as PDF (PageExport.tsx): only its title and its text, dark on white
+   whatever the theme. It takes the place of everything else only while it is there. */
+.orq-print-root {
+  display: none;
+}
+@media print {
+  /* Margins for this page only: printing anything else is as before. */
+  @page orq-print {
+    margin: 16mm 15mm;
+  }
+  html.orq-printing,
+  html.orq-printing body {
+    background: #fff !important;
+    min-height: 0 !important;
+  }
+  html.orq-printing body > :not(.orq-print-root) {
+    display: none !important;
+  }
+  html.orq-printing .orq-print-root {
+    display: block;
+    page: orq-print;
+    color-scheme: light;
+    /* As on screen: printers leave backgrounds out, and a done task's box, a table's header and a
+       block of code are drawn with them. All of them are light. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    /* The light theme's tones, so a page written in the dark one prints the same. */
+    --ink: #1c1a16;
+    --ink-2: #57524a;
+    --ink-3: #6e685d;
+    --ink-4: #8f897b;
+    --line: #e6e1d7;
+    --line-strong: #d4cec1;
+    --sunken: #f4f2ed;
+    --surface: #ffffff;
+    --accent: #c9431d;
+    --accent-soft: #fbe6dd;
+    color: var(--ink);
+    background: #fff;
+  }
+  .orq-print-title {
+    margin: 0 0 14pt;
+    font-family: var(--font-display);
+    font-variation-settings: 'SOFT' 60;
+    font-size: 24pt;
+    font-weight: 560;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    break-after: avoid;
+  }
+  .orq-print .orq-prose {
+    min-height: 0;
+    padding-bottom: 0;
+    font-size: 11pt;
+    line-height: 1.6;
+  }
+  /* On paper, each link says where it leads. */
+  .orq-print a {
+    color: inherit;
+    text-decoration: underline;
+  }
+  /* References to pages and tasks stay on one line on screen; on paper, with their address, they wrap. */
+  .orq-print .orq-prose a {
+    white-space: normal;
+  }
+  .orq-print a[data-address]::after {
+    content: ' (' attr(data-address) ')';
+    font-size: 0.85em;
+    color: var(--ink-3);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  /* Page breaks never cut a table, a block of code, a picture or a quote, nor leave a heading alone. */
+  .orq-print :is(table, pre, img, figure, blockquote, tr, li) {
+    break-inside: avoid;
+  }
+  .orq-print :is(h1, h2, h3, h4, h5, h6) {
+    break-after: avoid;
+  }
+  /* A picture taller than a page is made to fit one: no break can keep it whole otherwise. */
+  .orq-print img {
+    max-width: 100%;
+    max-height: 24cm;
+    height: auto;
+    object-fit: contain;
+  }
+  /* Code is kept whole on paper: long lines wrap instead of running off it, framed even where backgrounds don't print. */
+  .orq-print pre {
+    border: 1px solid var(--line);
+    box-shadow: none;
+  }
+  .orq-print pre.orq-raw-html {
+    box-shadow: none;
+  }
+  .orq-print pre,
+  .orq-print pre code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .orq-print table {
+    width: 100%;
+  }
+}

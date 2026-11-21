@@ -25,6 +25,15 @@
     "subpages": "サブページ",
     "attachments": "添付ファイル",
     "history": "履歴",
+    "download": "Markdown でダウンロード",
+    "print": "印刷または PDF として保存",
+    "downloadUnsaved": "最新の変更が保存されるまでダウンロードできません。",
+    "downloadAsk": {
+      "title": "「{{title}}」をダウンロード",
+      "description": "このページにはサブページがあります。ダウンロードに含めますか？",
+      "only": "このページのみ",
+      "withSubpages": "サブページも含める"
+    },
     "gone": {
       "byName": "<strong>{{name}}</strong>がこのページを削除しました。",
       "byYou": "別のタブまたはセッションでこのページを削除しました。",
