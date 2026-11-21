@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
@@ -15,7 +15,7 @@ import { Sidebar } from './Sidebar'
 import { FullScreenLoader, NotFound } from './States'
 import { WorkspaceContext } from './workspace'
 
-/** Wide enough for the side panel next to the page; narrower, it is a drawer over it. */
+/** Wide enough for the side panel next to the page; narrower, it is a drawer over it (`max-[900px]` in the classes, its exact opposite). */
 const DESKTOP = '(min-width: 900px)'
 const isDesktop = () => typeof window !== 'undefined' && window.matchMedia(DESKTOP).matches
 
@@ -29,6 +29,7 @@ export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(() => (isDesktop() ? localPref('sidebar', true) : false))
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [newProjectOpen, setNewProjectOpen] = useState(false)
+  const sidebar = useRef<HTMLDivElement>(null)
 
   // Live updates only for a session that is still valid and a workspace this person can open:
   // otherwise the server refuses the connection, again and again.
@@ -55,7 +56,11 @@ export function AppShell() {
   // brings the side panel back as it was left on a wide window.
   useEffect(() => {
     const media = window.matchMedia(DESKTOP)
-    const changed = () => setSidebarOpen(media.matches ? localPref('sidebar', true) : false)
+    const changed = () => {
+      // Closing it makes it inert: focus inside it would fall to nowhere, so it moves to the page.
+      if (!media.matches && sidebar.current?.contains(document.activeElement)) document.getElementById('main')?.focus({ preventScroll: true })
+      setSidebarOpen(media.matches ? localPref('sidebar', true) : false)
+    }
     media.addEventListener('change', changed)
     return () => media.removeEventListener('change', changed)
   }, [])
@@ -148,18 +153,19 @@ export function AppShell() {
         <div
           className={cn(
             'z-40 shrink-0 transition-[width,transform] duration-300 ease-[var(--ease-out-quint)]',
-            'max-[899px]:fixed max-[899px]:inset-y-0 max-[899px]:left-0 max-[899px]:w-[272px] max-[899px]:bg-desk max-[899px]:shadow-lg',
-            sidebarOpen ? 'max-[899px]:translate-x-0 min-[900px]:w-[260px]' : 'max-[899px]:-translate-x-full min-[900px]:w-0',
+            'max-[900px]:fixed max-[900px]:inset-y-0 max-[900px]:left-0 max-[900px]:w-[272px] max-[900px]:bg-desk max-[900px]:shadow-lg',
+            sidebarOpen ? 'max-[900px]:translate-x-0 min-[900px]:w-[260px]' : 'max-[900px]:-translate-x-full min-[900px]:w-0',
           )}
         >
           {/* Closed, it is off the screen on a phone: inert, so Tab and screen readers skip it too. */}
-          <div className={cn('h-full w-[260px] max-[899px]:w-[272px]', !sidebarOpen && 'min-[900px]:invisible')} inert={!sidebarOpen}>
+          <div ref={sidebar} className={cn('h-full w-[260px] max-[900px]:w-[272px]', !sidebarOpen && 'min-[900px]:invisible')} inert={!sidebarOpen}>
             <Sidebar />
           </div>
         </div>
         <main
           id="main"
-          className={cn('sheet relative my-2 mr-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-[16px] max-[899px]:m-0 max-[899px]:rounded-none', !sidebarOpen && 'min-[900px]:ml-2')}
+          tabIndex={-1}
+          className={cn('sheet relative my-2 mr-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-[16px] outline-none max-[900px]:m-0 max-[900px]:rounded-none', !sidebarOpen && 'min-[900px]:ml-2')}
         >
           <Outlet />
         </main>

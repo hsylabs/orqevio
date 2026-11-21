@@ -176,8 +176,6 @@ test('something picked that left the trash meanwhile is said, and left out', asy
 test('on a phone, actions are in a menu and the bar for what is picked stays at the bottom', async ({ page }) => {
   const { list } = await fill(page)
   await page.setViewportSize({ width: 390, height: 780 })
-  // At this width the sidebar is a drawer, open as it was: Esc closes it.
-  await page.keyboard.press('Escape')
   const notes = list.getByRole('listitem', { name: 'Notas' })
   await expect(notes.getByRole('button', { name: 'Restaurar «Notas»' })).toBeHidden()
   await notes.getByRole('button', { name: 'Más acciones para «Notas»' }).click()

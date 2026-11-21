@@ -190,7 +190,6 @@ test('the sidebar button says if it is open, the current workspace is marked, no
 test('on a phone the palette keeps its search whole', async ({ page }, testInfo) => {
   await openNewWorkspace(page, 'Paleta E2E')
   await page.setViewportSize({ width: 390, height: 844 })
-  if (await page.getByRole('navigation', { name: 'Navegación principal' }).isVisible()) await page.keyboard.press('Escape')
   await page.keyboard.press('ControlOrMeta+k')
   const input = page.getByRole('combobox')
   await expect(input).toBeVisible()
