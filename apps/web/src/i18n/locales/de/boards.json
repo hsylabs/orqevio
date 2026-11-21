@@ -89,6 +89,7 @@
     "hasDescription": "Hat eine Beschreibung",
     "linkedDocs": "Verknüpfte Dokumente",
     "attachments": "Anhänge",
+    "comments": "Kommentare",
     "createdByName": "Erstellt von {{name}}",
     "a11y": {
       "labels": "Labels: {{list}}",
@@ -116,7 +117,7 @@
     "archivedToast": "Karte archiviert",
     "deleteConfirm": {
       "title": "Diese Karte löschen?",
-      "description": "Die Karte kommt mitsamt ihren Checklisten und Anhängen in den Papierkorb. Wenn du sie nur ausblenden willst, archiviere sie stattdessen."
+      "description": "Die Karte kommt mitsamt ihren Checklisten, Kommentaren und Anhängen in den Papierkorb. Wenn du sie nur ausblenden willst, archiviere sie stattdessen."
     },
     "labels": "Labels",
     "addLabels": "Labels hinzufügen",
@@ -133,6 +134,29 @@
     "checklistsEmpty": "Teile die Aufgabe in Schritte auf, die du abhaken kannst.",
     "linkedDocs": "Verknüpfte Dokumente",
     "attachments": "Anhänge",
+    "comments": {
+      "title": "Kommentare",
+      "titleCount_one": "Kommentare · {{count}}",
+      "titleCount_other": "Kommentare · {{count}}",
+      "list": "Kommentare",
+      "empty": "Noch keine Kommentare. Halte hier Fortschritte, Fragen oder Entscheidungen fest; auch Agenten können hier schreiben.",
+      "placeholder": "Kommentar schreiben … Markdown wird unterstützt.",
+      "label": "Neuer Kommentar",
+      "hint": "Strg+Enter zum Senden",
+      "submit": "Kommentieren",
+      "edit": "Bearbeiten",
+      "editLabel": "Kommentar bearbeiten",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "delete": "Löschen",
+      "deleted": "Kommentar in den Papierkorb gelegt",
+      "edited": "(bearbeitet)",
+      "actions": "Kommentaraktionen",
+      "older": "Frühere Kommentare anzeigen",
+      "by": "Kommentar von {{name}}, {{when}}",
+      "tooLong_one": "{{count}} Zeichen zu viel: Die Grenze liegt bei {{max}}.",
+      "tooLong_other": "{{count}} Zeichen zu viel: Die Grenze liegt bei {{max}}."
+    },
     "activity": "Aktivität",
     "deleted": "Karte in den Papierkorb verschoben",
     "history": "Verlauf",

@@ -91,6 +91,7 @@
     "hasDescription": "Contient une description",
     "linkedDocs": "Documents liés",
     "attachments": "Pièces jointes",
+    "comments": "Commentaires",
     "createdByName": "Créée par {{name}}",
     "a11y": {
       "labels": "Étiquettes : {{list}}",
@@ -118,7 +119,7 @@
     "archivedToast": "Carte archivée",
     "deleteConfirm": {
       "title": "Supprimer cette carte ?",
-      "description": "Elle ira dans la corbeille avec ses checklists et ses pièces jointes. Pour simplement la masquer, archivez-la plutôt."
+      "description": "Elle ira dans la corbeille avec ses checklists, ses commentaires et ses pièces jointes. Pour simplement la masquer, archivez-la plutôt."
     },
     "labels": "Étiquettes",
     "addLabels": "Ajouter des étiquettes",
@@ -135,6 +136,31 @@
     "checklistsEmpty": "Découpez la tâche en étapes à cocher.",
     "linkedDocs": "Documents liés",
     "attachments": "Pièces jointes",
+    "comments": {
+      "title": "Commentaires",
+      "titleCount_one": "Commentaires · {{count}}",
+      "titleCount_many": "Commentaires · {{count}}",
+      "titleCount_other": "Commentaires · {{count}}",
+      "list": "Commentaires",
+      "empty": "Aucun commentaire pour l’instant. Notez ici une avancée, une question ou une décision ; les agents peuvent aussi écrire ici.",
+      "placeholder": "Écrire un commentaire… Markdown accepté.",
+      "label": "Nouveau commentaire",
+      "hint": "Ctrl+Entrée pour envoyer",
+      "submit": "Commenter",
+      "edit": "Modifier",
+      "editLabel": "Modifier le commentaire",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "deleted": "Commentaire mis à la corbeille",
+      "edited": "(modifié)",
+      "actions": "Actions du commentaire",
+      "older": "Voir les commentaires précédents",
+      "by": "Commentaire de {{name}}, {{when}}",
+      "tooLong_one": "{{count}} caractère de trop : la limite est de {{max}}.",
+      "tooLong_many": "{{count}} caractères de trop : la limite est de {{max}}.",
+      "tooLong_other": "{{count}} caractères de trop : la limite est de {{max}}."
+    },
     "activity": "Activité",
     "deleted": "Carte placée dans la corbeille",
     "history": "Historique",

@@ -1,7 +1,7 @@
 import type { CardSummaryDTO, LabelDTO } from '@orqevio/shared'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Bot, Calendar, FileText, Paperclip, TextAlignStart } from 'lucide-react'
+import { Bot, Calendar, FileText, MessageSquare, Paperclip, TextAlignStart } from 'lucide-react'
 import { memo, useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { currentLocale } from '../../i18n'
@@ -65,7 +65,7 @@ export const CardView = memo(function CardView({ card, labels, overlay, ghost }:
   const { t } = useTranslation('boards')
   const agent = useAgentHighlight(card.id)
   const cardLabels = card.labelIds.map((id) => labels.get(id)).filter((l): l is LabelDTO => Boolean(l))
-  const hasMeta = card.dueAt || card.checklist.total || card.hasDescription || card.linkedPages || card.attachments || card.createdBy?.kind === 'agent'
+  const hasMeta = card.dueAt || card.checklist.total || card.hasDescription || card.linkedPages || card.attachments || card.comments || card.createdBy?.kind === 'agent'
   return (
     <div
       className={cn(
@@ -118,6 +118,12 @@ export const CardView = memo(function CardView({ card, labels, overlay, ghost }:
               {card.attachments}
             </span>
           )}
+          {card.comments > 0 && (
+            <span className="inline-flex items-center gap-0.5" title={t('card.comments')}>
+              <MessageSquare className="size-3.5" />
+              {card.comments}
+            </span>
+          )}
           {card.createdBy?.kind === 'agent' && (
             <span className="ml-auto inline-flex items-center gap-1 text-agent" title={t('card.createdByName', { name: card.createdBy.name })}>
               <Bot className="size-3.5" />
@@ -140,6 +146,7 @@ function useCardDescription(card: CardSummaryDTO, labels: Map<string, LabelDTO>)
     card.hasDescription && t('card.hasDescription'),
     card.linkedPages > 0 && `${t('card.linkedDocs')}: ${card.linkedPages}`,
     card.attachments > 0 && `${t('card.attachments')}: ${card.attachments}`,
+    card.comments > 0 && `${t('card.comments')}: ${card.comments}`,
     card.createdBy?.kind === 'agent' && t('card.createdByName', { name: card.createdBy.name }),
   ]
     .filter(Boolean)

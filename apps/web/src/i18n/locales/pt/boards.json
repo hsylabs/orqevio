@@ -91,6 +91,7 @@
     "hasDescription": "Tem descrição",
     "linkedDocs": "Documentos vinculados",
     "attachments": "Anexos",
+    "comments": "Comentários",
     "createdByName": "Criado por {{name}}",
     "a11y": {
       "labels": "Etiquetas: {{list}}",
@@ -118,7 +119,7 @@
     "archivedToast": "Cartão arquivado",
     "deleteConfirm": {
       "title": "Excluir este cartão?",
-      "description": "Ele irá para a lixeira com as checklists e os anexos. Para só ocultá-lo, arquive-o."
+      "description": "Ele irá para a lixeira com as checklists, os comentários e os anexos. Para só ocultá-lo, arquive-o."
     },
     "labels": "Etiquetas",
     "addLabels": "Adicionar etiquetas",
@@ -135,6 +136,31 @@
     "checklistsEmpty": "Divida a tarefa em etapas que você pode marcar.",
     "linkedDocs": "Documentos vinculados",
     "attachments": "Anexos",
+    "comments": {
+      "title": "Comentários",
+      "titleCount_one": "Comentários · {{count}}",
+      "titleCount_many": "Comentários · {{count}}",
+      "titleCount_other": "Comentários · {{count}}",
+      "list": "Comentários",
+      "empty": "Ainda não há comentários. Deixe aqui avanços, dúvidas ou decisões; os agentes também podem escrever.",
+      "placeholder": "Escreva um comentário… Aceita Markdown.",
+      "label": "Novo comentário",
+      "hint": "Ctrl+Enter para enviar",
+      "submit": "Comentar",
+      "edit": "Editar",
+      "editLabel": "Editar o comentário",
+      "save": "Salvar",
+      "cancel": "Cancelar",
+      "delete": "Excluir",
+      "deleted": "Comentário enviado para a lixeira",
+      "edited": "(editado)",
+      "actions": "Ações do comentário",
+      "older": "Ver comentários anteriores",
+      "by": "Comentário de {{name}}, {{when}}",
+      "tooLong_one": "{{count}} caractere a mais: o limite é {{max}}.",
+      "tooLong_many": "{{count}} caracteres a mais: o limite é {{max}}.",
+      "tooLong_other": "{{count}} caracteres a mais: o limite é {{max}}."
+    },
     "activity": "Atividade",
     "deleted": "Cartão movido para a lixeira",
     "history": "Histórico",

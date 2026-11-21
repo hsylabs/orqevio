@@ -1,6 +1,8 @@
 import {
   ARCHIVED_PAGE,
   type BackupsDTO,
+  COMMENTS_PAGE,
+  type CommentPageDTO,
   type ActivityDTO,
   type AnonymousSessionDTO,
   type BoardDTO,
@@ -39,6 +41,8 @@ export const keys = {
   board: (id: string) => ['board', id] as const,
   archived: (id: string) => ['archived', id] as const,
   card: (id: string) => ['card', id] as const,
+  /** Under the card's key: whatever refreshes the card refreshes its comments too. */
+  comments: (id: string) => ['card', id, 'comments'] as const,
   page: (id: string) => ['page', id] as const,
   search: (wid: string, q: string) => ['search', wid, q] as const,
   tokens: ['tokens'] as const,
@@ -109,6 +113,23 @@ export const useArchived = (id: string, enabled: boolean) =>
     getNextPageParam: (last: CardSummaryDTO[]) =>
       last.length < ARCHIVED_PAGE || !last.at(-1)!.archivedAt ? undefined : { id: last.at(-1)!.id, archivedAt: last.at(-1)!.archivedAt! },
     enabled,
+  })
+
+/** A card's comments, the newest first, a page at a time. */
+export const useComments = (cardId: string) =>
+  useInfiniteQuery({
+    queryKey: keys.comments(cardId),
+    queryFn: ({ signal, pageParam }) =>
+      get<CommentPageDTO>(
+        `/cards/${cardId}/comments?limit=${COMMENTS_PAGE}${pageParam ? `&before=${encodeURIComponent(pageParam.createdAt)}&beforeId=${pageParam.id}` : ''}`,
+        signal,
+      ),
+    // The next page starts after the last comment: when it was written, and the comment itself for those written at once.
+    initialPageParam: null as { id: string; createdAt: string } | null,
+    getNextPageParam: (last: CommentPageDTO) => {
+      const end = last.comments.at(-1)
+      return last.hasMore && end ? { id: end.id, createdAt: end.createdAt } : undefined
+    },
   })
 
 export const useCard = (id: string | null) =>

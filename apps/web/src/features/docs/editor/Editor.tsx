@@ -34,6 +34,8 @@ interface EditorProps {
   onUploaded?: (attachment: AttachmentDTO) => void
   className?: string
   ariaLabel?: string
+  /** Shows the Markdown without letting it be edited (a comment): links open on a plain click. */
+  readOnly?: boolean
 }
 
 type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'code' | 'table' | 'hr' | 'mention' | 'image' | 'file'
@@ -63,7 +65,7 @@ function insertAttachment(editor: TiptapEditor, attachment: AttachmentDTO, pos?:
   return editor.state.selection.to
 }
 
-export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel }: EditorProps) {
+export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel, readOnly }: EditorProps) {
   const { t } = useTranslation('docs')
   // TipTap keeps the callbacks it was created with: they read the current language and placeholder from refs.
   const tRef = useRef(t)
@@ -170,6 +172,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
 
   const editor = useEditor({
     immediatelyRender: true,
+    editable: !readOnly,
     shouldRerenderOnTransaction: false,
     autofocus: autofocus ? 'end' : false,
     extensions: [
@@ -185,13 +188,15 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
     content,
     contentType: 'markdown',
     editorProps: {
-      attributes: {
-        class: cn('orq-prose', compact && 'orq-prose--compact'),
-        'aria-label': ariaLabel ?? t('editor.label'),
-        role: 'textbox',
-        'aria-multiline': 'true',
-        spellcheck: 'true',
-      },
+      attributes: readOnly
+        ? { class: cn('orq-prose', compact && 'orq-prose--compact'), ...(ariaLabel ? { 'aria-label': ariaLabel } : {}) }
+        : {
+            class: cn('orq-prose', compact && 'orq-prose--compact'),
+            'aria-label': ariaLabel ?? t('editor.label'),
+            role: 'textbox',
+            'aria-multiline': 'true',
+            spellcheck: 'true',
+          },
       handlePaste: (view, event) => {
         const files = [...(event.clipboardData?.files ?? [])]
         if (!files.length || !uploadRef.current || !editorRef.current) return false
@@ -208,6 +213,8 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
         return true
       },
       handleClick: (_view, _pos, event) => {
+        // Read only, the links are followed by the click handler around it.
+        if (readOnly) return false
         const anchor = (event.target as HTMLElement).closest('a')
         const href = anchor?.getAttribute('href')
         if (!href) return false
@@ -247,6 +254,23 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
     if (editor) onReady?.(editor)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor])
+
+  if (readOnly) {
+    return (
+      <div
+        className={cn('relative', className)}
+        onClickCapture={(event) => {
+          const href = (event.target as HTMLElement).closest('a')?.getAttribute('href')
+          if (!href) return
+          event.preventDefault()
+          if (/^\/(card|doc)\//.test(href)) navigate(href)
+          else window.open(href, '_blank', 'noopener,noreferrer')
+        }}
+      >
+        <EditorContent editor={editor} />
+      </div>
+    )
+  }
 
   return (
     <div className={cn('relative', className)}>
