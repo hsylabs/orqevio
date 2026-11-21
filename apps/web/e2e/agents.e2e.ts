@@ -111,8 +111,7 @@ test('the MCP tools end at the height of the activity side by side, and wait fol
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(tools).toHaveCount(0)
   await expect(activity).toContainText('Cuando un agente trabaje en este espacio')
-  // The side panel opened on the wide page stays open over this one: close it, as on a phone.
-  await page.keyboard.press('Escape')
+  // Narrowing the window closed the side panel, so nothing covers the tools.
   await expect(page.getByRole('button', { name: 'Alternar barra lateral' })).toHaveAttribute('aria-expanded', 'false')
   const show = page.getByText(/^Ver las \d+ herramientas$/)
   await expect(show).toBeVisible()
