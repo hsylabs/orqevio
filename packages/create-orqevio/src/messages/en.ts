@@ -119,7 +119,7 @@ opens so you can sign in.`,
       'Leave the answer blank to do it another way.',
     ].join('\n'),
   askDeleteBackups: (bucket) =>
-    `Delete its backups too? The bucket “${bucket}” keeps its last 7 daily backups, the last 7 made by you and the one made before the last restore: keep it, and a copy you install again with the same name can restore them.`,
+    `The bucket “${bucket}” keeps its last 7 daily backups, the last 7 made by you and the one made before the last restore; keep it, and a copy you install again with the same name can restore them. Delete its backups too?`,
   emptyingBackupsThroughCopy: (bucket) =>
     [
       '',

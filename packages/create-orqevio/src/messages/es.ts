@@ -119,7 +119,7 @@ navegador para que inicies sesión.`,
       'Deja la respuesta en blanco si prefieres hacerlo de otra forma.',
     ].join('\n'),
   askDeleteBackups: (bucket) =>
-    `¿Borrar también sus copias de seguridad? El bucket «${bucket}» guarda sus 7 últimas copias diarias, las 7 últimas hechas por ti y la hecha antes de la última restauración: si lo conservas, una copia que vuelvas a instalar con el mismo nombre podrá restaurarlas.`,
+    `El bucket «${bucket}» guarda sus 7 últimas copias diarias, las 7 últimas hechas por ti y la hecha antes de la última restauración; si lo conservas, una copia que vuelvas a instalar con el mismo nombre podrá restaurarlas. ¿Borrar también sus copias de seguridad?`,
   emptyingBackupsThroughCopy: (bucket) =>
     [
       '',

@@ -120,7 +120,7 @@ sich dein Browser, damit du dich anmelden kannst.`,
       'Lass die Antwort leer, wenn du es anders machen willst.',
     ].join('\n'),
   askDeleteBackups: (bucket) =>
-    `Auch die Sicherungen löschen? Der Bucket „${bucket}“ enthält die letzten 7 täglichen Sicherungen, die letzten 7 von dir erstellten und die vor der letzten Wiederherstellung erstellte: Behältst du ihn, kann eine mit demselben Namen neu installierte Instanz sie wiederherstellen.`,
+    `Der Bucket „${bucket}“ enthält die letzten 7 täglichen Sicherungen, die letzten 7 von dir erstellten und die vor der letzten Wiederherstellung erstellte; behältst du ihn, kann eine mit demselben Namen neu installierte Instanz sie wiederherstellen. Auch die Sicherungen löschen?`,
   emptyingBackupsThroughCopy: (bucket) =>
     [
       '',
