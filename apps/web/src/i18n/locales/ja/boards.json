@@ -87,6 +87,7 @@
     "hasDescription": "説明あり",
     "linkedDocs": "リンクされたドキュメント",
     "attachments": "添付ファイル",
+    "comments": "コメント",
     "createdByName": "作成者：{{name}}",
     "a11y": {
       "labels": "ラベル: {{list}}",
@@ -114,7 +115,7 @@
     "archivedToast": "カードをアーカイブしました",
     "deleteConfirm": {
       "title": "このカードを削除しますか？",
-      "description": "チェックリストと添付ファイルも一緒にゴミ箱に移動します。非表示にするだけなら、アーカイブしてください。"
+      "description": "チェックリスト、コメント、添付ファイルも一緒にゴミ箱に移動します。非表示にするだけなら、アーカイブしてください。"
     },
     "labels": "ラベル",
     "addLabels": "ラベルを追加",
@@ -131,6 +132,26 @@
     "checklistsEmpty": "タスクを、チェックできるステップに分けましょう。",
     "linkedDocs": "リンクされたドキュメント",
     "attachments": "添付ファイル",
+    "comments": {
+      "title": "コメント",
+      "titleCount_other": "コメント · {{count}}",
+      "list": "コメント",
+      "empty": "まだコメントはありません。進捗、質問、決定をここに残しましょう。エージェントもここに書き込めます。",
+      "placeholder": "コメントを書く… Markdown を使えます。",
+      "label": "新しいコメント",
+      "hint": "<kbd>{{mod}}</kbd>+<kbd>Enter</kbd>で送信",
+      "submit": "コメントする",
+      "edit": "編集",
+      "editLabel": "コメントを編集",
+      "save": "保存",
+      "cancel": "キャンセル",
+      "delete": "削除",
+      "deleted": "コメントをゴミ箱に移動しました",
+      "edited": "（編集済み）",
+      "actions": "{{name}}のコメントの操作",
+      "older": "以前のコメントを表示",
+      "tooLong_other": "{{count}}文字多すぎます。上限は{{max}}文字です。"
+    },
     "activity": "アクティビティ",
     "deleted": "カードをゴミ箱に移動しました",
     "history": "履歴",

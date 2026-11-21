@@ -1,6 +1,6 @@
 import type { ActorRef, BoardDTO, CardDetailDTO, CardSummaryDTO, TrashedDTO } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
-import { Archive, ArchiveX, ArrowDown, ArrowUp, Bot, Calendar, ChevronDown, Columns3, Ellipsis, History, ListChecks, Tag, Trash, TriangleAlert, X } from 'lucide-react'
+import { Archive, ArchiveX, ArrowDown, ArrowUp, Bot, Calendar, ChevronDown, Columns3, Ellipsis, History, ListChecks, MessageSquare, Tag, Trash, TriangleAlert, X } from 'lucide-react'
 import { type ReactNode, useEffect, useReducer, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
@@ -22,6 +22,7 @@ import { useWorkspace } from '../shell/workspace'
 import { Attachments } from './Attachments'
 import { DueChip } from './CardItem'
 import { Checklists } from './Checklists'
+import { Comments } from './Comments'
 import { DuePicker } from './DuePicker'
 import { LabelPicker } from './LabelPicker'
 import { LinkedPages } from './LinkedPages'
@@ -534,6 +535,10 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
 
         <Section title={t('sheet.attachments')}>
           <Attachments items={card.attachmentList} target={{ type: 'card', id: card.id }} onChanged={() => void refresh()} />
+        </Section>
+
+        <Section title={card.commentCount ? t('sheet.comments.titleCount', { count: card.commentCount }) : t('sheet.comments.title')} icon={<MessageSquare />}>
+          <Comments card={card} />
         </Section>
 
         {card.activity.length > 0 && (

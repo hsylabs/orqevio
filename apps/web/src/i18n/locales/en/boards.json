@@ -89,6 +89,7 @@
     "hasDescription": "Has a description",
     "linkedDocs": "Linked documents",
     "attachments": "Attachments",
+    "comments": "Comments",
     "createdByName": "Created by {{name}}",
     "a11y": {
       "labels": "Labels: {{list}}",
@@ -116,7 +117,7 @@
     "archivedToast": "Card archived",
     "deleteConfirm": {
       "title": "Delete this card?",
-      "description": "It goes to the trash with its checklists and attachments. To just hide it, archive it instead."
+      "description": "It goes to the trash with its checklists, comments and attachments. To just hide it, archive it instead."
     },
     "labels": "Labels",
     "addLabels": "Add labels",
@@ -133,6 +134,28 @@
     "checklistsEmpty": "Break the task into steps you can check off.",
     "linkedDocs": "Linked documents",
     "attachments": "Attachments",
+    "comments": {
+      "title": "Comments",
+      "titleCount_one": "Comments · {{count}}",
+      "titleCount_other": "Comments · {{count}}",
+      "list": "Comments",
+      "empty": "No comments yet. Leave progress, a question or a decision here; agents can write here too.",
+      "placeholder": "Write a comment… Markdown works.",
+      "label": "New comment",
+      "hint": "<kbd>{{mod}}</kbd>+<kbd>Enter</kbd> to send",
+      "submit": "Comment",
+      "edit": "Edit",
+      "editLabel": "Edit comment",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleted": "Comment moved to the trash",
+      "edited": "(edited)",
+      "actions": "Actions for {{name}}’s comment",
+      "older": "Show earlier comments",
+      "tooLong_one": "{{count}} character over the limit of {{max}}.",
+      "tooLong_other": "{{count}} characters over the limit of {{max}}."
+    },
     "activity": "Activity",
     "deleted": "Card moved to the trash",
     "history": "History",

@@ -15,7 +15,7 @@ test('deleted things wait in the trash, to undo, restore or delete for good', as
     await page.getByRole('button', { name: 'Acciones de la tarjeta' }).click()
     await page.getByRole('menuitem', { name: 'Eliminar' }).click()
     const dialog = page.getByRole('dialog', { name: '¿Eliminar esta tarjeta?' })
-    await expect(dialog).toContainText('Irá a la papelera con su checklist y adjuntos.')
+    await expect(dialog).toContainText('Irá a la papelera con su checklist, sus comentarios y sus adjuntos.')
     await expect(dialog).toContainText('Podrás recuperarlo todo desde la papelera durante 30 días.')
     await dialog.getByRole('button', { name: 'Eliminar' }).click()
     await expect(column.getByRole('button', { name: title })).toHaveCount(0)

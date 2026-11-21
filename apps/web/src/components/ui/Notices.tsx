@@ -9,6 +9,9 @@ export function Notices() {
       containerAriaLabel={t('notifications')}
       position="bottom-right"
       gap={8}
+      // A sheet or a dialog open leaves the rest of the page unclickable: a notice's action (undo a
+      // deletion made in the sheet) still takes the click.
+      style={{ pointerEvents: 'auto' }}
       toastOptions={{
         unstyled: true,
         classNames: {

@@ -34,6 +34,8 @@ interface EditorProps {
   onUploaded?: (attachment: AttachmentDTO) => void
   className?: string
   ariaLabel?: string
+  /** The id of what tells more about the field (a hint with its keyboard shortcut). */
+  ariaDescribedBy?: string
 }
 
 type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'code' | 'table' | 'hr' | 'mention' | 'image' | 'file'
@@ -63,7 +65,7 @@ function insertAttachment(editor: TiptapEditor, attachment: AttachmentDTO, pos?:
   return editor.state.selection.to
 }
 
-export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel }: EditorProps) {
+export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel, ariaDescribedBy }: EditorProps) {
   const { t } = useTranslation('docs')
   // TipTap keeps the callbacks it was created with: they read the current language and placeholder from refs.
   const tRef = useRef(t)
@@ -188,6 +190,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       attributes: {
         class: cn('orq-prose', compact && 'orq-prose--compact'),
         'aria-label': ariaLabel ?? t('editor.label'),
+        ...(ariaDescribedBy ? { 'aria-describedby': ariaDescribedBy } : {}),
         role: 'textbox',
         'aria-multiline': 'true',
         spellcheck: 'true',
