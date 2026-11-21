@@ -19,13 +19,13 @@ To update your copy, see [Updates](README.md#updates) in the README.
 - **Print a page or save it as PDF:** its title and its text alone, dark on white whatever the theme, with the ticks of done tasks and the address of each link, without cutting tables, code or pictures across pages. Ctrl/⌘+P prints it the same way.
 
 ### Changed
-- **Japanese titles** break between phrases in Safari and Firefox too, never in the middle of a word: the titles of cards and pages, the names of projects and boards, the greeting on Home, and the title of a printed page and of a vault item. Safari and Firefox download a small file that tells Japanese phrases apart (BudouX, 15.5 KB) when the app is in Japanese. Chromium, which already did this for headings, now does it for card titles and board names too. Nothing changes in other languages.
+- **Japanese titles** break between phrases in Safari and Firefox too, never in the middle of a word: the titles of cards and pages, the names of projects and boards, the greeting on Home, and the title of a printed page and of a vault item. Safari and Firefox download a small file that tells Japanese phrases apart (BudouX, 15.5 KB) when the app is in Japanese. Chromium, which already did this for headings, now does it for card and page titles and board names too. Nothing changes in other languages.
 - **The sidebar** closes when the window gets narrower than 900 px, and comes back as it was when it widens.
 - **Agents:** side by side, the MCP tools and the activity each fit in the window and scroll in their own box. Stacked, on a phone or a narrow window, the tools wait folded under the activity, behind **Show all 39 tools**.
 
 ### Fixed
 - **Undo** on a notice could not be clicked while a card was open, for instance after deleting a checklist item.
-- **Which backups are kept.** The Deploy to Cloudflare template and the uninstall prompt said only «the last 7», and so did the description in **Settings → Backups**, over a line that said otherwise. The template and the prompt now say the last 7 daily ones, the last 7 made by you and the one made before the last restore; in **Settings → Backups**, only the line under the description says it.
+- **Which backups are kept.** The Deploy to Cloudflare template, the uninstall prompt and the description in **Settings → Backups** spoke only of the last 7 backups; the description did so over a line that said otherwise. The template and the prompt now say the last 7 daily ones, the last 7 made by you and the one made before the last restore; in **Settings → Backups**, only the line under the description says it.
 
 ## [1.3.0] - 2026-11-20
 

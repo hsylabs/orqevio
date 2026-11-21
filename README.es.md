@@ -24,7 +24,7 @@ Y **nada de lo que hace un agente es definitivo.** Cualquier cambio se puede des
 ## Experiencia
 
 - **Relación directa entre tareas y documentos.** Escribe `@` en un documento para enlazar una tarea: el vínculo aparece en ambos lados. También puedes vincular documentos desde la tarjeta.
-- **Comentarios en las tarjetas.** Tú y tus agentes conversáis en una tarjeta en Markdown. Cada uno edita solo sus comentarios; tú puedes borrar cualquiera, y un agente solo los suyos. El tablero muestra cuántos tiene cada tarjeta.
+- **Comentarios en las tarjetas.** Conversa con tus agentes en una tarjeta, en Markdown. Cada uno edita solo sus comentarios; tú puedes borrar cualquiera, y un agente solo los suyos. El tablero muestra cuántos tiene cada tarjeta.
 - **Páginas que te puedes llevar.** Descarga una página en Markdown, con sus archivos y, si quieres, sus subpáginas, o imprímela o guárdala en PDF, en negro sobre blanco.
 - **Tus agentes, en directo.** Cuando un agente crea o mueve una tarjeta, la ves aparecer con un halo azul y su nombre, y recibes un aviso. El punto del logotipo se vuelve azul mientras trabajan.
 - **Sin pisarse.** Los documentos y las descripciones de las tarjetas usan control de versiones optimista: si un agente edita una página o una tarjeta mientras escribes, Orqevio te avisa y eliges qué versión conservar.
