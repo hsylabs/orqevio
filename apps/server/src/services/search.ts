@@ -39,7 +39,7 @@ export class SearchService {
     private readonly access: Access,
   ) {}
 
-  /** Full-text search over card and page titles and bodies (FTS5), titles ranked first. */
+  /** Full-text search over card and page titles and bodies (FTS5), titles ranked first, and card comments after them. */
   /** `archived`: archived cards are found too, and say so; otherwise only those on their boards. */
   async search(actor: Actor, workspaceId: string, rawQuery: string, opts: { types?: Array<'card' | 'page'>; limit?: number; archived?: boolean } = {}) {
     await this.access.workspace(actor, workspaceId)
@@ -90,6 +90,57 @@ export class SearchService {
           columnName: r.columnName,
           ...(r.archivedAt !== null ? { archived: true } : {}),
         })
+      }
+
+      // Cards found by what a comment on them says, after those found by their own text: one
+      // result each, the comment that matches best, while there is room for more cards.
+      const room = limit - results.length
+      if (room > 0) {
+        const found = new Set(results.map((r) => r.id))
+        const comments = this.deps.db.all<{
+          id: string
+          body: string
+          authorName: string
+          cardId: string
+          title: string
+          boardId: string
+          boardName: string
+          columnName: string
+          projectId: string
+          projectName: string
+          archivedAt: number | null
+        }>(sql`
+          SELECT cm.id, cm.body, cm.author_name AS authorName, c.id AS cardId, c.title, b.id AS boardId, b.name AS boardName,
+                 col.name AS columnName, p.id AS projectId, p.name AS projectName, c.archived_at AS archivedAt
+          FROM card_comments_fts
+          JOIN card_comments_fts_map m ON m.id = card_comments_fts.rowid
+          JOIN card_comments cm ON cm.id = m.entity_id
+          JOIN cards c ON c.id = cm.card_id
+          JOIN boards b ON b.id = c.board_id
+          JOIN board_columns col ON col.id = c.column_id
+          JOIN projects p ON p.id = b.project_id
+          WHERE card_comments_fts MATCH ${match} AND cm.workspace_id = ${workspaceId} AND (${opts.archived ? 1 : 0} OR c.archived_at IS NULL)
+          ORDER BY bm25(card_comments_fts), cm.created_at DESC
+          LIMIT ${(limit + room) * 3}`)
+        for (const r of comments) {
+          if (results.length >= limit) break
+          if (found.has(r.cardId)) continue
+          found.add(r.cardId)
+          results.push({
+            type: 'card',
+            id: r.cardId,
+            title: r.title,
+            excerpt: excerpt(r.body, terms),
+            icon: null,
+            projectId: r.projectId,
+            projectName: r.projectName,
+            boardId: r.boardId,
+            boardName: r.boardName,
+            columnName: r.columnName,
+            comment: { id: r.id, author: r.authorName },
+            ...(r.archivedAt !== null ? { archived: true } : {}),
+          })
+        }
       }
     }
 

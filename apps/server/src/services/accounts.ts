@@ -37,6 +37,7 @@ const UNINSTALL_ORDER = [
   schema.cardLabels,
   schema.checklistItems,
   schema.checklists,
+  schema.cardComments,
   schema.cardPageLinks,
   schema.attachments,
   schema.activity,

@@ -20,7 +20,13 @@
       "linked": "<actor>{{actor}}</actor> vinculou um documento a <target>“{{target}}”</target>",
       "linked_self": "<actor>{{actor}}</actor> vinculou um documento",
       "unlinked": "<actor>{{actor}}</actor> desvinculou um documento de <target>“{{target}}”</target>",
-      "unlinked_self": "<actor>{{actor}}</actor> desvinculou um documento"
+      "unlinked_self": "<actor>{{actor}}</actor> desvinculou um documento",
+      "commented": "<actor>{{actor}}</actor> comentou no cartão <target>“{{target}}”</target>",
+      "commented_self": "<actor>{{actor}}</actor> comentou",
+      "comment_edited": "<actor>{{actor}}</actor> editou um comentário de <target>“{{target}}”</target>",
+      "comment_edited_self": "<actor>{{actor}}</actor> editou um comentário",
+      "comment_deleted": "<actor>{{actor}}</actor> excluiu um comentário de <target>“{{target}}”</target>",
+      "comment_deleted_self": "<actor>{{actor}}</actor> excluiu um comentário"
     },
     "column": {
       "created": "<actor>{{actor}}</actor> criou a coluna <target>“{{target}}”</target>",

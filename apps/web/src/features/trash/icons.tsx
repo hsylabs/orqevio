@@ -1,5 +1,5 @@
 import type { TrashKind } from '@orqevio/shared'
-import { Columns3, FileText, Folder, Link2, ListChecks, Paperclip, SquareCheck, SquareKanban, StickyNote, Tag } from 'lucide-react'
+import { Columns3, FileText, Folder, Link2, ListChecks, MessageSquare, Paperclip, SquareCheck, SquareKanban, StickyNote, Tag } from 'lucide-react'
 
 const ICONS = {
   project: Folder,
@@ -12,6 +12,7 @@ const ICONS = {
   checklist: ListChecks,
   checklist_item: SquareCheck,
   link: Link2,
+  comment: MessageSquare,
 } satisfies Record<TrashKind, unknown>
 
 /** The icon of each kind of thing in the trash. */

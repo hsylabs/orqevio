@@ -20,7 +20,13 @@
       "linked": "<actor>{{actor}}</actor> ha collegato un documento a <target>«{{target}}»</target>",
       "linked_self": "<actor>{{actor}}</actor> ha collegato un documento",
       "unlinked": "<actor>{{actor}}</actor> ha scollegato un documento da <target>«{{target}}»</target>",
-      "unlinked_self": "<actor>{{actor}}</actor> ha scollegato un documento"
+      "unlinked_self": "<actor>{{actor}}</actor> ha scollegato un documento",
+      "commented": "<actor>{{actor}}</actor> ha commentato la scheda <target>«{{target}}»</target>",
+      "commented_self": "<actor>{{actor}}</actor> ha commentato",
+      "comment_edited": "<actor>{{actor}}</actor> ha modificato un commento di <target>«{{target}}»</target>",
+      "comment_edited_self": "<actor>{{actor}}</actor> ha modificato un commento",
+      "comment_deleted": "<actor>{{actor}}</actor> ha eliminato un commento di <target>«{{target}}»</target>",
+      "comment_deleted_self": "<actor>{{actor}}</actor> ha eliminato un commento"
     },
     "column": {
       "created": "<actor>{{actor}}</actor> ha creato la colonna <target>«{{target}}»</target>",

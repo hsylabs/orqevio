@@ -60,6 +60,8 @@ const dueAt = z.string().transform((value, ctx) => {
 })
 
 export const MAX_MARKDOWN = 200_000
+/** The longest comment on a card, in characters. */
+export const MAX_COMMENT = 20_000
 
 /**
  * How many characters a text has, as the schemas count them for their limits: an emoji or a letter
@@ -156,6 +158,20 @@ export const checklistItemUpdateInput = z.object({
   index: index.optional(),
 })
 export const linkPageInput = z.object({ pageId: id })
+
+// ── Comments ────────────────────────────────────────────────────
+/**
+ * A comment's Markdown: blank lines before it and spaces after it go (spaces at the start of
+ * its first line stay, they make code), and it must show something.
+ */
+const commentBody = z
+  .string()
+  .overwrite((value) => value.replace(/^(?:[^\S\n]*\n)+/, '').trimEnd())
+  .min(1, { message: 'Required', abort: true })
+  .max(MAX_COMMENT)
+  .refine((value) => VISIBLE.test(value), 'Required')
+export const commentCreateInput = z.object({ body: commentBody })
+export const commentUpdateInput = z.object({ body: commentBody })
 
 // ── Pages ───────────────────────────────────────────────────────
 export const pageCreateInput = z.object({
@@ -268,7 +284,7 @@ export const undoInput = z
 // ── Trash ────────────────────────────────────────────────────────
 /** Something in the trash, by key: `kind:id`, or `link:<card id>:<page id>`. */
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
-export const TRASH_KEY = new RegExp(`^(?:(?:project|board|column|card|page|attachment|label|checklist|checklist_item):${UUID}|link:${UUID}:${UUID})$`, 'i')
+export const TRASH_KEY = new RegExp(`^(?:(?:project|board|column|card|page|attachment|label|checklist|checklist_item|comment):${UUID}|link:${UUID}:${UUID})$`, 'i')
 export const trashKey = z.string().regex(TRASH_KEY, 'Not a trash key')
 /**
  * Restoring something from the trash with everything below it but what is left out (`exclude`).

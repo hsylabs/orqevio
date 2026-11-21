@@ -51,9 +51,10 @@
       "listProjects": "Projekte, Boards und Seitenstruktur",
       "search": "Suche in Karten und Seiten",
       "readAttachments": "Text- und Bildanhänge lesen",
-      "readBoards": "Spalten, Karten, Checklisten und Verknüpfungen",
+      "readBoards": "Spalten, Karten, Kommentare, Checklisten und Verknüpfungen",
       "editCards": "Karten erstellen, bearbeiten und verschieben",
       "archiveCard": "Archivieren (in der App wiederherstellbar)",
+      "comments": "Karten kommentieren und eigene Kommentare bearbeiten",
       "organizeBoards": "Boards neu ordnen",
       "labels": "Labels und Checklisten",
       "readPages": "Seitenbaum und Markdown-Inhalt",
@@ -62,7 +63,7 @@
       "uploadAttachment": "Dateien an Karten und Seiten anhängen",
       "linkCard": "Aufgaben und Dokumente verknüpfen",
       "createProject": "Projekte anlegen",
-      "deleteTasks": "Karten, Boards, Spalten, Labels und Checklisten löschen (in den Papierkorb)",
+      "deleteTasks": "Karten, Boards, Spalten, Labels, Checklisten und eigene Kommentare löschen (in den Papierkorb)",
       "deleteDocs": "Seiten, Projekte und Anhänge löschen (in den Papierkorb)",
       "moveElsewhere": "Anhänge verschieben und Karten von Seiten lösen"
     }

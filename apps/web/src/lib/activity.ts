@@ -2,7 +2,7 @@ import type { ActivityDTO, RealtimeEvent } from '@orqevio/shared'
 import { t } from 'i18next'
 
 const ACTIONS = {
-  card: ['created', 'updated', 'moved', 'reordered', 'archived', 'restored', 'deleted', 'checklist', 'linked', 'unlinked'],
+  card: ['created', 'updated', 'moved', 'reordered', 'archived', 'restored', 'deleted', 'checklist', 'linked', 'unlinked', 'commented', 'comment_edited', 'comment_deleted'],
   column: ['created', 'updated', 'moved', 'deleted'],
   board: ['created', 'updated', 'deleted'],
   page: ['created', 'updated', 'moved', 'deleted'],

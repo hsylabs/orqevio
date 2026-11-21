@@ -78,6 +78,13 @@
       "when": 1794969843692,
       "tag": "0010_vault_key_version",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1795270929363,
+      "tag": "0011_card_comments",
+      "breakpoints": true
     }
   ]
 }

@@ -19,7 +19,8 @@
     "label": "Label",
     "checklist": "Checkliste",
     "checklist_item": "Checklistenpunkt",
-    "link": "Verknüpfung mit einer Seite"
+    "link": "Verknüpfung mit einer Seite",
+    "comment": "Kommentar"
   },
   "contents": {
     "boards_one": "{{count}} Board",
@@ -34,6 +35,8 @@
     "checklists_other": "{{count}} Checklisten",
     "items_one": "{{count}} Checklistenpunkt",
     "items_other": "{{count}} Checklistenpunkte",
+    "comments_one": "{{count}} Kommentar",
+    "comments_other": "{{count}} Kommentare",
     "labels_one": "{{count}} Label",
     "labels_other": "{{count}} Labels",
     "attachments_one": "{{count}} Anhang",
@@ -88,7 +91,8 @@
     "label": "das Label „{{name}}“",
     "checklist": "die Checkliste „{{name}}“",
     "checklist_item": "den Checklistenpunkt „{{name}}“",
-    "link": "die Verknüpfung mit „{{name}}“"
+    "link": "die Verknüpfung mit „{{name}}“",
+    "comment": "den Kommentar „{{name}}“"
   },
   "kindA": {
     "project": "ein Projekt „{{name}}“",
@@ -100,7 +104,8 @@
     "label": "ein Label „{{name}}“",
     "checklist": "eine Checkliste „{{name}}“",
     "checklist_item": "einen Checklistenpunkt „{{name}}“",
-    "link": "eine Verknüpfung mit „{{name}}“"
+    "link": "eine Verknüpfung mit „{{name}}“",
+    "comment": "einen Kommentar „{{name}}“"
   },
   "relationKind": {
     "label": "Das Label „{{name}}“",

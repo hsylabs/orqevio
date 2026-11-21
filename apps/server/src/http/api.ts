@@ -305,6 +305,10 @@ export function createApi(env: Env) {
     c.json(await c.get('services').cards.updateItem(requireActor(c), c.req.param('id'), await json(c))),
   )
   api.delete('/checklist-items/:id', async (c) => c.json({ trashId: await c.get('services').cards.removeItem(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
+  api.get('/cards/:id/comments', async (c) => c.json(await c.get('services').comments.list(requireActor(c), c.req.param('id'), historyPage(c))))
+  api.post('/cards/:id/comments', async (c) => c.json(await c.get('services').comments.create(requireActor(c), c.req.param('id'), await json(c)), 201))
+  api.patch('/comments/:id', async (c) => c.json(await c.get('services').comments.update(requireActor(c), c.req.param('id'), await json(c))))
+  api.delete('/comments/:id', async (c) => c.json({ trashId: await c.get('services').comments.remove(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))
   api.post('/cards/:id/pages', async (c) => {
     await c.get('services').cards.linkPage(requireActor(c), c.req.param('id'), await json(c))
     return c.body(null, 204)

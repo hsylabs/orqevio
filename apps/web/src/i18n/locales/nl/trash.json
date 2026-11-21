@@ -19,7 +19,8 @@
     "label": "Label",
     "checklist": "Checklist",
     "checklist_item": "Checklistitem",
-    "link": "Koppeling met een pagina"
+    "link": "Koppeling met een pagina",
+    "comment": "Opmerking"
   },
   "contents": {
     "boards_one": "{{count}} bord",
@@ -34,6 +35,8 @@
     "checklists_other": "{{count}} checklists",
     "items_one": "{{count}} checklistitem",
     "items_other": "{{count}} checklistitems",
+    "comments_one": "{{count}} opmerking",
+    "comments_other": "{{count}} opmerkingen",
     "labels_one": "{{count}} label",
     "labels_other": "{{count}} labels",
     "attachments_one": "{{count}} bijlage",
@@ -88,7 +91,8 @@
     "label": "het label ‘{{name}}’",
     "checklist": "de checklist ‘{{name}}’",
     "checklist_item": "het checklistitem ‘{{name}}’",
-    "link": "de koppeling met ‘{{name}}’"
+    "link": "de koppeling met ‘{{name}}’",
+    "comment": "de opmerking ‘{{name}}’"
   },
   "kindA": {
     "project": "een project ‘{{name}}’",
@@ -100,7 +104,8 @@
     "label": "een label ‘{{name}}’",
     "checklist": "een checklist ‘{{name}}’",
     "checklist_item": "een checklistitem ‘{{name}}’",
-    "link": "een koppeling met ‘{{name}}’"
+    "link": "een koppeling met ‘{{name}}’",
+    "comment": "een opmerking ‘{{name}}’"
   },
   "relationKind": {
     "label": "Het label ‘{{name}}’",

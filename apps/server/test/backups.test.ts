@@ -182,8 +182,21 @@ describe('backups', () => {
 
     const earlier = await copy({ migrationsDir: old, backupDir: shared })
     const before = await signUp(earlier, 'Lucía Martín')
-    const { columns } = await seedBoard(before.client, before.workspaceId)
-    const card = (await before.client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'De la versión anterior' })).body.id as string
+    const { boardId, columns } = await seedBoard(before.client, before.workspaceId)
+    // Written into the tables as that version has them: today's code for cards also reads their
+    // comments, whose table only the last migration makes.
+    const card = crypto.randomUUID()
+    earlier.sql.run(
+      'INSERT INTO cards (id, workspace_id, board_id, column_id, title, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      card,
+      before.workspaceId,
+      boardId,
+      columns[0]!.id,
+      'De la versión anterior',
+      'a0',
+      Date.now(),
+      Date.now(),
+    )
     expect((await before.client.post('/api/backups')).status).toBe(201)
 
     // A new copy with the same backups folder, claimed by its owner, finds the backup and restores it.
@@ -196,6 +209,7 @@ describe('backups', () => {
     expect((await now.client.get('/api/auth/me')).body.user.name).toBe('Lucía Martín')
     expect((await now.client.get(`/api/cards/${card}`)).body.title).toBe('De la versión anterior')
     // The migration the backup didn't have ran afterwards.
+    expect([...fresh.sql.rows("SELECT name FROM sqlite_master WHERE type = 'table'")].flat()).toContain('card_comments')
     expect([...fresh.sql.rows('SELECT name FROM pragma_table_info(?)', 'oauth_tokens')].flat()).toContain('scopes')
     expect([...fresh.sql.rows('SELECT count(*) FROM __drizzle_migrations')][0]![0]).toBe(journal.entries.length + 1)
   })

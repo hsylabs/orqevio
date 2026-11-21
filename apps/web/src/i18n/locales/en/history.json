@@ -67,6 +67,12 @@
       "deleted": "<actor>{{actor}}</actor> moved the item “{{text}}” to the trash",
       "restored": "<actor>{{actor}}</actor> brought back the item “{{text}}”"
     },
+    "comment": {
+      "created": "<actor>{{actor}}</actor> commented “{{text}}”",
+      "body": "<actor>{{actor}}</actor> edited the comment, now “{{text}}”",
+      "deleted": "<actor>{{actor}}</actor> moved the comment “{{text}}” to the trash",
+      "restored": "<actor>{{actor}}</actor> brought back the comment “{{text}}”"
+    },
     "attachment": {
       "created": "<actor>{{actor}}</actor> attached “{{name}}”",
       "deleted": "<actor>{{actor}}</actor> moved the file “{{name}}” to the trash",

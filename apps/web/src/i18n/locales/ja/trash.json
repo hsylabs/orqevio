@@ -16,7 +16,8 @@
     "label": "ラベル",
     "checklist": "チェックリスト",
     "checklist_item": "チェックリストの項目",
-    "link": "ページへのリンク"
+    "link": "ページへのリンク",
+    "comment": "コメント"
   },
   "contents": {
     "boards_other": "ボード{{count}}件",
@@ -25,6 +26,7 @@
     "pages_other": "ページ{{count}}件",
     "checklists_other": "チェックリスト{{count}}件",
     "items_other": "チェックリスト項目{{count}}件",
+    "comments_other": "コメント{{count}}件",
     "labels_other": "ラベル{{count}}件",
     "attachments_other": "添付ファイル{{count}}件",
     "links_other": "ページへのリンク{{count}}件",
@@ -74,7 +76,8 @@
     "label": "ラベル「{{name}}」",
     "checklist": "チェックリスト「{{name}}」",
     "checklist_item": "チェックリストの項目「{{name}}」",
-    "link": "「{{name}}」へのリンク"
+    "link": "「{{name}}」へのリンク",
+    "comment": "コメント「{{name}}」"
   },
   "kindA": {
     "project": "プロジェクト「{{name}}」",
@@ -86,7 +89,8 @@
     "label": "ラベル「{{name}}」",
     "checklist": "チェックリスト「{{name}}」",
     "checklist_item": "チェックリストの項目「{{name}}」",
-    "link": "「{{name}}」へのリンク"
+    "link": "「{{name}}」へのリンク",
+    "comment": "コメント「{{name}}」"
   },
   "relationKind": {
     "label": "ラベル「{{name}}」",

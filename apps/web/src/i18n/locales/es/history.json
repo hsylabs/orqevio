@@ -73,6 +73,12 @@
       "deleted": "<actor>{{actor}}</actor> llevó el punto «{{text}}» a la papelera",
       "restored": "<actor>{{actor}}</actor> recuperó el punto «{{text}}»"
     },
+    "comment": {
+      "created": "<actor>{{actor}}</actor> comentó «{{text}}»",
+      "body": "<actor>{{actor}}</actor> editó el comentario, que ahora dice «{{text}}»",
+      "deleted": "<actor>{{actor}}</actor> llevó el comentario «{{text}}» a la papelera",
+      "restored": "<actor>{{actor}}</actor> recuperó el comentario «{{text}}»"
+    },
     "attachment": {
       "created": "<actor>{{actor}}</actor> adjuntó «{{name}}»",
       "deleted": "<actor>{{actor}}</actor> llevó el archivo «{{name}}» a la papelera",

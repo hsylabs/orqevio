@@ -15,12 +15,13 @@ import {
 } from '@orqevio/shared'
 import { type SQL, and, desc, eq, getTableColumns, gt, inArray, lt, or, sql } from 'drizzle-orm'
 import type { Actor, UserActor } from '../auth/actor'
-import { attachments, cardLabels, cardPageLinks, cards, checklistItems, checklists, columns, history, labels, pages, trash, trashRows } from '../db/schema'
+import { attachments, cardComments, cardLabels, cardPageLinks, cards, checklistItems, checklists, columns, history, labels, pages, trash, trashRows } from '../db/schema'
 import { AppError, badRequest, notFound } from '../lib/errors'
 import { parse } from '../lib/validate'
 import type { Access } from './access'
 import type { AttachmentService } from './attachments'
 import type { CardService } from './cards'
+import type { CommentService } from './comments'
 import type { Deps } from './deps'
 import { type HistoryRow, decode } from './history'
 import { MAX_TREE_DEPTH, type PageService } from './pages'
@@ -102,7 +103,7 @@ export class UndoService {
   constructor(
     private readonly deps: Deps,
     private readonly access: Access,
-    private readonly services: { cards: CardService; pages: PageService; attachments: AttachmentService; trash: TrashService },
+    private readonly services: { cards: CardService; pages: PageService; attachments: AttachmentService; trash: TrashService; comments: CommentService },
   ) {}
 
   async undo(actor: Actor, input: unknown): Promise<UndoResultDTO> {
@@ -678,6 +679,9 @@ export class UndoService {
       const item = () =>
         one(db.select({ text: checklistItems.text, done: checklistItems.done }).from(checklistItems).where(eq(checklistItems.id, subject))) ??
         kept('checklist_items', subject).map(({ data }) => ({ text: String(data.text), done: Boolean(data.done) }))[0]
+      const comment = () =>
+        one(db.select({ body: cardComments.body }).from(cardComments).where(and(eq(cardComments.id, subject), eq(cardComments.cardId, card.id)))) ??
+        kept('card_comments', subject).filter(({ data }) => data.card_id === card.id).map(({ data }) => ({ body: String(data.body) }))[0]
       switch (kind) {
         case 'checklist.created':
         case 'checklist.restored':
@@ -698,6 +702,15 @@ export class UndoService {
           const it = item()
           return it ? value(kind === 'item.text' ? it.text : it.done) : { status: 'impossible', reason: 'gone' }
         }
+        case 'comment.created':
+        case 'comment.restored':
+          return takeAway(`comment:${subject}`, () => Boolean(comment()) || returning(subject))
+        case 'comment.deleted':
+          return bringBack(`comment:${subject}`, () => Boolean(comment()))
+        case 'comment.body': {
+          const it = comment()
+          return it ? value(it.body) : { status: 'impossible', reason: 'gone' }
+        }
       }
     }
     return { status: 'impossible', reason: 'refused' }
@@ -705,7 +718,7 @@ export class UndoService {
 
   /** Undoes one change, through the services that make changes, so it is checked and recorded as any other. */
   private async apply(row: HistoryRow, actor: UserActor) {
-    const { cards: cardService, pages: pageService, attachments: attachmentService, trash: trashService } = this.services
+    const { cards: cardService, pages: pageService, attachments: attachmentService, trash: trashService, comments: commentService } = this.services
     const kind: HistoryKind = row.kind
     // Long texts are read one at a time, as each is undone.
     const raw = HISTORY_BODY_KINDS.has(kind) ? (this.deps.db.get<{ text: string | null }>(sql`SELECT "before" AS text FROM history WHERE id = ${row.id}`)?.text ?? null) : row.before
@@ -772,6 +785,11 @@ export class UndoService {
         return cardService.updateItem(actor, subject, { text: String(before ?? '') })
       case 'item.done':
         return cardService.updateItem(actor, subject, { done: before === true })
+      case 'comment.created':
+      case 'comment.restored':
+        return commentService.remove(actor, subject)
+      case 'comment.body':
+        return commentService.update(actor, subject, { body: String(before ?? '') })
       case 'attachment.created':
       case 'attachment.restored':
         return attachmentService.remove(actor, subject)
@@ -784,6 +802,7 @@ export class UndoService {
       case 'card.unlinked':
       case 'checklist.deleted':
       case 'item.deleted':
+      case 'comment.deleted':
       case 'attachment.deleted':
         return trashService.restore(actor, trashId)
     }

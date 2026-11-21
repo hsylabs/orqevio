@@ -67,6 +67,12 @@
       "deleted": "<actor>{{actor}}</actor> hat den Punkt „{{text}}“ in den Papierkorb gelegt",
       "restored": "<actor>{{actor}}</actor> hat den Punkt „{{text}}“ zurückgeholt"
     },
+    "comment": {
+      "created": "<actor>{{actor}}</actor> hat „{{text}}“ kommentiert",
+      "body": "<actor>{{actor}}</actor> hat den Kommentar bearbeitet, jetzt: „{{text}}“",
+      "deleted": "<actor>{{actor}}</actor> hat den Kommentar „{{text}}“ in den Papierkorb gelegt",
+      "restored": "<actor>{{actor}}</actor> hat den Kommentar „{{text}}“ zurückgeholt"
+    },
     "attachment": {
       "created": "<actor>{{actor}}</actor> hat „{{name}}“ angehängt",
       "deleted": "<actor>{{actor}}</actor> hat die Datei „{{name}}“ in den Papierkorb gelegt",

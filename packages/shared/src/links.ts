@@ -39,3 +39,12 @@ export function markdownToPlainText(markdown: string): string {
     .replace(/\s+/g, ' ')
     .trim()
 }
+
+/**
+ * A comment in a line, for the trash, the history and their lists: its text without the Markdown,
+ * or, when that leaves nothing (a block of code), the text as written.
+ */
+export function commentExcerpt(body: string, max = 120): string {
+  const plain = markdownToPlainText(body) || body.replace(/\s+/g, ' ').trim()
+  return [...plain].length > max ? `${[...plain].slice(0, max - 1).join('')}…` : plain
+}
