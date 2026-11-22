@@ -1,6 +1,7 @@
 import { asc, eq } from 'drizzle-orm'
 import type { Actor } from '../auth/actor'
-import { attachments, boards, cardLabels, cardPageLinks, cards, checklistItems, checklists, columns, labels, pages, projects, workspaceMembers, workspaces } from '../db/schema'
+import { attachments, boards, cardComments, cardLabels, cardPageLinks, cards, checklistItems, checklists, columns, labels, pages, projects, workspaceMembers, workspaces } from '../db/schema'
+import { notFound } from '../lib/errors'
 import { ZipWriter } from '../lib/zip'
 import { VERSION } from '../version'
 import type { Access } from './access'
@@ -175,10 +176,109 @@ const iso = (date: Date | null) => (date ? date.toISOString() : null)
 /** Due dates are calendar days: the day, without the hour they are stored at. */
 const day = (date: Date | null) => (date ? date.toISOString().slice(0, 10) : null)
 
+/** How many files a page's download checks in storage at once. */
+const EXISTS_AT_ONCE = 8
+
 interface FileEntry {
   path: string
   storageKey: string
   size: number
+}
+
+type PageRow = typeof pages.$inferSelect
+type FileRow = typeof attachments.$inferSelect
+type Namer = ReturnType<typeof namer>
+
+/** Rows by a key, each group in the order the rows came. */
+function group<T, K>(rows: T[], key: (row: T) => K) {
+  const groups = new Map<K, T[]>()
+  for (const row of rows) {
+    const bucket = groups.get(key(row))
+    if (bucket) bucket.push(row)
+    else groups.set(key(row), [row])
+  }
+  return (k: K) => groups.get(k) ?? []
+}
+
+const join = (folder: string, name: string) => (folder ? `${folder}/${name}` : name)
+
+/** A namer for each folder: what goes in one never takes the name of something already there. */
+function folderNamers() {
+  const names = new Map<string, Namer>()
+  return (folder: string) => {
+    let namer_ = names.get(folder)
+    if (!namer_) names.set(folder, (namer_ = namer()))
+    return namer_
+  }
+}
+
+/**
+ * Pages laid out as files: each a Markdown file, its subpages in a folder of the same name, its
+ * attachments in "<name> (files)" when it has any (`withFiles`).
+ */
+function pageLayout(pageRows: PageRow[], withFiles: Set<string>, namesIn: (folder: string) => Namer) {
+  const pagePath = new Map<string, string>()
+  const filesFolder = new Map<string, string>()
+  const byParent = group(pageRows, (page) => page.parentId ?? `project:${page.projectId}`)
+  /** Puts a page in `folder`, and gives the folder of its subpages. */
+  const place = (page: PageRow, folder: string) => {
+    const names = namesIn(folder)
+    // Its text and the folder of its subpages: "A.md" and "A", both free (a sibling "A.md" would take "A.md" as a folder).
+    const stem = names(safeName(page.title), ['.md', ''])
+    pagePath.set(page.id, join(folder, `${stem}.md`))
+    if (withFiles.has(page.id)) filesFolder.set(page.id, join(folder, names(`${stem} (files)`)))
+    return join(folder, stem)
+  }
+  /** Puts what hangs from `key` (a page's id, or "project:<id>") in `folder`, all the way down. Without recursion: a tree has no depth limit. */
+  const placeUnder = (key: string, folder: string) => {
+    const pending = [{ key, folder }]
+    while (pending.length) {
+      const next = pending.pop()!
+      for (const page of byParent(next.key)) {
+        if (pagePath.has(page.id)) continue
+        pending.push({ key: page.id, folder: place(page, next.folder) })
+      }
+    }
+  }
+  return { pagePath, filesFolder, byParent, place, placeUnder }
+}
+
+/** Where an attachment goes in `folder`: its name made safe and free there, its extension kept. */
+function placeFile(file: FileRow, folder: string, namesIn: (folder: string) => Namer) {
+  const dot = file.filename.lastIndexOf('.')
+  const stem = dot > 0 ? file.filename.slice(0, dot) : file.filename
+  const ending = dot > 0 ? cleanName(file.filename.slice(dot + 1), 16) : ''
+  const extension = ending ? `.${ending}` : ''
+  return join(folder, `${namesIn(folder)(safeName(stem, 'file'), [extension])}${extension}`)
+}
+
+/**
+ * Where links to attachments and references to pages and cards point, rewritten outside code.
+ * `to` gives a link's new destination, or undefined to leave it as it is; `absolute` says an
+ * attachment's link had an address of its own (https://…) before /api/attachments.
+ */
+function relink(markdown: string, to: { attachment(id: string, absolute: boolean): string | undefined; reference(type: 'doc' | 'card', id: string): string | undefined }) {
+  return outsideCode(markdown, (text) =>
+    text
+      .replace(ATTACHMENT_LINK, (link, open: string, id: string) => {
+        const destination = to.attachment(id.toLowerCase(), !link.slice(open.length).startsWith('/'))
+        return destination === undefined ? link : `${open}${destination}`
+      })
+      .replace(REFERENCE, (link, open: string, type: string, id: string) => {
+        const destination = to.reference(type.toLowerCase() as 'doc' | 'card', id.toLowerCase())
+        return destination === undefined ? link : `${open}${destination}`
+      }),
+  )
+}
+
+/** The ids of the attachments a text links to, outside code. */
+function linkedAttachments(markdown: string) {
+  const ids = new Set<string>()
+  outsideCode(markdown, (text) => {
+    for (const match of text.matchAll(ATTACHMENT_LINK)) ids.add(match[2]!.toLowerCase())
+    return text
+  })
+  return ids
 }
 
 /**
@@ -200,25 +300,105 @@ export class ExportService {
     const now = new Date()
     const root = `orqevio-${now.toISOString().slice(0, 10)}`
     const { texts, files, summary } = this.snapshot(actor.userId, root)
+    const body = this.zip(async (zip) => {
+      // An attachment whose file is gone from storage (a backup restored without it, say) is listed, never an empty file.
+      const missing = new Set<string>()
+      for (const file of files) if (!(await this.deps.storage.exists(file.storageKey))) missing.add(file.path)
+      const about = { format: EXPORT_FORMAT, version: 1, app: VERSION, exportedAt: now.toISOString(), workspaces: summary, missingAttachments: [...missing].map((path) => path.slice(root.length + 1)) }
+      await zip.add(`${root}/export.json`, utf8.encode(`${JSON.stringify(about, null, 2)}\n`), now)
+      for (const [path, content] of texts) await zip.add(path, utf8.encode(content), now)
+      await this.addFiles(
+        zip,
+        files.filter((file) => !missing.has(file.path)),
+        now,
+      )
+    })
+    return { body, filename: `${root}.zip` }
+  }
 
+  /**
+   * One page to take elsewhere, written as the export writes it: its Markdown alone when that is all
+   * it is; otherwise a ZIP with the attachments it shows or links to next to it, and with its
+   * subpages in folders when asked. Links to anything that doesn't go with it (tasks, other pages,
+   * other files) point at this copy, `origin`. People only, as the export.
+   */
+  async page(actor: Actor, pageId: string, options: { subpages: boolean; origin: string }) {
+    this.access.requireUser(actor)
+    const db = this.deps.db
+    const [root] = await db.select().from(pages).where(eq(pages.id, pageId))
+    if (!root) throw notFound('Page')
+    await this.access.workspace(actor, root.workspaceId)
+    // The page, and the pages under it when asked: walked without recursion, a tree has no depth limit.
+    const included = [root]
+    const seen = new Set([root.id])
+    if (options.subpages) {
+      const projectPages = await db.select().from(pages).where(eq(pages.projectId, root.projectId)).orderBy(asc(pages.position), asc(pages.id))
+      const childrenOf = group(projectPages, (page) => page.parentId)
+      for (let i = 0; i < included.length; i++)
+        for (const child of childrenOf(included[i]!.id))
+          if (!seen.has(child.id)) {
+            seen.add(child.id)
+            included.push(child)
+          }
+    }
+
+    // Its own attachments go next to each page; one it links to from elsewhere in the workspace, next
+    // to the first page that does. One whose file is gone from storage stays a link to this copy.
+    // Read by workspace, not listed by id: a Durable Object takes at most 100 bound values in a query.
+    const fileRows = await db.select().from(attachments).where(eq(attachments.workspaceId, root.workspaceId)).orderBy(asc(attachments.createdAt), asc(attachments.id))
+    const fileById = new Map(fileRows.map((file) => [file.id, file]))
+    const nextTo = new Map<string, string>()
+    for (const file of fileRows) if (file.pageId && seen.has(file.pageId)) nextTo.set(file.id, file.pageId)
+    for (const page of included) for (const id of linkedAttachments(page.content)) if (fileById.has(id) && !nextTo.has(id)) nextTo.set(id, page.id)
+    const ids = [...nextTo.keys()]
+    for (let i = 0; i < ids.length; i += EXISTS_AT_ONCE) {
+      const batch = ids.slice(i, i + EXISTS_AT_ONCE)
+      const there = await Promise.all(batch.map((id) => this.deps.storage.exists(fileById.get(id)!.storageKey)))
+      batch.forEach((id, k) => !there[k] && nextTo.delete(id))
+    }
+
+    const namesIn = folderNamers()
+    const layout = pageLayout(included, new Set(nextTo.values()), namesIn)
+    const under = layout.place(root, '')
+    if (options.subpages) layout.placeUnder(root.id, under)
+    const filePath = new Map<string, string>()
+    const files: FileEntry[] = []
+    for (const [id, pageId] of nextTo) {
+      const file = fileById.get(id)!
+      const path = placeFile(file, layout.filesFolder.get(pageId)!, namesIn)
+      filePath.set(id, path)
+      files.push({ path, storageKey: file.storageKey, size: file.size })
+    }
+    const copy = (path: string) => `${options.origin}${path}`
+    const texts = included.map((page): [string, string] => {
+      const path = layout.pagePath.get(page.id)!
+      const fromDir = path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : ''
+      const markdown = relink(page.content, {
+        // A link with an address of its own already leads somewhere without this copy's.
+        attachment: (id, absolute) => (filePath.has(id) ? linkTo(fromDir, filePath.get(id)!) : absolute ? undefined : copy(`/api/attachments/${id}`)),
+        reference: (type, id) => (type === 'doc' && layout.pagePath.has(id) ? linkTo(fromDir, layout.pagePath.get(id)!) : copy(`/${type}/${id}`)),
+      })
+      return [path, markdown]
+    })
+
+    const stem = layout.pagePath.get(root.id)!.slice(0, -'.md'.length)
+    if (texts.length === 1 && files.length === 0) return { body: texts[0]![1], filename: `${stem}.md`, type: 'text/markdown; charset=utf-8' }
+    const now = new Date()
+    const body = this.zip(async (zip) => {
+      for (const [path, content] of texts) await zip.add(path, utf8.encode(content), now)
+      await this.addFiles(zip, files, now)
+    })
+    return { body, filename: `${stem}.zip`, type: 'application/zip' }
+  }
+
+  /** A ZIP written by `fill`, as a stream: each piece waits for the reader to take the last one, so memory stays flat whatever the size. */
+  private zip(fill: (zip: ZipWriter) => Promise<void>) {
     const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>()
     const writer = writable.getWriter()
-    // Each piece waits for the browser to take the last one: memory stays flat whatever the size.
     const zip = new ZipWriter((chunk) => writer.write(chunk))
-    const text = (value: string) => new TextEncoder().encode(value)
-
     void (async () => {
       try {
-        // An attachment whose file is gone from storage (a backup restored without it, say) is listed, never an empty file.
-        const missing = new Set<string>()
-        for (const file of files) if (!(await this.deps.storage.exists(file.storageKey))) missing.add(file.path)
-        const about = { format: EXPORT_FORMAT, version: 1, app: VERSION, exportedAt: now.toISOString(), workspaces: summary, missingAttachments: [...missing].map((path) => path.slice(root.length + 1)) }
-        await zip.add(`${root}/export.json`, text(`${JSON.stringify(about, null, 2)}\n`), now)
-        for (const [path, content] of texts) await zip.add(path, text(content), now)
-        for (const file of files) {
-          const body = missing.has(file.path) ? null : await this.deps.storage.stream(file.storageKey)
-          if (body) await zip.addStream(file.path, file.size, body as ReadableStream<Uint8Array>, now)
-        }
+        await fill(zip)
         await zip.end()
         await writer.close()
       } catch (error) {
@@ -226,7 +406,15 @@ export class ExportService {
         await writer.abort(error).catch(() => {})
       }
     })()
-    return { body: readable, filename: `${root}.zip` }
+    return readable
+  }
+
+  /** The attachments' files, streamed one by one from storage. One gone meanwhile is left out. */
+  private async addFiles(zip: ZipWriter, files: FileEntry[], now: Date) {
+    for (const file of files) {
+      const body = await this.deps.storage.stream(file.storageKey)
+      if (body) await zip.addStream(file.path, file.size, body as ReadableStream<Uint8Array>, now)
+    }
   }
 
   /** Every text of the export and the list of attachments to add, read at once from the database. */
@@ -258,18 +446,10 @@ export class ExportService {
       const itemRows = db.select().from(checklistItems).where(eq(checklistItems.workspaceId, workspace.id)).orderBy(asc(checklistItems.position), asc(checklistItems.id)).all()
       const pageRows = db.select().from(pages).where(eq(pages.workspaceId, workspace.id)).orderBy(asc(pages.position), asc(pages.id)).all()
       const fileRows = db.select().from(attachments).where(eq(attachments.workspaceId, workspace.id)).orderBy(asc(attachments.createdAt), asc(attachments.id)).all()
+      const commentRows = db.select().from(cardComments).where(eq(cardComments.workspaceId, workspace.id)).orderBy(asc(cardComments.createdAt), asc(cardComments.id)).all()
       // Joined rather than listed by id: a Durable Object takes at most 100 bound values in a query.
       const cardLabelRows = db.select({ cardId: cardLabels.cardId, labelId: cardLabels.labelId }).from(cardLabels).innerJoin(cards, eq(cards.id, cardLabels.cardId)).where(eq(cards.workspaceId, workspace.id)).all()
       const linkRows = db.select({ cardId: cardPageLinks.cardId, pageId: cardPageLinks.pageId }).from(cardPageLinks).innerJoin(cards, eq(cards.id, cardPageLinks.cardId)).where(eq(cards.workspaceId, workspace.id)).all()
-      const group = <T, K>(rows: T[], key: (row: T) => K) => {
-        const groups = new Map<K, T[]>()
-        for (const row of rows) {
-          const bucket = groups.get(key(row))
-          if (bucket) bucket.push(row)
-          else groups.set(key(row), [row])
-        }
-        return (k: K) => groups.get(k) ?? []
-      }
       const cardById = new Map(cardRows.map((c) => [c.id, c]))
       const labelById = new Map(labelRows.map((l) => [l.id, l]))
       const boardsOf = group(boardRows, (b) => b.projectId)
@@ -281,37 +461,16 @@ export class ExportService {
       const itemsOf = group(itemRows, (i) => i.checklistId)
       const linksOf = group(linkRows, (l) => l.cardId)
       const filesOf = group(fileRows, (f) => f.cardId)
+      const commentsOf = group(commentRows, (c) => c.cardId)
 
       // Documents: each project a folder, each page a Markdown file, its subpages in a folder of the
-      // same name, its attachments in "<name> (files)". Walked without recursion: a tree has no depth limit.
-      const pagePath = new Map<string, string>()
-      const pageFilesFolder = new Map<string, string>()
+      // same name, its attachments in "<name> (files)".
+      const namesIn = folderNamers()
       const projectFolders = namer()
       const projectFolder = new Map(projectRows.map((p) => [p.id, projectFolders(safeName(p.name))]))
-      const byParent = group(pageRows, (page) => page.parentId ?? `project:${page.projectId}`)
       const withFiles = new Set(fileRows.map((f) => f.pageId).filter((id): id is string => Boolean(id)))
-      const folderNames = new Map<string, ReturnType<typeof namer>>()
-      const namesIn = (folder: string) => {
-        let names = folderNames.get(folder)
-        if (!names) folderNames.set(folder, (names = namer()))
-        return names
-      }
-      const place = (page: (typeof pageRows)[number], folder: string) => {
-        const names = namesIn(folder)
-        // Its text and the folder of its subpages: "A.md" and "A", both free (a sibling "A.md" would take "A.md" as a folder).
-        const stem = names(safeName(page.title), ['.md', ''])
-        pagePath.set(page.id, `${folder}/${stem}.md`)
-        if (withFiles.has(page.id)) pageFilesFolder.set(page.id, `${folder}/${names(`${stem} (files)`)}`)
-        return `${folder}/${stem}`
-      }
-      const pending: Array<{ key: string; folder: string }> = projectRows.map((p) => ({ key: `project:${p.id}`, folder: `documents/${projectFolder.get(p.id)}` }))
-      while (pending.length) {
-        const { key, folder } = pending.pop()!
-        for (const page of byParent(key)) {
-          if (pagePath.has(page.id)) continue
-          pending.push({ key: page.id, folder: place(page, folder) })
-        }
-      }
+      const { pagePath, filesFolder: pageFilesFolder, place, placeUnder } = pageLayout(pageRows, withFiles, namesIn)
+      for (const project of projectRows) placeUnder(`project:${project.id}`, `documents/${projectFolder.get(project.id)}`)
       // A page whose parent isn't there (it shouldn't happen) still comes out, at the top of its project.
       for (const page of pageRows) if (!pagePath.has(page.id) && projectFolder.has(page.projectId)) place(page, `documents/${projectFolder.get(page.projectId)}`)
 
@@ -331,31 +490,24 @@ export class ExportService {
         } else {
           folder = pageFilesFolder.get(file.pageId ?? '') ?? (orphans ??= `attachments/${cardFolderNames('pages')}`)
         }
-        const dot = file.filename.lastIndexOf('.')
-        const stem = dot > 0 ? file.filename.slice(0, dot) : file.filename
-        const ending = dot > 0 ? cleanName(file.filename.slice(dot + 1), 16) : ''
-        const extension = ending ? `.${ending}` : ''
-        const path = `${folder}/${namesIn(folder)(safeName(stem, 'file'), [extension])}${extension}`
+        const path = placeFile(file, folder, namesIn)
         filePath.set(file.id, path)
         files.push({ path: `${base}/${path}`, storageKey: file.storageKey, size: file.size })
       }
       // Links to attachments and references to documents point at their files in the ZIP, relative
       // to where the text is; references to tasks at tasks.json, with the card's id (it is in there)
       // after the "#". One to anything that isn't in the export stays as it was.
-      const target = (type: string, id: string) => (type.toLowerCase() === 'doc' ? pagePath.get(id) : cardById.has(id) ? 'tasks.json' : undefined)
-      const relink = (markdown: string, fromDir: string) =>
-        outsideCode(markdown, (text) =>
-          text
-            .replace(ATTACHMENT_LINK, (link, open: string, id: string) => (filePath.has(id.toLowerCase()) ? `${open}${linkTo(fromDir, filePath.get(id.toLowerCase())!)}` : link))
-            .replace(REFERENCE, (link, open: string, type: string, id: string) => {
-              const to = target(type, id.toLowerCase())
-              if (!to) return link
-              return `${open}${linkTo(fromDir, to)}${to === 'tasks.json' ? `#${id.toLowerCase()}` : ''}`
-            }),
-        )
+      const relinked = (markdown: string, fromDir: string) =>
+        relink(markdown, {
+          attachment: (id) => (filePath.has(id) ? linkTo(fromDir, filePath.get(id)!) : undefined),
+          reference: (type, id) => {
+            if (type === 'doc') return pagePath.has(id) ? linkTo(fromDir, pagePath.get(id)!) : undefined
+            return cardById.has(id) ? `${linkTo(fromDir, 'tasks.json')}#${id}` : undefined
+          },
+        })
       for (const page of pageRows) {
         const path = pagePath.get(page.id)
-        if (path) texts.push([`${base}/${path}`, relink(page.content, path.slice(0, path.lastIndexOf('/')))])
+        if (path) texts.push([`${base}/${path}`, relinked(page.content, path.slice(0, path.lastIndexOf('/')))])
       }
 
       // Tasks: projects, their boards, columns and cards, in order.
@@ -375,7 +527,7 @@ export class ExportService {
                 // What references to this task (#<id> after tasks.json) point at.
                 id: card.id,
                 title: card.title,
-                description: relink(card.description, ''),
+                description: relinked(card.description, ''),
                 labels: labelsOfCard(card.id)
                   .map((cl) => labelById.get(cl.labelId)?.name)
                   .filter(Boolean),
@@ -385,6 +537,14 @@ export class ExportService {
                 // A document linked by hand and mentioned too is one document.
                 documents: [...new Set(linksOf(card.id).map((link) => pagePath.get(link.pageId)))].filter(Boolean),
                 attachments: filesOf(card.id).map((f) => filePath.get(f.id)),
+                // Oldest first, as a conversation reads.
+                comments: commentsOf(card.id).map((c) => ({
+                  author: c.authorName,
+                  by: c.authorKind === 'agent' ? 'agent' : 'person',
+                  body: relinked(c.body, ''),
+                  createdAt: iso(c.createdAt),
+                  editedAt: c.editedAt ? iso(c.editedAt) : null,
+                })),
                 createdAt: iso(card.createdAt),
                 updatedAt: iso(card.updatedAt),
               })),

@@ -34,6 +34,9 @@
   },
   "tools": {
     "title": "MCP tools",
+    "show_one": "Show {{count}} tool",
+    "show_other": "Show all {{count}} tools",
+    "hide": "Hide tools",
     "footnote": "Each agent only sees the tools its permissions allow.",
     "scopes": {
       "read": "Read",
@@ -48,9 +51,10 @@
       "listProjects": "Projects, boards and page outline",
       "search": "Search across cards and pages",
       "readAttachments": "Read text and image attachments",
-      "readBoards": "Columns, cards, checklists and links",
+      "readBoards": "Columns, cards, comments, checklists and links",
       "editCards": "Create, edit and move cards",
       "archiveCard": "Archive (restorable from the app)",
+      "comments": "Comment on cards and edit their own comments",
       "organizeBoards": "Reorganize boards",
       "labels": "Labels and checklists",
       "readPages": "Page tree and Markdown content",
@@ -59,7 +63,7 @@
       "uploadAttachment": "Attach files to cards and pages",
       "linkCard": "Link tasks and documents",
       "createProject": "Create projects",
-      "deleteTasks": "Delete cards, boards, columns, labels and checklists (to the trash)",
+      "deleteTasks": "Delete cards, boards, columns, labels, checklists and their own comments (to the trash)",
       "deleteDocs": "Delete pages, projects and attachments (to the trash)",
       "moveElsewhere": "Move attachments and unlink cards from pages"
     }

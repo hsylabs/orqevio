@@ -27,7 +27,7 @@ type Asking = {
 
 /** What undoing touches: refetch whatever of it is on screen. */
 function refresh() {
-  for (const key of ['history', 'history-entry', 'card', 'page', 'board', 'archived', 'overview', 'trash']) void queryClient.invalidateQueries({ queryKey: [key] })
+  for (const key of ['history', 'history-entry', 'card', 'comments', 'page', 'board', 'archived', 'overview', 'trash']) void queryClient.invalidateQueries({ queryKey: [key] })
 }
 
 /**

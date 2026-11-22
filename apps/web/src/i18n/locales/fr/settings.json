@@ -60,7 +60,7 @@
   },
   "backups": {
     "title": "Sauvegardes",
-    "description": "Chaque jour, cette copie se sauvegarde elle-même : tout, tel quel, y compris le coffre-fort chiffré, la corbeille, l’historique et les pièces jointes. Les 7 dernières sont conservées, à part de ses données.",
+    "description": "Chaque jour, cette copie se sauvegarde elle-même : tout, tel quel, y compris le coffre-fort chiffré, la corbeille, l’historique et les pièces jointes. Les sauvegardes sont conservées à part de ses données.",
     "whereFolder": "Elles se trouvent dans le dossier <code>{{name}}</code> du serveur. Pour les garder sur un autre disque ou volume, définissez BACKUP_DIR.",
     "whereBucket": "Elles se trouvent dans le bucket R2 <code>{{name}}</code> de votre compte Cloudflare, à part des pièces jointes.",
     "off": "Cette copie ne fait pas de sauvegardes (BACKUPS=off).",

@@ -22,7 +22,8 @@
     "label": "Etiqueta",
     "checklist": "Checklist",
     "checklist_item": "Item de checklist",
-    "link": "Link para uma página"
+    "link": "Link para uma página",
+    "comment": "Comentário"
   },
   "contents": {
     "boards_one": "{{count}} quadro",
@@ -43,6 +44,9 @@
     "items_one": "{{count}} item de checklist",
     "items_many": "{{count}} itens de checklist",
     "items_other": "{{count}} itens de checklist",
+    "comments_one": "{{count}} comentário",
+    "comments_many": "{{count}} comentários",
+    "comments_other": "{{count}} comentários",
     "labels_one": "{{count}} etiqueta",
     "labels_many": "{{count}} etiquetas",
     "labels_other": "{{count}} etiquetas",
@@ -102,7 +106,8 @@
     "label": "a etiqueta “{{name}}”",
     "checklist": "a checklist “{{name}}”",
     "checklist_item": "o item “{{name}}”",
-    "link": "o link para “{{name}}”"
+    "link": "o link para “{{name}}”",
+    "comment": "o comentário “{{name}}”"
   },
   "kindA": {
     "project": "um projeto “{{name}}”",
@@ -114,7 +119,8 @@
     "label": "uma etiqueta “{{name}}”",
     "checklist": "uma checklist “{{name}}”",
     "checklist_item": "um item “{{name}}”",
-    "link": "um link para “{{name}}”"
+    "link": "um link para “{{name}}”",
+    "comment": "um comentário “{{name}}”"
   },
   "relationKind": {
     "label": "A etiqueta “{{name}}”",

@@ -61,6 +61,12 @@
       "deleted": "<actor>{{actor}}</actor>が項目「{{text}}」をゴミ箱に移動しました",
       "restored": "<actor>{{actor}}</actor>が項目「{{text}}」を復元しました"
     },
+    "comment": {
+      "created": "<actor>{{actor}}</actor>が「{{text}}」とコメントしました",
+      "body": "<actor>{{actor}}</actor>がコメントを「{{text}}」に編集しました",
+      "deleted": "<actor>{{actor}}</actor>がコメント「{{text}}」をゴミ箱に移動しました",
+      "restored": "<actor>{{actor}}</actor>がコメント「{{text}}」を復元しました"
+    },
     "attachment": {
       "created": "<actor>{{actor}}</actor>が「{{name}}」を添付しました",
       "deleted": "<actor>{{actor}}</actor>がファイル「{{name}}」をゴミ箱に移動しました",

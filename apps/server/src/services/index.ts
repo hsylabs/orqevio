@@ -5,6 +5,7 @@ import { AttachmentService } from './attachments'
 import { BackupService } from './backups'
 import { BoardService } from './boards'
 import { CardService } from './cards'
+import { CommentService } from './comments'
 import { ExportService } from './export'
 import type { Deps } from './deps'
 import { HistoryService } from './history'
@@ -28,6 +29,7 @@ export function createServices(deps: Deps) {
   const history = new HistoryService(deps, access)
   const trash = new TrashService(deps, access, activity, history)
   const cards = new CardService(deps, access, activity, trash, history)
+  const comments = new CommentService(deps, access, activity, trash, history)
   const workspaces = new WorkspaceService(deps, access, activity, cards, trash)
   const tokens = new TokenService(deps, access)
   const attachments = new AttachmentService(deps, access, activity, trash, history)
@@ -42,10 +44,11 @@ export function createServices(deps: Deps) {
     history,
     trash,
     cards,
+    comments,
     workspaces,
     boards: new BoardService(deps, access, activity, cards, trash),
     pages,
-    undo: new UndoService(deps, access, { cards, pages, attachments, trash }),
+    undo: new UndoService(deps, access, { cards, pages, attachments, trash, comments }),
     search: new SearchService(deps, access),
     attachments,
     tokens,

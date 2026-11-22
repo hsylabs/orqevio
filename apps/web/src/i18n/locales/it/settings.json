@@ -60,7 +60,7 @@
   },
   "backups": {
     "title": "Backup",
-    "description": "Ogni giorno questa copia fa un backup di sé stessa: di tutto così com’è, compresi la cassaforte cifrata, il cestino, la cronologia e gli allegati. Gli ultimi 7 vengono conservati, separati dai suoi dati.",
+    "description": "Ogni giorno questa copia fa un backup di sé stessa: di tutto così com’è, compresi la cassaforte cifrata, il cestino, la cronologia e gli allegati. I backup vengono conservati separati dai suoi dati.",
     "whereFolder": "Si trovano nella cartella <code>{{name}}</code> del server. Per tenerli su un altro disco o volume, imposta BACKUP_DIR.",
     "whereBucket": "Si trovano nel bucket R2 <code>{{name}}</code> del tuo account Cloudflare, separati dagli allegati.",
     "off": "Questa copia non fa backup (BACKUPS=off).",

@@ -6,6 +6,27 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-21
+
+### Added
+- **Comments on cards.** You and your agents talk on a card in Markdown, up to 20,000 characters each, in a **Comments** section above **Activity**; the board shows how many comments each card has.
+  - Send with the button or with Ctrl/⌘+Enter. What you were writing waits until you reload or close the tab, even if you close the card.
+  - Each author edits only their own comments. You can also delete anyone's, to the trash; an agent deletes only its own.
+  - Comments go to the trash and come back with their card, are in the card's history and can be undone, also with everything an agent did. Search finds a card by its comments, and the export and the backups keep them.
+- **MCP:** `add_comment`, `update_comment` and `list_comments`, and with **Can delete and move**, `delete_comment`. An agent changes and deletes only the comments written with its own access: with a new one, even for the same app, it can't change the old ones. `get_card` shows the latest ten.
+- **A color of its own for a project**, besides the nine of the palette: **Custom color** opens the browser's color picker. It is drawn lighter or darker for each theme, so it stands out as the palette's colors do. The API and the MCP `create_project` take `#rrggbb` too; labels keep to the palette.
+- **Download a page as Markdown**, from its menu. A page that is only text comes as a `.md` file; one with files, as a ZIP with them next to it. If it has subpages, you choose whether they go too, in folders. Links to what doesn't go with it point at your copy. What you just wrote, title included, is saved first.
+- **Print a page or save it as PDF:** its title and its text alone, dark on white whatever the theme, with the ticks of done tasks and the address of each link, without cutting tables, code or pictures across pages. Ctrl/⌘+P prints it the same way.
+
+### Changed
+- **Japanese titles** break between phrases in Safari and Firefox too, never in the middle of a word: the titles of cards and pages, the names of projects and boards, the greeting on Home, and the title of a printed page and of a vault item. Safari and Firefox download a small file that tells Japanese phrases apart (BudouX, 15.5 KB) when the app is in Japanese. Chromium, which already did this for headings, now does it for card and page titles and board names too. Nothing changes in other languages.
+- **The sidebar** closes when the window gets narrower than 900 px, and comes back as it was when it widens.
+- **Agents:** side by side, the MCP tools and the activity each fit in the window and scroll in their own box. Stacked, on a phone or a narrow window, the tools wait folded under the activity, behind **Show all 39 tools**.
+
+### Fixed
+- **Undo** on a notice could not be clicked while a card was open, for instance after deleting a checklist item.
+- **Which backups are kept.** The Deploy to Cloudflare template, the uninstall prompt and the description in **Settings → Backups** spoke only of the last 7 backups; the description did so over a line that said otherwise. The template and the prompt now say the last 7 daily ones, the last 7 made by you and the one made before the last restore; in **Settings → Backups**, only the line under the description says it.
+
 ## [1.3.0] - 2026-11-20
 
 ### Added

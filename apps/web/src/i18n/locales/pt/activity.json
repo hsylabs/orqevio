@@ -20,7 +20,13 @@
       "linked": "<actor>{{actor}}</actor> vinculou um documento a <target>“{{target}}”</target>",
       "linked_self": "<actor>{{actor}}</actor> vinculou um documento",
       "unlinked": "<actor>{{actor}}</actor> desvinculou um documento de <target>“{{target}}”</target>",
-      "unlinked_self": "<actor>{{actor}}</actor> desvinculou um documento"
+      "unlinked_self": "<actor>{{actor}}</actor> desvinculou um documento",
+      "commented": "<actor>{{actor}}</actor> comentou no cartão <target>“{{target}}”</target>",
+      "commented_self": "<actor>{{actor}}</actor> comentou",
+      "comment_edited": "<actor>{{actor}}</actor> editou um comentário de <target>“{{target}}”</target>",
+      "comment_edited_self": "<actor>{{actor}}</actor> editou um comentário",
+      "comment_deleted": "<actor>{{actor}}</actor> excluiu um comentário de <target>“{{target}}”</target>",
+      "comment_deleted_self": "<actor>{{actor}}</actor> excluiu um comentário"
     },
     "column": {
       "created": "<actor>{{actor}}</actor> criou a coluna <target>“{{target}}”</target>",
@@ -51,7 +57,9 @@
     },
     "trash": {
       "restored": "<actor>{{actor}}</actor> restaurou <target>“{{target}}”</target> da lixeira",
-      "purged": "<actor>{{actor}}</actor> excluiu de vez <target>“{{target}}”</target>"
+      "purged": "<actor>{{actor}}</actor> excluiu de vez <target>“{{target}}”</target>",
+      "restoredComment": "<actor>{{actor}}</actor> restaurou da lixeira um comentário de <target>“{{target}}”</target>",
+      "purgedComment": "<actor>{{actor}}</actor> excluiu de vez um comentário de <target>“{{target}}”</target>"
     },
     "other": "<actor>{{actor}}</actor> fez uma alteração"
   },

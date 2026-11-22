@@ -120,7 +120,7 @@ per farti accedere.`,
       'Lascia la risposta vuota se preferisci farlo in un altro modo.',
     ].join('\n'),
   askDeleteBackups: (bucket) =>
-    `Eliminare anche i suoi backup? Il bucket «${bucket}» conserva gli ultimi 7 backup giornalieri: se lo tieni, una copia installata di nuovo con lo stesso nome potrà ripristinarli.`,
+    `Il bucket «${bucket}» conserva gli ultimi 7 backup giornalieri, gli ultimi 7 fatti da te e quello fatto prima dell’ultimo ripristino; se lo tieni, una copia installata di nuovo con lo stesso nome potrà ripristinarli. Eliminare anche i suoi backup?`,
   emptyingBackupsThroughCopy: (bucket) =>
     [
       '',

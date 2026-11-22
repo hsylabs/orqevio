@@ -73,6 +73,12 @@
       "deleted": "<actor>{{actor}}</actor> a mis l’élément « {{text}} » à la corbeille",
       "restored": "<actor>{{actor}}</actor> a récupéré l’élément « {{text}} »"
     },
+    "comment": {
+      "created": "<actor>{{actor}}</actor> a commenté : « {{text}} »",
+      "body": "<actor>{{actor}}</actor> a modifié le commentaire, qui dit maintenant « {{text}} »",
+      "deleted": "<actor>{{actor}}</actor> a mis le commentaire « {{text}} » à la corbeille",
+      "restored": "<actor>{{actor}}</actor> a récupéré le commentaire « {{text}} »"
+    },
     "attachment": {
       "created": "<actor>{{actor}}</actor> a joint « {{name}} »",
       "deleted": "<actor>{{actor}}</actor> a mis le fichier « {{name}} » à la corbeille",

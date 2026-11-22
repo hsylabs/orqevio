@@ -34,6 +34,9 @@
   },
   "tools": {
     "title": "MCP-tools",
+    "show_one": "{{count}} tool tonen",
+    "show_other": "Alle {{count}} tools tonen",
+    "hide": "Tools verbergen",
     "footnote": "Elke agent ziet alleen de tools die zijn rechten toestaan.",
     "scopes": {
       "read": "Lezen",
@@ -48,9 +51,10 @@
       "listProjects": "Projecten, borden en paginaoverzicht",
       "search": "Zoeken in kaarten en pagina’s",
       "readAttachments": "Tekst- en afbeeldingsbijlagen lezen",
-      "readBoards": "Kolommen, kaarten, checklists en koppelingen",
+      "readBoards": "Kolommen, kaarten, opmerkingen, checklists en koppelingen",
       "editCards": "Kaarten maken, bewerken en verplaatsen",
       "archiveCard": "Archiveren (te herstellen vanuit de app)",
+      "comments": "Opmerkingen bij kaarten plaatsen en de eigen opmerkingen bewerken",
       "organizeBoards": "Borden reorganiseren",
       "labels": "Labels en checklists",
       "readPages": "Paginastructuur en Markdown-inhoud",
@@ -59,7 +63,7 @@
       "uploadAttachment": "Bestanden toevoegen aan kaarten en pagina’s",
       "linkCard": "Taken en documenten koppelen",
       "createProject": "Projecten aanmaken",
-      "deleteTasks": "Kaarten, borden, kolommen, labels en checklists verwijderen (naar de prullenbak)",
+      "deleteTasks": "Kaarten, borden, kolommen, labels, checklists en de eigen opmerkingen verwijderen (naar de prullenbak)",
       "deleteDocs": "Pagina’s, projecten en bijlagen verwijderen (naar de prullenbak)",
       "moveElsewhere": "Bijlagen verplaatsen en kaarten van pagina’s ontkoppelen"
     }

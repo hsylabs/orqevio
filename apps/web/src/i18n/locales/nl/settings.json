@@ -60,7 +60,7 @@
   },
   "backups": {
     "title": "Back-ups",
-    "description": "Elke dag maakt deze installatie een back-up van zichzelf: van alles zoals het is, ook de versleutelde kluis, de prullenbak, de geschiedenis en de bijlagen. De laatste 7 worden bewaard, los van de gegevens.",
+    "description": "Elke dag maakt deze installatie een back-up van zichzelf: van alles zoals het is, ook de versleutelde kluis, de prullenbak, de geschiedenis en de bijlagen. De back-ups worden los van de gegevens bewaard.",
     "whereFolder": "Ze staan in de map <code>{{name}}</code> van de server. Stel BACKUP_DIR in om ze op een andere schijf of een ander volume te bewaren.",
     "whereBucket": "Ze staan in de R2-bucket <code>{{name}}</code> van je Cloudflare-account, los van de bijlagen.",
     "off": "Deze installatie maakt geen back-ups (BACKUPS=off).",

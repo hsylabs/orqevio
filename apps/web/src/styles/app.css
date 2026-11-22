@@ -198,8 +198,19 @@
   }
   /* Japanese has no spaces: headings break between phrases, not inside a word ("ござい|ます"),
      where the browser can tell them apart; the others ignore it. */
-  :lang(ja) :is(h1, h2, h3) {
+  :lang(ja) :is(h1, h2, h3, .orq-title) {
     word-break: auto-phrase;
+  }
+  /* A Japanese title (Phrases.tsx) breaks between its phrases only: Chromium tells them apart, and
+     elsewhere BudouX marks where (<wbr>). A phrase too long for its line still breaks, never overflows. */
+  .orq-phrases {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+  @supports (word-break: auto-phrase) {
+    .orq-phrases {
+      word-break: auto-phrase;
+    }
   }
   ::selection {
     background: color-mix(in oklab, var(--accent) 24%, transparent);
@@ -325,6 +336,12 @@
   .c-iris { --c: var(--c-iris); }
   .c-rose { --c: var(--c-rose); }
   .c-slate { --c: var(--c-slate); }
+  /* A project's own colour: both tones come inline (lib/colors.ts), the theme picks one. */
+  .c-custom { --c: var(--c-custom-light); }
+  :root[data-theme='dark'] .c-custom { --c: var(--c-custom-dark); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']):not([data-theme='dark']) .c-custom { --c: var(--c-custom-dark); }
+  }
 
   .scroll-fade-x {
     mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);

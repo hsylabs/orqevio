@@ -1,8 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
 // E2E_BROWSER=firefox (or webkit, Safari's engine) runs the suite in another engine
-// (CI installs them). One per run: the suite expects a fresh copy, and the vault belongs
-// to the owner, not to a workspace. Chromium by default.
+// (CI runs it in Playwright's image, which has them all). One per run: the suite expects a
+// fresh copy, and the vault belongs to the owner, not to a workspace. Chromium by default.
 const ENGINES = { chromium: devices['Desktop Chrome'], firefox: devices['Desktop Firefox'], webkit: devices['Desktop Safari'] }
 const browser = (process.env.E2E_BROWSER ?? 'chromium') as keyof typeof ENGINES
 if (!(browser in ENGINES)) throw new Error(`E2E_BROWSER must be chromium, firefox or webkit, not ${browser}`)

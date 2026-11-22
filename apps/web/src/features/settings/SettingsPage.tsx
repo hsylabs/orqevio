@@ -11,7 +11,9 @@ import { Segmented } from '../../components/ui/Segmented'
 import { useConfirm } from '../../components/ui/confirm'
 import { applyLocale } from '../../i18n'
 import { LanguageSelect } from '../../i18n/LanguageSelect'
-import { ApiError, del, errorMessage, patch, post } from '../../lib/api'
+import { del, errorMessage, patch, post } from '../../lib/api'
+import { downloadFrom } from '../../lib/download'
+import { clearPhrases } from '../../lib/phrases'
 import { keys, queryClient } from '../../lib/queries'
 import { applyTheme } from '../../lib/theme'
 import { AccessKeyReveal } from '../auth/AccessKeyReveal'
@@ -32,22 +34,6 @@ function Section({ title, description, children }: { title: string; description?
       <div className="max-w-[460px]">{children}</div>
     </section>
   )
-}
-
-/**
- * The ZIP of everything, as a download: the page stays where it is. The session is checked first:
- * ended, the browser would open the error the server answers instead (JSON, in English); this way
- * the app says it, and asks to sign in again.
- */
-async function downloadExport() {
-  // Asked again as the app asks it: ended, the app goes to sign in (see AppShell).
-  await queryClient.refetchQueries({ queryKey: keys.me })
-  const { error } = queryClient.getQueryState(keys.me) ?? {}
-  if (error) {
-    if (!(error instanceof ApiError && error.status === 401)) toast.error(errorMessage(error))
-    return
-  }
-  window.location.assign('/api/export')
 }
 
 export function SettingsPage() {
@@ -208,7 +194,7 @@ export function SettingsPage() {
           </Section>
 
           <Section title={t('export.title')} description={t('export.description')}>
-            <Button variant="secondary" onClick={() => void downloadExport()}>
+            <Button variant="secondary" onClick={() => void downloadFrom('/api/export')}>
               {t('export.action')}
             </Button>
           </Section>
@@ -245,6 +231,7 @@ export function SettingsPage() {
             if (await run('delete', () => post('/account/delete', { accessKey: deleteKey }), t('erase.done'))) {
               lockVaultEverywhere()
               queryClient.clear()
+              clearPhrases()
               navigate('/setup', { replace: true })
             }
           }}

@@ -2,11 +2,13 @@ import type { ActorRef, PageDTO, RealtimeEvent, TrashTreeDTO } from '@orqevio/sh
 import { MAX_MARKDOWN, characters, extractReferences } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { EditorState } from '@tiptap/pm/state'
-import { Bot, CornerDownRight, Ellipsis, FileText, FilePlus, FolderInput, History, Paperclip, SquareKanban, Trash, TriangleAlert } from 'lucide-react'
+import { Bot, CornerDownRight, Download, Ellipsis, FileText, FilePlus, FolderInput, History, Paperclip, Printer, SquareKanban, Trash, TriangleAlert } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link, useBlocker, useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
+import { fitTitle, usePhrasedField } from '../../components/Phrases'
 import { Button } from '../../components/ui/Button'
 import { useConfirm } from '../../components/ui/confirm'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from '../../components/ui/Menu'
@@ -25,9 +27,13 @@ import { Editor } from './editor/Editor'
 import { IconPicker } from './IconPicker'
 import { HistoryDialog } from '../history/HistoryDialog'
 import { MovePageDialog } from './MovePageDialog'
+import { DownloadDialog, PrintView, downloadPage, picturesReady } from './PageExport'
 import { useRestore } from '../trash/restore'
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error'
+
+/** The page title's type: the field and, in Japanese where only BudouX tells phrases apart, the title drawn over it. */
+const TITLE_TYPE = 'font-display text-[40px] leading-[1.1] font-medium tracking-[-0.025em] sm:text-[44px]'
 
 /**
  * Why the editor is not saving what was written. Only a network failure (or a server that does
@@ -78,6 +84,10 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
   const [gone, setGone] = useState<Gone | null>(null)
   const [moveOpen, setMoveOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const phrasedTitle = usePhrasedField(title, TITLE_TYPE)
+  const [downloadAsk, setDownloadAsk] = useState(false)
+  /** The Markdown being printed, while it is. */
+  const [printing, setPrinting] = useState<string | null>(null)
 
   const editorRef = useRef<TiptapEditor | null>(null)
   const version = useRef(page.version)
@@ -87,6 +97,10 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const titleTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const titleFocused = useRef(false)
+  /** A title written and not saved yet. */
+  const titleDue = useRef<string | null>(null)
+  /** The last title sent to be saved: whether it was. */
+  const titleSaving = useRef<Promise<boolean> | null>(null)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const conflictRef = useRef(false)
   conflictRef.current = conflict !== null
@@ -100,13 +114,7 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
   const mentions = useRef(extractReferences(page.content).cards.sort().join(','))
 
   // Autosize the title.
-  useEffect(() => {
-    const el = titleRef.current
-    if (el) {
-      el.style.height = '0'
-      el.style.height = `${el.scrollHeight}px`
-    }
-  }, [title])
+  useEffect(() => fitTitle(titleRef.current), [title])
 
   useEffect(() => {
     if ((location.state as { focusTitle?: boolean } | null)?.focusTitle) titleRef.current?.focus()
@@ -117,6 +125,17 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
     if (!titleFocused.current) setTitle(page.title)
     setIcon(page.icon)
   }, [page.title, page.icon])
+
+  useEffect(() => {
+    const before = () => flushSync(() => setPrinting(latest.current))
+    const after = () => setPrinting(null)
+    window.addEventListener('beforeprint', before)
+    window.addEventListener('afterprint', after)
+    return () => {
+      window.removeEventListener('beforeprint', before)
+      window.removeEventListener('afterprint', after)
+    }
+  }, [])
 
   const report = useCallback((next: SaveProblem | null) => {
     problemRef.current = next
@@ -353,16 +372,74 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
     await save()
   }
 
+  /** Saves the title or the icon; says whether it was saved. */
   function saveMeta(patchBody: { title?: string; icon?: string | null }) {
-    void patch<{ version: number }>(`/pages/${page.id}`, patchBody)
-      .then((res) => {
+    if (patchBody.title !== undefined && titleDue.current === patchBody.title) titleDue.current = null
+    const saved = patch<{ version: number }>(`/pages/${page.id}`, patchBody)
+      .then(async (res) => {
         version.current = Math.max(version.current, res.version)
-        return queryClient.invalidateQueries({ queryKey: keys.overview(workspaceId) })
+        await queryClient.invalidateQueries({ queryKey: keys.overview(workspaceId) })
+        return true
       })
-      .catch(lost)
+      .catch((error: unknown) => {
+        lost(error)
+        // Not saved: it is sent again before a download, unless a newer one was sent or is waiting.
+        if (patchBody.title !== undefined && titleSaving.current === saved) titleDue.current ??= patchBody.title
+        return false
+      })
+    if (patchBody.title !== undefined) titleSaving.current = saved
+    return saved
   }
 
   const projectPages = overview?.projects.find((p) => p.id === page.projectId)?.pages ?? []
+
+  /** Saves what is written now, title included, and says whether all of it is saved. */
+  async function savedNow() {
+    if (titleDue.current !== null) {
+      clearTimeout(titleTimer.current)
+      void saveMeta({ title: titleDue.current })
+    }
+    // The title on its way too: the file is named after it.
+    if (titleSaving.current && !(await titleSaving.current)) return false
+    let tried = false
+    for (let tries = 0; tries < 200 && (dirty.current || saving.current); tries++) {
+      // Nothing more to do here when what is written can't be saved now (a conflict, the page gone),
+      // or failed again just now (too long, refused): an older failure is tried once more, as what is written may have changed.
+      if (conflictRef.current || goneRef.current || (tried && problemRef.current)) break
+      if (saving.current) await new Promise((resolve) => setTimeout(resolve, 50))
+      else {
+        tried = true
+        await save()
+      }
+    }
+    return !dirty.current
+  }
+
+  /** The page as Markdown, saved first: what is downloaded is what is on screen. With subpages, it asks whether to take them. */
+  async function download(subpages?: boolean) {
+    // Gone, there is nothing to download: the banner says why.
+    if (goneRef.current) {
+      toast.error(t('page.gone.unknown'))
+      return
+    }
+    if (!(await savedNow())) {
+      toast.error(t('page.downloadUnsaved'))
+      return
+    }
+    if (subpages === undefined && projectPages.some((p) => p.parentId === page.id)) return setDownloadAsk(true)
+    await downloadPage(page.id, Boolean(subpages))
+  }
+
+  /**
+   * Prints the page, or saves it as PDF, once its pictures are ready: at once when they already are
+   * (Safari only prints what follows a click without waiting).
+   */
+  async function print() {
+    flushSync(() => setPrinting(latest.current))
+    const view = document.querySelector('.orq-print-root')
+    if (![...(view?.querySelectorAll('img') ?? [])].every((img) => img.complete)) await picturesReady(view)
+    window.print()
+  }
   const statusLabel = status === 'idle' ? '' : t(`page.status.${status}`)
 
   return (
@@ -391,6 +468,13 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
                 </MenuItem>
                 <MenuItem icon={<History />} onSelect={() => setHistoryOpen(true)}>
                   {t('page.history')}
+                </MenuItem>
+                <MenuSeparator />
+                <MenuItem icon={<Download />} onSelect={() => void download()}>
+                  {t('page.download')}
+                </MenuItem>
+                <MenuItem icon={<Printer />} onSelect={() => void print()}>
+                  {t('page.print')}
                 </MenuItem>
                 <MenuSeparator />
                 <MenuItem
@@ -428,37 +512,49 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
               value={icon}
               onChange={(next) => {
                 setIcon(next)
-                saveMeta({ icon: next })
+                void saveMeta({ icon: next })
               }}
             />
-            <textarea
-              ref={titleRef}
-              value={title}
-              rows={1}
-              maxLength={200}
-              placeholder={t('untitled', { ns: 'common' })}
-              aria-label={t('page.titleLabel')}
-              onFocus={() => (titleFocused.current = true)}
-              onBlur={() => (titleFocused.current = false)}
-              onChange={(e) => {
-                const next = e.target.value.replace(/\n/g, '')
-                setTitle(next)
-                clearTimeout(titleTimer.current)
-                titleTimer.current = setTimeout(() => saveMeta({ title: next.trim() }), 500)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || (e.key === 'ArrowDown' && e.currentTarget.selectionStart === title.length)) {
-                  e.preventDefault()
-                  const editor = editorRef.current
-                  if (editor) {
-                    // Synchronous focus so fast typing continues in the body, not the title.
-                    editor.view.focus()
-                    editor.commands.setTextSelection(1)
+            <div className="mt-2 grid">
+              <textarea
+                ref={titleRef}
+                value={title}
+                rows={1}
+                maxLength={200}
+                placeholder={t('untitled', { ns: 'common' })}
+                aria-label={t('page.titleLabel')}
+                onFocus={() => {
+                  titleFocused.current = true
+                  phrasedTitle.onFocus()
+                }}
+                onBlur={() => {
+                  titleFocused.current = false
+                  phrasedTitle.onBlur()
+                }}
+                onPointerDown={phrasedTitle.onPointerDown}
+                onClick={phrasedTitle.onClick}
+                onChange={(e) => {
+                  const next = e.target.value.replace(/\n/g, '')
+                  setTitle(next)
+                  clearTimeout(titleTimer.current)
+                  titleDue.current = next.trim()
+                  titleTimer.current = setTimeout(() => void saveMeta({ title: next.trim() }), 500)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || (e.key === 'ArrowDown' && e.currentTarget.selectionStart === title.length)) {
+                    e.preventDefault()
+                    const editor = editorRef.current
+                    if (editor) {
+                      // Synchronous focus so fast typing continues in the body, not the title.
+                      editor.view.focus()
+                      editor.commands.setTextSelection(1)
+                    }
                   }
-                }
-              }}
-              className="mt-2 block w-full resize-none overflow-hidden bg-transparent font-display text-[40px] leading-[1.1] font-medium tracking-[-0.025em] outline-none placeholder:text-ink-3 sm:text-[44px]"
-            />
+                }}
+                className={cn('orq-title block w-full resize-none self-stretch overflow-hidden bg-transparent outline-none placeholder:text-ink-3 [grid-area:1/1]', TITLE_TYPE, phrasedTitle.hidden && 'opacity-0')}
+              />
+              {phrasedTitle.overlay}
+            </div>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[12.5px] text-ink-3">
@@ -603,6 +699,16 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
         </article>
       </div>
       <MovePageDialog open={moveOpen} onOpenChange={setMoveOpen} pageId={page.id} projectName={page.project.name} pages={projectPages} workspaceId={workspaceId} />
+      <DownloadDialog
+        open={downloadAsk}
+        onOpenChange={setDownloadAsk}
+        title={title.trim() || t('untitled', { ns: 'common' })}
+        onChoose={(subpages) => {
+          setDownloadAsk(false)
+          void download(subpages)
+        }}
+      />
+      {printing !== null && <PrintView title={title.trim() || t('untitled', { ns: 'common' })} icon={icon} markdown={printing} />}
       <HistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} type="page" id={page.id} name={title || t('untitled', { ns: 'common' })} />
       {restoring.dialog}
     </div>

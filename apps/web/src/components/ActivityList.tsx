@@ -25,7 +25,7 @@ export function ActivityList({ items, workspaceId, compact, showSummary = true }
             <div className="min-w-0 flex-1 text-[13px] leading-snug text-ink-2">
               <Trans
                 t={t}
-                i18nKey={activityKey(a.action, !showSummary)}
+                i18nKey={activityKey(a.action, !showSummary, a.meta)}
                 values={{ actor: a.actor.name, target: activityTarget(a) }}
                 components={{ actor: <span className={a.actor.kind === 'agent' ? 'font-medium text-agent' : 'font-medium text-ink'} />, target }}
               />

@@ -91,6 +91,7 @@
     "hasDescription": "Ha una descrizione",
     "linkedDocs": "Documenti collegati",
     "attachments": "Allegati",
+    "comments": "Commenti",
     "createdByName": "Creata da {{name}}",
     "a11y": {
       "labels": "Etichette: {{list}}",
@@ -118,7 +119,7 @@
     "archivedToast": "Scheda archiviata",
     "deleteConfirm": {
       "title": "Eliminare questa scheda?",
-      "description": "Finirà nel cestino con le sue checklist e i suoi allegati. Se vuoi solo nasconderla, archiviala."
+      "description": "Finirà nel cestino con le sue checklist, i suoi commenti e i suoi allegati. Se vuoi solo nasconderla, archiviala."
     },
     "labels": "Etichette",
     "addLabels": "Aggiungi etichette",
@@ -135,6 +136,30 @@
     "checklistsEmpty": "Dividi l’attività in passaggi da spuntare.",
     "linkedDocs": "Documenti collegati",
     "attachments": "Allegati",
+    "comments": {
+      "title": "Commenti",
+      "titleCount_one": "Commenti · {{count}}",
+      "titleCount_many": "Commenti · {{count}}",
+      "titleCount_other": "Commenti · {{count}}",
+      "list": "Commenti",
+      "empty": "Ancora nessun commento. Lascia qui avanzamenti, dubbi o decisioni; anche gli agenti possono scrivere qui.",
+      "placeholder": "Scrivi un commento… Supporta Markdown.",
+      "label": "Nuovo commento",
+      "hint": "<kbd>{{mod}}</kbd>+<kbd>Invio</kbd> per inviare",
+      "submit": "Commenta",
+      "edit": "Modifica",
+      "editLabel": "Modifica il commento",
+      "save": "Salva",
+      "cancel": "Annulla",
+      "delete": "Elimina",
+      "deleted": "Commento spostato nel cestino",
+      "edited": "(modificato)",
+      "actions": "Azioni del commento di {{name}}",
+      "older": "Mostra i commenti precedenti",
+      "tooLong_one": "{{count}} carattere di troppo: il limite è {{max}}.",
+      "tooLong_many": "{{count}} caratteri di troppo: il limite è {{max}}.",
+      "tooLong_other": "{{count}} caratteri di troppo: il limite è {{max}}."
+    },
     "activity": "Attività",
     "deleted": "Scheda spostata nel cestino",
     "history": "Cronologia",

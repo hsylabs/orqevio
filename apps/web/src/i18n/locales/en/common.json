@@ -56,7 +56,9 @@
     "cobalt": "Cobalt",
     "iris": "Iris",
     "rose": "Pink",
-    "slate": "Slate"
+    "slate": "Slate",
+    "custom": "Custom color",
+    "customValue": "Custom color ({{value}})"
   },
   "untitled": "Untitled",
   "quoted": "“{{text}}”"

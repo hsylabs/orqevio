@@ -273,6 +273,7 @@ describe('MCP server', () => {
       'delete_checklist',
       'delete_checklist_item',
       'delete_column',
+      'delete_comment',
       'delete_label',
       'delete_page',
       'delete_project',
@@ -476,6 +477,14 @@ describe('MCP server', () => {
     const rest = new Client(h, token.token)
     expect((await rest.patch(`/api/projects/${created.project_id}`, { name: 'Otro' })).status).toBe(403)
     expect((await rest.del(`/api/projects/${created.project_id}`)).status).toBe(403)
+
+    // A colour from another tool can come along as #rrggbb, written as the app writes it; anything else can't.
+    const copied = data(await writer.callTool({ name: 'create_project', arguments: { name: 'Copiado', color: '#61BD4F' } }))
+    const overview = (await client.get(`/api/workspaces/${empty.body.id}/overview`)).body
+    expect(overview.projects.find((p: { id: string }) => p.id === copied.project_id).color).toBe('#61bd4f')
+    for (const color of ['green', '#61bd4', 'rgb(97, 189, 79)']) {
+      expect((await writer.callTool({ name: 'create_project', arguments: { name: 'Mal', color } })).isError, color).toBe(true)
+    }
   })
 
   it('lets an agent tidy up with tools that delete to the trash and move, and people undo it', async () => {

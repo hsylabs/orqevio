@@ -35,6 +35,10 @@
   },
   "tools": {
     "title": "Ferramentas MCP",
+    "show_one": "Ver {{count}} ferramenta",
+    "show_many": "Ver as {{count}} ferramentas",
+    "show_other": "Ver as {{count}} ferramentas",
+    "hide": "Ocultar as ferramentas",
     "footnote": "Cada agente só vê as ferramentas que as permissões dele permitem.",
     "scopes": {
       "read": "Leitura",
@@ -49,9 +53,10 @@
       "listProjects": "Projetos, quadros e estrutura de páginas",
       "search": "Busca em cartões e páginas",
       "readAttachments": "Ler anexos de texto e imagem",
-      "readBoards": "Colunas, cartões, checklists e vínculos",
+      "readBoards": "Colunas, cartões, comentários, checklists e vínculos",
       "editCards": "Criar, editar e mover cartões",
       "archiveCard": "Arquivar (restaurável pelo app)",
+      "comments": "Comentar em cartões e editar os próprios comentários",
       "organizeBoards": "Reorganizar quadros",
       "labels": "Etiquetas e checklists",
       "readPages": "Árvore de páginas e conteúdo em Markdown",
@@ -60,7 +65,7 @@
       "uploadAttachment": "Anexar arquivos a cartões e páginas",
       "linkCard": "Vincular tarefas e documentos",
       "createProject": "Criar projetos",
-      "deleteTasks": "Excluir cartões, quadros, colunas, etiquetas e checklists (para a lixeira)",
+      "deleteTasks": "Excluir cartões, quadros, colunas, etiquetas, checklists e os próprios comentários (para a lixeira)",
       "deleteDocs": "Excluir páginas, projetos e anexos (para a lixeira)",
       "moveElsewhere": "Mover anexos e desvincular cartões de páginas"
     }

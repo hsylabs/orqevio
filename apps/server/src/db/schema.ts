@@ -325,6 +325,37 @@ export const checklistItems = sqliteTable(
   (t) => [index('checklist_items_checklist_idx').on(t.checklistId)],
 )
 
+/**
+ * Comments on a card, by the person or by an agent. The author is the person (`author_user_id`)
+ * or the agent's access (`author_token_id`), and only they change its text. Both references go
+ * when what they name does: the name they had stays, and the comment is nobody's to edit then.
+ */
+export const cardComments = sqliteTable(
+  'card_comments',
+  {
+    id: id(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    cardId: text('card_id')
+      .notNull()
+      .references(() => cards.id, { onDelete: 'cascade' }),
+    /** Markdown, up to MAX_COMMENT characters. */
+    body: text('body').notNull(),
+    authorKind: text('author_kind', { enum: ['user', 'agent'] }).notNull(),
+    /** Set for a person's comments only. */
+    authorUserId: text('author_user_id').references(() => users.id, { onDelete: 'set null' }),
+    /** Set for an agent's comments only. */
+    authorTokenId: text('author_token_id').references(() => apiTokens.id, { onDelete: 'set null' }),
+    authorName: text('author_name').notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+    /** When its text last changed; null while it is as written. */
+    editedAt: timestamp('edited_at'),
+  },
+  (t) => [index('card_comments_card_idx').on(t.cardId, t.createdAt), index('card_comments_token_idx').on(t.authorTokenId)],
+)
+
 // ── Documents ────────────────────────────────────────────────────
 export const pages = sqliteTable(
   'pages',

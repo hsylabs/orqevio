@@ -122,7 +122,7 @@ navigateur s’ouvre pour que vous puissiez vous connecter.`,
       'Laissez la réponse vide pour procéder autrement.',
     ].join('\n'),
   askDeleteBackups: (bucket) =>
-    `Supprimer aussi ses sauvegardes ? Le bucket « ${bucket} » garde ses 7 dernières sauvegardes quotidiennes : si vous le gardez, une copie réinstallée avec le même nom pourra les restaurer.`,
+    `Le bucket « ${bucket} » garde ses 7 dernières sauvegardes quotidiennes, les 7 dernières faites par vous et celle faite avant la dernière restauration ; si vous le gardez, une copie réinstallée avec le même nom pourra les restaurer. Supprimer aussi ses sauvegardes ?`,
   emptyingBackupsThroughCopy: (bucket) =>
     [
       '',

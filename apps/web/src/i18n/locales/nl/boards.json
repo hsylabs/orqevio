@@ -89,6 +89,7 @@
     "hasDescription": "Heeft een beschrijving",
     "linkedDocs": "Gekoppelde documenten",
     "attachments": "Bijlagen",
+    "comments": "Opmerkingen",
     "createdByName": "Aangemaakt door {{name}}",
     "a11y": {
       "labels": "Labels: {{list}}",
@@ -116,7 +117,7 @@
     "archivedToast": "Kaart gearchiveerd",
     "deleteConfirm": {
       "title": "Deze kaart verwijderen?",
-      "description": "De kaart gaat met haar checklists en bijlagen naar de prullenbak. Wil je haar alleen verbergen, archiveer haar dan."
+      "description": "De kaart gaat met haar checklists, opmerkingen en bijlagen naar de prullenbak. Wil je haar alleen verbergen, archiveer haar dan."
     },
     "labels": "Labels",
     "addLabels": "Labels toevoegen",
@@ -133,6 +134,28 @@
     "checklistsEmpty": "Verdeel de taak in stappen die je kunt afvinken.",
     "linkedDocs": "Gekoppelde documenten",
     "attachments": "Bijlagen",
+    "comments": {
+      "title": "Opmerkingen",
+      "titleCount_one": "Opmerkingen · {{count}}",
+      "titleCount_other": "Opmerkingen · {{count}}",
+      "list": "Opmerkingen",
+      "empty": "Nog geen opmerkingen. Noteer hier voortgang, vragen of besluiten; ook agents kunnen hier schrijven.",
+      "placeholder": "Schrijf een opmerking… Markdown werkt.",
+      "label": "Nieuwe opmerking",
+      "hint": "<kbd>{{mod}}</kbd>+<kbd>Enter</kbd> om te verzenden",
+      "submit": "Plaatsen",
+      "edit": "Bewerken",
+      "editLabel": "Opmerking bewerken",
+      "save": "Opslaan",
+      "cancel": "Annuleren",
+      "delete": "Verwijderen",
+      "deleted": "Opmerking naar de prullenbak verplaatst",
+      "edited": "(bewerkt)",
+      "actions": "Acties voor de opmerking van {{name}}",
+      "older": "Eerdere opmerkingen tonen",
+      "tooLong_one": "{{count}} teken te veel: de limiet is {{max}}.",
+      "tooLong_other": "{{count}} tekens te veel: de limiet is {{max}}."
+    },
     "activity": "Activiteit",
     "deleted": "Kaart naar de prullenbak verplaatst",
     "history": "Geschiedenis",

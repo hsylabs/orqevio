@@ -60,7 +60,7 @@
   },
   "backups": {
     "title": "Sicherungen",
-    "description": "Diese Instanz sichert sich jeden Tag selbst: alles so, wie es ist, auch den verschlüsselten Tresor, den Papierkorb, den Verlauf und die Anhänge. Die letzten 7 werden aufbewahrt, getrennt von ihren Daten.",
+    "description": "Diese Instanz sichert sich jeden Tag selbst: alles so, wie es ist, auch den verschlüsselten Tresor, den Papierkorb, den Verlauf und die Anhänge. Die Sicherungen werden getrennt von den Daten der Instanz aufbewahrt.",
     "whereFolder": "Sie liegen im Ordner <code>{{name}}</code> des Servers. Um sie auf einer anderen Festplatte oder einem anderen Volume abzulegen, setze BACKUP_DIR.",
     "whereBucket": "Sie liegen im R2-Bucket <code>{{name}}</code> deines Cloudflare-Kontos, getrennt von den Anhängen.",
     "off": "Diese Instanz erstellt keine Sicherungen (BACKUPS=off).",

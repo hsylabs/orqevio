@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { type CallToolResult, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
-import { DUE_DATE_HINT, MAX_MARKDOWN, PALETTE, TRASH_DAYS, dueDay } from '@orqevio/shared'
+import { type CommentDTO, DUE_DATE_HINT, MAX_COMMENT, MAX_MARKDOWN, PALETTE, TRASH_DAYS, dueDay } from '@orqevio/shared'
 import { z } from 'zod'
 import type { AgentActor } from '../auth/actor'
 import { hasScope } from '../auth/actor'
@@ -26,6 +26,7 @@ How to work with it:
 - To reference a card inside a document write a Markdown link: [Card title](/card/<card_id>). To reference a page: [Page title](/doc/<page_id>). Card references inside a page automatically link that card to the page.
 - update_page with mode "replace" should include base_version (from read_page) to avoid overwriting someone else's edits. Use mode "append" to add content safely.
 - Likewise, update_card with a description should include base_version (the version from get_card).
+- To leave a note for people on a card (progress, a question, a result), use add_comment rather than editing its description. get_card shows the latest comments; list_comments pages through older ones. You can change or delete only the comments written with this same access.
 - Every change is recorded in the history of its card or page, and people can undo it from there.
 - When a card is done or no longer needed, prefer archive_card: it leaves the board but stays findable. Delete what was a mistake or a duplicate.
 - Tokens allowed to delete and move also have delete_* tools, move_attachment and move_card to another board. Deleting always moves things to the trash, where a person can bring them back for ${TRASH_DAYS} days. Agents can never empty the trash or delete anything for good.
@@ -61,6 +62,8 @@ async function readAll(body: ReadableStream<Uint8Array>, max: number) {
 }
 
 const attachmentSummary = (a: { id: string; filename: string; mimeType: string; size: number }) => ({ id: a.id, name: a.filename, type: a.mimeType, size: a.size })
+/** The comments get_card shows, the newest; list_comments gives the rest. */
+const CARD_COMMENTS = 10
 const dueDate = z
   .string()
   .describe('Due date: the day as YYYY-MM-DD (a full ISO 8601 date-time also works; its date is the day). Use null to clear it.')
@@ -113,6 +116,16 @@ export function createMcpServer(services: Services, actor: AgentActor) {
   /** Delete (to the trash) and move things to another board, card or page. */
   const canOrganize = hasScope(actor, 'organize') && (canWriteTasks || canWriteDocs)
   const ws = actor.workspaceId
+  const commentSummary = (c: CommentDTO) => ({
+    id: c.id,
+    author: c.author.name,
+    author_kind: c.author.kind,
+    /** Written with this access: only those can it change or delete. */
+    yours: c.author.kind === 'agent' && c.author.id === actor.tokenId,
+    body: c.body,
+    created_at: c.createdAt,
+    edited_at: c.editedAt,
+  })
 
   // ── Discovery ─────────────────────────────────────────────────
   server.registerTool(
@@ -153,7 +166,7 @@ export function createMcpServer(services: Services, actor: AgentActor) {
     'search',
     {
       title: 'Search',
-      description: 'Full-text search across card titles/descriptions and page titles/contents in the workspace.',
+      description: 'Full-text search across card titles, descriptions and comments, and page titles and contents, in the workspace.',
       inputSchema: {
         query: z.string().min(1).max(100),
         type: z.enum(['all', 'cards', 'pages']).default('all'),
@@ -167,7 +180,17 @@ export function createMcpServer(services: Services, actor: AgentActor) {
         const results = await services.search.search(actor, ws, query, { types: types ? [...types] : undefined, limit: 15, archived: include_archived })
         return results.map((r) =>
           r.type === 'card'
-            ? { type: 'card', id: r.id, title: r.title, board: r.boardName, board_id: r.boardId, column: r.columnName, excerpt: r.excerpt, ...(r.archived ? { archived: true } : {}) }
+            ? {
+                type: 'card',
+                id: r.id,
+                title: r.title,
+                board: r.boardName,
+                board_id: r.boardId,
+                column: r.columnName,
+                excerpt: r.excerpt,
+                ...(r.comment ? { in_comment: { comment_id: r.comment.id, author: r.comment.author } } : {}),
+                ...(r.archived ? { archived: true } : {}),
+              }
             : { type: 'page', id: r.id, title: r.title || 'Untitled', project: r.projectName, excerpt: r.excerpt },
         )
       }),
@@ -183,7 +206,10 @@ export function createMcpServer(services: Services, actor: AgentActor) {
         inputSchema: {
           name: z.string().min(1).max(80),
           description: z.string().max(500).optional(),
-          color: z.enum(PALETTE).optional(),
+          color: z
+            .union([z.enum(PALETTE), z.string().regex(/^#[0-9a-fA-F]{6}$/)])
+            .optional()
+            .describe(`One of ${PALETTE.join(', ')}, or a color of its own as #rrggbb (to keep a color from another tool). Cobalt if left out.`),
         },
         annotations: WRITE,
       },
@@ -226,6 +252,7 @@ export function createMcpServer(services: Services, actor: AgentActor) {
                   labels: card.labelIds.map((id) => labelName.get(id) ?? id),
                   checklist: card.checklist.total ? `${card.checklist.done}/${card.checklist.total}` : null,
                   linked_pages: card.linkedPages,
+                  comments: card.comments,
                 })),
             })),
           }
@@ -237,13 +264,13 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       {
         title: 'Get card',
         description:
-          'Returns a card in full: Markdown description and its version, labels, due date, checklists (with item ids), linked pages and recent activity.',
+          `Returns a card in full: Markdown description and its version, labels, due date, checklists (with item ids), linked pages, attachments, its latest ${CARD_COMMENTS} comments (newest first; list_comments gives older ones) and recent activity.`,
         inputSchema: { card_id: uuid },
         annotations: READ,
       },
       ({ card_id }) =>
         run(async () => {
-          const card = await services.cards.detail(actor, card_id)
+          const [card, comments] = await Promise.all([services.cards.detail(actor, card_id), services.comments.list(actor, card_id, { limit: CARD_COMMENTS })])
           return {
             id: card.id,
             title: card.title,
@@ -261,8 +288,33 @@ export function createMcpServer(services: Services, actor: AgentActor) {
             })),
             linked_pages: card.pages.map((p) => ({ id: p.id, title: p.title || 'Untitled' })),
             attachments: card.attachmentList.map(attachmentSummary),
+            comments: { total: comments.total, latest: comments.comments.map(commentSummary), more: comments.hasMore },
             recent_activity: card.activity.slice(0, 10).map((a) => ({ action: a.action, by: a.actor.name, at: a.createdAt })),
           }
+        }),
+    )
+
+    server.registerTool(
+      'list_comments',
+      {
+        title: 'List comments',
+        description: 'Lists the comments on a card, newest first, a page at a time. For the next (older) page, pass the next_before of this one as before.',
+        inputSchema: {
+          card_id: uuid,
+          before: z.string().max(100).optional().describe('The next_before of the previous page: list the comments written before its last one.'),
+          limit: z.number().int().min(1).max(50).default(20),
+        },
+        annotations: READ,
+      },
+      ({ card_id, before, limit }) =>
+        run(async () => {
+          // When and which: a page goes on from there even if that comment was deleted since.
+          const cursor = before === undefined ? undefined : /^(.+)\|([0-9a-f-]{36})$/i.exec(before)
+          const at = cursor ? new Date(cursor[1]!) : undefined
+          if (before !== undefined && (!cursor || Number.isNaN(at!.getTime()))) throw new AppError(400, 'bad_request', 'before must be the next_before of a previous page.')
+          const page = await services.comments.list(actor, card_id, { before: at, beforeId: cursor?.[2], limit })
+          const last = page.comments.at(-1)
+          return { total: page.total, comments: page.comments.map(commentSummary), next_before: page.hasMore && last ? `${last.createdAt}|${last.id}` : null }
         }),
     )
   }
@@ -474,6 +526,36 @@ export function createMcpServer(services: Services, actor: AgentActor) {
           return { updated: true, item_id: item.id, done: item.done }
         }),
     )
+
+    server.registerTool(
+      'add_comment',
+      {
+        title: 'Add comment',
+        description: `Adds a comment to a card, signed with this access's name, for people to read: progress, a question, a result. body is Markdown, up to ${MAX_COMMENT} characters.`,
+        inputSchema: { card_id: uuid, body: z.string().min(1).max(MAX_COMMENT) },
+        annotations: WRITE,
+      },
+      ({ card_id, body }) =>
+        run(async () => {
+          const comment = await services.comments.create(actor, card_id, { body })
+          return { created: true, comment_id: comment.id }
+        }),
+    )
+
+    server.registerTool(
+      'update_comment',
+      {
+        title: 'Update comment',
+        description: `Replaces the text of a comment written with this access (others' comments, and those written with an earlier access, can't be changed). body is Markdown, up to ${MAX_COMMENT} characters.`,
+        inputSchema: { comment_id: uuid, body: z.string().min(1).max(MAX_COMMENT) },
+        annotations: { ...WRITE, idempotentHint: true },
+      },
+      ({ comment_id, body }) =>
+        run(async () => {
+          const comment = await services.comments.update(actor, comment_id, { body })
+          return { updated: true, comment_id: comment.id, edited_at: comment.editedAt }
+        }),
+    )
   }
 
   // ── Documents ─────────────────────────────────────────────────
@@ -666,12 +748,13 @@ export function createMcpServer(services: Services, actor: AgentActor) {
       )
 
     if (canWriteTasks) {
-      remove('delete_card', 'Delete card', 'Moves a card to the trash, with its checklists, links and attachments.', { card_id: uuid }, (a) => services.cards.remove(actor, a.card_id!))
+      remove('delete_card', 'Delete card', 'Moves a card to the trash, with its checklists, comments, links and attachments.', { card_id: uuid }, (a) => services.cards.remove(actor, a.card_id!))
       remove('delete_board', 'Delete board', 'Moves a board to the trash, with its columns and cards.', { board_id: uuid }, (a) => services.boards.remove(actor, a.board_id!))
       remove('delete_column', 'Delete column', 'Moves a column to the trash, with all its cards.', { column_id: uuid }, (a) => services.boards.removeColumn(actor, a.column_id!))
       remove('delete_label', 'Delete label', 'Moves a label of a board to the trash; it comes off every card that had it.', { label_id: uuid }, (a) => services.boards.removeLabel(actor, a.label_id!))
       remove('delete_checklist', 'Delete checklist', 'Moves a checklist of a card to the trash, with its items.', { checklist_id: uuid }, (a) => services.cards.removeChecklist(actor, a.checklist_id!))
       remove('delete_checklist_item', 'Delete checklist item', 'Moves a checklist item to the trash.', { item_id: uuid }, (a) => services.cards.removeItem(actor, a.item_id!))
+      remove('delete_comment', 'Delete comment', "Moves a comment written with this access to the trash (others' comments can't be deleted).", { comment_id: uuid }, (a) => services.comments.remove(actor, a.comment_id!))
     }
     if (canWriteDocs) {
       remove('delete_page', 'Delete page', 'Moves a page to the trash, with its sub-pages and attachments.', { page_id: uuid }, (a) => services.pages.remove(actor, a.page_id!))

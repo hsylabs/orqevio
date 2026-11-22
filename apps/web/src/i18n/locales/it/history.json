@@ -73,6 +73,12 @@
       "deleted": "<actor>{{actor}}</actor> ha spostato la voce «{{text}}» nel cestino",
       "restored": "<actor>{{actor}}</actor> ha recuperato la voce «{{text}}»"
     },
+    "comment": {
+      "created": "<actor>{{actor}}</actor> ha commentato: «{{text}}»",
+      "body": "<actor>{{actor}}</actor> ha modificato il commento, che ora dice «{{text}}»",
+      "deleted": "<actor>{{actor}}</actor> ha spostato il commento «{{text}}» nel cestino",
+      "restored": "<actor>{{actor}}</actor> ha recuperato il commento «{{text}}»"
+    },
     "attachment": {
       "created": "<actor>{{actor}}</actor> ha allegato «{{name}}»",
       "deleted": "<actor>{{actor}}</actor> ha spostato il file «{{name}}» nel cestino",

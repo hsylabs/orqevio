@@ -20,7 +20,13 @@
       "linked": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>にドキュメントをリンクしました",
       "linked_self": "<actor>{{actor}}</actor>がドキュメントをリンクしました",
       "unlinked": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>からドキュメントのリンクを解除しました",
-      "unlinked_self": "<actor>{{actor}}</actor>がドキュメントのリンクを解除しました"
+      "unlinked_self": "<actor>{{actor}}</actor>がドキュメントのリンクを解除しました",
+      "commented": "<actor>{{actor}}</actor>がカード<target>「{{target}}」</target>にコメントしました",
+      "commented_self": "<actor>{{actor}}</actor>がコメントしました",
+      "comment_edited": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>のコメントを編集しました",
+      "comment_edited_self": "<actor>{{actor}}</actor>がコメントを編集しました",
+      "comment_deleted": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>のコメントを削除しました",
+      "comment_deleted_self": "<actor>{{actor}}</actor>がコメントを削除しました"
     },
     "column": {
       "created": "<actor>{{actor}}</actor>が列<target>「{{target}}」</target>を作成しました",
@@ -51,7 +57,9 @@
     },
     "trash": {
       "restored": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>をゴミ箱から復元しました",
-      "purged": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>を完全に削除しました"
+      "purged": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>を完全に削除しました",
+      "restoredComment": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>のコメントをゴミ箱から復元しました",
+      "purgedComment": "<actor>{{actor}}</actor>が<target>「{{target}}」</target>のコメントを完全に削除しました"
     },
     "other": "<actor>{{actor}}</actor>が変更を加えました"
   },

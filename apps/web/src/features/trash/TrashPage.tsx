@@ -21,7 +21,7 @@ import { useWorkspace } from '../shell/workspace'
 import { TrashIcon } from './icons'
 import { useRestore, useRestoreMany } from './restore'
 
-const CONTENTS = ['projects', 'boards', 'columns', 'cards', 'pages', 'checklists', 'items', 'labels', 'attachments', 'links'] as const satisfies ReadonlyArray<keyof TrashContents>
+const CONTENTS = ['projects', 'boards', 'columns', 'cards', 'pages', 'checklists', 'items', 'comments', 'labels', 'attachments', 'links'] as const satisfies ReadonlyArray<keyof TrashContents>
 const DAY = 86_400_000
 /** The trash says when something goes for good only when that is this close. */
 const SOON_DAYS = 3

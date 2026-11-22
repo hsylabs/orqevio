@@ -25,6 +25,15 @@
     "subpages": "Sous-pages",
     "attachments": "Pièces jointes",
     "history": "Historique",
+    "download": "Télécharger en Markdown",
+    "print": "Imprimer ou enregistrer en PDF",
+    "downloadUnsaved": "Impossible de télécharger tant que vos dernières modifications ne sont pas enregistrées.",
+    "downloadAsk": {
+      "title": "Télécharger « {{title}} »",
+      "description": "Cette page a des sous-pages. Les inclure dans le téléchargement ?",
+      "only": "Seulement cette page",
+      "withSubpages": "Avec ses sous-pages"
+    },
     "gone": {
       "byName": "<strong>{{name}}</strong> a supprimé cette page.",
       "byYou": "Vous avez supprimé cette page dans un autre onglet ou une autre session.",

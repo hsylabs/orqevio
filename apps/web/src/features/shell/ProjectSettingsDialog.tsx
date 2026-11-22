@@ -1,4 +1,4 @@
-import type { PaletteColor, ProjectTreeDTO } from '@orqevio/shared'
+import type { ProjectColor, ProjectTreeDTO } from '@orqevio/shared'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -13,7 +13,7 @@ export function ProjectSettingsDialog({ project, open, onOpenChange }: { project
   const { t } = useTranslation(['shell', 'common'])
   const [name, setName] = useState(project.name)
   const [description, setDescription] = useState(project.description ?? '')
-  const [color, setColor] = useState<PaletteColor>(project.color)
+  const [color, setColor] = useState<ProjectColor>(project.color)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export function ProjectSettingsDialog({ project, open, onOpenChange }: { project
         <Field label={t('projectSettings.description')} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} placeholder={t('projectSettings.optional')} />
         <div className="flex flex-col gap-2">
           <span className="text-[12.5px] font-medium text-ink-2">{t('projectSettings.color')}</span>
-          <ColorPicker value={color} onChange={setColor} />
+          <ColorPicker value={color} onChange={setColor} custom />
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>

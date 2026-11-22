@@ -4,6 +4,7 @@ import { ExternalLink, Eye, EyeOff, KeyRound, LockKeyhole, Pencil, Plus, Search,
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { Phrases } from '../../components/Phrases'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { Dialog } from '../../components/ui/Dialog'
@@ -423,7 +424,9 @@ function ItemDetail({ item, onEdit, onDelete, onToggleFavorite, onBack }: { item
       <div className="flex items-start gap-4">
         <Monogram item={item} size={52} />
         <div className="min-w-0 flex-1">
-          <h1 className="font-display text-[26px] leading-tight font-medium tracking-[-0.02em] [overflow-wrap:anywhere]">{item.title}</h1>
+          <h1 className="font-display text-[26px] leading-tight font-medium tracking-[-0.02em] [overflow-wrap:anywhere]">
+            <Phrases text={item.title} cache={false} />
+          </h1>
           <p className="mt-1 text-[12.5px] text-ink-3">
             {item.type === 'login' ? t('detail.updatedLogin', { time: relativeTime(item.updatedAt) }) : t('detail.updatedNote', { time: relativeTime(item.updatedAt) })}
           </p>

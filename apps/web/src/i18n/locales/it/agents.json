@@ -35,6 +35,10 @@
   },
   "tools": {
     "title": "Strumenti MCP",
+    "show_one": "Mostra {{count}} strumento",
+    "show_many": "Mostra i {{count}} strumenti",
+    "show_other": "Mostra i {{count}} strumenti",
+    "hide": "Nascondi gli strumenti",
     "footnote": "Ogni agente vede solo gli strumenti consentiti dai suoi permessi.",
     "scopes": {
       "read": "Lettura",
@@ -49,9 +53,10 @@
       "listProjects": "Progetti, bacheche e struttura delle pagine",
       "search": "Ricerca in schede e pagine",
       "readAttachments": "Leggere allegati di testo e immagini",
-      "readBoards": "Colonne, schede, checklist e collegamenti",
+      "readBoards": "Colonne, schede, commenti, checklist e collegamenti",
       "editCards": "Creare, modificare e spostare schede",
       "archiveCard": "Archiviare (ripristinabile dall’app)",
+      "comments": "Commentare le schede e modificare i propri commenti",
       "organizeBoards": "Riorganizzare le bacheche",
       "labels": "Etichette e checklist",
       "readPages": "Albero delle pagine e contenuto Markdown",
@@ -60,7 +65,7 @@
       "uploadAttachment": "Allegare file a schede e pagine",
       "linkCard": "Collegare attività e documenti",
       "createProject": "Creare progetti",
-      "deleteTasks": "Eliminare schede, bacheche, colonne, etichette e checklist (nel cestino)",
+      "deleteTasks": "Eliminare schede, bacheche, colonne, etichette, checklist e i propri commenti (nel cestino)",
       "deleteDocs": "Eliminare pagine, progetti e allegati (nel cestino)",
       "moveElsewhere": "Spostare allegati e scollegare schede dalle pagine"
     }

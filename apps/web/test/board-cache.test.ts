@@ -14,6 +14,7 @@ const card = (id: string, title = 'Revisar el informe'): CardSummaryDTO => ({
   checklist: { done: 0, total: 0 },
   linkedPages: 0,
   attachments: 0,
+  comments: 0,
   createdBy: null,
   createdAt: '2026-11-13T12:00:00.000Z',
   updatedAt: '2026-11-13T12:00:00.000Z',

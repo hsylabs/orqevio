@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { PALETTE } from './colors'
+import { CUSTOM_COLOR, type CustomColor, PALETTE } from './colors'
 import { LOCALES } from './locales'
 import { SCOPES } from './scopes'
 
@@ -29,6 +29,19 @@ const optionalName = (max: number) =>
     .overwrite((value) => (VISIBLE.test(value) ? value : ''))
     .max(max)
 const color = z.enum(PALETTE)
+/**
+ * A project's colour: one of the palette, or one of its own as `#rrggbb`, in either case and kept
+ * in lower case, so the same colour is always written the same way.
+ */
+export const projectColor = z.union([
+  color,
+  z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(CUSTOM_COLOR, 'A color is one of the palette or #rrggbb')
+    .transform((value) => value as CustomColor),
+])
 const index = z.number().int().min(0).max(100_000)
 
 /** Due dates are calendar days, stored at 12:00 UTC so that every time zone shows the same day. */
@@ -60,6 +73,8 @@ const dueAt = z.string().transform((value, ctx) => {
 })
 
 export const MAX_MARKDOWN = 200_000
+/** The longest comment on a card, in characters. */
+export const MAX_COMMENT = 20_000
 
 /**
  * How many characters a text has, as the schemas count them for their limits: an emoji or a letter
@@ -108,12 +123,12 @@ export const updateAccountInput = z.object({
 export const workspaceInput = z.object({ name: name(60) })
 export const projectCreateInput = z.object({
   name: name(80),
-  color: color.default('cobalt'),
+  color: projectColor.default('cobalt'),
   description: z.string().trim().max(500).optional(),
 })
 export const projectUpdateInput = z.object({
   name: name(80).optional(),
-  color: color.optional(),
+  color: projectColor.optional(),
   description: z.string().trim().max(500).optional(),
 })
 
@@ -156,6 +171,20 @@ export const checklistItemUpdateInput = z.object({
   index: index.optional(),
 })
 export const linkPageInput = z.object({ pageId: id })
+
+// ── Comments ────────────────────────────────────────────────────
+/**
+ * A comment's Markdown: blank lines before it and spaces after it go (spaces at the start of
+ * its first line stay, they make code), and it must show something.
+ */
+const commentBody = z
+  .string()
+  .overwrite((value) => value.replace(/^(?:[^\S\n]*\n)+/, '').trimEnd())
+  .min(1, { message: 'Required', abort: true })
+  .max(MAX_COMMENT)
+  .refine((value) => VISIBLE.test(value), 'Required')
+export const commentCreateInput = z.object({ body: commentBody })
+export const commentUpdateInput = z.object({ body: commentBody })
 
 // ── Pages ───────────────────────────────────────────────────────
 export const pageCreateInput = z.object({
@@ -268,7 +297,7 @@ export const undoInput = z
 // ── Trash ────────────────────────────────────────────────────────
 /** Something in the trash, by key: `kind:id`, or `link:<card id>:<page id>`. */
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
-export const TRASH_KEY = new RegExp(`^(?:(?:project|board|column|card|page|attachment|label|checklist|checklist_item):${UUID}|link:${UUID}:${UUID})$`, 'i')
+export const TRASH_KEY = new RegExp(`^(?:(?:project|board|column|card|page|attachment|label|checklist|checklist_item|comment):${UUID}|link:${UUID}:${UUID})$`, 'i')
 export const trashKey = z.string().regex(TRASH_KEY, 'Not a trash key')
 /**
  * Restoring something from the trash with everything below it but what is left out (`exclude`).

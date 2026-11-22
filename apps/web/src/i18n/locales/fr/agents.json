@@ -35,6 +35,10 @@
   },
   "tools": {
     "title": "Outils MCP",
+    "show_one": "Afficher {{count}} outil",
+    "show_many": "Afficher les {{count}} outils",
+    "show_other": "Afficher les {{count}} outils",
+    "hide": "Masquer les outils",
     "footnote": "Chaque agent ne voit que les outils autorisés par ses permissions.",
     "scopes": {
       "read": "Lecture",
@@ -49,9 +53,10 @@
       "listProjects": "Projets, tableaux et arborescence des pages",
       "search": "Recherche dans les cartes et les pages",
       "readAttachments": "Lire les pièces jointes texte et image",
-      "readBoards": "Colonnes, cartes, checklists et liens",
+      "readBoards": "Colonnes, cartes, commentaires, checklists et liens",
       "editCards": "Créer, modifier et déplacer des cartes",
       "archiveCard": "Archiver (restaurable depuis l’application)",
+      "comments": "Commenter les cartes et modifier ses propres commentaires",
       "organizeBoards": "Réorganiser les tableaux",
       "labels": "Étiquettes et checklists",
       "readPages": "Arborescence des pages et contenu Markdown",
@@ -60,7 +65,7 @@
       "uploadAttachment": "Joindre des fichiers aux cartes et aux pages",
       "linkCard": "Lier tâches et documents",
       "createProject": "Créer des projets",
-      "deleteTasks": "Supprimer cartes, tableaux, colonnes, étiquettes et checklists (vers la corbeille)",
+      "deleteTasks": "Supprimer cartes, tableaux, colonnes, étiquettes, checklists et ses propres commentaires (vers la corbeille)",
       "deleteDocs": "Supprimer pages, projets et pièces jointes (vers la corbeille)",
       "moveElsewhere": "Déplacer des pièces jointes et délier cartes et pages"
     }

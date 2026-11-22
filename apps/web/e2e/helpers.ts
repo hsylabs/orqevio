@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { type APIRequestContext, type Page, test as base, expect } from '@playwright/test'
+import { type APIRequestContext, type Page, type Request, test as base, expect } from '@playwright/test'
 
 /**
  * A new tab's first navigation, the one that moves it from about:blank to another process,
@@ -89,6 +89,56 @@ export const test = base.extend<{ consoleErrors: string[] }>({
   ],
 })
 export { expect }
+
+/**
+ * Follows the page's requests to the API, so that a test can reload the page once none is in
+ * flight: WebKit reports a request cut short by a reload as an error («… due to access control
+ * checks»), which fails the test. Live updates can start one at any moment, so what is on screen
+ * does not tell.
+ */
+export function apiRequests(page: Page) {
+  /** Each request in flight, with the number of navigations of the page when it started. */
+  const pending = new Map<Request, number>()
+  let navigations = 0
+  let lastSeen = Date.now()
+  page.on('framenavigated', (frame) => {
+    if (frame === page.mainFrame()) navigations++
+  })
+  page.on('request', (request) => {
+    if (!new URL(request.url()).pathname.startsWith('/api/')) return
+    pending.set(request, navigations)
+    lastSeen = Date.now()
+  })
+  const done = (request: Request) => {
+    if (pending.delete(request)) lastSeen = Date.now()
+  }
+  page.on('requestfinished', done)
+  page.on('requestfailed', done)
+  /**
+   * Waits until none of them is in flight, and none has started or ended for half a second: a
+   * change announced live is refetched a moment later (GATHER_MS in lib/live-refresh.ts), with
+   * nothing in flight meanwhile.
+   */
+  const settled = () =>
+    expect
+      .poll(() => (pending.size === 0 && Date.now() - lastSeen >= 500 ? 'settled' : [...pending.keys()].map((request) => `${request.method()} ${request.url()}`).join(', ') || 'just finished'), {
+        message: 'requests to the API in flight or still starting',
+      })
+      .toBe('settled')
+  return {
+    /**
+     * Reloads the page once its requests have settled. One the old page starts in the meantime is
+     * cut short and then forgotten: Chromium never reports it as ended, so waiting on requests
+     * after a page is left any other way (a goto, a link that loads a whole page) would never end.
+     */
+    reload: async () => {
+      await settled()
+      const before = navigations
+      await page.reload()
+      for (const [request, loaded] of pending) if (loaded <= before) pending.delete(request)
+    },
+  }
+}
 
 /**
  * For contexts a test opens itself, which do not take the configuration's options: the
