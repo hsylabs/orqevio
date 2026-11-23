@@ -216,7 +216,10 @@ const FaithfulParagraph = Paragraph.extend({
     return helpers.createNode('paragraph', undefined, helpers.parseInline(token.tokens ?? []))
   },
   renderMarkdown(node, helpers, context) {
-    return escapeLineStarts(this.parent?.(node, helpers, context) ?? '')
+    const markdown = escapeLineStarts(this.parent?.(node, helpers, context) ?? '')
+    // An alert, such as GitHub's `> [!NOTE]` or Obsidian's `> [!tip]- Title`, keeps its marker as
+    // written: escaped, it stops being one. Unescaped it still reads back as the same text.
+    return context.parentType === 'blockquote' && context.index === 0 ? markdown.replace(/^\\\[!([A-Za-z][\w-]*)\\\]/, '[!$1]') : markdown
   },
 })
 

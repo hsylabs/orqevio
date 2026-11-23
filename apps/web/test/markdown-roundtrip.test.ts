@@ -57,6 +57,12 @@ const kept: Array<[string, string]> = [
   ['a private-use character in an ordered list, as an icon font uses', '1. paso \uE000 con icono\n   - [ ] a\n2. otro'],
   ['tasks under a two-digit item', '10. diez\n    - [ ] a\n    - [x] b\n11. once'],
   ['an ordered list inside another', '1. uno\n   1. sub\n   2. sub dos\n2. dos'],
+  ['a GitHub alert', '> [!NOTE]\n> Algo importante'],
+  ['the other GitHub alerts', '> [!TIP]\n> Un consejo\n\n> [!IMPORTANT]\n> Clave\n\n> [!WARNING]\n> Ojo\n\n> [!CAUTION]\n> Peligro'],
+  ['an alert of several paragraphs, with a list', '> [!WARNING]\n> Antes de seguir:\n>\n> - haz una copia\n> - cierra las pestañas'],
+  ['an Obsidian callout with a title, folded', '> [!tip]- Un truco\n> Dentro'],
+  ['an alert inside a list', '- paso\n  > [!NOTE]\n  > Dentro de la lista'],
+  ['brackets later in a quote stay escaped', '> Texto \\[!NOTE\\] en medio\n>\n> \\[!TIP\\] en otro párrafo'],
 ]
 
 /** Read the same again: written in another, equivalent way. */
@@ -105,6 +111,13 @@ describe('Markdown round trip', () => {
       const markdown = editor.getMarkdown()
       expect(open(markdown).getJSON().content, `${line} → ${markdown}`).toEqual([{ type: 'paragraph', content: [{ type: 'text', text: line }] }])
     }
+  })
+
+  it('writes an alert typed in a quote so GitHub shows it, and reads it back as the same text', () => {
+    const quote = (text: string): JSONContent => ({ type: 'blockquote', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] })
+    const markdown = open({ type: 'doc', content: [quote('[!NOTE] Recuerda')] }).getMarkdown()
+    expect(markdown).toBe('> [!NOTE] Recuerda')
+    expect(open(markdown).getJSON().content).toEqual([quote('[!NOTE] Recuerda')])
   })
 
   it('keeps an image whose name has brackets an image', () => {
