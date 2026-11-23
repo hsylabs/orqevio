@@ -127,8 +127,8 @@ test('the Enter that ends a conversion stays in the title of a page, and its Esc
   await openNewWorkspace(page, 'Teclado japonés páginas E2E')
 
   // The command palette closes on Escape, but not on the one that drops a conversion in its search.
-  await page.keyboard.press('Control+k')
-  const palette = page.getByRole('dialog', { name: 'Paleta de comandos' })
+  await page.keyboard.press('ControlOrMeta+k')
+  const palette = page.getByRole('dialog', { name: 'Buscar' })
   await expect(palette).toBeVisible()
   for (const style of STYLES) {
     await convert(page, '計画', 'Escape', style)
