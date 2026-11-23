@@ -2,9 +2,11 @@
 // and its pages in src/pages/<lang>/; every page is put into src/layout.html. English lives
 // at the root (/, /install/, /privacy/) and every other language under /<lang>/, with
 // hreflang links between the versions of a page. Fonts are the app's own, Latin subsets only.
+// Japanese pages get a place to break between their phrases (phrases.mjs).
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { withPhrases } from './phrases.mjs'
 
 const here = path.dirname(new URL(import.meta.url).pathname)
 const src = path.join(here, 'src')
@@ -114,7 +116,8 @@ export function build() {
         where,
       )
       mkdirSync(path.dirname(fileOf(lang, page)), { recursive: true })
-      writeFileSync(fileOf(lang, page), openOutsideInNewTab(html, escape(texts.newTab)))
+      // Split before the links say they open a new tab: that is read out, never shown.
+      writeFileSync(fileOf(lang, page), openOutsideInNewTab(lang === 'ja' ? withPhrases(html) : html, escape(texts.newTab)))
     }
   }
 

@@ -123,6 +123,24 @@ describe('the public website', () => {
     }
   })
 
+  it('builds the Japanese pages with a place to break between phrases, and only them', () => {
+    for (const { lang, file } of pages) {
+      const html = read(file)
+      if (lang !== 'ja') {
+        expect(html, file).not.toContain('<wbr>')
+        continue
+      }
+      expect(html.match(/<wbr>/g)?.length ?? 0, file).toBeGreaterThan(5)
+      // Code, commands, the head and attributes stay as written.
+      for (const kept of html.match(/<head>[\s\S]*?<\/head>|<pre>[\s\S]*?<\/pre>|<code>[\s\S]*?<\/code>|<(?!wbr>)(?:[^>"']|"[^"]*"|'[^']*')*>/g) ?? []) expect(kept, file).not.toContain('<wbr')
+      // No line starts with closing punctuation or ends with an opening bracket.
+      expect(html, file).not.toMatch(/<wbr>(?:<[^>]+>)*[、。，．・：；！？…）」』】〕〉》］ーぁぃぅぇぉっゃゅょァィゥェォッャュョ]|[（「『【〔〈《［](?:<[^>]+>)*<wbr>/)
+    }
+    const home = read(fileOf('ja', 'home'))
+    expect(home).toContain('<h3>あなたにしか<wbr>読めない<wbr>パスワード</h3>')
+    expect(home).toContain('<code><span class="prompt">$ </span>npx create-orqevio</code>')
+  })
+
   it('sends strict security headers', () => {
     const headers = read('_headers')
     expect(headers).toContain("default-src 'none'; script-src 'self'; style-src 'self'")
