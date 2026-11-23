@@ -72,6 +72,9 @@ const kept: Array<[string, string]> = [
 
 /** Read the same again: written in another, equivalent way. */
 const normalised: Array<[string, string, string]> = [
+  ['a marker with only its closing bracket escaped stays escaped', '> [!NOTE\\]\n> Así se escribe', '> \\[!NOTE\\]\n> Así se escribe'],
+  ['a marker with its exclamation mark escaped stays escaped', '> [\\!NOTE]\n> Así se escribe', '> \\[!NOTE\\]\n> Así se escribe'],
+  ['a marker written with an entity stays escaped', '> &#91;!NOTE]\n> Así se escribe', '> \\[!NOTE\\]\n> Así se escribe'],
   ['a quote loses its empty first line, and an escaped marker after it stays escaped', '>\n> \\[!NOTE\\]\n> Así se escribe', '> \\[!NOTE\\]\n> Así se escribe'],
   ['named entities become their characters', 'Copyright &copy; y caf&eacute;', 'Copyright © y café'],
   ['an unclosed tag is escaped', 'a <b sin cerrar', 'a \\<b sin cerrar'],

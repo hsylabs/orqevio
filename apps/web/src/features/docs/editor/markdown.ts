@@ -249,9 +249,13 @@ const FaithfulBlockquote = Blockquote.extend({
   },
   parseMarkdown(token, helpers) {
     const quote = this.parent?.(token, helpers) as JSONContent
+    // A marker read from the first paragraph that was not written as such there was escaped, in
+    // whatever way: `\[!NOTE\]`, `[!NOTE\]`, `[\!NOTE]`, `&#91;!NOTE]`…
+    const text = quote.content?.[0]?.type === 'paragraph' ? quote.content[0].content?.[0] : undefined
+    const marker = text?.type === 'text' ? /^\[![A-Za-z][A-Za-z0-9-]*\]/.exec(text.text ?? '')?.[0] : undefined
     // The quote's first paragraph as written, without the `>` marked has already taken away.
     const first = (token.tokens as Array<{ type?: string; raw?: string }> | undefined)?.find((child) => child.type !== 'space')
-    if (first?.type !== 'paragraph' || !/^\\\[!/.test(first.raw ?? '')) return quote
+    if (!marker || first?.type !== 'paragraph' || (first.raw ?? '').startsWith(marker)) return quote
     return { ...quote, attrs: { ...quote.attrs, escapedMarker: true } }
   },
   renderMarkdown(node, helpers, context) {
