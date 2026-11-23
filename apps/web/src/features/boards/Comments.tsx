@@ -88,6 +88,8 @@ export function Comments({ card }: { card: CardDetailDTO }) {
       <Composer card={card} onSent={() => setRemoved(null)} />
       {removed && (
         <Removed
+          // A new one for each deletion, so that the menu that deleted it sees it as new.
+          key={removed}
           trashId={removed}
           card={card}
           onDone={(back) => {
@@ -129,6 +131,9 @@ function Removed({ trashId, card, onDone }: { trashId: string; card: CardDetailD
       <button
         ref={undo}
         type="button"
+        // Deleted from the comment's menu, it may appear before the menu has closed: the menu then
+        // gives it the focus as it closes (see MenuContent), instead of to its own button.
+        data-autofocus
         // Said with it when it takes the focus: the message above it may not be read when it appears.
         aria-describedby={said}
         className="ml-auto rounded-[8px] bg-ink px-2.5 py-1 text-[12px] font-medium text-sheet"
