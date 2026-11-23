@@ -63,6 +63,11 @@ const kept: Array<[string, string]> = [
   ['an Obsidian callout with a title, folded', '> [!tip]- Un truco\n> Dentro'],
   ['an alert inside a list', '- paso\n  > [!NOTE]\n  > Dentro de la lista'],
   ['brackets later in a quote stay escaped', '> Texto \\[!NOTE\\] en medio\n>\n> \\[!TIP\\] en otro párrafo'],
+  ['an alert marker escaped on purpose, to show how one is written', '> \\[!NOTE\\]\n> Así se escribe un aviso'],
+  // A marker followed by `:` or `(` stays escaped: unescaped, it would be a link reference definition or a link.
+  ['a marker followed by a colon', '> \\[!NOTE\\]: Importante'],
+  ['a marker followed by a colon and an address', '> \\[!TIP\\]: /guia "Guía"'],
+  ['a marker followed by parentheses', '> \\[!NOTE\\](importante) algo'],
 ]
 
 /** Read the same again: written in another, equivalent way. */
@@ -113,11 +118,25 @@ describe('Markdown round trip', () => {
     }
   })
 
-  it('writes an alert typed in a quote so GitHub shows it, and reads it back as the same text', () => {
-    const quote = (text: string): JSONContent => ({ type: 'blockquote', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] })
-    const markdown = open({ type: 'doc', content: [quote('[!NOTE] Recuerda')] }).getMarkdown()
-    expect(markdown).toBe('> [!NOTE] Recuerda')
-    expect(open(markdown).getJSON().content).toEqual([quote('[!NOTE] Recuerda')])
+  it('writes an alert typed in a quote as an alert, and reads it back as the same text', () => {
+    // GitHub shows an alert when its marker is alone on the first line of the quote.
+    const alert: JSONContent = {
+      type: 'blockquote',
+      attrs: { escapedMarker: false },
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: '[!NOTE]' }, { type: 'hardBreak' }, { type: 'text', text: 'Recuerda' }] }],
+    }
+    const markdown = open({ type: 'doc', content: [alert] }).getMarkdown()
+    expect(markdown).toBe('> [!NOTE]  \n> Recuerda')
+    expect(open(markdown).getJSON().content).toEqual([alert])
+  })
+
+  it('keeps text typed after a marker in a quote as text', () => {
+    // Followed by `:` or `(`, the marker would turn into something else if it were written unescaped.
+    for (const text of ['[!NOTE]: Importante', '[!NOTE]: /ruta "Título"', '[!NOTE](importante)', '[!WARNING]:x']) {
+      const quote: JSONContent = { type: 'blockquote', attrs: { escapedMarker: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] }
+      const markdown = open({ type: 'doc', content: [quote] }).getMarkdown()
+      expect(open(markdown).getJSON().content?.[0]?.content, `${text} → ${markdown}`).toEqual(quote.content)
+    }
   })
 
   it('keeps an image whose name has brackets an image', () => {
