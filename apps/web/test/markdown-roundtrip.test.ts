@@ -57,10 +57,25 @@ const kept: Array<[string, string]> = [
   ['a private-use character in an ordered list, as an icon font uses', '1. paso \uE000 con icono\n   - [ ] a\n2. otro'],
   ['tasks under a two-digit item', '10. diez\n    - [ ] a\n    - [x] b\n11. once'],
   ['an ordered list inside another', '1. uno\n   1. sub\n   2. sub dos\n2. dos'],
+  ['a GitHub alert', '> [!NOTE]\n> Algo importante'],
+  ['the other GitHub alerts', '> [!TIP]\n> Un consejo\n\n> [!IMPORTANT]\n> Clave\n\n> [!WARNING]\n> Ojo\n\n> [!CAUTION]\n> Peligro'],
+  ['an alert of several paragraphs, with a list', '> [!WARNING]\n> Antes de seguir:\n>\n> - haz una copia\n> - cierra las pestañas'],
+  ['an Obsidian callout with a title, folded', '> [!tip]- Un truco\n> Dentro'],
+  ['an alert inside a list', '- paso\n  > [!NOTE]\n  > Dentro de la lista'],
+  ['brackets later in a quote stay escaped', '> Texto \\[!NOTE\\] en medio\n>\n> \\[!TIP\\] en otro párrafo'],
+  ['an alert marker escaped on purpose, to show how one is written', '> \\[!NOTE\\]\n> Así se escribe un aviso'],
+  // Escaped where they came from, these stay so; written from the editor, see the test of text typed after a marker.
+  ['an escaped marker followed by a colon', '> \\[!NOTE\\]: Importante'],
+  ['an escaped marker followed by a colon and an address', '> \\[!TIP\\]: /guia "Guía"'],
+  ['an escaped marker followed by parentheses', '> \\[!NOTE\\](importante) algo'],
 ]
 
 /** Read the same again: written in another, equivalent way. */
 const normalised: Array<[string, string, string]> = [
+  ['a marker with only its closing bracket escaped stays escaped', '> [!NOTE\\]\n> Así se escribe', '> \\[!NOTE\\]\n> Así se escribe'],
+  ['a marker with its exclamation mark escaped stays escaped', '> [\\!NOTE]\n> Así se escribe', '> \\[!NOTE\\]\n> Así se escribe'],
+  ['a marker written with an entity stays escaped', '> &#91;!NOTE]\n> Así se escribe', '> \\[!NOTE\\]\n> Así se escribe'],
+  ['a quote loses its empty first line, and an escaped marker after it stays escaped', '>\n> \\[!NOTE\\]\n> Así se escribe', '> \\[!NOTE\\]\n> Así se escribe'],
   ['named entities become their characters', 'Copyright &copy; y caf&eacute;', 'Copyright © y café'],
   ['an unclosed tag is escaped', 'a <b sin cerrar', 'a \\<b sin cerrar'],
   ['front matter gets a blank line after it', '---\ntitle: Hola\n---\nTexto', '---\ntitle: Hola\n---\n\nTexto'],
@@ -104,6 +119,45 @@ describe('Markdown round trip', () => {
       const editor = open({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: line }] }] })
       const markdown = editor.getMarkdown()
       expect(open(markdown).getJSON().content, `${line} → ${markdown}`).toEqual([{ type: 'paragraph', content: [{ type: 'text', text: line }] }])
+    }
+  })
+
+  it('writes an alert typed in a quote as an alert, and reads it back as the same text', () => {
+    // GitHub shows an alert when its marker is alone on the first line of the quote.
+    const alert: JSONContent = {
+      type: 'blockquote',
+      attrs: { escapedMarker: false },
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: '[!NOTE]' }, { type: 'hardBreak' }, { type: 'text', text: 'Recuerda' }] }],
+    }
+    const markdown = open({ type: 'doc', content: [alert] }).getMarkdown()
+    expect(markdown).toBe('> [!NOTE]  \n> Recuerda')
+    expect(open(markdown).getJSON().content).toEqual([alert])
+  })
+
+  it('keeps a marker escaped on purpose when its quote is copied and pasted', () => {
+    // jsdom has no ClipboardEvent, which pasting makes when it is not given one.
+    const missing = typeof ClipboardEvent === 'undefined'
+    if (missing) (globalThis as { ClipboardEvent?: unknown }).ClipboardEvent = class extends Event {}
+    try {
+      // Paragraphs apart: pasting turns a line break inside one into a hard break, as it always has.
+      for (const markdown of ['> \\[!NOTE\\]\n>\n> Así se escribe', '> [!NOTE]\n>\n> Un aviso de verdad']) {
+        const source = open(markdown)
+        const { dom } = source.view.serializeForClipboard(source.state.doc.slice(0, source.state.doc.content.size))
+        const target = open('')
+        target.view.pasteHTML(dom.innerHTML)
+        expect(target.getMarkdown().trim()).toBe(markdown)
+      }
+    } finally {
+      if (missing) delete (globalThis as { ClipboardEvent?: unknown }).ClipboardEvent
+    }
+  })
+
+  it('keeps text typed after a marker in a quote as text', () => {
+    // Followed by `:` or `(`, the marker would turn into something else if it were written unescaped.
+    for (const text of ['[!NOTE]: Importante', '[!NOTE]: /ruta "Título"', '[!NOTE](importante)', '[!WARNING]:x']) {
+      const quote: JSONContent = { type: 'blockquote', attrs: { escapedMarker: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] }
+      const markdown = open({ type: 'doc', content: [quote] }).getMarkdown()
+      expect(open(markdown).getJSON().content?.[0]?.content, `${text} → ${markdown}`).toEqual(quote.content)
     }
   })
 

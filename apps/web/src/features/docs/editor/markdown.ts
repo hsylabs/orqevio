@@ -1,4 +1,5 @@
 import { type AnyExtension, type JSONContent, Node } from '@tiptap/core'
+import Blockquote from '@tiptap/extension-blockquote'
 import CodeBlock from '@tiptap/extension-code-block'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
@@ -217,6 +218,49 @@ const FaithfulParagraph = Paragraph.extend({
   },
   renderMarkdown(node, helpers, context) {
     return escapeLineStarts(this.parent?.(node, helpers, context) ?? '')
+  },
+})
+
+// ── Quotes ───────────────────────────────────────────────────────
+
+/**
+ * The marker of an alert at the start of a quote, as text escapes it: GitHub's `[!NOTE]` or an
+ * Obsidian callout such as `[!tip]-`. Only before a space or the end of the line, where it is
+ * text again when read back; followed by `:` or `(` it would be a link reference definition or a link.
+ */
+const ESCAPED_ALERT = /^> \\\[!([A-Za-z][A-Za-z0-9-]*)\\\](?=[+-]?(?:[ \t]|\n|$))/
+
+/**
+ * An alert keeps its marker as written. Escaped, `> [!NOTE]` stops being an alert, so the marker
+ * of a quote's first paragraph is written as it is, unless it was escaped where it came from:
+ * someone showing how to write one.
+ */
+const FaithfulBlockquote = Blockquote.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      // In the HTML too, which copying and pasting goes through.
+      escapedMarker: {
+        default: false,
+        parseHTML: (element) => element.hasAttribute('data-escaped-marker'),
+        renderHTML: (attributes) => (attributes.escapedMarker ? { 'data-escaped-marker': '' } : {}),
+      },
+    }
+  },
+  parseMarkdown(token, helpers) {
+    const quote = this.parent?.(token, helpers) as JSONContent
+    // A marker read from the first paragraph that was not written as such there was escaped, in
+    // whatever way: `\[!NOTE\]`, `[!NOTE\]`, `[\!NOTE]`, `&#91;!NOTE]`…
+    const text = quote.content?.[0]?.type === 'paragraph' ? quote.content[0].content?.[0] : undefined
+    const marker = text?.type === 'text' ? /^\[![A-Za-z][A-Za-z0-9-]*\]/.exec(text.text ?? '')?.[0] : undefined
+    // The quote's first paragraph as written, without the `>` marked has already taken away.
+    const first = (token.tokens as Array<{ type?: string; raw?: string }> | undefined)?.find((child) => child.type !== 'space')
+    if (!marker || first?.type !== 'paragraph' || (first.raw ?? '').startsWith(marker)) return quote
+    return { ...quote, attrs: { ...quote.attrs, escapedMarker: true } }
+  },
+  renderMarkdown(node, helpers, context) {
+    const markdown = this.parent?.(node, helpers, context) ?? ''
+    return node.attrs?.escapedMarker ? markdown : markdown.replace(ESCAPED_ALERT, '> [!$1]')
   },
 })
 
@@ -445,6 +489,7 @@ export function documentExtensions(): AnyExtension[] {
       link: false,
       codeBlock: false,
       orderedList: false,
+      blockquote: false,
     }),
     FaithfulLink.configure({
       openOnClick: false,
@@ -457,6 +502,7 @@ export function documentExtensions(): AnyExtension[] {
     FaithfulCodeBlock,
     FaithfulOrderedList,
     FaithfulParagraph,
+    FaithfulBlockquote,
     FaithfulMarkdown.configure({ markedOptions: { gfm: true } }),
     TaskList,
     // What a screen reader says for each checkbox, in the app's language.
