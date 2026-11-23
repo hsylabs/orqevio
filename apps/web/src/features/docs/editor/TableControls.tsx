@@ -34,6 +34,7 @@ import {
   cellAt,
   deleteColumns,
   deleteRows,
+  deleteTable,
   infoAt,
   insertColumn,
   insertRow,
@@ -368,7 +369,7 @@ export function TableControls({ editor }: { editor: Editor }) {
             <MenuItem icon={<Trash2 />} danger disabled={columns >= s.columns} onSelect={act(() => deleteColumns(editor, s.pos, s.left, s.right, s.top))}>
               {t('editor.table.deleteColumns', { count: columns })}
             </MenuItem>
-            <MenuItem icon={<Trash2 />} danger onSelect={act(() => editor.chain().focus().deleteTable().run())}>
+            <MenuItem icon={<Trash2 />} danger onSelect={act(() => deleteTable(editor, s.pos))}>
               {t('editor.table.deleteTable')}
             </MenuItem>
           </MenuContent>

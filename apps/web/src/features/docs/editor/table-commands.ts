@@ -3,7 +3,21 @@ import { closeHistory } from '@tiptap/pm/history'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import { type EditorState, Selection, type Transaction } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
-import { CellSelection, TableMap, type TableRect, addColumn, addRow, cellAround, isInTable, moveTableColumn, moveTableRow, removeColumn, removeRow, selectedRect } from '@tiptap/pm/tables'
+import {
+  CellSelection,
+  TableMap,
+  type TableRect,
+  addColumn,
+  addRow,
+  cellAround,
+  deleteTable as deleteTableCommand,
+  isInTable,
+  moveTableColumn,
+  moveTableRow,
+  removeColumn,
+  removeRow,
+  selectedRect,
+} from '@tiptap/pm/tables'
 
 /**
  * What the table controls do, on the table at a position and by row and column, so a handle can act
@@ -224,6 +238,14 @@ export function deleteColumns(editor: Editor, pos: number, left: number, right: 
     for (let col = right - 1; col >= left; col--) removeColumn(tr, rectAt(tr.doc, pos)!, col)
     cursorIn(tr, pos, row, left)
     return true
+  })
+}
+
+/** The whole table goes, the cursor where it was. */
+export function deleteTable(editor: Editor, pos: number) {
+  return change(editor, pos, (tr, _rect, { state, dispatch }) => {
+    cursorIn(tr, pos, 0, 0)
+    return deleteTableCommand(state, dispatch)
   })
 }
 

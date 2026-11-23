@@ -9,6 +9,7 @@ import {
   canMoveRow,
   deleteColumns,
   deleteRows,
+  deleteTable,
   insertColumn,
   insertRow,
   moveColumn,
@@ -183,6 +184,16 @@ describe('table controls', () => {
     deleteRows(editor, pos, 2, 3)
     editor.commands.undo()
     expect(cells(editor)).toEqual([['a', 'b'], ['x1', '2'], ['', '']])
+  })
+
+  it('deletes the whole table in a step of its own', () => {
+    const editor = open(`Antes\n\n${TABLE}\n\nDespués`)
+    const pos = cursorAt(editor, 1, 0)
+    type(editor, 'x')
+    expect(deleteTable(editor, pos)).toBe(true)
+    expect(editor.getMarkdown()).not.toContain('|')
+    editor.commands.undo()
+    expect(cells(editor)[1]).toEqual(['xPera', '2'])
   })
 
   it('moves rows and columns with the cursor elsewhere, as a handle does', () => {
