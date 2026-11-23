@@ -6,6 +6,7 @@ import { type FormEvent, type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { cn } from '../../../lib/cn'
+import { isConverting } from '../../../lib/ime'
 
 const SAFE = /^(https?:\/\/|mailto:|\/(?!\/))/i
 
@@ -58,7 +59,7 @@ export function FormatMenu({ editor }: { editor: Editor }) {
               autoFocus
               value={href}
               onChange={(e) => setHref(e.target.value)}
-              onKeyDown={(e) => e.key === 'Escape' && setEditingLink(false)}
+              onKeyDown={(e) => e.key === 'Escape' && !isConverting(e) && setEditingLink(false)}
               placeholder={t('editor.format.linkPlaceholder')}
               aria-label={t('editor.format.linkLabel')}
               className="h-7 w-[240px] rounded-[7px] bg-sunken px-2 text-[13px] outline-none"

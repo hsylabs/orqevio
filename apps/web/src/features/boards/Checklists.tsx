@@ -8,6 +8,7 @@ import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from '../../components/u
 import { del, errorMessage, patch, post } from '../../lib/api'
 import { keys, queryClient } from '../../lib/queries'
 import { toastTrashed } from '../../lib/trash'
+import { isConverting } from '../../lib/ime'
 
 export function Checklists({ card }: { card: CardDetailDTO }) {
   const { t } = useTranslation('boards')
@@ -146,7 +147,7 @@ function AddItem({ onAdd }: { onAdd: (text: string) => Promise<void> }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={() => !text.trim() && setOpen(false)}
-        onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
+        onKeyDown={(e) => e.key === 'Escape' && !isConverting(e) && setOpen(false)}
         placeholder={t('checklist.newItemPlaceholder')}
         aria-label={t('checklist.newItem')}
         maxLength={500}
@@ -173,6 +174,7 @@ export function EditableText({ value, onSave, className, label }: { value: strin
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
+          if (isConverting(e)) return
           if (e.key === 'Enter') commit()
           if (e.key === 'Escape') {
             setDraft(value)

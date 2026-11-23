@@ -7,6 +7,7 @@ import { Trans, useTranslation } from 'react-i18next'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from '../../components/ui/Menu'
 import { cn } from '../../lib/cn'
 import { SortableCard } from './CardItem'
+import { isConverting } from '../../lib/ime'
 
 interface ColumnProps {
   column: ColumnDTO
@@ -57,6 +58,7 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
             onChange={(e) => setName(e.target.value)}
             onBlur={commitRename}
             onKeyDown={(e) => {
+              if (isConverting(e)) return
               if (e.key === 'Enter') void commitRename()
               if (e.key === 'Escape') {
                 setName(column.name)
@@ -162,6 +164,7 @@ function Composer({ onSubmit, onClose }: { onSubmit: (title: string) => Promise<
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (isConverting(e)) return
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       void submit()

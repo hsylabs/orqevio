@@ -45,6 +45,7 @@ import { CardView } from './CardItem'
 import { CardSheet } from './CardSheet'
 import { withNewCard } from './board-cache'
 import { toastTrashed, trashNote } from '../../lib/trash'
+import { isConverting } from '../../lib/ime'
 
 type DueFilter = 'all' | 'overdue' | 'week' | 'none'
 interface Filter {
@@ -527,7 +528,7 @@ function AddColumn({ boardId }: { boardId: string }) {
         autoFocus
         value={name}
         onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
+        onKeyDown={(e) => e.key === 'Escape' && !isConverting(e) && setOpen(false)}
         onBlur={() => !name.trim() && setOpen(false)}
         placeholder={t('column.name')}
         aria-label={t('column.name')}
