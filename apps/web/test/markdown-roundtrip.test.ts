@@ -64,14 +64,15 @@ const kept: Array<[string, string]> = [
   ['an alert inside a list', '- paso\n  > [!NOTE]\n  > Dentro de la lista'],
   ['brackets later in a quote stay escaped', '> Texto \\[!NOTE\\] en medio\n>\n> \\[!TIP\\] en otro párrafo'],
   ['an alert marker escaped on purpose, to show how one is written', '> \\[!NOTE\\]\n> Así se escribe un aviso'],
-  // A marker followed by `:` or `(` stays escaped: unescaped, it would be a link reference definition or a link.
-  ['a marker followed by a colon', '> \\[!NOTE\\]: Importante'],
-  ['a marker followed by a colon and an address', '> \\[!TIP\\]: /guia "Guía"'],
-  ['a marker followed by parentheses', '> \\[!NOTE\\](importante) algo'],
+  // Escaped where they came from, these stay so; written from the editor, see the test of text typed after a marker.
+  ['an escaped marker followed by a colon', '> \\[!NOTE\\]: Importante'],
+  ['an escaped marker followed by a colon and an address', '> \\[!TIP\\]: /guia "Guía"'],
+  ['an escaped marker followed by parentheses', '> \\[!NOTE\\](importante) algo'],
 ]
 
 /** Read the same again: written in another, equivalent way. */
 const normalised: Array<[string, string, string]> = [
+  ['a quote loses its empty first line, and an escaped marker after it stays escaped', '>\n> \\[!NOTE\\]\n> Así se escribe', '> \\[!NOTE\\]\n> Así se escribe'],
   ['named entities become their characters', 'Copyright &copy; y caf&eacute;', 'Copyright © y café'],
   ['an unclosed tag is escaped', 'a <b sin cerrar', 'a \\<b sin cerrar'],
   ['front matter gets a blank line after it', '---\ntitle: Hola\n---\nTexto', '---\ntitle: Hola\n---\n\nTexto'],
@@ -128,6 +129,24 @@ describe('Markdown round trip', () => {
     const markdown = open({ type: 'doc', content: [alert] }).getMarkdown()
     expect(markdown).toBe('> [!NOTE]  \n> Recuerda')
     expect(open(markdown).getJSON().content).toEqual([alert])
+  })
+
+  it('keeps a marker escaped on purpose when its quote is copied and pasted', () => {
+    // jsdom has no ClipboardEvent, which pasting makes when it is not given one.
+    const missing = typeof ClipboardEvent === 'undefined'
+    if (missing) (globalThis as { ClipboardEvent?: unknown }).ClipboardEvent = class extends Event {}
+    try {
+      // Paragraphs apart: pasting turns a line break inside one into a hard break, as it always has.
+      for (const markdown of ['> \\[!NOTE\\]\n>\n> Así se escribe', '> [!NOTE]\n>\n> Un aviso de verdad']) {
+        const source = open(markdown)
+        const { dom } = source.view.serializeForClipboard(source.state.doc.slice(0, source.state.doc.content.size))
+        const target = open('')
+        target.view.pasteHTML(dom.innerHTML)
+        expect(target.getMarkdown().trim()).toBe(markdown)
+      }
+    } finally {
+      if (missing) delete (globalThis as { ClipboardEvent?: unknown }).ClipboardEvent
+    }
   })
 
   it('keeps text typed after a marker in a quote as text', () => {

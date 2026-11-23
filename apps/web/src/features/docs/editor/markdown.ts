@@ -237,11 +237,21 @@ const ESCAPED_ALERT = /^> \\\[!([A-Za-z][A-Za-z0-9-]*)\\\](?=[+-]?(?:[ \t]|\n|$)
  */
 const FaithfulBlockquote = Blockquote.extend({
   addAttributes() {
-    return { ...this.parent?.(), escapedMarker: { default: false, rendered: false } }
+    return {
+      ...this.parent?.(),
+      // In the HTML too, which copying and pasting goes through.
+      escapedMarker: {
+        default: false,
+        parseHTML: (element) => element.hasAttribute('data-escaped-marker'),
+        renderHTML: (attributes) => (attributes.escapedMarker ? { 'data-escaped-marker': '' } : {}),
+      },
+    }
   },
   parseMarkdown(token, helpers) {
     const quote = this.parent?.(token, helpers) as JSONContent
-    if (!/^ {0,3}>[ \t]?\\\[!/.test(String(token.raw ?? ''))) return quote
+    // The quote's first paragraph as written, without the `>` marked has already taken away.
+    const first = (token.tokens as Array<{ type?: string; raw?: string }> | undefined)?.find((child) => child.type !== 'space')
+    if (first?.type !== 'paragraph' || !/^\\\[!/.test(first.raw ?? '')) return quote
     return { ...quote, attrs: { ...quote.attrs, escapedMarker: true } }
   },
   renderMarkdown(node, helpers, context) {
