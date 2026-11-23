@@ -3,9 +3,8 @@ import { expect, test } from './helpers'
 // SQLite in a Cloudflare Durable Object takes at most 100 parameters a query. These cases failed
 // there while working on Node; the suite also runs against the Cloudflare package.
 //
-// Each test makes its data through the API before the browser opens anything: with the workspace
-// open, every change would refresh it live, and opening another address in the middle cuts those
-// requests short, which WebKit reports as errors («… due to access control checks»).
+// Each test makes its data through the API before the browser opens anything, so that an open
+// workspace does not refresh live for every change.
 
 /** A workspace of its own, not opened in the browser yet. */
 async function workspace(page: import('@playwright/test').Page, name: string) {

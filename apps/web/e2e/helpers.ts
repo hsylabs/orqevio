@@ -1,5 +1,6 @@
 import path from 'node:path'
-import { type APIRequestContext, type Page, type Request, test as base, expect } from '@playwright/test'
+import { type APIRequestContext, type Page, test as base, expect } from '@playwright/test'
+import { type Refusal, cancelledFontLoad, refusedRequest, unexplainedRefusals } from './browser-noise'
 
 /**
  * A new tab's first navigation, the one that moves it from about:blank to another process,
@@ -33,16 +34,9 @@ export async function settle(page: Page, baseURL: string) {
 }
 
 /**
- * Firefox logs a font whose download was cancelled (status NS_BINDING_ABORTED, 0x804B0002) as an
- * error: when the page starts a download or goes elsewhere while a font is still loading. Nothing
- * failed, and the font loads again when needed. Any other font error still counts. Playwright
- * hands the message over wrapped, as `[JavaScript Error: "downloadable font: …"]`.
- */
-export const cancelledFontLoad = (text: string) => /\bdownloadable font: download failed \(.*\): status=2152398850\b/.test(text)
-
-/**
- * Test fixture that fails the test on any uncaught page error or console error.
- * When a test fails, it also reports the page's load state and the requests still
+ * Test fixture that fails the test on any uncaught page error or console error, except what a
+ * browser reports although nothing failed (browser-noise.ts): a font download Firefox called off,
+ * and a request WebKit refused as the page was left. When a test fails, it also reports the page's load state and the requests still
  * in flight, to explain pages that never finish loading.
  */
 export const test = base.extend<{ consoleErrors: string[] }>({
@@ -51,7 +45,7 @@ export const test = base.extend<{ consoleErrors: string[] }>({
     await use(page)
   },
   consoleErrors: [
-    async ({ page }, use, testInfo) => {
+    async ({ page, baseURL }, use, testInfo) => {
       const inFlight = new Map<object, string>()
       page.on('request', (r) => inFlight.set(r, `${r.method()} ${r.url()} (${r.resourceType()}, since ${new Date().toISOString()})`))
       page.on('requestfinished', (r) => inFlight.delete(r))
@@ -61,11 +55,22 @@ export const test = base.extend<{ consoleErrors: string[] }>({
         document.addEventListener('securitypolicyviolation', (e) => console.error(`CSP violation: ${e.effectiveDirective} blocked ${e.blockedURI || 'inline code'} in ${e.sourceFile}`)),
       )
       const errors: string[] = []
-      page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`))
+      // Requests WebKit refused as the page was left (see refusedRequest): judged once the new
+      // documents around them are known. A route changed inside the app loads none.
+      const refusals: Refusal[] = []
+      const loads: number[] = []
+      page.on('domcontentloaded', () => loads.push(Date.now()))
+      page.on('pageerror', (e) => {
+        if (refusedRequest(`${e.name}: ${e.message}`, baseURL!)) refusals.push({ text: `pageerror: ${e.name}: ${e.message}`, at: Date.now() })
+        else errors.push(`pageerror: ${e.message}`)
+      })
       page.on('console', (m) => {
-        if (m.type() === 'error' && !cancelledFontLoad(m.text())) errors.push(`console: ${m.text()}`)
+        if (m.type() !== 'error' || cancelledFontLoad(m.text())) return
+        if (refusedRequest(m.text(), baseURL!)) refusals.push({ text: `console: ${m.text()}`, at: Date.now() })
+        else errors.push(`console: ${m.text()}`)
       })
       await use(errors)
+      errors.push(...unexplainedRefusals(refusals, loads).map((refusal) => refusal.text))
       if (testInfo.status !== testInfo.expectedStatus) {
         const state = await Promise.race([
           page.evaluate(() => ({
@@ -89,56 +94,6 @@ export const test = base.extend<{ consoleErrors: string[] }>({
   ],
 })
 export { expect }
-
-/**
- * Follows the page's requests to the API, so that a test can reload the page once none is in
- * flight: WebKit reports a request cut short by a reload as an error («… due to access control
- * checks»), which fails the test. Live updates can start one at any moment, so what is on screen
- * does not tell.
- */
-export function apiRequests(page: Page) {
-  /** Each request in flight, with the number of navigations of the page when it started. */
-  const pending = new Map<Request, number>()
-  let navigations = 0
-  let lastSeen = Date.now()
-  page.on('framenavigated', (frame) => {
-    if (frame === page.mainFrame()) navigations++
-  })
-  page.on('request', (request) => {
-    if (!new URL(request.url()).pathname.startsWith('/api/')) return
-    pending.set(request, navigations)
-    lastSeen = Date.now()
-  })
-  const done = (request: Request) => {
-    if (pending.delete(request)) lastSeen = Date.now()
-  }
-  page.on('requestfinished', done)
-  page.on('requestfailed', done)
-  /**
-   * Waits until none of them is in flight, and none has started or ended for half a second: a
-   * change announced live is refetched a moment later (GATHER_MS in lib/live-refresh.ts), with
-   * nothing in flight meanwhile.
-   */
-  const settled = () =>
-    expect
-      .poll(() => (pending.size === 0 && Date.now() - lastSeen >= 500 ? 'settled' : [...pending.keys()].map((request) => `${request.method()} ${request.url()}`).join(', ') || 'just finished'), {
-        message: 'requests to the API in flight or still starting',
-      })
-      .toBe('settled')
-  return {
-    /**
-     * Reloads the page once its requests have settled. One the old page starts in the meantime is
-     * cut short and then forgotten: Chromium never reports it as ended, so waiting on requests
-     * after a page is left any other way (a goto, a link that loads a whole page) would never end.
-     */
-    reload: async () => {
-      await settled()
-      const before = navigations
-      await page.reload()
-      for (const [request, loaded] of pending) if (loaded <= before) pending.delete(request)
-    },
-  }
-}
 
 /**
  * For contexts a test opens itself, which do not take the configuration's options: the
