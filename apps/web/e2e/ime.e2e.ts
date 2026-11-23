@@ -97,10 +97,45 @@ test('the Enter or Escape that ends a conversion stays in the field: cards, colu
   }
   await page.keyboard.press('Enter')
   await expect(page.getByRole('checkbox', { name: '印鑑印鑑' })).toBeVisible()
+
+  // Editing an item: neither key of a conversion saves the edit or drops it.
+  await page.getByRole('button', { name: '印鑑印鑑', exact: true }).click()
+  const edit = page.getByLabel('Elemento', { exact: true })
+  await edit.press('End')
+  for (const style of STYLES) {
+    await convert(page, '済', 'Enter', style)
+    await convert(page, '済', 'Escape', style)
+    await expect(edit).toBeVisible()
+  }
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('checkbox', { name: '印鑑印鑑済済済済' })).toBeVisible()
+
+  // A popover (the name of a new label) closes on Escape, but not on the one of a conversion.
+  await page.getByRole('button', { name: 'Añadir etiquetas' }).click()
+  await page.getByRole('button', { name: 'Crear etiqueta' }).click()
+  const labelName = page.getByLabel('Nombre de la etiqueta')
+  for (const style of STYLES) {
+    await convert(page, '至急', 'Escape', style)
+    await expect(labelName).toBeVisible()
+  }
+  await page.keyboard.press('Escape')
+  await expect(labelName).toHaveCount(0)
+  await expect(page.getByRole('dialog')).toBeVisible()
 })
 
 test('the Enter that ends a conversion stays in the title of a page, and its Escape in a dialog', async ({ page }) => {
   await openNewWorkspace(page, 'Teclado japonés páginas E2E')
+
+  // The command palette closes on Escape, but not on the one that drops a conversion in its search.
+  await page.keyboard.press('Control+k')
+  const palette = page.getByRole('dialog', { name: 'Paleta de comandos' })
+  await expect(palette).toBeVisible()
+  for (const style of STYLES) {
+    await convert(page, '計画', 'Escape', style)
+    await expect(palette).toBeVisible()
+  }
+  await page.keyboard.press('Escape')
+  await expect(palette).toHaveCount(0)
 
   // A dialog closes on Escape, but not on the one that drops a conversion in its field.
   await page.getByRole('button', { name: 'Nuevo proyecto' }).first().click()

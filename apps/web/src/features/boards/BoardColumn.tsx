@@ -6,8 +6,8 @@ import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 
 import { Trans, useTranslation } from 'react-i18next'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from '../../components/ui/Menu'
 import { cn } from '../../lib/cn'
-import { SortableCard } from './CardItem'
 import { isConverting } from '../../lib/ime'
+import { SortableCard } from './CardItem'
 
 interface ColumnProps {
   column: ColumnDTO
