@@ -54,6 +54,9 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
         {renaming ? (
           <input
             autoFocus
+            // Opened from the column's menu, it takes the focus when the menu closes (see MenuContent),
+            // instead of the menu's button: what is typed goes into it.
+            data-autofocus
             value={name}
             onChange={(e) => setName(e.target.value)}
             onBlur={commitRename}
@@ -176,6 +179,8 @@ function Composer({ onSubmit, onClose }: { onSubmit: (title: string) => Promise<
       <textarea
         ref={ref}
         autoFocus
+        // Opened from the column's menu too: see the name field above.
+        data-autofocus
         rows={2}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
