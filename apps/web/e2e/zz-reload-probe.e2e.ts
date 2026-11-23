@@ -7,7 +7,7 @@ import { test } from '@playwright/test'
 // response, so the reload always lands while they are in flight.
 const DELAY = 2500
 const PORT = 3100
-let mode: 'headers' | 'body' = 'headers'
+let mode: 'headers' | 'body' | 'none' = 'headers'
 
 test('probe: a reload cuts the app own API requests in flight', async ({ page, baseURL }) => {
   const target = new URL(baseURL!)
@@ -45,7 +45,7 @@ test('probe: a reload cuts the app own API requests in flight', async ({ page, b
   const log: string[] = []
   page.on('pageerror', (e) => log.push(`pageerror: ${e.name}: ${e.message}`))
   page.on('console', (m) => {
-    if (!['log', 'debug', 'info'].includes(m.type())) log.push(`console.${m.type()}: ${m.text()}`)
+    if (!['debug'].includes(m.type())) log.push(`console.${m.type()}: ${m.text()}`)
   })
   page.on('requestfailed', (r) => log.push(`requestfailed: ${r.method()} ${new URL(r.url()).pathname} — ${r.failure()?.errorText}`))
   page.on('request', (r) => r.url().includes('/api/') && log.push(`request: ${r.method()} ${r.url()}`))
@@ -68,6 +68,25 @@ test('probe: a reload cuts the app own API requests in flight', async ({ page, b
     log.push('--- reload')
     await page.reload({ waitUntil: 'commit' })
     await page.waitForTimeout(DELAY * 3)
+  }
+  // Requests that start while the page is going away, as a live refresh or a reconnection could.
+  for (const variant of ['pagehide, caught', 'pagehide, uncaught', 'beforeunload, caught', 'timer during unload, caught'] as const) {
+    mode = 'none' as never
+    log.push(`=== fetch started on ${variant}`)
+    await page.goto(`http://localhost:${PORT}/healthz`)
+    await page.evaluate((v) => {
+      const go = (caught: boolean) => {
+        const p = fetch(`/api/auth/session?probe=${encodeURIComponent(v)}`)
+        if (caught) p.catch((e) => console.log(`caught: ${e.name}: ${e.message}`))
+      }
+      if (v === 'pagehide, caught') addEventListener('pagehide', () => go(true))
+      if (v === 'pagehide, uncaught') addEventListener('pagehide', () => go(false))
+      if (v === 'beforeunload, caught') addEventListener('beforeunload', () => go(true))
+      if (v === 'timer during unload, caught') addEventListener('pagehide', () => setTimeout(() => go(true), 0))
+    }, variant)
+    log.push('--- reload')
+    await page.reload()
+    await page.waitForTimeout(1500)
   }
   log.push('=== done')
   await page.waitForTimeout(100)
