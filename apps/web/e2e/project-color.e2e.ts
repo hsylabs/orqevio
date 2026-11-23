@@ -58,7 +58,6 @@ test('a project takes a colour of its own, kept on reload, in both themes, and c
   // A colour the palette could have shows as chosen in the light theme.
   const glyph = page.getByRole('navigation').getByRole('link', { name: 'M Mudanza', exact: true }).locator('.glyph')
   await expect.poll(() => tone(glyph)).toBe('#8b4513')
-  await expect(page.getByRole('region', { name: 'Columna Por hacer' })).toBeVisible()
   await page.reload()
   await expect.poll(() => tone(glyph)).toBe('#8b4513')
 

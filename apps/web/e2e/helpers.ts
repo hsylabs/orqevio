@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { type APIRequestContext, type Page, test as base, expect } from '@playwright/test'
-import { type Refusal, refusedRequest, unexplainedRefusals } from './browser-noise'
+import { type Refusal, cancelledFontLoad, refusedRequest, unexplainedRefusals } from './browser-noise'
 
 /**
  * A new tab's first navigation, the one that moves it from about:blank to another process,
@@ -33,13 +33,6 @@ export async function settle(page: Page, baseURL: string) {
   }
 }
 
-/**
- * Firefox logs a font whose download was cancelled (status NS_BINDING_ABORTED, 0x804B0002) as an
- * error: when the page starts a download or goes elsewhere while a font is still loading. Nothing
- * failed, and the font loads again when needed. Any other font error still counts. Playwright
- * hands the message over wrapped, as `[JavaScript Error: "downloadable font: …"]`.
- */
-export const cancelledFontLoad = (text: string) => /\bdownloadable font: download failed \(.*\): status=2152398850\b/.test(text)
 
 /**
  * Test fixture that fails the test on any uncaught page error or console error.
@@ -62,11 +55,11 @@ export const test = base.extend<{ consoleErrors: string[] }>({
         document.addEventListener('securitypolicyviolation', (e) => console.error(`CSP violation: ${e.effectiveDirective} blocked ${e.blockedURI || 'inline code'} in ${e.sourceFile}`)),
       )
       const errors: string[] = []
-      // Requests WebKit refused as the page was left (see refusedRequest): judged once the
-      // navigations around them are known.
+      // Requests WebKit refused as the page was left (see refusedRequest): judged once the new
+      // documents around them are known. A route changed inside the app loads none.
       const refusals: Refusal[] = []
-      const navigations: number[] = []
-      page.on('framenavigated', (frame) => frame === page.mainFrame() && navigations.push(Date.now()))
+      const loads: number[] = []
+      page.on('domcontentloaded', () => loads.push(Date.now()))
       page.on('pageerror', (e) => {
         if (refusedRequest(`${e.name}: ${e.message}`, baseURL!)) refusals.push({ text: `pageerror: ${e.message}`, at: Date.now() })
         else errors.push(`pageerror: ${e.message}`)
@@ -77,7 +70,7 @@ export const test = base.extend<{ consoleErrors: string[] }>({
         else errors.push(`console: ${m.text()}`)
       })
       await use(errors)
-      errors.push(...unexplainedRefusals(refusals, navigations).map((refusal) => refusal.text))
+      errors.push(...unexplainedRefusals(refusals, loads).map((refusal) => refusal.text))
       if (testInfo.status !== testInfo.expectedStatus) {
         const state = await Promise.race([
           page.evaluate(() => ({

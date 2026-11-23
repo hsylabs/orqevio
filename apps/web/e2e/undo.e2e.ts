@@ -153,9 +153,7 @@ test('a forced undo shows in the open page even when live updates are down', asy
 /**
  * A workspace with a board (its columns «Por hacer», «En curso» and «Hecho») and a card in «Por
  * hacer», made through the API without opening anything. The batch tests make hundreds of changes:
- * with the board open, each would refresh it live, and opening it again in the middle cuts those
- * refreshes short, which WebKit reports as errors («… due to access control checks»). The board is
- * opened once they are all made.
+ * with the board open, each would refresh it live. The board is opened once they are all made.
  */
 async function boardWithCard(page: Page, workspace: string, project: string, card: string) {
   const made = async (path: string, data: unknown) => {

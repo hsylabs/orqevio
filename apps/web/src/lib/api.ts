@@ -58,7 +58,7 @@ export async function api<T = unknown>(method: Method, path: string, body?: unkn
   try {
     res = await fetch(`/api${path}`, init)
     if (res.status === 204) return undefined as T
-    // The answer can still be cut short after its headers came: as with no answer at all.
+    // A body cut short after the headers came is no connection too.
     text = await res.text()
   } catch (error) {
     if ((error as Error).name === 'AbortError') throw error
