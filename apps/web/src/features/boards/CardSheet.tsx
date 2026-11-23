@@ -28,6 +28,7 @@ import { DuePicker } from './DuePicker'
 import { LabelPicker } from './LabelPicker'
 import { LinkedPages } from './LinkedPages'
 import { toastTrashed, trashNote } from '../../lib/trash'
+import { isConverting } from '../../lib/ime'
 
 /** Cards this tab is deleting: their sheet just closes, without saying they are gone. */
 const deletingHere = new Set<string>()
@@ -416,7 +417,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
               onClick={phrasedTitle.onClick}
               onChange={(e) => setTitle(e.target.value.replace(/\n/g, ''))}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !isConverting(e)) {
                   e.preventDefault()
                   e.currentTarget.blur()
                 }

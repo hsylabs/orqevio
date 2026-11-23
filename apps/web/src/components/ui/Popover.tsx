@@ -1,6 +1,7 @@
 import { Popover as P } from 'radix-ui'
 import type { ReactNode } from 'react'
 import { cn } from '../../lib/cn'
+import { keepOpenWhileConverting } from '../../lib/ime'
 
 export function Popover({
   trigger,
@@ -25,6 +26,7 @@ export function Popover({
           align={align}
           sideOffset={6}
           collisionPadding={12}
+          onEscapeKeyDown={keepOpenWhileConverting}
           className={cn('z-50 rounded-[14px] border border-line bg-surface p-2 shadow-lg outline-none', className)}
         >
           {children}

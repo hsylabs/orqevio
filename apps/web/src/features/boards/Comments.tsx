@@ -16,6 +16,7 @@ import { restoreFromTrash } from '../../lib/trash'
 import { Editor } from '../docs/editor/Editor'
 import { markdownToHtml } from '../docs/editor/markdown-html'
 import { useWorkspace } from '../shell/workspace'
+import { isConverting } from '../../lib/ime'
 
 /**
  * Text written and not sent yet, by person and card (a new comment) or comment (one being edited,
@@ -44,7 +45,7 @@ const refresh = (cardId: string, boardId: string) =>
 
 /** Ctrl+Enter (⌘+Enter) sends, before the editor takes it for a line break. */
 const sendOn = (send: () => void) => (event: KeyboardEvent) => {
-  if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return
+  if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey) || isConverting(event)) return
   event.preventDefault()
   event.stopPropagation()
   send()
