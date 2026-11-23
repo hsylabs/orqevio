@@ -67,6 +67,10 @@ export function withPhrases(html) {
     if (CJK.test(text)) {
       let offset = 0
       const phrases = splitPhrases(text)
+      // Short of context, BudouX may leave the last letter of a short text on its own
+      // ("インストール方|法"): it stays with the phrase before it.
+      const last = phrases.at(-1).trimEnd()
+      if (phrases.length > 1 && [...graphemes.segment(last)].length === 1 && CJK.test(last)) phrases.splice(-2, 2, phrases.at(-2) + phrases.at(-1))
       for (const phrase of phrases.slice(0, -1)) {
         offset += phrase.length
         // A space is a place to break already.

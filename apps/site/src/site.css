@@ -683,6 +683,11 @@ td {
   overflow-wrap: anywhere;
 }
 
+/* A table scrolls sideways when it must: none of its cells is narrower than its longest phrase. */
+:lang(ja) :is(th, td) {
+  overflow-wrap: normal;
+}
+
 /* ── Footer ──────────────────────────────────────────────────── */
 .foot {
   border-top: 1px solid var(--line);

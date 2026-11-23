@@ -10,6 +10,10 @@ describe('Japanese split into phrases at build time', () => {
     expect(marked('<p>次の<em>手順</em>で</p>')).toBe('<p>次の<em>|手順</em>で</p>')
   })
 
+  it('keeps the last letter of a paragraph with the phrase before it', () => {
+    expect(marked('<th scope="col">インストール方法</th><th>残りの削除方法</th>')).toBe('<th scope="col">インストール方法</th><th>残りの|削除方法</th>')
+  })
+
   it('reads a paragraph across the elements inside it, and leaves the elements as they are', () => {
     expect(marked('<li><strong>ゼロ知識の保管庫。</strong>ブラウザ内で<a href="/ja/#x" class="link">暗号化</a>します。</li>')).toBe(
       '<li><strong>ゼロ知識の|保管庫。</strong>|ブラウザ内で<a href="/ja/#x" class="link">|暗号化</a>します。</li>',
