@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core'
+import { CellSelection } from '@tiptap/pm/tables'
 import { useEditorState } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import { Code, ExternalLink, Link2, Strikethrough, X } from 'lucide-react'
@@ -48,7 +49,10 @@ export function FormatMenu({ editor }: { editor: Editor }) {
   return (
     <BubbleMenu
       editor={editor}
-      shouldShow={({ editor: e, state: s }) => e.isEditable && (!s.selection.empty || e.isActive('link')) && !e.isActive('codeBlock') && !e.isActive('image')}
+      // Selected cells have the table's bar instead.
+      shouldShow={({ editor: e, state: s }) =>
+        e.isEditable && (!s.selection.empty || e.isActive('link')) && !(s.selection instanceof CellSelection) && !e.isActive('codeBlock') && !e.isActive('image')
+      }
       options={{ placement: 'top', offset: 8 }}
       className="z-40"
     >

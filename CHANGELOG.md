@@ -6,6 +6,13 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+### Added
+- **Editing tables in documents, as in Notion.** A table could only be created; changing it meant editing its Markdown by hand. Now:
+  - With the cursor in a table, a bar above it inserts rows and columns and aligns the column. Its menu moves or deletes rows and columns, or the whole table. On a phone it appears with a tap.
+  - With a mouse, a handle on the row and the column under the pointer opens their menu. A «+» below and to the right adds a row or a column at the end.
+  - From the keyboard, Alt+F10 goes to the bar, the arrows move along it and Escape goes back to the text.
+  - What they make is still a Markdown table, as agents and GitHub read it. The header row stays first, and deleting it makes the next row the header. Cells are never merged. Each change is undone on its own.
+
 ### Fixed
 - **GitHub alerts in documents.** An alert such as `> [!NOTE]`, written by an agent or brought from GitHub, stays an alert when the page is edited. It was saved as `> \[!NOTE\]`, and GitHub then showed a plain quote. This covers the five GitHub alerts and Obsidian callouts. A marker escaped on purpose, to show how an alert is written, stays escaped, also when its quote is copied and pasted.
 

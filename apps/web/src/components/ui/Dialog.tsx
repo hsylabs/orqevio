@@ -3,7 +3,7 @@ import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../lib/cn'
-import { keepOpenWhileConverting } from '../../lib/ime'
+import { keepOpenOnOwnEscape } from '../../lib/ime'
 import { useReturnFocus } from './return-focus'
 
 interface DialogProps {
@@ -35,7 +35,7 @@ export function Dialog({ open, onOpenChange, title, description, children, foote
           }}
           // Closing, the focus goes back to what had it; opened from a menu, to the menu's button.
           onCloseAutoFocus={returnFocus}
-          onEscapeKeyDown={keepOpenWhileConverting}
+          onEscapeKeyDown={keepOpenOnOwnEscape}
           className={cn(
             'fixed top-1/2 left-1/2 z-50 flex max-h-[min(88dvh,760px)] w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[18px] border border-line bg-sheet shadow-lg outline-none data-[state=open]:animate-[dialog-in_0.26s_var(--ease-out-quint)]',
             width,

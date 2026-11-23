@@ -5,7 +5,20 @@ import { cn } from '../../lib/cn'
 export const MenuRoot = M.Root
 export const MenuTrigger = M.Trigger
 
-export function MenuContent({ children, align = 'end', className, side }: { children: ReactNode; align?: 'start' | 'end' | 'center'; className?: string; side?: 'top' | 'bottom' | 'left' | 'right' }) {
+export function MenuContent({
+  children,
+  align = 'end',
+  className,
+  side,
+  onCloseAutoFocus,
+}: {
+  children: ReactNode
+  align?: 'start' | 'end' | 'center'
+  className?: string
+  side?: 'top' | 'bottom' | 'left' | 'right'
+  /** Where the focus goes when the menu closes; preventing the event keeps it from the menu's button. */
+  onCloseAutoFocus?: (event: Event) => void
+}) {
   // A field meant to take the focus (see Field) that an item brought up, a form say, couldn't take
   // it while the menu was open: it gets it when the menu closes, instead of the menu's button.
   const before = useRef<Set<Element>>(new Set())
@@ -17,6 +30,8 @@ export function MenuContent({ children, align = 'end', className, side }: { chil
       <M.Content
         ref={opened}
         onCloseAutoFocus={(e) => {
+          onCloseAutoFocus?.(e)
+          if (e.defaultPrevented) return
           const field = [...document.querySelectorAll<HTMLElement>('[data-autofocus]')].find((el) => !before.current.has(el))
           if (!field) return
           e.preventDefault()
