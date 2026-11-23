@@ -17,6 +17,6 @@ test('a request the page starts as it is reloaded or left is not taken for an er
     await expect(home).toBeVisible()
   }
   await askOnLeaving(page)
-  await page.goto('/settings')
-  await expect(page.getByRole('heading', { name: 'Clave de acceso' })).toBeVisible()
+  await page.goto('/')
+  await expect(home).toBeVisible()
 })
