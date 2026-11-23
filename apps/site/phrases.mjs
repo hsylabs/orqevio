@@ -33,48 +33,83 @@ export function splitPhrases(text) {
   return phrases
 }
 
-/** Elements whose text stays exactly as written: the head, code and commands, scripts and drawings. */
-const KEEP = new Set(['head', 'title', 'script', 'style', 'pre', 'code', 'kbd', 'samp', 'var', 'svg', 'textarea'])
+/** What a Japanese line must not start with: closing brackets and punctuation, small kana, the long vowel mark. */
+const NO_LINE_START = /[、。，．,.・：；:;！？!?…‥）)」』】〕〉》〙〗］\]｝}ーゝゞヽヾ々ぁぃぅぇぉっゃゅょゎゕゖァィゥェォッャュョヮヵヶ]/u
+/** What a Japanese line must not end with: opening brackets. */
+const NO_LINE_END = /[（(「『【〔〈《〘〖［[｛{]/u
+
+/**
+ * A phrase of a single letter, punctuation aside: BudouX finds one when it is short of context or
+ * unsure ("インストール方|法", "それで|も|う|まく"). It stays with the phrase before it, and with
+ * the one after it too when Japanese comes before it: after code, it is most likely a particle
+ * ("<code>…</code>を|追加").
+ */
+const lone = (phrase) => {
+  // Code (OBJECT, a symbol) counts as a letter.
+  const letters = phrase.replace(/(?!\uFFFC)[\p{P}\p{S}\s]/gu, '')
+  return CJK.test(letters) && [...graphemes.segment(letters)].length === 1
+}
+
+/** Where to break `text` between its phrases: offsets into it. */
+export function phraseBreaks(text) {
+  const phrases = splitPhrases(text)
+  const breaks = []
+  let offset = 0
+  for (let i = 0; i < phrases.length - 1; i++) {
+    offset += phrases[i].length
+    const before = text[offset - 1]
+    const after = text[offset]
+    // A space is a place to break already.
+    if (/\s/.test(before) || /\s/.test(after)) continue
+    if (lone(phrases[i + 1])) continue
+    if (lone(phrases[i]) && (i === 0 || CJK.test([...phrases[i - 1]].at(-1)))) continue
+    if (NO_LINE_START.test(after) || NO_LINE_END.test(before)) continue
+    // A number stays with what it counts ("100|万回").
+    if (/\p{N}/u.test(before) && CJK.test(after)) continue
+    breaks.push(offset)
+  }
+  return breaks
+}
+
+/** Elements whose text stays exactly as written, and which end a paragraph: the head, code blocks, scripts and drawings. */
+const KEEP_BLOCK = new Set(['head', 'title', 'script', 'style', 'pre', 'svg', 'textarea'])
+/** Elements whose text stays exactly as written, read as part of the sentence around them: code and commands. */
+const KEEP_INLINE = new Set(['code', 'kbd', 'samp', 'var'])
 /** Elements that end one paragraph and start another; any other (a, em, strong, span…) is part of the text around it. */
 const BLOCKS = new Set([
   ...['html', 'body', 'header', 'main', 'footer', 'nav', 'section', 'article', 'aside', 'div', 'p', 'blockquote', 'figure', 'figcaption', 'details', 'summary'],
   ...['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'table', 'caption', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td'],
   ...['br', 'hr', 'button', 'label', 'form', 'fieldset', 'legend'],
 ])
+/** What BudouX reads in place of something it should not read: code kept as written, or an entity it would not know. */
+const OBJECT = '\uFFFC'
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }
 const decode = (entity) => {
   const name = entity.slice(1, -1)
-  if (name[0] !== '#') return ENTITIES[name] ?? entity
-  return String.fromCodePoint(name[1] === 'x' || name[1] === 'X' ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10))
+  if (name[0] !== '#') return ENTITIES[name] ?? OBJECT
+  const code = name[1] === 'x' || name[1] === 'X' ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10)
+  return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : OBJECT
 }
 
 /**
- * The page with a <wbr> between the phrases of each Japanese paragraph. Only text changes: tags,
- * attributes and whatever is inside a KEEP element stay byte for byte, and removing every <wbr>
+ * The page with a <wbr> between the phrases of each Japanese paragraph. Only that changes: tags,
+ * attributes and whatever is inside a kept element stay byte for byte, and removing every <wbr>
  * gives the page back as it was.
  */
 export function withPhrases(html) {
-  const tokens = html.match(/<!--[\s\S]*?-->|<[^>]*>|[^<]+/g) ?? []
-  /** Where to put a <wbr> in each text token: offsets into it. */
+  // A comment, a tag (with ">" allowed inside its quoted attributes), text, or a "<" that starts none of them.
+  const tokens = html.match(/<!--[\s\S]*?-->|<(?:[^>"']|"[^"]*"|'[^']*')*>|[^<]+|</g) ?? []
+  /** Where to put a <wbr> in each token: offsets into it. */
   const breaks = new Map()
   /** The paragraph being read: its text, and where each of its UTF-16 units came from. */
   let text = ''
   let origin = []
-  /** The KEEP element being skipped, and how deep inside elements of its name. */
+  /** The kept element being skipped, and how deep inside elements of its name. */
   let keep = null
 
   const endParagraph = () => {
     if (CJK.test(text)) {
-      let offset = 0
-      const phrases = splitPhrases(text)
-      // Short of context, BudouX may leave the last letter of a short text on its own
-      // ("インストール方|法"): it stays with the phrase before it.
-      const last = phrases.at(-1).trimEnd()
-      if (phrases.length > 1 && [...graphemes.segment(last)].length === 1 && CJK.test(last)) phrases.splice(-2, 2, phrases.at(-2) + phrases.at(-1))
-      for (const phrase of phrases.slice(0, -1)) {
-        offset += phrase.length
-        // A space is a place to break already.
-        if (/\s/.test(text[offset - 1]) || /\s/.test(text[offset])) continue
+      for (const offset of phraseBreaks(text)) {
         const { token, at } = origin[offset]
         breaks.set(token, [...(breaks.get(token) ?? []), at])
       }
@@ -94,8 +129,13 @@ export function withPhrases(html) {
         if (keep.depth === 0) keep = null
         return
       }
-      if (KEEP.has(tag) || BLOCKS.has(tag)) endParagraph()
-      if (KEEP.has(tag) && opens) keep = { tag, depth: 1 }
+      if (KEEP_BLOCK.has(tag) || BLOCKS.has(tag)) endParagraph()
+      if (KEEP_INLINE.has(tag) && opens) {
+        // Read as one character; a place to break before it goes before the element.
+        origin.push({ token: index, at: 0 })
+        text += OBJECT
+      }
+      if ((KEEP_BLOCK.has(tag) || KEEP_INLINE.has(tag)) && opens) keep = { tag, depth: 1 }
       return
     }
     if (keep) return

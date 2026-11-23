@@ -132,7 +132,9 @@ describe('the public website', () => {
       }
       expect(html.match(/<wbr>/g)?.length ?? 0, file).toBeGreaterThan(5)
       // Code, commands, the head and attributes stay as written.
-      for (const kept of html.match(/<head>[\s\S]*?<\/head>|<pre>[\s\S]*?<\/pre>|<code>[\s\S]*?<\/code>|<(?!wbr>)[^>]*>/g) ?? []) expect(kept, file).not.toContain('<wbr')
+      for (const kept of html.match(/<head>[\s\S]*?<\/head>|<pre>[\s\S]*?<\/pre>|<code>[\s\S]*?<\/code>|<(?!wbr>)(?:[^>"']|"[^"]*"|'[^']*')*>/g) ?? []) expect(kept, file).not.toContain('<wbr')
+      // No line starts with closing punctuation or ends with an opening bracket.
+      expect(html, file).not.toMatch(/<wbr>[、。，．：；！？）」』】]|[（「『【]<wbr>/)
     }
     const home = read(fileOf('ja', 'home'))
     expect(home).toContain('<h3>あなたにしか<wbr>読めない<wbr>パスワード</h3>')
