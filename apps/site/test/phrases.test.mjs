@@ -44,6 +44,9 @@ describe('Japanese split into phrases at build time', () => {
       expect(withPhrases(html).replaceAll('<wbr>', '')).toBe(html)
     }
     expect(withPhrases('<span title="注意>あなたにしか読めない">保管庫</span>')).toBe('<span title="注意>あなたにしか読めない">保管庫</span>')
+    // A "<" that starts no tag is text: the code and the block after it stay as written.
+    expect(marked('<p>a < b <code>あなたにしか読めないパスワード</code>です</p>')).toContain('<code>あなたにしか読めないパスワード</code>')
+    expect(marked('<p>1 <2 です</p><pre>あなたにしか読めないパスワード</pre>')).toContain('<pre>あなたにしか読めないパスワード</pre>')
   })
 
   it('changes nothing but the places to break in the Japanese pages and layout', () => {

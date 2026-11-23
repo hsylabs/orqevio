@@ -97,8 +97,9 @@ const decode = (entity) => {
  * gives the page back as it was.
  */
 export function withPhrases(html) {
-  // A comment, a tag (with ">" allowed inside its quoted attributes), text, or a "<" that starts none of them.
-  const tokens = html.match(/<!--[\s\S]*?-->|<(?:[^>"']|"[^"]*"|'[^']*')*>|[^<]+|</g) ?? []
+  // A comment, a tag (with ">" allowed inside its quoted attributes), text, or a "<" that starts
+  // none of them: as in HTML, a tag starts with a letter, "/", "!" or "?" right after the "<".
+  const tokens = html.match(/<!--[\s\S]*?-->|<(?=[a-zA-Z/!?])(?:[^>"']|"[^"]*"|'[^']*')*>|[^<]+|</g) ?? []
   /** Where to put a <wbr> in each token: offsets into it. */
   const breaks = new Map()
   /** The paragraph being read: its text, and where each of its UTF-16 units came from. */
