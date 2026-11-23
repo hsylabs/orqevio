@@ -6,6 +6,9 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+### Fixed
+- **GitHub alerts in documents.** An alert such as `> [!NOTE]`, written by an agent or brought from GitHub, stays an alert when the page is edited. It was saved as `> \[!NOTE\]`, and GitHub then showed a plain quote. This covers the five GitHub alerts and Obsidian callouts. A marker escaped on purpose, to show how an alert is written, stays escaped, also when its quote is copied and pasted.
+
 ## [1.4.1] - 2026-11-23
 
 ### Fixed
