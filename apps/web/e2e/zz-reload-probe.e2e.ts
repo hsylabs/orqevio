@@ -7,19 +7,28 @@ import { test } from '@playwright/test'
 // response, so the reload always lands while they are in flight.
 const DELAY = 2500
 const PORT = 3100
+let mode: 'headers' | 'body' = 'headers'
 
 test('probe: a reload cuts the app own API requests in flight', async ({ page, baseURL }) => {
   const target = new URL(baseURL!)
   const server = http.createServer((req, res) => {
     const forward = () => {
       const upstream = http.request({ host: '127.0.0.1', port: target.port, path: req.url, method: req.method, headers: { ...req.headers, host: target.host, ...(req.headers.origin ? { origin: target.origin } : {}) } }, (r) => {
-        res.writeHead(r.statusCode!, r.headers)
-        r.pipe(res)
+        if (mode === 'body' && req.url!.startsWith('/api/')) {
+          // The headers at once, the body a while later: the reload lands while it is being read.
+          const { 'content-length': _length, ...headers } = r.headers
+          res.writeHead(r.statusCode!, headers)
+          res.write(' ')
+          setTimeout(() => r.pipe(res), DELAY)
+        } else {
+          res.writeHead(r.statusCode!, r.headers)
+          r.pipe(res)
+        }
       })
       upstream.on('error', () => res.destroy())
       req.pipe(upstream)
     }
-    if (req.url!.startsWith('/api/')) setTimeout(forward, DELAY)
+    if (mode === 'headers' && req.url!.startsWith('/api/')) setTimeout(forward, DELAY)
     else forward()
   })
   // Live updates go through a WebSocket: pass it through untouched.
@@ -39,14 +48,15 @@ test('probe: a reload cuts the app own API requests in flight', async ({ page, b
     if (!['log', 'debug', 'info'].includes(m.type())) log.push(`console.${m.type()}: ${m.text()}`)
   })
   page.on('requestfailed', (r) => log.push(`requestfailed: ${r.method()} ${new URL(r.url()).pathname} — ${r.failure()?.errorText}`))
-  page.on('request', (r) => log.push(`request: ${r.method()} ${r.url()}`))
-  page.on('response', (r) => log.push(`response: ${r.status()} ${r.url()}`))
+  page.on('request', (r) => r.url().includes('/api/') && log.push(`request: ${r.method()} ${r.url()}`))
+  page.on('response', (r) => r.url().includes('/api/') && log.push(`response: ${r.status()} ${r.url()}`))
   page.on('framenavigated', (f) => f === page.mainFrame() && log.push(`navigated: ${new URL(f.url()).pathname}`))
 
   // A new tab's first navigation can get lost (see settle in helpers.ts): open a small page first.
   await page.goto(`http://localhost:${PORT}/healthz`)
-  for (const where of ['/', '/settings']) {
-    log.push(`=== ${where}: reload while the first API requests wait`)
+  for (const [where, how] of [['/', 'headers'], ['/', 'body'], ['/', 'body']] as const) {
+    mode = how
+    log.push(`=== ${where}, slow ${how}: reload while the first API requests wait`)
     const started = page.waitForRequest((r) => new URL(r.url()).pathname.startsWith('/api/'), { timeout: 20_000 })
     await page.goto(`http://localhost:${PORT}${where}`, { waitUntil: 'commit' })
     const ok = await started.then(() => true, () => false)
