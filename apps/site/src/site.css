@@ -676,9 +676,11 @@ td {
   color: #fff;
 }
 
-/* Japanese has no spaces: let browsers that can break lines between phrases do so. */
+/* Japanese has no spaces: its lines break only between phrases, where the build put a <wbr>
+   (phrases.mjs), never inside a word ("ござい|ます"). A phrase too long for its line still breaks. */
 :lang(ja) {
-  word-break: auto-phrase;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 /* ── Footer ──────────────────────────────────────────────────── */
