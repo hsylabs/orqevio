@@ -34,8 +34,9 @@ export async function settle(page: Page, baseURL: string) {
 }
 
 /**
- * Test fixture that fails the test on any uncaught page error or console error.
- * When a test fails, it also reports the page's load state and the requests still
+ * Test fixture that fails the test on any uncaught page error or console error, except what a
+ * browser reports although nothing failed (browser-noise.ts): a font download Firefox called off,
+ * and a request WebKit refused as the page was left. When a test fails, it also reports the page's load state and the requests still
  * in flight, to explain pages that never finish loading.
  */
 export const test = base.extend<{ consoleErrors: string[] }>({
@@ -60,7 +61,7 @@ export const test = base.extend<{ consoleErrors: string[] }>({
       const loads: number[] = []
       page.on('domcontentloaded', () => loads.push(Date.now()))
       page.on('pageerror', (e) => {
-        if (refusedRequest(`${e.name}: ${e.message}`, baseURL!)) refusals.push({ text: `pageerror: ${e.message}`, at: Date.now() })
+        if (refusedRequest(`${e.name}: ${e.message}`, baseURL!)) refusals.push({ text: `pageerror: ${e.name}: ${e.message}`, at: Date.now() })
         else errors.push(`pageerror: ${e.message}`)
       })
       page.on('console', (m) => {

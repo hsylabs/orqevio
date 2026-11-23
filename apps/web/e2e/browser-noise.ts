@@ -37,7 +37,8 @@ export function refusedRequest(text: string, origin: string) {
 
 /**
  * The refusals that no new document of the page explains: WebKit reports one just before the next
- * document loads, so its DOMContentLoaded follows within moments. One with no load around it is
+ * document loads, so its DOMContentLoaded follows within moments. The report and the load reach
+ * the test separately, so a load up to a second before counts too. One with no load around it is
  * reported as the error it would be.
  */
 export const unexplainedRefusals = (refusals: Refusal[], loads: number[]) =>
