@@ -14,6 +14,7 @@ import { FormatMenu } from './FormatMenu'
 import { Mentions, SlashCommands } from './extensions'
 import { documentExtensions } from './markdown'
 import { SuggestionMenu } from './SuggestionMenu'
+import { TableControls } from './TableControls'
 import { type MenuItem, createSuggestionStore } from './suggestion-store'
 import '../../../styles/editor.css'
 
@@ -255,6 +256,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
     <div className={cn('relative', className)}>
       <EditorContent editor={editor} />
       {editor && <FormatMenu editor={editor} />}
+      {editor && <TableControls editor={editor} />}
       <SuggestionMenu store={slashStore} emptyLabel={t('editor.noBlocks')} />
       <SuggestionMenu store={mentionStore} emptyLabel={t('editor.mentionHint')} />
       <input
