@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { useReturnFocus } from '../../components/ui/return-focus'
 import { patch } from '../../lib/api'
+import { keepOpenWhileConverting } from '../../lib/ime'
 import { useSearch } from '../../lib/queries'
 import { applyTheme } from '../../lib/theme'
 import { lockVault, useVaultLocked } from '../vault/session'
@@ -56,6 +57,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         <D.Content
           aria-label={t('palette.label')}
           onCloseAutoFocus={returnFocus}
+          onEscapeKeyDown={keepOpenWhileConverting}
           className="fixed top-[14vh] left-1/2 z-50 w-[calc(100vw-32px)] max-w-[620px] -translate-x-1/2 overflow-hidden rounded-[18px] border border-line bg-sheet shadow-lg outline-none data-[state=open]:animate-[pop_0.18s_var(--ease-out-quint)]"
         >
           <D.Title className="sr-only">{t('palette.title')}</D.Title>

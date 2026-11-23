@@ -80,21 +80,39 @@ test('the Enter or Escape that ends a conversion stays in the field: cards, colu
   await expect(cardTitle).toHaveValue('書類確認確認')
   await page.keyboard.press('Enter')
   expect(await focused(cardTitle)).toBe(false)
+  // The sheet keeps the board out of reach while it is open: closed, the board shows the new title.
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(todo.getByRole('button', { name: '書類確認確認' })).toBeVisible()
+  await todo.getByRole('button', { name: '書類確認確認' }).click()
 
   await page.getByRole('button', { name: '+ Añadir' }).click()
   await page.getByRole('button', { name: 'Añadir elemento' }).click()
   const item = page.getByLabel('Nuevo elemento')
+  // The sheet closes on Escape anywhere in it, but not on the one that drops a conversion.
   for (const style of STYLES) {
     await convert(page, '印鑑', 'Escape', style)
     await expect(item).toBeVisible()
+    await expect(page.getByRole('dialog')).toBeVisible()
   }
   await page.keyboard.press('Enter')
   await expect(page.getByRole('checkbox', { name: '印鑑印鑑' })).toBeVisible()
 })
 
-test('the Enter that ends a conversion stays in the title of a page', async ({ page }) => {
+test('the Enter that ends a conversion stays in the title of a page, and its Escape in a dialog', async ({ page }) => {
   await openNewWorkspace(page, 'Teclado japonés páginas E2E')
+
+  // A dialog closes on Escape, but not on the one that drops a conversion in its field.
+  await page.getByRole('button', { name: 'Nuevo proyecto' }).first().click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Nombre').click()
+  for (const style of STYLES) {
+    await convert(page, '計', 'Escape', style)
+    await expect(dialog).toBeVisible()
+  }
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+
   await createProject(page, '計画')
   await page.getByRole('button', { name: 'Nueva página en 計画' }).click({ force: true })
   await page.waitForURL(/\/d\//)

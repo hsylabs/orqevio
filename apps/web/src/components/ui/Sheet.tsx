@@ -2,6 +2,7 @@ import { Dialog as D } from 'radix-ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../lib/cn'
+import { keepOpenWhileConverting } from '../../lib/ime'
 import { useReturnFocus } from './return-focus'
 
 /** Right-hand drawer built on the accessible Radix dialog. */
@@ -25,6 +26,7 @@ export function Sheet({ open, onOpenChange, title, children, width = 'max-w-[640
             if (e.currentTarget instanceof HTMLElement) e.currentTarget.focus()
           }}
           onCloseAutoFocus={returnFocus}
+          onEscapeKeyDown={keepOpenWhileConverting}
           // A notice's action (undo what was just deleted in it) leaves the sheet open.
           onPointerDownOutside={(e) => {
             if (e.target instanceof Element && e.target.closest('[data-sonner-toaster]')) e.preventDefault()

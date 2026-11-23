@@ -10,3 +10,11 @@ export function isConverting(event: KeyboardEvent | ReactKeyboardEvent) {
   const key = 'nativeEvent' in event ? event.nativeEvent : event
   return key.isComposing || key.keyCode === 229
 }
+
+/**
+ * For a dialog, a sheet or a popover, which closes on Escape anywhere in it: the Escape that drops
+ * a conversion in one of its fields leaves it open.
+ */
+export function keepOpenWhileConverting(event: KeyboardEvent) {
+  if (isConverting(event)) event.preventDefault()
+}

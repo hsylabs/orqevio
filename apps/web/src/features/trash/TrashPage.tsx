@@ -12,6 +12,7 @@ import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from '../../components/u
 import { Tooltip } from '../../components/ui/Tooltip'
 import { useConfirm } from '../../components/ui/confirm'
 import { errorMessage } from '../../lib/api'
+import { isConverting } from '../../lib/ime'
 import { cn } from '../../lib/cn'
 import { bytes, dateTime, formatList, relativeTime } from '../../lib/format'
 import { useTrash, useTrashTree } from '../../lib/queries'
@@ -101,7 +102,7 @@ export function TrashPage() {
   useEffect(() => {
     if (selected.size === 0) return
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector('[role="dialog"],[role="alertdialog"],[role="menu"]')) return
+      if (e.key !== 'Escape' || isConverting(e) || e.defaultPrevented || document.querySelector('[role="dialog"],[role="alertdialog"],[role="menu"]')) return
       clear()
     }
     document.addEventListener('keydown', onKey)
