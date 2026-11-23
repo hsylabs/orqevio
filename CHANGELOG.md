@@ -18,6 +18,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
   Enter and Escape typed on their own work as before.
 - **A connection that breaks off in the middle of an answer** now says «There's no connection to the server», as when nothing arrives at all, instead of «Something went wrong».
+- **A column's menu:** **Rename** and **Add a card** open their field ready to type in. The focus went back to the menu's button, so what you typed went nowhere until you clicked the field.
 
 ## [1.4.0] - 2026-11-21
 
