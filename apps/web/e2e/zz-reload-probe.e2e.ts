@@ -32,7 +32,7 @@ test('probe: a reload cuts the app own API requests in flight', async ({ page, b
     upstream.on('error', () => socket.destroy())
     socket.on('error', () => upstream.destroy())
   })
-  await new Promise<void>((resolve) => server.listen(PORT, '127.0.0.1', resolve))
+  await new Promise<void>((resolve) => server.listen(PORT, resolve))
   const log: string[] = []
   page.on('pageerror', (e) => log.push(`pageerror: ${e.name}: ${e.message}`))
   page.on('console', (m) => {
