@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core'
+import { closeHistory } from '@tiptap/pm/history'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import { type EditorState, Selection, type Transaction } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
@@ -102,6 +103,8 @@ function tidy(tr: Transaction, pos: number, header: boolean, aligns?: Array<Alig
   const { tableHeader, tableCell } = rect.table.type.schema.nodes
   for (let row = 0; row < rect.map.height; row++) {
     for (const at of cellsOf(rect, { row })) {
+      // A cell that spans rows (pasted from a page) belongs to the row it starts in.
+      if (rect.map.findCell(at).top !== row) continue
       const node = rect.table.nodeAt(at)!
       const type = !header ? node.type : row === 0 ? tableHeader! : tableCell!
       const col = rect.map.findCell(at).left
@@ -123,16 +126,21 @@ function cursorIn(tr: Transaction, pos: number, row: number, col: number) {
 
 type Props = { tr: Transaction; state: EditorState; dispatch?: (tr: Transaction) => void }
 
+/** A change to the table at `pos`, undone on its own: not with what was typed just before or after it, nor with the next change. */
 function change(editor: Editor, pos: number, build: (tr: Transaction, rect: TableRect, props: Props) => boolean) {
-  return editor
+  const done = editor
     .chain()
     .focus(undefined, { scrollIntoView: false })
     .command((props) => {
       const rect = rectAt(props.tr.doc, pos)
-      return rect ? build(props.tr, rect, props) : false
+      if (!rect) return false
+      closeHistory(props.tr)
+      return build(props.tr, rect, props)
     })
     .scrollIntoView()
     .run()
+  if (done) editor.view.dispatch(closeHistory(editor.state.tr))
+  return done
 }
 
 const aligns = (rect: TableRect) => Array.from({ length: rect.map.width }, (_, col) => columnAlign(rect, col))
@@ -174,9 +182,15 @@ export function canMoveRow(spot: Pick<TableSpot, 'header' | 'rows'>, from: numbe
 
 /** Moves a row, and selects it where it went. */
 export function moveRow(editor: Editor, pos: number, from: number, to: number) {
-  return change(editor, pos, (_tr, rect, { state, dispatch }) => {
-    if (!canMoveRow({ header: headerRow(rect), rows: rect.map.height }, from, to)) return false
-    return moveTableRow({ from, to, pos: pos + 1, select: true })(state, dispatch)
+  return change(editor, pos, (tr, rect, { state, dispatch }) => {
+    const header = headerRow(rect)
+    if (!canMoveRow({ header, rows: rect.map.height }, from, to)) return false
+    // The move finds its rows from the selection: it has to be in this table.
+    cursorIn(tr, pos, from, 0)
+    if (!moveTableRow({ from, to, pos: pos + 1, select: true })(state, dispatch)) return false
+    // Rows spanned by a pasted cell move together, and could take the header's place.
+    tidy(tr, pos, header)
+    return true
   })
 }
 
@@ -184,8 +198,9 @@ export const canMoveColumn = (spot: Pick<TableSpot, 'columns'>, from: number, to
 
 /** Moves a column, and selects it where it went. */
 export function moveColumn(editor: Editor, pos: number, from: number, to: number) {
-  return change(editor, pos, (_tr, rect, { state, dispatch }) => {
+  return change(editor, pos, (tr, rect, { state, dispatch }) => {
     if (!canMoveColumn({ columns: rect.map.width }, from, to)) return false
+    cursorIn(tr, pos, 0, from)
     return moveTableColumn({ from, to, pos: pos + 1, select: true })(state, dispatch)
   })
 }

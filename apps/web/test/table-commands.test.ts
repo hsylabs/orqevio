@@ -170,6 +170,52 @@ describe('table controls', () => {
     expect(spotOf(open('Sin tabla').state)).toBe(null)
   })
 
+  it('undoes quick changes one at a time, and apart from what was typed', () => {
+    const editor = open(['| a | b |', '| --- | --- |', '| 1 | 2 |'].join('\n'))
+    const pos = cursorAt(editor, 1, 0)
+    insertRow(editor, pos, 2, 0)
+    insertRow(editor, pos, 3, 0)
+    expect(cells(editor)).toHaveLength(4)
+    editor.commands.undo()
+    expect(cells(editor)).toHaveLength(3)
+    cursorAt(editor, 1, 0)
+    type(editor, 'x')
+    deleteRows(editor, pos, 2, 3)
+    editor.commands.undo()
+    expect(cells(editor)).toEqual([['a', 'b'], ['x1', '2'], ['', '']])
+  })
+
+  it('moves rows and columns with the cursor elsewhere, as a handle does', () => {
+    const editor = open(`Antes\n\n${TABLE}`)
+    const pos = tablePos(editor)
+    editor.commands.setTextSelection(1)
+    expect(moveRow(editor, pos, 2, 1)).toBe(true)
+    editor.commands.setTextSelection(1)
+    expect(moveColumn(editor, pos, 1, 0)).toBe(true)
+    expect(cells(editor)).toEqual([['Precio', 'Fruta'], ['3', 'Uva'], ['2', 'Pera']])
+  })
+
+  it('keeps one header row with a cell that spans two rows, pasted from a page', () => {
+    const editor = new Editor({ extensions: documentExtensions(), content: '<table><tr><th rowspan="2">A</th><th>B</th></tr><tr><td>C</td></tr><tr><td>D</td><td>E</td></tr></table>' })
+    editors.push(editor)
+    const pos = tablePos(editor)
+    const types = () => {
+      const rows: string[][] = []
+      editor.state.doc.nodeAt(pos)!.forEach((row) => {
+        const names: string[] = []
+        row.forEach((cell) => names.push(cell.type.name))
+        rows.push(names)
+      })
+      return rows
+    }
+    cursorAt(editor, 2, 0)
+    alignColumns(editor, pos, 0, 2, 'center')
+    expect(types()[0]).toEqual(['tableHeader', 'tableHeader'])
+    // Moving the last row up takes it above both rows the header cell spans: it becomes the header.
+    moveRow(editor, pos, 2, 1)
+    expect(types()).toEqual([['tableHeader', 'tableHeader'], ['tableCell', 'tableCell'], ['tableCell']])
+  })
+
   it('undoes each change in one step', () => {
     const editor = open()
     const pos = cursorAt(editor, 1, 0)

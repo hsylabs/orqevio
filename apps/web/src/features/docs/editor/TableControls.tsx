@@ -1,5 +1,6 @@
 import type { Editor } from '@tiptap/core'
-import { type SelectionBookmark, TextSelection } from '@tiptap/pm/state'
+import { type SelectionBookmark, TextSelection, type Transaction } from '@tiptap/pm/state'
+import { TableMap } from '@tiptap/pm/tables'
 import { useEditorState } from '@tiptap/react'
 import {
   ArrowDown,
@@ -71,9 +72,15 @@ export function TableControls({ editor }: { editor: Editor }) {
     }),
   })
   const [hover, setHover] = useState<Hover | null>(null)
+  const hoverRef = useRef<Hover | null>(null)
+  hoverRef.current = hover
   const [open, setOpen] = useState<Open>(null)
   const openRef = useRef<Open>(null)
   openRef.current = open
+  /** The bar's menu is closing: the bar stays until the menu has put the focus back. */
+  const [barClosing, setBarClosing] = useState(false)
+  /** Whether the bar's menu was opened from the keyboard, so closing it goes back to its button. */
+  const byKeyboard = useRef(false)
   const [, redraw] = useReducer((n: number) => n + 1, 0)
   const leaving = useRef<ReturnType<typeof setTimeout>>(undefined)
   /** Whether a menu item ran, so the menu leaves the focus in the editor; and the selection to bring back if none did. */
@@ -88,9 +95,24 @@ export function TableControls({ editor }: { editor: Editor }) {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(redraw)
     }
-    const changed = ({ transaction }: { transaction: { docChanged: boolean } }) => {
-      // The handles were for a row that may have moved: they come back with the pointer.
-      if (transaction.docChanged && !openRef.current) setHover(null)
+    const changed = ({ transaction }: { transaction: Transaction }) => {
+      if (transaction.docChanged) {
+        // What a handle's menu acts on, and the selection it gives back, follow the change: an
+        // agent or another tab can change the page while the menu is open.
+        before.current = before.current?.map(transaction.mapping) ?? null
+        const h = hoverRef.current
+        if (openRef.current === 'row' || openRef.current === 'col') {
+          const pos = h && transaction.mapping.map(h.pos)
+          if (h && pos !== null && infoAt(transaction.doc, pos)) setHover({ ...h, pos })
+          else {
+            setOpen(null)
+            setHover(null)
+          }
+        } else {
+          // The handles were for a row that may have moved: they come back with the pointer.
+          setHover(null)
+        }
+      }
       later()
     }
     editor.on('transaction', changed)
@@ -123,11 +145,15 @@ export function TableControls({ editor }: { editor: Editor }) {
       const at = cellAt(editor.view, cell as HTMLElement)
       setHover((prev) => (at && prev && prev.pos === at.pos && prev.row === at.row && prev.col === at.col ? prev : at))
     }
-    // Alt+F10 goes to the bar, as in other editors; Escape comes back.
+    // Alt+F10 goes to the bar, as in other editors; Escape comes back. Selected text gives way to it.
     const key = (event: globalThis.KeyboardEvent) => {
       if (event.key !== 'F10' || !event.altKey || !spotOf(editor.state)) return
       event.preventDefault()
-      bar.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus()
+      const { selection } = editor.state
+      if (selection instanceof TextSelection && !selection.empty) editor.commands.setTextSelection(selection.head)
+      const first = () => bar.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus()
+      if (bar.current) first()
+      else requestAnimationFrame(() => requestAnimationFrame(first))
     }
     dom.addEventListener('pointermove', move)
     dom.addEventListener('pointerleave', leave)
@@ -141,8 +167,9 @@ export function TableControls({ editor }: { editor: Editor }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor])
 
-  // A screen reader hears how to reach the bar once, on coming into a table.
-  const inTable = state.focused && state.spot ? state.spot.pos : null
+  // A screen reader hears how to reach the bar once, on coming into a table: not on coming back from the bar.
+  const inside = state.focused || open !== null || Boolean(root.current?.contains(document.activeElement))
+  const inTable = inside && state.spot ? state.spot.pos : null
   useEffect(() => setSaid(inTable === null ? '' : t('editor.table.hint')), [inTable === null, t])
 
   function stay() {
@@ -171,21 +198,53 @@ export function TableControls({ editor }: { editor: Editor }) {
     return { base, table, top: rect.top, bottom: rect.bottom, left: Math.max(rect.left, box.left), right: Math.min(rect.right, box.right) }
   }
 
-  function closeFocus(event: Event, handle: boolean) {
+  function menuChange(o: boolean, which: Open) {
+    setOpen((current) => (o ? which : current === which ? null : current))
+    if (!o && which === 'bar') setBarClosing(true)
+  }
+
+  /** Where the focus goes as a menu closes: what was there stays until then, or it would have nowhere to go. */
+  function closeFocus(event: Event, which: Open) {
     const ran = acted.current
     const bookmark = before.current
+    const keyboard = byKeyboard.current
     acted.current = false
     before.current = null
-    // An action leaves the cursor where it worked. A handle's menu closed without one gives back the selection it took.
-    if (ran) event.preventDefault()
-    if (!handle) return
-    // The handles go once the menu has put the focus where it goes: with them gone, it would have nowhere to.
+    byKeyboard.current = false
+    if (which === 'bar') {
+      setBarClosing(false)
+      // After an action, the editor, where it worked. Closed without one: the menu's button from the keyboard, the editor with a pointer.
+      if (!ran && keyboard) return
+      event.preventDefault()
+      editor.view.focus()
+      return
+    }
     setHover(null)
-    if (ran) return
     event.preventDefault()
-    const chain = editor.chain().focus(undefined, { scrollIntoView: false })
-    if (bookmark) chain.command(({ tr }) => (tr.setSelection(bookmark.resolve(tr.doc)), true))
-    chain.run()
+    if (ran) return editor.view.focus()
+    // A handle's menu closed without an action gives back the selection it took.
+    editor
+      .chain()
+      .focus(undefined, { scrollIntoView: false })
+      .command(({ tr }) => {
+        try {
+          if (bookmark) tr.setSelection(bookmark.resolve(tr.doc))
+        } catch {
+          // The page changed under the menu: the cursor stays where the change left it.
+        }
+        return true
+      })
+      .run()
+  }
+
+  /** A cell on screen by its row and column in the table, merged cells (pasted from a page) included. */
+  function cellDom(pos: number, row: number, col: number) {
+    const table = editor.state.doc.nodeAt(pos)
+    if (table?.type.spec.tableRole !== 'table') return null
+    const map = TableMap.get(table)
+    const at = map.map[row * map.width + col]
+    const dom = at === undefined ? null : editor.view.nodeDOM(pos + 1 + at)
+    return dom instanceof HTMLElement ? dom : null
   }
 
   const act = (run: () => unknown) => () => {
@@ -194,8 +253,10 @@ export function TableControls({ editor }: { editor: Editor }) {
   }
 
   const spot = state.spot
-  const showBar = Boolean(spot && !state.selectingText && (state.focused || open === 'bar' || root.current?.contains(document.activeElement)))
+  const showBar = Boolean(spot && !state.selectingText && (state.focused || open === 'bar' || barClosing || root.current?.contains(document.activeElement)))
   const plusAt = hover?.pos ?? (showBar ? spot!.pos : null)
+  // With a menu open, a click outside it only closes it, as anywhere else.
+  const live = open === null ? 'pointer-events-auto' : ''
 
   return (
     <div ref={root} className="pointer-events-none absolute inset-0 z-30 print:hidden">
@@ -247,13 +308,15 @@ export function TableControls({ editor }: { editor: Editor }) {
         ref={bar}
         role="toolbar"
         aria-label={t('editor.table.toolbar')}
+        // Its Escape goes back to the text, and doesn't close the card or dialog it is in.
+        data-own-escape
         aria-keyshortcuts="Alt+F10"
         onKeyDown={onKeyDown}
         onFocus={redraw}
         onBlur={redraw}
         // A click keeps the cursor in the editor, on a phone the keyboard too. Not in the open menu.
         onMouseDown={(e) => e.currentTarget.contains(e.target as Node) && e.preventDefault()}
-        className="animate-pop pointer-events-auto absolute flex items-center gap-0.5 rounded-[12px] border border-line bg-surface p-1 shadow-lg"
+        className={cn('animate-pop absolute flex items-center gap-0.5 rounded-[12px] border border-line bg-surface p-1 shadow-lg', live)}
         style={{ top: y - g.base.top, left: g.left - g.base.left }}
       >
         <Tool label={t('editor.table.rowAbove')} disabled={!canInsertRow(s, s.top)} onClick={() => insertRow(editor, s.pos, s.top, s.left)}>
@@ -275,13 +338,17 @@ export function TableControls({ editor }: { editor: Editor }) {
           </Tool>
         ))}
         <span className="mx-0.5 h-5 w-px bg-line" />
-        <MenuRoot open={open === 'bar'} onOpenChange={(o) => setOpen(o ? 'bar' : null)}>
+        <MenuRoot open={open === 'bar'} onOpenChange={(o) => menuChange(o, 'bar')}>
           <MenuTrigger asChild>
-            <Tool label={t('editor.table.more')}>
+            <Tool
+              label={t('editor.table.more')}
+              onPointerDown={() => (byKeyboard.current = false)}
+              onKeyDown={(e) => (byKeyboard.current = ['Enter', ' ', 'ArrowDown'].includes(e.key))}
+            >
               <Ellipsis />
             </Tool>
           </MenuTrigger>
-          <MenuContent align="start" onCloseAutoFocus={(e) => closeFocus(e, false)}>
+          <MenuContent align="start" onCloseAutoFocus={(e) => closeFocus(e, 'bar')}>
             <MenuItem icon={<ArrowUp />} disabled={rows !== 1 || !canMoveRow(s, s.top, s.top - 1)} onSelect={act(() => moveRow(editor, s.pos, s.top, s.top - 1))}>
               {t('editor.table.moveRowUp')}
             </MenuItem>
@@ -314,29 +381,30 @@ export function TableControls({ editor }: { editor: Editor }) {
     const info = infoAt(editor.state.doc, h.pos)
     const g = measure(h.pos)
     const row = g?.table.rows[h.row]
-    const cell = g?.table.rows[0]?.cells[h.col]
+    const cell = cellDom(h.pos, 0, h.col)
     if (!info || !g || !row || !cell) return null
     const r = row.getBoundingClientRect()
     const c = cell.getBoundingClientRect()
     const columnInView = c.right > g.left && c.left < g.right
-    const take = (line: { row: number } | { col: number }) => () => {
+    // A main click selects what the menu acts on; another button opens no menu.
+    const take = (line: { row: number } | { col: number }) => (event: { button: number; ctrlKey: boolean }) => {
+      if (event.button !== 0 || event.ctrlKey) return
       before.current = editor.state.selection.getBookmark()
       selectLine(editor, h.pos, line)
     }
-    const handle = 'pointer-events-auto absolute grid place-items-center rounded-[6px] border border-line bg-surface text-ink-3 shadow-sm hover:bg-hover hover:text-ink data-[state=open]:bg-accent-soft data-[state=open]:text-accent [&_svg]:size-[13px]'
+    const handle = 'absolute grid place-items-center rounded-[6px] border border-line bg-surface text-ink-3 shadow-sm hover:bg-hover hover:text-ink data-[state=open]:bg-accent-soft data-[state=open]:text-accent [&_svg]:size-[13px]'
     const hold = { onPointerEnter: stay, onPointerLeave: leave }
-    const closed = (o: boolean, which: Open) => setOpen(o ? which : null)
 
     return (
       <>
-        <MenuRoot open={open === 'row'} onOpenChange={(o) => closed(o, 'row')}>
+        <MenuRoot open={open === 'row'} onOpenChange={(o) => menuChange(o, 'row')}>
           <MenuTrigger asChild>
             <button
               type="button"
               tabIndex={-1}
               aria-label={t('editor.table.rowMenu')}
               title={t('editor.table.rowMenu')}
-              className={handle}
+              className={cn(handle, live)}
               style={{ width: HANDLE - 6, height: HANDLE, left: g.left - g.base.left - (HANDLE - 6) / 2, top: r.top - g.base.top + r.height / 2 - HANDLE / 2 }}
               onPointerDown={take({ row: h.row })}
               {...hold}
@@ -344,7 +412,7 @@ export function TableControls({ editor }: { editor: Editor }) {
               <GripVertical />
             </button>
           </MenuTrigger>
-          <MenuContent align="start" side="right" onCloseAutoFocus={(e) => closeFocus(e, true)}>
+          <MenuContent align="start" side="right" onCloseAutoFocus={(e) => closeFocus(e, 'row')}>
             <MenuItem icon={<BetweenHorizontalStart />} disabled={!canInsertRow(info, h.row)} onSelect={act(() => insertRow(editor, h.pos, h.row, 0))}>
               {t('editor.table.rowAbove')}
             </MenuItem>
@@ -364,14 +432,14 @@ export function TableControls({ editor }: { editor: Editor }) {
           </MenuContent>
         </MenuRoot>
         {columnInView && (
-          <MenuRoot open={open === 'col'} onOpenChange={(o) => closed(o, 'col')}>
+          <MenuRoot open={open === 'col'} onOpenChange={(o) => menuChange(o, 'col')}>
             <MenuTrigger asChild>
               <button
                 type="button"
                 tabIndex={-1}
                 aria-label={t('editor.table.columnMenu')}
                 title={t('editor.table.columnMenu')}
-                className={handle}
+                className={cn(handle, live)}
                 style={{
                   width: HANDLE,
                   height: HANDLE - 6,
@@ -384,7 +452,7 @@ export function TableControls({ editor }: { editor: Editor }) {
                 <GripHorizontal />
               </button>
             </MenuTrigger>
-            <MenuContent align="start" onCloseAutoFocus={(e) => closeFocus(e, true)}>
+            <MenuContent align="start" onCloseAutoFocus={(e) => closeFocus(e, 'col')}>
               <MenuItem icon={<BetweenVerticalStart />} onSelect={act(() => insertColumn(editor, h.pos, h.col, 0))}>
                 {t('editor.table.columnLeft')}
               </MenuItem>
@@ -423,7 +491,7 @@ export function TableControls({ editor }: { editor: Editor }) {
     const g = measure(pos)
     if (!info || !g) return null
     const button =
-      'pointer-events-auto absolute grid place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 [&_svg]:size-[13px]'
+      'absolute grid place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 [&_svg]:size-[13px]'
     const hold = { onPointerEnter: stay, onPointerLeave: leave, onMouseDown: (e: { preventDefault(): void }) => e.preventDefault() }
     return (
       <>
@@ -432,7 +500,7 @@ export function TableControls({ editor }: { editor: Editor }) {
           tabIndex={-1}
           aria-label={t('editor.table.addRow')}
           title={t('editor.table.addRow')}
-          className={button}
+          className={cn(button, live)}
           style={{ left: g.left - g.base.left, top: g.bottom - g.base.top + 2, width: g.right - g.left, height: 16 }}
           onClick={() => insertRow(editor, pos, info.rows, 0)}
           {...hold}
@@ -444,7 +512,7 @@ export function TableControls({ editor }: { editor: Editor }) {
           tabIndex={-1}
           aria-label={t('editor.table.addColumn')}
           title={t('editor.table.addColumn')}
-          className={button}
+          className={cn(button, live)}
           style={{ left: g.right - g.base.left + 2, top: g.top - g.base.top, width: 16, height: g.bottom - g.top }}
           onClick={() => insertColumn(editor, pos, info.columns, 0)}
           {...hold}

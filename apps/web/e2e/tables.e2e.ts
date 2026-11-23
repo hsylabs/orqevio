@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, test } from './helpers'
+import { createProject, expect, openNewWorkspace, test } from './helpers'
 
 // Editing a table as in Notion: a bar above it, a handle on each row and column, a «+» at the
 // edges. What they make is a Markdown table, the same one agents and GitHub read.
@@ -62,6 +62,22 @@ test('edit a table from its bar, with the mouse and the keyboard', async ({ page
   await page.keyboard.press('Alt+F10')
   await page.keyboard.press('Escape')
   await expect(editor).toBeFocused()
+
+  // Its menu closed without choosing: from the keyboard, back to its button; with the mouse, back to the text.
+  const more = bar.getByRole('button', { name: 'Más opciones de la tabla' })
+  await page.keyboard.press('Alt+F10')
+  await page.keyboard.press('End')
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('menuitem', { name: 'Eliminar tabla' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(more).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(editor).toBeFocused()
+  await more.click()
+  await expect(page.getByRole('menuitem', { name: 'Eliminar tabla' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(editor).toBeFocused()
+  await expect(bar).toBeVisible()
 
   // Each change is one step back.
   await page.keyboard.press('ControlOrMeta+z')
@@ -135,6 +151,28 @@ test('edit a table from the handles of its rows and columns and its «+»', asyn
   await page.keyboard.type('Origen')
   await expect.poll(rows).toEqual([['Precio', 'Fruta', 'Origen'], ['3', 'Uvas', ''], ['2', 'Pera', ''], ['4', '', '']])
   await page.screenshot({ path: test.info().outputPath('table.png') })
+})
+
+test('in a card, Escape on the bar goes back to the text and leaves the card open', async ({ page }) => {
+  const workspaceId = await openNewWorkspace(page, 'Tablas tarjeta E2E')
+  const boardId = await createProject(page, 'Notas')
+  const columns = ((await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string }> }).columns
+  const card = (await (await page.request.post(`/api/columns/${columns[0]!.id}/cards`, { data: { title: 'Precios', description: TABLE } })).json()) as { id: string }
+  await page.goto(`/w/${workspaceId}/b/${boardId}?card=${card.id}`)
+  const description = page.getByRole('textbox', { name: 'Descripción de la tarjeta' })
+  // In Firefox the first click into a card's description puts the cursor at its start, wherever it
+  // was (it happened before the table controls too); the second lands where it was.
+  const pera = description.locator('td').filter({ hasText: /^Pera$/ })
+  await pera.click()
+  await pera.click()
+  const bar = page.getByRole('toolbar', { name: 'Tabla' })
+  await expect(bar.getByRole('button', { name: 'Insertar fila encima' })).toBeEnabled()
+  await expect(bar).toBeVisible()
+  await page.keyboard.press('Alt+F10')
+  await expect(bar.getByRole('button', { name: 'Insertar fila encima' })).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(description).toBeFocused()
+  await expect(page.getByLabel('Título de la tarjeta')).toHaveValue('Precios')
 })
 
 test.describe('on a phone', () => {
