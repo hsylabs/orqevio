@@ -39,6 +39,8 @@ test('probe: a reload cuts the app own API requests in flight', async ({ page, b
     if (!['log', 'debug', 'info'].includes(m.type())) log.push(`console.${m.type()}: ${m.text()}`)
   })
   page.on('requestfailed', (r) => log.push(`requestfailed: ${r.method()} ${new URL(r.url()).pathname} — ${r.failure()?.errorText}`))
+  page.on('request', (r) => log.push(`request: ${r.method()} ${r.url()}`))
+  page.on('response', (r) => log.push(`response: ${r.status()} ${r.url()}`))
   page.on('framenavigated', (f) => f === page.mainFrame() && log.push(`navigated: ${new URL(f.url()).pathname}`))
 
   // A new tab's first navigation can get lost (see settle in helpers.ts): open a small page first.
@@ -47,13 +49,18 @@ test('probe: a reload cuts the app own API requests in flight', async ({ page, b
     log.push(`=== ${where}: reload while the first API requests wait`)
     const started = page.waitForRequest((r) => new URL(r.url()).pathname.startsWith('/api/'), { timeout: 20_000 })
     await page.goto(`http://localhost:${PORT}${where}`, { waitUntil: 'commit' })
-    await started
+    const ok = await started.then(() => true, () => false)
+    if (!ok) {
+      log.push(`no API request; page: ${page.url()} ${(await page.content().catch(() => '')).slice(0, 600)}`)
+      break
+    }
     await page.waitForTimeout(500)
     log.push('--- reload')
     await page.reload({ waitUntil: 'commit' })
     await page.waitForTimeout(DELAY * 3)
   }
   log.push('=== done')
+  await page.waitForTimeout(100)
   console.log(`PROBE ${process.env.E2E_BROWSER ?? 'chromium'}\n${log.join('\n')}`)
   server.close()
 })
