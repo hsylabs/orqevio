@@ -166,7 +166,9 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
       # The runner's own user, who owns the checkout.
       options: --user 1001
-    timeout-minutes: 20
+    # WebKit is the slowest engine: with the same code its tests have taken from 12 to 18
+    # minutes, and the job about a minute more.
+    timeout-minutes: 30
     env:
       APP_URL: http://localhost:3000
       SETUP_CODE: e2e-setup-code-1234
