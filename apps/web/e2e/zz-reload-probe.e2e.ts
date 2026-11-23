@@ -7,7 +7,7 @@ import { test } from '@playwright/test'
 // response, so the reload always lands while they are in flight.
 const DELAY = 2500
 const PORT = 3100
-let mode: 'headers' | 'body' | 'none' = 'headers'
+let mode: 'headers' | 'body' | 'none' | 'live' = 'headers'
 
 test('probe: a reload cuts the app own API requests in flight', async ({ page, baseURL }) => {
   const target = new URL(baseURL!)
@@ -33,6 +33,11 @@ test('probe: a reload cuts the app own API requests in flight', async ({ page, b
   })
   // Live updates go through a WebSocket: pass it through untouched.
   server.on('upgrade', (req, socket, head) => {
+    if (mode === 'live') {
+      // Hold the live connection open but unanswered: the app's socket stays connecting.
+      setTimeout(() => socket.destroy(), DELAY * 4)
+      return
+    }
     const upstream = net.connect(Number(target.port), '127.0.0.1', () => {
       upstream.write(`${req.method} ${req.url} HTTP/1.1\r\n${Object.entries({ ...req.headers, host: target.host, ...(req.headers.origin ? { origin: target.origin } : {}) }).map(([k, v]) => `${k}: ${v}`).join('\r\n')}\r\n\r\n`)
       upstream.write(head)
@@ -54,7 +59,7 @@ test('probe: a reload cuts the app own API requests in flight', async ({ page, b
 
   // A new tab's first navigation can get lost (see settle in helpers.ts): open a small page first.
   await page.goto(`http://localhost:${PORT}/healthz`)
-  for (const [where, how] of [['/', 'headers'], ['/', 'body'], ['/', 'body']] as const) {
+  for (const [where, how] of [] as ['/', 'headers' | 'body'][]) {
     mode = how
     log.push(`=== ${where}, slow ${how}: reload while the first API requests wait`)
     const started = page.waitForRequest((r) => new URL(r.url()).pathname.startsWith('/api/'), { timeout: 20_000 })
@@ -68,6 +73,18 @@ test('probe: a reload cuts the app own API requests in flight', async ({ page, b
     log.push('--- reload')
     await page.reload({ waitUntil: 'commit' })
     await page.waitForTimeout(DELAY * 3)
+  }
+  // The app's own requests: a reload while its live connection is still connecting.
+  for (const attempt of [1, 2, 3]) {
+    mode = 'live'
+    log.push(`=== reload while the live connection is connecting (${attempt})`)
+    const connecting = page.waitForEvent('websocket', { timeout: 20_000 })
+    await page.goto(`http://localhost:${PORT}/`)
+    await connecting
+    await page.waitForTimeout(500)
+    log.push('--- reload')
+    await page.reload()
+    await page.waitForTimeout(1500)
   }
   // Requests that start while the page is going away, as a live refresh or a reconnection could.
   for (const variant of ['pagehide, caught', 'pagehide, uncaught', 'beforeunload, caught', 'timer during unload, caught'] as const) {
