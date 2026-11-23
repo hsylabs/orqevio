@@ -33,7 +33,6 @@ export async function settle(page: Page, baseURL: string) {
   }
 }
 
-
 /**
  * Test fixture that fails the test on any uncaught page error or console error.
  * When a test fails, it also reports the page's load state and the requests still
