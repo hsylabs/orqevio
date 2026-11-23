@@ -54,14 +54,16 @@ export async function api<T = unknown>(method: Method, path: string, body?: unkn
     init.body = JSON.stringify(body)
   }
   let res: Response
+  let text: string
   try {
     res = await fetch(`/api${path}`, init)
+    if (res.status === 204) return undefined as T
+    // A body cut short after the headers came is no connection too.
+    text = await res.text()
   } catch (error) {
     if ((error as Error).name === 'AbortError') throw error
     throw new ApiError(0, 'network', 'No connection to the server')
   }
-  if (res.status === 204) return undefined as T
-  const text = await res.text()
   const data = text ? safeJson(text) : null
   if (!res.ok) {
     const err = (data as ApiErrorBody | null)?.error
