@@ -6,6 +6,7 @@ import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 
 import { Trans, useTranslation } from 'react-i18next'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from '../../components/ui/Menu'
 import { cn } from '../../lib/cn'
+import { isConverting } from '../../lib/ime'
 import { SortableCard } from './CardItem'
 
 interface ColumnProps {
@@ -53,10 +54,14 @@ export function BoardColumn({ column, cards, labels, dragDisabled, filtered, onO
         {renaming ? (
           <input
             autoFocus
+            // Opened from the column's menu, it takes the focus when the menu closes (see MenuContent),
+            // instead of the menu's button: what is typed goes into it.
+            data-autofocus
             value={name}
             onChange={(e) => setName(e.target.value)}
             onBlur={commitRename}
             onKeyDown={(e) => {
+              if (isConverting(e)) return
               if (e.key === 'Enter') void commitRename()
               if (e.key === 'Escape') {
                 setName(column.name)
@@ -162,6 +167,7 @@ function Composer({ onSubmit, onClose }: { onSubmit: (title: string) => Promise<
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (isConverting(e)) return
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       void submit()
@@ -173,6 +179,8 @@ function Composer({ onSubmit, onClose }: { onSubmit: (title: string) => Promise<
       <textarea
         ref={ref}
         autoFocus
+        // Opened from the column's menu too: see the name field above.
+        data-autofocus
         rows={2}
         value={title}
         onChange={(e) => setTitle(e.target.value)}

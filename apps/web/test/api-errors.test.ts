@@ -62,3 +62,24 @@ describe('the message for a session that ended', () => {
     expect(errorMessage(new ApiError(401, 'unauthorized', 'Authentication required'))).toBe('Tu sesión ha terminado. Vuelve a entrar.')
   })
 })
+
+describe('an answer cut short', () => {
+  /** An answer whose headers came, but whose body broke off with `error`. */
+  const cut = (error: Error, status = 200) => async () => new Response(new ReadableStream({ start: (body) => body.error(error) }), { status })
+
+  it('after its headers came is told as no connection, as when nothing came', async () => {
+    for (const status of [200, 500]) {
+      vi.stubGlobal('fetch', cut(new TypeError('Load failed'), status))
+      const error = await get('/boards/x').catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(ApiError)
+      expect((error as ApiError).code).toBe('network')
+      expect(errorMessage(error)).toBe(errors.codes.network)
+    }
+  })
+
+  it('because the request was called off is passed on as such', async () => {
+    const aborted = new DOMException('The operation was aborted.', 'AbortError')
+    vi.stubGlobal('fetch', cut(aborted))
+    await expect(get('/boards/x')).rejects.toBe(aborted)
+  })
+})

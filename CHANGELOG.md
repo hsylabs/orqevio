@@ -6,6 +6,21 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-11-23
+
+### Fixed
+- **Japanese, Chinese and Korean typing.** The Enter that accepts a conversion of the input method, or the Escape that drops it, belongs to the conversion. It no longer saves or creates what you are typing, leaves the field, or closes the open card, a dialog, a menu or the search. This was most likely in Safari, in:
+  - the titles of cards and pages;
+  - new cards and columns, and column names;
+  - checklist items;
+  - the link field of the editor;
+  - the comment box.
+
+  Enter and Escape typed on their own work as before.
+- **A connection that breaks off in the middle of an answer** now says «There's no connection to the server», as when nothing arrives at all, instead of «Something went wrong».
+- **A column's menu:** **Rename** and **Add a card** open their field ready to type in. The focus went back to the menu's button, so what you typed went nowhere until you clicked the field.
+- **Deleting a comment** from its menu leaves the focus on **Undo**, as meant, also when the copy answers at once. It sometimes went back to the menu's button instead.
+
 ## [1.4.0] - 2026-11-21
 
 ### Added

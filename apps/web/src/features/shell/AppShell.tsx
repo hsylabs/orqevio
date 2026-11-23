@@ -6,6 +6,7 @@ import { Avatar } from '../../components/ui/Avatar'
 import { ApiError } from '../../lib/api'
 import { eventSentence } from '../../lib/activity'
 import { cn } from '../../lib/cn'
+import { isConverting } from '../../lib/ime'
 import { useMe, useOverview } from '../../lib/queries'
 import { setAgentToast, useRealtime } from '../../lib/realtime'
 import { applyTheme, localPref, setLocalPref, storedTheme } from '../../lib/theme'
@@ -69,7 +70,7 @@ export function AppShell() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey
-      if (e.key === 'Escape' && !isDesktop()) {
+      if (e.key === 'Escape' && !isConverting(e) && !isDesktop()) {
         setSidebarOpen(false)
       }
       if (mod && e.key.toLowerCase() === 'k') {

@@ -29,6 +29,7 @@ import { HistoryDialog } from '../history/HistoryDialog'
 import { MovePageDialog } from './MovePageDialog'
 import { DownloadDialog, PrintView, downloadPage, picturesReady } from './PageExport'
 import { useRestore } from '../trash/restore'
+import { isConverting } from '../../lib/ime'
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error'
 
@@ -541,6 +542,7 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
                   titleTimer.current = setTimeout(() => void saveMeta({ title: next.trim() }), 500)
                 }}
                 onKeyDown={(e) => {
+                  if (isConverting(e)) return
                   if (e.key === 'Enter' || (e.key === 'ArrowDown' && e.currentTarget.selectionStart === title.length)) {
                     e.preventDefault()
                     const editor = editorRef.current

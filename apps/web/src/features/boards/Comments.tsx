@@ -16,6 +16,7 @@ import { restoreFromTrash } from '../../lib/trash'
 import { Editor } from '../docs/editor/Editor'
 import { markdownToHtml } from '../docs/editor/markdown-html'
 import { useWorkspace } from '../shell/workspace'
+import { isConverting } from '../../lib/ime'
 
 /**
  * Text written and not sent yet, by person and card (a new comment) or comment (one being edited,
@@ -44,7 +45,7 @@ const refresh = (cardId: string, boardId: string) =>
 
 /** Ctrl+Enter (⌘+Enter) sends, before the editor takes it for a line break. */
 const sendOn = (send: () => void) => (event: KeyboardEvent) => {
-  if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return
+  if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey) || isConverting(event)) return
   event.preventDefault()
   event.stopPropagation()
   send()
@@ -87,6 +88,8 @@ export function Comments({ card }: { card: CardDetailDTO }) {
       <Composer card={card} onSent={() => setRemoved(null)} />
       {removed && (
         <Removed
+          // A new one for each deletion, so that the menu that deleted it sees it as new.
+          key={removed}
           trashId={removed}
           card={card}
           onDone={(back) => {
@@ -128,6 +131,9 @@ function Removed({ trashId, card, onDone }: { trashId: string; card: CardDetailD
       <button
         ref={undo}
         type="button"
+        // Deleted from the comment's menu, it may appear before the menu has closed: the menu then
+        // gives it the focus as it closes (see MenuContent), instead of to its own button.
+        data-autofocus
         // Said with it when it takes the focus: the message above it may not be read when it appears.
         aria-describedby={said}
         className="ml-auto rounded-[8px] bg-ink px-2.5 py-1 text-[12px] font-medium text-sheet"
