@@ -107,6 +107,13 @@ export function BlockControls({ editor }: { editor: Editor }) {
       const target = event.target instanceof Element ? event.target : null
       const li = target?.closest('li') ?? null
       const list = target?.closest('ul, ol') ?? null
+      // The list inside an item (in a to-do, it is deeper, after its checkbox) level with the pointer.
+      const inner = (item: Element) =>
+        [...item.querySelectorAll('ul, ol')].find((nested) => {
+          if (nested.parentElement?.closest('li') !== item) return false
+          const box = nested.getBoundingClientRect()
+          return event.clientY >= box.top && event.clientY <= box.bottom
+        })
       // In a list's margin: its item nearest the pointer's height, and down into the list inside
       // that item while the pointer is level with it.
       const pick = (from: Element): Element | null => {
@@ -118,15 +125,16 @@ export function BlockControls({ editor }: { editor: Editor }) {
           const away = event.clientY < box.top ? box.top - event.clientY : Math.max(0, event.clientY - box.bottom)
           if (away < distance) [best, distance] = [child, away]
         }
-        const inner = best && [...best.children].find((child) => {
-          if (child.tagName !== 'UL' && child.tagName !== 'OL') return false
-          const box = child.getBoundingClientRect()
-          return event.clientY >= box.top && event.clientY <= box.bottom
-        })
-        return inner ? (pick(inner) ?? best) : best
+        const nested = best && inner(best)
+        return nested ? (pick(nested) ?? best) : best
       }
       let item: Element | null = li
       if (list && (!li || li.contains(list))) item = pick(list)
+      else if (li) {
+        // Over an item's own box, beside or below its checkbox: the item inside it at that height.
+        const nested = inner(li)
+        if (nested) item = pick(nested) ?? li
+      }
       if (!item || !dom.contains(item)) return null
       try {
         return blockAt(editor.state.doc, editor.view.posAtDOM(item, 0))

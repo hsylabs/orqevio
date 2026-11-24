@@ -120,6 +120,21 @@ test('each list item has its own handle, also over its bullet or its checkbox', 
   await expect.poll(saved).toBe('- uno\n- tres\n- dos\n\n- [ ] pendiente\n- [ ] hecho\n\nFin\n\n- fuera\n  - otro\n  - dentro')
 })
 
+test('a to-do inside a to-do has its own handle', async ({ page }) => {
+  const { saved, text } = await openPage(page, 'Bloques tareas E2E', '- [ ] padre\n  - [ ] primera\n  - [ ] segunda')
+  const handle = page.getByRole('button', { name: 'Opciones del bloque' })
+  await text('segunda').hover()
+  const inner = (await text('segunda').boundingBox())!
+  await page.mouse.move(inner.x - 40, inner.y + inner.height / 2, { steps: 8 })
+  await handle.click()
+  // A to-do's text includes its checkbox's label, «Tarea: segunda».
+  const selected = page.locator('.orq-prose .ProseMirror-selectednode')
+  await expect(selected).toContainText('segunda')
+  await expect(selected).not.toContainText('padre')
+  await page.getByRole('menuitem', { name: 'Subir' }).click()
+  await expect.poll(saved).toBe('- [ ] padre\n  - [ ] segunda\n  - [ ] primera')
+})
+
 test('drag a block by its handle to move it', async ({ page }) => {
   const { saved, text } = await openPage(page, 'Bloques arrastrar E2E', 'Uno\n\nDos\n\nTres')
   const handle = page.getByRole('button', { name: 'Opciones del bloque' })
