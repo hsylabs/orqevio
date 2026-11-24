@@ -200,7 +200,18 @@
       "duplicate": "Duplica",
       "moveUp": "Sposta su",
       "moveDown": "Sposta giù",
+      "language": "Linguaggio…",
       "delete": "Elimina"
+    },
+    "code": {
+      "plain": "Testo semplice",
+      "language": "Linguaggio: {{name}}",
+      "copy": "Copia il codice",
+      "copied": "Codice copiato",
+      "search": "Cerca un linguaggio…",
+      "picker": "Linguaggio del blocco di codice",
+      "noResults": "Nessun linguaggio corrisponde",
+      "use": "Usa «{{name}}»"
     },
     "taskCheckbox": "Da fare: {{text}}",
     "taskCheckboxEmpty": "Cosa da fare vuota"

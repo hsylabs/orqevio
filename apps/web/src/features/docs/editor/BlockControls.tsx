@@ -1,13 +1,14 @@
 import type { Editor } from '@tiptap/core'
 import { NodeSelection, Selection, type SelectionBookmark, type Transaction } from '@tiptap/pm/state'
 import { useEditorState } from '@tiptap/react'
-import { ArrowDown, ArrowUp, Copy, GripVertical, Repeat, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ClipboardCopy, Code, Copy, GripVertical, Repeat, Trash2 } from 'lucide-react'
 import { type DragEvent, useEffect, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { isMac } from '../../../components/ui/Kbd'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuSub, MenuSubContent, MenuSubTrigger, MenuTrigger } from '../../../components/ui/Menu'
 import { cn } from '../../../lib/cn'
-import { changeOf } from './own-step'
+import { codeStorage, copyCode } from './code-block'
+import { changeOf, followBlock } from './own-step'
 import { TURN_ICONS, blockAt, canMove, deleteBlock, duplicateBlock, moveBlock, turnBlock, turns } from './block-commands'
 
 const WIDTH = 18
@@ -53,6 +54,8 @@ export function BlockControls({ editor }: { editor: Editor }) {
   /** Whether a menu item ran, and the selection to bring back if none did. */
   const acted = useRef(false)
   const before = useRef<SelectionBookmark | null>(null)
+  /** The code block whose list of languages opens once the menu has closed and given the focus back. */
+  const languages = useRef<number | null>(null)
 
   // The handle follows its block as the page changes, scrolls or resizes.
   useEffect(() => {
@@ -67,11 +70,7 @@ export function BlockControls({ editor }: { editor: Editor }) {
         // An agent or another tab can change the page while the menu is open: it follows its block.
         before.current = before.current?.map(change.mapping) ?? null
         // The same for a menu that is closing, so its handle doesn't show on another block meanwhile.
-        const follow = (pos: number | null) => {
-          if (pos === null) return null
-          const moved = change.mapping.mapResult(pos, 1)
-          return moved.deleted || !change.doc.nodeAt(moved.pos) ? null : moved.pos
-        }
+        const follow = (pos: number | null) => (pos === null ? null : followBlock(change, pos))
         if (menuRef.current !== null) setMenu(follow(menuRef.current))
         if (closingRef.current !== null) setClosing(follow(closingRef.current))
         setHover(null)
@@ -194,11 +193,24 @@ export function BlockControls({ editor }: { editor: Editor }) {
     event.preventDefault()
     const ran = acted.current
     const bookmark = before.current
+    const language = languages.current
     acted.current = false
     before.current = null
+    languages.current = null
     setClosing(null)
     setHover(null)
     if (ran) return editor.view.focus()
+    if (language !== null) {
+      // «Language…»: the cursor goes back where it was, and the list takes the focus (it gives it
+      // back as it closes). Focused now, the editor would take it from the list a moment later.
+      try {
+        if (bookmark) editor.view.dispatch(editor.state.tr.setSelection(bookmark.resolve(editor.state.doc)))
+      } catch {
+        // The page changed under the menu: the cursor stays where the change left it.
+      }
+      codeStorage(editor)?.openLanguages?.(language)
+      return
+    }
     editor
       .chain()
       .focus(undefined, { scrollIntoView: false })
@@ -304,6 +316,16 @@ export function BlockControls({ editor }: { editor: Editor }) {
                   ))}
                 </MenuSubContent>
               </MenuSub>
+            )}
+            {node.type.name === 'codeBlock' && (
+              <>
+                <MenuItem icon={<Code />} onSelect={() => (languages.current = pos)}>
+                  {t('editor.block.language')}
+                </MenuItem>
+                <MenuItem icon={<ClipboardCopy />} onSelect={() => void copyCode(node.textContent)}>
+                  {t('editor.code.copy')}
+                </MenuItem>
+              </>
             )}
             <MenuItem icon={<Copy />} onSelect={act(() => duplicateBlock(editor, pos))}>
               {t('editor.block.duplicate')}

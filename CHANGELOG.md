@@ -17,6 +17,11 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - Clicked, or with Ctrl+/ (⌘/), it opens the block's menu: turn it into text, a heading, a list, a quote or code, as the «/» menu does; duplicate it; move it up or down; or delete it.
   - Ctrl+Shift+↑/↓ (⌘⇧↑/↓) moves the block with the cursor.
   - Each action is undone on its own. Front matter stays at the top, and a list item moves within its list. Comments have no handles.
+- **Code blocks with their language, colours and a copy button, as in Notion.** For scripts, commands and prompts:
+  - A bar along the top of each code block shows its language. Clicked, it opens the list of languages, with a search box; a language the list doesn't know, such as `mermaid`, can be used as it is written. From the keyboard, the block's menu (Ctrl+/) has **Language…** and **Copy code**.
+  - The code is coloured in its language, with the theme's tones in light and dark mode and on paper. A block without a language, such as a prompt, keeps no colours. The colours load apart from the editor, so a page opens as fast as before.
+  - The copy button copies the code as it is. Comments and printed pages show the language and the colours too, and comments have the copy button.
+  - What is saved is still a Markdown fence, as agents and GitHub read it: ` ```python `. Changing the language keeps the rest of the fence's line (` ```ts title="a.ts" `), and `ts` stays `ts`. Each change is undone on its own.
 
 ### Fixed
 - **Two tables in a row in a document.** Each time the page was opened and saved, more blank lines appeared between them, and then an empty paragraph. They now stay as they were.

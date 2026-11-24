@@ -196,7 +196,18 @@
       "duplicate": "複製",
       "moveUp": "上へ移動",
       "moveDown": "下へ移動",
+      "language": "言語…",
       "delete": "削除"
+    },
+    "code": {
+      "plain": "プレーンテキスト",
+      "language": "言語：{{name}}",
+      "copy": "コードをコピー",
+      "copied": "コードをコピーしました",
+      "search": "言語を検索…",
+      "picker": "コードブロックの言語",
+      "noResults": "一致する言語がありません",
+      "use": "「{{name}}」を使う"
     },
     "taskCheckbox": "ToDo：{{text}}",
     "taskCheckboxEmpty": "空のToDo"

@@ -14,6 +14,8 @@ import { dateTime, formatNumber, relativeTime } from '../../lib/format'
 import { keys, queryClient, useComments } from '../../lib/queries'
 import { restoreFromTrash } from '../../lib/trash'
 import { Editor } from '../docs/editor/Editor'
+import { copyCode } from '../docs/editor/code-block'
+import { useCodeColours } from '../docs/editor/code-languages'
 import { markdownToHtml } from '../docs/editor/markdown-html'
 import { useWorkspace } from '../shell/workspace'
 import { isConverting } from '../../lib/ime'
@@ -233,8 +235,17 @@ function Limit({ tooLong, over }: { tooLong: boolean; over: number }) {
 /** A comment as Markdown, shown, not edited: links are followed, inside the app or in a new tab. */
 function Body({ markdown }: { markdown: string }) {
   const navigate = useNavigate()
-  const html = useMemo(() => markdownToHtml(markdown), [markdown])
+  const { i18n } = useTranslation()
+  const colours = useCodeColours()
+  // Written again with the code's colours once they come, and in the app's language.
+  const html = useMemo(() => markdownToHtml(markdown), [markdown, colours, i18n.language])
   const follow = (event: MouseEvent) => {
+    // A code block's button copies its code.
+    const copy = (event.target as HTMLElement).closest('[data-copy-code]')
+    if (copy) {
+      void copyCode(copy.closest('.orq-code')?.querySelector('pre')?.textContent ?? '')
+      return
+    }
     const link = (event.target as HTMLElement).closest('a')
     if (!link) return
     // A link without an address the editor allows has none: it leads nowhere, rather than reloading the app.

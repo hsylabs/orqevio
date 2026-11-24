@@ -1,6 +1,5 @@
 import { type AnyExtension, type JSONContent, Node } from '@tiptap/core'
 import Blockquote from '@tiptap/extension-blockquote'
-import CodeBlock from '@tiptap/extension-code-block'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import { ORDERED_LIST_MARKER_PATTERN, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
@@ -10,6 +9,7 @@ import { Markdown, MarkdownManager, assumeContentType } from '@tiptap/markdown'
 import StarterKit from '@tiptap/starter-kit'
 import { t } from 'i18next'
 import { DocumentRules } from './block-commands'
+import { FaithfulCodeBlock } from './code-block'
 
 /**
  * Documents are Markdown, often written by agents, and the editor saves the whole
@@ -285,22 +285,6 @@ const FaithfulLink = Link.extend({
     const title = String(node.attrs?.title ?? '')
     const address = /[\s<>]/.test(href) || !balancedParentheses(href) ? destination(href) : href
     return `[${helpers.renderChildren(node)}](${address}${title ? ` "${title.replace(/"/g, '\\"')}"` : ''})`
-  },
-})
-
-// ── Code blocks ──────────────────────────────────────────────────
-
-/** A fence longer than any run of backticks that starts a line of the code, as CommonMark has it. */
-const fenceFor = (code: string) => '`'.repeat(Math.max(3, ...[...code.matchAll(/^ {0,3}(`{3,})/gm)].map((m) => m[1]!.length + 1)))
-
-// A block showing a fence (Markdown about Markdown, say) keeps it inside: a fence of three would
-// close the block there, and everything after it would become code.
-const FaithfulCodeBlock = CodeBlock.extend({
-  renderMarkdown: (node, helpers) => {
-    const language = String(node.attrs?.language ?? '')
-    const code = node.content ? helpers.renderChildren(node.content) : ''
-    const fence = fenceFor(code)
-    return `${fence}${language}\n${code}\n${fence}`
   },
 })
 

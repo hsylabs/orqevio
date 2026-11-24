@@ -151,6 +151,210 @@
   box-shadow: none;
   font-size: inherit;
 }
+
+/* A code block (code-block.ts): a bar along its top with its language, which opens the list of
+   languages, and a button that copies the code. The language shows when it has one; the button
+   comes with the pointer, the cursor or the keyboard, and stays on a screen without a pointer. */
+.orq-code {
+  position: relative;
+}
+.orq-prose .orq-code > pre {
+  padding-top: 38px;
+}
+.orq-code-bar {
+  position: absolute;
+  top: 7px;
+  left: 9px;
+  right: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 26px;
+  font-family: var(--font-sans);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.orq-code-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  max-width: 70%;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--ink-3);
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    opacity 0.15s;
+}
+.orq-code-lang > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+button.orq-code-lang {
+  cursor: pointer;
+}
+button.orq-code-lang:hover,
+button.orq-code-lang[aria-expanded='true'] {
+  background: var(--hover);
+  color: var(--ink);
+}
+.orq-code-chevron {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.orq-code-copy {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  margin-left: auto;
+  border-radius: 7px;
+  color: var(--ink-3);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    opacity 0.15s;
+}
+.orq-code-copy:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.orq-code-icon {
+  grid-area: 1 / 1;
+  width: 15px;
+  height: 15px;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+.orq-code-icon--done,
+.orq-code-copy.is-done .orq-code-icon:not(.orq-code-icon--done) {
+  opacity: 0;
+  transform: scale(0.5);
+}
+.orq-code-copy.is-done .orq-code-icon--done {
+  opacity: 1;
+  transform: none;
+  color: var(--ok);
+}
+/* No language: «Plain text» only comes with the buttons. */
+.orq-code[data-plain] .orq-code-lang {
+  opacity: 0;
+}
+.orq-code:hover :is(.orq-code-copy, .orq-code-lang, .orq-code-chevron),
+.ProseMirror-focused .orq-code--current :is(.orq-code-copy, .orq-code-lang, .orq-code-chevron),
+.orq-code-bar :is(.orq-code-lang, .orq-code-copy):focus-visible,
+.orq-code-lang[aria-expanded='true'],
+.orq-code-lang[aria-expanded='true'] .orq-code-chevron,
+.orq-code-copy.is-done {
+  opacity: 1;
+}
+@media (hover: none) {
+  .orq-code-copy,
+  .orq-code-chevron {
+    opacity: 1;
+  }
+}
+/* Shown, not edited (a comment, a page printed): the language is a name, not a button. */
+.ProseMirror[contenteditable='false'] .orq-code-lang,
+span.orq-code-lang {
+  pointer-events: none;
+}
+.ProseMirror[contenteditable='false'] .orq-code-chevron,
+span.orq-code-lang .orq-code-chevron {
+  display: none;
+}
+.orq-code.ProseMirror-selectednode > pre {
+  background: color-mix(in oklab, var(--accent) 10%, var(--sunken));
+}
+.orq-prose--compact .orq-code > pre {
+  padding-top: 34px;
+}
+.orq-prose--compact .orq-code-bar {
+  top: 5px;
+}
+
+/* Its colours, from highlight.js: the theme's tones, each one readable on the block (4.5:1 or more). */
+:root {
+  --code-keyword: #b83a16;
+  --code-string: #22764a;
+  --code-number: #8a5a0e;
+  --code-comment: #6e685d;
+  --code-function: #6b3fc0;
+  --code-type: #0e6e80;
+  --code-attr: #9a2f6a;
+}
+:root[data-theme='dark'] {
+  --code-keyword: #ff865f;
+  --code-string: #6fcf97;
+  --code-number: #e0a643;
+  --code-comment: #958f83;
+  --code-function: #b9a4ff;
+  --code-type: #5fc8d8;
+  --code-attr: #f27ab3;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) {
+    --code-keyword: #ff865f;
+    --code-string: #6fcf97;
+    --code-number: #e0a643;
+    --code-comment: #958f83;
+    --code-function: #b9a4ff;
+    --code-type: #5fc8d8;
+    --code-attr: #f27ab3;
+  }
+}
+.orq-prose :is(.hljs-keyword, .hljs-selector-tag, .hljs-name, .hljs-doctag, .hljs-section, .hljs-meta .hljs-keyword) {
+  color: var(--code-keyword);
+}
+.orq-prose :is(.hljs-string, .hljs-regexp, .hljs-symbol, .hljs-char, .hljs-template-tag, .hljs-meta .hljs-string) {
+  color: var(--code-string);
+}
+.orq-prose :is(.hljs-number, .hljs-literal, .hljs-bullet, .hljs-link) {
+  color: var(--code-number);
+}
+.orq-prose :is(.hljs-comment, .hljs-quote) {
+  color: var(--code-comment);
+  font-style: italic;
+}
+.orq-prose :is(.hljs-title, .hljs-title.function_, .hljs-function .hljs-title) {
+  color: var(--code-function);
+}
+.orq-prose :is(.hljs-type, .hljs-built_in, .hljs-title.class_, .hljs-title.class_.inherited__, .hljs-class .hljs-title) {
+  color: var(--code-type);
+}
+.orq-prose :is(.hljs-attr, .hljs-attribute, .hljs-property, .hljs-variable, .hljs-template-variable, .hljs-selector-id, .hljs-selector-class, .hljs-selector-attr, .hljs-selector-pseudo, .hljs-params .hljs-variable) {
+  color: var(--code-attr);
+}
+.orq-prose :is(.hljs-meta, .hljs-subst) {
+  color: var(--code-comment);
+}
+.orq-prose .hljs-addition {
+  color: var(--code-string);
+}
+.orq-prose .hljs-deletion {
+  color: var(--danger);
+}
+.orq-prose .hljs-emphasis {
+  font-style: italic;
+}
+.orq-prose .hljs-strong {
+  font-weight: 650;
+}
 .orq-prose blockquote {
   border-left: 3px solid var(--accent);
   padding: 2px 0 2px 16px;
@@ -308,7 +512,7 @@
   border-top-color: var(--ink);
 }
 /* A whole block selected (its handle's menu is open on it): shaded, as the cells of a selected row. */
-.orq-prose > .ProseMirror-selectednode:not(.orq-raw-html),
+.orq-prose > .ProseMirror-selectednode:not(.orq-raw-html, .orq-code),
 .orq-prose li.ProseMirror-selectednode {
   background: color-mix(in oklab, var(--accent) 10%, transparent);
   border-radius: 6px;
@@ -375,6 +579,13 @@
     --surface: #ffffff;
     --accent: #c9431d;
     --accent-soft: #fbe6dd;
+    --code-keyword: #b83a16;
+    --code-string: #22764a;
+    --code-number: #8a5a0e;
+    --code-comment: #6e685d;
+    --code-function: #6b3fc0;
+    --code-type: #0e6e80;
+    --code-attr: #9a2f6a;
     color: var(--ink);
     background: #fff;
   }
@@ -436,6 +647,13 @@
   .orq-print pre code {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+  }
+  /* On paper a code block says its language, and has nothing to press: one without has no bar. */
+  .orq-print .orq-code-copy {
+    display: none;
+  }
+  .orq-print .orq-code[data-plain] > pre {
+    padding-top: 14px;
   }
   .orq-print table {
     width: 100%;
