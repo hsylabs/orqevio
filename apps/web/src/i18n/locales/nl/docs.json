@@ -118,6 +118,11 @@
         "subtitle": "Een opvallend kader: opmerking, tip, waarschuwing…",
         "keywords": "kader callout melding opmerking tip belangrijk waarschuwing let op"
       },
+      "toggle": {
+        "title": "Uitklapblok",
+        "subtitle": "Een titel die toont of verbergt wat eronder staat",
+        "keywords": "uitklappen toggle details inklappen verbergen tonen accordeon"
+      },
       "code": {
         "title": "Code",
         "subtitle": "Codeblok",
@@ -215,6 +220,11 @@
       "typeOf": "Soort kader: {{type}}",
       "menu": "Soort kader",
       "remove": "Kader verwijderen"
+    },
+    "toggle": {
+      "expand": "Inhoud tonen",
+      "collapse": "Inhoud verbergen",
+      "title": "Titel van het uitklapblok"
     },
     "code": {
       "plain": "Platte tekst",

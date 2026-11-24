@@ -118,6 +118,11 @@
         "subtitle": "Un encadré mis en évidence : remarque, astuce, avertissement…",
         "keywords": "encadré callout alerte remarque astuce important avertissement attention"
       },
+      "toggle": {
+        "title": "Bloc dépliant",
+        "subtitle": "Un titre qui affiche ou masque ce qu’il y a dessous",
+        "keywords": "dépliant toggle details replier déplier masquer afficher accordéon"
+      },
       "code": {
         "title": "Code",
         "subtitle": "Bloc de code",
@@ -217,6 +222,11 @@
       "typeOf": "Type d’encadré : {{type}}",
       "menu": "Type d’encadré",
       "remove": "Retirer l’encadré"
+    },
+    "toggle": {
+      "expand": "Afficher le contenu",
+      "collapse": "Masquer le contenu",
+      "title": "Titre du bloc dépliant"
     },
     "code": {
       "plain": "Texte brut",

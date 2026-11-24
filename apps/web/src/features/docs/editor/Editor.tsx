@@ -13,6 +13,7 @@ import { keys, queryClient } from '../../../lib/queries'
 import { BlockControls } from './BlockControls'
 import { CalloutControls } from './CalloutControls'
 import { markerFor } from './callout'
+import { insertToggle } from './toggle'
 import { CodeControls } from './CodeControls'
 import { FormatMenu } from './FormatMenu'
 import { BlockKeys, Mentions, SlashCommands } from './extensions'
@@ -45,7 +46,7 @@ interface EditorProps {
   blockHandles?: boolean
 }
 
-type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'code' | 'table' | 'hr' | 'mention' | 'image' | 'file'
+type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'toggle' | 'code' | 'table' | 'hr' | 'mention' | 'image' | 'file'
 type SlashGroup = 'blocks' | 'lists' | 'insert'
 
 export async function uploadFile(file: File, target: UploadTarget): Promise<AttachmentDTO> {
@@ -134,6 +135,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       item('todo', '☑', 'lists', (e, r) => e.chain().focus().deleteRange(r).toggleTaskList().run()),
       item('quote', '❝', 'blocks', (e, r) => e.chain().focus().deleteRange(r).toggleBlockquote().run()),
       item('callout', 'ⓘ', 'blocks', (e, r) => e.chain().focus().deleteRange(r).wrapIn('callout', { marker: markerFor('note') }).run()),
+      item('toggle', '▸', 'blocks', (e, r) => e.chain().focus().deleteRange(r).command(({ tr }) => insertToggle(tr)).run()),
       item('code', '</>', 'blocks', (e, r) => e.chain().focus().deleteRange(r).toggleCodeBlock().run()),
       item('table', '▦', 'insert', (e, r) => e.chain().focus().deleteRange(r).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()),
       item('hr', '—', 'insert', (e, r) => e.chain().focus().deleteRange(r).setHorizontalRule().run()),
@@ -186,7 +188,13 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       ...documentExtensions(),
       Placeholder.configure({
         placeholder: ({ node, pos }) =>
-          node.type.name === 'heading' ? tRef.current('editor.headingPlaceholder') : pos === 0 ? (placeholderRef.current ?? tRef.current('editor.placeholder')) : '',
+          node.type.name === 'heading'
+            ? tRef.current('editor.headingPlaceholder')
+            : node.type.name === 'toggleTitle'
+              ? tRef.current('editor.toggle.title')
+              : pos === 0
+                ? (placeholderRef.current ?? tRef.current('editor.placeholder'))
+                : '',
         showOnlyCurrent: true,
       }),
       SlashCommands.configure({ store: slashStore, items: slashItems }),

@@ -10,6 +10,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { t } from 'i18next'
 import { DocumentRules } from './block-commands'
 import { Callout, calloutFromQuote } from './callout'
+import { Toggle, ToggleTitle, foldToggles } from './toggle'
 import { FaithfulCodeBlock } from './code-block'
 
 /**
@@ -407,7 +408,7 @@ const FaithfulImage = Image.extend({
 // ── Tables ───────────────────────────────────────────────────────
 
 /**
- * A table of the document's top level, of a quote or of a callout is written without the blank lines
+ * A table of the document's top level, of a quote, a callout or a toggle is written without the blank lines
  * @tiptap/extension-table puts around it: blocks are already apart there. With them, two tables in a
  * row read back with an empty paragraph between them, one more on every save. In a list item they
  * hold its lines apart, and stay.
@@ -415,7 +416,7 @@ const FaithfulImage = Image.extend({
 const FaithfulTable = Table.extend({
   renderMarkdown(node, helpers, context) {
     const markdown = this.parent?.(node, helpers, context) ?? ''
-    return ['doc', 'blockquote', 'callout'].includes(String(context.parentType)) ? markdown.replace(/^\n+|\n+$/g, '') : markdown
+    return ['doc', 'blockquote', 'callout', 'toggle'].includes(String(context.parentType)) ? markdown.replace(/^\n+|\n+$/g, '') : markdown
   },
 })
 
@@ -442,8 +443,12 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
     return inCode ? text : encodeText(internals.escapeMarkdownSyntax(text))
   }
 
-  // Front matter stays at the top as written; the rest is read as usual.
-  const parse = manager.parse.bind(manager)
+  // Front matter stays at the top as written; the rest is read as usual, with its `<details>` as toggles (toggle.ts).
+  const read = manager.parse.bind(manager)
+  const parse = (markdown: string) => {
+    const doc = read(markdown)
+    return { ...doc, content: foldToggles(doc.content ?? []) }
+  }
   manager.parse = (markdown: string) => {
     const front = FRONT_MATTER.exec(markdown)
     if (!front) return parse(markdown)
@@ -509,6 +514,8 @@ export function documentExtensions(): AnyExtension[] {
     FaithfulParagraph,
     FaithfulBlockquote,
     Callout,
+    Toggle,
+    ToggleTitle,
     FaithfulMarkdown.configure({ markedOptions: { gfm: true } }),
     TaskList,
     // What a screen reader says for each checkbox, in the app's language.

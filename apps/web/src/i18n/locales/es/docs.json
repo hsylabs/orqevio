@@ -118,6 +118,11 @@
         "subtitle": "Un recuadro destacado: nota, consejo, advertencia…",
         "keywords": "aviso callout alerta nota consejo importante advertencia precaución"
       },
+      "toggle": {
+        "title": "Desplegable",
+        "subtitle": "Un título que muestra u oculta lo que hay debajo",
+        "keywords": "desplegable toggle details plegar ocultar mostrar acordeón"
+      },
       "code": {
         "title": "Código",
         "subtitle": "Bloque de código",
@@ -217,6 +222,11 @@
       "typeOf": "Tipo de aviso: {{type}}",
       "menu": "Tipo de aviso",
       "remove": "Quitar el aviso"
+    },
+    "toggle": {
+      "expand": "Mostrar el contenido",
+      "collapse": "Ocultar el contenido",
+      "title": "Título del desplegable"
     },
     "code": {
       "plain": "Texto plano",

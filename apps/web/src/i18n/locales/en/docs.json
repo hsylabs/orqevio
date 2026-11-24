@@ -118,6 +118,11 @@
         "subtitle": "A highlighted box: note, tip, warning…",
         "keywords": "callout alert admonition note tip important warning caution"
       },
+      "toggle": {
+        "title": "Toggle",
+        "subtitle": "A title that shows or hides what is under it",
+        "keywords": "toggle details collapse expand fold hide show accordion"
+      },
       "code": {
         "title": "Code",
         "subtitle": "Code block",
@@ -215,6 +220,11 @@
       "typeOf": "Callout type: {{type}}",
       "menu": "Callout type",
       "remove": "Remove the callout"
+    },
+    "toggle": {
+      "expand": "Show the content",
+      "collapse": "Hide the content",
+      "title": "Toggle title"
     },
     "code": {
       "plain": "Plain text",

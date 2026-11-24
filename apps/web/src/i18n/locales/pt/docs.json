@@ -118,6 +118,11 @@
         "subtitle": "Uma caixa em destaque: nota, dica, aviso…",
         "keywords": "destaque callout alerta nota dica importante aviso cuidado"
       },
+      "toggle": {
+        "title": "Recolhível",
+        "subtitle": "Um título que mostra ou oculta o que está abaixo",
+        "keywords": "recolhível toggle details recolher expandir ocultar mostrar acordeão"
+      },
       "code": {
         "title": "Código",
         "subtitle": "Bloco de código",
@@ -217,6 +222,11 @@
       "typeOf": "Tipo de destaque: {{type}}",
       "menu": "Tipo de destaque",
       "remove": "Remover o destaque"
+    },
+    "toggle": {
+      "expand": "Mostrar o conteúdo",
+      "collapse": "Ocultar o conteúdo",
+      "title": "Título do recolhível"
     },
     "code": {
       "plain": "Texto simples",

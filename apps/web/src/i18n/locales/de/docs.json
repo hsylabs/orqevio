@@ -118,6 +118,11 @@
         "subtitle": "Ein hervorgehobener Kasten: Hinweis, Tipp, Warnung…",
         "keywords": "hinweisbox callout hinweis tipp wichtig warnung vorsicht"
       },
+      "toggle": {
+        "title": "Aufklappbereich",
+        "subtitle": "Ein Titel, der zeigt oder verbirgt, was darunter steht",
+        "keywords": "aufklappen toggle details zuklappen einklappen ausblenden einblenden akkordeon"
+      },
       "code": {
         "title": "Code",
         "subtitle": "Codeblock",
@@ -215,6 +220,11 @@
       "typeOf": "Art der Hinweisbox: {{type}}",
       "menu": "Art der Hinweisbox",
       "remove": "Hinweisbox entfernen"
+    },
+    "toggle": {
+      "expand": "Inhalt anzeigen",
+      "collapse": "Inhalt ausblenden",
+      "title": "Titel des Aufklappbereichs"
     },
     "code": {
       "plain": "Nur Text",

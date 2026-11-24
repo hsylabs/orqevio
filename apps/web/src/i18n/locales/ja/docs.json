@@ -118,6 +118,11 @@
         "subtitle": "目立つ枠：注記、ヒント、警告など",
         "keywords": "注意書き コールアウト callout 注記 ヒント 重要 警告 注意"
       },
+      "toggle": {
+        "title": "折りたたみ",
+        "subtitle": "下の内容を表示・非表示にする見出し",
+        "keywords": "折りたたみ トグル toggle details 展開 隠す 表示 アコーディオン"
+      },
       "code": {
         "title": "コード",
         "subtitle": "コードブロック",
@@ -213,6 +218,11 @@
       "typeOf": "注意書きの種類：{{type}}",
       "menu": "注意書きの種類",
       "remove": "注意書きを解除"
+    },
+    "toggle": {
+      "expand": "内容を表示",
+      "collapse": "内容を隠す",
+      "title": "折りたたみの見出し"
     },
     "code": {
       "plain": "プレーンテキスト",
