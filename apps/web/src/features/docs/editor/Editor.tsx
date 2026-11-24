@@ -11,6 +11,8 @@ import { ApiError, api, errorMessage, get } from '../../../lib/api'
 import { cn } from '../../../lib/cn'
 import { keys, queryClient } from '../../../lib/queries'
 import { BlockControls } from './BlockControls'
+import { CalloutControls } from './CalloutControls'
+import { markerFor } from './callout'
 import { CodeControls } from './CodeControls'
 import { FormatMenu } from './FormatMenu'
 import { BlockKeys, Mentions, SlashCommands } from './extensions'
@@ -43,7 +45,7 @@ interface EditorProps {
   blockHandles?: boolean
 }
 
-type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'code' | 'table' | 'hr' | 'mention' | 'image' | 'file'
+type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'code' | 'table' | 'hr' | 'mention' | 'image' | 'file'
 type SlashGroup = 'blocks' | 'lists' | 'insert'
 
 export async function uploadFile(file: File, target: UploadTarget): Promise<AttachmentDTO> {
@@ -131,6 +133,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       item('ol', '1.', 'lists', (e, r) => e.chain().focus().deleteRange(r).toggleOrderedList().run()),
       item('todo', '☑', 'lists', (e, r) => e.chain().focus().deleteRange(r).toggleTaskList().run()),
       item('quote', '❝', 'blocks', (e, r) => e.chain().focus().deleteRange(r).toggleBlockquote().run()),
+      item('callout', 'ⓘ', 'blocks', (e, r) => e.chain().focus().deleteRange(r).wrapIn('callout', { marker: markerFor('note') }).run()),
       item('code', '</>', 'blocks', (e, r) => e.chain().focus().deleteRange(r).toggleCodeBlock().run()),
       item('table', '▦', 'insert', (e, r) => e.chain().focus().deleteRange(r).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()),
       item('hr', '—', 'insert', (e, r) => e.chain().focus().deleteRange(r).setHorizontalRule().run()),
@@ -263,6 +266,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       {editor && <FormatMenu editor={editor} />}
       {editor && <TableControls editor={editor} />}
       {editor && <CodeControls editor={editor} />}
+      {editor && <CalloutControls editor={editor} />}
       {editor && blockHandles && <BlockControls editor={editor} />}
       <SuggestionMenu store={slashStore} emptyLabel={t('editor.noBlocks')} />
       <SuggestionMenu store={mentionStore} emptyLabel={t('editor.mentionHint')} />

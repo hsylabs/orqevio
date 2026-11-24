@@ -22,6 +22,10 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - The code is coloured in its language, with the theme's tones in light and dark mode and on paper. A block without a language, such as a prompt, keeps no colours. The colours load apart from the editor, so a page opens as fast as before.
   - The copy button copies the code as it is. Comments and printed pages show the language and the colours too, and comments have the copy button.
   - What is saved is still a Markdown fence, as agents and GitHub read it: ` ```python `. Changing the language keeps the rest of the fence's line (` ```ts title="a.ts" `), and `ts` stays `ts`. Each change is undone on its own.
+- **Callouts in documents, as in Notion: GitHub's alerts.** A quote that starts with `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]` or `[!CAUTION]` on a line of its own shows as a tinted box with its icon and its type's name, in the editor, in comments and on paper.
+  - The type's name is a button: its menu changes the type or takes the callout away and leaves what it held. From the keyboard, the block's menu (Ctrl+/) has **Callout type**.
+  - The «/» menu has **Callout**, and **Turn into** makes text, a heading or a quote into one, and back.
+  - What is saved is still the quote GitHub reads as an alert, as it was written: a marker in small letters or a blank line after it stays. An Obsidian callout with a title, or a marker escaped on purpose, stays a quote. An alert copied from a page of GitHub is pasted as a callout.
 
 ### Fixed
 - **Two tables in a row in a document.** Each time the page was opened and saved, more blank lines appeared between them, and then an empty paragraph. They now stay as they were.

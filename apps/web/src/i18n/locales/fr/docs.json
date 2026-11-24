@@ -113,6 +113,11 @@
         "subtitle": "Mettre un passage en valeur",
         "keywords": "citation quote blockquote"
       },
+      "callout": {
+        "title": "Encadré",
+        "subtitle": "Un encadré mis en évidence : remarque, astuce, avertissement…",
+        "keywords": "encadré callout alerte remarque astuce important avertissement attention"
+      },
       "code": {
         "title": "Code",
         "subtitle": "Bloc de code",
@@ -202,6 +207,16 @@
       "moveDown": "Descendre",
       "language": "Langage…",
       "delete": "Supprimer"
+    },
+    "callout": {
+      "note": "Remarque",
+      "tip": "Astuce",
+      "important": "Important",
+      "warning": "Avertissement",
+      "caution": "Attention",
+      "typeOf": "Type d’encadré : {{type}}",
+      "menu": "Type d’encadré",
+      "remove": "Retirer l’encadré"
     },
     "code": {
       "plain": "Texte brut",

@@ -1,12 +1,13 @@
 import type { Editor } from '@tiptap/core'
 import { NodeSelection, Selection, type SelectionBookmark, type Transaction } from '@tiptap/pm/state'
 import { useEditorState } from '@tiptap/react'
-import { ArrowDown, ArrowUp, ClipboardCopy, Code, Copy, GripVertical, Repeat, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ClipboardCopy, Code, Copy, GripVertical, Info, Repeat, Trash2 } from 'lucide-react'
 import { type DragEvent, useEffect, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { isMac } from '../../../components/ui/Kbd'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuSub, MenuSubContent, MenuSubTrigger, MenuTrigger } from '../../../components/ui/Menu'
 import { cn } from '../../../lib/cn'
+import { CalloutTypeItems } from './CalloutControls'
 import { codeStorage, copyCode } from './code-block'
 import { changeOf, followBlock } from './own-step'
 import { TURN_ICONS, blockAt, canMove, deleteBlock, duplicateBlock, moveBlock, turnBlock, turns } from './block-commands'
@@ -56,6 +57,8 @@ export function BlockControls({ editor }: { editor: Editor }) {
   const before = useRef<SelectionBookmark | null>(null)
   /** The code block whose list of languages opens once the menu has closed and given the focus back. */
   const languages = useRef<number | null>(null)
+  /** A callout inside the block with the cursor (in a list item, in a quote): its types are in the block's menu too. */
+  const [inner, setInner] = useState<number | null>(null)
 
   // The handle follows its block as the page changes, scrolls or resizes.
   useEffect(() => {
@@ -73,6 +76,7 @@ export function BlockControls({ editor }: { editor: Editor }) {
         const follow = (pos: number | null) => (pos === null ? null : followBlock(change, pos))
         if (menuRef.current !== null) setMenu(follow(menuRef.current))
         if (closingRef.current !== null) setClosing(follow(closingRef.current))
+        setInner((pos) => follow(pos))
         setHover(null)
       }
       later()
@@ -178,8 +182,22 @@ export function BlockControls({ editor }: { editor: Editor }) {
   /** The menu acts on its block, selected while it is open to show which one. */
   function openMenu(pos: number) {
     before.current = editor.state.selection.getBookmark()
+    setInner(calloutWithin(pos))
     editor.view.dispatch(editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, pos)))
     setMenu(pos)
+  }
+
+  /** The callout nearest the cursor, if it is inside the block at `pos` and not the block itself. */
+  function calloutWithin(pos: number) {
+    const { $from } = editor.state.selection
+    const block = editor.state.doc.nodeAt(pos)
+    if (!block) return null
+    for (let depth = $from.depth; depth > 0; depth--) {
+      if ($from.node(depth).type.name !== 'callout') continue
+      const at = $from.before(depth)
+      return at > pos && at < pos + block.nodeSize ? at : null
+    }
+    return null
   }
 
   function closeMenu(open: boolean) {
@@ -290,6 +308,7 @@ export function BlockControls({ editor }: { editor: Editor }) {
     const left = box.left - (node.type.name === 'listItem' ? MARKER : 0) - WIDTH - GAP - base.left
     const { current, options } = turns(editor.state.doc, pos)
     const label = t('editor.block.handle')
+    const callout = node.type.name === 'callout' ? pos : menu === pos && inner !== null && editor.state.doc.nodeAt(inner)?.type.name === 'callout' ? inner : null
 
     return (
       <div className={cn('absolute', live)} style={{ top, left, width: WIDTH, height: HEIGHT }} onPointerEnter={stay} onPointerLeave={leave}>
@@ -314,6 +333,15 @@ export function BlockControls({ editor }: { editor: Editor }) {
                       {t(`editor.slash.${option}.title`)}
                     </MenuItem>
                   ))}
+                </MenuSubContent>
+              </MenuSub>
+            )}
+            {callout !== null && (
+              <MenuSub>
+                <MenuSubTrigger icon={<Info />}>{t('editor.callout.menu')}</MenuSubTrigger>
+                <MenuSubContent>
+                  {/* Not an action that places the cursor: it goes back where it was, in the callout. */}
+                  <CalloutTypeItems editor={editor} pos={callout} />
                 </MenuSubContent>
               </MenuSub>
             )}

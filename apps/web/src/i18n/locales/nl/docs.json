@@ -113,6 +113,11 @@
         "subtitle": "Laat een passage opvallen",
         "keywords": "citaat quote blockquote"
       },
+      "callout": {
+        "title": "Kader",
+        "subtitle": "Een opvallend kader: opmerking, tip, waarschuwing…",
+        "keywords": "kader callout melding opmerking tip belangrijk waarschuwing let op"
+      },
       "code": {
         "title": "Code",
         "subtitle": "Codeblok",
@@ -200,6 +205,16 @@
       "moveDown": "Omlaag",
       "language": "Taal…",
       "delete": "Verwijderen"
+    },
+    "callout": {
+      "note": "Opmerking",
+      "tip": "Tip",
+      "important": "Belangrijk",
+      "warning": "Waarschuwing",
+      "caution": "Let op",
+      "typeOf": "Soort kader: {{type}}",
+      "menu": "Soort kader",
+      "remove": "Kader verwijderen"
     },
     "code": {
       "plain": "Platte tekst",

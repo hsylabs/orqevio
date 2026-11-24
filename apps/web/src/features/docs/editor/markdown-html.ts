@@ -1,9 +1,11 @@
 import { Editor } from '@tiptap/core'
 import { DOMSerializer } from '@tiptap/pm/model'
 import i18next, { t } from 'i18next'
-import { icon, languageClass, languageName } from './code-block'
+import { CALLOUT_ICONS, calloutName, calloutType } from './callout'
+import { languageClass, languageName } from './code-block'
 import { highlightCode, loadCodeColours, whenCodeColoursLoad } from './code-languages'
 import { documentExtensions } from './markdown'
+import { icon } from './svg-icons'
 
 /**
  * Markdown shown and never edited (a comment), as the editor would show it: read with the same
@@ -25,6 +27,7 @@ function render(markdown: string) {
   root.append(DOMSerializer.fromSchema(reader.schema).serializeFragment(doc.content, { document: page }))
   for (const link of root.querySelectorAll('a[href=""]')) link.removeAttribute('href')
   for (const code of root.querySelectorAll('pre:not([data-raw-html]):not([data-raw-markdown]) > code')) codeBlock(code, page)
+  for (const quote of root.querySelectorAll('blockquote[data-callout]')) calloutTitle(quote, page)
   // A task's box shows whether it is done; here it can't be ticked.
   for (const box of root.querySelectorAll('input[type="checkbox"]')) box.setAttribute('disabled', '')
   // The empty paragraph the editor keeps after a list or a table at the end is no part of it.
@@ -77,6 +80,20 @@ function codeBlock(code: Element, page: Document) {
   bar.append(shown, copy)
   pre.replaceWith(box)
   box.append(bar, pre)
+}
+
+/** A callout's icon and its type's name on top, as the editor shows them (callout.ts). */
+function calloutTitle(quote: Element, page: Document) {
+  const type = calloutType(`[!${quote.getAttribute('data-callout') ?? ''}]`)
+  const title = page.createElement('div')
+  title.className = 'orq-callout-title'
+  const name = page.createElement('span')
+  name.className = 'orq-callout-type'
+  const label = page.createElement('span')
+  label.textContent = calloutName(type)
+  name.append(icon(CALLOUT_ICONS[type], 'orq-callout-icon', page), label)
+  title.append(name)
+  quote.prepend(title)
 }
 
 // What was written before the colours came, or in another language of the app, is written again.
