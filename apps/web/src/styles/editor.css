@@ -307,6 +307,13 @@
 .orq-prose .ProseMirror-gapcursor::after {
   border-top-color: var(--ink);
 }
+/* A whole block selected (its handle's menu is open on it): shaded, as the cells of a selected row. */
+.orq-prose > .ProseMirror-selectednode:not(.orq-raw-html),
+.orq-prose li.ProseMirror-selectednode {
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  border-radius: 6px;
+  outline: none;
+}
 .ProseMirror-dropcursor {
   background: var(--accent) !important;
 }
