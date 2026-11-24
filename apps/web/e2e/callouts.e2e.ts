@@ -74,6 +74,18 @@ test('a callout from the «/» menu, and its type from the block menu with the k
   await expect.poll(saved).toBe('> Revisa esto')
 })
 
+test('a callout inside a quote has its types in the menu of the quote, from the keyboard', async ({ page }) => {
+  const { editor, saved } = await openPage(page, 'Avisos anidados E2E', '> Fuera\n>\n> > [!TIP]\n> > Dentro')
+  const text = editor.getByText('Dentro', { exact: true })
+  const box = (await text.boundingBox())!
+  // Twice: Firefox puts the cursor of a first click at the start (card nUoMC5Z9).
+  for (let i = 0; i < 2; i++) await text.click({ position: { x: box.width - 1, y: box.height / 2 } })
+  await page.keyboard.press('ControlOrMeta+/')
+  await page.getByRole('menuitem', { name: 'Tipo de aviso' }).press('ArrowRight')
+  await page.getByRole('menuitem', { name: 'Importante' }).press('Enter')
+  await expect.poll(saved).toBe('> Fuera\n>\n> > [!IMPORTANT]\n> > Dentro')
+})
+
 test('in a comment, a callout shows its icon and its type', async ({ page }) => {
   const workspaceId = await openNewWorkspace(page, 'Avisos comentario E2E')
   const boardId = await createProject(page, 'Notas')

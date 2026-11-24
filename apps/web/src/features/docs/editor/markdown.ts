@@ -407,7 +407,7 @@ const FaithfulImage = Image.extend({
 // ── Tables ───────────────────────────────────────────────────────
 
 /**
- * A table of the document's top level or of a quote is written without the blank lines
+ * A table of the document's top level, of a quote or of a callout is written without the blank lines
  * @tiptap/extension-table puts around it: blocks are already apart there. With them, two tables in a
  * row read back with an empty paragraph between them, one more on every save. In a list item they
  * hold its lines apart, and stay.
@@ -415,7 +415,7 @@ const FaithfulImage = Image.extend({
 const FaithfulTable = Table.extend({
   renderMarkdown(node, helpers, context) {
     const markdown = this.parent?.(node, helpers, context) ?? ''
-    return context.parentType === 'doc' || context.parentType === 'blockquote' ? markdown.replace(/^\n+|\n+$/g, '') : markdown
+    return ['doc', 'blockquote', 'callout'].includes(String(context.parentType)) ? markdown.replace(/^\n+|\n+$/g, '') : markdown
   },
 })
 

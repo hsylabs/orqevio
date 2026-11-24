@@ -163,7 +163,9 @@ export function turnBlock(editor: Editor, pos: number, to: Turn) {
   // A quote and a callout hold blocks alike: one becomes the other as it is, a note for a new callout.
   if ((name === 'blockquote' && to === 'callout') || (name === 'callout' && to === 'quote')) {
     return ownStep(editor, ({ tr }) => {
-      const attrs = to === 'callout' ? { marker: markerFor('note') } : {}
+      // A quote whose text starts like a marker keeps it escaped: it was text in the callout, and stays text.
+      const first = node.firstChild?.type.name === 'paragraph' ? node.firstChild.textContent : ''
+      const attrs = to === 'callout' ? { marker: markerFor('note') } : { escapedMarker: /^\[![A-Za-z][A-Za-z0-9-]*\]/.test(first) }
       tr.setNodeMarkup(pos, editor.schema.nodes[to === 'callout' ? 'callout' : 'blockquote'], attrs)
       return true
     })
@@ -201,14 +203,21 @@ export function turnBlock(editor: Editor, pos: number, to: Turn) {
   }, { joinLists: true })
 }
 
-/** Gives a callout another type, its marker in the case it was written in. */
+/**
+ * Gives a callout another type, its marker in the case it was written in. From a menu, which gives the
+ * focus back as it closes: focused now, the page would scroll to where the cursor was.
+ */
 export function setCalloutType(editor: Editor, pos: number, type: CalloutType) {
-  return ownStep(editor, ({ tr }) => {
-    const node = tr.doc.nodeAt(pos)
-    if (node?.type.name !== 'callout') return false
-    tr.setNodeMarkup(pos, undefined, { ...node.attrs, marker: markerFor(type, node.attrs.marker) })
-    return true
-  })
+  return ownStep(
+    editor,
+    ({ tr }) => {
+      const node = tr.doc.nodeAt(pos)
+      if (node?.type.name !== 'callout') return false
+      tr.setNodeMarkup(pos, undefined, { ...node.attrs, marker: markerFor(type, node.attrs.marker) })
+      return true
+    },
+    { focus: false },
+  )
 }
 
 /** Takes a callout away and leaves what it held, with the cursor at its end. */

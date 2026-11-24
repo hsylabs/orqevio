@@ -292,7 +292,7 @@ span.orq-code-lang .orq-code-chevron {
 :root {
   --code-keyword: #b83a16;
   --code-string: #22764a;
-  --code-number: #8a5a0e;
+  --code-number: #7a4f0a;
   --code-comment: #6e685d;
   --code-function: #6b3fc0;
   --code-type: #0e6e80;
@@ -366,7 +366,7 @@ span.orq-code-lang .orq-code-chevron {
 
 /* A callout (callout.ts), GitHub's alert: a tinted box in its type's colour, with its icon and its
    name on top. In the editor the name is a button that opens the menu of types; shown (a comment,
-   a page printed), it is only a name. Each name reads at 4.5:1 or more on its box. */
+   a page printed), it is only a name. Each name reads at 4.5:1 or more on its box, also hovered. */
 .orq-prose .orq-callout {
   padding: 8px 16px 10px 14px;
   border-left: 3px solid var(--callout);
@@ -379,23 +379,23 @@ span.orq-code-lang .orq-code-chevron {
 }
 .orq-callout--note {
   --callout: var(--c-teal);
-  --callout-ink: #11707f;
+  --callout-ink: #0d6573;
 }
 .orq-callout--tip {
   --callout: var(--c-jade);
-  --callout-ink: #1d7a52;
+  --callout-ink: #135f3f;
 }
 .orq-callout--important {
   --callout: var(--c-iris);
-  --callout-ink: #5b3fc4;
+  --callout-ink: #5536b8;
 }
 .orq-callout--warning {
   --callout: var(--c-amber);
-  --callout-ink: #8a5a0e;
+  --callout-ink: #7a4f0a;
 }
 .orq-callout--caution {
   --callout: var(--danger);
-  --callout-ink: #b02a23;
+  --callout-ink: #a02520;
 }
 :root[data-theme='dark'] .orq-callout--note {
   --callout-ink: #5cc8db;
@@ -456,7 +456,7 @@ button.orq-callout-type {
 }
 button.orq-callout-type:hover,
 button.orq-callout-type[aria-expanded='true'] {
-  background: color-mix(in oklab, var(--callout) 16%, transparent);
+  background: color-mix(in oklab, var(--callout) 12%, transparent);
 }
 .orq-callout-icon {
   width: 16px;
@@ -489,7 +489,7 @@ button.orq-callout-type[aria-expanded='true'] {
 blockquote.orq-callout > * + * {
   margin-top: 0.7em;
 }
-.orq-callout-title + * {
+blockquote.orq-callout > .orq-callout-title + * {
   margin-top: 0;
 }
 /* Its menu's icons, in each type's colour. */
@@ -717,11 +717,16 @@ blockquote.orq-callout > * + * {
     --accent-soft: #fbe6dd;
     --code-keyword: #b83a16;
     --code-string: #22764a;
-    --code-number: #8a5a0e;
+    --code-number: #7a4f0a;
     --code-comment: #6e685d;
     --code-function: #6b3fc0;
     --code-type: #0e6e80;
     --code-attr: #9a2f6a;
+    --c-teal: #1b93a6;
+    --c-jade: #2a9668;
+    --c-iris: #7657e0;
+    --c-amber: #d29a12;
+    --danger: #bd3029;
     color: var(--ink);
     background: #fff;
   }
@@ -793,19 +798,19 @@ blockquote.orq-callout > * + * {
   }
   /* A callout's name in the light theme's tones, as everything on paper, whatever the theme's rules say. */
   .orq-print .orq-callout--note {
-    --callout-ink: #11707f !important;
+    --callout-ink: #0d6573 !important;
   }
   .orq-print .orq-callout--tip {
-    --callout-ink: #1d7a52 !important;
+    --callout-ink: #135f3f !important;
   }
   .orq-print .orq-callout--important {
-    --callout-ink: #5b3fc4 !important;
+    --callout-ink: #5536b8 !important;
   }
   .orq-print .orq-callout--warning {
-    --callout-ink: #8a5a0e !important;
+    --callout-ink: #7a4f0a !important;
   }
   .orq-print .orq-callout--caution {
-    --callout-ink: #b02a23 !important;
+    --callout-ink: #a02520 !important;
   }
   .orq-print table {
     width: 100%;

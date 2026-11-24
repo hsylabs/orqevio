@@ -1,5 +1,6 @@
 import { type Editor, type JSONContent, Node, mergeAttributes } from '@tiptap/core'
-import type { Node as PMNode } from '@tiptap/pm/model'
+import { type Node as PMNode, Slice } from '@tiptap/pm/model'
+import { TextSelection } from '@tiptap/pm/state'
 import type { NodeView } from '@tiptap/pm/view'
 import i18next, { t } from 'i18next'
 import { type IconName, icon } from './svg-icons'
@@ -55,6 +56,45 @@ export function calloutFromQuote(quote: JSONContent, gap: boolean): JSONContent 
     attrs: { marker: line, gap: newline === -1 && gap && content.length > 0 },
     content: content.length ? content : [{ type: 'paragraph' }],
   }
+}
+
+/**
+ * A first line that would not start a block of its own right under the marker's: a rule or `=`
+ * (they would make the marker a heading), an empty item, or a numbered list not starting at 1. Such
+ * a first block is written after a blank line, or the marker would read as something else.
+ */
+const CONTINUES = /^ {0,3}(?:[-=]+[ \t]*$|[-+*][ \t]*$|\d{1,9}[.)][ \t]*$|(?!1[.)])\d{1,9}[.)][ \t])/
+
+/** The title a callout is shown with outside the editor (markdown-html.ts): no part of what it holds. */
+function withoutTitle(element: HTMLElement) {
+  const copy = element.cloneNode(true) as HTMLElement
+  for (const title of copy.querySelectorAll(':scope > .orq-callout-title, :scope > .markdown-alert-title')) title.remove()
+  return copy
+}
+
+/**
+ * Backspace at the start of a paragraph right after a callout brings its text into the callout's
+ * last paragraph, as TipTap does after a quote, rather than the paragraph itself into the callout.
+ */
+function joinIntoCallout(editor: Editor) {
+  const { selection } = editor.state
+  if (!selection.empty) return false
+  const { $from } = selection
+  if ($from.parentOffset !== 0 || $from.depth < 1 || !$from.parent.isTextblock) return false
+  const index = $from.index($from.depth - 1)
+  if (index === 0) return false
+  const previous = $from.node($from.depth - 1).child(index - 1)
+  if (previous.type.name !== 'callout' || !previous.lastChild?.isTextblock) return false
+  const target = $from.before() - 2
+  return editor.commands.command(({ tr, dispatch }) => {
+    if (!dispatch) return true
+    const content = $from.parent.content
+    tr.replace(target, $from.after(), new Slice(content, 0, 0))
+    tr.setSelection(TextSelection.create(tr.doc, target))
+    tr.scrollIntoView()
+    dispatch(tr)
+    return true
+  })
 }
 
 /** The name of a callout's type, in the app's language. */
@@ -168,17 +208,14 @@ export const Callout = Node.create<object, CalloutStorage>({
 
   parseHTML() {
     return [
-      { tag: 'blockquote[data-callout]', priority: 60 },
+      // Ours, copied in the editor or from a comment: the title shown outside the editor is no part of it.
+      { tag: 'blockquote[data-callout]', priority: 60, contentElement: (element) => withoutTitle(element as HTMLElement) },
       // An alert copied from a page of GitHub: its title is GitHub's, not text of the alert.
       {
         tag: 'div.markdown-alert',
         priority: 60,
         getAttrs: (element) => (CALLOUT_TYPES.some((name) => element.classList.contains(`markdown-alert-${name}`)) ? null : false),
-        contentElement: (element) => {
-          const copy = element.cloneNode(true) as HTMLElement
-          copy.querySelector('.markdown-alert-title')?.remove()
-          return copy
-        },
+        contentElement: (element) => withoutTitle(element as HTMLElement),
       },
     ]
   },
@@ -194,15 +231,14 @@ export const Callout = Node.create<object, CalloutStorage>({
     const content = node.content ?? []
     const empty = content.length === 1 && content[0]!.type === 'paragraph' && !content[0]!.content?.length
     if (!content.length || empty) return `> ${marker}`
-    const body = content
-      .map((child, index) =>
-        (helpers.renderChild?.(child, index) ?? helpers.renderChildren([child]))
-          .split('\n')
-          .map((line) => (line.trim() === '' ? '>' : `> ${line}`))
-          .join('\n'),
-      )
-      .join('\n>\n')
-    return `> ${marker}\n${node.attrs?.gap ? '>\n' : ''}${body}`
+    const blocks = content.map((child, index) => helpers.renderChild?.(child, index) ?? helpers.renderChildren([child]))
+    const body = blocks.map((block) => block.split('\n').map((line) => (line.trim() === '' ? '>' : `> ${line}`)).join('\n')).join('\n>\n')
+    const gap = node.attrs?.gap || (content[0]!.type !== 'paragraph' && CONTINUES.test(blocks[0]!.split('\n')[0]!))
+    return `> ${marker}\n${gap ? '>\n' : ''}${body}`
+  },
+
+  addKeyboardShortcuts() {
+    return { Backspace: () => joinIntoCallout(this.editor) }
   },
 
   addNodeView() {
