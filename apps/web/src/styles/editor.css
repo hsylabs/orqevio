@@ -292,7 +292,7 @@ span.orq-code-lang .orq-code-chevron {
 :root {
   --code-keyword: #b83a16;
   --code-string: #22764a;
-  --code-number: #7a4f0a;
+  --code-number: #8a5a0e;
   --code-comment: #6e685d;
   --code-function: #6b3fc0;
   --code-type: #0e6e80;
@@ -717,7 +717,7 @@ blockquote.orq-callout > .orq-callout-title + * {
     --accent-soft: #fbe6dd;
     --code-keyword: #b83a16;
     --code-string: #22764a;
-    --code-number: #7a4f0a;
+    --code-number: #8a5a0e;
     --code-comment: #6e685d;
     --code-function: #6b3fc0;
     --code-type: #0e6e80;

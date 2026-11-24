@@ -84,6 +84,9 @@ test('a callout inside a quote has its types in the menu of the quote, from the 
   await page.getByRole('menuitem', { name: 'Tipo de aviso' }).press('ArrowRight')
   await page.getByRole('menuitem', { name: 'Importante' }).press('Enter')
   await expect.poll(saved).toBe('> Fuera\n>\n> > [!IMPORTANT]\n> > Dentro')
+  // The cursor is back where it was: what is typed goes there, and nothing else changes.
+  await page.keyboard.type('!')
+  await expect.poll(saved).toBe('> Fuera\n>\n> > [!IMPORTANT]\n> > Dentro!')
 })
 
 test('in a comment, a callout shows its icon and its type', async ({ page }) => {

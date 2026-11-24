@@ -340,7 +340,8 @@ export function BlockControls({ editor }: { editor: Editor }) {
               <MenuSub>
                 <MenuSubTrigger icon={<Info />}>{t('editor.callout.menu')}</MenuSubTrigger>
                 <MenuSubContent>
-                  <CalloutTypeItems editor={editor} pos={callout} onAct={() => (acted.current = true)} />
+                  {/* Not an action that places the cursor: it goes back where it was, in the callout. */}
+                  <CalloutTypeItems editor={editor} pos={callout} />
                 </MenuSubContent>
               </MenuSub>
             )}
