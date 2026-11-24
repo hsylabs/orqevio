@@ -120,7 +120,7 @@ export function moveBlock(editor: Editor, pos: number, dir: -1 | 1) {
       placeIn(tr, was, pos, node, pos + other.nodeSize)
     }
     return true
-  })
+  }, { joinLists: true })
 }
 
 /** A copy of the block right below it, with the cursor in the copy. */
@@ -132,7 +132,7 @@ export function duplicateBlock(editor: Editor, pos: number) {
     tr.insert(pos + node.nodeSize, node)
     placeIn(tr, was, pos, node, pos + node.nodeSize)
     return true
-  })
+  }, { joinLists: true })
 }
 
 /** The block goes, and a list with it when it was its only item. */
@@ -149,7 +149,7 @@ export function deleteBlock(editor: Editor, pos: number) {
     const $at = tr.doc.resolve(Math.min(from, tr.doc.content.size))
     tr.setSelection(Selection.findFrom($at, -1, true) ?? Selection.findFrom($at, 1, true) ?? Selection.near($at, -1))
     return true
-  })
+  }, { joinLists: true })
 }
 
 /** Turns the block into another kind, as the «/» menu would on its text; the cursor goes to its end. */
@@ -164,7 +164,7 @@ export function turnBlock(editor: Editor, pos: number, to: Turn) {
       tr.replaceWith(pos, pos + node.nodeSize, node.content)
       tr.setSelection(Selection.near(tr.doc.resolve(pos + node.content.size), -1))
       return true
-    })
+    }, { joinLists: true })
   }
   // The text of the block: of its first paragraph for a list item, of the paragraphs inside for a quote.
   const item = ITEMS.has(name)
@@ -177,7 +177,8 @@ export function turnBlock(editor: Editor, pos: number, to: Turn) {
   for (let depth = $pos.depth; depth > 0; depth--) if (ITEMS.has($pos.node(depth).type.name)) lifts.push($pos.node(depth).type.name)
   return ownChain(editor, (chain) => {
     chain.command(({ tr }) => (tr.setSelection(TextSelection.create(tr.doc, from, end)), true))
-    if (item && to === 'p') for (const type of lifts) chain.liftListItem(type)
+    // Each lift as far as it goes: in a list of another kind the item can stop being one on the way.
+    if (item && to === 'p') for (const type of lifts) chain.command(({ commands }) => (commands.liftListItem(type), true))
     else if (to === 'p') chain.setParagraph()
     else if (to === 'h1' || to === 'h2' || to === 'h3') chain.setHeading({ level: Number(to[1]) as 1 | 2 | 3 })
     else if (to === 'ul') chain.toggleBulletList()
@@ -186,7 +187,7 @@ export function turnBlock(editor: Editor, pos: number, to: Turn) {
     else if (to === 'quote') chain.toggleBlockquote()
     else chain.toggleCodeBlock()
     return chain.command(({ tr }) => (tr.setSelection(Selection.near(tr.doc.resolve(tr.mapping.map(end)), -1)), true))
-  })
+  }, { joinLists: true })
 }
 
 /** Where two lists of the same kind meet, in `node` (at `start`) and inside it. */
@@ -221,7 +222,9 @@ export const DocumentRules = Extension.create({
           state.doc.forEach((node, offset, index) => {
             if (index > 0 && at === -1 && isFrontMatter(node)) at = offset
           })
-          if (at !== -1) {
+          // Unless front matter is already there: two of them (one pasted) stay where they are.
+          const first = state.doc.firstChild
+          if (at !== -1 && !(first && isFrontMatter(first))) {
             const node = state.doc.nodeAt(at)!
             tr.delete(at, at + node.nodeSize).insert(0, node)
           }

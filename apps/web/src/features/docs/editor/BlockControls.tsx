@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { isMac } from '../../../components/ui/Kbd'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuSub, MenuSubContent, MenuSubTrigger, MenuTrigger } from '../../../components/ui/Menu'
 import { cn } from '../../../lib/cn'
+import { changeOf } from './own-step'
 import { TURN_ICONS, blockAt, canMove, deleteBlock, duplicateBlock, moveBlock, turnBlock, turns } from './block-commands'
 
 const WIDTH = 18
@@ -60,15 +61,16 @@ export function BlockControls({ editor }: { editor: Editor }) {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(redraw)
     }
-    const changed = ({ transaction }: { transaction: Transaction }) => {
-      if (transaction.docChanged) {
+    const changed = (event: { transaction: Transaction; appendedTransactions?: Transaction[] }) => {
+      const change = changeOf(event)
+      if (change.docChanged) {
         // An agent or another tab can change the page while the menu is open: it follows its block.
-        before.current = before.current?.map(transaction.mapping) ?? null
+        before.current = before.current?.map(change.mapping) ?? null
         // The same for a menu that is closing, so its handle doesn't show on another block meanwhile.
         const follow = (pos: number | null) => {
           if (pos === null) return null
-          const moved = transaction.mapping.mapResult(pos, 1)
-          return moved.deleted || !transaction.doc.nodeAt(moved.pos) ? null : moved.pos
+          const moved = change.mapping.mapResult(pos, 1)
+          return moved.deleted || !change.doc.nodeAt(moved.pos) ? null : moved.pos
         }
         if (menuRef.current !== null) setMenu(follow(menuRef.current))
         if (closingRef.current !== null) setClosing(follow(closingRef.current))
@@ -105,13 +107,26 @@ export function BlockControls({ editor }: { editor: Editor }) {
       const target = event.target instanceof Element ? event.target : null
       const li = target?.closest('li') ?? null
       const list = target?.closest('ul, ol') ?? null
-      let item: Element | null = li
-      if (list && (!li || li.contains(list))) {
-        item = [...list.children].find((child) => {
+      // In a list's margin: its item nearest the pointer's height, and down into the list inside
+      // that item while the pointer is level with it.
+      const pick = (from: Element): Element | null => {
+        let best: Element | null = null
+        let distance = Infinity
+        for (const child of from.children) {
+          if (child.tagName !== 'LI') continue
+          const box = child.getBoundingClientRect()
+          const away = event.clientY < box.top ? box.top - event.clientY : Math.max(0, event.clientY - box.bottom)
+          if (away < distance) [best, distance] = [child, away]
+        }
+        const inner = best && [...best.children].find((child) => {
+          if (child.tagName !== 'UL' && child.tagName !== 'OL') return false
           const box = child.getBoundingClientRect()
           return event.clientY >= box.top && event.clientY <= box.bottom
-        }) ?? null
+        })
+        return inner ? (pick(inner) ?? best) : best
       }
+      let item: Element | null = li
+      if (list && (!li || li.contains(list))) item = pick(list)
       if (!item || !dom.contains(item)) return null
       try {
         return blockAt(editor.state.doc, editor.view.posAtDOM(item, 0))
@@ -209,8 +224,8 @@ export function BlockControls({ editor }: { editor: Editor }) {
     event.dataTransfer.effectAllowed = 'copyMove'
     const block = view.nodeDOM(pos)
     if (block instanceof HTMLElement) event.dataTransfer.setDragImage(block, 0, 0)
-    // With the node, ProseMirror deletes that block when it is dropped, whatever is selected by then.
-    view.dragging = { slice, move: true, node: selection } as typeof view.dragging
+    // Dropped, ProseMirror deletes the selection, the block, as the page may have changed since.
+    view.dragging = { slice, move: true }
   }
 
   const inside = state.focused || Boolean(root.current?.contains(document.activeElement))

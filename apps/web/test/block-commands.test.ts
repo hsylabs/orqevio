@@ -206,6 +206,25 @@ describe('block handle', () => {
     expect(editor.getMarkdown().trim()).toBe('Hola')
   })
 
+  it('leaves two front matters where they are, edit after edit', () => {
+    const editor = open('---\ntitle: x\n---\n\nUno')
+    const front = editor.state.doc.firstChild!
+    editor.view.dispatch(editor.state.tr.insert(editor.state.doc.content.size, front.type.create({ markdown: '---\ntitle: otra\n---' })))
+    const before = editor.getMarkdown()
+    editor.commands.setTextSelection(editor.state.doc.firstChild!.nodeSize + 2)
+    editor.commands.insertContent('a')
+    expect(editor.getMarkdown().indexOf('title: x')).toBe(before.indexOf('title: x'))
+    editor.commands.insertContent('b')
+    expect(editor.getMarkdown().indexOf('title: x')).toBe(before.indexOf('title: x'))
+  })
+
+  it('turns an item into text also in a list of another kind', () => {
+    const editor = open('- uno\n  - [ ] t\n- dos')
+    expect(turnBlock(editor, block(editor, 't'), 'p')).toBe(true)
+    expect(editor.state.doc.textContent).toContain('t')
+    expect(saved(editor)).not.toContain('[ ]')
+  })
+
   it('keeps front matter at the top whatever is put before it', () => {
     const editor = open('---\ntitle: x\n---\n\nUno')
     const { schema } = editor.state
