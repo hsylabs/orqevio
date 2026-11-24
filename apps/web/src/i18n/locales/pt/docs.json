@@ -200,7 +200,18 @@
       "duplicate": "Duplicar",
       "moveUp": "Mover para cima",
       "moveDown": "Mover para baixo",
+      "language": "Linguagem…",
       "delete": "Excluir"
+    },
+    "code": {
+      "plain": "Texto simples",
+      "language": "Linguagem: {{name}}",
+      "copy": "Copiar código",
+      "copied": "Código copiado",
+      "search": "Procurar uma linguagem…",
+      "picker": "Linguagem do bloco de código",
+      "noResults": "Nenhuma linguagem corresponde",
+      "use": "Usar “{{name}}”"
     },
     "taskCheckbox": "Tarefa: {{text}}",
     "taskCheckboxEmpty": "Tarefa sem texto"

@@ -11,6 +11,7 @@ import { ApiError, api, errorMessage, get } from '../../../lib/api'
 import { cn } from '../../../lib/cn'
 import { keys, queryClient } from '../../../lib/queries'
 import { BlockControls } from './BlockControls'
+import { CodeControls } from './CodeControls'
 import { FormatMenu } from './FormatMenu'
 import { BlockKeys, Mentions, SlashCommands } from './extensions'
 import { documentExtensions } from './markdown'
@@ -261,6 +262,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       <EditorContent editor={editor} />
       {editor && <FormatMenu editor={editor} />}
       {editor && <TableControls editor={editor} />}
+      {editor && <CodeControls editor={editor} />}
       {editor && blockHandles && <BlockControls editor={editor} />}
       <SuggestionMenu store={slashStore} emptyLabel={t('editor.noBlocks')} />
       <SuggestionMenu store={mentionStore} emptyLabel={t('editor.mentionHint')} />

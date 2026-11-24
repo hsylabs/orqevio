@@ -3,6 +3,7 @@ import type { Editor, Range } from '@tiptap/core'
 import { PluginKey } from '@tiptap/pm/state'
 import Suggestion from '@tiptap/suggestion'
 import { blockAt, canMove, moveBlock } from './block-commands'
+import { readPending } from './own-step'
 import type { MenuItem, SuggestionStore } from './suggestion-store'
 
 interface MenuExtensionOptions {
@@ -89,7 +90,11 @@ export const BlockKeys = Extension.create<object, { openMenu: ((pos: number) => 
     return { openMenu: null }
   },
   addKeyboardShortcuts() {
-    const cursor = () => blockAt(this.editor.state.doc, this.editor.state.selection.from)
+    // The block with the cursor, also where a click just before the key put it.
+    const cursor = () => {
+      readPending(this.editor)
+      return blockAt(this.editor.state.doc, this.editor.state.selection.from)
+    }
     const move = (dir: -1 | 1) => () => {
       const block = cursor()
       if (!block) return false

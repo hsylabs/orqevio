@@ -198,7 +198,18 @@
       "duplicate": "Dupliceren",
       "moveUp": "Omhoog",
       "moveDown": "Omlaag",
+      "language": "Taal…",
       "delete": "Verwijderen"
+    },
+    "code": {
+      "plain": "Platte tekst",
+      "language": "Taal: {{name}}",
+      "copy": "Code kopiëren",
+      "copied": "Code gekopieerd",
+      "search": "Taal zoeken…",
+      "picker": "Taal van het codeblok",
+      "noResults": "Geen taal gevonden",
+      "use": "“{{name}}” gebruiken"
     },
     "taskCheckbox": "Taak: {{text}}",
     "taskCheckboxEmpty": "Lege taak"

@@ -198,7 +198,18 @@
       "duplicate": "Duplicate",
       "moveUp": "Move up",
       "moveDown": "Move down",
+      "language": "Language…",
       "delete": "Delete"
+    },
+    "code": {
+      "plain": "Plain text",
+      "language": "Language: {{name}}",
+      "copy": "Copy code",
+      "copied": "Code copied",
+      "search": "Search for a language…",
+      "picker": "Code block language",
+      "noResults": "No language matches",
+      "use": "Use “{{name}}”"
     },
     "taskCheckbox": "To-do: {{text}}",
     "taskCheckboxEmpty": "Empty to-do"
