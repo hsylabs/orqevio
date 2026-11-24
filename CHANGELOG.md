@@ -26,10 +26,10 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - The type's name is a button: its menu changes the type or takes the callout away and leaves what it held. From the keyboard, the block's menu (Ctrl+/) has **Callout type**.
   - The «/» menu has **Callout**, and **Turn into** makes text, a heading or a quote into one, and back.
   - What is saved is still the quote GitHub reads as an alert, as it was written: a marker in small letters or a blank line after it stays. An Obsidian callout with a title, or a marker escaped on purpose, stays a quote. An alert copied from a page of GitHub is pasted as a callout.
-- **Toggles in documents, as in Notion: HTML's `<details>`.** A `<details>` with its `<summary>`, as GitHub shows it, is a title with an arrow that shows or hides what is under it, in the editor and in comments; on paper it is open.
-  - The title is edited as text. Enter in it goes into what it holds, or to a new line after it when it is closed; Ctrl+Enter (⌘↵) shows or hides it; Backspace at its start makes it text again.
-  - The «/» menu has **Toggle**, and **Turn into** makes a line of text into one, and back.
-  - What is saved is still the `<details>` as it was written, `open` included; its summary is written anew only when its text changes. Opening or closing a toggle is not a change to the page. A `<details>` written all on one block, or without a summary, stays as it was.
+- **Toggles in documents, as in Notion: HTML's `<details>`.** A `<details>` with its `<summary>`, as GitHub shows it, is a title with an arrow that shows or hides what is under it, in the editor and in comments; on paper it is open. Both ways of writing it are read: the summary right under `<details>`, or after a blank line as in GitHub's own guide.
+  - The title is one line of plain text: what is typed or pasted in it stays text, never formatting. Enter in it goes into what it holds, or to a new line after it when it is closed; Ctrl+Enter (⌘↵) shows or hides it; Backspace at its start makes it text again. Backspace right after a closed toggle selects it, rather than hiding the line in it.
+  - The «/» menu has **Toggle**, and **Turn into** makes a line of plain text into one, and back.
+  - What is saved is still the `<details>` as it was written, `open` included; its summary is written anew only when its text changes. Opening or closing a toggle is not a change to the page, and a page brought up to date from another tab or an agent keeps the toggles as the reader left them. A `<details>` written all on one block, without a summary, or closed inside other HTML stays as it was.
 
 ### Fixed
 - **Two tables in a row in a document.** Each time the page was opened and saved, more blank lines appeared between them, and then an empty paragraph. They now stay as they were.

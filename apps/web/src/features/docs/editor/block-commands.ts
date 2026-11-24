@@ -64,12 +64,14 @@ export function turns(doc: PMNode, pos: number): { current: Turn | null; options
   // A heading is one line, and a block of code only text: what wouldn't fit isn't offered.
   let lines = false
   let atoms = false
+  let marks = false
   node.descendants((child) => {
     if (child.type.name === 'hardBreak' || (child.isText && child.text?.includes('\n'))) lines = true
     else if (child.isInline && !child.isText) atoms = true
+    if (child.marks.length) marks = true
   })
-  // A toggle's title is one line of plain text too.
-  const fits = (options: Turn[]) => options.filter((o) => !(lines && (o.startsWith('h') || o === 'toggle')) && !(atoms && (o === 'code' || o === 'toggle')))
+  // A toggle's title is one line of plain text: no formatting, links or pictures.
+  const fits = (options: Turn[]) => options.filter((o) => !(lines && (o.startsWith('h') || o === 'toggle')) && !(atoms && (o === 'code' || o === 'toggle')) && !(marks && o === 'toggle'))
   if (ITEMS.has(name)) return { current: LISTS[doc.resolve(pos).parent.type.name] ?? null, options: ['p', 'ul', 'ol', 'todo'] }
   if (name === 'paragraph') return { current: 'p', options: fits(ALL) }
   if (name === 'heading') {

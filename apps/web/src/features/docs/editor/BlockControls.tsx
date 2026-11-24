@@ -10,6 +10,7 @@ import { cn } from '../../../lib/cn'
 import { CalloutTypeItems } from './CalloutControls'
 import { codeStorage, copyCode } from './code-block'
 import { changeOf, followBlock } from './own-step'
+import { TOGGLE_VIEW } from './toggle'
 import { TURN_ICONS, blockAt, canMove, deleteBlock, duplicateBlock, moveBlock, turnBlock, turns } from './block-commands'
 
 const WIDTH = 18
@@ -77,7 +78,8 @@ export function BlockControls({ editor }: { editor: Editor }) {
         if (menuRef.current !== null) setMenu(follow(menuRef.current))
         if (closingRef.current !== null) setClosing(follow(closingRef.current))
         setInner((pos) => follow(pos))
-        setHover(null)
+        // Showing or hiding a toggle moves what is under it, not the block the pointer is on.
+        if (![event.transaction, ...(event.appendedTransactions ?? [])].every((tr) => !tr.docChanged || tr.getMeta(TOGGLE_VIEW))) setHover(null)
       }
       later()
     }

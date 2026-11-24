@@ -12,14 +12,17 @@ async function openPage(page: Page, name: string, content: string) {
   await page.goto(`/w/${workspace.id}/d/${pageId}`)
   const editor = page.getByRole('textbox', { name: 'Contenido de la página' })
   await expect(editor).toBeVisible()
-  const saved = async () => ((await (await page.request.get(`/api/pages/${pageId}`)).json()) as { content: string }).content.trim()
-  return { editor, saved }
+  const read = async () => (await (await page.request.get(`/api/pages/${pageId}`)).json()) as { content: string; version: number }
+  const saved = async () => (await read()).content.trim()
+  const version = async () => (await read()).version
+  return { editor, saved, version }
 }
 
 const DETAILS = '<details>\n<summary>Más detalles</summary>\n\nOculto\n\n</details>\n\nFin'
 
 test('a <details> is a toggle: its arrow shows what it holds, and its title is edited as text', async ({ page }) => {
-  const { editor, saved } = await openPage(page, 'Desplegables E2E', DETAILS)
+  const { editor, saved, version } = await openPage(page, 'Desplegables E2E', DETAILS)
+  const first = await version()
   const hidden = editor.getByText('Oculto', { exact: true })
   await expect(editor.getByText('Más detalles', { exact: true })).toBeVisible()
   await expect(hidden).toBeHidden()
@@ -30,7 +33,10 @@ test('a <details> is a toggle: its arrow shows what it holds, and its title is e
   await expect(editor.getByRole('button', { name: 'Ocultar el contenido' })).toHaveAttribute('aria-expanded', 'true')
   await editor.getByRole('button', { name: 'Ocultar el contenido' }).click()
   await expect(hidden).toBeHidden()
-  expect(await saved()).toBe(DETAILS)
+  // Longer than the editor waits before it saves: the page is still the version it was.
+  await page.waitForTimeout(1500)
+  expect(await version()).toBe(first)
+  await expect(page.getByText('Cambios sin guardar')).toBeHidden()
 
   // Its title, edited as text: its summary is written anew.
   const title = editor.getByText('Más detalles', { exact: true })
@@ -55,6 +61,8 @@ test('a toggle from the «/» menu: a title, and Enter into what it holds', asyn
   await page.keyboard.type('/desplegable')
   await expect(page.getByRole('option', { name: /Desplegable/ })).toBeVisible()
   await page.keyboard.press('Enter')
+  // Its empty title says what it is for.
+  await expect(editor.locator('.orq-toggle-title.is-empty')).toHaveAttribute('data-placeholder', 'Título del desplegable')
   await page.keyboard.type('¿Cómo se instala?')
   await page.keyboard.press('Enter')
   await page.keyboard.type('Con un comando.')

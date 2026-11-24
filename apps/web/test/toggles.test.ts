@@ -1,17 +1,22 @@
 // @vitest-environment jsdom
 import { Editor } from '@tiptap/core'
 import { undoDepth } from '@tiptap/pm/history'
-import { TextSelection } from '@tiptap/pm/state'
-import { afterEach, describe, expect, it } from 'vitest'
+import { Slice } from '@tiptap/pm/model'
+import { NodeSelection, TextSelection } from '@tiptap/pm/state'
+import i18next from 'i18next'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import docs from '../src/i18n/locales/es/docs.json'
 import { turnBlock, turns } from '../src/features/docs/editor/block-commands'
 import { documentExtensions } from '../src/features/docs/editor/markdown'
 import { markdownToHtml } from '../src/features/docs/editor/markdown-html'
-import { insertToggle, setToggleOpen } from '../src/features/docs/editor/toggle'
+import { insertToggle, setToggleOpen, showTogglesAsBefore, togglesShown } from '../src/features/docs/editor/toggle'
 
 // HTML's <details> as a toggle in the editor: a title that shows or hides what is under it, written
 // back as the HTML and Markdown it was.
 const editors: Editor[] = []
 afterEach(() => editors.splice(0).forEach((e) => e.destroy()))
+// The placeholder of an empty title, in the app's language.
+beforeAll(() => i18next.init({ lng: 'es', resources: { es: { docs } }, ns: ['docs'] }))
 
 function open(content: string, contentType: 'markdown' | 'html' = 'markdown', mounted = false) {
   const element = mounted ? document.body.appendChild(document.createElement('div')) : undefined
@@ -41,6 +46,23 @@ const cursorIn = (editor: Editor, name: string, at: 'start' | 'end' = 'end') => 
   const node = editor.state.doc.nodeAt(pos)!
   editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, at === 'start' ? pos + 1 : pos + node.nodeSize - 1)))
 }
+/** The cursor at the start or the end of the paragraph whose text is `text`. */
+const cursorAt = (editor: Editor, text: string, at: 'start' | 'end' = 'start') => {
+  let found = -1
+  editor.state.doc.descendants((node, pos) => {
+    if (found === -1 && node.type.name === 'paragraph' && node.textContent === text) found = at === 'start' ? pos + 1 : pos + node.nodeSize - 1
+    return found === -1
+  })
+  editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, found)))
+}
+/** Text typed key by key, as the browser sends it: what the editor makes of it as it is typed (its input rules) included. */
+const type = (editor: Editor, text: string) => {
+  for (const char of text) {
+    const { from, to } = editor.state.selection
+    if (!editor.view.someProp('handleTextInput', (handle) => handle(editor.view, from, to, char, () => editor.state.tr.insertText(char, from, to)))) editor.view.dispatch(editor.state.tr.insertText(char, from, to))
+  }
+}
+const titleText = (editor: Editor) => editor.state.doc.nodeAt(first(editor, 'toggleTitle'))!.textContent
 
 describe('a <details> with its summary', () => {
   it.each([
@@ -53,10 +75,30 @@ describe('a <details> with its summary', () => {
     ['inside another', '<details>\n<summary>Fuera</summary>\n\n<details>\n<summary>Dentro</summary>\n\nHondo\n\n</details>\n\n</details>'],
     ['in a quote', '> <details>\n> <summary>En cita</summary>\n>\n> Texto\n>\n> </details>'],
     ['with code and a callout inside', '<details>\n<summary>Ejemplo</summary>\n\n```js\nlet a = 1\n```\n\n> [!NOTE]\n> Ojo\n\n</details>'],
+    ['as GitHub\'s guide writes it, a blank line before its summary', '<details>\n\n<summary>Consejos</summary>\n\n### Un título\n\nTexto\n\n</details>'],
+    ['with its summary over several lines', '<details>\n<summary>\n    <b>En varias líneas</b>\n  </summary>\n\nTexto\n\n</details>'],
+    ['with only blank lines', '<details>\n<summary>Hueco</summary>\n\n\n\n</details>'],
   ])('is a toggle, written back as it was: %s', (_name, markdown) => {
     const editor = open(markdown)
     expect(types(editor)).toContain('toggle')
     expect(editor.getMarkdown()).toBe(markdown)
+  })
+
+  it('shows its summary as one line of text', () => {
+    expect(titleText(open('<details>\n<summary>\n    <b>En varias líneas</b>\n  </summary>\n\nTexto\n\n</details>'))).toBe('En varias líneas')
+    expect(titleText(open('<details>\n\n<summary>Consejos</summary>\n\nTexto\n\n</details>'))).toBe('Consejos')
+  })
+
+  it('writes what it holds as the same blocks would be written outside it, empty lines included', () => {
+    for (const body of ['A\n\n\n\n&nbsp;\n\nB', 'A\n\n&nbsp;\n\n&nbsp;\n\nB', 'A\n\n\n\nB']) {
+      const wrap = (inside: string) => `<details>\n<summary>S</summary>\n\n${inside}\n\n</details>`
+      expect(open(wrap(body)).getMarkdown()).toBe(wrap(open(body).getMarkdown()))
+    }
+  })
+
+  it('is closed unless its own `open` says otherwise, not a word in another attribute', () => {
+    const editor = open('<details title="please open it">\n<summary>A</summary>\n\nB\n\n</details>')
+    expect(editor.state.doc.nodeAt(first(editor, 'toggle'))!.attrs.open).toBe(false)
   })
 
   it('in a list item, stays the same from the second save on', () => {
@@ -71,6 +113,8 @@ describe('a <details> with its summary', () => {
     ['no summary', '<details>\n\nTexto\n\n</details>'],
     ['no end', '<details>\n<summary>Sin cierre</summary>\n\nTexto'],
     ['more after its summary', '<details>\n<summary>A</summary>\n<p>B</p>\n\nTexto\n\n</details>'],
+    ['its end at the end of other HTML', '<details>\n<summary>Captura</summary>\n\nMira:\n\n<img src="/x.png">\n</details>\n\nDespués\n\n</details>'],
+    ['the next one\'s start right after its end', '<details>\n<summary>A</summary>\n\nUno\n\n</details>\n<details>\n<summary>B</summary>\n\nDos\n\n</details>'],
   ])('stays HTML as it was with %s', (_name, markdown) => {
     const editor = open(markdown)
     expect(types(editor)).not.toContain('toggle')
@@ -108,8 +152,8 @@ describe('a toggle changed in the editor', () => {
     expect(saved(editor)).toBe('Pregunta\n\nRespuesta')
   })
 
-  it('is not offered for text with a picture, which its title couldn\'t hold', () => {
-    expect(turns(open('Mira ![x](/api/attachments/x.png)').state.doc, 0).options).not.toContain('toggle')
+  it('is not offered for text with a picture, a link or formatting, which its title couldn\'t hold', () => {
+    for (const text of ['Mira ![x](/api/attachments/x.png)', 'Ver [el contrato](/card/x)', 'Esto **ya**']) expect(turns(open(text).state.doc, 0).options).not.toContain('toggle')
   })
 
   it('is put in place of an empty line, with the cursor in its title', () => {
@@ -134,6 +178,116 @@ describe('a toggle changed in the editor', () => {
     expect(saved(editor)).toBe('<details>\n<summary>Más</summary>\n\nPrimero\n\nDentro\n\n</details>\n\nDespués')
   })
 
+  it('says what its empty title is for', () => {
+    const editor = open('', 'markdown', true)
+    editor.commands.command(({ tr }) => insertToggle(tr))
+    const title = editor.view.dom.querySelector('.orq-toggle-title')!
+    expect(title.classList.contains('is-empty')).toBe(true)
+    expect(title.getAttribute('data-placeholder')).toBe('Título del desplegable')
+  })
+
+  it('takes what is typed in its title as text, never as Markdown, and Shift+Enter as Enter', () => {
+    const editor = open('', 'markdown', true)
+    editor.commands.command(({ tr }) => insertToggle(tr))
+    type(editor, '--- **a** ')
+    expect(titleText(editor)).toBe('--- **a** ')
+    expect(saved(editor)).toBe('<details>\n<summary>--- **a**</summary>\n\n</details>')
+    press(editor, 'Enter')
+    expect(editor.state.selection.$from.parent.type.name).toBe('paragraph')
+    cursorIn(editor, 'toggleTitle')
+    editor.view.someProp('handleKeyDown', (handle) => handle(editor.view, new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true })))
+    expect(titleText(editor)).toBe('--- **a** ')
+    expect(editor.state.selection.$from.parent.type.name).toBe('paragraph')
+  })
+
+  it('takes what is pasted into its title as one line of text', () => {
+    const editor = open('<details>\n<summary>Más</summary>\n\nDentro\n\n</details>', 'markdown', true)
+    cursorIn(editor, 'toggleTitle')
+    const event = { clipboardData: { getData: () => 'uno\n\ndos' } } as unknown as ClipboardEvent
+    editor.view.someProp('handlePaste', (handle) => handle(editor.view, event, Slice.empty))
+    expect(saved(editor)).toBe('<details>\n<summary>Másuno dos</summary>\n\nDentro\n\n</details>')
+  })
+
+  it('is put only where a toggle can go: not in its own title nor in a table\'s cell, and after an empty item', () => {
+    const editor = open('<details>\n<summary></summary>\n\nDentro\n\n</details>\n\n| a |\n| --- |\n| b |', 'markdown', true)
+    cursorIn(editor, 'toggleTitle')
+    expect(insertToggle(editor.state.tr)).toBe(false)
+    cursorIn(editor, 'tableCell')
+    expect(insertToggle(editor.state.tr)).toBe(false)
+    const list = open('', 'markdown', true)
+    list.commands.setContent({ type: 'doc', content: [{ type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph' }] }] }] })
+    cursorIn(list, 'paragraph')
+    list.commands.command(({ tr }) => insertToggle(tr))
+    expect(list.state.selection.$from.parent.type.name).toBe('toggleTitle')
+    // In the item, after its empty line; the editor's empty line after a list at the end, as ever.
+    expect(types(list)).toEqual(['bulletList', 'listItem', 'paragraph', 'toggle', 'toggleTitle', 'paragraph', 'paragraph'])
+  })
+
+  it('is selected by Backspace right after it when closed, and takes the line\'s text into its last one when open', () => {
+    const markdown = '<details>\n<summary>Más</summary>\n\nOculto\n\n</details>\n\nDespués'
+    const closed = open(markdown, 'markdown', true)
+    cursorAt(closed, 'Después')
+    press(closed, 'Backspace')
+    expect(closed.state.selection).toBeInstanceOf(NodeSelection)
+    expect(saved(closed)).toBe(markdown)
+    const opened = open(markdown, 'markdown', true)
+    setToggleOpen(opened, first(opened, 'toggle'), true)
+    cursorAt(opened, 'Después')
+    press(opened, 'Backspace')
+    expect(saved(opened)).toBe('<details>\n<summary>Más</summary>\n\nOcultoDespués\n\n</details>')
+  })
+
+  it('takes the first line it holds into its title only if it is plain text', () => {
+    const plain = open('<details open>\n<summary>Más</summary>\n\nDentro\n\nOtro\n\n</details>', 'markdown', true)
+    cursorAt(plain, 'Dentro')
+    press(plain, 'Backspace')
+    expect(saved(plain)).toBe('<details open>\n<summary>MásDentro</summary>\n\nOtro\n\n</details>')
+    const bold = '<details open>\n<summary>Más</summary>\n\n**Dentro**\n\n</details>'
+    const formatted = open(bold, 'markdown', true)
+    cursorAt(formatted, 'Dentro')
+    press(formatted, 'Backspace')
+    expect(saved(formatted)).toBe(bold)
+    expect(formatted.state.selection.$from.parent.type.name).toBe('toggleTitle')
+    // Delete at the end of the title of a closed one brings nothing hidden up into it.
+    const closed = '<details>\n<summary>Más</summary>\n\nDentro\n\n</details>'
+    const hidden = open(closed, 'markdown', true)
+    cursorIn(hidden, 'toggleTitle')
+    press(hidden, 'Delete')
+    expect(saved(hidden)).toBe(closed)
+  })
+
+  it('becomes text with Backspace, its list joined with the one after it', () => {
+    const editor = open('<details>\n<summary>Lista</summary>\n\n- a\n\n</details>\n\n- b', 'markdown', true)
+    cursorIn(editor, 'toggleTitle', 'start')
+    press(editor, 'Backspace')
+    expect(editor.getJSON().content?.map((node) => node.type)).toEqual(['paragraph', 'bulletList', 'paragraph'])
+    expect(saved(editor)).toBe('Lista\n\n- a\n- b')
+  })
+
+  it('keeps the cursor out of what it hides, a selection that ends there too', () => {
+    const editor = open('<details open>\n<summary>Más</summary>\n\nDentro\n\n</details>', 'markdown', true)
+    const title = first(editor, 'toggleTitle')
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, title + 1, title + 8)))
+    setToggleOpen(editor, first(editor, 'toggle'), false)
+    expect(editor.state.selection.$to.parent.type.name).toBe('toggleTitle')
+    expect(editor.view.dom.querySelector('.orq-toggle--reveal')).toBeNull()
+  })
+
+  it('stays open or closed as the reader left it when the page is read again', () => {
+    const markdown = '<details>\n<summary>Uno</summary>\n\nA\n\n</details>\n\n<details open>\n<summary>Dos</summary>\n\nB\n\n</details>\n\n<details>\n<summary>Tres</summary>\n\nC\n\n</details>'
+    const editor = open(markdown, 'markdown', true)
+    const toggles = () => { const found: boolean[] = []; editor.state.doc.descendants((node) => void (node.type.name === 'toggle' && found.push(node.attrs.open))); return found }
+    let second = -1
+    editor.state.doc.descendants((node, pos) => void (node.type.name === 'toggle' && node.textContent.startsWith('Dos') && (second = pos)))
+    setToggleOpen(editor, first(editor, 'toggle'), true)
+    setToggleOpen(editor, second, false)
+    const shown = togglesShown(editor.state.doc)
+    editor.commands.setContent(`Nuevo\n\n${markdown}`, { contentType: 'markdown', emitUpdate: false })
+    showTogglesAsBefore(editor, shown)
+    expect(toggles()).toEqual([true, false, false])
+    expect(saved(editor)).toBe(`Nuevo\n\n${markdown}`)
+  })
+
   it('is shown or hidden with Ctrl+Enter in its title, and becomes text with Backspace at its start', () => {
     const editor = open('<details>\n<summary>Más</summary>\n\nDentro\n\n</details>', 'markdown', true)
     cursorIn(editor, 'toggleTitle')
@@ -149,6 +303,11 @@ describe('a toggle as HTML', () => {
   it('comes back the same through copy and paste', () => {
     const markdown = '<details open>\n  <summary><b>Con etiqueta</b></summary>\n\nTexto\n\n</details>'
     expect(open(open(markdown).getHTML(), 'html').getMarkdown()).toBe(markdown)
+  })
+
+  it('writes only what a <details> can be written as, whatever a pasted one says', () => {
+    const html = '<details data-head="&lt;div&gt;" data-closing="" data-tail="x" data-summary="&lt;/summary&gt;"><summary>Pregunta</summary><p>Respuesta</p></details>'
+    expect(open(html, 'html').getMarkdown()).toBe('<details>\n<summary>Pregunta</summary>\n\nRespuesta\n\n</details>')
   })
 
   it('is read from a <details> copied from a web page', () => {

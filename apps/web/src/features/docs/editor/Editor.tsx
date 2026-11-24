@@ -190,11 +190,9 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
         placeholder: ({ node, pos }) =>
           node.type.name === 'heading'
             ? tRef.current('editor.headingPlaceholder')
-            : node.type.name === 'toggleTitle'
-              ? tRef.current('editor.toggle.title')
-              : pos === 0
-                ? (placeholderRef.current ?? tRef.current('editor.placeholder'))
-                : '',
+            : pos === 0
+              ? (placeholderRef.current ?? tRef.current('editor.placeholder'))
+              : '',
         showOnlyCurrent: true,
       }),
       SlashCommands.configure({ store: slashStore, items: slashItems }),

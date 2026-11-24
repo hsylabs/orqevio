@@ -57,6 +57,7 @@ export function FormatMenu({ editor }: { editor: Editor }) {
         !(s.selection instanceof CellSelection) &&
         !(s.selection instanceof NodeSelection && s.selection.node.isBlock) &&
         !e.isActive('codeBlock') &&
+        !e.isActive('toggleTitle') &&
         !e.isActive('image')
       }
       options={{ placement: 'top', offset: 8 }}
