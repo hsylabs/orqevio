@@ -9,6 +9,7 @@ import { Markdown, MarkdownManager, assumeContentType } from '@tiptap/markdown'
 import StarterKit from '@tiptap/starter-kit'
 import { t } from 'i18next'
 import { DocumentRules } from './block-commands'
+import { Callout, calloutFromQuote } from './callout'
 import { FaithfulCodeBlock } from './code-block'
 
 /**
@@ -255,9 +256,13 @@ const FaithfulBlockquote = Blockquote.extend({
     const text = quote.content?.[0]?.type === 'paragraph' ? quote.content[0].content?.[0] : undefined
     const marker = text?.type === 'text' ? /^\[![A-Za-z][A-Za-z0-9-]*\]/.exec(text.text ?? '')?.[0] : undefined
     // The quote's first paragraph as written, without the `>` marked has already taken away.
-    const first = (token.tokens as Array<{ type?: string; raw?: string }> | undefined)?.find((child) => child.type !== 'space')
-    if (!marker || first?.type !== 'paragraph' || (first.raw ?? '').startsWith(marker)) return quote
-    return { ...quote, attrs: { ...quote.attrs, escapedMarker: true } }
+    const tokens = (token.tokens as Array<{ type?: string; raw?: string }> | undefined) ?? []
+    const index = tokens.findIndex((child) => child.type !== 'space')
+    const first = tokens[index]
+    const escaped = !!marker && first?.type === 'paragraph' && !(first.raw ?? '').startsWith(marker)
+    const read = escaped ? { ...quote, attrs: { ...quote.attrs, escapedMarker: true } } : quote
+    // One of GitHub's alerts is a callout (callout.ts); a blank line after its marker is kept.
+    return calloutFromQuote(read, tokens[index + 1]?.type === 'space') ?? read
   },
   renderMarkdown(node, helpers, context) {
     const markdown = this.parent?.(node, helpers, context) ?? ''
@@ -503,6 +508,7 @@ export function documentExtensions(): AnyExtension[] {
     FaithfulOrderedList,
     FaithfulParagraph,
     FaithfulBlockquote,
+    Callout,
     FaithfulMarkdown.configure({ markedOptions: { gfm: true } }),
     TaskList,
     // What a screen reader says for each checkbox, in the app's language.

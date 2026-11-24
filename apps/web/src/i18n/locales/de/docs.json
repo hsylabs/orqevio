@@ -113,6 +113,11 @@
         "subtitle": "Eine Passage hervorheben",
         "keywords": "zitat quote blockquote"
       },
+      "callout": {
+        "title": "Hinweisbox",
+        "subtitle": "Ein hervorgehobener Kasten: Hinweis, Tipp, Warnung…",
+        "keywords": "hinweisbox callout hinweis tipp wichtig warnung vorsicht"
+      },
       "code": {
         "title": "Code",
         "subtitle": "Codeblock",
@@ -200,6 +205,16 @@
       "moveDown": "Nach unten",
       "language": "Sprache…",
       "delete": "Löschen"
+    },
+    "callout": {
+      "note": "Hinweis",
+      "tip": "Tipp",
+      "important": "Wichtig",
+      "warning": "Warnung",
+      "caution": "Vorsicht",
+      "typeOf": "Art der Hinweisbox: {{type}}",
+      "menu": "Art der Hinweisbox",
+      "remove": "Hinweisbox entfernen"
     },
     "code": {
       "plain": "Nur Text",

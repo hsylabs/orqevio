@@ -113,6 +113,11 @@
         "subtitle": "Make a passage stand out",
         "keywords": "quote blockquote"
       },
+      "callout": {
+        "title": "Callout",
+        "subtitle": "A highlighted box: note, tip, warning…",
+        "keywords": "callout alert admonition note tip important warning caution"
+      },
       "code": {
         "title": "Code",
         "subtitle": "Code block",
@@ -200,6 +205,16 @@
       "moveDown": "Move down",
       "language": "Language…",
       "delete": "Delete"
+    },
+    "callout": {
+      "note": "Note",
+      "tip": "Tip",
+      "important": "Important",
+      "warning": "Warning",
+      "caution": "Caution",
+      "typeOf": "Callout type: {{type}}",
+      "menu": "Callout type",
+      "remove": "Remove the callout"
     },
     "code": {
       "plain": "Plain text",

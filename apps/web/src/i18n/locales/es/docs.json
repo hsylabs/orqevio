@@ -113,6 +113,11 @@
         "subtitle": "Destaca un fragmento",
         "keywords": "cita quote blockquote"
       },
+      "callout": {
+        "title": "Aviso",
+        "subtitle": "Un recuadro destacado: nota, consejo, advertencia…",
+        "keywords": "aviso callout alerta nota consejo importante advertencia precaución"
+      },
       "code": {
         "title": "Código",
         "subtitle": "Bloque de código",
@@ -202,6 +207,16 @@
       "moveDown": "Bajar",
       "language": "Lenguaje…",
       "delete": "Eliminar"
+    },
+    "callout": {
+      "note": "Nota",
+      "tip": "Consejo",
+      "important": "Importante",
+      "warning": "Advertencia",
+      "caution": "Precaución",
+      "typeOf": "Tipo de aviso: {{type}}",
+      "menu": "Tipo de aviso",
+      "remove": "Quitar el aviso"
     },
     "code": {
       "plain": "Texto plano",

@@ -1,6 +1,7 @@
 import { type Editor, Extension } from '@tiptap/core'
 import { Fragment, type Node as PMNode } from '@tiptap/pm/model'
 import { NodeSelection, Plugin, PluginKey, Selection, TextSelection, type Transaction } from '@tiptap/pm/state'
+import { type CalloutType, markerFor } from './callout'
 import { JOIN_LISTS, ownChain, ownStep } from './own-step'
 
 /**
@@ -13,10 +14,10 @@ const ITEMS = new Set(['listItem', 'taskItem'])
 const LISTS: Record<string, Turn> = { bulletList: 'ul', orderedList: 'ol', taskList: 'todo' }
 
 /** What a block can be turned into, as in the «/» menu. */
-export type Turn = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'code'
-const ALL: Turn[] = ['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'todo', 'quote', 'code']
+export type Turn = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'code'
+const ALL: Turn[] = ['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'todo', 'quote', 'callout', 'code']
 /** The icons of the «/» menu for each of them. */
-export const TURN_ICONS: Record<Turn, string> = { p: 'T', h1: 'H1', h2: 'H2', h3: 'H3', ul: '•', ol: '1.', todo: '☑', quote: '❝', code: '</>' }
+export const TURN_ICONS: Record<Turn, string> = { p: 'T', h1: 'H1', h2: 'H2', h3: 'H3', ul: '•', ol: '1.', todo: '☑', quote: '❝', callout: 'ⓘ', code: '</>' }
 
 
 export interface Block {
@@ -74,7 +75,8 @@ export function turns(doc: PMNode, pos: number): { current: Turn | null; options
     return { current: level <= 3 ? (`h${level}` as Turn) : null, options: fits(ALL) }
   }
   if (name === 'codeBlock') return { current: 'code', options: fits(['p', 'h1', 'h2', 'h3', 'code']) }
-  if (name === 'blockquote') return { current: 'quote', options: ['p', 'quote'] }
+  if (name === 'blockquote') return { current: 'quote', options: ['p', 'quote', 'callout'] }
+  if (name === 'callout') return { current: 'callout', options: ['p', 'quote', 'callout'] }
   return { current: null, options: [] }
 }
 
@@ -158,8 +160,16 @@ export function turnBlock(editor: Editor, pos: number, to: Turn) {
   const { current, options } = turns(editor.state.doc, pos)
   if (!node || to === current || !options.includes(to)) return false
   const name = node.type.name
-  // A quote turned into text gives what it holds, whatever it is: paragraphs, a list, a table.
-  if (name === 'blockquote' && to === 'p') {
+  // A quote and a callout hold blocks alike: one becomes the other as it is, a note for a new callout.
+  if ((name === 'blockquote' && to === 'callout') || (name === 'callout' && to === 'quote')) {
+    return ownStep(editor, ({ tr }) => {
+      const attrs = to === 'callout' ? { marker: markerFor('note') } : {}
+      tr.setNodeMarkup(pos, editor.schema.nodes[to === 'callout' ? 'callout' : 'blockquote'], attrs)
+      return true
+    })
+  }
+  // A quote or a callout turned into text gives what it holds, whatever it is: paragraphs, a list, a table.
+  if ((name === 'blockquote' || name === 'callout') && to === 'p') {
     return ownStep(editor, ({ tr }) => {
       tr.replaceWith(pos, pos + node.nodeSize, node.content)
       tr.setSelection(Selection.near(tr.doc.resolve(pos + node.content.size), -1))
@@ -185,9 +195,25 @@ export function turnBlock(editor: Editor, pos: number, to: Turn) {
     else if (to === 'ol') chain.toggleOrderedList()
     else if (to === 'todo') chain.toggleTaskList()
     else if (to === 'quote') chain.toggleBlockquote()
+    else if (to === 'callout') chain.wrapIn('callout', { marker: markerFor('note') })
     else chain.toggleCodeBlock()
     return chain.command(({ tr }) => (tr.setSelection(Selection.near(tr.doc.resolve(tr.mapping.map(end)), -1)), true))
   }, { joinLists: true })
+}
+
+/** Gives a callout another type, its marker in the case it was written in. */
+export function setCalloutType(editor: Editor, pos: number, type: CalloutType) {
+  return ownStep(editor, ({ tr }) => {
+    const node = tr.doc.nodeAt(pos)
+    if (node?.type.name !== 'callout') return false
+    tr.setNodeMarkup(pos, undefined, { ...node.attrs, marker: markerFor(type, node.attrs.marker) })
+    return true
+  })
+}
+
+/** Takes a callout away and leaves what it held, with the cursor at its end. */
+export function removeCallout(editor: Editor, pos: number) {
+  return turnBlock(editor, pos, 'p')
 }
 
 /** Where two lists of the same kind meet, in `node` (at `start`) and inside it. */

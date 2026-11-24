@@ -113,6 +113,11 @@
         "subtitle": "Destaque um trecho",
         "keywords": "citação destaque quote blockquote"
       },
+      "callout": {
+        "title": "Destaque",
+        "subtitle": "Uma caixa em destaque: nota, dica, aviso…",
+        "keywords": "destaque callout alerta nota dica importante aviso cuidado"
+      },
       "code": {
         "title": "Código",
         "subtitle": "Bloco de código",
@@ -202,6 +207,16 @@
       "moveDown": "Mover para baixo",
       "language": "Linguagem…",
       "delete": "Excluir"
+    },
+    "callout": {
+      "note": "Nota",
+      "tip": "Dica",
+      "important": "Importante",
+      "warning": "Aviso",
+      "caution": "Cuidado",
+      "typeOf": "Tipo de destaque: {{type}}",
+      "menu": "Tipo de destaque",
+      "remove": "Remover o destaque"
     },
     "code": {
       "plain": "Texto simples",

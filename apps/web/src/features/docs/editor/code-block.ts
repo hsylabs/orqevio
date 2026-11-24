@@ -7,6 +7,7 @@ import i18next, { t } from 'i18next'
 import { copyText } from '../../../components/ui/CopyButton'
 import { codeColoursLoaded, findLanguage, highlighter, languageOf, loadCodeColours, PLAIN, whenCodeColoursLoad } from './code-languages'
 import { readPending } from './own-step'
+import { icon } from './svg-icons'
 
 /** What the editor's controls reach through `editor.storage.codeBlock`. */
 export interface CodeBlockStorage {
@@ -37,29 +38,6 @@ export const languageClass = (info: string | null | undefined) => {
 export const copyCode = (code: string) => copyText(code, { message: t('docs:editor.code.copied') })
 
 // ── The block as shown ───────────────────────────────────────────
-
-const SVG = 'http://www.w3.org/2000/svg'
-/** Lucide's icons (copy, check, chevron-down), as the rest of the app draws them, for a view outside React. */
-const ICONS = {
-  copy: [
-    ['rect', { width: '14', height: '14', x: '8', y: '8', rx: '2', ry: '2' }],
-    ['path', { d: 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2' }],
-  ],
-  check: [['path', { d: 'M20 6 9 17l-5-5' }]],
-  chevron: [['path', { d: 'm6 9 6 6 6-6' }]],
-} as const satisfies Record<string, ReadonlyArray<readonly [string, Record<string, string>]>>
-
-export function icon(name: keyof typeof ICONS, className: string, doc: Document = document) {
-  const svg = doc.createElementNS(SVG, 'svg')
-  for (const [key, value] of Object.entries({ viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', class: className }))
-    svg.setAttribute(key, value)
-  for (const [tag, attrs] of ICONS[name]) {
-    const child = doc.createElementNS(SVG, tag)
-    for (const [key, value] of Object.entries(attrs)) child.setAttribute(key, value)
-    svg.append(child)
-  }
-  return svg
-}
 
 /**
  * A code block in the editor: its code, and a bar above it with its language (a button that opens

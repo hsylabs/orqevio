@@ -113,6 +113,11 @@
         "subtitle": "文章の一部を目立たせる",
         "keywords": "引用 いんよう quote blockquote"
       },
+      "callout": {
+        "title": "注意書き",
+        "subtitle": "目立つ枠：注記、ヒント、警告など",
+        "keywords": "注意書き コールアウト callout 注記 ヒント 重要 警告 注意"
+      },
       "code": {
         "title": "コード",
         "subtitle": "コードブロック",
@@ -198,6 +203,16 @@
       "moveDown": "下へ移動",
       "language": "言語…",
       "delete": "削除"
+    },
+    "callout": {
+      "note": "注記",
+      "tip": "ヒント",
+      "important": "重要",
+      "warning": "警告",
+      "caution": "注意",
+      "typeOf": "注意書きの種類：{{type}}",
+      "menu": "注意書きの種類",
+      "remove": "注意書きを解除"
     },
     "code": {
       "plain": "プレーンテキスト",

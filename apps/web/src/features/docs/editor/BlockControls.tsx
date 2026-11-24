@@ -1,12 +1,13 @@
 import type { Editor } from '@tiptap/core'
 import { NodeSelection, Selection, type SelectionBookmark, type Transaction } from '@tiptap/pm/state'
 import { useEditorState } from '@tiptap/react'
-import { ArrowDown, ArrowUp, ClipboardCopy, Code, Copy, GripVertical, Repeat, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ClipboardCopy, Code, Copy, GripVertical, Info, Repeat, Trash2 } from 'lucide-react'
 import { type DragEvent, useEffect, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { isMac } from '../../../components/ui/Kbd'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuSub, MenuSubContent, MenuSubTrigger, MenuTrigger } from '../../../components/ui/Menu'
 import { cn } from '../../../lib/cn'
+import { CalloutTypeItems } from './CalloutControls'
 import { codeStorage, copyCode } from './code-block'
 import { changeOf, followBlock } from './own-step'
 import { TURN_ICONS, blockAt, canMove, deleteBlock, duplicateBlock, moveBlock, turnBlock, turns } from './block-commands'
@@ -314,6 +315,14 @@ export function BlockControls({ editor }: { editor: Editor }) {
                       {t(`editor.slash.${option}.title`)}
                     </MenuItem>
                   ))}
+                </MenuSubContent>
+              </MenuSub>
+            )}
+            {node.type.name === 'callout' && (
+              <MenuSub>
+                <MenuSubTrigger icon={<Info />}>{t('editor.callout.menu')}</MenuSubTrigger>
+                <MenuSubContent>
+                  <CalloutTypeItems editor={editor} pos={pos} onAct={() => (acted.current = true)} />
                 </MenuSubContent>
               </MenuSub>
             )}

@@ -113,6 +113,11 @@
         "subtitle": "Metti in risalto un passaggio",
         "keywords": "citazione quote blockquote"
       },
+      "callout": {
+        "title": "Riquadro",
+        "subtitle": "Un riquadro in evidenza: nota, suggerimento, avvertenza…",
+        "keywords": "riquadro callout avviso nota suggerimento importante avvertenza attenzione"
+      },
       "code": {
         "title": "Codice",
         "subtitle": "Blocco di codice",
@@ -202,6 +207,16 @@
       "moveDown": "Sposta giù",
       "language": "Linguaggio…",
       "delete": "Elimina"
+    },
+    "callout": {
+      "note": "Nota",
+      "tip": "Suggerimento",
+      "important": "Importante",
+      "warning": "Avvertenza",
+      "caution": "Attenzione",
+      "typeOf": "Tipo di riquadro: {{type}}",
+      "menu": "Tipo di riquadro",
+      "remove": "Rimuovi il riquadro"
     },
     "code": {
       "plain": "Testo semplice",
