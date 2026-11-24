@@ -10,8 +10,9 @@ import { toast } from 'sonner'
 import { ApiError, api, errorMessage, get } from '../../../lib/api'
 import { cn } from '../../../lib/cn'
 import { keys, queryClient } from '../../../lib/queries'
+import { BlockControls } from './BlockControls'
 import { FormatMenu } from './FormatMenu'
-import { Mentions, SlashCommands } from './extensions'
+import { BlockKeys, Mentions, SlashCommands } from './extensions'
 import { documentExtensions } from './markdown'
 import { SuggestionMenu } from './SuggestionMenu'
 import { TableControls } from './TableControls'
@@ -37,6 +38,8 @@ interface EditorProps {
   ariaLabel?: string
   /** The id of what tells more about the field (a hint with its keyboard shortcut). */
   ariaDescribedBy?: string
+  /** The handle of each block, to move it and turn it into another; not in a short text such as a comment. */
+  blockHandles?: boolean
 }
 
 type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'code' | 'table' | 'hr' | 'mention' | 'image' | 'file'
@@ -66,7 +69,7 @@ function insertAttachment(editor: TiptapEditor, attachment: AttachmentDTO, pos?:
   return editor.state.selection.to
 }
 
-export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel, ariaDescribedBy }: EditorProps) {
+export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel, ariaDescribedBy, blockHandles = true }: EditorProps) {
   const { t } = useTranslation('docs')
   // TipTap keeps the callbacks it was created with: they read the current language and placeholder from refs.
   const tRef = useRef(t)
@@ -184,6 +187,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       }),
       SlashCommands.configure({ store: slashStore, items: slashItems }),
       Mentions.configure({ store: mentionStore, items: mentionItems }),
+      BlockKeys,
     ],
     content,
     contentType: 'markdown',
@@ -257,6 +261,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       <EditorContent editor={editor} />
       {editor && <FormatMenu editor={editor} />}
       {editor && <TableControls editor={editor} />}
+      {editor && blockHandles && <BlockControls editor={editor} />}
       <SuggestionMenu store={slashStore} emptyLabel={t('editor.noBlocks')} />
       <SuggestionMenu store={mentionStore} emptyLabel={t('editor.mentionHint')} />
       <input

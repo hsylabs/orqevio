@@ -193,6 +193,15 @@
       "addRow": "Aggiungi una riga",
       "addColumn": "Aggiungi una colonna"
     },
+    "block": {
+      "handle": "Opzioni del blocco",
+      "handleHint": "Trascina per spostarlo. Fai clic, o premi {{key}}, per le sue opzioni.",
+      "turnInto": "Trasforma in",
+      "duplicate": "Duplica",
+      "moveUp": "Sposta su",
+      "moveDown": "Sposta giù",
+      "delete": "Elimina"
+    },
     "taskCheckbox": "Da fare: {{text}}",
     "taskCheckboxEmpty": "Cosa da fare vuota"
   },

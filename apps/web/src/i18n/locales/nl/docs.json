@@ -191,6 +191,15 @@
       "addRow": "Rij toevoegen",
       "addColumn": "Kolom toevoegen"
     },
+    "block": {
+      "handle": "Blokopties",
+      "handleHint": "Sleep om te verplaatsen. Klik, of druk op {{key}}, voor de opties.",
+      "turnInto": "Omzetten naar",
+      "duplicate": "Dupliceren",
+      "moveUp": "Omhoog",
+      "moveDown": "Omlaag",
+      "delete": "Verwijderen"
+    },
     "taskCheckbox": "Taak: {{text}}",
     "taskCheckboxEmpty": "Lege taak"
   },

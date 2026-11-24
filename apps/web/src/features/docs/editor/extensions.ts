@@ -2,6 +2,7 @@ import { Extension } from '@tiptap/core'
 import type { Editor, Range } from '@tiptap/core'
 import { PluginKey } from '@tiptap/pm/state'
 import Suggestion from '@tiptap/suggestion'
+import { blockAt, canMove, moveBlock } from './block-commands'
 import type { MenuItem, SuggestionStore } from './suggestion-store'
 
 interface MenuExtensionOptions {
@@ -75,3 +76,17 @@ export const SlashCommands = createMenuExtension('slashCommands', '/', 'slash')
 export const Mentions = createMenuExtension('mentions', '@', 'mention')
 
 export type { Range }
+
+/** Ctrl+Shift+↑/↓ (⌘⇧↑/↓) moves the block with the cursor, as its handle's menu does. */
+export const BlockKeys = Extension.create({
+  name: 'blockKeys',
+  addKeyboardShortcuts() {
+    const move = (dir: -1 | 1) => () => {
+      const block = blockAt(this.editor.state.doc, this.editor.state.selection.from)
+      if (!block) return false
+      if (canMove(this.editor.state.doc, block.pos, dir)) moveBlock(this.editor, block.pos, dir)
+      return true
+    }
+    return { 'Mod-Shift-ArrowUp': move(-1), 'Mod-Shift-ArrowDown': move(1) }
+  },
+})

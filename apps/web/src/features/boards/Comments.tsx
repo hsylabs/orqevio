@@ -194,6 +194,7 @@ function Composer({ card, onSent }: { card: CardDetailDTO; onSent: () => void })
         content={drafts.get(draftKey)?.text ?? ''}
         workspaceId={workspaceId}
         compact
+        blockHandles={false}
         upload={{ type: 'card', id: card.id }}
         onUploaded={() => void refresh(card.id, card.boardId)}
         onReady={(instance) => (editor.current = instance)}
@@ -378,6 +379,7 @@ function EditComment({ comment, draftKey, focus, cardId, boardId, onDone }: { co
         content={initial}
         workspaceId={workspaceId}
         compact
+        blockHandles={false}
         autofocus={focus}
         upload={{ type: 'card', id: cardId }}
         onUploaded={() => void refresh(cardId, boardId)}

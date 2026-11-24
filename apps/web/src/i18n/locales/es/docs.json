@@ -193,6 +193,15 @@
       "addRow": "Añadir una fila",
       "addColumn": "Añadir una columna"
     },
+    "block": {
+      "handle": "Opciones del bloque",
+      "handleHint": "Arrastra para moverlo. Haz clic, o pulsa {{key}}, para ver sus opciones.",
+      "turnInto": "Convertir en",
+      "duplicate": "Duplicar",
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "delete": "Eliminar"
+    },
     "taskCheckbox": "Tarea: {{text}}",
     "taskCheckboxEmpty": "Tarea sin texto"
   },
