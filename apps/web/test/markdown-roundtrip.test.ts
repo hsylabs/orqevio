@@ -115,6 +115,12 @@ describe('Markdown round trip', () => {
     expect(first).toBe(tables)
   })
 
+  it('keeps two tables in a row in a quote, save after save', () => {
+    const quoted = '> | a   |\n> | --- |\n> | 1   |\n>\n> | b   |\n> | --- |\n> | 2   |'
+    expect(roundTrip(quoted)).toBe(quoted)
+    expect(roundTrip(roundTrip(roundTrip(quoted)))).toBe(quoted)
+  })
+
   it('keeps tables, with their HTML, the same from the second save on', () => {
     const first = roundTrip('| a | b |\n| --- | --- |\n| x<br>y | z |')
     expect(first).toContain('x<br>y')

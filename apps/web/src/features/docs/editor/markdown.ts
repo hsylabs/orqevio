@@ -9,6 +9,7 @@ import { Table, TableKit } from '@tiptap/extension-table'
 import { Markdown, MarkdownManager, assumeContentType } from '@tiptap/markdown'
 import StarterKit from '@tiptap/starter-kit'
 import { t } from 'i18next'
+import { DocumentRules } from './block-commands'
 
 /**
  * Documents are Markdown, often written by agents, and the editor saves the whole
@@ -417,14 +418,15 @@ const FaithfulImage = Image.extend({
 // ── Tables ───────────────────────────────────────────────────────
 
 /**
- * A table of the document's top level is written without the blank lines @tiptap/extension-table
- * puts around it: blocks are already apart. With them, two tables in a row read back with an empty
- * paragraph between them, one more on every save. In a list or a quote they hold their place.
+ * A table of the document's top level or of a quote is written without the blank lines
+ * @tiptap/extension-table puts around it: blocks are already apart there. With them, two tables in a
+ * row read back with an empty paragraph between them, one more on every save. In a list item they
+ * hold its lines apart, and stay.
  */
 const FaithfulTable = Table.extend({
   renderMarkdown(node, helpers, context) {
     const markdown = this.parent?.(node, helpers, context) ?? ''
-    return context.parentType === 'doc' ? markdown.replace(/^\n+|\n+$/g, '') : markdown
+    return context.parentType === 'doc' || context.parentType === 'blockquote' ? markdown.replace(/^\n+|\n+$/g, '') : markdown
   },
 })
 
@@ -531,5 +533,6 @@ export function documentExtensions(): AnyExtension[] {
     RawHtmlInline,
     RawMarkdownBlock,
     RawMarkdownInline,
+    DocumentRules,
   ]
 }

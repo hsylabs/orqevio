@@ -3,6 +3,7 @@ import { Editor } from '@tiptap/core'
 import { NodeSelection, TextSelection } from '@tiptap/pm/state'
 import { afterEach, describe, expect, it } from 'vitest'
 import { blockAt, canMove, deleteBlock, duplicateBlock, moveBlock, turnBlock, turns } from '../src/features/docs/editor/block-commands'
+import { BlockKeys } from '../src/features/docs/editor/extensions'
 import { documentExtensions } from '../src/features/docs/editor/markdown'
 
 // Each action of the block handle changes the Markdown the way it says, and what it makes reads back the same.
@@ -142,6 +143,74 @@ describe('block handle', () => {
     moveBlock(editor, rule, -1)
     expect((editor.state.selection as NodeSelection).node?.type.name).toBe('horizontalRule')
     expect(saved(editor)).toBe('Dos!\n\n---\n\nUno')
+  })
+
+  it('finds a list item from right before it, as over its bullet or checkbox', () => {
+    const editor = open('- uno\n- dos\n\n- [ ] tarea')
+    const item = block(editor, 'dos')
+    expect(blockAt(editor.state.doc, item)?.node.textContent).toBe('dos')
+    const task = block(editor, 'tarea')
+    expect(blockAt(editor.state.doc, task)?.node.type.name).toBe('taskItem')
+  })
+
+  it('never moves a block below the empty paragraph the editor keeps at the end', () => {
+    const editor = open('Uno\n\n## Fin')
+    const fin = block(editor, 'Fin')
+    expect(canMove(editor.state.doc, fin, 1)).toBe(false)
+    expect(moveBlock(editor, fin, 1)).toBe(false)
+    expect(saved(editor)).toBe('Uno\n\n## Fin')
+  })
+
+  it('leaves the cursor in text after a delete, never the front matter selected', () => {
+    const editor = open('---\ntitle: x\n---\n\nUno\n\nDos')
+    deleteBlock(editor, block(editor, 'Uno'))
+    editor.commands.insertContent('X')
+    expect(saved(editor)).toBe('---\ntitle: x\n---\n\nXDos')
+  })
+
+  it('turns a nested item into text out of every list, and a quote into what it holds', () => {
+    const editor = open('- uno\n  - dentro\n- dos\n\n> - a\n> - b')
+    turnBlock(editor, block(editor, 'dentro'), 'p')
+    let quote = -1
+    editor.state.doc.forEach((node, offset) => {
+      if (node.type.name === 'blockquote') quote = offset
+    })
+    expect(turns(editor.state.doc, quote).current).toBe('quote')
+    turnBlock(editor, quote, 'p')
+    // The quote's list meets the list before it: one list, as Markdown would read them anyway.
+    expect(saved(editor)).toBe('- uno\n\ndentro\n\n- dos\n- a\n- b')
+  })
+
+  it('makes one list of two lists of the same kind that a move brings together', () => {
+    const editor = open('- a\n\nEntre\n\n- b\n\n1. uno')
+    moveBlock(editor, block(editor, 'Entre'), 1)
+    expect(saved(editor)).toBe('- a\n- b\n\nEntre\n\n1. uno')
+  })
+
+  it('offers no heading for text of several lines, and no code for text with an image', () => {
+    const editor = open('```\nuno\ndos\n```\n\nTexto ![i](/x.png) y más')
+    expect(turns(editor.state.doc, block(editor, 'uno')).options).toEqual(['p', 'code'])
+    expect(turns(editor.state.doc, block(editor, 'Texto')).options).not.toContain('code')
+  })
+
+  it('opens the menu with Ctrl+/ also where «/» is Shift+7, without making a numbered list', () => {
+    const editor = new Editor({ extensions: [...documentExtensions(), BlockKeys], content: 'Hola', contentType: 'markdown' })
+    editors.push(editor)
+    const opened: number[] = []
+    ;(editor.storage as unknown as { blockKeys: { openMenu: (pos: number) => void } }).blockKeys.openMenu = (pos) => opened.push(pos)
+    editor.commands.setTextSelection(3)
+    const key = new KeyboardEvent('keydown', { key: '/', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true })
+    Object.defineProperty(key, 'keyCode', { value: 55 })
+    editor.view.dom.dispatchEvent(key)
+    expect(opened).toEqual([0])
+    expect(editor.getMarkdown().trim()).toBe('Hola')
+  })
+
+  it('keeps front matter at the top whatever is put before it', () => {
+    const editor = open('---\ntitle: x\n---\n\nUno')
+    const { schema } = editor.state
+    editor.view.dispatch(editor.state.tr.insert(0, schema.nodes.paragraph!.create(null, schema.text('Antes'))))
+    expect(editor.getMarkdown().trim()).toBe('---\ntitle: x\n---\n\nAntes\n\nUno')
   })
 
   it('undoes each action alone, apart from what was typed', () => {

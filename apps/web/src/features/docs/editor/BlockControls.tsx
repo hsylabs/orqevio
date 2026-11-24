@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { isMac } from '../../../components/ui/Kbd'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuSub, MenuSubContent, MenuSubTrigger, MenuTrigger } from '../../../components/ui/Menu'
 import { cn } from '../../../lib/cn'
-import { TURN_ICONS, blockAt, canMove, deleteBlock, duplicateBlock, isItem, moveBlock, turnBlock, turns } from './block-commands'
+import { TURN_ICONS, blockAt, canMove, deleteBlock, duplicateBlock, moveBlock, turnBlock, turns } from './block-commands'
 
 const WIDTH = 18
 const HEIGHT = 24
@@ -41,6 +41,8 @@ export function BlockControls({ editor }: { editor: Editor }) {
   const [closing, setClosing] = useState<number | null>(null)
   const menuRef = useRef<number | null>(null)
   menuRef.current = menu
+  const closingRef = useRef<number | null>(null)
+  closingRef.current = closing
   const [, redraw] = useReducer((n: number) => n + 1, 0)
   const leaving = useRef<ReturnType<typeof setTimeout>>(undefined)
   /** Whether a handle is pressed or dragged: it stays where it is, whatever the pointer goes over. */
@@ -62,12 +64,14 @@ export function BlockControls({ editor }: { editor: Editor }) {
       if (transaction.docChanged) {
         // An agent or another tab can change the page while the menu is open: it follows its block.
         before.current = before.current?.map(transaction.mapping) ?? null
-        const open = menuRef.current
-        if (open !== null) {
-          const moved = transaction.mapping.mapResult(open, 1)
-          if (moved.deleted || !transaction.doc.nodeAt(moved.pos)) setMenu(null)
-          else setMenu(moved.pos)
+        // The same for a menu that is closing, so its handle doesn't show on another block meanwhile.
+        const follow = (pos: number | null) => {
+          if (pos === null) return null
+          const moved = transaction.mapping.mapResult(pos, 1)
+          return moved.deleted || !transaction.doc.nodeAt(moved.pos) ? null : moved.pos
         }
+        if (menuRef.current !== null) setMenu(follow(menuRef.current))
+        if (closingRef.current !== null) setClosing(follow(closingRef.current))
         setHover(null)
       }
       later()
@@ -90,32 +94,49 @@ export function BlockControls({ editor }: { editor: Editor }) {
     const dom = editor.view.dom
     const move = (event: PointerEvent) => {
       if (event.pointerType === 'touch' || !editor.isEditable || held.current) return
-      // The block at the pointer's height, also from the margin left of the text.
-      const box = dom.getBoundingClientRect()
-      const at = editor.view.posAtCoords({ left: Math.min(Math.max(event.clientX, box.left + 1), box.right - 1), top: event.clientY })
-      const block = at && blockAt(editor.state.doc, at.inside >= 0 ? at.inside : at.pos)
+      const block = itemAt(event) ?? blockAtHeight(event)
       if (!block) return leave()
       stay()
       if (menuRef.current === null) setHover(block.pos)
     }
-    // Ctrl+/ (⌘/) opens the menu of the block with the cursor; Escape closes it and comes back.
-    const key = (event: KeyboardEvent) => {
-      if (event.key !== '/' || !(isMac ? event.metaKey : event.ctrlKey) || event.altKey || event.shiftKey || !editor.isEditable) return
-      const block = blockAt(editor.state.doc, editor.state.selection.from)
-      if (!block) return
-      event.preventDefault()
-      openMenu(block.pos)
+    // Over a list, the item at the pointer's height: also over its bullet or checkbox, in the
+    // margin of a list inside it, or between two items.
+    const itemAt = (event: PointerEvent) => {
+      const target = event.target instanceof Element ? event.target : null
+      const li = target?.closest('li') ?? null
+      const list = target?.closest('ul, ol') ?? null
+      let item: Element | null = li
+      if (list && (!li || li.contains(list))) {
+        item = [...list.children].find((child) => {
+          const box = child.getBoundingClientRect()
+          return event.clientY >= box.top && event.clientY <= box.bottom
+        }) ?? null
+      }
+      if (!item || !dom.contains(item)) return null
+      try {
+        return blockAt(editor.state.doc, editor.view.posAtDOM(item, 0))
+      } catch {
+        return null
+      }
+    }
+    // Elsewhere, the block at the pointer's height, also from the margin left of the text.
+    const blockAtHeight = (event: PointerEvent) => {
+      const box = dom.getBoundingClientRect()
+      const at = editor.view.posAtCoords({ left: Math.min(Math.max(event.clientX, box.left + 1), box.right - 1), top: event.clientY })
+      return at && blockAt(editor.state.doc, at.inside >= 0 ? at.inside : at.pos)
     }
     const release = () => (held.current = false)
     dom.addEventListener('pointermove', move)
     dom.addEventListener('pointerleave', leave)
-    dom.addEventListener('keydown', key)
     window.addEventListener('pointerup', release)
+    // Ctrl+/ (⌘/), a key of the editor (BlockKeys), opens the menu of the block with the cursor.
+    const storage = (editor.storage as unknown as { blockKeys?: { openMenu: ((pos: number) => void) | null } }).blockKeys
+    if (storage) storage.openMenu = (pos) => openMenuRef.current(pos)
     return () => {
       window.removeEventListener('pointerup', release)
       dom.removeEventListener('pointermove', move)
       dom.removeEventListener('pointerleave', leave)
-      dom.removeEventListener('keydown', key)
+      if (storage) storage.openMenu = null
       clearTimeout(leaving.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -128,6 +149,9 @@ export function BlockControls({ editor }: { editor: Editor }) {
     clearTimeout(leaving.current)
     leaving.current = setTimeout(() => !held.current && setHover(null), 250)
   }
+
+  const openMenuRef = useRef(openMenu)
+  openMenuRef.current = openMenu
 
   /** The menu acts on its block, selected while it is open to show which one. */
   function openMenu(pos: number) {
@@ -185,7 +209,8 @@ export function BlockControls({ editor }: { editor: Editor }) {
     event.dataTransfer.effectAllowed = 'copyMove'
     const block = view.nodeDOM(pos)
     if (block instanceof HTMLElement) event.dataTransfer.setDragImage(block, 0, 0)
-    view.dragging = { slice, move: true }
+    // With the node, ProseMirror deletes that block when it is dropped, whatever is selected by then.
+    view.dragging = { slice, move: true, node: selection } as typeof view.dragging
   }
 
   const inside = state.focused || Boolean(root.current?.contains(document.activeElement))
@@ -226,7 +251,8 @@ export function BlockControls({ editor }: { editor: Editor }) {
       }
     }
     const top = (line.top + line.bottom) / 2 - HEIGHT / 2 - base.top
-    const left = box.left - (isItem(node) ? MARKER : 0) - WIDTH - GAP - base.left
+    // A bullet or a number sits left of its item's box; a task's checkbox is inside it.
+    const left = box.left - (node.type.name === 'listItem' ? MARKER : 0) - WIDTH - GAP - base.left
     const { current, options } = turns(editor.state.doc, pos)
     const label = t('editor.block.handle')
 
@@ -235,7 +261,7 @@ export function BlockControls({ editor }: { editor: Editor }) {
         <MenuRoot open={menu === pos} onOpenChange={closeMenu}>
           {/* Where the menu opens from; the handle itself opens it on a click, so that it can be dragged. */}
           <MenuTrigger asChild>
-            <span aria-hidden="true" className="pointer-events-none absolute inset-0" />
+            <span aria-hidden="true" aria-label={label} className="pointer-events-none absolute inset-0" />
           </MenuTrigger>
           <MenuContent align="start" onCloseAutoFocus={closeFocus}>
             {options.length > 0 && (
@@ -285,7 +311,7 @@ export function BlockControls({ editor }: { editor: Editor }) {
           onPointerDown={(e) => {
             finger.current = e.pointerType === 'touch'
             if (finger.current) e.preventDefault()
-            else held.current = true
+            else if (e.button === 0 && !e.ctrlKey) held.current = true
           }}
           onPointerUp={(e) => e.pointerType === 'touch' && openMenu(pos)}
           onClick={() => !finger.current && openMenu(pos)}

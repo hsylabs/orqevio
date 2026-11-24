@@ -2,6 +2,9 @@ import type { ChainedCommands, Editor } from '@tiptap/core'
 import { closeHistory } from '@tiptap/pm/history'
 import type { EditorState, Transaction } from '@tiptap/pm/state'
 
+/** Set on the controls' changes: lists of the same kind they bring together become one (DocumentRules). */
+export const JOIN_LISTS = 'joinLists'
+
 export type StepProps = { tr: Transaction; state: EditorState; dispatch?: (tr: Transaction) => void }
 
 /**
@@ -12,7 +15,7 @@ export function ownChain(editor: Editor, extend: (chain: ChainedCommands) => Cha
   const start = editor
     .chain()
     .focus(undefined, { scrollIntoView: false })
-    .command(({ tr }) => (closeHistory(tr), true))
+    .command(({ tr }) => (closeHistory(tr).setMeta(JOIN_LISTS, true), true))
   const done = extend(start).scrollIntoView().run()
   if (done) editor.view.dispatch(closeHistory(editor.state.tr))
   return done

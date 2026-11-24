@@ -92,6 +92,26 @@ test('move list items from the keyboard, and open the menu with Ctrl+/', async (
   await expect.poll(saved).toBe('- uno\n- tres! y más\n- dos\n\nDespués')
 })
 
+test('each list item has its own handle, also over its bullet or its checkbox', async ({ page }) => {
+  const { saved, text, editor } = await openPage(page, 'Bloques listas E2E', '- uno\n- dos\n- tres\n\n- [ ] hecho\n- [ ] pendiente')
+  const handle = page.getByRole('button', { name: 'Opciones del bloque' })
+  // From the item's text to its handle, over its bullet: the handle stays the item's.
+  await text('dos').hover()
+  const item = (await text('dos').boundingBox())!
+  await page.mouse.move(item.x - 10, item.y + item.height / 2, { steps: 5 })
+  const box = (await handle.boundingBox())!
+  expect(Math.abs(box.y + box.height / 2 - (item.y + item.height / 2))).toBeLessThan(3)
+  await handle.click()
+  await expect(page.locator('.orq-prose .ProseMirror-selectednode')).toHaveText('dos')
+  await page.getByRole('menuitem', { name: 'Bajar' }).click()
+  await expect.poll(saved).toBe('- uno\n- tres\n- dos\n\n- [ ] hecho\n- [ ] pendiente')
+  // Over a task's checkbox, that task.
+  await editor.getByRole('checkbox', { name: 'Tarea: pendiente' }).hover()
+  await handle.click()
+  await page.getByRole('menuitem', { name: 'Subir' }).click()
+  await expect.poll(saved).toBe('- uno\n- tres\n- dos\n\n- [ ] pendiente\n- [ ] hecho')
+})
+
 test('drag a block by its handle to move it', async ({ page }) => {
   const { saved, text } = await openPage(page, 'Bloques arrastrar E2E', 'Uno\n\nDos\n\nTres')
   const handle = page.getByRole('button', { name: 'Opciones del bloque' })

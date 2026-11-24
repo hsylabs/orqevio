@@ -187,7 +187,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       }),
       SlashCommands.configure({ store: slashStore, items: slashItems }),
       Mentions.configure({ store: mentionStore, items: mentionItems }),
-      BlockKeys,
+      ...(blockHandles ? [BlockKeys] : []),
     ],
     content,
     contentType: 'markdown',

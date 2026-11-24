@@ -1,7 +1,7 @@
-import type { Editor } from '@tiptap/core'
+import { type Editor, Extension } from '@tiptap/core'
 import { Fragment, type Node as PMNode } from '@tiptap/pm/model'
-import { NodeSelection, Selection, TextSelection, type Transaction } from '@tiptap/pm/state'
-import { ownChain, ownStep } from './own-step'
+import { NodeSelection, Plugin, PluginKey, Selection, TextSelection, type Transaction } from '@tiptap/pm/state'
+import { JOIN_LISTS, ownChain, ownStep } from './own-step'
 
 /**
  * What the block handle does. A block is a list item (the innermost one around a position), or
@@ -18,7 +18,6 @@ const ALL: Turn[] = ['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'todo', 'quote', 'code']
 /** The icons of the «/» menu for each of them. */
 export const TURN_ICONS: Record<Turn, string> = { p: 'T', h1: 'H1', h2: 'H2', h3: 'H3', ul: '•', ol: '1.', todo: '☑', quote: '❝', code: '</>' }
 
-export const isItem = (node: PMNode) => ITEMS.has(node.type.name)
 
 export interface Block {
   /** Position right before the block. */
@@ -26,10 +25,13 @@ export interface Block {
   node: PMNode
 }
 
-/** Front matter (`---` or `+++` at the very top): it is the document's, not a block to move. */
+/** Front matter, as the editor keeps it: Markdown it shows as written, starting with `---`. */
+export const isFrontMatter = (node: PMNode) => node.type.name === 'rawMarkdownBlock' && /^---/.test(String(node.attrs.markdown))
+
+/** Front matter at the very top: it is the document's, not a block to move. */
 function frontMatter(doc: PMNode, pos: number) {
   const node = doc.nodeAt(pos)
-  return pos === 0 && node?.type.name === 'rawMarkdownBlock' && /^(---|\+\+\+)/.test(String(node.attrs.markdown))
+  return pos === 0 && node !== null && isFrontMatter(node)
 }
 
 function blockFrom(doc: PMNode, pos: number): Block | null {
@@ -40,6 +42,9 @@ function blockFrom(doc: PMNode, pos: number): Block | null {
 /** The block around a position, or right at it between two blocks of the top level. */
 export function blockAt(doc: PMNode, at: number): Block | null {
   const $pos = doc.resolve(Math.max(0, Math.min(at, doc.content.size)))
+  // Right before a list item (its bullet, its checkbox): that item, not the list around it.
+  const here = doc.nodeAt($pos.pos)
+  if (here && ITEMS.has(here.type.name)) return blockFrom(doc, $pos.pos)
   for (let depth = $pos.depth; depth > 0; depth--) {
     if (ITEMS.has($pos.node(depth).type.name)) return blockFrom(doc, $pos.before(depth))
   }
@@ -54,13 +59,21 @@ export function turns(doc: PMNode, pos: number): { current: Turn | null; options
   const node = doc.nodeAt(pos)
   if (!node) return { current: null, options: [] }
   const name = node.type.name
+  // A heading is one line, and a block of code only text: what wouldn't fit isn't offered.
+  let lines = false
+  let atoms = false
+  node.descendants((child) => {
+    if (child.type.name === 'hardBreak' || (child.isText && child.text?.includes('\n'))) lines = true
+    else if (child.isInline && !child.isText) atoms = true
+  })
+  const fits = (options: Turn[]) => options.filter((o) => !(lines && o.startsWith('h')) && !(atoms && o === 'code'))
   if (ITEMS.has(name)) return { current: LISTS[doc.resolve(pos).parent.type.name] ?? null, options: ['p', 'ul', 'ol', 'todo'] }
-  if (name === 'paragraph') return { current: 'p', options: ALL }
+  if (name === 'paragraph') return { current: 'p', options: fits(ALL) }
   if (name === 'heading') {
     const level = node.attrs.level as number
-    return { current: level <= 3 ? (`h${level}` as Turn) : null, options: ALL }
+    return { current: level <= 3 ? (`h${level}` as Turn) : null, options: fits(ALL) }
   }
-  if (name === 'codeBlock') return { current: 'code', options: ['p', 'h1', 'h2', 'h3', 'code'] }
+  if (name === 'codeBlock') return { current: 'code', options: fits(['p', 'h1', 'h2', 'h3', 'code']) }
   if (name === 'blockquote') return { current: 'quote', options: ['p', 'quote'] }
   return { current: null, options: [] }
 }
@@ -83,7 +96,11 @@ export function canMove(doc: PMNode, pos: number, dir: -1 | 1) {
   const $pos = doc.resolve(pos)
   const index = $pos.index() + dir
   if (index < 0 || index >= $pos.parent.childCount) return false
-  return !(dir < 0 && $pos.depth === 0 && index === 0 && frontMatter(doc, 0))
+  if ($pos.depth > 0) return true
+  if (dir < 0) return !(index === 0 && frontMatter(doc, 0))
+  // The empty paragraph the editor keeps at the end, after a list or a table, is not a block to pass.
+  const next = doc.child(index)
+  return !(index === doc.childCount - 1 && next.type.name === 'paragraph' && next.content.size === 0)
 }
 
 /** Swaps the block with the one above (-1) or below (1). */
@@ -128,7 +145,9 @@ export function deleteBlock(editor: Editor, pos: number) {
     const from = whole ? $pos.before() : pos
     const to = whole ? $pos.after() : pos + node.nodeSize
     tr.delete(from, to)
-    tr.setSelection(Selection.near(tr.doc.resolve(Math.min(from, tr.doc.content.size)), -1))
+    // In text, before or after: an atom selected there (front matter, a rule) would go with the next key.
+    const $at = tr.doc.resolve(Math.min(from, tr.doc.content.size))
+    tr.setSelection(Selection.findFrom($at, -1, true) ?? Selection.findFrom($at, 1, true) ?? Selection.near($at, -1))
     return true
   })
 }
@@ -138,14 +157,27 @@ export function turnBlock(editor: Editor, pos: number, to: Turn) {
   const node = editor.state.doc.nodeAt(pos)
   const { current, options } = turns(editor.state.doc, pos)
   if (!node || to === current || !options.includes(to)) return false
+  const name = node.type.name
+  // A quote turned into text gives what it holds, whatever it is: paragraphs, a list, a table.
+  if (name === 'blockquote' && to === 'p') {
+    return ownStep(editor, ({ tr }) => {
+      tr.replaceWith(pos, pos + node.nodeSize, node.content)
+      tr.setSelection(Selection.near(tr.doc.resolve(pos + node.content.size), -1))
+      return true
+    })
+  }
   // The text of the block: of its first paragraph for a list item, of the paragraphs inside for a quote.
-  const item = ITEMS.has(node.type.name)
-  const from = pos + (item || node.type.name === 'blockquote' ? 2 : 1)
-  const end = item ? from + (node.firstChild?.content.size ?? 0) : pos + node.nodeSize - (node.type.name === 'blockquote' ? 2 : 1)
+  const item = ITEMS.has(name)
+  const from = pos + (item || name === 'blockquote' ? 2 : 1)
+  const end = item ? from + (node.firstChild?.content.size ?? 0) : pos + node.nodeSize - (name === 'blockquote' ? 2 : 1)
+  // An item in a list in a list goes out of every one of them: lifted as its own kind of item, then
+  // as each item it was in, from the nearest out.
+  const $pos = editor.state.doc.resolve(pos)
+  const lifts = [name]
+  for (let depth = $pos.depth; depth > 0; depth--) if (ITEMS.has($pos.node(depth).type.name)) lifts.push($pos.node(depth).type.name)
   return ownChain(editor, (chain) => {
     chain.command(({ tr }) => (tr.setSelection(TextSelection.create(tr.doc, from, end)), true))
-    if (item && to === 'p') chain.liftListItem(node.type.name)
-    else if (to === 'p' && node.type.name === 'blockquote') chain.lift('blockquote')
+    if (item && to === 'p') for (const type of lifts) chain.liftListItem(type)
     else if (to === 'p') chain.setParagraph()
     else if (to === 'h1' || to === 'h2' || to === 'h3') chain.setHeading({ level: Number(to[1]) as 1 | 2 | 3 })
     else if (to === 'ul') chain.toggleBulletList()
@@ -156,3 +188,50 @@ export function turnBlock(editor: Editor, pos: number, to: Turn) {
     return chain.command(({ tr }) => (tr.setSelection(Selection.near(tr.doc.resolve(tr.mapping.map(end)), -1)), true))
   })
 }
+
+/** Where two lists of the same kind meet, in `node` (at `start`) and inside it. */
+function meetingLists(node: PMNode, start: number, found: number[]) {
+  let offset = start
+  node.forEach((child, childOffset, index) => {
+    const at = start + childOffset
+    if (index > 0 && child.type.name in LISTS && node.child(index - 1).type === child.type) found.push(at)
+    if (!child.isTextblock && !child.isLeaf) meetingLists(child, at + 1, found)
+    offset = at
+  })
+  void offset
+  return found
+}
+
+/**
+ * Rules that keep the document what its Markdown says:
+ * - front matter stays at the top, whatever is put before it (a dragged block, something pasted);
+ * - two lists of the same kind that meet after a control moved or removed a block, or something was
+ *   dropped, are one list, as Markdown reads them.
+ */
+export const DocumentRules = Extension.create({
+  name: 'documentRules',
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey('documentRules'),
+        appendTransaction: (transactions, _old, state) => {
+          if (!transactions.some((tr) => tr.docChanged)) return null
+          const tr = state.tr
+          let at = -1
+          state.doc.forEach((node, offset, index) => {
+            if (index > 0 && at === -1 && isFrontMatter(node)) at = offset
+          })
+          if (at !== -1) {
+            const node = state.doc.nodeAt(at)!
+            tr.delete(at, at + node.nodeSize).insert(0, node)
+          }
+          if (transactions.some((t) => t.docChanged && (t.getMeta('uiEvent') === 'drop' || t.getMeta(JOIN_LISTS)))) {
+            // From the end, so that each join leaves the positions before it as they were.
+            for (const pos of meetingLists(tr.doc, 0, []).reverse()) tr.join(pos)
+          }
+          return tr.docChanged ? tr : null
+        },
+      }),
+    ]
+  },
+})
