@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core'
+import { NodeSelection } from '@tiptap/pm/state'
 import { CellSelection } from '@tiptap/pm/tables'
 import { useEditorState } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
@@ -49,9 +50,14 @@ export function FormatMenu({ editor }: { editor: Editor }) {
   return (
     <BubbleMenu
       editor={editor}
-      // Selected cells have the table's bar instead.
+      // Selected cells have the table's bar instead, and a whole block selected its handle's menu.
       shouldShow={({ editor: e, state: s }) =>
-        e.isEditable && (!s.selection.empty || e.isActive('link')) && !(s.selection instanceof CellSelection) && !e.isActive('codeBlock') && !e.isActive('image')
+        e.isEditable &&
+        (!s.selection.empty || e.isActive('link')) &&
+        !(s.selection instanceof CellSelection) &&
+        !(s.selection instanceof NodeSelection && s.selection.node.isBlock) &&
+        !e.isActive('codeBlock') &&
+        !e.isActive('image')
       }
       options={{ placement: 'top', offset: 8 }}
       className="z-40"

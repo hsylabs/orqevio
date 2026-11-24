@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { DropdownMenu as M } from 'radix-ui'
 import { type ReactNode, useCallback, useRef } from 'react'
 import { cn } from '../../lib/cn'
@@ -90,5 +91,32 @@ export function MenuRadioItem({ value, children, icon }: { value: string; childr
         <span className="block size-1.5 rounded-full bg-accent" />
       </M.ItemIndicator>
     </M.RadioItem>
+  )
+}
+
+export const MenuSub = M.Sub
+
+/** An item that opens a menu of its own, to the side: with the pointer, the right arrow or Enter. */
+export function MenuSubTrigger({ icon, children }: { icon?: ReactNode; children: ReactNode }) {
+  return (
+    <M.SubTrigger className="flex h-8 cursor-default items-center gap-2.5 rounded-[8px] px-2 text-[13px] text-ink outline-none select-none data-[highlighted]:bg-hover data-[state=open]:bg-hover [&_svg]:size-[15px] [&_svg]:text-ink-3">
+      {icon}
+      <span className="flex-1 truncate">{children}</span>
+      <ChevronRight className="size-3.5!" />
+    </M.SubTrigger>
+  )
+}
+
+export function MenuSubContent({ children }: { children: ReactNode }) {
+  return (
+    <M.Portal>
+      <M.SubContent
+        sideOffset={4}
+        collisionPadding={12}
+        className="z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[200px] overflow-y-auto rounded-[12px] border border-line bg-surface p-1 shadow-lg outline-none"
+      >
+        {children}
+      </M.SubContent>
+    </M.Portal>
   )
 }

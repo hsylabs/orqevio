@@ -43,6 +43,7 @@ import {
   selectLine,
   spotOf,
 } from './table-commands'
+import { changeOf } from './own-step'
 
 /** The cell under the pointer: its table's position, row and column. */
 type Hover = { pos: number; row: number; col: number }
@@ -96,15 +97,16 @@ export function TableControls({ editor }: { editor: Editor }) {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(redraw)
     }
-    const changed = ({ transaction }: { transaction: Transaction }) => {
-      if (transaction.docChanged) {
+    const changed = (event: { transaction: Transaction; appendedTransactions?: Transaction[] }) => {
+      const change = changeOf(event)
+      if (change.docChanged) {
         // What a handle's menu acts on, and the selection it gives back, follow the change: an
         // agent or another tab can change the page while the menu is open.
-        before.current = before.current?.map(transaction.mapping) ?? null
+        before.current = before.current?.map(change.mapping) ?? null
         const h = hoverRef.current
         if (openRef.current === 'row' || openRef.current === 'col') {
-          const pos = h && transaction.mapping.map(h.pos)
-          if (h && pos !== null && infoAt(transaction.doc, pos)) setHover({ ...h, pos })
+          const pos = h && change.mapping.map(h.pos)
+          if (h && pos !== null && infoAt(change.doc, pos)) setHover({ ...h, pos })
           else {
             setOpen(null)
             setHover(null)

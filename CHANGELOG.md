@@ -12,8 +12,14 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - With a mouse, a handle on the row and the column under the pointer opens their menu. A «+» below and to the right adds a row or a column at the end.
   - From the keyboard, Alt+F10 goes to the bar, the arrows move along it and Escape goes back to the text.
   - What they make is still a Markdown table, as agents and GitHub read it. The header row stays first, and deleting it makes the next row the header. Cells are never merged. Each change is undone on its own.
+- **A handle on each block of a document, as in Notion.** ⋮⋮ appears left of the block under the pointer, list items included; on a phone, left of the block with the cursor.
+  - Dragged, it moves the block.
+  - Clicked, or with Ctrl+/ (⌘/), it opens the block's menu: turn it into text, a heading, a list, a quote or code, as the «/» menu does; duplicate it; move it up or down; or delete it.
+  - Ctrl+Shift+↑/↓ (⌘⇧↑/↓) moves the block with the cursor.
+  - Each action is undone on its own. Front matter stays at the top, and a list item moves within its list. Comments have no handles.
 
 ### Fixed
+- **Two tables in a row in a document.** Each time the page was opened and saved, more blank lines appeared between them, and then an empty paragraph. They now stay as they were.
 - **GitHub alerts in documents.** An alert such as `> [!NOTE]`, written by an agent or brought from GitHub, stays an alert when the page is edited. It was saved as `> \[!NOTE\]`, and GitHub then showed a plain quote. This covers the five GitHub alerts and Obsidian callouts. A marker escaped on purpose, to show how an alert is written, stays escaped, also when its quote is copied and pasted.
 
 ## [1.4.1] - 2026-11-23

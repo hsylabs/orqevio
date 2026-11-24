@@ -1,5 +1,4 @@
 import type { Editor } from '@tiptap/core'
-import { closeHistory } from '@tiptap/pm/history'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import { type EditorState, Selection, type Transaction } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
@@ -18,6 +17,7 @@ import {
   removeRow,
   selectedRect,
 } from '@tiptap/pm/tables'
+import { type StepProps, ownStep } from './own-step'
 
 /**
  * What the table controls do, on the table at a position and by row and column, so a handle can act
@@ -138,23 +138,12 @@ function cursorIn(tr: Transaction, pos: number, row: number, col: number) {
   tr.setSelection(Selection.near(tr.doc.resolve(cell + 1)))
 }
 
-type Props = { tr: Transaction; state: EditorState; dispatch?: (tr: Transaction) => void }
-
-/** A change to the table at `pos`, undone on its own: not with what was typed just before or after it, nor with the next change. */
-function change(editor: Editor, pos: number, build: (tr: Transaction, rect: TableRect, props: Props) => boolean) {
-  const done = editor
-    .chain()
-    .focus(undefined, { scrollIntoView: false })
-    .command((props) => {
-      const rect = rectAt(props.tr.doc, pos)
-      if (!rect) return false
-      closeHistory(props.tr)
-      return build(props.tr, rect, props)
-    })
-    .scrollIntoView()
-    .run()
-  if (done) editor.view.dispatch(closeHistory(editor.state.tr))
-  return done
+/** A change to the table at `pos`, undone on its own (see ownStep). */
+function change(editor: Editor, pos: number, build: (tr: Transaction, rect: TableRect, props: StepProps) => boolean) {
+  return ownStep(editor, (props) => {
+    const rect = rectAt(props.tr.doc, pos)
+    return rect ? build(props.tr, rect, props) : false
+  })
 }
 
 const aligns = (rect: TableRect) => Array.from({ length: rect.map.width }, (_, col) => columnAlign(rect, col))

@@ -2,6 +2,7 @@ import { Extension } from '@tiptap/core'
 import type { Editor, Range } from '@tiptap/core'
 import { PluginKey } from '@tiptap/pm/state'
 import Suggestion from '@tiptap/suggestion'
+import { blockAt, canMove, moveBlock } from './block-commands'
 import type { MenuItem, SuggestionStore } from './suggestion-store'
 
 interface MenuExtensionOptions {
@@ -75,3 +76,32 @@ export const SlashCommands = createMenuExtension('slashCommands', '/', 'slash')
 export const Mentions = createMenuExtension('mentions', '@', 'mention')
 
 export type { Range }
+
+/**
+ * The keys of the block handle: Ctrl+Shift+↑/↓ (⌘⇧↑/↓) moves the block with the cursor, and Ctrl+/
+ * (⌘/) opens its menu, through `storage.openMenu`, which the handle sets. Before the other keys: on
+ * a Spanish or German keyboard «/» is Shift+7, and Ctrl+Shift+7 would make a numbered list.
+ */
+export const BlockKeys = Extension.create<object, { openMenu: ((pos: number) => void) | null }>({
+  name: 'blockKeys',
+  priority: 1000,
+  addStorage() {
+    return { openMenu: null }
+  },
+  addKeyboardShortcuts() {
+    const cursor = () => blockAt(this.editor.state.doc, this.editor.state.selection.from)
+    const move = (dir: -1 | 1) => () => {
+      const block = cursor()
+      if (!block) return false
+      if (canMove(this.editor.state.doc, block.pos, dir)) moveBlock(this.editor, block.pos, dir)
+      return true
+    }
+    const menu = () => {
+      const block = cursor()
+      if (!block || !this.storage.openMenu) return false
+      this.storage.openMenu(block.pos)
+      return true
+    }
+    return { 'Mod-Shift-ArrowUp': move(-1), 'Mod-Shift-ArrowDown': move(1), 'Mod-/': menu }
+  },
+})

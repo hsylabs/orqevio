@@ -193,6 +193,15 @@
       "addRow": "Adicionar uma linha",
       "addColumn": "Adicionar uma coluna"
     },
+    "block": {
+      "handle": "Opções do bloco",
+      "handleHint": "Arraste para mover. Clique, ou pressione {{key}}, para ver as opções.",
+      "turnInto": "Transformar em",
+      "duplicate": "Duplicar",
+      "moveUp": "Mover para cima",
+      "moveDown": "Mover para baixo",
+      "delete": "Excluir"
+    },
     "taskCheckbox": "Tarefa: {{text}}",
     "taskCheckboxEmpty": "Tarefa sem texto"
   },

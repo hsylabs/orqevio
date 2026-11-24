@@ -193,6 +193,15 @@
       "addRow": "Ajouter une ligne",
       "addColumn": "Ajouter une colonne"
     },
+    "block": {
+      "handle": "Options du bloc",
+      "handleHint": "Faites glisser pour le déplacer. Cliquez, ou appuyez sur {{key}}, pour ses options.",
+      "turnInto": "Transformer en",
+      "duplicate": "Dupliquer",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "delete": "Supprimer"
+    },
     "taskCheckbox": "Tâche : {{text}}",
     "taskCheckboxEmpty": "Tâche vide"
   },

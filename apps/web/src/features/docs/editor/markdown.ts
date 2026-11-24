@@ -5,10 +5,11 @@ import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import { ORDERED_LIST_MARKER_PATTERN, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
 import Paragraph from '@tiptap/extension-paragraph'
-import { TableKit } from '@tiptap/extension-table'
+import { Table, TableKit } from '@tiptap/extension-table'
 import { Markdown, MarkdownManager, assumeContentType } from '@tiptap/markdown'
 import StarterKit from '@tiptap/starter-kit'
 import { t } from 'i18next'
+import { DocumentRules } from './block-commands'
 
 /**
  * Documents are Markdown, often written by agents, and the editor saves the whole
@@ -414,6 +415,21 @@ const FaithfulImage = Image.extend({
   },
 }).configure({ inline: true, allowBase64: false })
 
+// ── Tables ───────────────────────────────────────────────────────
+
+/**
+ * A table of the document's top level or of a quote is written without the blank lines
+ * @tiptap/extension-table puts around it: blocks are already apart there. With them, two tables in a
+ * row read back with an empty paragraph between them, one more on every save. In a list item they
+ * hold its lines apart, and stay.
+ */
+const FaithfulTable = Table.extend({
+  renderMarkdown(node, helpers, context) {
+    const markdown = this.parent?.(node, helpers, context) ?? ''
+    return context.parentType === 'doc' || context.parentType === 'blockquote' ? markdown.replace(/^\n+|\n+$/g, '') : markdown
+  },
+})
+
 // ── Markdown manager ─────────────────────────────────────────────
 
 type Token = { type?: string; text?: string; raw?: string; tokens?: Token[] }
@@ -510,11 +526,13 @@ export function documentExtensions(): AnyExtension[] {
       nested: true,
       a11y: { checkboxLabel: (node) => (node.textContent ? t('docs:editor.taskCheckbox', { text: node.textContent }) : t('docs:editor.taskCheckboxEmpty')) },
     }),
-    TableKit.configure({ table: { resizable: false } }),
+    TableKit.configure({ table: false }),
+    FaithfulTable.configure({ resizable: false }),
     FaithfulImage,
     RawHtmlBlock,
     RawHtmlInline,
     RawMarkdownBlock,
     RawMarkdownInline,
+    DocumentRules,
   ]
 }

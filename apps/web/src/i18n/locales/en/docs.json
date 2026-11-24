@@ -191,6 +191,15 @@
       "addRow": "Add a row",
       "addColumn": "Add a column"
     },
+    "block": {
+      "handle": "Block options",
+      "handleHint": "Drag to move. Click, or press {{key}}, for its options.",
+      "turnInto": "Turn into",
+      "duplicate": "Duplicate",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "delete": "Delete"
+    },
     "taskCheckbox": "To-do: {{text}}",
     "taskCheckboxEmpty": "Empty to-do"
   },
