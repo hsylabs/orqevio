@@ -124,9 +124,18 @@ const normalised: Array<[string, string, string]> = [
   ['an item of a list inside another, less indented than the first', '1. a\n      2. dos\n   3. uno', '1. a\n   2. dos\n   3. uno'],
   ['an item of a list inside another, under a long number', '12. Ver\n       1. uno\n    2. uno', '12. Ver\n    1. uno\n    2. uno'],
   ['an item of a list inside another, a space more than the first', '1. a\n   1. b\n    2. c\n2. d', '1. a\n   1. b\n   2. c\n2. d'],
-  // Four spaces in where a block starts, a numbered line is code, as Markdown reads it.
-  ['a numbered line four spaces in, then an item', '    1. a\n2. b', '```\n1. a\n```\n\n2. b'],
-  ['a numbered line after a tab, then an item', '\t1. a\n2. b', '```\n1. a\n```\n\n2. b'],
+  ['an item less indented than a first one four spaces in', '    1. a\n2. b', '1. a\n2. b'],
+  ['an item after a blank line under an empty item, as far in as its text', '1. a\n2.\n\n   3. b', '1. a\n2.\n3. b'],
+  // What is under an item put in line with the others moves with it.
+  ['a list under an item moved in line', '1. a\n  2. b\n     - c\n     - d', '1. a\n2. b\n   - c\n   - d'],
+  ['a code block under an item moved in line', '1. a\n  2. b\n\n     ```py\n     if x:\n         y\n     ```', '1. a\n2. b\n   ```py\n   if x:\n       y\n   ```'],
+  ['a code block under an item moved right', '  1. a\n2. b\n   ```\n   2. x\n   ```\n3. c', '1. a\n2. b\n   ```\n   2. x\n   ```\n3. c'],
+  ['text under an item moved in line, a space past its text', '2) dos\n  3. b\n    c', '2. dos\n3. b\nc'],
+  // Letters and roman numerals are TipTap's: not CommonMark's, they stay where they were.
+  ['lettered items under a numbered one', '1. Paso uno\n  a. detalle\n  b. detalle', '1. Paso uno\n   a. detalle\n   b. detalle'],
+  // A number alone can't break into a paragraph (CommonMark): under a task's text, it goes on with it.
+  ['a number alone under the text of a task', '- [ ] Llamar\n  2.\n  Revisar', '- [ ] Llamar\n  2\\.\n  Revisar'],
+  ['numbered lines far in under an item', '- dos\n          1. a\n          2. b', '- dos\n  1. a\n  2. b'],
   // A fence one to three spaces in is a fence (CommonMark).
   ['a code block indented a few spaces', 'Texto\n\n   ```\n   x\n   ```', 'Texto\n\n```\nx\n```'],
   ['a code block indented less than the text of an empty item', '1. Instala:\n2.\n  ```bash\n  npm i\n  ```', '1. Instala:\n2.\n\n```bash\nnpm i\n```'],

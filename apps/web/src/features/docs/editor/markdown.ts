@@ -351,26 +351,27 @@ const NOT_AN_ITEM = '\uE000'
  *
  * An item of a list indented otherwise than its first, by up to three spaces and less than the
  * text of the item above, is one more of its items, as CommonMark and marked read it; so in a list
- * inside an item, from where the item's text starts. Its number is put in line with the others:
- * @tiptap/extension-list made it an item of a list inside the one above (` 2.` under `1. uno`), or
- * lost it if it was less indented than the first (`2.` under ` 1.`).
+ * inside an item, from where the item's text starts. Its number is put in line with the others,
+ * and what is under it moves with it: @tiptap/extension-list made it an item of a list inside the
+ * one above (` 2.` under `1. uno`), or lost it if it was less indented than the first (`2.` under
+ * ` 1.`). Only numbers: CommonMark has no letters or roman numerals, which stay as they were.
  *
  * An empty item, its number alone (`2.`) at the list's own margin, is an item too: it gets the
  * space after its number that @tiptap/extension-list wants. A space or two off, so is it where
  * nothing can be open under the item above (right under its line, or under an empty one). Only
  * there: a number alone further in is a line of what the item above holds (code, a formula), as
- * it was. What comes right under an
- * empty item is its own only if it is indented as its text would be, with no blank line before
- * it; another item of the list goes on with it, and anything else ends the list there, where
- * marked ends it, rather than going into the item.
+ * it was. What comes right under an empty item is its own only if it is indented as its text was,
+ * with no blank line before it; another item of the list goes on with it, and anything else ends
+ * the list there, where marked ends it, rather than going into the item.
  */
 export function alignOrderedContinuations(src: string) {
   let item: { strippedThere: number; textColumn: number } | null = null
   /**
-   * The lists open, from the list's own in: how far in the first item of each is, and the column
-   * the text of its item read last starts at, where what is less indented is no longer in it.
+   * The lists open, from the list's own in: how far in the first item of each is, the column the
+   * text of its item read last starts at (what is less indented is no longer in it), and how far
+   * that item was moved to be in line with the others (what is under it moves as far).
    */
-  const levels: Array<{ margin: number; text: number }> = []
+  const levels: Array<{ margin: number; text: number; moved: number }> = []
   /** The list the item read last is one of, in `levels`: -1 if none. */
   let level = -1
   /** The fence of a code block open under the item: its lines are code, whatever they look like. */
@@ -389,43 +390,66 @@ export function alignOrderedContinuations(src: string) {
     const newline = src.indexOf('\n', start)
     const end = newline === -1 ? src.length : newline
     let line = src.slice(start, end)
+    /**
+     * Whether the line is under the item read last of each list open, as it was written: from where
+     * its text started. A line under an item moved in line with the others moves as far, from the
+     * outermost list in; so does one the item's new text would take in, which goes on with its text.
+     */
+    const under = levels.map(() => false)
+    if (line.trim()) {
+      const spaces = /^ *$/.test(line.slice(0, line.length - line.trimStart().length))
+      levels.forEach((open, depth) => {
+        const lead = line.length - line.trimStart().length
+        under[depth] = lead >= open.text - open.moved
+        if (spaces && open.moved && lead >= Math.min(open.text, open.text - open.moved)) {
+          line = open.moved > 0 ? `${' '.repeat(open.moved)}${line}` : line.slice(-open.moved)
+        }
+      })
+    }
     const lead = line.length - line.trimStart().length
     // A line less indented than the item's text closes a code block left open under it.
     if (fence && line.trim() && item && lead < item.textColumn) fence = null
     const empty = fence ? null : EMPTY_ORDERED_ITEM.exec(line)
     const atMargin = (indent: string) => margin === -1 || indent.length === margin
-    const at = empty?.[1]!.length ?? -1
-    const bare = !!empty && (atMargin(empty[1]!) || (clear && margin <= 3 && levels.length > 0 && at < levels[0]!.text))
-    if (bare) line = `${' '.repeat(margin === -1 ? at : margin)}${empty![2]} `
+    const bare = !!empty && (atMargin(empty[1]!) || (clear && levels.length > 0 && empty[1]!.length < levels[0]!.text))
+    /** How far the item on this line is moved to be in line with the others. */
+    let moved = 0
+    if (bare) {
+      if (margin !== -1) moved = margin - empty![1]!.length
+      line = `${' '.repeat(empty![1]!.length + moved)}${empty![2]} `
+    }
     let match = fence ? null : ORDERED_ITEM.exec(line)
     level = -1
-    if (match && /^ *$/.test(match[1]!)) {
+    if (match && /^ *$/.test(match[1]!) && /^\d+$/.test(match[2]!)) {
       const at = match[1]!.length
+      // After an empty item and a blank line nothing more is its own: an item there is one more of the list.
+      const closed = emptyItem && previousBlank
       // From the innermost list out: in the text of its item read last, it starts a list there;
       // otherwise, up to three spaces in from where that list may start, it is one more of its items.
       for (let depth = levels.length - 1; depth >= 0; depth--) {
         const { margin: first, text } = levels[depth]!
-        const start = depth ? levels[depth - 1]!.text : 0
-        if (at >= text) {
-          if (at - text <= 3) level = levels.push({ margin: at, text: -1 }) - 1
+        const from = depth ? levels[depth - 1]!.text : 0
+        if (under[depth] && !(closed && depth === 0)) {
+          if (at - text <= 3) level = levels.push({ margin: at, text: -1, moved: 0 }) - 1
           break
         }
-        if (at >= start && at - start <= 3) {
+        if (at >= from && at - from <= 3) {
           levels.length = depth + 1
           level = depth
           // One more item of the list, indented otherwise than its first: in line with the others.
-          if (at !== first && first - start <= 3) {
+          if (at !== first) {
+            moved = first - at
             line = `${' '.repeat(first)}${line.slice(at)}`
             match = ORDERED_ITEM.exec(line)
           }
           break
         }
       }
-      if (!levels.length) level = levels.push({ margin: at, text: -1 }) - 1
+      if (!levels.length) level = levels.push({ margin: at, text: -1, moved: 0 }) - 1
     }
     if (emptyItem && line.trim() && !(match && atMargin(match[1]!))) {
-      // Under an empty item, only what is indented as its text would be, with no blank line before it, is its own.
-      if (previousBlank || lead < item!.textColumn) return aligned.replace(/\n$/, '')
+      // Under an empty item, only what was indented as its text, with no blank line before it, is its own.
+      if (previousBlank || !(levels.length ? under[0] : lead >= item!.textColumn)) return aligned.replace(/\n$/, '')
       emptyItem = false
     }
     if (match) {
@@ -436,11 +460,11 @@ export function alignOrderedContinuations(src: string) {
       // Five spaces or more after the marker: the text starts after one, and the rest is code.
       const gap = spaces.length > 4 ? 1 : spaces.length
       item = { strippedThere: indent.length + marker.length + 1, textColumn: indent.length + marker.length + 1 + gap }
-      if (level !== -1) levels[level]!.text = item.textColumn
+      if (level !== -1) Object.assign(levels[level]!, { text: item.textColumn, moved })
     } else if (item && line.trim()) {
       clear = false
       // Less indented than the text of the item read last in a list inside another: that list is over.
-      while (levels.length > 1 && lead < levels.at(-1)!.text) levels.pop()
+      while (levels.length > 1 && !under[levels.length - 1]) levels.pop()
       // Text at the margin after a blank line: the list is over.
       if (lead === 0 && previousBlank && !fence) return aligned + src.slice(start)
       const text = line.trimStart()
@@ -491,10 +515,10 @@ const FaithfulOrderedList = OrderedList.extend({
     tokenize: (src: string, tokens: unknown[], lexer: unknown) => {
       // Tried at the start of every block: only an ordered list is worth the work.
       const end = src.indexOf('\n')
-      const first = end === -1 ? src : src.slice(0, end)
-      // Four spaces in, or a tab, where a block starts, a number is code (marked reads it so): read
-      // as a list, the items after it less indented were lost.
-      if (/^(?: {4}| {0,3}\t)/.test(first)) return undefined
+      // One line alone is also how @tiptap/extension-list asks whether a line goes on with the text
+      // of a task or an item above it: read as it always was (`2.` alone is no list, and goes on).
+      if (end === -1 || end === src.length - 1) return orderedListTokenizer.tokenize(src, tokens, lexer)
+      const first = src.slice(0, end)
       if (!ORDERED_ITEM.test(first) && !EMPTY_ORDERED_ITEM.test(first)) return orderedListTokenizer.tokenize(src, tokens, lexer)
       const aligned = alignOrderedContinuations(src)
       const token = orderedListTokenizer.tokenize(aligned, tokens, lexer)
