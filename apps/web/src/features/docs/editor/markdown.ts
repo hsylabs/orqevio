@@ -668,25 +668,35 @@ interface MarkedInstance {
   Tokenizer: { prototype: { list: MarkedList } }
   use(extension: { tokenizer: { list: MarkedList } }): unknown
 }
-const readingBareNumbers = new WeakSet<object>()
+const readingListsAgain = new WeakSet<object>()
 /**
  * marked's own reading of a list, which a quote reads again with the lines that follow it without
- * `>`, takes no list whose first item is a number with only spaces after it (`> 2. `, then
- * `texto`): @tiptap/extension-list had read an empty item there, and the page couldn't be opened.
- * It is read as the number alone, the same empty item.
+ * `>`, takes no list whose first item is four spaces in or more, or is a marker with only spaces
+ * after it (`> 2. ` or `>     1. a`, then `texto`): @tiptap/extension-list had read a list there,
+ * and the page couldn't be opened. Then it is read with its lines as far left as the first can go,
+ * and the marker alone: the same items.
  */
-function readBareNumbers(instance: MarkedInstance) {
-  if (readingBareNumbers.has(instance)) return
-  readingBareNumbers.add(instance)
+function readListsAgain(instance: MarkedInstance) {
+  if (readingListsAgain.has(instance)) return
+  readingListsAgain.add(instance)
   const list = instance.Tokenizer.prototype.list
   instance.use({
     tokenizer: {
       list(src) {
-        const bare = /^( {0,3}\d{1,9}[.)])[ \t]+(?=\n|$)/.exec(src)
-        if (!bare) return false
-        const token = list.call(this, bare[1] + src.slice(bare[0].length))
-        // What it took from the source, as it was: marked goes on from there.
-        return token ? { ...token, raw: src.slice(0, token.raw.length + bare[0].length - bare[1]!.length) } : false
+        const token = list.call(this, src)
+        if (token) return token
+        const first = /^( *)([*+-]|\d{1,9}[.)])([ \t]+(?=\n|$)|(?=[ \t]|\n|$))/.exec(src)
+        if (!first) return false
+        const lead = first[1]!.length
+        const lines = src.split('\n')
+        lines[0] = `${first[2]}${lines[0]!.slice(first[0].length)}`
+        for (let i = 1; i < lines.length; i++) lines[i] = lines[i]!.slice(Math.min(lead, /^ */.exec(lines[i]!)![0].length))
+        const read = list.call(this, lines.join('\n'))
+        if (!read) return false
+        // What it took from the source, as it was: the quote goes on from there.
+        const taken = read.raw.split('\n')
+        const ends = taken.at(-1) === ''
+        return { ...read, raw: firstLines(src, ends ? taken.length - 1 : taken.length) + (ends ? '\n' : '') }
       },
     },
   })
@@ -694,7 +704,7 @@ function readBareNumbers(instance: MarkedInstance) {
 
 function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[0]) {
   const manager = new MarkdownManager(options)
-  readBareNumbers(manager.instance as unknown as MarkedInstance)
+  readListsAgain(manager.instance as unknown as MarkedInstance)
   const internals = manager as unknown as ManagerInternals
 
   // A formula in a line is written as text with its marks, in their run: `**a $x$ b**` and

@@ -142,6 +142,8 @@ const normalised: Array<[string, string, string]> = [
   // marked reads a list whose number has only spaces after it again in a quote, with the lines after it.
   ['a numbered item with only a space after its number in a quote, with a line after it', '> 2. \n>    b\ntexto', '> 2. b\n> texto'],
   ['a numbered item with only a space after its number in a quote, with a heading under it', '> 2. \n>    ## h\ntexto', '> 2. &nbsp;\n>    ## h\n>\n> texto'],
+  ['a numbered item four spaces in in a quote, with a line after it', '>     1. a\nx y', '> 1. a\n> x y'],
+  ['numbered items five spaces in in a quote, with a line after them', '>      1. a\n>      2. b\nx y', '> 1. a\n> 2. b\n> x y'],
   // A number alone further in than the list's own items is a line of the block it is in, as it was.
   ['a number alone in a code block indented less than the item', '1. Crea el script:\n  ```bash\n  case "$x" in\n    1)\n      echo uno ;;\n  esac\n  ```\n2. Ejecútalo', '1. Crea el script:\n   ```bash\n   case "$x" in\n    1)\n      echo uno ;;\n   esac\n   ```\n2. Ejecútalo'],
   ['a number alone in a formula in an item', '1. paso\n   $$\n   x\n   2.\n   $$\n2. otro', '1. paso\n   ```math\n   x\n   2.\n   ```\n2. otro'],
