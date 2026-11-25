@@ -175,6 +175,12 @@ export const FaithfulCodeBlock = CodeBlockLowlight.extend<CodeBlockLowlightOptio
   addStorage() {
     return { openLanguages: null, colouredAtStart: false, stopWaiting: null }
   },
+  // A fence one to three spaces in is a fence, as CommonMark has it (marked gives its code without
+  // them): @tiptap/extension-code-block 3.33.0 reads only one at the margin, and lost the code.
+  parseMarkdown(token, helpers) {
+    const raw = typeof token.raw === 'string' ? token.raw.replace(/^ {1,3}(?=`{3}|~{3})/, '') : token.raw
+    return this.parent?.({ ...token, raw }, helpers) ?? []
+  },
   // A block showing a fence (Markdown about Markdown, say) keeps it inside: a fence of three would
   // close the block there, and everything after it would become code. An info string with a backtick
   // takes a fence of tildes, as it came: after backticks it would be no fence, and the block text.

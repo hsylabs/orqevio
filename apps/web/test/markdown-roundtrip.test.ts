@@ -68,6 +68,17 @@ const kept: Array<[string, string]> = [
   ['an escaped marker followed by a colon', '> \\[!NOTE\\]: Importante'],
   ['an escaped marker followed by a colon and an address', '> \\[!TIP\\]: /guia "Guía"'],
   ['an escaped marker followed by parentheses', '> \\[!NOTE\\](importante) algo'],
+  ['a rule under the text of an item', '- uno\n\n  ---\n- dos'],
+  ['a rule under the text of a numbered item', '1. uno\n\n   ---\n2. dos'],
+  ['a rule under the text of a task', '- [ ] uno\n\n  ---\n- [ ] dos'],
+  ['an empty item of a numbered list', '1. uno\n2.\n3. tres'],
+  ['an empty first item of a numbered list', '1.\n2. dos'],
+  ['an empty last item of a numbered list', '1. uno\n2.'],
+  ['a number alone on its line, an empty numbered item as Markdown reads it', '2024.'],
+  ['an empty item of a bulleted list', '- uno\n-\n- tres'],
+  ['an empty first item of a bulleted list', '-\n- b'],
+  ['an empty bulleted list after text', 'Texto\n\n-'],
+  ['a line like an empty item in a code block of a numbered list', '1. paso\n   ```\n   2.\n   ```\n2. otro'],
 ]
 
 /** Read the same again: written in another, equivalent way. */
@@ -86,6 +97,57 @@ const normalised: Array<[string, string, string]> = [
     '1. paso\n\n   ```python\n   def f():\n       x = 1\n       1. + 2\n       return x\n   ```\n2. otro',
     '1. paso\n   ```python\n   def f():\n       x = 1\n       1. + 2\n       return x\n   ```\n2. otro',
   ],
+  // The editor writes a list's items one under the other (`- a\n\n- b` is `- a\n- b`).
+  ['a rule under the text of an item, with blank lines around it', '- uno\n\n  ---\n\n- dos', '- uno\n\n  ---\n- dos'],
+  ['a rule of stars under the text of an item', '- uno\n\n  ***', '- uno\n\n  ---'],
+  ['an empty numbered item between blank lines stays in its list', '1. uno\n\n2.\n\n3. tres', '1. uno\n2.\n3. tres'],
+  ['an empty numbered item with a space after its number', '1. uno\n2. \n3. tres', '1. uno\n2.\n3. tres'],
+  ['an empty bulleted item with a space after its marker', '- uno\n- \n- tres', '- uno\n-\n- tres'],
+  // Stuck to the text, marked and GitHub read a heading there, even in a task.
+  ['a rule right under the text of a task', '- [ ] uno\n  ---', '- [ ] uno\n\n  ---'],
+  // As Markdown reads them: what is not indented under an empty item is no part of it.
+  ['text right under an empty numbered item', '1. uno\n2.\ntexto', '1. uno\n2.\n\ntexto'],
+  ['a year alone on its line, then text', '2024.\nFue un buen año.', '2024.\n\nFue un buen año.'],
+  // A block right under an empty item is its own, after a line of `&nbsp;`, as with any item that starts with a block.
+  ['a list right under an empty numbered item', '1. uno\n2.\n   - a\n3. tres', '1. uno\n2. &nbsp;\n   - a\n3. tres'],
+  ['an empty item in a list inside another', '- a\n  1.\n  2. b', '- a\n  1. &nbsp;\n  2. b'],
+  // An item indented otherwise than the first, by up to three spaces, is one more of the list's items, as Markdown reads it.
+  ['an item indented a space more than the first', '1. a\n 2. b\n3. c', '1. a\n2. b\n3. c'],
+  ['an item less indented than the first', ' 1. a\n2. b', '1. a\n2. b'],
+  ['an item indented less than the text of a long number', '10. a\n   2. b', '10. a\n11. b'],
+  ['items indented otherwise under an empty item', '1. Paso uno\n2.\n  1. a\n  2. b\n3. Paso tres', '1. Paso uno\n2.\n3. a\n4. b\n5. Paso tres'],
+  ['an item indented a space more under an empty item', '1. a\n2.\n 3. b', '1. a\n2.\n3. b'],
+  ['an item after an empty first item indented more', '  2.\n1. x', '2.\n3. x'],
+  ['an item after text under an indented empty item', ' 1.\n    texto\n2. uno', '1. texto\n2. uno'],
+  ['an empty item indented a space more, right under an item', '1. a\n 2.\n3. b', '1. a\n2.\n3. b'],
+  ['an empty item indented a space more, under an empty one', '2)\n 2)', '2.\n3.'],
+  ['an item of a list inside another, less indented than the first', '1. a\n      2. dos\n   3. uno', '1. a\n   2. dos\n   3. uno'],
+  ['an item of a list inside another, under a long number', '12. Ver\n       1. uno\n    2. uno', '12. Ver\n    1. uno\n    2. uno'],
+  ['an item of a list inside another, a space more than the first', '1. a\n   1. b\n    2. c\n2. d', '1. a\n   1. b\n   2. c\n2. d'],
+  ['an item less indented than a first one four spaces in', '    1. a\n2. b', '1. a\n2. b'],
+  ['an item after a blank line under an empty item, as far in as its text', '1. a\n2.\n\n   3. b', '1. a\n2.\n3. b'],
+  // What is under an item put in line with the others moves with it.
+  ['a list under an item moved in line', '1. a\n  2. b\n     - c\n     - d', '1. a\n2. b\n   - c\n   - d'],
+  ['a code block under an item moved in line', '1. a\n  2. b\n\n     ```py\n     if x:\n         y\n     ```', '1. a\n2. b\n   ```py\n   if x:\n       y\n   ```'],
+  ['a code block under an item moved right', '  1. a\n2. b\n   ```\n   2. x\n   ```\n3. c', '1. a\n2. b\n   ```\n   2. x\n   ```\n3. c'],
+  ['text under an item moved in line, a space past its text', '2) dos\n  3. b\n    c', '2. dos\n3. b\nc'],
+  // Letters and roman numerals are TipTap's: not CommonMark's, they stay where they were.
+  ['lettered items under a numbered one', '1. Paso uno\n  a. detalle\n  b. detalle', '1. Paso uno\n   a. detalle\n   b. detalle'],
+  // A number alone can't break into a paragraph (CommonMark): under a task's text, it goes on with it.
+  ['a number alone under the text of a task', '- [ ] Llamar\n  2.\n  Revisar', '- [ ] Llamar\n  2\\.\n  Revisar'],
+  ['numbered lines far in under an item', '- dos\n          1. a\n          2. b', '- dos\n  1. a\n  2. b'],
+  // A fence one to three spaces in is a fence (CommonMark).
+  ['a code block indented a few spaces', 'Texto\n\n   ```\n   x\n   ```', 'Texto\n\n```\nx\n```'],
+  ['a code block indented less than the text of an empty item', '1. Instala:\n2.\n  ```bash\n  npm i\n  ```', '1. Instala:\n2.\n\n```bash\nnpm i\n```'],
+  // marked reads a list whose number has only spaces after it again in a quote, with the lines after it.
+  ['a numbered item with only a space after its number in a quote, with a line after it', '> 2. \n>    b\ntexto', '> 2. b\n> texto'],
+  ['a numbered item with only a space after its number in a quote, with a heading under it', '> 2. \n>    ## h\ntexto', '> 2. &nbsp;\n>    ## h\n>\n> texto'],
+  ['a numbered item four spaces in in a quote, with a line after it', '>     1. a\nx y', '> 1. a\n> x y'],
+  ['numbered items five spaces in in a quote, with a line after them', '>      1. a\n>      2. b\nx y', '> 1. a\n> 2. b\n> x y'],
+  // A number alone further in than the list's own items is a line of the block it is in, as it was.
+  ['a number alone in a code block indented less than the item', '1. Crea el script:\n  ```bash\n  case "$x" in\n    1)\n      echo uno ;;\n  esac\n  ```\n2. Ejecútalo', '1. Crea el script:\n   ```bash\n   case "$x" in\n    1)\n      echo uno ;;\n   esac\n   ```\n2. Ejecútalo'],
+  ['a number alone in a formula in an item', '1. paso\n   $$\n   x\n   2.\n   $$\n2. otro', '1. paso\n   ```math\n   x\n   2.\n   ```\n2. otro'],
+  ['a number alone indented as code is code', 'Texto\n\n    2.', 'Texto\n\n```\n2.\n```'],
   [
     'a code block in an ordered list keeps a line like an item at its margin',
     '1. paso\n\n   ~~~\n   2. no es un paso\n   ~~~\n2. otro',
@@ -104,6 +166,24 @@ describe('Markdown round trip', () => {
     expect(roundTrip(markdown)).toBe(written)
     // And from then on it stays put.
     expect(roundTrip(written)).toBe(written)
+  })
+
+  it('reads every item with a first line to write in, as the editor makes them', () => {
+    for (const markdown of ['1. uno\n2.\n   - a\n3. tres', '1. uno\n2.\n   ```js\n   x\n   ```\n3. tres', '1. uno\n2.\n   > cita\n3. tres', '- a\n  1.\n  2. b', '> 2.\n> texto', '1.\n\n   foo', '2024.\nFue un buen año.', '- a\n  - [ ] t\n    x\n    2.\n    a']) {
+      const editor = open(markdown)
+      expect(() => editor.state.doc.check(), markdown).not.toThrow()
+      expect(roundTrip(roundTrip(markdown)), markdown).toBe(roundTrip(markdown))
+    }
+  })
+
+  it('reads an empty item as an empty line to write in, as the editor makes one', () => {
+    for (const markdown of ['1. uno\n2.\n3. tres', '1. uno\n2. \n3. tres', '1. uno\n\n2.\n\n3. tres', '- uno\n-\n- tres']) {
+      const editor = open(markdown)
+      expect(() => editor.state.doc.check(), markdown).not.toThrow()
+      expect(editor.state.doc.childCount, markdown).toBe(1)
+      const items = editor.getJSON().content![0]!.content!.map((item) => item.content)
+      expect(items, markdown).toEqual([[{ type: 'paragraph', content: [{ type: 'text', text: 'uno' }] }], [{ type: 'paragraph' }], [{ type: 'paragraph', content: [{ type: 'text', text: 'tres' }] }]])
+    }
   })
 
   it('keeps two tables in a row apart by one blank line, save after save', () => {
