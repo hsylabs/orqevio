@@ -736,3 +736,100 @@ describe('what a fourth look found', () => {
     await act(async () => root.unmount())
   })
 })
+
+describe('what the review of the pull request found', () => {
+  const link: JSONContent['marks'] = [{ type: 'link', attrs: { href: 'https://example.com' } }]
+  const images = (editor: Editor) => {
+    const found: string[] = []
+    editor.state.doc.descendants((node) => void (node.type.name === 'image' && found.push(String(node.attrs.alt))))
+    return found
+  }
+
+  const linked = (editor: Editor) => {
+    const found: string[] = []
+    editor.state.doc.descendants((node) => void (node.marks.some((mark) => mark.type.name === 'link') && found.push(node.textContent)))
+    return found.join('')
+  }
+
+  it('keeps a link or an image whose text has a `$`, after a price', () => {
+    for (const [markdown, inLink] of [
+      ['Costs $5 [US$](https://example.com)', 'US$'],
+      ['De $5 a [20 US$](https://example.com) y más', '20 US$'],
+      ['Costs $5 [a [b] US$](https://example.com)', 'a [b] US$'],
+      ['Costs $5 [US$ `]` x](https://example.com)', 'US$ ] x'],
+      ['Costs $5 [US$``](https://example.com)', 'US$``'],
+    ]) {
+      const editor = open(markdown!)
+      expect(latexOf(editor), markdown).toEqual([])
+      expect(linked(editor), markdown).toBe(inLink)
+      // As written, but for the brackets and backticks of its text, which the editor escapes.
+      expect(saved(open(saved(editor))), markdown).toBe(saved(editor))
+      expect(linked(open(saved(editor))), markdown).toBe(inLink)
+    }
+    expect(saved(open('Costs $5 [US$](https://example.com)'))).toBe('Costs $5 [US$](https://example.com)')
+    const image = open('Costs $5 ![US$](https://example.com/x.png)')
+    expect(latexOf(image)).toEqual([])
+    expect(images(image)).toEqual(['US$'])
+    expect(saved(image)).toBe('Costs $5 ![US$](https://example.com/x.png)')
+  })
+
+  it('still reads a formula with brackets, and one before or in a link', () => {
+    for (const [markdown, latex] of [
+      ['El intervalo $[0,1)$ y $[a, b]$.', ['[0,1)', '[a, b]']],
+      ['$\\left[ x \\right)$ y [un enlace](https://example.com)', ['\\left[ x \\right)']],
+      ['$[0,1)$ antes de [un enlace](https://example.com) y $[2,3)$', ['[0,1)', '[2,3)']],
+      // In a link, as the editor writes it there: a `[` of its own would start the link's text.
+      ['[la fórmula $`[0,1)`$](https://example.com)', ['[0,1)']],
+      ['$[a [b] c$ y nada más', ['[a [b] c']],
+    ] as const) {
+      const editor = open(markdown)
+      expect(latexOf(editor), markdown).toEqual(latex)
+      expect(saved(editor), markdown).toBe(markdown)
+    }
+  })
+
+  it('writes a link whose text has a `$` as it is, after a price, a formula or a bracket', () => {
+    const editor = open(paragraph(text('Costs $5 '), text('US$', link), text(' and '), formula('[0,1)'), text(' '), text('a$', link)), 'json')
+    expect(saved(editor)).toBe('Costs $5 [US$](https://example.com) and $[0,1)$ [a$](https://example.com)')
+    const read = open(saved(editor))
+    expect(latexOf(read)).toEqual(['[0,1)'])
+    expect(read.getText()).toBe('Costs $5 US$ and $[0,1)$ a$')
+  })
+
+  it('reads back, in any order, prices next to links whose text has a `$` and formulas with brackets', () => {
+    const pieces: JSONContent[] = [text('$5 '), text('$'), text('US$', link), text('[a$', link), text('a$ b', link), formula('[0,1)'), formula('y'), text(' ['), text('](x)')]
+    const editor = open('')
+    const markdown = editor.markdown!
+    const plain = (json: JSONContent) => JSON.parse(JSON.stringify(json).replace(/,"raw":(?:null|"(?:[^"\\]|\\.)*")/g, ''))
+    let checked = 0
+    for (const a of pieces) {
+      for (const b of pieces) {
+        for (const c of pieces) {
+          const doc = editor.schema.nodeFromJSON(paragraph(a, b, c)).toJSON() as JSONContent
+          const written = markdown.serialize(doc)
+          expect(plain(editor.schema.nodeFromJSON(markdown.parse(written)).toJSON()), JSON.stringify(written)).toEqual(plain(doc))
+          checked++
+        }
+      }
+    }
+    expect(checked).toBe(729)
+  })
+
+  it('writes a paragraph full of prices or formulas in a moment, however long', () => {
+    // The page is written at each change: each `$` reads only what it needs of what follows it.
+    const markdown = open('').markdown!
+    const many = (count: number, ...content: JSONContent[]) => paragraph(...Array.from({ length: count }, () => content).flat())
+    for (const [name, doc] of [
+      ['prices', paragraph(text('$a '.repeat(20000)))],
+      ['a list of prices', many(20000, text('$5.00 item'), { type: 'hardBreak' })],
+      ['intervals', many(20000, formula('[0,1)'), text(' y '))],
+      ['open brackets', many(20000, formula('[a'))],
+      ['inequalities', many(20000, formula('0<t \\le T'), text(' '))],
+      ['links after prices', many(20000, text('$5 '), text('US$', link), text(' '))],
+    ] as const) {
+      const start = performance.now()
+      markdown.serialize(doc)
+      expect(performance.now() - start, name).toBeLessThan(2000)
+    }
+  })
+})

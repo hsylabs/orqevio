@@ -6,7 +6,7 @@ import type { NodeView } from '@tiptap/pm/view'
 import { t } from 'i18next'
 import katex, { type KatexOptions } from 'katex'
 import 'katex/dist/katex.min.css'
-import { AUTOLINK, INLINE_HTML } from './inline-html'
+import { AUTOLINK, INLINE_HTML, INLINE_HTML_START } from './inline-html'
 import { ownStep, readPending } from './own-step'
 
 /**
@@ -35,38 +35,202 @@ function paragraphEnd(src: string, from: number) {
  * first `$`, none before the next one, and no digit right after it; if the next `$` can't end it,
  * there is none (`$5 por $x$` is a price and a formula). A `\` takes the character after it: `\$` is
  * a dollar in the formula. Neither crosses a code span or a link's address, which come first in
- * Markdown: `` `A=$B` `` and `](…?$top=10)` keep their dollars.
+ * Markdown: `` `A=$B` `` and `](…?$top=10)` keep their dollars. Nor does one end in the text of a
+ * link or an image: `$5 [US$](…)` is a price and a link.
  */
 export function readInlineMath(src: string, from = 0): MathSource | null {
+  return scanInlineMath(src, from, false) as MathSource | null
+}
+
+/**
+ * What a reader answers when the answer depends on text after the end of `src`. settleDollars
+ * reads only the start of what follows a `$`, with `more` set when the text goes on.
+ */
+const MORE = Symbol('more')
+type More = typeof MORE
+
+/**
+ * readInlineMath, reading only as far as it must, and never past the end of the paragraph. Each
+ * blank line is found as it is reached, so this costs what it reads, not the rest of the text.
+ */
+function scanInlineMath(src: string, from: number, more: boolean): MathSource | null | More {
   if (src[from] !== '$') return null
-  const end = paragraphEnd(src, from)
-  // `$$…$$` in a line, as the editor makes it as it is typed (TipTap's own rule, as in Notion).
-  if (src[from + 1] === '$') {
-    const close = src.indexOf('$$', from + 2)
-    if (close === -1 || close + 2 > end || src[close + 2] === '$') return null
-    const latex = src.slice(from + 2, close)
-    return latex.trim() && !/[\n`]|\]\(/.test(latex) ? { raw: src.slice(from, close + 2), latex } : null
-  }
-  if (src[from + 1] === '`') {
-    const close = src.indexOf('`$', from + 2)
-    if (close > from + 2 && close + 2 <= end) return { raw: src.slice(from, close + 2), latex: src.slice(from + 2, close) }
-  }
   const first = src[from + 1]
-  if (first === undefined || first === '$' || SPACE.test(first)) return null
-  for (let i = from + 1; i < end; i++) {
+  if (first === undefined) return more ? MORE : null
+  // `$$…$$` in a line, as the editor makes it as it is typed (TipTap's own rule, as in Notion).
+  if (first === '$') return scanDollars(src, from, more)
+  if (first === '`') return scanBackticks(src, from, more)
+  if (SPACE.test(first)) return null
+  for (let i = from + 1; ; i++) {
     const char = src[i]
+    if (char === undefined) return more ? MORE : null
+    if (char === '\n' || (char === '\\' && src[i + 1] === '\n')) {
+      const blank = blankLine(src, char === '\n' ? i : i + 1, more)
+      if (blank !== false) return blank === MORE ? MORE : null
+    }
     if (char === '\\') {
+      if (i + 1 >= src.length) return more ? MORE : null
       i++
       continue
     }
-    if (char === '`' || (char === ']' && src[i + 1] === '(')) return null
+    if (char === '`') return null
+    if (char === ']') {
+      if (src[i + 1] === '(') return null
+      if (i + 1 >= src.length) return more ? MORE : null
+      continue
+    }
     // An autolink or raw HTML, as CommonMark has them (`a<b` is neither): `<https://…?$top>`, `<span>…`.
-    if (char === '<' && (AUTOLINK.test(src.slice(i, end)) || INLINE_HTML.test(src.slice(i, end)))) return null
+    if (char === '<') {
+      const tag = tagAt(src, i, more)
+      if (tag !== false) return tag === MORE ? MORE : null
+      continue
+    }
     if (char !== '$') continue
-    if (SPACE.test(src[i - 1]!) || DIGIT.test(src[i + 1] ?? '')) return null
+    if (SPACE.test(src[i - 1]!)) return null
+    if (i + 1 >= src.length && more) return MORE
+    if (DIGIT.test(src[i + 1] ?? '')) return null
+    const link = inLinkText(src, from + 1, i, more)
+    if (link !== false) return link === MORE ? MORE : null
     return { raw: src.slice(from, i + 1), latex: src.slice(from + 1, i) }
   }
-  return null
+}
+
+/** `$$…$$` in a line: on one line, with no code or link in it, and not followed by another `$`. */
+function scanDollars(src: string, from: number, more: boolean): MathSource | null | More {
+  let close = -1
+  for (let i = from + 2; close === -1; i++) {
+    const char = src[i]
+    if (char === undefined) return more ? MORE : null
+    if (char === '\n' || char === '`') return null
+    if (char === ']' || char === '$') {
+      if (i + 1 >= src.length) return more ? MORE : null
+      if (char === ']' && src[i + 1] === '(') return null
+      if (char === '$' && src[i + 1] === '$') close = i
+    }
+  }
+  if (close + 2 >= src.length && more) return MORE
+  if (src[close + 2] === '$') return null
+  const latex = src.slice(from + 2, close)
+  if (!latex.trim()) return null
+  const link = inLinkText(src, from + 2, close, more)
+  if (link !== false) return link === MORE ? MORE : null
+  return { raw: src.slice(from, close + 2), latex }
+}
+
+/** GitHub's $`…`$, not empty, before the end of its paragraph. */
+function scanBackticks(src: string, from: number, more: boolean): MathSource | null | More {
+  for (let i = from + 2; ; i++) {
+    const char = src[i]
+    if (char === undefined) return more ? MORE : null
+    if (char === '\n') {
+      const blank = blankLine(src, i, more)
+      if (blank !== false) return blank === MORE ? MORE : null
+    }
+    if (char !== '`') continue
+    if (i + 1 >= src.length) return more ? MORE : null
+    // Only the first `` `$ `` can end it.
+    if (src[i + 1] === '$') return i > from + 2 ? { raw: src.slice(from, i + 2), latex: src.slice(from + 2, i) } : null
+  }
+}
+
+/** Whether the line break at `at` is followed by a blank line, where its paragraph ends. */
+function blankLine(src: string, at: number, more: boolean): boolean | More {
+  let i = at + 1
+  while (src[i] === ' ' || src[i] === '\t') i++
+  if (i < src.length) return src[i] === '\n'
+  return more ? MORE : true
+}
+
+/** The first character of an autolink or of raw HTML after `<`. */
+const TAG_START = /[\w.!#$%&'*+/=?^`{|}~-]/
+const BLANK_LINE = /\n[ \t]*\n/
+
+/** Whether an autolink or raw HTML starts at the `<` at `at`, within its paragraph. */
+function tagAt(src: string, at: number, more: boolean): boolean | More {
+  if (at + 1 >= src.length) return more ? MORE : false
+  if (!TAG_START.test(src[at + 1]!)) return false
+  const rest = src.slice(at)
+  if (AUTOLINK.test(rest)) return true
+  const html = INLINE_HTML.exec(rest)
+  if (html) return !BLANK_LINE.test(html[0])
+  return more && INLINE_HTML_START.test(rest) ? MORE : false
+}
+
+/**
+ * Whether the end of a formula at `end` would be in the text of a link or an image whose `[` is
+ * in the formula, from `start` on: `$5 [US$](…)` is a price before a link, as Markdown reads it.
+ * A link's text holds one pair of brackets at most (marked): only the last two `[` still open at
+ * the end can start one around it.
+ */
+function inLinkText(src: string, start: number, end: number, more: boolean): boolean | More {
+  const open: number[] = []
+  for (let i = start; i < end; i++) {
+    if (src[i] === '\\') i++
+    else if (src[i] === '[') open.push(i)
+    else if (src[i] === ']') open.pop()
+  }
+  for (const at of open.slice(-2)) {
+    const link = linkTextAround(src, at, end, more)
+    if (link !== false) return link
+  }
+  return false
+}
+
+/**
+ * Whether the `[` at `at` starts the text of a link that holds `end`, as marked reads one: with
+ * escapes, code spans and one pair of brackets in it, up to a `]` followed by `(`, within its
+ * paragraph. It stops at a second `[` inside a pair, so a paragraph of `$[0,1)$` reads little.
+ */
+function linkTextAround(src: string, at: number, end: number, more: boolean): boolean | More {
+  let nested = false
+  for (let i = at + 1; ; i++) {
+    const char = src[i]
+    if (char === undefined) return more ? MORE : false
+    if (char === '\\') {
+      if (src[i + 1] !== '\n') i++
+    } else if (char === '\n') {
+      const blank = blankLine(src, i, more)
+      if (blank !== false) return blank === MORE ? MORE : false
+    } else if (char === '`' && !nested) {
+      // A code span, whose brackets don't count, or backticks right before the `]` that ends the
+      // text; inside a pair of brackets, backticks are text.
+      const run = i
+      while (src[i + 1] === '`') i++
+      if (i + 1 >= src.length) return more ? MORE : false
+      // Two or more before `]`: the text can end there, if not with a code span.
+      if (i > run && src[i + 1] === ']') {
+        if (i + 2 >= src.length && more) return MORE
+        if (src[i + 2] === '(') return true
+      }
+      const close = codeSpanEnd(src, i + 1, more)
+      if (close === MORE) return MORE
+      if (close === -1) return false
+      i = close
+    } else if (char === '[') {
+      if (nested) return false
+      nested = true
+    } else if (char === ']') {
+      if (nested) nested = false
+      else if (i < end) return false
+      else if (i + 1 >= src.length) return more ? MORE : false
+      else return src[i + 1] === '('
+    }
+  }
+}
+
+/** Where the backticks that close a code span opened before `from` end, or -1: none before its paragraph ends. */
+function codeSpanEnd(src: string, from: number, more: boolean): number | More {
+  for (let i = from; ; i++) {
+    const char = src[i]
+    if (char === undefined) return more ? MORE : -1
+    if (char === '\n') {
+      const blank = blankLine(src, i, more)
+      if (blank !== false) return blank === MORE ? MORE : -1
+    }
+    if (char !== '`') continue
+    while (src[i + 1] === '`') i++
+    return i + 1 >= src.length && more ? MORE : i
+  }
 }
 
 const DOLLARS_LINE = /^ {0,3}\$\$[ \t]*$/
@@ -187,11 +351,13 @@ function inlineForms(formula: InlineFormula) {
  * Whether `markdown` reads back as the formula `latex` before `following`; at the start of a line,
  * `startsBlock` says whether a formula of its own would start there instead.
  */
-function readsAs(markdown: string, latex: string, following = '', startsBlock?: (src: string) => boolean) {
-  const read = readInlineMath(markdown + following)
+function readsAs(markdown: string, latex: string, following = '', more = false, startsBlock?: (src: string, more: boolean) => boolean | More): boolean | More {
+  const read = scanInlineMath(markdown + following, 0, more)
+  if (read === MORE) return MORE
   if (read?.raw !== markdown || read.latex !== latex) return false
   // Alone on its line, `$$…$$` would be one of its own.
-  return !startsBlock?.(markdown + following)
+  const block = startsBlock?.(markdown + following, more) ?? false
+  return block === MORE ? MORE : !block
 }
 
 /**
@@ -205,7 +371,7 @@ export type BlockStarts = 'all' | 'later' | 'lines' | 'none'
 export function inlineMathMarkdown(latex: string, raw: string | null) {
   if (!latex.trim()) return ''
   const { latex: written, forms } = inlineForms({ latex, raw })
-  return forms.find((form) => readsAs(form, written)) ?? forms.at(-1)!
+  return forms.find((form) => readsAs(form, written) === true) ?? forms.at(-1)!
 }
 
 /** A fence longer than any run of its character that starts a line of the formula. */
@@ -230,7 +396,7 @@ export function blockMathMarkdown(latex: string, raw: string | null, place: Bloc
   if (!latex.trim()) return ''
   if (place === 'table') {
     const { latex: written, forms } = inlineForms({ latex, raw: null, inTable: true })
-    return forms.find((form) => readsAs(form, written)) ?? forms.at(-1)!
+    return forms.find((form) => readsAs(form, written) === true) ?? forms.at(-1)!
   }
   const reads = (markdown: string) => {
     const read = readBlockMath(markdown)
@@ -260,7 +426,7 @@ const DOLLAR = '﷐'
 /** Around the number of a formula in a line. */
 const OPEN = '﷑'
 const CLOSE = '﷒'
-const MARKS = /[﷐-﷒]/g
+const MARKED = /[﷐-﷒]/
 
 /** Text as Markdown writes it, with each of its `$` marked for settleDollars. */
 export const markDollars = (markdown: string) => (markdown.includes('$') ? markdown.replace(/\$/g, () => `${DOLLAR}$`) : markdown)
@@ -274,40 +440,90 @@ export const markFormula = (index: number) => `${OPEN}${index}${CLOSE}`
  * formula of its own at the start of a line; any other stays as it was. A formula is written in the
  * first of its forms that reads back where it is: not one followed by a digit, alone on its line,
  * or next to a `$`. From the end: how each one reads depends only on what follows it.
+ *
+ * Each `$` reads only as much of what follows it as it needs, often a few characters, so a paragraph
+ * full of prices costs what it is long (the editor writes the page at each change).
  */
 export function settleDollars(markdown: string, formulas: InlineFormula[] = [], { blocks = 'all' }: { blocks?: BlockStarts } = {}) {
-  if (!markdown.match(MARKS)) return markdown
+  if (!MARKED.test(markdown)) return markdown
+  /** What is written after the place being settled, in pieces, the nearest last. */
   const parts: string[] = []
-  const after = () => parts.slice().reverse().join('')
-  const lineStart = (before: string) => {
+  const push = (part: string) => void (part && parts.push(part))
+  /** The first `size` characters of what is written after, and whether more follow. */
+  const after = (size: number) => {
+    let text = ''
+    for (let k = parts.length - 1; k >= 0; k--) {
+      const part = parts[k]!
+      if (text.length + part.length >= size) return { text: text + part.slice(0, size - text.length), more: text.length + part.length > size || k > 0 }
+      text += part
+    }
+    return { text, more: false }
+  }
+  /** What `read` says of what is written after, given more of it until it can tell. */
+  const settle = <T>(read: (after: string, more: boolean) => T | More): T => {
+    for (let size = 64; ; size *= 4) {
+      const { text, more } = after(size)
+      const result = read(text, more)
+      if (result !== MORE) return result
+    }
+  }
+  /** Whether the place at `at` starts a line, where a formula of its own can start (only spaces and marks before it). */
+  const lineStart = (at: number) => {
     if (blocks === 'none') return false
-    return (blocks === 'all' ? /(?:^|\n)[ \t]*$/ : /\n[ \t]*$/).test(before.replace(MARKS, ''))
+    for (let k = at - 1; k >= 0; k--) {
+      const char = markdown[k]!
+      if (char === '\n') return true
+      if (char !== ' ' && char !== '\t' && !MARKED.test(char)) return false
+    }
+    return blocks === 'all'
   }
   /** Whether a formula of its own starts at `src`, at the start of a line where one can. */
-  const startsBlock = (src: string) => readBlockMath(blocks === 'lines' ? src.split('\n', 1)[0]! : src) !== null
+  const startsBlock = (src: string, more: boolean): boolean | More => {
+    // Where a `$` is, only `$$` can start one.
+    if (!src.startsWith('$$')) return false
+    const lineEnd = src.indexOf('\n')
+    if (lineEnd === -1) return more ? MORE : readBlockMath(src) !== null
+    const line = src.slice(0, lineEnd)
+    if (blocks === 'lines') return readBlockMath(line) !== null
+    // `$$` alone on its line reads the lines after it.
+    if (more && DOLLARS_LINE.test(line)) return MORE
+    return readBlockMath(src) !== null
+  }
   let end = markdown.length
   for (let i = markdown.length - 1; i >= 0; i--) {
     const char = markdown[i]
-    const open = char === CLOSE ? markdown.lastIndexOf(OPEN, i) : -1
-    const formula = open === -1 ? undefined : formulas[Number(markdown.slice(open + 1, i))]
-    if (formula && /^\d+$/.test(markdown.slice(open + 1, i))) {
-      parts.push(markdown.slice(i + 1, end))
-      const following = after()
+    let open = i - 1
+    if (char === CLOSE) while (open >= 0 && DIGIT.test(markdown[open]!)) open--
+    const formula = char === CLOSE && markdown[open] === OPEN && open < i - 1 ? formulas[Number(markdown.slice(open + 1, i))] : undefined
+    if (formula) {
+      push(markdown.slice(i + 1, end))
       const { latex, forms } = inlineForms(formula)
-      const start = lineStart(markdown.slice(0, open))
-      parts.push(forms.find((form) => readsAs(form, latex, following, start ? startsBlock : undefined)) ?? forms.at(-1)!)
+      const blockStart = lineStart(open) ? startsBlock : undefined
+      push(
+        settle((following, more) => {
+          for (const form of forms) {
+            const reads = readsAs(form, latex, following, more, blockStart)
+            if (reads !== false) return reads === MORE ? MORE : form
+          }
+          return forms.at(-1)!
+        }),
+      )
       i = open
       end = open
     } else if (char === DOLLAR && markdown[i + 1] === '$') {
-      parts.push(markdown.slice(i + 2, end))
-      const following = `$${after()}`
-      // At the start of any of its lines: a formula of its own breaks a paragraph there.
-      const opens = readInlineMath(following) !== null || (lineStart(markdown.slice(0, i)) && startsBlock(following))
-      parts.push(opens ? '\\$' : '$')
+      push(markdown.slice(i + 2, end))
+      const start = lineStart(i)
+      const opens = settle((following, more) => {
+        const read = scanInlineMath(`$${following}`, 0, more)
+        if (read !== null) return read === MORE ? MORE : true
+        // At the start of any of its lines: a formula of its own breaks a paragraph there.
+        return start ? startsBlock(`$${following}`, more) : false
+      })
+      push(opens ? '\\$' : '$')
       end = i
     }
   }
-  parts.push(markdown.slice(0, end))
+  push(markdown.slice(0, end))
   return parts.reverse().join('')
 }
 
