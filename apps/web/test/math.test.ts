@@ -831,6 +831,10 @@ describe('what the review of the pull request found', () => {
       ['paths', paragraph(text('$HOME_DIR/'.repeat(20000)))],
       ['dollars between words', paragraph(text('$x$y'.repeat(10000)))],
       ['lines of $$', many(20000, text('$$'), { type: 'hardBreak' })],
+      ['dollars before brackets', paragraph(text('$[a'.repeat(20000)))],
+      ['placeholders', paragraph(text('${a[0]}'.repeat(10000)))],
+      ['dollars on lines', paragraph(text('$a\nb'.repeat(10000)))],
+      ['dollars on lines broken', many(10000, text('$a'), { type: 'hardBreak' }, text('b'))],
     ] as const) {
       const start = performance.now()
       markdown.serialize(doc)
@@ -859,6 +863,48 @@ describe('what a fifth look found', () => {
       expect(linked(editor), markdown).toMatch(/^US\$/)
       // Written as a link of its own (the editor keeps no references), backticks of its text escaped.
       expect(saved(editor), markdown).toMatch(/\[US\$(?:\\`\\`)?\]\(https:\/\/example\.com\)/)
+    }
+  })
+
+  it('keeps a link to a reference defined on two lines of a quote', () => {
+    const editor = open('> Costs $5 [US$ x] here\n>\n> [US$\n> x]: https://example.com')
+    expect(latexOf(editor)).toEqual([])
+    expect(linked(editor)).toBe('US$ x')
+  })
+
+  it('escapes each `$` of text as reading all that follows it would', () => {
+    // As settleDollars did before it read only what it needs: each `$` with all of what is written after it.
+    const blockStarts = /(?:^|\n)[ \t]*$/
+    const reference = (markdown: string, blocks: 'all' | 'none' | 'lines') => {
+      let written = ''
+      let end = markdown.length
+      for (let i = markdown.length - 1; i >= 0; i--) {
+        if (markdown[i] !== '\uFDD0' || markdown[i + 1] !== '$') continue
+        written = markdown.slice(i + 2, end) + written
+        const following = `$${written}`
+        const before = markdown.slice(0, i).replace(/[\uFDD0-\uFDD2]/g, '')
+        const start = blocks !== 'none' && (blocks === 'all' ? blockStarts : /\n[ \t]*$/).test(before)
+        const block = start && readBlockMath(blocks === 'lines' ? following.split('\n', 1)[0]! : following) !== null
+        written = (readInlineMath(following) !== null || block ? '\\$' : '$') + written
+        end = i
+      }
+      return markdown.slice(0, end) + written
+    }
+    let seed = 7
+    const next = () => {
+      seed = (seed * 48271) % 2147483647
+      return seed / 2147483647
+    }
+    // As the editor writes text: brackets, backticks and underscores escaped; line breaks.
+    const pieces = ['a', 'b', ' ', '5', '\\[', '\\]', '\\_', '\\`', '\n', '\\\n', '  \n', '\n\n', 'HOME/', ',', '<b>', '<a', '[x](u)', '`c`', 'x'.repeat(40)]
+    for (let n = 0; n < 4000; n++) {
+      let markdown = ''
+      for (let k = 0, count = 1 + Math.floor(next() * (n % 10 === 0 ? 200 : 30)); k < count; k++) {
+        markdown += next() < 0.45 ? markDollars('$') : pieces[Math.floor(next() * pieces.length)]!
+      }
+      for (const blocks of ['all', 'none', 'lines'] as const) {
+        expect(settleDollars(markdown, [], { blocks }), JSON.stringify(markdown)).toBe(reference(markdown, blocks))
+      }
     }
   })
 

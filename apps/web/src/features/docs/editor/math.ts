@@ -50,10 +50,17 @@ const referenceKey = (label: string) => label.replace(/\s+/g, ' ').toLowerCase()
 /** A definition of a reference, at the start of a line, in a quote or a list's item, or not. It may take a line that marked wouldn't. */
 const DEFINITION = /^[ \t>*+\-.)0-9]*\[((?!\s*\])(?:\\[\s\S]|[^[\]\\])+)\]:/gm
 
+/** The key of a definition's label; on the lines it goes on to, without the quote's `>` its first line has. */
+function definedLabel(match: RegExpMatchArray) {
+  const depth = match[0].slice(0, match[0].indexOf('[')).split('>').length - 1
+  const label = depth ? match[1]!.replace(new RegExp(`\\n[ \\t]*(?:>[ \\t]?){0,${depth}}`, 'g'), '\n') : match[1]!
+  return referenceKey(label)
+}
+
 /** `read`, a reading of `markdown`, knowing the references it defines: a formula never ends in the text of a link to one. */
 export function readingReferences<T>(markdown: string, read: () => T): T {
   const before = references
-  references = markdown.includes(']:') ? new Set([...markdown.matchAll(DEFINITION)].map((match) => referenceKey(match[1]!))) : new Set()
+  references = markdown.includes(']:') ? new Set([...markdown.matchAll(DEFINITION)].map(definedLabel)) : new Set()
   try {
     return read()
   } finally {
@@ -554,9 +561,10 @@ export function settleDollars(markdown: string, formulas: InlineFormula[] = [], 
     return readBlockMath(src) !== null
   }
   /**
-   * After a `\$` whose formula went on through plain text: a `$` before it with only plain text
-   * between them opens the same formula, which reads on past the `\$` as the first one did, so it
-   * is escaped too without reading it all again (`$a$a$a…`, `$HOME/bin:$HOME/lib`).
+   * After a `\$` whose formula went on through text: a `$` before it with only plain text between
+   * them opens a formula that ends at the same `$`, reading on past the `\$` as the first one did,
+   * with the same brackets open; so it is escaped too, without reading it all again (`$a$a$a…`,
+   * `$HOME/bin:$HOME/lib`). Plain: nothing the reading stops or turns at, no blank line.
    */
   let run = false
   const plainBefore = (text: string) => {
@@ -565,9 +573,13 @@ export function settleDollars(markdown: string, formulas: InlineFormula[] = [], 
       const char = text[k]!
       if (char === '\\') {
         // An escape of its own, not one that would take the `\` of the `\$` after it.
-        if (k + 1 >= text.length || text[k + 1] === '\n') return false
-        k++
-      } else if ('`[]<\n$'.includes(char)) return false
+        if (k + 1 >= text.length) return false
+        if (text[k + 1] !== '\n') k++
+      } else if (char === '\n') {
+        let next = k + 1
+        while (text[next] === ' ' || text[next] === '\t') next++
+        if (text[next] === '\n') return false
+      } else if ('`[]<$'.includes(char)) return false
     }
     return true
   }
@@ -605,8 +617,8 @@ export function settleDollars(markdown: string, formulas: InlineFormula[] = [], 
       const opens = settle((following, more) => {
         const read = scanInlineMath(`$${following}`, 0, more)
         if (read === MORE) return MORE
-        // A `$…$` read on through text with no bracket in it, which the next `$` before it can count on.
-        if (read !== null) return { opens: true, run: read.raw[1] !== '$' && read.raw[1] !== '`' && !read.latex.includes('[') }
+        // A `$…$` read on through text, which the next `$` before it can count on.
+        if (read !== null) return { opens: true, run: read.raw[1] !== '$' && read.raw[1] !== '`' }
         // At the start of any of its lines: a formula of its own breaks a paragraph there.
         const block = start ? startsBlock(`$${following}`, more) : false
         return block === MORE ? MORE : { opens: block, run: false }
