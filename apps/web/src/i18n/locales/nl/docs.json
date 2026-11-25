@@ -226,6 +226,15 @@
       "collapse": "Inhoud verbergen",
       "title": "Titel van het uitklapblok"
     },
+    "image": {
+      "toolbar": "Afbeelding",
+      "hint": "Afbeelding. Druk op Alt+F10 om de breedte of het bijschrift te wijzigen.",
+      "width": "Breedte: {{size}}",
+      "original": "Oorspronkelijke grootte",
+      "caption": "Bijschrift",
+      "captionPlaceholder": "Schrijf een bijschrift",
+      "resize": "Sleep om de breedte te wijzigen"
+    },
     "code": {
       "plain": "Platte tekst",
       "language": "Taal: {{name}}",

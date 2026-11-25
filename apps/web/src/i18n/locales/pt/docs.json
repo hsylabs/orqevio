@@ -228,6 +228,15 @@
       "collapse": "Ocultar o conteúdo",
       "title": "Título do recolhível"
     },
+    "image": {
+      "toolbar": "Imagem",
+      "hint": "Imagem. Pressione Alt+F10 para mudar a largura ou a legenda.",
+      "width": "Largura: {{size}}",
+      "original": "Tamanho original",
+      "caption": "Legenda",
+      "captionPlaceholder": "Escreva uma legenda",
+      "resize": "Arraste para mudar a largura"
+    },
     "code": {
       "plain": "Texto simples",
       "language": "Linguagem: {{name}}",

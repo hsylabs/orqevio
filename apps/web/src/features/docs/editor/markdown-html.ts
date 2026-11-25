@@ -3,6 +3,7 @@ import { DOMSerializer } from '@tiptap/pm/model'
 import i18next, { t } from 'i18next'
 import { CALLOUT_ICONS, calloutName, calloutType } from './callout'
 import { languageClass, languageName } from './code-block'
+import { cssSize } from './image'
 import { highlightCode, loadCodeColours, whenCodeColoursLoad } from './code-languages'
 import { documentExtensions } from './markdown'
 import { icon } from './svg-icons'
@@ -28,6 +29,7 @@ function render(markdown: string) {
   for (const link of root.querySelectorAll('a[href=""]')) link.removeAttribute('href')
   for (const code of root.querySelectorAll('pre:not([data-raw-html]):not([data-raw-markdown]) > code')) codeBlock(code, page)
   for (const quote of root.querySelectorAll('blockquote[data-callout]')) calloutTitle(quote, page)
+  for (const img of root.querySelectorAll('img[title], img[width], img[height]')) imageCaption(img, page)
   // A task's box shows whether it is done; here it can't be ticked.
   for (const box of root.querySelectorAll('input[type="checkbox"]')) box.setAttribute('disabled', '')
   // The empty paragraph the editor keeps after a list or a table at the end is no part of it.
@@ -80,6 +82,33 @@ function codeBlock(code: Element, page: Document) {
   bar.append(shown, copy)
   pre.replaceWith(box)
   box.append(bar, pre)
+}
+
+/**
+ * An image with a caption or a width as the editor shows it (image.ts): as wide as it was made, and
+ * its title under it. The image keeps both, so that a copy of it pastes the same.
+ */
+function imageCaption(img: Element, page: Document) {
+  const box = page.createElement('span')
+  box.className = 'orq-image'
+  const width = cssSize(img.getAttribute('width'))
+  const height = cssSize(img.getAttribute('height'))
+  if (width) {
+    box.setAttribute('style', `width: ${width}`)
+    box.setAttribute('data-sized', '')
+  } else if (height) {
+    // Only a height, as a badge has: the picture that high, as wide as that makes it.
+    img.setAttribute('style', `height: ${height}`)
+  }
+  img.replaceWith(box)
+  box.append(img)
+  const title = img.getAttribute('title')
+  if (title) {
+    const caption = page.createElement('span')
+    caption.className = 'orq-image-caption'
+    caption.textContent = title
+    box.append(caption)
+  }
 }
 
 /** A callout's icon and its type's name on top, as the editor shows them (callout.ts). */

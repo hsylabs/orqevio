@@ -15,6 +15,7 @@ import { CalloutControls } from './CalloutControls'
 import { markerFor } from './callout'
 import { insertToggle, outOfTitle } from './toggle'
 import { CodeControls } from './CodeControls'
+import { ImageControls } from './ImageControls'
 import { FormatMenu } from './FormatMenu'
 import { BlockKeys, Mentions, SlashCommands } from './extensions'
 import { documentExtensions } from './markdown'
@@ -275,6 +276,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       {editor && <TableControls editor={editor} />}
       {editor && <CodeControls editor={editor} />}
       {editor && <CalloutControls editor={editor} />}
+      {editor && <ImageControls editor={editor} />}
       {editor && blockHandles && <BlockControls editor={editor} />}
       <SuggestionMenu store={slashStore} emptyLabel={t('editor.noBlocks')} />
       <SuggestionMenu store={mentionStore} emptyLabel={t('editor.mentionHint')} />

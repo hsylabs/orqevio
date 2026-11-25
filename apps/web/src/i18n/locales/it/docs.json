@@ -228,6 +228,15 @@
       "collapse": "Nascondi il contenuto",
       "title": "Titolo del blocco espandibile"
     },
+    "image": {
+      "toolbar": "Immagine",
+      "hint": "Immagine. Premi Alt+F10 per cambiarne la larghezza o la didascalia.",
+      "width": "Larghezza: {{size}}",
+      "original": "Dimensione originale",
+      "caption": "Didascalia",
+      "captionPlaceholder": "Scrivi una didascalia",
+      "resize": "Trascina per cambiare la larghezza"
+    },
     "code": {
       "plain": "Testo semplice",
       "language": "Linguaggio: {{name}}",

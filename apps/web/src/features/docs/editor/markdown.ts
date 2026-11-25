@@ -1,6 +1,5 @@
 import { type AnyExtension, type JSONContent, Node } from '@tiptap/core'
 import Blockquote from '@tiptap/extension-blockquote'
-import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import { ListItem, ORDERED_LIST_MARKER_PATTERN, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
 import Paragraph from '@tiptap/extension-paragraph'
@@ -11,6 +10,7 @@ import { t } from 'i18next'
 import { DocumentRules } from './block-commands'
 import { Callout, calloutFromQuote } from './callout'
 import { Toggle, ToggleTitle, foldToggles } from './toggle'
+import { FaithfulImage, destination, imageFromTag, indentationOf, isLoneTag, quotedTitle } from './image'
 import { FaithfulCodeBlock } from './code-block'
 
 /**
@@ -52,6 +52,9 @@ export const RawHtmlBlock = Node.create({
   parseMarkdown: (token, helpers) => {
     if (!token.block) return []
     const html = String(token.raw ?? token.text ?? '').replace(/\s+$/, '')
+    // An `<img>` tag alone is an image, on a line of its own (image.ts).
+    const image = imageFromTag(html)
+    if (image) return helpers.createNode('paragraph', undefined, [{ type: 'image', attrs: { ...image } }])
     return html ? helpers.createNode('htmlBlock', { html }) : []
   },
   renderMarkdown: (node) => String(node.attrs?.html ?? ''),
@@ -83,7 +86,12 @@ export const RawHtmlInline = Node.create({
       return match ? { type: 'htmlInline', raw: match[0], text: match[0] } : undefined
     },
   },
-  parseMarkdown: (token, helpers) => helpers.createNode('htmlInline', { html: String(token.raw ?? '') }),
+  parseMarkdown: (token, helpers) => {
+    const html = String(token.raw ?? '')
+    // An `<img>` tag is an image (image.ts).
+    const image = imageFromTag(html)
+    return image ? helpers.createNode('image', { ...image }) : helpers.createNode('htmlInline', { html })
+  },
   renderMarkdown: (node) => String(node.attrs?.html ?? ''),
 })
 
@@ -220,9 +228,31 @@ const FaithfulParagraph = Paragraph.extend({
     return helpers.createNode('paragraph', undefined, helpers.parseInline(token.tokens ?? []))
   },
   renderMarkdown(node, helpers, context) {
-    return escapeLineStarts(this.parent?.(node, helpers, context) ?? '')
+    const markdown = escapeLineStarts(this.parent?.(node, helpers, context) ?? '')
+    const parent = String(context?.parentType ?? '')
+    // A table writes each line break of a cell as `<br>`: a line break inside a tag would undo it.
+    if (TABLE_PARENTS.has(parent)) return markdown
+    // An `<img>` tag that was alone on its line keeps its indentation, where it can't change the item it is in.
+    const [only, ...more] = node.content ?? []
+    // (Not on an item's first line, which follows its marker.)
+    const lead = only?.type === 'image' && !more.length && !(LIST_PARENTS.has(parent) && !context?.index) ? indentationOf(only.attrs?.html) : ''
+    return lead + keepImageInline(markdown)
   },
 })
+
+const TABLE_PARENTS = new Set(['table', 'tableRow', 'tableCell', 'tableHeader'])
+const LIST_PARENTS = new Set(['listItem', 'taskItem'])
+
+/**
+ * A paragraph whose first line is only an `<img>` tag, with more lines after it (an image with a
+ * size, then text or another image under it): such a line starts an HTML block, which would take
+ * the lines after it as HTML. A line break inside the tag keeps it an image in the paragraph.
+ */
+function keepImageInline(markdown: string) {
+  const end = markdown.indexOf('\n')
+  if (end === -1 || !isLoneTag(markdown.slice(0, end))) return markdown
+  return markdown.replace(/^(\s*<img)[ \t]+/i, '$1\n')
+}
 
 // ── Quotes ───────────────────────────────────────────────────────
 
@@ -271,8 +301,6 @@ const FaithfulBlockquote = Blockquote.extend({
   },
 })
 
-const escapeAlt = (alt: string) => alt.replace(/([\\[\]])/g, '\\$1')
-const destination = (src: string) => (/[\s()<>]/.test(src) ? `<${src.replace(/([<>])/g, '\\$1')}>` : src)
 
 /** Whether the parentheses in `href` pair up, as a link's address may hold them without `<>`. */
 function balancedParentheses(href: string) {
@@ -290,7 +318,7 @@ const FaithfulLink = Link.extend({
     const href = String(node.attrs?.href ?? '')
     const title = String(node.attrs?.title ?? '')
     const address = /[\s<>]/.test(href) || !balancedParentheses(href) ? destination(href) : href
-    return `[${helpers.renderChildren(node)}](${address}${title ? ` "${title.replace(/"/g, '\\"')}"` : ''})`
+    return `[${helpers.renderChildren(node)}](${address}${title ? ` ${quotedTitle(title)}` : ''})`
   },
 })
 
@@ -395,15 +423,6 @@ const FaithfulOrderedList = OrderedList.extend({
   },
 })
 
-const FaithfulImage = Image.extend({
-  renderMarkdown: (node) => {
-    const { src = '', alt = '', title = '' } = (node.attrs ?? {}) as { src?: string; alt?: string; title?: string }
-    const image = `![${escapeAlt(alt ?? '')}](${destination(src ?? '')}${title ? ` "${title.replace(/"/g, '\\"')}"` : ''})`
-    // A linked image, such as a badge: @tiptap/markdown writes marks on text only.
-    const link = node.marks?.find((m) => m.type === 'link')
-    return link?.attrs?.href ? `[${image}](${destination(String(link.attrs.href))})` : image
-  },
-}).configure({ inline: true, allowBase64: false })
 
 // ── List items ───────────────────────────────────────────────────
 
