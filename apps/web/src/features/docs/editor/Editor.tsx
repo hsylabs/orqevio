@@ -13,7 +13,7 @@ import { keys, queryClient } from '../../../lib/queries'
 import { BlockControls } from './BlockControls'
 import { CalloutControls } from './CalloutControls'
 import { markerFor } from './callout'
-import { insertToggle } from './toggle'
+import { insertToggle, outOfTitle } from './toggle'
 import { CodeControls } from './CodeControls'
 import { FormatMenu } from './FormatMenu'
 import { BlockKeys, Mentions, SlashCommands } from './extensions'
@@ -64,13 +64,15 @@ function insertAttachment(editor: TiptapEditor, attachment: AttachmentDTO, pos?:
     ? { type: 'image', attrs: { src: attachment.url, alt: attachment.filename } }
     : { type: 'paragraph', content: [{ type: 'text', text: attachment.filename, marks: [{ type: 'link', attrs: { href: attachment.url } }] }] }
   const chain = editor.chain().focus()
-  if (pos === undefined) {
+  // A toggle's title holds only text: the file goes under it, or after the toggle when it is closed.
+  const at = outOfTitle(editor.state.doc, pos ?? editor.state.selection.from)
+  if (pos === undefined && at === editor.state.selection.from) {
     chain.insertContent(content).run()
     return undefined
   }
   // Inserting leaves the cursor right after what it inserted.
-  chain.insertContentAt(pos, content).run()
-  return editor.state.selection.to
+  chain.insertContentAt(at, content).run()
+  return pos === undefined ? undefined : editor.state.selection.to
 }
 
 export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel, ariaDescribedBy, blockHandles = true }: EditorProps) {

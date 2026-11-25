@@ -9,7 +9,7 @@ import docs from '../src/i18n/locales/es/docs.json'
 import { turnBlock, turns } from '../src/features/docs/editor/block-commands'
 import { documentExtensions } from '../src/features/docs/editor/markdown'
 import { markdownToHtml } from '../src/features/docs/editor/markdown-html'
-import { insertToggle, setToggleOpen, showTogglesAsBefore, togglesShown } from '../src/features/docs/editor/toggle'
+import { insertToggle, outOfTitle, setToggleOpen, showTogglesAsBefore, togglesShown } from '../src/features/docs/editor/toggle'
 
 // HTML's <details> as a toggle in the editor: a title that shows or hides what is under it, written
 // back as the HTML and Markdown it was.
@@ -82,6 +82,22 @@ describe('a <details> with its summary', () => {
     const editor = open(markdown)
     expect(types(editor)).toContain('toggle')
     expect(editor.getMarkdown()).toBe(markdown)
+  })
+
+  it.each([
+    ['in a quote', '> <details>\n>\n> <summary>En cita</summary>\n>\n> Texto\n>\n> </details>'],
+    ['in a callout', '> [!NOTE]\n> <details>\n>\n> <summary>En aviso</summary>\n>\n> Texto\n>\n> </details>'],
+  ])('as GitHub\'s guide writes it, is one %s too', (_name, markdown) => {
+    const editor = open(markdown)
+    expect(types(editor)).toContain('toggle')
+    expect(editor.getMarkdown()).toBe(markdown)
+  })
+
+  it('as GitHub\'s guide writes it, in a list item, stays the same from the second save on', () => {
+    const once = open('- uno\n\n  <details>\n\n  <summary>En lista</summary>\n\n  Texto\n\n  </details>').getMarkdown()
+    const twice = open(once)
+    expect(types(twice)).toContain('toggle')
+    expect(twice.getMarkdown()).toBe(once)
   })
 
   it('shows its summary as one line of text', () => {
@@ -288,6 +304,79 @@ describe('a toggle changed in the editor', () => {
     expect(saved(editor)).toBe(`Nuevo\n\n${markdown}`)
   })
 
+  it('is selected by Backspace at the start of a quote or a callout right after it when closed', () => {
+    for (const after of ['> Cita', '> [!NOTE]\n> Cita']) {
+      const markdown = `<details>\n<summary>Más</summary>\n\nOculto\n\n</details>\n\n${after}`
+      const editor = open(markdown, 'markdown', true)
+      cursorAt(editor, 'Cita')
+      press(editor, 'Backspace')
+      expect(editor.state.selection).toBeInstanceOf(NodeSelection)
+      expect(saved(editor)).toBe(markdown)
+    }
+  })
+
+  it('takes away with Backspace an empty line right after it when closed, the cursor to its title', () => {
+    const markdown = '<details>\n<summary>Más</summary>\n\nOculto\n\n</details>\n\nFin'
+    const editor = open(markdown, 'markdown', true)
+    cursorIn(editor, 'toggleTitle')
+    press(editor, 'Enter')
+    expect(saved(editor)).toBe('<details>\n<summary>Más</summary>\n\nOculto\n\n</details>\n\n\n\nFin')
+    press(editor, 'Backspace')
+    expect(saved(editor)).toBe(markdown)
+    expect(editor.state.selection.$from.parent.type.name).toBe('toggleTitle')
+  })
+
+  it('leaves a block of code right after it a block of code with Backspace, when open', () => {
+    const editor = open('<details open>\n<summary>Más</summary>\n\nÚltimo\n\n</details>\n\n```js\nlet a = 1\nlet b = 2\n```', 'markdown', true)
+    let code = -1
+    editor.state.doc.descendants((node, pos) => void (node.type.name === 'codeBlock' && (code = pos)))
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, code + 1)))
+    press(editor, 'Backspace')
+    expect(saved(editor)).toContain('```js\nlet a = 1\nlet b = 2\n```')
+  })
+
+  it('takes its only line into its title with Backspace at its start, or Delete at the end of its title', () => {
+    const back = open('<details open>\n<summary>Más</summary>\n\nDentro\n\n</details>', 'markdown', true)
+    cursorAt(back, 'Dentro')
+    press(back, 'Backspace')
+    expect(saved(back)).toBe('<details open>\n<summary>MásDentro</summary>\n\n</details>')
+    expect(back.state.selection.$from.parent.type.name).toBe('toggleTitle')
+    const forward = open('<details open>\n<summary>Más</summary>\n\nDentro\n\n</details>', 'markdown', true)
+    cursorIn(forward, 'toggleTitle')
+    press(forward, 'Delete')
+    expect(saved(forward)).toBe('<details open>\n<summary>MásDentro</summary>\n\n</details>')
+  })
+
+  it('reuses the empty line after it for Enter in its title when closed', () => {
+    const editor = open('<details>\n<summary>Más</summary>\n\nOculto\n\n</details>', 'markdown', true)
+    // The empty line the editor keeps after it at the end, not one more each time.
+    for (let i = 0; i < 2; i++) {
+      cursorIn(editor, 'toggleTitle')
+      press(editor, 'Enter')
+      expect(editor.state.doc.childCount).toBe(2)
+      expect(editor.state.selection.$from.parent.type.name).toBe('paragraph')
+    }
+  })
+
+  it('keeps a non-breaking space typed in its title as `&nbsp;`, and pasted text\'s spaces around it', () => {
+    const editor = open('<details>\n<summary>Más</summary>\n\nDentro\n\n</details>', 'markdown', true)
+    cursorIn(editor, 'toggleTitle')
+    const event = { clipboardData: { getData: () => ' y\u00a0más ' } } as unknown as ClipboardEvent
+    editor.view.someProp('handlePaste', (handle) => handle(editor.view, event, Slice.empty))
+    expect(saved(editor)).toBe('<details>\n<summary>Más y&nbsp;más</summary>\n\nDentro\n\n</details>')
+    expect(open(saved(editor)).getMarkdown()).toBe(saved(editor))
+  })
+
+  it('sends a file put in its title under the title, or after itself when closed', () => {
+    const editor = open('<details open>\n<summary>Abierto</summary>\n\nA\n\n</details>\n\n<details>\n<summary>Cerrado</summary>\n\nB\n\n</details>')
+    const titles: number[] = []
+    editor.state.doc.descendants((node, pos) => void (node.type.name === 'toggleTitle' && titles.push(pos)))
+    const [openTitle, closedTitle] = titles as [number, number]
+    expect(editor.state.doc.resolve(outOfTitle(editor.state.doc, openTitle + 2)).nodeAfter?.textContent).toBe('A')
+    expect(outOfTitle(editor.state.doc, closedTitle + 2)).toBe(closedTitle - 1 + editor.state.doc.nodeAt(closedTitle - 1)!.nodeSize)
+    expect(outOfTitle(editor.state.doc, 1)).toBe(1)
+  })
+
   it('is shown or hidden with Ctrl+Enter in its title, and becomes text with Backspace at its start', () => {
     const editor = open('<details>\n<summary>Más</summary>\n\nDentro\n\n</details>', 'markdown', true)
     cursorIn(editor, 'toggleTitle')
@@ -306,8 +395,12 @@ describe('a toggle as HTML', () => {
   })
 
   it('writes only what a <details> can be written as, whatever a pasted one says', () => {
+    const expected = '<details>\n<summary>Pregunta</summary>\n\nRespuesta\n\n</details>'
     const html = '<details data-head="&lt;div&gt;" data-closing="" data-tail="x" data-summary="&lt;/summary&gt;"><summary>Pregunta</summary><p>Respuesta</p></details>'
-    expect(open(html, 'html').getMarkdown()).toBe('<details>\n<summary>Pregunta</summary>\n\nRespuesta\n\n</details>')
+    expect(open(html, 'html').getMarkdown()).toBe(expected)
+    // A blank line inside its tag would end its HTML block there, on GitHub.
+    const blank = '<details data-head="&lt;details&#10;&#10;&lt;script&gt;&lt;summary&gt;"><summary>Pregunta</summary><p>Respuesta</p></details>'
+    expect(open(blank, 'html').getMarkdown()).toBe(expected)
   })
 
   it('is read from a <details> copied from a web page', () => {

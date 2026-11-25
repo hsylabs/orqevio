@@ -537,6 +537,12 @@ blockquote.orq-callout > .orq-callout-title + * {
 details.orq-toggle > * + * {
   margin-top: 0.7em;
 }
+/* Selected as a whole (Backspace right after a closed one), wherever it is: shaded as a selected block. */
+.orq-prose .orq-toggle.ProseMirror-selectednode {
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  border-radius: 6px;
+  outline: none;
+}
 /* Closed, it shows only its title; with the cursor in what it holds (undone, found), all of it. */
 .orq-toggle:not([data-open]):not(.orq-toggle--reveal) > .orq-toggle-content > :not(:first-child) {
   display: none;
