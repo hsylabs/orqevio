@@ -374,7 +374,58 @@ describe('a toggle changed in the editor', () => {
     const [openTitle, closedTitle] = titles as [number, number]
     expect(editor.state.doc.resolve(outOfTitle(editor.state.doc, openTitle + 2)).nodeAfter?.textContent).toBe('A')
     expect(outOfTitle(editor.state.doc, closedTitle + 2)).toBe(closedTitle - 1 + editor.state.doc.nodeAt(closedTitle - 1)!.nodeSize)
-    expect(outOfTitle(editor.state.doc, 1)).toBe(1)
+    // Right before a title, as a drop beside its arrow can be read: as in the title.
+    expect(outOfTitle(editor.state.doc, openTitle)).toBe(outOfTitle(editor.state.doc, openTitle + 2))
+    // In what an open one holds, where it was; in what a closed one hides, after it.
+    let a = -1
+    editor.state.doc.descendants((node, pos) => void (node.type.name === 'paragraph' && node.textContent === 'A' && (a = pos + 1)))
+    expect(outOfTitle(editor.state.doc, a)).toBe(a)
+    expect(outOfTitle(editor.state.doc, closedTitle + editor.state.doc.nodeAt(closedTitle)!.nodeSize + 1)).toBe(outOfTitle(editor.state.doc, closedTitle + 2))
+  })
+
+  it('keeps its rules for Backspace and Delete with Ctrl (or ⌘) and Shift too', () => {
+    const formatted = '<details open>\n<summary>Más</summary>\n\nMira ![x](/a.png) y [enlace](/x)\n\n</details>'
+    const back = open(formatted, 'markdown', true)
+    cursorAt(back, 'Mira  y enlace')
+    back.view.someProp('handleKeyDown', (handle) => handle(back.view, new KeyboardEvent('keydown', { key: 'Backspace', ctrlKey: true })))
+    expect(saved(back)).toBe(formatted)
+    const closed = '<details>\n<summary>Más</summary>\n\nOculto\n\n</details>\n\nDespués'
+    const shift = open(closed, 'markdown', true)
+    cursorAt(shift, 'Después')
+    shift.view.someProp('handleKeyDown', (handle) => handle(shift.view, new KeyboardEvent('keydown', { key: 'Backspace', shiftKey: true })))
+    expect(shift.state.selection).toBeInstanceOf(NodeSelection)
+    expect(saved(shift)).toBe(closed)
+    const forward = open(closed, 'markdown', true)
+    cursorIn(forward, 'toggleTitle')
+    forward.view.someProp('handleKeyDown', (handle) => handle(forward.view, new KeyboardEvent('keydown', { key: 'Delete', ctrlKey: true })))
+    expect(saved(forward)).toBe(closed)
+  })
+
+  it('in a list item, keeps the block after it apart, so that it is still a toggle when the page is read again', () => {
+    for (const after of ['> Cita', '```js\n  x\n  ```', '<details>\n  <summary>Otro</summary>\n\n  Dos\n\n  </details>']) {
+      const once = open(`- uno\n\n  <details>\n  <summary>En lista</summary>\n\n  Texto\n\n  </details>\n\n  ${after}`).getMarkdown()
+      const twice = open(once)
+      expect(types(twice).filter((name) => name === 'toggle').length).toBe(after.startsWith('<details') ? 2 : 1)
+      expect(twice.getMarkdown()).toBe(once)
+    }
+  })
+
+  it('leaves the page\'s last empty line and an empty block of code after it when closed, with Backspace, to the editor', () => {
+    const markdown = '<details>\n<summary>Más</summary>\n\nOculto\n\n</details>'
+    const editor = open(markdown, 'markdown', true)
+    // The editor puts its empty line after it with the first change, this one.
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, editor.state.doc.content.size - 1)))
+    const steps = undoDepth(editor.state)
+    press(editor, 'Backspace')
+    expect(editor.state.selection.$from.parent.type.name).toBe('toggleTitle')
+    expect(undoDepth(editor.state)).toBe(steps)
+    const code = open(`${markdown}\n\n\`\`\`js\n\`\`\`\n\nFin`, 'markdown', true)
+    let at = -1
+    code.state.doc.descendants((node, pos) => void (node.type.name === 'codeBlock' && (at = pos + 1)))
+    code.view.dispatch(code.state.tr.setSelection(TextSelection.create(code.state.doc, at)))
+    press(code, 'Backspace')
+    // Its own Backspace: a line, as everywhere else.
+    expect(code.state.selection.$from.parent.type.name).toBe('paragraph')
   })
 
   it('is shown or hidden with Ctrl+Enter in its title, and becomes text with Backspace at its start', () => {

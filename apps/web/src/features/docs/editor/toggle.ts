@@ -1,4 +1,4 @@
-import { type Editor, type JSONContent, Node, mergeAttributes } from '@tiptap/core'
+import { type Editor, type JSONContent, Node, isMacOS, mergeAttributes } from '@tiptap/core'
 import { type Node as PMNode, Slice } from '@tiptap/pm/model'
 import { type EditorState, NodeSelection, Plugin, PluginKey, Selection, TextSelection, type Transaction } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, type NodeView } from '@tiptap/pm/view'
@@ -23,10 +23,10 @@ const CLOSING = /^<\/details>$/i
 /** What can be written before a summary: one of the forms above. */
 const HEAD = /^<details(?:\s[^>]*)?>(?:[^\S\n]*\n?[^\S\n]*|\n\n)<summary(?:\s[^>]*)?>$/i
 /** A head that can be written back: one of the forms above, no blank line in either tag (it would end its HTML block there). */
-const isHead = (head: string) => HEAD.test(head) && !/\n[^\S\n]*\n/.test(head.replace(/>\n\n</, '><'))
+const isHead = (head: string) => HEAD.test(head) && !head.includes('\r') && !/\n[^\S\n]*\n/.test(head.replace(/>\n\n</, '><'))
 const TAIL = /^<\/summary>$/i
 /** A summary that is one: no tag that would end it, nor a blank line that would end its HTML block. */
-const isSummary = (html: string) => !/<\/?(?:summary|details)(?=[\s>])/i.test(html) && !/\n[^\S\n]*\n/.test(html)
+const isSummary = (html: string) => !/<\/?(?:summary|details)(?=[\s>])/i.test(html) && !/\n[^\S\n]*\n/.test(html) && !html.includes('\r')
 
 const NEW = { head: '<details>\n<summary>', tail: '</summary>', closing: '</details>' }
 
@@ -44,7 +44,7 @@ export function summaryText(html: string) {
 /** Spaces and line breaks as HTML shows them: one space. */
 const oneSpace = (text: string) => text.replace(/[\t\n\f\r ]+/g, ' ')
 /** …and none at either end. */
-const collapse = (text: string) => oneSpace(text).trim()
+const collapse = (text: string) => oneSpace(text).replace(/^ | $/g, '')
 
 /** The title a summary is shown with. */
 const titleOf = (summary: string) => collapse(summaryText(summary))
@@ -256,7 +256,7 @@ class ToggleView implements NodeView {
  * empty title says what it is for while the page can be edited. A title takes what is pasted into it
  * as one line of text.
  */
-const decorating = new PluginKey<DecorationSet>('toggleDecorations')
+const decorating = new PluginKey<{ language: string; set: DecorationSet }>('toggleDecorations')
 /** The placeholders of the empty titles of a page. */
 function placeholders(doc: PMNode) {
   const found: Decoration[] = []
@@ -270,8 +270,9 @@ const decorations = (editor: Editor) =>
   new Plugin({
     key: decorating,
     state: {
-      init: (_config, state) => placeholders(state.doc),
-      apply: (tr, set) => (tr.docChanged ? placeholders(tr.doc) : set),
+      init: (_config, state) => ({ language: i18next.language, set: placeholders(state.doc) }),
+      // Drawn again when the page changes, or with the next change of any kind once the language has.
+      apply: (tr, value) => (tr.docChanged || value.language !== i18next.language ? { language: i18next.language, set: placeholders(tr.doc) } : value),
     },
     props: {
       decorations(state) {
@@ -286,7 +287,7 @@ const decorations = (editor: Editor) =>
             found.push(Decoration.node(pos, pos + node.nodeSize, { class: 'orq-toggle--reveal' }))
           }
         }
-        const titles = editor.isEditable ? decorating.getState(state)! : DecorationSet.empty
+        const titles = editor.isEditable ? decorating.getState(state)!.set : DecorationSet.empty
         return found.length ? titles.add(state.doc, found) : titles
       },
       handlePaste(view, event, slice) {
@@ -354,7 +355,7 @@ export const Toggle = Node.create({
     return ['details', mergeAttributes(HTMLAttributes, { class: 'orq-toggle' }), 0]
   },
 
-  renderMarkdown: (node, helpers) => {
+  renderMarkdown: (node, helpers, context) => {
     const attrs = node.attrs ?? {}
     const [title, ...blocks] = node.content ?? []
     const text = collapse((title?.content ?? []).map((child) => child.text ?? '').join(''))
@@ -365,11 +366,14 @@ export const Toggle = Node.create({
     const closing = String(attrs.closing ?? NEW.closing)
     // The empty line a toggle has in the editor for nothing held isn't written; one it was read with is.
     const held = blocks.length === 1 && isEmptyParagraph(blocks[0]) && !attrs.blank ? [] : blocks
-    if (!held.length) return `${opening}\n\n${closing}`
+    // In a list item, the block after it comes on the next line, which would still be its `</details>`
+    // HTML block: a blank line after it ends that block.
+    const end = ['listItem', 'taskItem'].includes(String(context?.parentType)) ? '\n' : ''
+    if (!held.length) return `${opening}\n\n${closing}${end}`
     // Each block with its index in the toggle, after its title: an empty paragraph is written as it is
     // after the block before it.
     const body = held.map((block, index) => helpers.renderChild?.(block, index + 1) ?? helpers.renderChildren([block])).join('\n\n')
-    return `${opening}\n\n${body}\n\n${closing}`
+    return `${opening}\n\n${body}\n\n${closing}${end}`
   },
 
   addKeyboardShortcuts() {
@@ -405,15 +409,9 @@ export const Toggle = Node.create({
         const found = titleToggle(this.editor.state)
         return found ? setToggleOpen(this.editor, found.pos, !found.node.attrs.open) : false
       },
-      Backspace: () => backspace(this.editor),
-      // At the end of its title: what it holds comes up into it only if it is open and its first line plain text.
-      Delete: () => {
-        const { selection } = this.editor.state
-        const found = titleToggle(this.editor.state)
-        if (!found || !selection.empty || selection.$from.parentOffset !== selection.$from.parent.content.size) return false
-        if (!found.node.attrs.open) return true
-        return intoTitle(this.editor, found.pos, 'forward')
-      },
+      // Every key the editor deletes backwards or forwards with, as TipTap binds them (with Ctrl, ⌘, ⌥ or ⇧ too).
+      ...Object.fromEntries(BACKWARD.map((key) => [key, () => backspace(this.editor)])),
+      ...Object.fromEntries(FORWARD.map((key) => [key, () => deleteForward(this.editor)])),
     }
   },
 
@@ -425,6 +423,18 @@ export const Toggle = Node.create({
     return ({ node, editor, getPos }) => new ToggleView(node, editor, getPos)
   },
 })
+
+const BACKWARD = ['Backspace', 'Mod-Backspace', 'Shift-Backspace', ...(isMacOS() ? ['Alt-Backspace', 'Ctrl-h'] : [])]
+const FORWARD = ['Delete', 'Mod-Delete', ...(isMacOS() ? ['Ctrl-d', 'Ctrl-Alt-Backspace', 'Alt-Delete', 'Alt-d'] : [])]
+
+/** At the end of a title: what the toggle holds comes up into it only if it is open (see intoTitle). */
+function deleteForward(editor: Editor) {
+  const { selection } = editor.state
+  const found = titleToggle(editor.state)
+  if (!found || !selection.empty || selection.$from.parentOffset !== selection.$from.parent.content.size) return false
+  if (!found.node.attrs.open) return true
+  return intoTitle(editor, found.pos, 'forward')
+}
 
 /**
  * The first block a toggle holds, brought up into its title (Backspace at its start, Delete at the
@@ -490,12 +500,16 @@ function backspace(editor: Editor) {
   const block = $from.before(depth + 1)
   const at = block - previous.nodeSize
   if (!previous.attrs.open) {
-    // An empty line right after it goes; the cursor to the end of its title, which shows.
+    // An empty line right after it goes (the page's last one stays, as the editor would put it back),
+    // the cursor to the end of its title, which shows. An empty block of code becomes a line first.
     if (depth === $from.depth - 1 && $from.parent.content.size === 0) {
+      if ($from.parent.type.spec.code) return false
+      const title = at + previous.firstChild!.nodeSize
+      if (depth === 0 && index === doc.childCount - 1) return editor.commands.setTextSelection(title)
       return editor.commands.command(({ tr, dispatch }) => {
         if (!dispatch) return true
         tr.delete(block, block + $from.parent.nodeSize)
-        tr.setSelection(TextSelection.create(tr.doc, at + previous.firstChild!.nodeSize))
+        tr.setSelection(TextSelection.create(tr.doc, title))
         dispatch(tr.scrollIntoView())
         return true
       })
@@ -517,15 +531,21 @@ function backspace(editor: Editor) {
 }
 
 /**
- * Where a file goes when the cursor (or a drop) is in a toggle's title, which holds only text: under
- * the title if the toggle is open, after the toggle if it is closed. Anywhere else, where it was.
+ * Where a file goes when the cursor (or a drop) is in a toggle's title, which holds only text, or
+ * right before it: under the title if the toggle is open. In a closed toggle, where it would be
+ * hidden: after the toggle (the outermost closed one). Anywhere else, where it was.
  */
 export function outOfTitle(doc: PMNode, pos: number) {
   const $pos = doc.resolve(pos)
-  if ($pos.parent.type.name !== 'toggleTitle') return pos
-  const toggle = $pos.node($pos.depth - 1)
-  const at = $pos.before($pos.depth - 1)
-  return toggle.attrs.open ? at + 1 + toggle.firstChild!.nodeSize : at + toggle.nodeSize
+  let at = pos
+  for (let depth = $pos.depth; depth > 0; depth--) {
+    const node = $pos.node(depth)
+    if (node.type.name !== 'toggle') continue
+    const start = $pos.before(depth)
+    if (!node.attrs.open) at = start + node.nodeSize
+    else if (at === pos && $pos.index(depth) === 0) at = start + 1 + node.firstChild!.nodeSize
+  }
+  return at
 }
 
 /** A toggle as text: its title a paragraph, and what it held after it (an empty line it only had, not). */
