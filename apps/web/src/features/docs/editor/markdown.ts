@@ -12,7 +12,8 @@ import { Callout, calloutFromQuote } from './callout'
 import { Toggle, ToggleTitle, foldToggles } from './toggle'
 import { FaithfulImage, destination, imageFromTag, indentationOf, isLoneTag, quotedTitle } from './image'
 import { FaithfulCodeBlock } from './code-block'
-import { type BlockStarts, FaithfulBlockMath, FaithfulInlineMath, type InlineFormula, markDollars, markFormula, settleDollars } from './math'
+import { INLINE_HTML } from './inline-html'
+import { type BlockStarts, FaithfulBlockMath, FaithfulInlineMath, type InlineFormula, markDollars, markFormula, readInlineMath, settleDollars } from './math'
 
 /**
  * Documents are Markdown, often written by agents, and the editor saves the whole
@@ -28,11 +29,6 @@ export const SAFE_PROTOCOL = /^(https?:|mailto:|\/(?!\/))/i
 // The editor can't show HTML, so it keeps it as it was: an HTML block becomes a block
 // showing its source, an inline tag a chip showing the tag. Both are written back verbatim.
 
-/** CommonMark inline raw HTML: an open or closing tag, a comment, a processing instruction, a declaration or CDATA. */
-const ATTRIBUTE = String.raw`\s+[A-Za-z_:][\w.:-]*(?:\s*=\s*(?:[^\s"'=<>\x60]+|'[^']*'|"[^"]*"))?`
-const INLINE_HTML = new RegExp(
-  String.raw`^(?:<[A-Za-z][A-Za-z0-9-]*(?:${ATTRIBUTE})*\s*\/?>|<\/[A-Za-z][A-Za-z0-9-]*\s*>|<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<![A-Za-z][^>]*>|<!\[CDATA\[[\s\S]*?\]\]>)`,
-)
 
 export const RawHtmlBlock = Node.create({
   name: 'htmlBlock',
@@ -446,6 +442,9 @@ const FaithfulListItem = ListItem.extend({
     return this.parent?.({ ...token, tokens }, helpers) ?? []
   },
   renderMarkdown(node, helpers, context) {
+    // An item read without a first line of text (TipTap's numbered lists read `1.` alone so) is
+    // written as one with an empty one, which is how the editor keeps it.
+    if (node.content?.length && node.content[0]!.type !== 'paragraph') node = { ...node, content: [{ type: 'paragraph' }, ...node.content] }
     let markdown = this.parent?.(node, helpers, context) ?? ''
     // An item that starts with a block: the empty line the editor keeps before it is no line, and a
     // marker alone on its line would lose the item. In a bulleted list a formula of its own or a
@@ -456,7 +455,8 @@ const FaithfulListItem = ListItem.extend({
       if (context?.parentType === 'bulletList' && (second.type === 'blockMath' || second.type === 'codeBlock')) {
         markdown = markdown.replace(/^([-+*] +)(?:&nbsp;)?\n[ \t]*/, '$1')
       } else {
-        markdown = markdown.replace(/^((?:[-+*]|\d{1,9}[.)]) +)\n/, '$1&nbsp;\n')
+        // A rule right under a line of text would make it a heading: a blank line between them.
+        markdown = markdown.replace(/^((?:[-+*]|\d{1,9}[.)]) +)(?:&nbsp;)?\n/, second.type === 'horizontalRule' ? '$1&nbsp;\n\n' : '$1&nbsp;\n')
       }
     }
     const last = node.content?.at(-1)
@@ -518,7 +518,7 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
       // Read with these marks and this source, it reads back the same; otherwise the delimiters of
       // its marks in its source would end them there: `*` of italics or bold, `~` of strikes,
       // brackets and backticks of a link.
-      const asRead = raw !== null && sameMarks(node.attrs?.rawMarks, marks)
+      const asRead = raw !== null && readInlineMath(raw)?.latex === latex && sameMarks(node.attrs?.rawMarks, marks)
       const guarded =
         !asRead &&
         ((marks.some((mark) => mark === 'bold' || mark === 'italic') && latex.includes('*')) ||
@@ -528,6 +528,7 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
       return { type: 'text', text: `\uFDD3${key}:${formulas.length - 1}\uFDD4`, ...(node.marks ? { marks: node.marks } : {}) }
     }
     if (!node.content) return node
+    if ((node.type === 'tableCell' || node.type === 'tableHeader') && node.content.length > 1) return asText(oneLine(node), where, key)
     // `ordered`: the node is an item of a numbered list.
     const inner = { heading: where.heading || node.type === 'heading', table: where.table || node.type === 'tableCell' || node.type === 'tableHeader', ordered: node.type === 'orderedList' }
     const written = { ...node, content: node.content.map((child) => asText(child, inner, key)) }
@@ -604,6 +605,23 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
     })
 
   return manager
+}
+
+/**
+ * A table's cell of several lines (paragraphs, formulas of their own) as one paragraph with line
+ * breaks: the table writes them so anyway, `a<br>b`, and so its `$` and formulas are settled as the
+ * rest are, before the table escapes its pipes and measures its columns.
+ */
+function oneLine(cell: JSONContent): JSONContent {
+  const blocks = cell.content ?? []
+  if (!blocks.every((block) => block.type === 'paragraph' || block.type === 'blockMath')) return cell
+  const content: JSONContent[] = []
+  blocks.forEach((block, index) => {
+    if (index) content.push({ type: 'hardBreak' })
+    if (block.type === 'blockMath') content.push({ type: 'inlineMath', attrs: { latex: block.attrs?.latex ?? '', raw: null } })
+    else content.push(...(block.content ?? []))
+  })
+  return { ...cell, content: [{ type: 'paragraph', content }] }
 }
 
 /** Whether the marks a formula was read in are the ones it has now. */

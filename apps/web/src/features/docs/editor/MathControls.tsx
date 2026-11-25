@@ -130,8 +130,14 @@ export function MathControls({ editor }: { editor: Editor }) {
           const at = moved.deletedAcross ? (current.line ? placeIn(change.doc, current.line) : null) : moved.pos
           setWriting(at === null ? null : { ...current, pos: at, line: lineAt(change.doc, at) })
         } else {
+          // Followed through the change only to the same formula: at the page's start, what replaced
+          // the page maps there too.
+          const same = (pos: number) => {
+            const node = change.doc.nodeAt(pos)
+            return node?.type.name === (current.display ? 'blockMath' : 'inlineMath') && node.attrs.latex === current.opened
+          }
           const moved = [change.mapping.mapResult(current.pos, 1), change.mapping.mapResult(current.pos, -1)].find(
-            (result) => !result.deletedAcross && isMath(change.doc.nodeAt(result.pos)?.type.name),
+            (result) => !result.deleted && same(result.pos),
           )
           const all = twins(change.doc, current.display, current.opened)
           const at = moved ? moved.pos : all.length === current.of ? (all[current.nth] ?? null) : null
@@ -277,7 +283,8 @@ export function MathControls({ editor }: { editor: Editor }) {
           autoCapitalize="off"
           autoCorrect="off"
           // On the latest state: the page may have moved the formula since this was drawn.
-          onChange={(e) => setWriting({ ...(writingRef.current ?? current), text: e.target.value })}
+          // A field the page just closed takes nothing more.
+          onChange={(e) => writingRef.current && setWriting({ ...writingRef.current, text: e.target.value })}
           onKeyDown={onKeyDown}
           className="max-h-48 min-h-8 w-full resize-none rounded-[8px] bg-sunken px-2 py-1.5 font-mono text-[13px] leading-[1.5] text-ink outline-none placeholder:text-ink-3"
         />

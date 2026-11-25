@@ -539,6 +539,16 @@ describe('the field of a formula', () => {
     await twin.unmount()
   })
 
+  it('changes the formula first in the page only while it is the same one', async () => {
+    const page = await withField('$$\na\n$$\n\n$$\nb\n$$')
+    await page.act(async () => mathStorage(page.editor)!.edit!(first(page.editor, 'blockMath')))
+    await page.type('z')
+    await page.replace('$$\nb\n$$')
+    expect(page.field()).toBeNull()
+    expect(saved(page.editor)).toBe('$$\nb\n$$')
+    await page.unmount()
+  })
+
   it('puts a new one in the line it was opened in when the page is read again whole, not at its top', async () => {
     const page = await withField('Uno dos tres\n\nCuatro cinco')
     const cursor = page.editor.state.doc.child(0).nodeSize + 1 + 'Cuatro'.length
@@ -624,5 +634,62 @@ describe('what a second look found', () => {
     expect(insertMath(code, 2, 'x', true)).toBe(false)
     const toggle = open('<details>\n<summary>Título</summary>\n\nDentro\n\n</details>', 'markdown', true)
     expect(insertMath(toggle, 3, 'x', false)).toBe(false)
+  })
+})
+
+describe('what a third look found', () => {
+  it('writes a formula read in marks as $`…`$ once its source takes their delimiters', () => {
+    const cases: Array<[string, string, string]> = [
+      ['*valor $y$ fin*', 'x^*', '*valor $`x^*`$ fin*'],
+      ['**a $y$**', 'b**c', '**a $`b**c`$**'],
+      ['~~a $y$~~', 'b~~c', '~~a $`b~~c`$~~'],
+      ['[see $y$](https://a.test)', '[0,1)', '[see $`[0,1)`$](https://a.test)'],
+    ]
+    for (const [markdown, source, written] of cases) {
+      const editor = open(markdown)
+      setMath(editor, first(editor, 'inlineMath'), source)
+      expect(saved(editor), markdown).toBe(written)
+      expect(latexOf(open(written)), written).toEqual([source])
+    }
+  })
+
+  it('reads inequalities as formulas: only a whole tag, as CommonMark has it, stops one', () => {
+    for (const [markdown, latex] of [
+      ['Para $0<t \\le T$ y $T>0$.', ['0<t \\le T', 'T>0']],
+      ['Sea $p<q r$ con $r>1$', ['p<q r', 'r>1']],
+      ['Si $n<k \\cdot m$ y $m>2$', ['n<k \\cdot m', 'm>2']],
+    ] as Array<[string, string[]]>) {
+      const editor = open(markdown)
+      expect(latexOf(editor), markdown).toEqual(latex)
+      expect(saved(editor), markdown).toBe(markdown)
+    }
+  })
+
+  it('writes a table\'s cell of several lines as one, its formulas and pipes as the rest, stable from the first save', () => {
+    const table = open('| a | b |\n| --- | --- |\n| x | y |', 'markdown', true)
+    const x = first(table, 'tableCell') + 2
+    table.view.dispatch(table.state.tr.setSelection(TextSelection.create(table.state.doc, x + 1)))
+    table.commands.splitBlock()
+    insertMath(table, table.state.selection.from, '|v|', false)
+    const once = saved(table)
+    const read = open(once)
+    expect(latexOf(read), once).toEqual(['|v|'])
+    expect(read.getText(), once).toContain('y')
+    expect(saved(read)).toBe(once)
+    const price = open({ type: 'doc', content: [{ type: 'table', content: [
+      { type: 'tableRow', content: [{ type: 'tableHeader', content: [{ type: 'paragraph', content: [text('h')] }] }] },
+      { type: 'tableRow', content: [{ type: 'tableCell', content: [{ type: 'paragraph', content: [text('$5')] }, { type: 'paragraph', content: [text('$$x$$')] }] }] },
+    ] }] }, 'json')
+    expect(saved(open(saved(price)))).toBe(saved(price))
+  })
+
+  it('writes an item read without a line of text first, or with a rule under its empty line, so it reads back', () => {
+    for (const markdown of ['1.\n   $$\n   x\n   $$', '1.\n   ```js\n   code\n   ```']) {
+      const once = saved(open(markdown))
+      expect(saved(open(once)), once).toBe(once)
+      expect(latexOf(open(once)).length + (once.includes('```js') ? 1 : 0), once).toBe(1)
+    }
+    const rule = open({ type: 'doc', content: [{ type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph' }, { type: 'horizontalRule' }] }] }] }, 'json')
+    expect(types(open(saved(rule))), saved(rule)).toContain('horizontalRule')
   })
 })

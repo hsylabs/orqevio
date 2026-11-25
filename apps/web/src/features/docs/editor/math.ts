@@ -6,6 +6,7 @@ import type { NodeView } from '@tiptap/pm/view'
 import { t } from 'i18next'
 import katex, { type KatexOptions } from 'katex'
 import 'katex/dist/katex.min.css'
+import { AUTOLINK, INLINE_HTML } from './inline-html'
 import { ownStep, readPending } from './own-step'
 
 /**
@@ -27,9 +28,6 @@ function paragraphEnd(src: string, from: number) {
   blank.lastIndex = from
   return blank.exec(src)?.index ?? src.length
 }
-
-/** An autolink (`<https://…>`, `<a@b.c>`) or a whole HTML tag, which Markdown reads before a formula. `a<b` is neither. */
-const LINK_OR_TAG = /^<(?:[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\s<>]*|[\w.!#$%&'*+/=?^`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+|\/?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?\/?)>/
 
 /**
  * A formula in a line, at `from` in `src`: GitHub's $`…`$, for one with characters Markdown would
@@ -61,7 +59,9 @@ export function readInlineMath(src: string, from = 0): MathSource | null {
       i++
       continue
     }
-    if (char === '`' || (char === ']' && src[i + 1] === '(') || (char === '<' && LINK_OR_TAG.test(src.slice(i, i + 512)))) return null
+    if (char === '`' || (char === ']' && src[i + 1] === '(')) return null
+    // An autolink or raw HTML, as CommonMark has them (`a<b` is neither): `<https://…?$top>`, `<span>…`.
+    if (char === '<' && (AUTOLINK.test(src.slice(i, end)) || INLINE_HTML.test(src.slice(i, end)))) return null
     if (char !== '$') continue
     if (SPACE.test(src[i - 1]!) || DIGIT.test(src[i + 1] ?? '')) return null
     return { raw: src.slice(from, i + 1), latex: src.slice(from + 1, i) }
