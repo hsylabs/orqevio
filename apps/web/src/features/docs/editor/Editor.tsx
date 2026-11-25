@@ -16,6 +16,8 @@ import { markerFor } from './callout'
 import { insertToggle, outOfTitle } from './toggle'
 import { CodeControls } from './CodeControls'
 import { ImageControls } from './ImageControls'
+import { MathControls } from './MathControls'
+import { MathKeys, startMath } from './math'
 import { FormatMenu } from './FormatMenu'
 import { BlockKeys, Mentions, SlashCommands } from './extensions'
 import { documentExtensions } from './markdown'
@@ -47,7 +49,7 @@ interface EditorProps {
   blockHandles?: boolean
 }
 
-type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'toggle' | 'code' | 'table' | 'hr' | 'mention' | 'image' | 'file'
+type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'toggle' | 'code' | 'math' | 'inlineMath' | 'table' | 'hr' | 'mention' | 'image' | 'file'
 type SlashGroup = 'blocks' | 'lists' | 'insert'
 
 export async function uploadFile(file: File, target: UploadTarget): Promise<AttachmentDTO> {
@@ -140,6 +142,8 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       item('callout', 'ⓘ', 'blocks', (e, r) => e.chain().focus().deleteRange(r).wrapIn('callout', { marker: markerFor('note') }).run()),
       item('toggle', '▸', 'blocks', (e, r) => e.chain().focus().deleteRange(r).command(({ tr }) => insertToggle(tr)).run()),
       item('code', '</>', 'blocks', (e, r) => e.chain().focus().deleteRange(r).toggleCodeBlock().run()),
+      item('math', '∑', 'blocks', (e, r) => startMath(e, r, true)),
+      item('inlineMath', '√x', 'insert', (e, r) => startMath(e, r, false)),
       item('table', '▦', 'insert', (e, r) => e.chain().focus().deleteRange(r).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()),
       item('hr', '—', 'insert', (e, r) => e.chain().focus().deleteRange(r).setHorizontalRule().run()),
       item('mention', '@', 'insert', (e, r) => e.chain().focus().deleteRange(r).insertContent('@').run()),
@@ -200,6 +204,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       }),
       SlashCommands.configure({ store: slashStore, items: slashItems }),
       Mentions.configure({ store: mentionStore, items: mentionItems }),
+      MathKeys,
       ...(blockHandles ? [BlockKeys] : []),
     ],
     content,
@@ -277,6 +282,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       {editor && <CodeControls editor={editor} />}
       {editor && <CalloutControls editor={editor} />}
       {editor && <ImageControls editor={editor} />}
+      {editor && <MathControls editor={editor} />}
       {editor && blockHandles && <BlockControls editor={editor} />}
       <SuggestionMenu store={slashStore} emptyLabel={t('editor.noBlocks')} />
       <SuggestionMenu store={mentionStore} emptyLabel={t('editor.mentionHint')} />

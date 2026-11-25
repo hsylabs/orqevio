@@ -786,6 +786,52 @@ details.orq-toggle[open] > summary::before {
 .orq-prose a .orq-image-handle {
   display: none;
 }
+
+/* Formulas (math.ts), drawn by KaTeX in the text's colour. In the editor a click opens their source. */
+.orq-prose .orq-math {
+  border-radius: 4px;
+}
+.orq-prose[contenteditable='true'] .orq-math {
+  cursor: pointer;
+}
+.orq-prose[contenteditable='true'] .orq-math:hover {
+  background: var(--hover);
+}
+.orq-prose .orq-math.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  background: var(--accent-soft);
+}
+/* One of its own: centred, and scrolled sideways when wider than the page rather than past its edge. */
+.orq-prose .orq-math--block {
+  display: block;
+  margin: 1em 0;
+  padding: 0.35em 0.5em;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: center;
+}
+.orq-prose .orq-math--block .katex-display,
+.orq-math-preview .katex-display {
+  margin: 0;
+}
+/* Its source, where KaTeX can't draw it; and an empty one, saying so. */
+.orq-prose .orq-math--error,
+.orq-math-preview.orq-math--error {
+  color: var(--danger);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.875em;
+  white-space: pre-wrap;
+}
+.orq-prose .orq-math--empty,
+.orq-math-preview.orq-math--empty {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.orq-math-preview {
+  min-height: 1.5em;
+  font-size: 15px;
+}
 .orq-prose .is-empty::before,
 .orq-prose p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);

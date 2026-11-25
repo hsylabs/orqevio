@@ -3,12 +3,13 @@ import { NodeSelection } from '@tiptap/pm/state'
 import { CellSelection } from '@tiptap/pm/tables'
 import { useEditorState } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
-import { Code, ExternalLink, Link2, Strikethrough, X } from 'lucide-react'
+import { Code, ExternalLink, Link2, Sigma, Strikethrough, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { cn } from '../../../lib/cn'
 import { isConverting } from '../../../lib/ime'
+import { selectedSource, selectionToMath } from './math'
 
 const SAFE = /^(https?:\/\/|mailto:|\/(?!\/))/i
 
@@ -28,6 +29,8 @@ export function FormatMenu({ editor }: { editor: Editor }) {
       link: e.isActive('link'),
       href: (e.getAttributes('link').href as string | undefined) ?? '',
       empty: e.state.selection.empty,
+      // Plain text selected in one line can become a formula.
+      math: selectedSource(e) !== null,
     }),
   })
 
@@ -58,7 +61,8 @@ export function FormatMenu({ editor }: { editor: Editor }) {
         !(s.selection instanceof NodeSelection && s.selection.node.isBlock) &&
         !e.isActive('codeBlock') &&
         !e.isActive('toggleTitle') &&
-        !e.isActive('image')
+        !e.isActive('image') &&
+        !e.isActive('inlineMath')
       }
       options={{ placement: 'top', offset: 8 }}
       className="z-40"
@@ -115,6 +119,11 @@ export function FormatMenu({ editor }: { editor: Editor }) {
             <Tool label={t('editor.format.code')} active={state.code} onClick={() => editor.chain().focus().toggleCode().run()}>
               <Code />
             </Tool>
+            {state.math && (
+              <Tool label={t('editor.format.math')} onClick={() => selectionToMath(editor)}>
+                <Sigma />
+              </Tool>
+            )}
             <span className="mx-0.5 h-5 w-px bg-line" />
             <Tool
               label={t('editor.format.link')}

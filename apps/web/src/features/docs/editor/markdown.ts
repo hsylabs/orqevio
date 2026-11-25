@@ -12,6 +12,7 @@ import { Callout, calloutFromQuote } from './callout'
 import { Toggle, ToggleTitle, foldToggles } from './toggle'
 import { FaithfulImage, destination, imageFromTag, indentationOf, isLoneTag, quotedTitle } from './image'
 import { FaithfulCodeBlock } from './code-block'
+import { FaithfulBlockMath, FaithfulInlineMath, inlineFormula, markDollars, settleDollars } from './math'
 
 /**
  * Documents are Markdown, often written by agents, and the editor saves the whole
@@ -480,6 +481,7 @@ interface ManagerInternals {
   codeTypes: Set<string>
   escapeMarkdownSyntax(text: string): string
   encodeTextForMarkdown(text: string, node: JSONContent, parentNode?: JSONContent): string
+  renderNodeToMarkdown(node: JSONContent, ...rest: unknown[]): string
   parseInlineTokens(tokens: Token[]): JSONContent[]
   applyMarkToContent(markType: string, content: JSONContent[], attrs?: Record<string, unknown>): JSONContent[]
 }
@@ -488,11 +490,41 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
   const manager = new MarkdownManager(options)
   const internals = manager as unknown as ManagerInternals
 
+  // A formula in a line is written as text with its marks, in their run: `**a $x$ b**` and
+  // `[a $x$](…)` stay as they are. @tiptap/markdown closes the marks around any other inline node.
+  let formulas: string[] = []
+  const FORMULA = /^\uFDD3(\d+)\uFDD4$/
+  const asText = (node: JSONContent): JSONContent => {
+    if (node.type === 'inlineMath') {
+      formulas.push(inlineFormula(node.attrs))
+      return { type: 'text', text: `\uFDD3${formulas.length - 1}\uFDD4`, ...(node.marks ? { marks: node.marks } : {}) }
+    }
+    return node.content ? { ...node, content: node.content.map(asText) } : node
+  }
+
   internals.encodeTextForMarkdown = (text, node, parentNode) => {
+    const formula = FORMULA.exec(text)
+    if (formula) return formulas[Number(formula[1])] ?? ''
     const inCode =
       (parentNode?.type != null && internals.codeTypes.has(parentNode.type)) ||
       (node.marks ?? []).some((m) => internals.codeTypes.has(typeof m === 'string' ? m : m.type))
-    return inCode ? text : encodeText(internals.escapeMarkdownSyntax(text))
+    // Each `$` is settled once its paragraph or heading is written: escaped where it would open a formula (math.ts).
+    return inCode ? text : markDollars(encodeText(internals.escapeMarkdownSyntax(text)))
+  }
+  const renderNodeToMarkdown = internals.renderNodeToMarkdown.bind(manager)
+  internals.renderNodeToMarkdown = (node, ...rest) => {
+    const markdown = renderNodeToMarkdown(node, ...rest)
+    return node.type === 'paragraph' || node.type === 'heading' ? settleDollars(markdown) : markdown
+  }
+  // Text anywhere else is settled with the whole document after it: a `$` that might open a formula there is escaped.
+  const serialize = manager.serialize.bind(manager)
+  manager.serialize = (doc: JSONContent) => {
+    formulas = []
+    try {
+      return settleDollars(serialize(asText(doc)))
+    } finally {
+      formulas = []
+    }
   }
 
   // Front matter stays at the top as written; the rest is read as usual, with its `<details>` as toggles (toggle.ts).
@@ -512,11 +544,14 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
   internals.parseInlineTokens = (tokens) =>
     parseInlineTokens(tokens.map((t) => (t.type === 'text' && t.text ? { ...t, text: decodeNamedEntities(t.text) } : t)))
 
-  // Links around an image (a badge) stay on the image; marks only reach text otherwise.
+  // Links around an image (a badge) stay on the image, and any mark around a formula on the
+  // formula (`**$x$**`); marks only reach text otherwise.
   const applyMarkToContent = internals.applyMarkToContent.bind(manager)
   internals.applyMarkToContent = (markType, content, attrs) =>
     applyMarkToContent(markType, content, attrs).map((node, i) =>
-      markType === 'link' && content[i]?.type === 'image' ? { ...node, marks: [...(node.marks ?? []), { type: markType, ...(attrs ? { attrs } : {}) }] } : node,
+      (markType === 'link' && content[i]?.type === 'image') || content[i]?.type === 'inlineMath'
+        ? { ...node, marks: [...(node.marks ?? []), { type: markType, ...(attrs ? { attrs } : {}) }] }
+        : node,
     )
 
   return manager
@@ -580,6 +615,8 @@ export function documentExtensions(): AnyExtension[] {
     TableKit.configure({ table: false }),
     FaithfulTable.configure({ resizable: false }),
     FaithfulImage,
+    FaithfulInlineMath,
+    FaithfulBlockMath,
     RawHtmlBlock,
     RawHtmlInline,
     RawMarkdownBlock,

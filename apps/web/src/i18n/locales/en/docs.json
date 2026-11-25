@@ -128,6 +128,16 @@
         "subtitle": "Code block",
         "keywords": "code snippet"
       },
+      "math": {
+        "title": "Equation",
+        "subtitle": "An equation on a line of its own, in LaTeX",
+        "keywords": "equation formula math maths latex katex tex block"
+      },
+      "inlineMath": {
+        "title": "Inline equation",
+        "subtitle": "An equation within the text, in LaTeX",
+        "keywords": "equation formula math maths latex katex tex inline text"
+      },
       "table": {
         "title": "Table",
         "subtitle": "3 × 3 with a header row",
@@ -174,7 +184,8 @@
       "italic": "Italic",
       "strike": "Strikethrough",
       "code": "Code",
-      "link": "Link"
+      "link": "Link",
+      "math": "Equation"
     },
     "table": {
       "toolbar": "Table",
@@ -234,6 +245,18 @@
       "caption": "Caption",
       "captionPlaceholder": "Write a caption",
       "resize": "Drag to change the width"
+    },
+    "math": {
+      "field": "Equation in LaTeX",
+      "placeholder": "For example: E = mc^2",
+      "done": "Done",
+      "keysInline": "Enter to save · Esc to cancel",
+      "keysBlock": "Enter to save · Shift+Enter for a new line · Esc to cancel",
+      "empty": "Empty equation",
+      "error": "Error in the equation",
+      "hint": "Equation. Press Enter to edit it.",
+      "dialog": "Edit equation",
+      "preview": "Preview"
     },
     "code": {
       "plain": "Plain text",
