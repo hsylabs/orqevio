@@ -15,7 +15,10 @@ import { ownStep } from './own-step'
  * The caption is the image's title: shown under it in Orqevio, and over it on GitHub.
  */
 
-export const escapeAlt = (alt: string) => alt.replace(/([\\[\]])/g, '\\$1')
+/** Line breaks as Markdown reads them (it takes a carriage return for one), and never a blank line, which would end the paragraph. */
+const oneLineBreak = (text: string) => text.replace(/\r\n?/g, '\n').replace(/\n(?:[ \t]*\n)+/g, '\n')
+
+export const escapeAlt = (alt: string) => oneLineBreak(alt).replace(/([\\[\]])/g, '\\$1')
 export const destination = (src: string) => (/[\s()<>]/.test(src) ? `<${src.replace(/([<>])/g, '\\$1')}>` : src)
 
 /** A size as `width` and `height` take it: pixels, or a share of the line. */
@@ -47,7 +50,7 @@ function decode(value: string) {
 }
 
 /** A value written in a tag, between double quotes. */
-const quoted = (value: string) => `"${value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '&#10;')}"`
+const quoted = (value: string) => `"${value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '&#10;').replace(/\r/g, '&#13;')}"`
 
 /** The attributes of an `<img>` tag, in order, each with how it was written. */
 function attributesOf(tag: string) {
@@ -128,13 +131,11 @@ export function imageMarkdown(attrs: ImageAttributes) {
 }
 
 /** A title in Markdown, between double quotes: a backslash or a quote in it escaped, as GitHub reads it. */
-const ESCAPED_IN_TITLE = /\\(?=[!-\/:-@[-`{-~]|$)|"/g
+/** A backslash where Markdown reads an escape (before punctuation or a symbol, as marked does, or closing the title), and a quote. */
+const ESCAPED_IN_TITLE = /\\(?=[\p{P}\p{S}]|$)|"/gu
 export function quotedTitle(title: string) {
-  const escaped = title
-    .replace(ESCAPED_IN_TITLE, '\\$&')
-    // A blank line would end the paragraph, and the image with it: one line break instead.
-    .replace(/\n(?:[ \t]*\n)+/g, '\n')
-  return `"${escaped}"`
+  // A blank line would end the paragraph, and the image with it: one line break instead.
+  return `"${oneLineBreak(title).replace(ESCAPED_IN_TITLE, '\\$&')}"`
 }
 
 /** A width as CSS: a share of the line, or pixels. */

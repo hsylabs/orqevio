@@ -92,6 +92,8 @@ describe('an image', () => {
     const image = { type: 'image', attrs: { src: '/a.png', html: '  <img src="/a.png">' } }
     editor.commands.setContent({ type: 'doc', content: [{ type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [image] }] }] }, { type: 'paragraph', content: [{ type: 'text', text: 'Hola ' }, image] }] })
     expect(saved(editor)).toBe('- <img src="/a.png">\n\nHola <img src="/a.png">')
+    // In a later paragraph of an item, as text keeps it there.
+    for (const markdown of ['- a\n\n    <img src="/a.png">', '- [ ] a\n\n    <img src="/a.png">']) expect(roundTrip(markdown)).toBe(markdown)
   })
 
   it('reads the size and the caption of a tag', () => {
@@ -160,6 +162,25 @@ describe('an image changed in the editor', () => {
     expect(saved((() => { const e = open('![a](/x.png)'); setImageCaption(e, first(e), 'C:\\dir\\'); return e })())).toBe('![a](/x.png "C:\\dir\\\\")')
     // A backslash that escapes nothing is written as it was, in an image's title and a link's.
     for (const markdown of ['![a](/x.png "C:\\dir")', '[l](/u "C:\\dir")']) expect(roundTrip(markdown)).toBe(markdown)
+  })
+
+  it('reads back a caption with a backslash before any sign, not only an ASCII one', () => {
+    for (const caption of ['precio \\€', 'C:\\¿dónde?', 'a\\—b']) {
+      const editor = open('![a](/x.png)')
+      setImageCaption(editor, first(editor), caption)
+      const again = open(saved(editor))
+      expect(again.state.doc.nodeAt(first(again))!.attrs.title).toBe(caption)
+      expect(again.getMarkdown()).toBe(editor.getMarkdown())
+    }
+  })
+
+  it('keeps an image pasted with carriage returns or blank lines in its title or its text an image', () => {
+    for (const html of ['<img src="/a.png" title="a&#13;&#10;&#13;&#10;b">', '<img src="/a.png" alt="a\n\nb">', '<img src="/a.png" title="a&#13;&#13;b" width="50%">']) {
+      const editor = open(html, 'html')
+      const again = open(saved(editor))
+      expect(types(again)).toEqual(['paragraph', 'image'])
+      expect(again.getMarkdown()).toBe(editor.getMarkdown())
+    }
   })
 
   it('keeps an image with a title that had a blank line one image, its title on two lines', () => {

@@ -234,7 +234,8 @@ const FaithfulParagraph = Paragraph.extend({
     if (TABLE_PARENTS.has(parent)) return markdown
     // An `<img>` tag that was alone on its line keeps its indentation, where it can't change the item it is in.
     const [only, ...more] = node.content ?? []
-    const lead = only?.type === 'image' && !more.length && !LIST_PARENTS.has(parent) ? indentationOf(only.attrs?.html) : ''
+    // (Not on an item's first line, which follows its marker.)
+    const lead = only?.type === 'image' && !more.length && !(LIST_PARENTS.has(parent) && !context?.index) ? indentationOf(only.attrs?.html) : ''
     return lead + keepImageInline(markdown)
   },
 })

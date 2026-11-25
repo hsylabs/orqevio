@@ -64,7 +64,8 @@ export function ImageControls({ editor }: { editor: Editor }) {
       if (change.docChanged && writing) {
         const moved = change.mapping.mapResult(writing.pos, -1)
         // A page read again is replaced whole: its image is found again by its address, the nearest one.
-        const at = !moved.deletedAcross && change.doc.nodeAt(moved.pos)?.type.name === 'image' ? moved.pos : sameImage(change.doc, writing)
+        // An image deleted on its own takes its caption with it, even with a copy of it elsewhere.
+        const at = !moved.deletedAcross ? (change.doc.nodeAt(moved.pos)?.type.name === 'image' ? moved.pos : null) : sameImage(change.doc, writing)
         setCaption(at === null ? null : { ...writing, pos: at })
       }
       later()
