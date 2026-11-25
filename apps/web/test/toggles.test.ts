@@ -347,6 +347,17 @@ describe('a toggle changed in the editor', () => {
     expect(saved(forward)).toBe('<details open>\n<summary>MásDentro</summary>\n\n</details>')
   })
 
+  it('selects a block of HTML or a rule it starts with for Delete at the end of its title, rather than deleting it', () => {
+    for (const first of ['<div>importante</div>', '---']) {
+      const markdown = `<details open>\n<summary>Más</summary>\n\n${first}\n\nDespués\n\n</details>`
+      const editor = open(markdown, 'markdown', true)
+      cursorIn(editor, 'toggleTitle')
+      press(editor, 'Delete')
+      expect(saved(editor)).toBe(markdown)
+      expect(editor.state.selection).toBeInstanceOf(NodeSelection)
+    }
+  })
+
   it('reuses the empty line after it for Enter in its title when closed', () => {
     const editor = open('<details>\n<summary>Más</summary>\n\nOculto\n\n</details>', 'markdown', true)
     // The empty line the editor keeps after it at the end, not one more each time.

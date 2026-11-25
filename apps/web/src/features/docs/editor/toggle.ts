@@ -440,8 +440,9 @@ function deleteForward(editor: Editor) {
 /**
  * The first block a toggle holds, brought up into its title (Backspace at its start, Delete at the
  * end of the title): its text joins the title if it is plain text or nothing, which is all a title
- * takes, and the block goes (an empty line stays if it was the only one). Otherwise the cursor only
- * moves: to the end of the title, or into the block.
+ * takes, and the block goes (an empty line stays if it was the only one). Otherwise nothing is
+ * lost: the cursor moves to the end of the title, or into the block; a block of HTML, a rule or a
+ * picture is selected, as before it is deleted anywhere else.
  */
 function intoTitle(editor: Editor, pos: number, direction: 'back' | 'forward') {
   const toggle = editor.state.doc.nodeAt(pos)!
@@ -449,11 +450,18 @@ function intoTitle(editor: Editor, pos: number, direction: 'back' | 'forward') {
   const block = toggle.child(1)
   const end = pos + title.nodeSize
   const start = end + 1
-  if (block.content.size && !isPlain(block)) return editor.commands.setTextSelection(direction === 'back' ? end : Selection.near(editor.state.doc.resolve(start + 1)).from)
+  // Empty is a line with nothing in it: a block of HTML, a rule or a picture holds what it is in itself.
+  const empty = block.isTextblock && block.content.size === 0
+  if (!empty && !isPlain(block)) {
+    if (direction === 'back') return editor.commands.setTextSelection(end)
+    // Such a block is selected first, as the editor does before deleting one anywhere else.
+    if (block.isAtom) return editor.commands.setNodeSelection(start)
+    return editor.commands.setTextSelection(Selection.near(editor.state.doc.resolve(start + 1)).from)
+  }
   return editor.commands.command(({ tr, dispatch }) => {
     if (!dispatch) return true
     if (toggle.childCount > 2) tr.delete(start, start + block.nodeSize)
-    else if (block.content.size || block.type.name !== 'paragraph') tr.replaceWith(start, start + block.nodeSize, editor.schema.nodes.paragraph!.create())
+    else if (!empty || block.type.name !== 'paragraph') tr.replaceWith(start, start + block.nodeSize, editor.schema.nodes.paragraph!.create())
     if (block.textContent) tr.insertText(block.textContent, end)
     tr.setSelection(TextSelection.create(tr.doc, end))
     dispatch(tr.scrollIntoView())
