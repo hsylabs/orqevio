@@ -12,7 +12,7 @@ import { Callout, calloutFromQuote } from './callout'
 import { Toggle, ToggleTitle, foldToggles } from './toggle'
 import { FaithfulImage, destination, imageFromTag, indentationOf, isLoneTag, quotedTitle } from './image'
 import { FaithfulCodeBlock } from './code-block'
-import { FaithfulBlockMath, FaithfulInlineMath, type InlineFormula, markDollars, markFormula, settleDollars } from './math'
+import { type BlockStarts, FaithfulBlockMath, FaithfulInlineMath, type InlineFormula, markDollars, markFormula, settleDollars } from './math'
 
 /**
  * Documents are Markdown, often written by agents, and the editor saves the whole
@@ -447,12 +447,17 @@ const FaithfulListItem = ListItem.extend({
   },
   renderMarkdown(node, helpers, context) {
     let markdown = this.parent?.(node, helpers, context) ?? ''
-    // An item that starts with a formula of its own or a block of code (`- $$x$$`, `- ```js`): the
-    // empty line the editor keeps before it is no line of the item. Written there, the item would
-    // be lost; the block goes on the marker's line, as it was written.
+    // An item that starts with a block: the empty line the editor keeps before it is no line, and a
+    // marker alone on its line would lose the item. In a bulleted list a formula of its own or a
+    // block of code goes on the marker's line, as it was written (`- $$x$$`, `- ```js`); anywhere
+    // else (a numbered list reads that line as text) the line keeps `&nbsp;`, as nested items have it.
     const [first, second] = node.content ?? []
-    if (first?.type === 'paragraph' && !first.content?.length && (second?.type === 'blockMath' || second?.type === 'codeBlock')) {
-      markdown = markdown.replace(/^((?:[-+*]|\d{1,9}[.)]) +)(?:&nbsp;)?\n[ \t]*/, '$1')
+    if (first?.type === 'paragraph' && !first.content?.length && second) {
+      if (context?.parentType === 'bulletList' && (second.type === 'blockMath' || second.type === 'codeBlock')) {
+        markdown = markdown.replace(/^([-+*] +)(?:&nbsp;)?\n[ \t]*/, '$1')
+      } else {
+        markdown = markdown.replace(/^((?:[-+*]|\d{1,9}[.)]) +)\n/, '$1&nbsp;\n')
+      }
     }
     const last = node.content?.at(-1)
     return last?.type === 'paragraph' && !last.content?.length ? markdown : withoutTrailingLine(markdown)
@@ -502,22 +507,36 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
   // Its form is chosen once its paragraph or heading is written, where it is (math.ts).
   let formulas: InlineFormula[] = []
   let placeholder = /$^/
-  const asText = (node: JSONContent, where: { heading?: boolean; table?: boolean }, key: string): JSONContent => {
+  /** Where formulas of their own can start in a paragraph that isn't read as others are (math.ts). */
+  let blockStarts = new WeakMap<JSONContent, BlockStarts>()
+  const asText = (node: JSONContent, where: { heading?: boolean; table?: boolean; ordered?: boolean }, key: string): JSONContent => {
     if (node.type === 'inlineMath') {
       const marks = (node.marks ?? []).map((mark) => mark.type)
       const latex = String(node.attrs?.latex ?? '')
       if (!latex.trim()) return { type: 'text', text: '' }
-      // Delimiters of its marks in its source would end them there: `*` and `_` of italics or bold,
-      // `~` of strikes, brackets and backticks of a link.
+      const raw = (node.attrs?.raw as string | null) ?? null
+      // Read with these marks and this source, it reads back the same; otherwise the delimiters of
+      // its marks in its source would end them there: `*` of italics or bold, `~` of strikes,
+      // brackets and backticks of a link.
+      const asRead = raw !== null && sameMarks(node.attrs?.rawMarks, marks)
       const guarded =
-        (marks.some((mark) => mark === 'bold' || mark === 'italic') && /[*_]/.test(latex)) ||
-        (marks.includes('strike') && latex.includes('~')) ||
-        (marks.includes('link') && /[[\]`()<>]/.test(latex))
-      formulas.push({ latex, raw: (node.attrs?.raw as string | null) ?? null, oneLine: where.heading || where.table, inTable: where.table, guarded })
+        !asRead &&
+        ((marks.some((mark) => mark === 'bold' || mark === 'italic') && latex.includes('*')) ||
+          (marks.includes('strike') && latex.includes('~')) ||
+          (marks.includes('link') && /[[\]`<>]/.test(latex)))
+      formulas.push({ latex, raw, oneLine: where.heading || where.table, inTable: where.table, guarded })
       return { type: 'text', text: `\uFDD3${key}:${formulas.length - 1}\uFDD4`, ...(node.marks ? { marks: node.marks } : {}) }
     }
-    const inner = { heading: where.heading || node.type === 'heading', table: where.table || node.type === 'tableCell' || node.type === 'tableHeader' }
-    return node.content ? { ...node, content: node.content.map((child) => asText(child, inner, key)) } : node
+    if (!node.content) return node
+    // `ordered`: the node is an item of a numbered list.
+    const inner = { heading: where.heading || node.type === 'heading', table: where.table || node.type === 'tableCell' || node.type === 'tableHeader', ordered: node.type === 'orderedList' }
+    const written = { ...node, content: node.content.map((child) => asText(child, inner, key)) }
+    // A task's text is read line by line, the first as text (@tiptap/extension-list); a numbered
+    // item's first line is read as text too.
+    const first = written.content[0]
+    if (first?.type === 'paragraph' && node.type === 'taskItem') blockStarts.set(first, 'lines')
+    else if (first?.type === 'paragraph' && node.type === 'listItem' && where.ordered) blockStarts.set(first, 'later')
+    return written
   }
 
   internals.encodeTextForMarkdown = (text, node, parentNode) => {
@@ -533,10 +552,10 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
   internals.renderNodeToMarkdown = (node, ...rest) => {
     const markdown = renderNodeToMarkdown(node, ...rest)
     if (node.type !== 'paragraph' && node.type !== 'heading') return markdown
-    // A task's text, on its marker's line and the lines under it, is read as text, line by line
-    // (@tiptap/extension-list): no `$$` there starts a formula of its own.
-    const [parent, index] = rest as [JSONContent | undefined, number | undefined]
-    return settleDollars(markdown, formulas, { blocks: !(parent?.type === 'taskItem' && !index) })
+    // In a table, as the table writes its cell, its line breaks as `<br>`; no block starts there.
+    const [parent] = rest as [JSONContent | undefined]
+    if (TABLE_PARENTS.has(String(parent?.type ?? ''))) return settleDollars(markdown.replace(/[ \t]*\r?\n[ \t]*/g, '<br>'), formulas, { blocks: 'none' })
+    return settleDollars(markdown, formulas, { blocks: blockStarts.get(node) ?? 'all' })
   }
   // Text anywhere else is settled with the whole document after it: a `$` that might open a formula there is escaped.
   const serialize = manager.serialize.bind(manager)
@@ -544,6 +563,7 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
     // A key of its own for each writing: a text that looks like a formula's place is no formula.
     const key = Math.random().toString(36).slice(2, 10)
     formulas = []
+    blockStarts = new WeakMap()
     placeholder = new RegExp(`^\\uFDD3${key}:(\\d+)\\uFDD4$`)
     try {
       return settleDollars(serialize(asText(doc, {}, key)), formulas)
@@ -574,13 +594,22 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
   // formula (`**$x$**`); marks only reach text otherwise.
   const applyMarkToContent = internals.applyMarkToContent.bind(manager)
   internals.applyMarkToContent = (markType, content, attrs) =>
-    applyMarkToContent(markType, content, attrs).map((node, i) =>
-      (markType === 'link' && content[i]?.type === 'image') || content[i]?.type === 'inlineMath'
-        ? { ...node, marks: [...(node.marks ?? []), { type: markType, ...(attrs ? { attrs } : {}) }] }
-        : node,
-    )
+    applyMarkToContent(markType, content, attrs).map((node, i) => {
+      const mark = { type: markType, ...(attrs ? { attrs } : {}) }
+      if (markType === 'link' && content[i]?.type === 'image') return { ...node, marks: [...(node.marks ?? []), mark] }
+      if (content[i]?.type !== 'inlineMath') return node
+      // The marks it was read in, with its source: written so again while they are the same (math.ts).
+      const read = [...((node.attrs?.rawMarks as string[] | null) ?? []), markType]
+      return { ...node, attrs: { ...node.attrs, rawMarks: read }, marks: [...(node.marks ?? []), mark] }
+    })
 
   return manager
+}
+
+/** Whether the marks a formula was read in are the ones it has now. */
+function sameMarks(read: unknown, now: string[]) {
+  const before = Array.isArray(read) ? [...(read as string[])].sort() : []
+  return before.join() === [...now].sort().join()
 }
 
 /** @tiptap/markdown with the faithful manager; the same as its own setup otherwise. */

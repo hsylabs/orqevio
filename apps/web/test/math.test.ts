@@ -340,13 +340,18 @@ describe('a formula as it is shown', () => {
   })
 
   it('never runs or links what a formula holds', () => {
-    for (const markdown of ['$\\href{javascript:alert(1)}{x}$', '$\\url{javascript:alert(1)}$', '$\\htmlClass{x}{y}$', '$\\htmlData{onclick=alert(1)}{y}$', '$\\htmlId{x}{y}$', '$\\includegraphics{https://a.test/x.png}$', '$<img src=x onerror=alert(1)>$']) {
+    for (const markdown of ['$\\href{javascript:alert(1)}{x}$', '$\\url{javascript:alert(1)}$', '$\\htmlClass{x}{y}$', '$\\htmlData{onclick=alert(1)}{y}$', '$\\htmlId{x}{y}$', '$\\includegraphics{https://a.test/x.png}$']) {
       const box = document.createElement('div')
       box.innerHTML = markdownToHtml(markdown)
+      expect(box.querySelector('.orq-math'), markdown).not.toBeNull()
       expect(box.querySelector('a, img, [href], [src]'), markdown).toBeNull()
       const attributes = [...box.querySelectorAll('*')].flatMap((element) => element.getAttributeNames())
       expect(attributes.filter((name) => /^on|^data-(?!latex$|type$)|^id$/.test(name)), markdown).toEqual([])
     }
+    // A whole tag between dollars is the tag, as Markdown reads it first: an image (images.test.ts), without what it would run.
+    const box = document.createElement('div')
+    box.innerHTML = markdownToHtml('$<img src=x onerror=alert(1)>$')
+    expect([...box.querySelectorAll('*')].flatMap((element) => element.getAttributeNames()).filter((name) => /^on/.test(name))).toEqual([])
   })
 
   it('comes back the same through copy and paste, also from a comment', () => {
@@ -476,9 +481,10 @@ describe('a formula where Markdown reads it otherwise', () => {
 })
 
 describe('the field of a formula', () => {
-  it('keeps what was typed when the page is read again whole, its formula found again', async () => {
+  /** The editor with its field, mounted; `type` writes in the field as a person does. */
+  async function withField(content: string) {
     const element = document.body.appendChild(document.createElement('div'))
-    const editor = new Editor({ element, extensions: [...documentExtensions(), MathKeys], content: 'A $x$ y', contentType: 'markdown' })
+    const editor = new Editor({ element, extensions: [...documentExtensions(), MathKeys], content, contentType: 'markdown' })
     editors.push(editor)
     const { createRoot } = await import('react-dom/client')
     const { act } = await import('react')
@@ -486,19 +492,137 @@ describe('the field of a formula', () => {
     const host = document.body.appendChild(document.createElement('div'))
     const root = createRoot(host)
     await act(async () => root.render(createElement(MathControls, { editor })))
-    await act(async () => mathStorage(editor)!.edit!(first(editor, 'inlineMath')))
-    const field = host.querySelector('textarea')!
-    await act(async () => {
-      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!
-      setter.call(field, 'x^2')
-      field.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-    // The caret where it was typed, also once the formula moves.
-    field.setSelectionRange(1, 1)
-    await act(async () => editor.commands.setContent('Antes. A $x$ y', { contentType: 'markdown', emitUpdate: false }))
-    expect(host.querySelector('textarea')).not.toBeNull()
-    expect(host.querySelector('textarea')!.value).toBe('x^2')
-    expect(host.querySelector('textarea')!.selectionStart).toBe(1)
-    await act(async () => root.unmount())
+    const field = () => host.querySelector('textarea')
+    const type = async (value: string) =>
+      act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(field()!, value)
+        field()!.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+    const enter = async () => act(async () => void field()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })))
+    const replace = async (markdown: string) => act(async () => void editor.commands.setContent(markdown, { contentType: 'markdown', emitUpdate: false }))
+    return { editor, act, field, type, enter, replace, unmount: () => act(async () => root.unmount()) }
+  }
+  const nth = (editor: Editor, n: number) => {
+    const found: number[] = []
+    editor.state.doc.descendants((node, pos) => void (node.type.name === 'inlineMath' && found.push(pos)))
+    return found[n]!
+  }
+
+  it('keeps what was typed when the page is read again whole, its formula found again, the caret where it was', async () => {
+    const page = await withField('A $x$ y')
+    await page.act(async () => mathStorage(page.editor)!.edit!(first(page.editor, 'inlineMath')))
+    await page.type('x^2')
+    page.field()!.setSelectionRange(1, 1)
+    await page.replace('Antes. A $x$ y')
+    expect(page.field()!.value).toBe('x^2')
+    expect(page.field()!.selectionStart).toBe(1)
+    await page.enter()
+    expect(saved(page.editor)).toBe('Antes. A $x^2$ y')
+    await page.unmount()
+  })
+
+  it('changes the one of two alike it was opened for, and closes when it can no longer tell', async () => {
+    const page = await withField('Sea $n$ par y $n$ impar.')
+    await page.act(async () => mathStorage(page.editor)!.edit!(nth(page.editor, 1)))
+    await page.type('m')
+    await page.replace('Antes.\n\nSea $n$ par y $n$ impar.')
+    await page.enter()
+    expect(saved(page.editor)).toBe('Antes.\n\nSea $n$ par y $m$ impar.')
+    await page.unmount()
+    // The one it was for went, and one alike stays: it can't tell which, and nothing is changed.
+    const twin = await withField('A $x$ y\n\nB $x$ z')
+    await twin.act(async () => mathStorage(twin.editor)!.edit!(nth(twin.editor, 0)))
+    await twin.type('y^2')
+    await twin.replace('B $x$ z')
+    expect(twin.field()).toBeNull()
+    expect(saved(twin.editor)).toBe('B $x$ z')
+    await twin.unmount()
+  })
+
+  it('puts a new one in the line it was opened in when the page is read again whole, not at its top', async () => {
+    const page = await withField('Uno dos tres\n\nCuatro cinco')
+    const cursor = page.editor.state.doc.child(0).nodeSize + 1 + 'Cuatro'.length
+    await page.act(async () => mathStorage(page.editor)!.create!(cursor, false))
+    await page.type('x^2')
+    await page.replace('Uno dos tres\n\nCuatro cinco')
+    await page.enter()
+    expect(saved(page.editor)).toBe('Uno dos tres\n\nCuatro$x^2$ cinco')
+    await page.unmount()
+  })
+})
+
+describe('what a second look found', () => {
+  it('writes an item of a numbered list that starts with a block with its marker on a line of its own, as TipTap reads it', () => {
+    for (const second of [{ type: 'blockMath', attrs: { latex: 'x' } }, { type: 'codeBlock', attrs: { language: 'js' }, content: [text('code')] }]) {
+      const doc = { type: 'doc', content: [{ type: 'orderedList', content: [{ type: 'listItem', content: [{ type: 'paragraph' }, second] }] }] }
+      const editor = open(doc, 'json')
+      expect(saved(editor), second.type).toMatch(/^1\. &nbsp;\n {3}/)
+      expect(types(open(saved(editor))), saved(editor)).toEqual(types(editor))
+    }
+    // Any other block first in an item, in a bulleted list too.
+    const quote = open({ type: 'doc', content: [{ type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph' }, { type: 'blockquote', content: [{ type: 'paragraph', content: [text('q')] }] }] }] }] }, 'json')
+    expect(saved(quote)).toBe('- &nbsp;\n  > q')
+    expect(saved(open(saved(quote)))).toBe('- &nbsp;\n  > q')
+  })
+
+  it('goes into a numbered item from the editor and comes back the same', () => {
+    const editor = open({ type: 'doc', content: [{ type: 'orderedList', content: [{ type: 'listItem', content: [{ type: 'paragraph' }] }] }] }, 'json', true)
+    insertMath(editor, 3, 'x', true)
+    expect(latexOf(open(saved(editor)))).toEqual(['x'])
+  })
+
+  it('keeps Markdown an agent wrote around marks as it was', () => {
+    for (const markdown of ['**$x_1$** y *$x_1$*', '[$f(x)$](https://a.test)', '~~$a~b$~~ y **$a*b$**']) expect(saved(open(markdown)), markdown).toBe(markdown)
+  })
+
+  it('leaves one in a line of a task\'s text one in its line, also after a line break', () => {
+    const doc = { type: 'doc', content: [{ type: 'taskList', content: [{ type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [text('a'), { type: 'hardBreak' }, { type: 'inlineMath', attrs: { latex: 'x', raw: '$$x$$' } }] }] }] }] }
+    const editor = open(doc, 'json')
+    const read = open(saved(editor))
+    expect(types(read), saved(editor)).not.toContain('blockMath')
+    expect(latexOf(read)).toEqual(['x'])
+  })
+
+  it('in a table\'s cell, reads its dollars as the table writes them, line breaks as <br>', () => {
+    const table = open('| a |\n| --- |\n| x |')
+    const cell = first(table, 'tableCell') + 1
+    const paragraph = table.schema.nodes.paragraph!.create(null, [table.schema.text('5$'), table.schema.nodes.hardBreak!.create(), table.schema.text('3$')])
+    table.view.dispatch(table.state.tr.replaceWith(cell, cell + table.state.doc.nodeAt(cell)!.nodeSize, paragraph))
+    const read = open(saved(table))
+    expect(latexOf(read), saved(table)).toEqual([])
+    expect(saved(read)).toBe(saved(table))
+  })
+
+  it('keeps $$…$$ where it can\'t be one of its own: a table\'s cell, a numbered item\'s first line', () => {
+    for (const markdown of ['| $$x$$ |\n| ----- |\n| b     |', '1. $$x$$\n2. dos', '- a\n  1. $$x$$']) expect(saved(open(markdown)), markdown).toBe(markdown)
+  })
+
+  it('keeps one of its own on one line as it was, with a line after it', () => {
+    for (const [markdown, written] of [
+      ['$$x$$\nTexto', '$$x$$\n\nTexto'],
+      ['> $$x$$\n> más', '> $$x$$\n>\n> más'],
+      ['$$x$$\n$$y$$', '$$x$$\n\n$$y$$'],
+    ]) {
+      expect(saved(open(markdown!)), markdown).toBe(written)
+      expect(saved(open(written!)), written).toBe(written)
+    }
+  })
+
+  it('never crosses an autolink or a whole HTML tag after a price, and still reads a < b', () => {
+    expect(latexOf(open('Cuesta $5 <https://a.test/?a$b> hoy'))).toEqual([])
+    expect(latexOf(open('Cuesta $5 <span>x$</span> hoy'))).toEqual([])
+    expect(latexOf(open('Si $a<b$ y $c>d$'))).toEqual(['a<b', 'c>d'])
+  })
+
+  it('goes after the text of a list\'s item it is asked for at its start, the list kept; never in code or a toggle\'s title', () => {
+    const editor = open('- abc', 'markdown', true)
+    insertMath(editor, 3, 'x', true)
+    expect(types(editor)[0]).toBe('bulletList')
+    expect(latexOf(editor)).toEqual(['x'])
+    const code = open('```\ncode\n```', 'markdown', true)
+    expect(insertMath(code, 2, 'x', false)).toBe(false)
+    expect(insertMath(code, 2, 'x', true)).toBe(false)
+    const toggle = open('<details>\n<summary>Título</summary>\n\nDentro\n\n</details>', 'markdown', true)
+    expect(insertMath(toggle, 3, 'x', false)).toBe(false)
   })
 })

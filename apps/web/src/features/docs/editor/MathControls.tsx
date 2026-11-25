@@ -9,22 +9,64 @@ import { changeOf } from './own-step'
 
 const GAP = 8
 
+type Doc = Transaction['doc']
+
 /**
- * The formula being written: the one at `pos`, or a new one that goes in there (`fresh`); `opened`,
- * its source when its field opened, by which it is found again; `key`, which field this is.
+ * The formula being written: the one at `pos`, or a new one that goes in there (`fresh`); `key`,
+ * which field this is. How it is found again when the page is replaced whole (read again after
+ * another tab or an agent saved it): one already there by its source and which of the formulas
+ * with that source it is (`opened`, `nth`, `of`); a new one by the text of its line (`line`).
  */
-type Writing = { pos: number; display: boolean; fresh: boolean; text: string; opened: string; key: number }
+type Writing = { pos: number; display: boolean; fresh: boolean; text: string; key: number; opened: string; nth: number; of: number; line: Line | null }
+/** A line of text, which one it is among the document's, and a place in it. */
+type Line = { text: string; index: number; offset: number }
 
 const isMath = (name: string | undefined) => name === 'inlineMath' || name === 'blockMath'
 let opening = 0
 
-/** The formula `writing` is for in `doc` after a change that replaced it whole: the same one, nearest to where it was. */
-function sameFormula(doc: Transaction['doc'], writing: Writing) {
-  let best: number | null = null
+/** Where the formulas of a kind with a source are in `doc`, in order. */
+function twins(doc: Doc, display: boolean, latex: string) {
+  const found: number[] = []
   doc.descendants((node, pos) => {
-    if (node.type.name === (writing.display ? 'blockMath' : 'inlineMath') && node.attrs.latex === writing.opened && (best === null || Math.abs(pos - writing.pos) < Math.abs(best - writing.pos))) best = pos
+    if (node.type.name === (display ? 'blockMath' : 'inlineMath') && node.attrs.latex === latex) found.push(pos)
   })
-  return best
+  return found
+}
+
+/** The lines of text of `doc`, in order, with where each starts. */
+function lines(doc: Doc) {
+  const found: Array<{ pos: number; node: Doc }> = []
+  doc.descendants((node, pos) => {
+    if (!node.isTextblock) return true
+    found.push({ pos, node })
+    return false
+  })
+  return found
+}
+
+/** The line `pos` is in, to find it again. */
+function lineAt(doc: Doc, pos: number): Line | null {
+  const $pos = doc.resolve(Math.min(pos, doc.content.size))
+  if (!$pos.parent.isTextblock) return null
+  const start = $pos.before()
+  return { text: $pos.parent.textContent, index: lines(doc).findIndex((line) => line.pos === start), offset: $pos.parentOffset }
+}
+
+/** The same line in `doc`, the nearest one with the same text, and the place in it; or null. */
+function placeIn(doc: Doc, line: Line) {
+  let best: { pos: number; node: Doc; distance: number } | null = null
+  lines(doc).forEach((candidate, index) => {
+    const distance = Math.abs(index - line.index)
+    if (candidate.node.textContent === line.text && (!best || distance < best.distance)) best = { ...candidate, distance }
+  })
+  const found = best as { pos: number; node: Doc } | null
+  return found ? found.pos + 1 + Math.min(line.offset, found.node.content.size) : null
+}
+
+/** The formula at `pos`, and which of those with its kind and source it is. */
+function formulaAt(doc: Doc, pos: number, display: boolean, latex: string) {
+  const all = twins(doc, display, latex)
+  return { nth: all.indexOf(pos), of: all.length }
 }
 
 /**
@@ -61,34 +103,39 @@ export function MathControls({ editor }: { editor: Editor }) {
     const storage = mathStorage(editor)
     if (!storage) return
     storage.edit = (pos) => {
-      const node = editor.state.doc.nodeAt(pos)
+      const { doc } = editor.state
+      const node = doc.nodeAt(pos)
       if (!node || !isMath(node.type.name)) return
       const latex = String(node.attrs.latex ?? '')
-      setWriting({ pos, display: node.type.name === 'blockMath', fresh: false, text: latex, opened: latex, key: ++opening })
+      const display = node.type.name === 'blockMath'
+      setWriting({ pos, display, fresh: false, text: latex, key: ++opening, opened: latex, ...formulaAt(doc, pos, display, latex), line: null })
     }
-    storage.create = (pos, display) => setWriting({ pos, display, fresh: true, text: '', opened: '', key: ++opening })
+    storage.create = (pos, display) =>
+      setWriting({ pos, display, fresh: true, text: '', key: ++opening, opened: '', nth: -1, of: 0, line: lineAt(editor.state.doc, pos) })
     let frame = 0
     const later = () => {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(redraw)
     }
-    // The formula being written follows the page as it changes (another tab, an agent). A page
-    // read again is replaced whole: the formula is found again by its source, what was typed kept.
-    // Its field closes, unsaved, only if the formula went.
+    // The formula being written follows the page as it changes (another tab, an agent). When the
+    // page is replaced whole, it is found again (see Writing), what was typed kept; if it can't be
+    // told for sure, or it went, its field closes unsaved, rather than change another one.
     const changed = (event: { transaction: Transaction; appendedTransactions?: Transaction[] }) => {
       const change = changeOf(event)
+      // What was typed meanwhile, which the last drawing may not have yet.
       const current = writingRef.current
       if (change.docChanged && current) {
         if (current.fresh) {
-          // A new one goes where it was asked for, or as near as the page now allows (insertMath).
           const moved = change.mapping.mapResult(current.pos, -1)
-          setWriting({ ...current, pos: Math.min(moved.pos, change.doc.content.size) })
+          const at = moved.deletedAcross ? (current.line ? placeIn(change.doc, current.line) : null) : moved.pos
+          setWriting(at === null ? null : { ...current, pos: at, line: lineAt(change.doc, at) })
         } else {
           const moved = [change.mapping.mapResult(current.pos, 1), change.mapping.mapResult(current.pos, -1)].find(
             (result) => !result.deletedAcross && isMath(change.doc.nodeAt(result.pos)?.type.name),
           )
-          const at = moved ? moved.pos : sameFormula(change.doc, current)
-          setWriting(at === null ? null : { ...current, pos: at })
+          const all = twins(change.doc, current.display, current.opened)
+          const at = moved ? moved.pos : all.length === current.of ? (all[current.nth] ?? null) : null
+          setWriting(at === null ? null : { ...current, pos: at, ...formulaAt(change.doc, at, current.display, current.opened) })
         }
       }
       later()
@@ -138,15 +185,23 @@ export function MathControls({ editor }: { editor: Editor }) {
 
   /** Where the formula is on the screen, or where a new one goes. */
   function anchorOf(current: Writing): DOMRect | null {
+    const pos = Math.min(current.pos, editor.state.doc.content.size)
     try {
       if (!current.fresh) {
-        const dom = editor.view.nodeDOM(current.pos)
+        const dom = editor.view.nodeDOM(pos)
         return dom instanceof HTMLElement ? dom.getBoundingClientRect() : null
       }
-      const at = editor.view.coordsAtPos(Math.min(current.pos, editor.state.doc.content.size))
+      const at = editor.view.coordsAtPos(pos)
       return new DOMRect(at.left, at.top, 0, at.bottom - at.top)
     } catch {
-      return null
+      // Where the browser can't tell the cursor's place (an empty line, a page still drawing): its line.
+      try {
+        const { node } = editor.view.domAtPos(pos)
+        const line = node instanceof HTMLElement ? node : node.parentElement
+        return line?.getBoundingClientRect() ?? null
+      } catch {
+        return null
+      }
     }
   }
 
@@ -221,7 +276,8 @@ export function MathControls({ editor }: { editor: Editor }) {
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
-          onChange={(e) => setWriting({ ...current, text: e.target.value })}
+          // On the latest state: the page may have moved the formula since this was drawn.
+          onChange={(e) => setWriting({ ...(writingRef.current ?? current), text: e.target.value })}
           onKeyDown={onKeyDown}
           className="max-h-48 min-h-8 w-full resize-none rounded-[8px] bg-sunken px-2 py-1.5 font-mono text-[13px] leading-[1.5] text-ink outline-none placeholder:text-ink-3"
         />
