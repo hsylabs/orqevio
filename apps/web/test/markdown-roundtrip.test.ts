@@ -70,7 +70,7 @@ const kept: Array<[string, string]> = [
   ['an escaped marker followed by parentheses', '> \\[!NOTE\\](importante) algo'],
   ['a rule under the text of an item', '- uno\n\n  ---\n- dos'],
   ['a rule under the text of a numbered item', '1. uno\n\n   ---\n2. dos'],
-  ['a rule under the text of a task', '- [ ] uno\n\n  ---'],
+  ['a rule under the text of a task, which a task reads as a rule', '- [ ] uno\n  ---'],
   ['an empty item of a numbered list', '1. uno\n2.\n3. tres'],
   ['an empty first item of a numbered list', '1.\n2. dos'],
   ['an empty last item of a numbered list', '1. uno\n2.'],
@@ -101,6 +101,17 @@ const normalised: Array<[string, string, string]> = [
   ['an empty numbered item between blank lines stays in its list', '1. uno\n\n2.\n\n3. tres', '1. uno\n2.\n3. tres'],
   ['an empty numbered item with a space after its number', '1. uno\n2. \n3. tres', '1. uno\n2.\n3. tres'],
   ['an empty bulleted item', '- uno\n-\n- tres', '- uno\n- \n- tres'],
+  ['a rule under the text of a task, after a blank line', '- [ ] uno\n\n  ---', '- [ ] uno\n  ---'],
+  // As Markdown reads them: what is not indented under an empty item is no part of it.
+  ['text right under an empty numbered item', '1. uno\n2.\ntexto', '1. uno\n2.\n\ntexto'],
+  ['a year alone on its line, then text', '2024.\nFue un buen año.', '2024.\n\nFue un buen año.'],
+  // A block right under an empty item is its own, after a line of `&nbsp;`, as with any item that starts with a block.
+  ['a list right under an empty numbered item', '1. uno\n2.\n   - a\n3. tres', '1. uno\n2. &nbsp;\n   - a\n3. tres'],
+  ['an empty item in a list inside another', '- a\n  1.\n  2. b', '- a\n  1. &nbsp;\n  2. b'],
+  // A number alone further in than the list's own items is a line of the block it is in, as it was.
+  ['a number alone in a code block indented less than the item', '1. Crea el script:\n  ```bash\n  case "$x" in\n    1)\n      echo uno ;;\n  esac\n  ```\n2. Ejecútalo', '1. Crea el script:\n   ```bash\n   case "$x" in\n    1)\n      echo uno ;;\n   esac\n   ```\n2. Ejecútalo'],
+  ['a number alone in a formula in an item', '1. paso\n   $$\n   x\n   2.\n   $$\n2. otro', '1. paso\n   ```math\n   x\n   2.\n   ```\n2. otro'],
+  ['a number alone indented as code is code', 'Texto\n\n    2.', 'Texto\n\n```\n2.\n```'],
   [
     'a code block in an ordered list keeps a line like an item at its margin',
     '1. paso\n\n   ~~~\n   2. no es un paso\n   ~~~\n2. otro',
@@ -119,6 +130,14 @@ describe('Markdown round trip', () => {
     expect(roundTrip(markdown)).toBe(written)
     // And from then on it stays put.
     expect(roundTrip(written)).toBe(written)
+  })
+
+  it('reads every item with a first line to write in, as the editor makes them', () => {
+    for (const markdown of ['1. uno\n2.\n   - a\n3. tres', '1. uno\n2.\n   ```js\n   x\n   ```\n3. tres', '1. uno\n2.\n   > cita\n3. tres', '- a\n  1.\n  2. b', '> 2.\n> texto', '1.\n\n   foo', '2024.\nFue un buen año.']) {
+      const editor = open(markdown)
+      expect(() => editor.state.doc.check(), markdown).not.toThrow()
+      expect(roundTrip(roundTrip(markdown)), markdown).toBe(roundTrip(markdown))
+    }
   })
 
   it('reads an empty item as an empty line to write in, as the editor makes one', () => {

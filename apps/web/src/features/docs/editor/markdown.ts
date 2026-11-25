@@ -328,11 +328,11 @@ const FaithfulLink = Link.extend({
 
 const ORDERED_ITEM = new RegExp(`^([ \\t]*)(${ORDERED_LIST_MARKER_PATTERN})([.)])( +)`)
 /**
- * An empty item of a numbered list, its number alone (`2.`), as CommonMark and marked read it.
- * @tiptap/extension-list wants a space after the number: without it, the line ended the list or
- * went into the text of the item above. It gets that space before the list is read.
+ * An empty item of a numbered list: its number alone (`2.`), at most three spaces in (four make
+ * it code). @tiptap/extension-list wants a space after the number: without it, the line ended the
+ * list or went into the text of the item above (alignOrderedContinuations).
  */
-const EMPTY_ORDERED_ITEM = /^([ \t]*)(\d{1,9}[.)])[ \t]*$/
+const EMPTY_ORDERED_ITEM = /^( {0,3})(\d{1,9}[.)])[ \t]*$/
 const FENCE = /^(`{3,}|~{3,})/
 /**
  * Put before a line of code that looks like an item of an ordered list (`1. + 2` in a code block
@@ -346,11 +346,21 @@ const NOT_AN_ITEM = '\uE000'
  * `1. `). @tiptap/extension-list 3.33.0 strips one column fewer (the marker and one space, without
  * the `.`), and then trims only the first line: in `1. paso` with `   - [ ] a` and `   - [x] b`
  * under it, the second task ends up inside the first. The extra column is taken off here first.
+ *
+ * An empty item, its number alone (`2.`) at the list's own margin, is an item, as CommonMark and
+ * marked read it: it gets the space after its number that @tiptap/extension-list wants. Only there:
+ * a number alone further in is a line of what the item above holds (code, a formula), as it was.
+ * What comes right under an empty item is its own only if it is indented as its text would be;
+ * anything else ends the list there, where marked ends it, rather than going into the item.
  */
 export function alignOrderedContinuations(src: string) {
   let item: { strippedThere: number; textColumn: number } | null = null
   /** The fence of a code block open under the item: its lines are code, whatever they look like. */
   let fence: { char: string; length: number } | null = null
+  /** How far in the list's own items are, from its first. */
+  let margin = -1
+  /** Whether the item read last is empty, and nothing is its own yet. */
+  let emptyItem = false
   const protect = !src.includes(NOT_AN_ITEM)
   let aligned = ''
   let previousBlank = false
@@ -363,9 +373,17 @@ export function alignOrderedContinuations(src: string) {
     // A line less indented than the item's text closes a code block left open under it.
     if (fence && line.trim() && item && lead < item.textColumn) fence = null
     const empty = fence ? null : EMPTY_ORDERED_ITEM.exec(line)
-    if (empty) line = `${empty[1]}${empty[2]} `
+    const atMargin = (indent: string) => margin === -1 || indent.length === margin
+    if (empty && atMargin(empty[1]!)) line = `${empty[1]}${empty[2]} `
     const match = fence ? null : ORDERED_ITEM.exec(line)
+    if (emptyItem && line.trim() && !(match && atMargin(match[1]!))) {
+      // Under an empty item, only what is indented as its text would be, with no blank line before it, is its own.
+      if (previousBlank || !item || lead < item.textColumn) return aligned.replace(/\n$/, '')
+      emptyItem = false
+    }
     if (match) {
+      if (margin === -1) margin = match[1]!.length
+      emptyItem = !!empty && atMargin(empty[1]!)
       const [, indent = '', marker = '', , spaces = ''] = match
       // Five spaces or more after the marker: the text starts after one, and the rest is code.
       const gap = spaces.length > 4 ? 1 : spaces.length
@@ -440,25 +458,28 @@ const FaithfulOrderedList = OrderedList.extend({
 /** An item written without the whitespace-only line a block can leave at its end (a toggle's, a table's). */
 const withoutTrailingLine = (markdown: string) => markdown.replace(/\n[ \t]*$/, '')
 
-/** An empty item, as the editor holds it: one empty line of text. */
-const EMPTY_ITEM: JSONContent[] = [{ type: 'paragraph' }]
+/** An empty line of text, which every item starts with in the editor. */
+const emptyLine = (): JSONContent => ({ type: 'paragraph' })
 
 /**
- * The document read, with each empty item (`2.`, `-`) holding an empty line of text, as one the
- * editor makes: @tiptap/extension-list reads it with nothing in it, which the editor can't write
- * in, and which was written as nothing.
+ * The document read, with each item of a list starting with a line of text, as the editor's items
+ * do: @tiptap/extension-list reads an empty numbered item (`2.`) with nothing in it, and one with
+ * only a block under its number (`2.` and `   - a`) with no such line, which the editor can't
+ * write in; the first was written as nothing.
  */
 function fillEmptyItems(nodes: JSONContent[]): JSONContent[] {
   return nodes.map((node) => {
-    if ((node.type === 'listItem' || node.type === 'taskItem') && !node.content?.length) return { ...node, content: EMPTY_ITEM }
-    return node.content ? { ...node, content: fillEmptyItems(node.content) } : node
+    const content = node.content ? fillEmptyItems(node.content) : node.content
+    if (node.type === 'listItem' && content?.[0]?.type !== 'paragraph') return { ...node, content: [emptyLine(), ...(content ?? [])] }
+    return content ? { ...node, content } : node
   })
 }
 
 /**
- * The helpers an item is written with, but for each rule right under a paragraph with text: the
- * item writes its blocks one line under the other, and `---` under a line of text makes it a
- * heading (and `***` is written `---`). Such a rule is marked, and written after a blank line.
+ * The helpers an item of a list is written with, but for each rule right under a paragraph with
+ * text: the item writes its blocks one line under the other, and `---` under a line of text makes
+ * it a heading (`***` is written `---` too), which lost the rule on the next save. Such a rule is
+ * marked, and written after a blank line. A task's item reads that line as a rule: it stays so.
  */
 function rulesApart(node: JSONContent, helpers: MarkdownRendererHelpers) {
   const content = node.content ?? []
@@ -491,8 +512,7 @@ const FaithfulListItem = ListItem.extend({
   renderMarkdown(node, helpers, context) {
     // An item read without a first line of text (TipTap's numbered lists read `1.` alone so) is
     // written as one with an empty one, which is how the editor keeps it.
-    if (!node.content?.length) node = { ...node, content: EMPTY_ITEM }
-    else if (node.content[0]!.type !== 'paragraph') node = { ...node, content: [{ type: 'paragraph' }, ...node.content] }
+    if (node.content?.[0]?.type !== 'paragraph') node = { ...node, content: [emptyLine(), ...(node.content ?? [])] }
     const apart = rulesApart(node, helpers)
     let markdown = apart.write(this.parent?.(node, apart.helpers, context) ?? '')
     // An empty item of a numbered list is its number alone, as it is written by hand (`2.`).
@@ -517,8 +537,7 @@ const FaithfulListItem = ListItem.extend({
 
 const FaithfulTaskItem = TaskItem.extend({
   renderMarkdown(node, helpers, context) {
-    const apart = rulesApart(node, helpers)
-    return withoutTrailingLine(apart.write(this.parent?.(node, apart.helpers, context) ?? ''))
+    return withoutTrailingLine(this.parent?.(node, helpers, context) ?? '')
   },
 })
 
