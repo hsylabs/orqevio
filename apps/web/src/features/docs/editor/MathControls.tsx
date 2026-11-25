@@ -9,10 +9,23 @@ import { changeOf } from './own-step'
 
 const GAP = 8
 
-/** The formula being written: the one at `pos`, or a new one that goes in there (`fresh`). */
-type Writing = { pos: number; display: boolean; fresh: boolean; text: string }
+/**
+ * The formula being written: the one at `pos`, or a new one that goes in there (`fresh`); `opened`,
+ * its source when its field opened, by which it is found again; `key`, which field this is.
+ */
+type Writing = { pos: number; display: boolean; fresh: boolean; text: string; opened: string; key: number }
 
 const isMath = (name: string | undefined) => name === 'inlineMath' || name === 'blockMath'
+let opening = 0
+
+/** The formula `writing` is for in `doc` after a change that replaced it whole: the same one, nearest to where it was. */
+function sameFormula(doc: Transaction['doc'], writing: Writing) {
+  let best: number | null = null
+  doc.descendants((node, pos) => {
+    if (node.type.name === (writing.display ? 'blockMath' : 'inlineMath') && node.attrs.latex === writing.opened && (best === null || Math.abs(pos - writing.pos) < Math.abs(best - writing.pos))) best = pos
+  })
+  return best
+}
 
 /**
  * The field where a formula is written, as in Notion: under the formula, its LaTeX source and how it
@@ -50,28 +63,32 @@ export function MathControls({ editor }: { editor: Editor }) {
     storage.edit = (pos) => {
       const node = editor.state.doc.nodeAt(pos)
       if (!node || !isMath(node.type.name)) return
-      setWriting({ pos, display: node.type.name === 'blockMath', fresh: false, text: String(node.attrs.latex ?? '') })
+      const latex = String(node.attrs.latex ?? '')
+      setWriting({ pos, display: node.type.name === 'blockMath', fresh: false, text: latex, opened: latex, key: ++opening })
     }
-    storage.create = (pos, display) => setWriting({ pos, display, fresh: true, text: '' })
+    storage.create = (pos, display) => setWriting({ pos, display, fresh: true, text: '', opened: '', key: ++opening })
     let frame = 0
     const later = () => {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(redraw)
     }
-    // The formula being written follows the page as it changes (another tab, an agent); its field
-    // closes, unsaved, if the formula went.
+    // The formula being written follows the page as it changes (another tab, an agent). A page
+    // read again is replaced whole: the formula is found again by its source, what was typed kept.
+    // Its field closes, unsaved, only if the formula went.
     const changed = (event: { transaction: Transaction; appendedTransactions?: Transaction[] }) => {
       const change = changeOf(event)
       const current = writingRef.current
       if (change.docChanged && current) {
         if (current.fresh) {
+          // A new one goes where it was asked for, or as near as the page now allows (insertMath).
           const moved = change.mapping.mapResult(current.pos, -1)
-          setWriting(moved.deletedAcross ? null : { ...current, pos: moved.pos })
+          setWriting({ ...current, pos: Math.min(moved.pos, change.doc.content.size) })
         } else {
-          const at = [change.mapping.mapResult(current.pos, 1), change.mapping.mapResult(current.pos, -1)].find(
-            (moved) => !moved.deletedAcross && isMath(change.doc.nodeAt(moved.pos)?.type.name),
+          const moved = [change.mapping.mapResult(current.pos, 1), change.mapping.mapResult(current.pos, -1)].find(
+            (result) => !result.deletedAcross && isMath(change.doc.nodeAt(result.pos)?.type.name),
           )
-          setWriting(at ? { ...current, pos: at.pos } : null)
+          const at = moved ? moved.pos : sameFormula(change.doc, current)
+          setWriting(at === null ? null : { ...current, pos: at })
         }
       }
       later()
@@ -89,18 +106,22 @@ export function MathControls({ editor }: { editor: Editor }) {
     }
   }, [editor])
 
-  // The field takes the focus as it opens, its cursor at the end.
+  // The field takes the focus as it opens, its cursor at the end; only then, wherever the formula moves.
   useEffect(() => {
     const el = field.current
     if (!writing || !el) return
     el.focus({ preventScroll: true })
     el.setSelectionRange(el.value.length, el.value.length)
-  }, [writing?.pos, writing !== null])
+  }, [writing?.key])
 
-  // How it looks, as it is typed.
+  // How it looks, as it is typed; and the field as tall as what it holds, up to a point.
   useLayoutEffect(() => {
     if (writing && preview.current) drawMath(preview.current, writing.text, writing.display)
-  }, [writing?.text, writing?.display])
+    const el = field.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight + 2, 192)}px`
+  }, [writing?.text, writing?.display, writing?.key])
 
   const anchor = writing ? anchorOf(writing) : null
   const base = root.current?.getBoundingClientRect()
@@ -171,6 +192,8 @@ export function MathControls({ editor }: { editor: Editor }) {
     // Leaving it for something else on the page saves it, as Enter does, without taking the focus back.
     function onBlur(event: FocusEvent<HTMLDivElement>) {
       if (event.relatedTarget instanceof Node && box.current?.contains(event.relatedTarget)) return
+      // Another window (to copy a formula from it): the focus comes back here with the window.
+      if (!document.hasFocus()) return
       if (writingRef.current) save(false)
     }
 
@@ -200,7 +223,7 @@ export function MathControls({ editor }: { editor: Editor }) {
           autoCorrect="off"
           onChange={(e) => setWriting({ ...current, text: e.target.value })}
           onKeyDown={onKeyDown}
-          className="max-h-48 min-h-8 w-full resize-y rounded-[8px] bg-sunken px-2 py-1.5 font-mono text-[13px] leading-[1.5] text-ink outline-none placeholder:text-ink-3"
+          className="max-h-48 min-h-8 w-full resize-none rounded-[8px] bg-sunken px-2 py-1.5 font-mono text-[13px] leading-[1.5] text-ink outline-none placeholder:text-ink-3"
         />
         <div aria-label={t('editor.math.preview')} role="img" className="orq-math-preview max-h-40 overflow-auto px-1 text-ink" ref={preview} />
         {error && (

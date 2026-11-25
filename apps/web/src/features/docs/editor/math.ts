@@ -1,7 +1,7 @@
-import { type Editor, Extension, type Range } from '@tiptap/core'
+import { type Editor, Extension, type Range, mergeAttributes } from '@tiptap/core'
 import { BlockMath, InlineMath } from '@tiptap/extension-mathematics'
 import type { Node as PMNode } from '@tiptap/pm/model'
-import { NodeSelection, TextSelection } from '@tiptap/pm/state'
+import { NodeSelection, Selection, TextSelection } from '@tiptap/pm/state'
 import type { NodeView } from '@tiptap/pm/view'
 import { t } from 'i18next'
 import katex, { type KatexOptions } from 'katex'
@@ -33,7 +33,8 @@ function paragraphEnd(src: string, from: number) {
  * read, or `$…$` as Pandoc has it, so that prices are no formulas (`$5 y $10`): no space after the
  * first `$`, none before the next one, and no digit right after it; if the next `$` can't end it,
  * there is none (`$5 por $x$` is a price and a formula). A `\` takes the character after it: `\$` is
- * a dollar in the formula.
+ * a dollar in the formula. Neither crosses a code span or a link's address, which come first in
+ * Markdown: `` `A=$B` `` and `](…?$top=10)` keep their dollars.
  */
 export function readInlineMath(src: string, from = 0): MathSource | null {
   if (src[from] !== '$') return null
@@ -43,7 +44,7 @@ export function readInlineMath(src: string, from = 0): MathSource | null {
     const close = src.indexOf('$$', from + 2)
     if (close === -1 || close + 2 > end || src[close + 2] === '$') return null
     const latex = src.slice(from + 2, close)
-    return latex.trim() && !latex.includes('\n') ? { raw: src.slice(from, close + 2), latex } : null
+    return latex.trim() && !/[\n`]|\]\(/.test(latex) ? { raw: src.slice(from, close + 2), latex } : null
   }
   if (src[from + 1] === '`') {
     const close = src.indexOf('`$', from + 2)
@@ -57,6 +58,7 @@ export function readInlineMath(src: string, from = 0): MathSource | null {
       i++
       continue
     }
+    if (char === '`' || (char === ']' && src[i + 1] === '(')) return null
     if (char !== '$') continue
     if (SPACE.test(src[i - 1]!) || DIGIT.test(src[i + 1] ?? '')) return null
     return { raw: src.slice(from, i + 1), latex: src.slice(from + 1, i) }
@@ -69,8 +71,8 @@ const FENCE_OPEN = /^( {0,3})(`{3,}|~{3,})[ \t]*math[ \t]*$/
 
 /**
  * A formula as a block at the start of `src`: `$$` on a line of its own, the formula, and `$$` on a
- * line of its own; all of it on one line (`$$…$$`); or a fence of the language `math`. Between `$$`,
- * no blank line, where Markdown ends a paragraph. Never empty.
+ * line of its own; all of it alone on one line (`$$…$$`, not two of them); or a fence of the language
+ * `math`. Between `$$`, no blank line, where Markdown ends a paragraph. Never empty.
  */
 export function readBlockMath(src: string): MathSource | null {
   // Line after line, only as far as the formula goes: asked at every block of the document.
@@ -99,8 +101,12 @@ export function readBlockMath(src: string): MathSource | null {
     }
     return null
   }
-  const one = /^ {0,3}\$\$(?!\$)(.*\S.*?)\$\$[ \t]*$/.exec(first)
-  if (one) return { raw: first, latex: one[1]! }
+  const lead = /^ {0,3}\$\$/.exec(first)?.[0].length
+  if (lead !== undefined && first[lead] !== '$') {
+    const close = first.indexOf('$$', lead)
+    const latex = close === -1 ? '' : first.slice(lead, close)
+    if (latex.trim() && !first.slice(close + 2).trim()) return { raw: first, latex }
+  }
   if (!DOLLARS_LINE.test(first)) return null
   for (let line = next(); line !== null; line = next()) {
     if (!line.trim()) return null
@@ -114,11 +120,12 @@ export function readBlockMath(src: string): MathSource | null {
  * Where a formula of its own starts on a line of the paragraph `src` is in, or -1: there it breaks
  * the paragraph, as a fence does (in a list's item, the formula is on the line after its text).
  * marked asks from the paragraph's second character: only what follows a line break starts a line.
+ * Asked at every paragraph with the rest of the document: only the paragraph matters.
  */
 export function blockMathStart(src: string) {
-  const end = paragraphEnd(src, 0)
+  const paragraph = src.slice(0, paragraphEnd(src, 0))
   const line = /\n( {0,3}(?:\$\$|`{3,}|~{3,}))/g
-  for (let match = line.exec(src); match && match.index < end; match = line.exec(src)) {
+  for (let match = line.exec(paragraph); match; match = line.exec(paragraph)) {
     const at = match.index + match[0].length - match[1]!.length
     if (readBlockMath(src.slice(at)) !== null) return at
   }
@@ -137,16 +144,55 @@ export function tidyLatex(latex: string, display: boolean) {
     .replace(/^(?:[ \t]*\n)+|(?:\n[ \t]*)+$/g, '')
 }
 
-/** A formula in a line as Markdown: as it was written, or `$…$`, or $`…`$ when that wouldn't read back. */
+/** A formula in a line, and what is around it where it is written. */
+export interface InlineFormula {
+  latex: string
+  /** The Markdown it was read from, if any. */
+  raw: string | null
+  /** In a heading or a table, which end at a line break. */
+  oneLine?: boolean
+  /** In a table, whose cells unescape `\|` before reading what they hold. */
+  inTable?: boolean
+  /** Bold, in italics, struck or in a link, whose delimiters its source holds: `*`, `~`, brackets… */
+  guarded?: boolean
+}
+
+/** A source one table's cell reads back the same: `\|` (the double bars) is `\Vert` there, line breaks spaces. */
+function latexWritten(formula: InlineFormula) {
+  let latex = formula.latex
+  if (formula.oneLine || formula.inTable) latex = latex.replace(/\s*\n\s*/g, ' ')
+  if (formula.inTable) latex = latex.replace(/\\[\s\S]/g, (escape) => (escape === '\\|' ? '\\Vert ' : escape))
+  return latex
+}
+
+/**
+ * The ways a formula in a line can be written, the best first: as it was written, `$$…$$` if it was,
+ * `$…$`, and $`…`$, which Markdown reads nothing in. Among marks whose delimiters its source holds,
+ * $`…`$ first: `*a $b*c$*` would end the italics inside it.
+ */
+function inlineForms(formula: InlineFormula) {
+  const latex = latexWritten(formula)
+  const forms: string[] = []
+  if (formula.guarded) forms.push(`$\`${latex}\`$`)
+  else if (formula.raw && latex === formula.latex) forms.push(formula.raw)
+  if (formula.raw?.startsWith('$$')) forms.push(`$$${latex}$$`)
+  forms.push(`$${latex}$`, `$\`${latex}\`$`)
+  return { latex, forms: [...new Set(forms)] }
+}
+
+/** Whether `markdown` reads back as the formula `latex` before `following`, at the start of a line or not. */
+function readsAs(markdown: string, latex: string, following = '', lineStart = false) {
+  const read = readInlineMath(markdown + following)
+  if (read?.raw !== markdown || read.latex !== latex) return false
+  // Alone on its line, `$$…$$` would be one of its own.
+  return !lineStart || readBlockMath(markdown + following) === null
+}
+
+/** A formula in a line as Markdown on its own: as it was written, or the first form that reads back. */
 export function inlineMathMarkdown(latex: string, raw: string | null) {
   if (!latex.trim()) return ''
-  const reads = (markdown: string) => {
-    const read = readInlineMath(markdown)
-    return read?.raw === markdown && read.latex === latex
-  }
-  if (raw && reads(raw)) return raw
-  const candidates = [...(raw?.startsWith('$$') ? [`$$${latex}$$`] : []), `$${latex}$`, `$\`${latex}\`$`]
-  return candidates.find(reads) ?? candidates[0]!
+  const { latex: written, forms } = inlineForms({ latex, raw })
+  return forms.find((form) => readsAs(form, written)) ?? forms.at(-1)!
 }
 
 /** A fence longer than any run of its character that starts a line of the formula. */
@@ -155,34 +201,50 @@ function fenceFor(latex: string, char: string) {
   return char.repeat(Math.max(3, ...runs))
 }
 
-/** A formula of its own as Markdown: as it was written, or in its form (fence, one line, `$$` lines) with the new source. */
-export function blockMathMarkdown(latex: string, raw: string | null) {
+/** Where a formula of its own is written, which decides how it can be. */
+export type BlockPlace = 'block' | 'list' | 'task' | 'table'
+
+/** A line of the formula that would be read as a list's item, a heading or a quote in a list. */
+const LIST_LIKE = /^[ \t]*(?:[-+*]|\d{1,9}[.)]|#{1,6}|>)(?:[ \t]|$)/m
+
+/**
+ * A formula of its own as Markdown: as it was written, or in its form (fence, one line, `$$` lines)
+ * with the new source. In a task's item, whose lines after the first marked reads as text, a fence;
+ * in a list's item, a fence if a line of it would start an item there. In a table's cell, which
+ * holds one line, a formula in that line.
+ */
+export function blockMathMarkdown(latex: string, raw: string | null, place: BlockPlace = 'block') {
   if (!latex.trim()) return ''
+  if (place === 'table') {
+    const { latex: written, forms } = inlineForms({ latex, raw: null, inTable: true })
+    return forms.find((form) => readsAs(form, written)) ?? forms.at(-1)!
+  }
   const reads = (markdown: string) => {
     const read = readBlockMath(markdown)
     return read?.raw === markdown && read.latex === latex
   }
-  if (raw && reads(raw)) return raw
   const fence = raw ? FENCE_OPEN.exec(raw.split('\n')[0]!) : null
   const fenced = (char: string) => {
     const mark = fenceFor(latex, char)
     return `${mark}math\n${latex}\n${mark}`
   }
+  const fenceOnly = place === 'task' || (place === 'list' && LIST_LIKE.test(latex))
+  if (raw && reads(raw) && (!fenceOnly || fence)) return raw
   const candidates = [
     ...(fence ? [fenced(fence[2]![0]!)] : []),
-    ...(raw && !raw.includes('\n') && !latex.includes('\n') ? [`$$${latex}$$`] : []),
-    `$$\n${latex}\n$$`,
+    ...(fenceOnly ? [] : [...(raw && !raw.includes('\n') && !latex.includes('\n') ? [`$$${latex}$$`] : []), `$$\n${latex}\n$$`]),
     fenced('`'),
   ]
   return candidates.find(reads) ?? candidates.at(-1)!
 }
 
-// What a `$` of text reads as depends on what comes after it, which text alone doesn't know: it
-// is marked where text is written, and settled once its paragraph or heading is.
+// What a `$` of text reads as depends on what comes after it, which text alone doesn't know; so
+// does how a formula in a line is written. Both are marked where they are written, and settled
+// once their paragraph or heading is.
 
 /** Before a `$` of text. */
 const DOLLAR = '﷐'
-/** Around a formula in a line. */
+/** Around the number of a formula in a line. */
 const OPEN = '﷑'
 const CLOSE = '﷒'
 const MARKS = /[﷐-﷒]/g
@@ -190,45 +252,46 @@ const MARKS = /[﷐-﷒]/g
 /** Text as Markdown writes it, with each of its `$` marked for settleDollars. */
 export const markDollars = (markdown: string) => (markdown.includes('$') ? markdown.replace(/\$/g, () => `${DOLLAR}$`) : markdown)
 
-/** A formula in a line, marked for settleDollars. */
-const markFormula = (markdown: string) => (markdown ? `${OPEN}${markdown}${CLOSE}` : '')
-
-/** A formula in a line as Markdown writes it, marked for settleDollars. */
-export const inlineFormula = (attrs: Record<string, unknown> | undefined) => markFormula(inlineMathMarkdown(String(attrs?.latex ?? ''), (attrs?.raw as string | null) ?? null))
+/** The formula number `index` of the ones settleDollars is given, marked where it goes. */
+export const markFormula = (index: number) => `${OPEN}${index}${CLOSE}`
 
 /**
- * The marked `$` of a paragraph's or a heading's Markdown, written so it reads back as it is: a `$`
- * of text that would open a formula is escaped, and so is one that would open a formula of its own
- * at the start of the block; any other stays as it was. A formula followed by a digit is written as
- * $`…`$, which ends before it. From the end: what each one reads as depends only on what follows.
+ * The marked `$` and formulas of a paragraph's or a heading's Markdown, written so they read back as
+ * they are. A `$` of text that would open a formula is escaped, and so is one that would open a
+ * formula of its own at the start of a line; any other stays as it was. A formula is written in the
+ * first of its forms that reads back where it is: not one followed by a digit, alone on its line,
+ * or next to a `$`. From the end: how each one reads depends only on what follows it.
  */
-export function settleDollars(markdown: string) {
+export function settleDollars(markdown: string, formulas: InlineFormula[] = [], { blocks = true } = {}) {
   if (!markdown.match(MARKS)) return markdown
   const parts: string[] = []
   const after = () => parts.slice().reverse().join('')
+  // Where no line starts a block (a task's text: TipTap reads it line by line, as text), none is a start.
+  const lineStart = (before: string) => blocks && /(?:^|\n)[ \t]*$/.test(before.replace(MARKS, ''))
   let end = markdown.length
   for (let i = markdown.length - 1; i >= 0; i--) {
     const char = markdown[i]
-    if (char === CLOSE) {
-      const open = markdown.lastIndexOf(OPEN, i)
+    const open = char === CLOSE ? markdown.lastIndexOf(OPEN, i) : -1
+    const formula = open === -1 ? undefined : formulas[Number(markdown.slice(open + 1, i))]
+    if (formula && /^\d+$/.test(markdown.slice(open + 1, i))) {
       parts.push(markdown.slice(i + 1, end))
-      const formula = markdown.slice(open + 1, i).replace(MARKS, '')
-      const next = after()[0] ?? ''
-      parts.push(formula[1] !== '`' && DIGIT.test(next) && !formula.includes('`$') ? `$\`${formula.slice(1, -1)}\`$` : formula)
+      const following = after()
+      const { latex, forms } = inlineForms(formula)
+      const start = lineStart(markdown.slice(0, open))
+      parts.push(forms.find((form) => readsAs(form, latex, following, start)) ?? forms.at(-1)!)
       i = open
       end = open
     } else if (char === DOLLAR && markdown[i + 1] === '$') {
       parts.push(markdown.slice(i + 2, end))
       const following = `$${after()}`
-      const start = markdown.slice(0, i).replace(MARKS, '')
       // At the start of any of its lines: a formula of its own breaks a paragraph there.
-      const opens = readInlineMath(following) !== null || (/(?:^|\n)[ \t]*$/.test(start) && readBlockMath(following) !== null)
+      const opens = readInlineMath(following) !== null || (lineStart(markdown.slice(0, i)) && readBlockMath(following) !== null)
       parts.push(opens ? '\\$' : '$')
       end = i
     }
   }
   parts.push(markdown.slice(0, end))
-  return parts.reverse().join('').replace(MARKS, '')
+  return parts.reverse().join('')
 }
 
 // ── How they look ────────────────────────────────────────────────
@@ -336,6 +399,8 @@ class MathView implements NodeView {
 const texOf = (element: HTMLElement) => element.querySelector('annotation[encoding="application/x-tex"]')?.textContent?.trim() ?? ''
 /** Only what keeps its TeX source is a formula; what doesn't is read as what it holds. */
 const withTex = (element: HTMLElement) => (texOf(element) ? null : false)
+/** One of ours, copied, with its source: an empty one has none to keep. */
+const withLatex = (element: HTMLElement) => (element.getAttribute('data-latex')?.trim() ? null : false)
 
 /**
  * Its source, ours or the one kept in what KaTeX or MathJax drew, and the Markdown it was read
@@ -361,11 +426,15 @@ export const FaithfulInlineMath = InlineMath.extend<object, MathStorage>({
   },
   parseHTML() {
     return [
-      ...(this.parent?.() ?? []),
+      { tag: 'span[data-type="inline-math"]', getAttrs: withLatex },
       // Pasted from a page that draws its formulas with KaTeX, or with MathML (MathJax, Wikipedia).
       { tag: 'span.katex', getAttrs: withTex },
       { tag: 'math:not([display="block"])', getAttrs: withTex },
     ]
+  },
+  // Copied to another app, its source shows where the formula was.
+  renderHTML({ node, HTMLAttributes }) {
+    return ['span', mergeAttributes(HTMLAttributes, { 'data-type': 'inline-math' }), `$${String(node.attrs.latex ?? '')}$`]
   },
   renderText: ({ node }) => `$${String(node.attrs.latex ?? '')}$`,
   markdownTokenizer: {
@@ -378,12 +447,21 @@ export const FaithfulInlineMath = InlineMath.extend<object, MathStorage>({
     },
   },
   parseMarkdown: (token) => ({ type: 'inlineMath', attrs: { latex: String(token.latex ?? ''), raw: String(token.raw ?? '') } }),
-  // Written as text is, in its marks' run (markdown.ts); this is for one written on its own.
-  renderMarkdown: (node) => inlineFormula(node.attrs),
+  // Written as text is, in its marks' run, and settled with its paragraph (markdown.ts); this is for one written on its own.
+  renderMarkdown: (node) => inlineMathMarkdown(String(node.attrs?.latex ?? ''), (node.attrs?.raw as string | null) ?? null),
   addNodeView() {
     return ({ node, editor, getPos }) => new MathView(node, editor, getPos, false)
   },
 })
+
+/** Where a formula of its own is, for how it is written (blockMathMarkdown). */
+function placeOf(parent: unknown): BlockPlace {
+  if (parent === 'taskItem') return 'task'
+  if (parent === 'listItem') return 'list'
+  // The table writes its cells' blocks itself: they are the table's.
+  if (parent === 'table' || parent === 'tableRow' || parent === 'tableCell' || parent === 'tableHeader') return 'table'
+  return 'block'
+}
 
 /** A formula of its own, between blocks. */
 export const FaithfulBlockMath = BlockMath.extend({
@@ -392,10 +470,13 @@ export const FaithfulBlockMath = BlockMath.extend({
   },
   parseHTML() {
     return [
-      ...(this.parent?.() ?? []),
+      { tag: 'div[data-type="block-math"]', getAttrs: withLatex },
       { tag: '.katex-display', getAttrs: withTex },
       { tag: 'math[display="block"]', getAttrs: withTex },
     ]
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'block-math' }), `$$\n${String(node.attrs.latex ?? '')}\n$$`]
   },
   renderText: ({ node }) => `$$\n${String(node.attrs.latex ?? '')}\n$$`,
   markdownTokenizer: {
@@ -409,7 +490,7 @@ export const FaithfulBlockMath = BlockMath.extend({
     },
   },
   parseMarkdown: (token) => ({ type: 'blockMath', attrs: { latex: String(token.latex ?? ''), raw: String(token.raw ?? '') } }),
-  renderMarkdown: (node) => blockMathMarkdown(String(node.attrs?.latex ?? ''), (node.attrs?.raw as string | null) ?? null),
+  renderMarkdown: (node, _helpers, context) => blockMathMarkdown(String(node.attrs?.latex ?? ''), (node.attrs?.raw as string | null) ?? null, placeOf(context?.parentType)),
   addNodeView() {
     return ({ node, editor, getPos }) => new MathView(node, editor, getPos, true)
   },
@@ -467,28 +548,41 @@ export function insertMath(editor: Editor, pos: number, source: string, display:
   return ownStep(
     editor,
     ({ tr, state }) => {
-    const at = Math.min(pos, tr.doc.content.size)
-    if (!display) {
-      const node = state.schema.nodes.inlineMath!.create({ latex })
-      tr.insert(at, node)
-      tr.setSelection(TextSelection.create(tr.doc, at + node.nodeSize))
+      // Where it was asked for, or the nearest place for text if the page changed under it.
+      let $at = tr.doc.resolve(Math.min(pos, tr.doc.content.size))
+      if (!$at.parent.inlineContent) $at = Selection.near($at).$from
+      if (!display) {
+        // With the marks of the text where it goes: in a link, it stays in the link.
+        const type = state.schema.nodes.inlineMath!
+        const node = type.create({ latex }, null, $at.marks().filter((mark) => type.allowsMarkType(mark.type)))
+        tr.insert($at.pos, node)
+        tr.setSelection(TextSelection.create(tr.doc, $at.pos + node.nodeSize))
+        return true
+      }
+      const node = state.schema.nodes.blockMath!.create({ latex })
+      const line = $at.parent
+      if (line.isTextblock && !line.content.size && $at.depth > 0) {
+        // Instead of the empty line; or after it, where the line must stay (an item's first).
+        const from = $at.before()
+        const replace = $at.node(-1).canReplaceWith($at.index(-1), $at.indexAfter(-1), node.type)
+        const at = replace ? from : $at.after()
+        if (replace) tr.replaceWith(from, $at.after(), node)
+        else tr.insert(at, node)
+        tr.setSelection(NodeSelection.create(tr.doc, at))
+        return true
+      }
+      // Splitting the line, without the spaces at the split: they would start or end a line.
+      const before = line.textBetween(0, $at.parentOffset, undefined, '￼')
+      const after = line.textBetween($at.parentOffset, line.content.size, undefined, '￼')
+      const from = $at.pos - (before.length - before.trimEnd().length)
+      const to = $at.pos + (after.length - after.trimStart().length)
+      tr.delete(from, to)
+      tr.setSelection(TextSelection.create(tr.doc, from))
+      tr.replaceSelectionWith(node)
+      const placed = tr.mapping.map(from, -1)
+      const found = [placed, placed + 1, placed - 1].find((p) => p >= 0 && p <= tr.doc.content.size && tr.doc.nodeAt(p)?.type.name === 'blockMath')
+      if (found !== undefined) tr.setSelection(NodeSelection.create(tr.doc, found))
       return true
-    }
-    const node = state.schema.nodes.blockMath!.create({ latex })
-    const $at = tr.doc.resolve(at)
-    const empty = $at.parent.isTextblock && $at.parent.content.size === 0 && $at.depth > 0
-    if (empty && $at.node(-1).canReplaceWith($at.index(-1), $at.indexAfter(-1), node.type)) {
-      const from = $at.before()
-      tr.replaceWith(from, $at.after(), node)
-      tr.setSelection(NodeSelection.create(tr.doc, from))
-      return true
-    }
-    tr.setSelection(TextSelection.create(tr.doc, at))
-    tr.replaceSelectionWith(node)
-    const placed = tr.mapping.map(at, -1)
-    const found = [placed, placed + 1, placed - 1].find((p) => p >= 0 && p <= tr.doc.content.size && tr.doc.nodeAt(p)?.type.name === 'blockMath')
-    if (found !== undefined) tr.setSelection(NodeSelection.create(tr.doc, found))
-    return true
     },
     { focus },
   )
@@ -514,7 +608,11 @@ export function selectionToMath(editor: Editor) {
   if (!source) return false
   const latex = tidyLatex(source.text, false)
   const done = ownStep(editor, ({ tr, state }) => {
-    tr.replaceWith(source.from, source.to, state.schema.nodes.inlineMath!.create({ latex }))
+    // With the marks all the text had: a word in a link stays in it.
+    const type = state.schema.nodes.inlineMath!
+    const { $from, $to } = state.selection
+    const marks = ($from.marksAcross($to) ?? []).filter((mark) => type.allowsMarkType(mark.type))
+    tr.replaceWith(source.from, source.to, type.create({ latex }, null, marks))
     tr.setSelection(NodeSelection.create(tr.doc, source.from))
     return true
   })

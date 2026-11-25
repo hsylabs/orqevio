@@ -3,10 +3,11 @@ import { Editor, type JSONContent } from '@tiptap/core'
 import { undoDepth } from '@tiptap/pm/history'
 import { NodeSelection, TextSelection } from '@tiptap/pm/state'
 import katex from 'katex'
+import { createElement } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { documentExtensions } from '../src/features/docs/editor/markdown'
 import { markdownToHtml } from '../src/features/docs/editor/markdown-html'
-import { MathKeys, insertMath, mathStorage, readBlockMath, readInlineMath, selectionToMath, setMath } from '../src/features/docs/editor/math'
+import { MathKeys, blockMathStart, insertMath, mathStorage, readBlockMath, readInlineMath, selectionToMath, setMath } from '../src/features/docs/editor/math'
 
 // Formulas in LaTeX, drawn by KaTeX: in a line as `$…$` (or GitHub's $`…`$), of their own between
 // `$$` or in a fence of `math`. Each one written back as it was; a `$` of text never becomes one.
@@ -262,15 +263,34 @@ describe('a new formula', () => {
     expect(empty.state.selection).toBeInstanceOf(NodeSelection)
     const split = open('Antes después', 'markdown', true)
     insertMath(split, 6, 'x', true)
-    expect(saved(split)).toBe('Antes\n\n$$\nx\n$$\n\n después')
+    // Without the space at the split, which would start the line after it.
+    expect(saved(split)).toBe('Antes\n\n$$\nx\n$$\n\ndespués')
     expect(types(split)).toEqual(['paragraph', 'text', 'blockMath', 'paragraph', 'text'])
   })
 
-  it('goes of its own in an empty item of a list, which keeps its line', () => {
-    const editor = open({ type: 'doc', content: [{ type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph' }] }] }] }, 'json', true)
+  it('goes of its own in an empty item of a list, which keeps its line and its list', () => {
+    const editor = open(
+      { type: 'doc', content: [{ type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph' }] }] }, { type: 'paragraph', content: [text('fin')] }] },
+      'json',
+      true,
+    )
     insertMath(editor, 3, 'x', true)
     expect(editor.state.doc.check()).toBeUndefined()
-    expect(latexOf(editor)).toEqual(['x'])
+    expect(types(editor)).toEqual(['bulletList', 'listItem', 'paragraph', 'blockMath', 'paragraph', 'text'])
+    expect(saved(editor)).toBe('- $$\n  x\n  $$\n\nfin')
+    expect(saved(open(saved(editor)))).toBe('- $$\n  x\n  $$\n\nfin')
+  })
+
+  it('keeps the marks of the text it goes in, or of the text it is made of', () => {
+    const link = [{ type: 'link', attrs: { href: 'https://a.test' } }]
+    const inLink = open(paragraph(text('ver ', link), text('docs', link)), 'json', true)
+    insertMath(inLink, 5, 'x', false)
+    expect(saved(inLink)).toBe('[ver $x$docs](https://a.test)')
+    const made = open(paragraph(text('ver a^2 aquí', link)), 'json', true)
+    mathStorage(made)!.edit = vi.fn()
+    made.commands.setTextSelection({ from: 5, to: 8 })
+    selectionToMath(made)
+    expect(saved(made)).toBe('[ver $a^2$ aquí](https://a.test)')
   })
 
   it('takes the text selected as its source, as one step, and opens its field (Ctrl+Shift+E)', () => {
@@ -342,5 +362,143 @@ describe('a formula as it is shown', () => {
     const mathml = '<math><semantics><mi>x</mi><annotation encoding="application/x-tex">x_1</annotation></semantics></math>'
     const editor = open(`<p>Una ${inline} y ${mathml}</p>${display}`, 'html')
     expect(saved(editor)).toBe('Una $a^2 + b^2$ y $x_1$\n\n$$\n\\sum x\n$$')
+  })
+})
+
+describe('a formula where Markdown reads it otherwise', () => {
+  it('starting an item of a list, stays on its marker line, the list and all', () => {
+    for (const markdown of ['- $$x$$', '- $$\n  x\n  $$', '- a\n  - $$x$$', '- ```js\n  code\n  ```']) {
+      const editor = open(markdown)
+      expect(saved(editor), markdown).toBe(markdown)
+      expect(types(editor)[0], markdown).toBe('bulletList')
+    }
+  })
+
+  it('in a task, is written as a fence of math, which TipTap reads there; $$ lines under its text stay its text', () => {
+    const loose = open('- [ ] tarea\n\n  $$\n  x\n  $$')
+    expect(saved(loose)).toBe('- [ ] tarea\n  ```math\n  x\n  ```')
+    expect(latexOf(open(saved(loose)))).toEqual(['x'])
+    for (const markdown of ['- [ ] tarea\n  $$\n  x\n  $$', '- [ ] $$x$$ y']) expect(saved(open(markdown)), markdown).toBe(markdown)
+  })
+
+  it('in a list, is written as a fence when a line of it would start an item', () => {
+    const editor = open('1. Paso\n\n   $$\n   x\n   $$')
+    setMath(editor, first(editor, 'blockMath'), '1. a\n2. b')
+    expect(saved(editor)).toBe('1. Paso\n   ```math\n   1. a\n   2. b\n   ```')
+    expect(latexOf(open(saved(editor)))).toEqual(['1. a\n2. b'])
+  })
+
+  it('written as $$…$$ in a line, stays so before a digit, and is $…$ where it would be one of its own', () => {
+    expect(saved(open('a $$x$$5 b'))).toBe('a $$x$$5 b')
+    const alone = open('Esto $$x$$ en línea')
+    alone.commands.setContent(paragraph(formula('x')))
+    const raw = open('Esto $$x$$ en línea')
+    const pos = first(raw, 'inlineMath')
+    raw.view.dispatch(raw.state.tr.delete(pos + 1, raw.state.doc.content.size - 1).delete(1, pos))
+    expect(saved(raw)).toBe('$x$')
+    expect(types(open(saved(raw)))).toEqual(['paragraph', 'inlineMath'])
+    for (const markdown of ['Texto  \n$$x$$', 'Texto\n$$x$$ y']) {
+      const editor = open(markdown)
+      expect(latexOf(editor), markdown).toEqual(['x'])
+    }
+  })
+
+  it('next to a dollar of text, reads back as it was', () => {
+    for (const content of [[formula('x'), text('$')], [formula('x'), text('$5')], [text('$'), formula('x')], [formula('x'), text('2')]]) {
+      const editor = open(paragraph(...content), 'json')
+      const read = open(saved(editor))
+      expect(read.getText(), saved(editor)).toBe(editor.getText())
+      expect(latexOf(read), saved(editor)).toEqual(latexOf(editor))
+    }
+  })
+
+  it('in italics, bold or struck with their delimiters in it, or in a link with brackets, is written as $`…`$', () => {
+    const italic = [{ type: 'italic' }]
+    const bold = [{ type: 'bold' }]
+    const strike = [{ type: 'strike' }]
+    const link = [{ type: 'link', attrs: { href: 'https://a.test' } }]
+    const cases: Array<[JSONContent[], string]> = [
+      [[text('valor ', italic), { ...formula('x^*'), marks: italic }, text(' fin', italic)], '*valor $`x^*`$ fin*'],
+      [[text('a ', bold), { ...formula('b**c'), marks: bold }], '**a $`b**c`$**'],
+      [[text('a ', strike), { ...formula('b~~c'), marks: strike }], '~~a $`b~~c`$~~'],
+      [[text('see ', link), { ...formula('[0,1)'), marks: link }], '[see $`[0,1)`$](https://a.test)'],
+    ]
+    for (const [content, written] of cases) {
+      const editor = open(paragraph(...content), 'json')
+      expect(saved(editor)).toBe(written)
+      const read = open(written)
+      expect(latexOf(read), written).toEqual(latexOf(editor))
+      expect(read.getText(), written).toBe(editor.getText())
+    }
+  })
+
+  it('in a heading or a table, is written on one line; in a table, with its double bars as \\Vert', () => {
+    const heading = open({ type: 'doc', content: [{ type: 'heading', attrs: { level: 2 }, content: [text('A '), formula('a\nb'), text(' y')] }] }, 'json')
+    expect(saved(heading)).toBe('## A $a b$ y')
+    const table = open('| a | b |\n| --- | --- |\n| x | y |')
+    const cell = first(table, 'paragraph') + 1
+    table.view.dispatch(table.state.tr.insert(cell, table.schema.nodes.inlineMath!.create({ latex: '\\|v\\|\nw' })))
+    expect(saved(table)).toContain('$\\Vert v\\Vert w$')
+    expect(latexOf(open(saved(table)))).toEqual(['\\Vert v\\Vert w'])
+  })
+
+  it('of its own in a table\'s cell, is written as one in its line', () => {
+    const table = open('| a |\n| --- |\n| x |')
+    const cell = first(table, 'tableCell')
+    table.view.dispatch(table.state.tr.insert(cell + 1, table.schema.nodes.blockMath!.create({ latex: 'x^2\n+ 1' })))
+    const once = saved(table)
+    expect(once).toContain('$x^2 + 1$')
+    expect(saved(open(once))).toBe(once)
+  })
+
+  it('never crosses a code span or a link\'s address after a price', () => {
+    for (const markdown of ['Cuesta $5; ejecuta `A=$B` antes', 'Cuesta $5, ver [docs](https://api.test/items?$top=10) hoy']) {
+      const editor = open(markdown)
+      expect(latexOf(editor), markdown).toEqual([])
+      expect(saved(editor), markdown).toBe(markdown)
+    }
+  })
+
+  it('is no formula of its own when a line holds two of them, or more after one', () => {
+    for (const markdown of ['$$a$$ and $$b$$', '$$x$$$']) {
+      const editor = open(markdown)
+      expect(types(editor), markdown).not.toContain('blockMath')
+      expect(saved(editor), markdown).toBe(markdown)
+    }
+  })
+
+  it('looks for a formula of its own only in the paragraph it is asked about', () => {
+    const long = Array.from({ length: 4000 }, (_, i) => `Párrafo ${i} con texto.`).join('\n\n') + '\n\n$$\nx\n$$'
+    const started = performance.now()
+    for (let i = 0; i < 4000; i++) blockMathStart(long.slice(i * 10))
+    expect(performance.now() - started).toBeLessThan(2000)
+  })
+})
+
+describe('the field of a formula', () => {
+  it('keeps what was typed when the page is read again whole, its formula found again', async () => {
+    const element = document.body.appendChild(document.createElement('div'))
+    const editor = new Editor({ element, extensions: [...documentExtensions(), MathKeys], content: 'A $x$ y', contentType: 'markdown' })
+    editors.push(editor)
+    const { createRoot } = await import('react-dom/client')
+    const { act } = await import('react')
+    const { MathControls } = await import('../src/features/docs/editor/MathControls')
+    const host = document.body.appendChild(document.createElement('div'))
+    const root = createRoot(host)
+    await act(async () => root.render(createElement(MathControls, { editor })))
+    await act(async () => mathStorage(editor)!.edit!(first(editor, 'inlineMath')))
+    const field = host.querySelector('textarea')!
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!
+      setter.call(field, 'x^2')
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    // The caret where it was typed, also once the formula moves.
+    field.setSelectionRange(1, 1)
+    await act(async () => editor.commands.setContent('Antes. A $x$ y', { contentType: 'markdown', emitUpdate: false }))
+    expect(host.querySelector('textarea')).not.toBeNull()
+    expect(host.querySelector('textarea')!.value).toBe('x^2')
+    expect(host.querySelector('textarea')!.selectionStart).toBe(1)
+    await act(async () => root.unmount())
   })
 })

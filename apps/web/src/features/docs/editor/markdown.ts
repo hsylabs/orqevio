@@ -12,7 +12,7 @@ import { Callout, calloutFromQuote } from './callout'
 import { Toggle, ToggleTitle, foldToggles } from './toggle'
 import { FaithfulImage, destination, imageFromTag, indentationOf, isLoneTag, quotedTitle } from './image'
 import { FaithfulCodeBlock } from './code-block'
-import { FaithfulBlockMath, FaithfulInlineMath, inlineFormula, markDollars, settleDollars } from './math'
+import { FaithfulBlockMath, FaithfulInlineMath, type InlineFormula, markDollars, markFormula, settleDollars } from './math'
 
 /**
  * Documents are Markdown, often written by agents, and the editor saves the whole
@@ -446,7 +446,14 @@ const FaithfulListItem = ListItem.extend({
     return this.parent?.({ ...token, tokens }, helpers) ?? []
   },
   renderMarkdown(node, helpers, context) {
-    const markdown = this.parent?.(node, helpers, context) ?? ''
+    let markdown = this.parent?.(node, helpers, context) ?? ''
+    // An item that starts with a formula of its own or a block of code (`- $$x$$`, `- ```js`): the
+    // empty line the editor keeps before it is no line of the item. Written there, the item would
+    // be lost; the block goes on the marker's line, as it was written.
+    const [first, second] = node.content ?? []
+    if (first?.type === 'paragraph' && !first.content?.length && (second?.type === 'blockMath' || second?.type === 'codeBlock')) {
+      markdown = markdown.replace(/^((?:[-+*]|\d{1,9}[.)]) +)(?:&nbsp;)?\n[ \t]*/, '$1')
+    }
     const last = node.content?.at(-1)
     return last?.type === 'paragraph' && !last.content?.length ? markdown : withoutTrailingLine(markdown)
   },
@@ -492,19 +499,30 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
 
   // A formula in a line is written as text with its marks, in their run: `**a $x$ b**` and
   // `[a $x$](…)` stay as they are. @tiptap/markdown closes the marks around any other inline node.
-  let formulas: string[] = []
-  const FORMULA = /^\uFDD3(\d+)\uFDD4$/
-  const asText = (node: JSONContent): JSONContent => {
+  // Its form is chosen once its paragraph or heading is written, where it is (math.ts).
+  let formulas: InlineFormula[] = []
+  let placeholder = /$^/
+  const asText = (node: JSONContent, where: { heading?: boolean; table?: boolean }, key: string): JSONContent => {
     if (node.type === 'inlineMath') {
-      formulas.push(inlineFormula(node.attrs))
-      return { type: 'text', text: `\uFDD3${formulas.length - 1}\uFDD4`, ...(node.marks ? { marks: node.marks } : {}) }
+      const marks = (node.marks ?? []).map((mark) => mark.type)
+      const latex = String(node.attrs?.latex ?? '')
+      if (!latex.trim()) return { type: 'text', text: '' }
+      // Delimiters of its marks in its source would end them there: `*` and `_` of italics or bold,
+      // `~` of strikes, brackets and backticks of a link.
+      const guarded =
+        (marks.some((mark) => mark === 'bold' || mark === 'italic') && /[*_]/.test(latex)) ||
+        (marks.includes('strike') && latex.includes('~')) ||
+        (marks.includes('link') && /[[\]`()<>]/.test(latex))
+      formulas.push({ latex, raw: (node.attrs?.raw as string | null) ?? null, oneLine: where.heading || where.table, inTable: where.table, guarded })
+      return { type: 'text', text: `\uFDD3${key}:${formulas.length - 1}\uFDD4`, ...(node.marks ? { marks: node.marks } : {}) }
     }
-    return node.content ? { ...node, content: node.content.map(asText) } : node
+    const inner = { heading: where.heading || node.type === 'heading', table: where.table || node.type === 'tableCell' || node.type === 'tableHeader' }
+    return node.content ? { ...node, content: node.content.map((child) => asText(child, inner, key)) } : node
   }
 
   internals.encodeTextForMarkdown = (text, node, parentNode) => {
-    const formula = FORMULA.exec(text)
-    if (formula) return formulas[Number(formula[1])] ?? ''
+    const formula = placeholder.exec(text)
+    if (formula) return markFormula(Number(formula[1]))
     const inCode =
       (parentNode?.type != null && internals.codeTypes.has(parentNode.type)) ||
       (node.marks ?? []).some((m) => internals.codeTypes.has(typeof m === 'string' ? m : m.type))
@@ -514,16 +532,24 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
   const renderNodeToMarkdown = internals.renderNodeToMarkdown.bind(manager)
   internals.renderNodeToMarkdown = (node, ...rest) => {
     const markdown = renderNodeToMarkdown(node, ...rest)
-    return node.type === 'paragraph' || node.type === 'heading' ? settleDollars(markdown) : markdown
+    if (node.type !== 'paragraph' && node.type !== 'heading') return markdown
+    // A task's text, on its marker's line and the lines under it, is read as text, line by line
+    // (@tiptap/extension-list): no `$$` there starts a formula of its own.
+    const [parent, index] = rest as [JSONContent | undefined, number | undefined]
+    return settleDollars(markdown, formulas, { blocks: !(parent?.type === 'taskItem' && !index) })
   }
   // Text anywhere else is settled with the whole document after it: a `$` that might open a formula there is escaped.
   const serialize = manager.serialize.bind(manager)
   manager.serialize = (doc: JSONContent) => {
+    // A key of its own for each writing: a text that looks like a formula's place is no formula.
+    const key = Math.random().toString(36).slice(2, 10)
     formulas = []
+    placeholder = new RegExp(`^\\uFDD3${key}:(\\d+)\\uFDD4$`)
     try {
-      return settleDollars(serialize(asText(doc)))
+      return settleDollars(serialize(asText(doc, {}, key)), formulas)
     } finally {
       formulas = []
+      placeholder = /$^/
     }
   }
 
