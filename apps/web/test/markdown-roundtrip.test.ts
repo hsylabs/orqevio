@@ -68,6 +68,15 @@ const kept: Array<[string, string]> = [
   ['an escaped marker followed by a colon', '> \\[!NOTE\\]: Importante'],
   ['an escaped marker followed by a colon and an address', '> \\[!TIP\\]: /guia "Guía"'],
   ['an escaped marker followed by parentheses', '> \\[!NOTE\\](importante) algo'],
+  ['a rule under the text of an item', '- uno\n\n  ---\n- dos'],
+  ['a rule under the text of a numbered item', '1. uno\n\n   ---\n2. dos'],
+  ['a rule under the text of a task', '- [ ] uno\n\n  ---'],
+  ['an empty item of a numbered list', '1. uno\n2.\n3. tres'],
+  ['an empty first item of a numbered list', '1.\n2. dos'],
+  ['an empty last item of a numbered list', '1. uno\n2.'],
+  ['a number alone on its line, an empty numbered item as Markdown reads it', '2024.'],
+  ['an empty item of a bulleted list, as the editor writes it', '- uno\n- \n- tres'],
+  ['a line like an empty item in a code block of a numbered list', '1. paso\n   ```\n   2.\n   ```\n2. otro'],
 ]
 
 /** Read the same again: written in another, equivalent way. */
@@ -86,6 +95,12 @@ const normalised: Array<[string, string, string]> = [
     '1. paso\n\n   ```python\n   def f():\n       x = 1\n       1. + 2\n       return x\n   ```\n2. otro',
     '1. paso\n   ```python\n   def f():\n       x = 1\n       1. + 2\n       return x\n   ```\n2. otro',
   ],
+  // The editor writes a list's items one under the other (`- a\n\n- b` is `- a\n- b`).
+  ['a rule under the text of an item, with blank lines around it', '- uno\n\n  ---\n\n- dos', '- uno\n\n  ---\n- dos'],
+  ['a rule of stars under the text of an item', '- uno\n\n  ***', '- uno\n\n  ---'],
+  ['an empty numbered item between blank lines stays in its list', '1. uno\n\n2.\n\n3. tres', '1. uno\n2.\n3. tres'],
+  ['an empty numbered item with a space after its number', '1. uno\n2. \n3. tres', '1. uno\n2.\n3. tres'],
+  ['an empty bulleted item', '- uno\n-\n- tres', '- uno\n- \n- tres'],
   [
     'a code block in an ordered list keeps a line like an item at its margin',
     '1. paso\n\n   ~~~\n   2. no es un paso\n   ~~~\n2. otro',
@@ -104,6 +119,16 @@ describe('Markdown round trip', () => {
     expect(roundTrip(markdown)).toBe(written)
     // And from then on it stays put.
     expect(roundTrip(written)).toBe(written)
+  })
+
+  it('reads an empty item as an empty line to write in, as the editor makes one', () => {
+    for (const markdown of ['1. uno\n2.\n3. tres', '1. uno\n2. \n3. tres', '1. uno\n\n2.\n\n3. tres', '- uno\n-\n- tres']) {
+      const editor = open(markdown)
+      expect(() => editor.state.doc.check(), markdown).not.toThrow()
+      expect(editor.state.doc.childCount, markdown).toBe(1)
+      const items = editor.getJSON().content![0]!.content!.map((item) => item.content)
+      expect(items, markdown).toEqual([[{ type: 'paragraph', content: [{ type: 'text', text: 'uno' }] }], [{ type: 'paragraph' }], [{ type: 'paragraph', content: [{ type: 'text', text: 'tres' }] }]])
+    }
   })
 
   it('keeps two tables in a row apart by one blank line, save after save', () => {

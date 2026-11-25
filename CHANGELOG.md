@@ -43,6 +43,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
 - **Two tables in a row in a document.** Each time the page was opened and saved, more blank lines appeared between them, and then an empty paragraph. They now stay as they were.
 - **GitHub alerts in documents.** An alert such as `> [!NOTE]`, written by an agent or brought from GitHub, stays an alert when the page is edited. It was saved as `> \[!NOTE\]`, and GitHub then showed a plain quote. This covers the five GitHub alerts and Obsidian callouts. A marker escaped on purpose, to show how an alert is written, stays escaped, also when its quote is copied and pasted.
 - **Lists in documents.** In a list item, the lines after a heading or a block of HTML had their formatting escaped once more on every save (`**b**` grew backslashes). A table at the end of a task item split its task list in two. An item that starts with a block of code, a quote, a table or a rule lost its list, or the block, when the page was saved. They all stay as they were now.
+- **Rules and empty items in lists.** A rule right under the text of a list item, `---` or `***`, was saved stuck to the text, where Markdown reads it as a heading, and lost on the next save. An empty item of a numbered list, its number alone (`2.`), became text of the item above, split its list in two, or was lost. Both now stay as they were.
 
 ## [1.4.1] - 2026-11-23
 
