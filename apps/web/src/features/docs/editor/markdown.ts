@@ -414,16 +414,21 @@ const withoutTrailingLine = (markdown: string) => markdown.replace(/\n[ \t]*$/, 
  * A list item read as blocks. In a tight list marked gives the lines after a heading, a toggle or
  * other HTML as bare text, and @tiptap/extension-list makes only the first one a paragraph: the
  * others went straight in the item, an invalid document whose text was escaped again on every
- * save. Each is a paragraph, as in a loose list. Written without a trailing whitespace-only line,
- * which would make the list loose, or split a task list in two.
+ * save. Then, and only then, each is a paragraph, as in a loose list (an item of only `&nbsp;`
+ * read as a paragraph would be empty). Written without a trailing whitespace-only line, which
+ * would make the list loose, or split a task list in two; but with the one an empty last
+ * paragraph is written as, which is that paragraph.
  */
 const FaithfulListItem = ListItem.extend({
   parseMarkdown(token, helpers) {
-    const tokens = token.tokens?.map((child) => (child.type === 'text' ? { ...child, type: 'paragraph' } : child))
+    if (!token.tokens?.some((child, index) => index > 0 && child.type === 'text')) return this.parent?.(token, helpers) ?? []
+    const tokens = token.tokens.map((child) => (child.type === 'text' ? { ...child, type: 'paragraph' } : child))
     return this.parent?.({ ...token, tokens }, helpers) ?? []
   },
   renderMarkdown(node, helpers, context) {
-    return withoutTrailingLine(this.parent?.(node, helpers, context) ?? '')
+    const markdown = this.parent?.(node, helpers, context) ?? ''
+    const last = node.content?.at(-1)
+    return last?.type === 'paragraph' && !last.content?.length ? markdown : withoutTrailingLine(markdown)
   },
 })
 

@@ -136,6 +136,13 @@ describe('Markdown round trip', () => {
     }
   })
 
+  it('keeps an item of only a non-breaking space, and an empty line at the end of an item, as they were', () => {
+    for (const markdown of ['- &nbsp;\n- b', '- &nbsp;\n  - b', '- a\n- &nbsp;', '> - &nbsp;\n> - b', '- a\n  ```\n  x\n  ```\n\n  \n- b']) {
+      expect(roundTrip(markdown)).toBe(markdown)
+      expect(roundTrip(roundTrip(markdown))).toBe(markdown)
+    }
+  })
+
   it('keeps a task list with a table at the end of an item one list', () => {
     const first = roundTrip('- [ ] a\n\n  | t |\n  | --- |\n  | x |\n- [x] b')
     expect(open(first).getJSON().content?.map((node) => node.type)).toEqual(['taskList'])
