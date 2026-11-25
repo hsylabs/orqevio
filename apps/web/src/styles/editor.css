@@ -707,7 +707,7 @@ details.orq-toggle[open] > summary::before {
   box-shadow: none;
 }
 .orq-prose img.ProseMirror-selectednode,
-.orq-prose .orq-image.ProseMirror-selectednode > img {
+.orq-prose .orq-image.ProseMirror-selectednode img {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
@@ -721,26 +721,32 @@ details.orq-toggle[open] > summary::before {
 /* An image with its caption under it (image.ts, and outside the editor markdown-html.ts): as wide as
    the picture, or the width it was given, a share of the line or pixels, never wider than the line. */
 .orq-prose .orq-image {
-  position: relative;
-  /* A table, so that its caption wraps within the picture's width instead of widening it. */
-  display: table;
+  display: block;
+  width: fit-content;
   max-width: 100%;
   margin: 1.2em 0;
 }
-.orq-prose .orq-image > img {
+/* The picture and the handle on its edge (the editor's); outside the editor the picture is right in the box. */
+.orq-prose .orq-image-frame {
+  position: relative;
+  display: block;
+}
+.orq-prose .orq-image img {
   margin: 0;
 }
-.orq-prose .orq-image[data-sized] > img {
+.orq-prose .orq-image[data-sized] img {
   width: 100%;
 }
 .orq-prose a .orq-image {
-  display: inline-table;
+  display: inline-block;
   vertical-align: middle;
   margin: 0 0.15em;
 }
+/* As wide as the picture, whatever its length: never wider than the box. */
 .orq-prose .orq-image-caption {
-  display: table-caption;
-  caption-side: bottom;
+  display: block;
+  width: 0;
+  min-width: 100%;
   margin-top: 0.5em;
   font-size: 0.875em;
   line-height: 1.45;
@@ -768,12 +774,12 @@ details.orq-toggle[open] > summary::before {
   touch-action: none;
   transition: opacity 120ms;
 }
-.orq-prose .orq-image:hover > .orq-image-handle,
-.orq-prose .orq-image.ProseMirror-selectednode > .orq-image-handle,
-.orq-prose .orq-image[data-resizing] > .orq-image-handle {
+.orq-prose .orq-image:hover .orq-image-handle,
+.orq-prose .orq-image.ProseMirror-selectednode .orq-image-handle,
+.orq-prose .orq-image[data-resizing] .orq-image-handle {
   opacity: 1;
 }
-.orq-prose .orq-image[data-resizing] > .orq-image-handle {
+.orq-prose .orq-image[data-resizing] .orq-image-handle {
   background: var(--accent);
 }
 .orq-prose[contenteditable='false'] .orq-image-handle,

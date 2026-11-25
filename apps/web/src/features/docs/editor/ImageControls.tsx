@@ -63,7 +63,8 @@ export function ImageControls({ editor }: { editor: Editor }) {
       const writing = captionRef.current
       if (change.docChanged && writing) {
         const moved = change.mapping.mapResult(writing.pos, -1)
-        const at = !moved.deletedAcross && change.doc.nodeAt(moved.pos)?.type.name === 'image' ? moved.pos : null
+        // A page read again is replaced whole: its image is found again by its address, the nearest one.
+        const at = !moved.deletedAcross && change.doc.nodeAt(moved.pos)?.type.name === 'image' ? moved.pos : sameImage(change.doc, writing)
         setCaption(at === null ? null : { ...writing, pos: at })
       }
       later()
@@ -196,7 +197,7 @@ export function ImageControls({ editor }: { editor: Editor }) {
           label={t('editor.image.caption')}
           active={Boolean(image!.attrs.title) || caption !== null}
           aria-expanded={caption !== null}
-          onClick={() => (caption ? saveCaption('save') : setCaption({ pos, text: String(image!.attrs.title ?? '') }))}
+          onClick={() => (caption ? saveCaption('save') : setCaption({ pos, src: String(image!.attrs.src ?? ''), text: String(image!.attrs.title ?? '') }))}
         >
           <Captions />
         </Tool>
@@ -206,7 +207,7 @@ export function ImageControls({ editor }: { editor: Editor }) {
             value={caption.text}
             aria-label={t('editor.image.caption')}
             placeholder={t('editor.image.captionPlaceholder')}
-            onChange={(e) => setCaption({ pos: caption.pos, text: e.target.value })}
+            onChange={(e) => setCaption({ ...caption, text: e.target.value })}
             onKeyDown={(e) => {
               if (isConverting(e)) return
               if (e.key === 'Enter') {
@@ -232,7 +233,16 @@ export function ImageControls({ editor }: { editor: Editor }) {
   }
 }
 
-type Caption = { pos: number; text: string }
+type Caption = { pos: number; src: string; text: string }
+
+/** The image with the caption's address nearest to where it was, or null if there is none. */
+function sameImage(doc: EditorState['doc'], caption: Caption) {
+  let best: number | null = null
+  doc.descendants((node, pos) => {
+    if (node.type.name === 'image' && String(node.attrs.src ?? '') === caption.src && (best === null || Math.abs(pos - caption.pos) < Math.abs(best - caption.pos))) best = pos
+  })
+  return best
+}
 
 function Tool({ label, active, children, ...rest }: ComponentProps<'button'> & { label: string; active?: boolean }) {
   return (

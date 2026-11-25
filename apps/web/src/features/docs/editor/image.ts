@@ -47,7 +47,7 @@ function decode(value: string) {
 }
 
 /** A value written in a tag, between double quotes. */
-const quoted = (value: string) => `"${value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}"`
+const quoted = (value: string) => `"${value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '&#10;')}"`
 
 /** The attributes of an `<img>` tag, in order, each with how it was written. */
 function attributesOf(tag: string) {
@@ -81,6 +81,9 @@ export function imageFromTag(html: string): ImageAttributes | null {
   return { src, alt: get('alt'), title: get('title'), width: sizeOf(get('width')), height: sizeOf(get('height')), html: html.replace(/\s+$/, '') }
 }
 
+/** The indentation an `<img>` tag alone on its line was written with (see FaithfulParagraph). */
+export const indentationOf = (html: unknown) => (typeof html === 'string' ? /^[ \t]*/.exec(html)![0] : '')
+
 /** A line that is only an `<img>` tag: at the start of a block, HTML that runs to the next blank line. */
 export const isLoneTag = (line: string) => TAG.test(line.trim())
 
@@ -95,10 +98,10 @@ function retag(attrs: ImageAttributes) {
   if (!was || !tag) return newTag(attrs)
   const changes = new Map<string, string | null>()
   for (const name of ['src', 'alt', 'title', 'width', 'height'] as const) if (!same(was[name], attrs[name])) changes.set(name, attrs[name] ?? null)
-  if (!changes.size) return html
+  if (!changes.size) return html.slice(lead.length)
   // A new width, and the height it had would stretch it: the image keeps its proportions.
   if (changes.has('width') && !changes.has('height')) changes.set('height', null)
-  let out = `${lead}<img`
+  let out = '<img'
   for (const attribute of tag.list) {
     if (!changes.has(attribute.name)) out += attribute.space + attribute.raw
     else {
@@ -125,7 +128,14 @@ export function imageMarkdown(attrs: ImageAttributes) {
 }
 
 /** A title in Markdown, between double quotes: a backslash or a quote in it escaped, as GitHub reads it. */
-export const quotedTitle = (title: string) => `"${title.replace(/[\\"]/g, '\\$&')}"`
+const ESCAPED_IN_TITLE = /\\(?=[!-\/:-@[-`{-~]|$)|"/g
+export function quotedTitle(title: string) {
+  const escaped = title
+    .replace(ESCAPED_IN_TITLE, '\\$&')
+    // A blank line would end the paragraph, and the image with it: one line break instead.
+    .replace(/\n(?:[ \t]*\n)+/g, '\n')
+  return `"${escaped}"`
+}
 
 /** A width as CSS: a share of the line, or pixels. */
 export const cssSize = (value: unknown) => {
@@ -142,6 +152,7 @@ const MIN_WIDTH = 48
  */
 class ImageView implements NodeView {
   dom: HTMLElement
+  private frame: HTMLElement
   private img: HTMLImageElement
   private caption: HTMLElement
   private handle: HTMLElement
@@ -162,7 +173,10 @@ class ImageView implements NodeView {
     this.handle = document.createElement('span')
     this.handle.className = 'orq-image-handle'
     this.handle.setAttribute('aria-hidden', 'true')
-    this.dom.append(this.img, this.caption, this.handle)
+    this.frame = document.createElement('span')
+    this.frame.className = 'orq-image-frame'
+    this.frame.append(this.img, this.handle)
+    this.dom.append(this.frame, this.caption)
     this.handle.addEventListener('pointerdown', this.resize)
     i18next.on('languageChanged', this.label)
     this.render()
@@ -223,7 +237,8 @@ class ImageView implements NodeView {
       const pos = this.getPos()
       if (!commit || pos === undefined || Math.abs(width - from) < 2) return this.render()
       // Dragged with the pointer, the editor takes the focus, with the image selected and its bar.
-      setImageWidth(this.editor, pos, `${Math.max(1, Math.min(100, Math.round((width / room) * 100)))}%`, { focus: true, select: true })
+      // The same share it had (a drag of a few pixels): it is drawn with that share again.
+      if (!setImageWidth(this.editor, pos, `${Math.max(1, Math.min(100, Math.round((width / room) * 100)))}%`, { focus: true, select: true })) this.render()
     }
     this.handle.addEventListener(
       'pointermove',

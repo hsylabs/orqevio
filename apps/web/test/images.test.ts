@@ -66,6 +66,17 @@ describe('an image', () => {
     expect(editor.getMarkdown()).toBe(markdown)
   })
 
+  it('stays an image in a table with a line break after it', () => {
+    const editor = open('| Logo |\n| --- |\n| <img src="/x.png" width="50%"> |')
+    editor.commands.setTextSelection(first(editor) + 1)
+    editor.commands.setHardBreak()
+    editor.commands.insertContent('Más')
+    expect(saved(editor)).toContain('<img src="/x.png" width="50%"><br>Más')
+    const again = open(saved(editor))
+    expect(types(again)).toContain('image')
+    expect(again.getMarkdown()).toBe(editor.getMarkdown())
+  })
+
   it('is an image in a table too, the same from the first save on', () => {
     const once = roundTrip('| Logo |\n| --- |\n| <img src="/a.png" width="40"> |')
     expect(once).toContain('<img src="/a.png" width="40">')
@@ -73,11 +84,14 @@ describe('an image', () => {
     expect(roundTrip(once)).toBe(once)
   })
 
-  it('keeps the indentation of a tag alone, also once changed', () => {
+  it('keeps the indentation of a tag alone, also once changed, and only while it is alone on its line', () => {
     const editor = open('  <img src="/a.png" width="300">')
     expect(editor.getMarkdown()).toBe('  <img src="/a.png" width="300">')
     setImageWidth(editor, first(editor), '50%')
     expect(saved(editor)).toBe('  <img src="/a.png" width="50%">')
+    const image = { type: 'image', attrs: { src: '/a.png', html: '  <img src="/a.png">' } }
+    editor.commands.setContent({ type: 'doc', content: [{ type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [image] }] }] }, { type: 'paragraph', content: [{ type: 'text', text: 'Hola ' }, image] }] })
+    expect(saved(editor)).toBe('- <img src="/a.png">\n\nHola <img src="/a.png">')
   })
 
   it('reads the size and the caption of a tag', () => {
@@ -143,7 +157,17 @@ describe('an image changed in the editor', () => {
       expect(again.state.doc.nodeAt(first(again))!.attrs.title).toBe(caption)
       expect(again.getMarkdown()).toBe(editor.getMarkdown())
     }
-    expect(saved((() => { const e = open('![a](/x.png)'); setImageCaption(e, first(e), 'C:\\dir\\'); return e })())).toBe('![a](/x.png "C:\\\\dir\\\\")')
+    expect(saved((() => { const e = open('![a](/x.png)'); setImageCaption(e, first(e), 'C:\\dir\\'); return e })())).toBe('![a](/x.png "C:\\dir\\\\")')
+    // A backslash that escapes nothing is written as it was, in an image's title and a link's.
+    for (const markdown of ['![a](/x.png "C:\\dir")', '[l](/u "C:\\dir")']) expect(roundTrip(markdown)).toBe(markdown)
+  })
+
+  it('keeps an image with a title that had a blank line one image, its title on two lines', () => {
+    const editor = open('<img src="/a.png" title="a\n\nb">', 'html')
+    const again = open(saved(editor))
+    expect(types(again)).toEqual(['paragraph', 'image'])
+    expect(again.state.doc.nodeAt(first(again))!.attrs.title).toBe('a\nb')
+    expect(again.getMarkdown()).toBe(editor.getMarkdown())
   })
 
   it('changes nothing for a caption left as it was, spaces and all', () => {

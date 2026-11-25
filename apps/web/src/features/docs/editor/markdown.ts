@@ -10,7 +10,7 @@ import { t } from 'i18next'
 import { DocumentRules } from './block-commands'
 import { Callout, calloutFromQuote } from './callout'
 import { Toggle, ToggleTitle, foldToggles } from './toggle'
-import { FaithfulImage, destination, imageFromTag, isLoneTag, quotedTitle } from './image'
+import { FaithfulImage, destination, imageFromTag, indentationOf, isLoneTag, quotedTitle } from './image'
 import { FaithfulCodeBlock } from './code-block'
 
 /**
@@ -228,9 +228,19 @@ const FaithfulParagraph = Paragraph.extend({
     return helpers.createNode('paragraph', undefined, helpers.parseInline(token.tokens ?? []))
   },
   renderMarkdown(node, helpers, context) {
-    return keepImageInline(escapeLineStarts(this.parent?.(node, helpers, context) ?? ''))
+    const markdown = escapeLineStarts(this.parent?.(node, helpers, context) ?? '')
+    const parent = String(context?.parentType ?? '')
+    // A table writes each line break of a cell as `<br>`: a line break inside a tag would undo it.
+    if (TABLE_PARENTS.has(parent)) return markdown
+    // An `<img>` tag that was alone on its line keeps its indentation, where it can't change the item it is in.
+    const [only, ...more] = node.content ?? []
+    const lead = only?.type === 'image' && !more.length && !LIST_PARENTS.has(parent) ? indentationOf(only.attrs?.html) : ''
+    return lead + keepImageInline(markdown)
   },
 })
+
+const TABLE_PARENTS = new Set(['table', 'tableRow', 'tableCell', 'tableHeader'])
+const LIST_PARENTS = new Set(['listItem', 'taskItem'])
 
 /**
  * A paragraph whose first line is only an `<img>` tag, with more lines after it (an image with a

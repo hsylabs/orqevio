@@ -127,4 +127,12 @@ test.describe('on a phone', () => {
     await expect.poll(read).toBe(`<img src="${url}" alt="captura" width="75%">`)
     await page.screenshot({ path: test.info().outputPath('phone.png') })
   })
+
+  test('an image wider than the screen, in pixels, stays within its line', async ({ page }) => {
+    const { editor } = await openPage(page, 'Imágenes anchas E2E', (src) => `<img src="${src}" width="900" title="Ancha">`)
+    await expect(editor.locator('.orq-image img')).toBeVisible()
+    const line = (await editor.locator('p').first().boundingBox())!
+    const box = (await editor.locator('.orq-image').boundingBox())!
+    expect(box.width).toBeLessThanOrEqual(line.width + 1)
+  })
 })
