@@ -23,7 +23,8 @@ async function upload(page: Page, pageId: string) {
 }
 
 async function openPage(page: Page, name: string, content: (url: string) => string) {
-  await page.goto('/')
+  // The picture is drawn on the blank page the test starts on: going to the app first, and away
+  // before it has loaded, would cut what it is loading.
   const workspace = (await (await page.request.post('/api/workspaces', { data: { name } })).json()) as { id: string }
   const project = (await (await page.request.post(`/api/workspaces/${workspace.id}/projects`, { data: { name: 'Notas' } })).json()) as { id: string }
   const created = await page.request.post(`/api/projects/${project.id}/pages`, { data: { title: 'Capturas' } })
