@@ -7,7 +7,7 @@ import { createElement } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { documentExtensions } from '../src/features/docs/editor/markdown'
 import { markdownToHtml } from '../src/features/docs/editor/markdown-html'
-import { MathKeys, blockMathStart, insertMath, mathStorage, readBlockMath, readInlineMath, selectionToMath, setMath } from '../src/features/docs/editor/math'
+import { type InlineFormula, MathKeys, blockMathStart, insertMath, markDollars, markFormula, mathStorage, readBlockMath, readInlineMath, selectionToMath, setMath, settleDollars } from '../src/features/docs/editor/math'
 
 // Formulas in LaTeX, drawn by KaTeX: in a line as `$…$` (or GitHub's $`…`$), of their own between
 // `$$` or in a fence of `math`. Each one written back as it was; a `$` of text never becomes one.
@@ -815,7 +815,7 @@ describe('what the review of the pull request found', () => {
     expect(checked).toBe(729)
   })
 
-  it('writes a paragraph full of prices or formulas in a moment, however long', () => {
+  it('writes a paragraph full of prices or formulas in a moment', () => {
     // The page is written at each change: each `$` reads only what it needs of what follows it.
     const markdown = open('').markdown!
     const many = (count: number, ...content: JSONContent[]) => paragraph(...Array.from({ length: count }, () => content).flat())
@@ -826,10 +826,71 @@ describe('what the review of the pull request found', () => {
       ['open brackets', many(20000, formula('[a'))],
       ['inequalities', many(20000, formula('0<t \\le T'), text(' '))],
       ['links after prices', many(20000, text('$5 '), text('US$', link), text(' '))],
+      // Each `$` would open a formula up to the last one: all escaped but the last.
+      ['dollars one after another', paragraph(text('$a'.repeat(20000)))],
+      ['paths', paragraph(text('$HOME_DIR/'.repeat(20000)))],
+      ['dollars between words', paragraph(text('$x$y'.repeat(10000)))],
+      ['lines of $$', many(20000, text('$$'), { type: 'hardBreak' })],
     ] as const) {
       const start = performance.now()
       markdown.serialize(doc)
       expect(performance.now() - start, name).toBeLessThan(2000)
+    }
+  })
+})
+
+describe('what a fifth look found', () => {
+  const linked = (editor: Editor) => {
+    const found: string[] = []
+    editor.state.doc.descendants((node) => void (node.marks.some((mark) => mark.type.name === 'link') && found.push(node.textContent)))
+    return found.join('')
+  }
+
+  it('keeps a link to a reference whose text has a `$`, after a price', () => {
+    for (const markdown of [
+      'Costs $5 [US$][r] here\n\n[r]: https://example.com',
+      'Costs $5 [US$][] here\n\n[US$]: https://example.com',
+      'Costs $5 [US$] here\n\n[us$]: https://example.com',
+      'Costs $5 [US$``][r] here\n\n[r]: https://example.com',
+      '> Costs $5 [US$][r] here\n>\n> [r]: https://example.com',
+    ]) {
+      const editor = open(markdown)
+      expect(latexOf(editor), markdown).toEqual([])
+      expect(linked(editor), markdown).toMatch(/^US\$/)
+      // Written as a link of its own (the editor keeps no references), backticks of its text escaped.
+      expect(saved(editor), markdown).toMatch(/\[US\$(?:\\`\\`)?\]\(https:\/\/example\.com\)/)
+    }
+  })
+
+  it('reads the formula when no reference has that text', () => {
+    expect(latexOf(open('Costs $5 [US$] here'))).toEqual(['5 [US'])
+    expect(latexOf(open('El intervalo $[0,1)$ y $(2,3]$.\n\n[a]: https://example.com'))).toEqual(['[0,1)', '(2,3]'])
+  })
+
+  it('settles every `$` the same, however little of what follows it reads first', () => {
+    // A small random generator, the same at each run: a failure can be run again.
+    let seed = 1
+    const next = () => {
+      seed = (seed * 48271) % 2147483647
+      return seed / 2147483647
+    }
+    const pieces = ['a', ' ', '5', '\\', '`', '\n', ']', '(', '<b>', '<t ', '](', '[', '![', '*', 'x'.repeat(30), '$', '$$', '\\_', 'HOME/']
+    const latexes = ['x', 'a$b', '[0,1)', 'a]', 'b<c', '\\$', '`']
+    for (let n = 0; n < 3000; n++) {
+      const formulas: InlineFormula[] = []
+      let markdown = ''
+      for (let k = 0, count = 1 + Math.floor(next() * 30); k < count; k++) {
+        const roll = next()
+        if (roll < 0.3) markdown += markDollars('$')
+        else if (roll < 0.4) {
+          const latex = latexes[Math.floor(next() * latexes.length)]!
+          formulas.push({ latex, raw: next() < 0.5 ? null : `$${latex}$` })
+          markdown += markFormula(formulas.length - 1)
+        } else markdown += pieces[Math.floor(next() * pieces.length)]
+      }
+      for (const blocks of ['all', 'later', 'lines', 'none'] as const) {
+        expect(settleDollars(markdown, formulas, { blocks, window: 1 }), markdown).toBe(settleDollars(markdown, formulas, { blocks, window: 1e9 }))
+      }
     }
   })
 })

@@ -35,11 +35,30 @@ function paragraphEnd(src: string, from: number) {
  * first `$`, none before the next one, and no digit right after it; if the next `$` can't end it,
  * there is none (`$5 por $x$` is a price and a formula). A `\` takes the character after it: `\$` is
  * a dollar in the formula. Neither crosses a code span or a link's address, which come first in
- * Markdown: `` `A=$B` `` and `](…?$top=10)` keep their dollars. Nor does one end in the text of a
- * link or an image: `$5 [US$](…)` is a price and a link.
+ * Markdown: `` `A=$B` `` and `](…?$top=10)` keep their dollars. Nor does a `$…$` or `$$…$$` end
+ * in the text of a link or an image, inline or to a reference the page defines: `$5 [US$](…)` is a
+ * price and a link. Any `](` counts as a link here, whatever its address: at worst, a formula is
+ * read as the text it was written as. $`…`$ holds code, which Markdown reads before links.
  */
 export function readInlineMath(src: string, from = 0): MathSource | null {
   return scanInlineMath(src, from, false) as MathSource | null
+}
+
+/** The labels of the links to references that the page being read defines (`[label]: …`), as marked keys them. */
+let references: ReadonlySet<string> = new Set()
+const referenceKey = (label: string) => label.replace(/\s+/g, ' ').toLowerCase()
+/** A definition of a reference, at the start of a line, in a quote or a list's item, or not. It may take a line that marked wouldn't. */
+const DEFINITION = /^[ \t>*+\-.)0-9]*\[((?!\s*\])(?:\\[\s\S]|[^[\]\\])+)\]:/gm
+
+/** `read`, a reading of `markdown`, knowing the references it defines: a formula never ends in the text of a link to one. */
+export function readingReferences<T>(markdown: string, read: () => T): T {
+  const before = references
+  references = markdown.includes(']:') ? new Set([...markdown.matchAll(DEFINITION)].map((match) => referenceKey(match[1]!))) : new Set()
+  try {
+    return read()
+  } finally {
+    references = before
+  }
 }
 
 /**
@@ -173,7 +192,40 @@ function inLinkText(src: string, start: number, end: number, more: boolean): boo
     const link = linkTextAround(src, at, end, more)
     if (link !== false) return link
   }
-  return false
+  return open.length && references.size ? shortcutAround(src, open.at(-1)!, end, more) : false
+}
+
+/** Whether the `[` at `at` starts `[text]`, a link to a reference the page defines, that holds `end`: no brackets in its text. */
+function shortcutAround(src: string, at: number, end: number, more: boolean): boolean | More {
+  for (let i = at + 1; ; i++) {
+    const char = src[i]
+    if (char === undefined) return more ? MORE : false
+    if (char === '\\') {
+      if (src[i + 1] !== '\n') i++
+    } else if (char === '\n') {
+      const blank = blankLine(src, i, more)
+      if (blank !== false) return blank === MORE ? MORE : false
+    } else if (char === '[') return false
+    else if (char === ']') return i >= end && references.has(referenceKey(src.slice(at + 1, i)))
+  }
+}
+
+/** Whether `[text][ref]` or `[text][]`, the text ending at `close`, links to a reference the page defines. */
+function referenceAfter(src: string, at: number, close: number, more: boolean): boolean | More {
+  for (let i = close + 2; ; i++) {
+    const char = src[i]
+    if (char === undefined) return more ? MORE : false
+    if (char === '\\') {
+      if (src[i + 1] !== '\n') i++
+    } else if (char === '\n') {
+      const blank = blankLine(src, i, more)
+      if (blank !== false) return blank === MORE ? MORE : false
+    } else if (char === '[') return false
+    else if (char === ']') {
+      const ref = src.slice(close + 2, i)
+      return references.has(referenceKey(ref.trim() ? ref : src.slice(at + 1, close)))
+    }
+  }
 }
 
 /**
@@ -199,8 +251,8 @@ function linkTextAround(src: string, at: number, end: number, more: boolean): bo
       if (i + 1 >= src.length) return more ? MORE : false
       // Two or more before `]`: the text can end there, if not with a code span.
       if (i > run && src[i + 1] === ']') {
-        if (i + 2 >= src.length && more) return MORE
-        if (src[i + 2] === '(') return true
+        const link = linkAfter(src, at, i + 1, more)
+        if (link !== false) return link
       }
       const close = codeSpanEnd(src, i + 1, more)
       if (close === MORE) return MORE
@@ -212,10 +264,16 @@ function linkTextAround(src: string, at: number, end: number, more: boolean): bo
     } else if (char === ']') {
       if (nested) nested = false
       else if (i < end) return false
-      else if (i + 1 >= src.length) return more ? MORE : false
-      else return src[i + 1] === '('
+      else return linkAfter(src, at, i, more)
     }
   }
+}
+
+/** Whether the text from the `[` at `at` to the `]` at `close` is a link's: its address, or a reference the page defines, follows. */
+function linkAfter(src: string, at: number, close: number, more: boolean): boolean | More {
+  if (close + 1 >= src.length) return more ? MORE : false
+  if (src[close + 1] === '(') return true
+  return src[close + 1] === '[' && references.size ? referenceAfter(src, at, close, more) : false
 }
 
 /** Where the backticks that close a code span opened before `from` end, or -1: none before its paragraph ends. */
@@ -442,9 +500,10 @@ export const markFormula = (index: number) => `${OPEN}${index}${CLOSE}`
  * or next to a `$`. From the end: how each one reads depends only on what follows it.
  *
  * Each `$` reads only as much of what follows it as it needs, often a few characters, so a paragraph
- * full of prices costs what it is long (the editor writes the page at each change).
+ * full of prices costs what it is long (the editor writes the page at each change). `window` is how
+ * much it reads first, and grows from: smaller in tests, which give the same result.
  */
-export function settleDollars(markdown: string, formulas: InlineFormula[] = [], { blocks = 'all' }: { blocks?: BlockStarts } = {}) {
+export function settleDollars(markdown: string, formulas: InlineFormula[] = [], { blocks = 'all', window = 64 }: { blocks?: BlockStarts; window?: number } = {}) {
   if (!MARKED.test(markdown)) return markdown
   /** What is written after the place being settled, in pieces, the nearest last. */
   const parts: string[] = []
@@ -461,7 +520,7 @@ export function settleDollars(markdown: string, formulas: InlineFormula[] = [], 
   }
   /** What `read` says of what is written after, given more of it until it can tell. */
   const settle = <T>(read: (after: string, more: boolean) => T | More): T => {
-    for (let size = 64; ; size *= 4) {
+    for (let size = Math.max(1, window); ; size *= 4) {
       const { text, more } = after(size)
       const result = read(text, more)
       if (result !== MORE) return result
@@ -485,9 +544,32 @@ export function settleDollars(markdown: string, formulas: InlineFormula[] = [], 
     if (lineEnd === -1) return more ? MORE : readBlockMath(src) !== null
     const line = src.slice(0, lineEnd)
     if (blocks === 'lines') return readBlockMath(line) !== null
-    // `$$` alone on its line reads the lines after it.
-    if (more && DOLLARS_LINE.test(line)) return MORE
+    // `$$` alone on its line reads the lines after it, until a `$$` or a blank line: among whole lines.
+    if (more && DOLLARS_LINE.test(line)) {
+      const last = src.lastIndexOf('\n')
+      const whole = last > lineEnd ? src.slice(lineEnd + 1, last).split('\n') : []
+      if (!whole.some((text) => !text.trim() || DOLLARS_LINE.test(text))) return MORE
+      return readBlockMath(src.slice(0, last)) !== null
+    }
     return readBlockMath(src) !== null
+  }
+  /**
+   * After a `\$` whose formula went on through plain text: a `$` before it with only plain text
+   * between them opens the same formula, which reads on past the `\$` as the first one did, so it
+   * is escaped too without reading it all again (`$a$a$a…`, `$HOME/bin:$HOME/lib`).
+   */
+  let run = false
+  const plainBefore = (text: string) => {
+    if (SPACE.test(text[0] ?? '')) return false
+    for (let k = 0; k < text.length; k++) {
+      const char = text[k]!
+      if (char === '\\') {
+        // An escape of its own, not one that would take the `\` of the `\$` after it.
+        if (k + 1 >= text.length || text[k + 1] === '\n') return false
+        k++
+      } else if ('`[]<\n$'.includes(char)) return false
+    }
+    return true
   }
   let end = markdown.length
   for (let i = markdown.length - 1; i >= 0; i--) {
@@ -510,16 +592,27 @@ export function settleDollars(markdown: string, formulas: InlineFormula[] = [], 
       )
       i = open
       end = open
+      run = false
     } else if (char === DOLLAR && markdown[i + 1] === '$') {
-      push(markdown.slice(i + 2, end))
+      const between = markdown.slice(i + 2, end)
+      push(between)
+      if (run && plainBefore(between)) {
+        push('\\$')
+        end = i
+        continue
+      }
       const start = lineStart(i)
       const opens = settle((following, more) => {
         const read = scanInlineMath(`$${following}`, 0, more)
-        if (read !== null) return read === MORE ? MORE : true
+        if (read === MORE) return MORE
+        // A `$…$` read on through text with no bracket in it, which the next `$` before it can count on.
+        if (read !== null) return { opens: true, run: read.raw[1] !== '$' && read.raw[1] !== '`' && !read.latex.includes('[') }
         // At the start of any of its lines: a formula of its own breaks a paragraph there.
-        return start ? startsBlock(`$${following}`, more) : false
+        const block = start ? startsBlock(`$${following}`, more) : false
+        return block === MORE ? MORE : { opens: block, run: false }
       })
-      push(opens ? '\\$' : '$')
+      run = opens.run
+      push(opens.opens ? '\\$' : '$')
       end = i
     }
   }

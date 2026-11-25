@@ -13,7 +13,7 @@ import { Toggle, ToggleTitle, foldToggles } from './toggle'
 import { FaithfulImage, destination, imageFromTag, indentationOf, isLoneTag, quotedTitle } from './image'
 import { FaithfulCodeBlock } from './code-block'
 import { INLINE_HTML } from './inline-html'
-import { type BlockStarts, FaithfulBlockMath, FaithfulInlineMath, type InlineFormula, markDollars, markFormula, readInlineMath, settleDollars } from './math'
+import { type BlockStarts, FaithfulBlockMath, FaithfulInlineMath, type InlineFormula, markDollars, markFormula, readInlineMath, readingReferences, settleDollars } from './math'
 
 /**
  * Documents are Markdown, often written by agents, and the editor saves the whole
@@ -586,7 +586,8 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
   // Front matter stays at the top as written; the rest is read as usual, with its `<details>` as toggles (toggle.ts).
   const read = manager.parse.bind(manager)
   const parse = (markdown: string) => {
-    const doc = read(markdown)
+    // Knowing the references the page defines: a formula never ends in the text of a link to one (math.ts).
+    const doc = readingReferences(markdown, () => read(markdown))
     return { ...doc, content: foldToggles(doc.content ?? []) }
   }
   manager.parse = (markdown: string) => {
