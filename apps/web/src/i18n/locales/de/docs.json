@@ -226,6 +226,15 @@
       "collapse": "Inhalt ausblenden",
       "title": "Titel des Aufklappbereichs"
     },
+    "image": {
+      "toolbar": "Bild",
+      "hint": "Bild. Mit Alt+F10 änderst du seine Breite oder Bildunterschrift.",
+      "width": "Breite: {{size}}",
+      "original": "Originalgröße",
+      "caption": "Bildunterschrift",
+      "captionPlaceholder": "Bildunterschrift eingeben",
+      "resize": "Ziehen, um die Breite zu ändern"
+    },
     "code": {
       "plain": "Nur Text",
       "language": "Sprache: {{name}}",

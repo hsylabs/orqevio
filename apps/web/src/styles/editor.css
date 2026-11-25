@@ -706,9 +706,78 @@ details.orq-toggle[open] > summary::before {
   border-radius: 4px;
   box-shadow: none;
 }
-.orq-prose img.ProseMirror-selectednode {
+.orq-prose img.ProseMirror-selectednode,
+.orq-prose .orq-image.ProseMirror-selectednode > img {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+/* The editor's own mark after an image at the end of a line is no picture: none of their look. */
+.orq-prose img.ProseMirror-separator {
+  display: inline;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+/* An image with its caption under it (image.ts, and outside the editor markdown-html.ts): as wide as
+   the picture, or the width it was given, a share of the line or pixels, never wider than the line. */
+.orq-prose .orq-image {
+  position: relative;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 1.2em 0;
+}
+.orq-prose .orq-image > img {
+  margin: 0;
+}
+.orq-prose .orq-image[data-sized] > img {
+  width: 100%;
+}
+.orq-prose a .orq-image {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 0.15em;
+}
+.orq-prose .orq-image-caption {
+  display: block;
+  margin-top: 0.5em;
+  font-size: 0.875em;
+  line-height: 1.45;
+  color: var(--ink-2);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.orq-prose .orq-image-caption[hidden] {
+  display: none;
+}
+/* Its right edge, dragged to give it a width: shown with the pointer on it, or selected on a phone. */
+.orq-prose .orq-image-handle {
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  width: 6px;
+  height: min(48px, 40%);
+  min-height: 20px;
+  transform: translateY(-50%);
+  border-radius: 3px;
+  border: 1px solid var(--surface);
+  background: var(--ink-2);
+  opacity: 0;
+  cursor: ew-resize;
+  touch-action: none;
+  transition: opacity 120ms;
+}
+.orq-prose .orq-image:hover > .orq-image-handle,
+.orq-prose .orq-image.ProseMirror-selectednode > .orq-image-handle,
+.orq-prose .orq-image[data-resizing] > .orq-image-handle {
+  opacity: 1;
+}
+.orq-prose .orq-image[data-resizing] > .orq-image-handle {
+  background: var(--accent);
+}
+.orq-prose[contenteditable='false'] .orq-image-handle,
+.orq-prose a .orq-image-handle {
+  display: none;
 }
 .orq-prose .is-empty::before,
 .orq-prose p.is-editor-empty:first-child::before {

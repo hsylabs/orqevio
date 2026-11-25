@@ -1,6 +1,5 @@
 import { type AnyExtension, type JSONContent, Node } from '@tiptap/core'
 import Blockquote from '@tiptap/extension-blockquote'
-import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import { ListItem, ORDERED_LIST_MARKER_PATTERN, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
 import Paragraph from '@tiptap/extension-paragraph'
@@ -11,6 +10,7 @@ import { t } from 'i18next'
 import { DocumentRules } from './block-commands'
 import { Callout, calloutFromQuote } from './callout'
 import { Toggle, ToggleTitle, foldToggles } from './toggle'
+import { FaithfulImage, destination, imageFromTag } from './image'
 import { FaithfulCodeBlock } from './code-block'
 
 /**
@@ -52,6 +52,9 @@ export const RawHtmlBlock = Node.create({
   parseMarkdown: (token, helpers) => {
     if (!token.block) return []
     const html = String(token.raw ?? token.text ?? '').replace(/\s+$/, '')
+    // An `<img>` tag alone is an image, on a line of its own (image.ts).
+    const image = imageFromTag(html)
+    if (image) return helpers.createNode('paragraph', undefined, [{ type: 'image', attrs: { ...image } }])
     return html ? helpers.createNode('htmlBlock', { html }) : []
   },
   renderMarkdown: (node) => String(node.attrs?.html ?? ''),
@@ -83,7 +86,12 @@ export const RawHtmlInline = Node.create({
       return match ? { type: 'htmlInline', raw: match[0], text: match[0] } : undefined
     },
   },
-  parseMarkdown: (token, helpers) => helpers.createNode('htmlInline', { html: String(token.raw ?? '') }),
+  parseMarkdown: (token, helpers) => {
+    const html = String(token.raw ?? '')
+    // An `<img>` tag is an image (image.ts).
+    const image = imageFromTag(html)
+    return image ? helpers.createNode('image', { ...image }) : helpers.createNode('htmlInline', { html })
+  },
   renderMarkdown: (node) => String(node.attrs?.html ?? ''),
 })
 
@@ -271,8 +279,6 @@ const FaithfulBlockquote = Blockquote.extend({
   },
 })
 
-const escapeAlt = (alt: string) => alt.replace(/([\\[\]])/g, '\\$1')
-const destination = (src: string) => (/[\s()<>]/.test(src) ? `<${src.replace(/([<>])/g, '\\$1')}>` : src)
 
 /** Whether the parentheses in `href` pair up, as a link's address may hold them without `<>`. */
 function balancedParentheses(href: string) {
@@ -395,15 +401,6 @@ const FaithfulOrderedList = OrderedList.extend({
   },
 })
 
-const FaithfulImage = Image.extend({
-  renderMarkdown: (node) => {
-    const { src = '', alt = '', title = '' } = (node.attrs ?? {}) as { src?: string; alt?: string; title?: string }
-    const image = `![${escapeAlt(alt ?? '')}](${destination(src ?? '')}${title ? ` "${title.replace(/"/g, '\\"')}"` : ''})`
-    // A linked image, such as a badge: @tiptap/markdown writes marks on text only.
-    const link = node.marks?.find((m) => m.type === 'link')
-    return link?.attrs?.href ? `[${image}](${destination(String(link.attrs.href))})` : image
-  },
-}).configure({ inline: true, allowBase64: false })
 
 // ── List items ───────────────────────────────────────────────────
 

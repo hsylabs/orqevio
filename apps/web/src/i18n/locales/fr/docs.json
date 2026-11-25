@@ -228,6 +228,15 @@
       "collapse": "Masquer le contenu",
       "title": "Titre du bloc dépliant"
     },
+    "image": {
+      "toolbar": "Image",
+      "hint": "Image. Appuyez sur Alt+F10 pour changer sa largeur ou sa légende.",
+      "width": "Largeur : {{size}}",
+      "original": "Taille d’origine",
+      "caption": "Légende",
+      "captionPlaceholder": "Écrivez une légende",
+      "resize": "Faites glisser pour changer la largeur"
+    },
     "code": {
       "plain": "Texte brut",
       "language": "Langage : {{name}}",

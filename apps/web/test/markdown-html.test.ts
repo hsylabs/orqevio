@@ -30,10 +30,11 @@ describe('a comment shown as HTML', () => {
     expect(html).toContain('<code class="language-html">')
   })
 
-  it('shows raw HTML as text', () => {
+  it('shows raw HTML as text, and an <img> as an image without anything it would run', () => {
     const html = markdownToHtml('<img src=x onerror=alert(1)>\n\nY <b onclick="x()">esto</b>')
-    expect(html).not.toMatch(/<img|<b /)
-    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
+    expect(html).not.toMatch(/onerror|<b /)
+    expect(html).toContain('<img src="x">')
+    expect(html).toContain('&lt;b onclick="x()"&gt;')
   })
 
   it('shows task boxes that cannot be ticked, and leaves no empty paragraph at the end', () => {

@@ -226,6 +226,15 @@
       "collapse": "Hide the content",
       "title": "Toggle title"
     },
+    "image": {
+      "toolbar": "Image",
+      "hint": "Image. Press Alt+F10 to change its width or caption.",
+      "width": "Width: {{size}}",
+      "original": "Original size",
+      "caption": "Caption",
+      "captionPlaceholder": "Write a caption",
+      "resize": "Drag to change the width"
+    },
     "code": {
       "plain": "Plain text",
       "language": "Language: {{name}}",

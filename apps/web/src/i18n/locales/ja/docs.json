@@ -224,6 +224,15 @@
       "collapse": "内容を隠す",
       "title": "折りたたみの見出し"
     },
+    "image": {
+      "toolbar": "画像",
+      "hint": "画像です。Alt+F10で幅やキャプションを変更できます。",
+      "width": "幅：{{size}}",
+      "original": "元のサイズ",
+      "caption": "キャプション",
+      "captionPlaceholder": "キャプションを入力",
+      "resize": "ドラッグして幅を変更"
+    },
     "code": {
       "plain": "プレーンテキスト",
       "language": "言語：{{name}}",

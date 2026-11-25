@@ -214,11 +214,15 @@ describe('Markdown round trip', () => {
     expect(open(markdown).getMarkdown()).toBe(markdown)
   })
 
-  it('shows HTML as its source and never runs it', () => {
-    const editor = open('<img src=x onerror="window.hacked=1">\n\nY <img src=y onerror="window.hacked=2"> aquí')
+  it('shows HTML as its source and never runs it, an <img> as an image without its other attributes', () => {
+    const markdown = '<img src=x onerror="window.hacked=1">\n\nY <img src=y onerror="window.hacked=2"> aquí <b onclick="window.hacked=3">b</b>'
+    const editor = open(markdown)
     const dom = editor.view.dom
-    expect(dom.querySelector('img')).toBeNull()
-    expect([...dom.querySelectorAll('[data-raw-html]')].map((el) => el.textContent)).toEqual(['<img src=x onerror="window.hacked=1">', '<img src=y onerror="window.hacked=2">'])
+    const images = [...dom.querySelectorAll('img[src]')]
+    expect(images.map((img) => img.getAttribute('src'))).toEqual(['x', 'y'])
+    expect(images.some((img) => img.hasAttribute('onerror'))).toBe(false)
+    expect([...dom.querySelectorAll('[data-raw-html]')].map((el) => el.textContent)).toEqual(['<b onclick="window.hacked=3">', '</b>'])
     expect((window as { hacked?: number }).hacked).toBeUndefined()
+    expect(editor.getMarkdown()).toBe(markdown)
   })
 })

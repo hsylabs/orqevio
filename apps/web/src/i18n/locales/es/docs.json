@@ -228,6 +228,15 @@
       "collapse": "Ocultar el contenido",
       "title": "Título del desplegable"
     },
+    "image": {
+      "toolbar": "Imagen",
+      "hint": "Imagen. Pulsa Alt+F10 para cambiar su ancho o su pie.",
+      "width": "Ancho: {{size}}",
+      "original": "Tamaño original",
+      "caption": "Pie de imagen",
+      "captionPlaceholder": "Escribe el pie de la imagen",
+      "resize": "Arrastra para cambiar el ancho"
+    },
     "code": {
       "plain": "Texto plano",
       "language": "Lenguaje: {{name}}",
