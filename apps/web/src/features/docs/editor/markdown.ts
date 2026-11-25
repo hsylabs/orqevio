@@ -10,7 +10,7 @@ import { t } from 'i18next'
 import { DocumentRules } from './block-commands'
 import { Callout, calloutFromQuote } from './callout'
 import { Toggle, ToggleTitle, foldToggles } from './toggle'
-import { FaithfulImage, destination, imageFromTag } from './image'
+import { FaithfulImage, destination, imageFromTag, isLoneTag, quotedTitle } from './image'
 import { FaithfulCodeBlock } from './code-block'
 
 /**
@@ -228,9 +228,20 @@ const FaithfulParagraph = Paragraph.extend({
     return helpers.createNode('paragraph', undefined, helpers.parseInline(token.tokens ?? []))
   },
   renderMarkdown(node, helpers, context) {
-    return escapeLineStarts(this.parent?.(node, helpers, context) ?? '')
+    return keepImageInline(escapeLineStarts(this.parent?.(node, helpers, context) ?? ''))
   },
 })
+
+/**
+ * A paragraph whose first line is only an `<img>` tag, with more lines after it (an image with a
+ * size, then text or another image under it): such a line starts an HTML block, which would take
+ * the lines after it as HTML. A line break inside the tag keeps it an image in the paragraph.
+ */
+function keepImageInline(markdown: string) {
+  const end = markdown.indexOf('\n')
+  if (end === -1 || !isLoneTag(markdown.slice(0, end))) return markdown
+  return markdown.replace(/^(\s*<img)[ \t]+/i, '$1\n')
+}
 
 // ── Quotes ───────────────────────────────────────────────────────
 
@@ -296,7 +307,7 @@ const FaithfulLink = Link.extend({
     const href = String(node.attrs?.href ?? '')
     const title = String(node.attrs?.title ?? '')
     const address = /[\s<>]/.test(href) || !balancedParentheses(href) ? destination(href) : href
-    return `[${helpers.renderChildren(node)}](${address}${title ? ` "${title.replace(/"/g, '\\"')}"` : ''})`
+    return `[${helpers.renderChildren(node)}](${address}${title ? ` ${quotedTitle(title)}` : ''})`
   },
 })
 

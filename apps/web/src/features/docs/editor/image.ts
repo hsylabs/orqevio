@@ -65,31 +65,40 @@ function attributesOf(tag: string) {
 /** An address an image can be loaded from: on the web, or on this copy. Anything else stays HTML. */
 const loadable = (src: string) => !/^[a-z][a-z0-9+.-]*:/i.test(src.trim()) || /^https?:/i.test(src.trim())
 
-/** The image an `<img>` tag alone is, or null for any other HTML. */
+/** A width or a height as it can be written back: pixels or a share of the line, else none. */
+const sizeOf = (value: unknown) => {
+  const text = value === null || value === undefined ? '' : String(value).trim()
+  return SIZE.test(text) ? text : null
+}
+
+/** The image an `<img>` tag alone is (its indentation kept), or null for any other HTML. */
 export function imageFromTag(html: string): ImageAttributes | null {
   const tag = attributesOf(html.trim())
   if (!tag) return null
   const get = (name: string) => tag.list.find((attribute) => attribute.name === name)?.value ?? null
   const src = get('src')
   if (!src || !loadable(src)) return null
-  const size = (value: string | null) => (value !== null && SIZE.test(value.trim()) ? value.trim() : null)
-  return { src, alt: get('alt'), title: get('title'), width: size(get('width')), height: size(get('height')), html: html.trim() }
+  return { src, alt: get('alt'), title: get('title'), width: sizeOf(get('width')), height: sizeOf(get('height')), html: html.replace(/\s+$/, '') }
 }
+
+/** A line that is only an `<img>` tag: at the start of a block, HTML that runs to the next blank line. */
+export const isLoneTag = (line: string) => TAG.test(line.trim())
 
 const same = (a: string | null | undefined, b: string | null | undefined) => (a ?? null) === (b ?? null)
 
 /** The `<img>` tag an image was read from, with the attributes changed since then written anew. */
 function retag(attrs: ImageAttributes) {
   const html = attrs.html!
+  const lead = /^\s*/.exec(html)![0]
   const was = imageFromTag(html)
-  const tag = attributesOf(html)
+  const tag = attributesOf(html.slice(lead.length))
   if (!was || !tag) return newTag(attrs)
   const changes = new Map<string, string | null>()
   for (const name of ['src', 'alt', 'title', 'width', 'height'] as const) if (!same(was[name], attrs[name])) changes.set(name, attrs[name] ?? null)
   if (!changes.size) return html
   // A new width, and the height it had would stretch it: the image keeps its proportions.
   if (changes.has('width') && !changes.has('height')) changes.set('height', null)
-  let out = '<img'
+  let out = `${lead}<img`
   for (const attribute of tag.list) {
     if (!changes.has(attribute.name)) out += attribute.space + attribute.raw
     else {
@@ -112,11 +121,17 @@ export function imageMarkdown(attrs: ImageAttributes) {
   if (attrs.html) return retag(attrs)
   if (attrs.width || attrs.height) return newTag(attrs)
   const { src, alt, title } = attrs
-  return `![${escapeAlt(alt ?? '')}](${destination(src ?? '')}${title ? ` "${title.replace(/"/g, '\\"')}"` : ''})`
+  return `![${escapeAlt(alt ?? '')}](${destination(src ?? '')}${title ? ` ${quotedTitle(title)}` : ''})`
 }
 
+/** A title in Markdown, between double quotes: a backslash or a quote in it escaped, as GitHub reads it. */
+export const quotedTitle = (title: string) => `"${title.replace(/[\\"]/g, '\\$&')}"`
+
 /** A width as CSS: a share of the line, or pixels. */
-export const cssSize = (value: string | null) => (!value ? '' : value.endsWith('%') ? value : `${parseFloat(value)}px`)
+export const cssSize = (value: unknown) => {
+  const size = sizeOf(value)
+  return !size ? '' : size.endsWith('%') ? size : `${parseFloat(size)}px`
+}
 
 /** The narrowest an image is made by dragging its edge. */
 const MIN_WIDTH = 48
@@ -130,7 +145,8 @@ class ImageView implements NodeView {
   private img: HTMLImageElement
   private caption: HTMLElement
   private handle: HTMLElement
-  private dragging = false
+  /** The drag under way, if any: ended by letting go, cancelled, or the view going. */
+  private drag: AbortController | null = null
 
   constructor(
     private node: PMNode,
@@ -171,41 +187,55 @@ class ImageView implements NodeView {
   update(node: PMNode) {
     if (node.type !== this.node.type) return false
     this.node = node
-    if (!this.dragging) this.render()
+    if (!this.drag) this.render()
     return true
   }
 
-  /** Dragging the handle: the width follows the pointer, and is saved once, as one step, on letting go. */
+  /**
+   * Dragging the handle: the width follows the pointer, and is saved once, as one step, on letting
+   * go, as a share of the line. A cancelled drag (the system took the pointer) leaves it as it was.
+   */
   private resize = (event: PointerEvent) => {
-    if (!this.editor.isEditable || event.button !== 0) return
+    if (!this.editor.isEditable || event.button !== 0 || this.drag) return
     event.preventDefault()
     event.stopPropagation()
     const line = this.dom.parentElement
     const room = line?.clientWidth || this.dom.getBoundingClientRect().width
     const start = event.clientX
-    const from = this.dom.getBoundingClientRect().width
+    const from = this.img.getBoundingClientRect().width
     let width = from
-    this.dragging = true
+    const drag = new AbortController()
+    this.drag = drag
+    const listen = { signal: drag.signal }
+    // Sized while it is dragged, so that it can grow past its own width.
     this.dom.setAttribute('data-resizing', '')
-    this.handle.setPointerCapture?.(event.pointerId)
-    const move = (e: PointerEvent) => {
-      width = Math.max(MIN_WIDTH, Math.min(room, from + e.clientX - start))
-      this.dom.style.width = `${width}px`
+    this.dom.setAttribute('data-sized', '')
+    this.dom.style.width = `${from}px`
+    try {
+      this.handle.setPointerCapture(event.pointerId)
+    } catch {
+      // A pointer the page can't hold (a synthetic one): it is followed all the same while over it.
     }
-    const done = () => {
-      this.handle.removeEventListener('pointermove', move)
-      this.handle.removeEventListener('pointerup', done)
-      this.handle.removeEventListener('pointercancel', done)
-      this.dragging = false
+    const end = (commit: boolean) => {
+      drag.abort()
+      this.drag = null
       this.dom.removeAttribute('data-resizing')
       const pos = this.getPos()
-      if (pos === undefined || Math.abs(width - from) < 2) return this.render()
+      if (!commit || pos === undefined || Math.abs(width - from) < 2) return this.render()
       // Dragged with the pointer, the editor takes the focus, with the image selected and its bar.
-      setImageWidth(this.editor, pos, `${Math.max(1, Math.min(100, Math.round((width / room) * 100)))}%`, { focus: true })
+      setImageWidth(this.editor, pos, `${Math.max(1, Math.min(100, Math.round((width / room) * 100)))}%`, { focus: true, select: true })
     }
-    this.handle.addEventListener('pointermove', move)
-    this.handle.addEventListener('pointerup', done)
-    this.handle.addEventListener('pointercancel', done)
+    this.handle.addEventListener(
+      'pointermove',
+      (e) => {
+        width = Math.max(MIN_WIDTH, Math.min(room, from + e.clientX - start))
+        this.dom.style.width = `${width}px`
+      },
+      listen,
+    )
+    this.handle.addEventListener('pointerup', () => end(true), listen)
+    this.handle.addEventListener('pointercancel', () => end(false), listen)
+    this.handle.addEventListener('lostpointercapture', () => this.drag === drag && end(true), listen)
   }
 
   // Its handle is its own: the editor neither selects nor drags anything from there.
@@ -219,46 +249,62 @@ class ImageView implements NodeView {
   }
 
   destroy() {
+    this.drag?.abort()
     this.handle.removeEventListener('pointerdown', this.resize)
     i18next.off('languageChanged', this.label)
   }
 }
 
-/** The image at `pos` with another width (null: its own size), as one step; it stays selected. */
-export function setImageWidth(editor: Editor, pos: number, width: string | null, { focus = false } = {}) {
+/**
+ * A change to the image at `pos`, as one step. The selection stays as it was: a cursor next to the
+ * image stays a cursor, so that typing doesn't replace the image. Selected, it stays selected; and
+ * `select` selects it (after dragging its edge).
+ */
+function changeImage(editor: Editor, pos: number, attrs: Partial<ImageAttributes>, { focus = false, select = false } = {}) {
   const node = editor.state.doc.nodeAt(pos)
-  if (node?.type.name !== 'image' || (node.attrs.width === width && (width !== null || !node.attrs.height))) return false
+  if (node?.type.name !== 'image') return false
+  const { selection } = editor.state
+  const selected = select || (selection instanceof NodeSelection && selection.from === pos)
   return ownStep(
     editor,
     ({ tr }) => {
-      tr.setNodeMarkup(pos, undefined, { ...node.attrs, width, height: null })
-      tr.setSelection(NodeSelection.create(tr.doc, pos))
+      tr.setNodeMarkup(pos, undefined, { ...node.attrs, ...attrs })
+      if (selected) tr.setSelection(NodeSelection.create(tr.doc, pos))
       return true
     },
     { focus },
   )
 }
 
-/** The image at `pos` with another caption (empty: none), as one step. */
+/** The image at `pos` with another width (null: its own size); a height it had goes with it. */
+export function setImageWidth(editor: Editor, pos: number, width: string | null, options: { focus?: boolean; select?: boolean } = {}) {
+  const node = editor.state.doc.nodeAt(pos)
+  if (node?.type.name !== 'image' || (node.attrs.width === width && (width !== null || !node.attrs.height))) return false
+  return changeImage(editor, pos, { width, height: null }, options)
+}
+
+/** The image at `pos` with another caption (empty: none). Left as it was, nothing changes, spaces and all. */
 export function setImageCaption(editor: Editor, pos: number, caption: string) {
   const node = editor.state.doc.nodeAt(pos)
+  if (node?.type.name !== 'image' || caption === String(node.attrs.title ?? '')) return false
   const title = caption.replace(/\s+/g, ' ').trim() || null
-  if (node?.type.name !== 'image' || same(node.attrs.title, title)) return false
-  return ownStep(
-    editor,
-    ({ tr }) => {
-      tr.setNodeMarkup(pos, undefined, { ...node.attrs, title })
-      tr.setSelection(NodeSelection.create(tr.doc, pos))
-      return true
-    },
-    { focus: false },
-  )
+  if (same(node.attrs.title, title)) return false
+  return changeImage(editor, pos, { title })
 }
+
+/** An attribute read from pasted HTML as text: TipTap would make `width="320"` a number. */
+const text = (name: string) => ({ default: null, parseHTML: (element: HTMLElement) => element.getAttribute(name) })
+const size = (name: string) => ({ default: null, parseHTML: (element: HTMLElement) => sizeOf(element.getAttribute(name)) })
 
 export const FaithfulImage = Image.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
+      src: text('src'),
+      alt: text('alt'),
+      title: text('title'),
+      width: size('width'),
+      height: size('height'),
       // The tag it was read from, written back as it was; no part of its HTML.
       html: { default: null, rendered: false, parseHTML: () => null },
     }
@@ -273,7 +319,9 @@ export const FaithfulImage = Image.extend({
   },
 
   renderMarkdown: (node) => {
-    const image = imageMarkdown((node.attrs ?? {}) as ImageAttributes)
+    const attrs = node.attrs ?? {}
+    const string = (value: unknown) => (value === null || value === undefined ? null : String(value))
+    const image = imageMarkdown({ src: string(attrs.src) ?? '', alt: string(attrs.alt), title: string(attrs.title), width: sizeOf(attrs.width), height: sizeOf(attrs.height), html: string(attrs.html) })
     // A linked image, such as a badge: @tiptap/markdown writes marks on text only.
     const link = node.marks?.find((m) => m.type === 'link')
     return link?.attrs?.href ? `[${image}](${destination(String(link.attrs.href))})` : image

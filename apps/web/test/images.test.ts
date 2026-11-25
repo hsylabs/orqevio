@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { Editor } from '@tiptap/core'
 import { undoDepth } from '@tiptap/pm/history'
+import { NodeSelection } from '@tiptap/pm/state'
 import { afterEach, describe, expect, it } from 'vitest'
 import { setImageCaption, setImageWidth } from '../src/features/docs/editor/image'
 import { imageAt } from '../src/features/docs/editor/ImageControls'
@@ -72,6 +73,13 @@ describe('an image', () => {
     expect(roundTrip(once)).toBe(once)
   })
 
+  it('keeps the indentation of a tag alone, also once changed', () => {
+    const editor = open('  <img src="/a.png" width="300">')
+    expect(editor.getMarkdown()).toBe('  <img src="/a.png" width="300">')
+    setImageWidth(editor, first(editor), '50%')
+    expect(saved(editor)).toBe('  <img src="/a.png" width="50%">')
+  })
+
   it('reads the size and the caption of a tag', () => {
     const editor = open('<img src="/a.png" alt="Logo" title="Pie" width="50%" height="80">')
     expect(editor.state.doc.nodeAt(first(editor))!.attrs).toMatchObject({ src: '/a.png', alt: 'Logo', title: 'Pie', width: '50%', height: '80' })
@@ -98,6 +106,26 @@ describe('an image changed in the editor', () => {
     expect(saved(editor)).toBe('<img width="50%" src="/a.png" data-x=\'1\'>')
   })
 
+  it('stays an image, and its lines after it text, when it starts a paragraph of several lines', () => {
+    for (const [markdown, rest] of [
+      ['![a](/x.png)\n![b](/y.png)', '\n![b](/y.png)'],
+      ['![a](/x.png)\nY el texto', '\nY el texto'],
+      ['![a](/x.png)  \nTras un salto', '  \nTras un salto'],
+      ['> ![a](/x.png)\n> Más', '\n> Más'],
+      // The list writes the lines after the first of an item without their indentation, as ever.
+      ['- ![a](/x.png)\n  Más', '\nMás'],
+    ]) {
+      const editor = open(markdown)
+      setImageWidth(editor, first(editor), '50%')
+      expect(saved(editor)).toContain(rest)
+      const again = open(saved(editor))
+      expect(types(again)).not.toContain('htmlBlock')
+      expect(types(again).filter((name) => name === 'image').length).toBe(types(editor).filter((name) => name === 'image').length)
+      expect(again.getMarkdown().trimEnd()).toBe(saved(editor))
+      expect(again.state.doc.nodeAt(first(again))!.attrs.width).toBe('50%')
+    }
+  })
+
   it('takes a caption as its title, quotes and all, and none once it is empty', () => {
     const editor = open('![a](/x.png)')
     setImageCaption(editor, first(editor), '  Dice  "hola" ')
@@ -105,6 +133,38 @@ describe('an image changed in the editor', () => {
     expect(open(saved(editor)).state.doc.nodeAt(first(open(saved(editor))))!.attrs.title).toBe('Dice "hola"')
     setImageCaption(editor, first(editor), ' ')
     expect(saved(editor)).toBe('![a](/x.png)')
+  })
+
+  it('escapes backslashes in a caption written in Markdown, as GitHub reads it', () => {
+    for (const caption of ['a \\* b', 'C:\\dir\\']) {
+      const editor = open('![a](/x.png)')
+      setImageCaption(editor, first(editor), caption)
+      const again = open(saved(editor))
+      expect(again.state.doc.nodeAt(first(again))!.attrs.title).toBe(caption)
+      expect(again.getMarkdown()).toBe(editor.getMarkdown())
+    }
+    expect(saved((() => { const e = open('![a](/x.png)'); setImageCaption(e, first(e), 'C:\\dir\\'); return e })())).toBe('![a](/x.png "C:\\\\dir\\\\")')
+  })
+
+  it('changes nothing for a caption left as it was, spaces and all', () => {
+    const editor = open('<img src="/a.png" title=" pie  dos ">')
+    const steps = undoDepth(editor.state)
+    expect(setImageCaption(editor, first(editor), ' pie  dos ')).toBe(false)
+    expect(undoDepth(editor.state)).toBe(steps)
+    expect(saved(editor)).toBe('<img src="/a.png" title=" pie  dos ">')
+  })
+
+  it('leaves a cursor next to it a cursor, so that typing doesn\'t replace it, and a selected one selected', () => {
+    const editor = open('![a](/x.png)', 'markdown', true)
+    const image = first(editor)
+    editor.commands.setTextSelection(image + 1)
+    setImageWidth(editor, image, '50%')
+    expect(editor.state.selection).not.toBeInstanceOf(NodeSelection)
+    editor.commands.insertContent('H')
+    expect(saved(editor)).toBe('<img src="/x.png" alt="a" width="50%">H')
+    editor.commands.setNodeSelection(first(editor))
+    setImageCaption(editor, first(editor), 'Pie')
+    expect(editor.state.selection).toBeInstanceOf(NodeSelection)
   })
 
   it('escapes what its tag holds, and reads it back the same', () => {
@@ -175,6 +235,18 @@ describe('an image as HTML', () => {
     const html = markdownToHtml('![a](/x.png "Pie <b>")\n\n<img src="/y.png" width="50%">')
     expect(html).toContain('<span class="orq-image"><img src="/x.png" alt="a" title="Pie &lt;b&gt;"><span class="orq-image-caption">Pie &lt;b&gt;</span></span>')
     expect(html).toContain('<span class="orq-image" style="width: 50%" data-sized=""><img src="/y.png" width="50%"></span>')
+  })
+
+  it('is pasted from a web page with sizes and texts in numbers, written as text', () => {
+    const editor = open('<p>texto <img src="https://e.test/a.png" width="320" height="200" alt="2024" title="1"> fin</p>', 'html', true)
+    expect(saved(editor)).toBe('texto <img src="https://e.test/a.png" alt="2024" title="1" width="320" height="200"> fin')
+    expect(editor.view.dom.querySelector<HTMLElement>('.orq-image')!.style.width).toBe('320px')
+    // A width that is no size isn't written.
+    expect(open('<img src="/a.png" width="1px;position:fixed">', 'html').getMarkdown()).toBe('![](/a.png)')
+  })
+
+  it('shows a picture with only a height that high in a comment', () => {
+    expect(markdownToHtml('<img src="/b.svg" height="20">')).toContain('<span class="orq-image"><img src="/b.svg" height="20" style="height: 20px"></span>')
   })
 
   it('comes back the same through copy and paste, also from a comment, without its caption as text', () => {

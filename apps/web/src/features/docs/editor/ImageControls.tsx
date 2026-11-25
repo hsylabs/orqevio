@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/core'
-import { type EditorState, NodeSelection, TextSelection } from '@tiptap/pm/state'
+import { type EditorState, NodeSelection, TextSelection, type Transaction } from '@tiptap/pm/state'
 import { useEditorState } from '@tiptap/react'
 import { Captions, ImageUpscale } from 'lucide-react'
 import { type ComponentProps, type KeyboardEvent, useEffect, useReducer, useRef, useState } from 'react'
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '../../../lib/cn'
 import { isConverting } from '../../../lib/ime'
 import { setImageCaption, setImageWidth } from './image'
+import { changeOf } from './own-step'
 
 const GAP = 8
 /** The widths offered on the bar, as shares of the line. */
@@ -37,9 +38,16 @@ export function ImageControls({ editor }: { editor: Editor }) {
     editor,
     selector: ({ editor: e }) => ({ pos: e.isEditable ? imageAt(e.state) : null, focused: e.isFocused }),
   })
-  /** The caption being written, and for which image. */
-  const [caption, setCaption] = useState<{ pos: number; text: string } | null>(null)
+  /** The caption being written, and for which image; also in a ref, read when its field loses the focus. */
+  const [caption, setCaptionState] = useState<Caption | null>(null)
+  const captionRef = useRef<Caption | null>(null)
+  const setCaption = (value: Caption | null) => {
+    captionRef.current = value
+    setCaptionState(value)
+  }
   const [, redraw] = useReducer((n: number) => n + 1, 0)
+  /** Where the page scrolls: the bar stays in view there. */
+  const scroller = useRef<HTMLElement | null>(null)
 
   // Placed over the editor, the bar follows the image as the page moves.
   useEffect(() => {
@@ -48,23 +56,38 @@ export function ImageControls({ editor }: { editor: Editor }) {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(redraw)
     }
-    // Alt+F10 goes to the bar, as for a table; Escape comes back.
+    // The caption being written follows its image as the page changes (another tab, an agent); it
+    // closes, unsaved, if the image went.
+    const changed = (event: { transaction: Transaction; appendedTransactions?: Transaction[] }) => {
+      const change = changeOf(event)
+      const writing = captionRef.current
+      if (change.docChanged && writing) {
+        const moved = change.mapping.mapResult(writing.pos, -1)
+        const at = !moved.deletedAcross && change.doc.nodeAt(moved.pos)?.type.name === 'image' ? moved.pos : null
+        setCaption(at === null ? null : { ...writing, pos: at })
+      }
+      later()
+    }
+    // Alt+F10 goes to the bar, as for a table (whose bar it leaves the key to, in a cell); Escape comes back.
     const key = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== 'F10' || !event.altKey || imageAt(editor.state) === null) return
+      if (event.key !== 'F10' || !event.altKey || event.defaultPrevented || imageAt(editor.state) === null) return
       event.preventDefault()
       const first = () => bar.current?.querySelector<HTMLButtonElement>('button')?.focus()
       if (bar.current) first()
       else requestAnimationFrame(() => requestAnimationFrame(first))
     }
-    editor.on('transaction', later)
+    editor.on('transaction', changed)
     window.addEventListener('scroll', later, true)
     window.addEventListener('resize', later)
     const observer = new ResizeObserver(later)
     observer.observe(editor.view.dom)
     editor.view.dom.addEventListener('keydown', key)
+    let el = root.current?.parentElement ?? null
+    while (el && !/(auto|scroll)/.test(getComputedStyle(el).overflowY)) el = el.parentElement
+    scroller.current = el
     return () => {
       cancelAnimationFrame(frame)
-      editor.off('transaction', later)
+      editor.off('transaction', changed)
       window.removeEventListener('scroll', later, true)
       window.removeEventListener('resize', later)
       observer.disconnect()
@@ -76,6 +99,11 @@ export function ImageControls({ editor }: { editor: Editor }) {
   useEffect(() => {
     if (caption) field.current?.focus()
   }, [caption !== null])
+
+  // A caption whose image is gone (the page replaced) closes: the bar is then for the selection again.
+  useEffect(() => {
+    if (caption && editor.state.doc.nodeAt(caption.pos)?.type.name !== 'image') setCaption(null)
+  })
 
   const inside = state.focused || Boolean(root.current?.contains(document.activeElement))
   const pos = caption?.pos ?? (inside ? state.pos : null)
@@ -102,18 +130,20 @@ export function ImageControls({ editor }: { editor: Editor }) {
     if (!(dom instanceof HTMLElement) || !base) return null
     const box = dom.getBoundingClientRect()
     const height = bar.current?.offsetHeight ?? 36
-    const top = Math.max(box.top - height - GAP, base.top - height - GAP)
+    // Above the image, kept in view while any of it is: a tall picture scrolled half out has it at its top.
+    const viewTop = Math.max(0, scroller.current?.getBoundingClientRect().top ?? 0) + GAP
+    const top = Math.min(Math.max(box.top - height - GAP, viewTop), box.bottom - height)
     const width = (image!.attrs.width as string | null) ?? null
     const percent = new Intl.NumberFormat(i18n.language, { style: 'percent' })
 
-    /** Back to the editor, with the image selected if it is still there. */
+    /** Back to the editor, its cursor or selection as it was: a cursor next to the image stays a cursor. */
     function back() {
-      const chain = editor.chain().focus(undefined, { scrollIntoView: false })
-      ;(editor.state.doc.nodeAt(pos)?.type.name === 'image' ? chain.setNodeSelection(pos) : chain).run()
+      editor.commands.focus(undefined, { scrollIntoView: false })
     }
 
     function saveCaption(done: 'save' | 'cancel') {
-      const writing = caption
+      // Read and cleared before the focus moves: its field's blur, on the way, must find nothing to save.
+      const writing = captionRef.current
       setCaption(null)
       if (writing && done === 'save') setImageCaption(editor, writing.pos, writing.text)
       back()
@@ -189,9 +219,10 @@ export function ImageControls({ editor }: { editor: Editor }) {
             }}
             // Leaving it for something else saves it, as Enter does, without taking the focus back.
             onBlur={() => {
-              if (!caption) return
+              const writing = captionRef.current
+              if (!writing) return
               setCaption(null)
-              setImageCaption(editor, caption.pos, caption.text)
+              setImageCaption(editor, writing.pos, writing.text)
             }}
             className="ml-0.5 h-7 w-[min(260px,60vw)] min-w-0 rounded-[7px] bg-sunken px-2 text-[13px] outline-none placeholder:text-ink-3"
           />
@@ -200,6 +231,8 @@ export function ImageControls({ editor }: { editor: Editor }) {
     )
   }
 }
+
+type Caption = { pos: number; text: string }
 
 function Tool({ label, active, children, ...rest }: ComponentProps<'button'> & { label: string; active?: boolean }) {
   return (

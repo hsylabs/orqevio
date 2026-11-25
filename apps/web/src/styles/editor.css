@@ -722,8 +722,8 @@ details.orq-toggle[open] > summary::before {
    the picture, or the width it was given, a share of the line or pixels, never wider than the line. */
 .orq-prose .orq-image {
   position: relative;
-  display: block;
-  width: fit-content;
+  /* A table, so that its caption wraps within the picture's width instead of widening it. */
+  display: table;
   max-width: 100%;
   margin: 1.2em 0;
 }
@@ -734,12 +734,13 @@ details.orq-toggle[open] > summary::before {
   width: 100%;
 }
 .orq-prose a .orq-image {
-  display: inline-block;
+  display: inline-table;
   vertical-align: middle;
   margin: 0 0.15em;
 }
 .orq-prose .orq-image-caption {
-  display: block;
+  display: table-caption;
+  caption-side: bottom;
   margin-top: 0.5em;
   font-size: 0.875em;
   line-height: 1.45;
@@ -906,7 +907,7 @@ details.orq-toggle[open] > summary::before {
     overflow-wrap: anywhere;
   }
   /* Page breaks never cut a table, a block of code, a picture or a quote, nor leave a heading alone. */
-  .orq-print :is(table, pre, img, figure, blockquote, tr, li) {
+  .orq-print :is(table, pre, img, figure, blockquote, tr, li, .orq-image) {
     break-inside: avoid;
   }
   .orq-print :is(h1, h2, h3, h4, h5, h6) {

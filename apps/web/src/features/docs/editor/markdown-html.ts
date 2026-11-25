@@ -29,7 +29,7 @@ function render(markdown: string) {
   for (const link of root.querySelectorAll('a[href=""]')) link.removeAttribute('href')
   for (const code of root.querySelectorAll('pre:not([data-raw-html]):not([data-raw-markdown]) > code')) codeBlock(code, page)
   for (const quote of root.querySelectorAll('blockquote[data-callout]')) calloutTitle(quote, page)
-  for (const img of root.querySelectorAll('img[title], img[width]')) imageCaption(img, page)
+  for (const img of root.querySelectorAll('img[title], img[width], img[height]')) imageCaption(img, page)
   // A task's box shows whether it is done; here it can't be ticked.
   for (const box of root.querySelectorAll('input[type="checkbox"]')) box.setAttribute('disabled', '')
   // The empty paragraph the editor keeps after a list or a table at the end is no part of it.
@@ -91,10 +91,14 @@ function codeBlock(code: Element, page: Document) {
 function imageCaption(img: Element, page: Document) {
   const box = page.createElement('span')
   box.className = 'orq-image'
-  const width = img.getAttribute('width')
-  if (width && /^\d{1,5}(?:\.\d+)?(?:px|%)?$/i.test(width.trim())) {
-    box.setAttribute('style', `width: ${cssSize(width.trim())}`)
+  const width = cssSize(img.getAttribute('width'))
+  const height = cssSize(img.getAttribute('height'))
+  if (width) {
+    box.setAttribute('style', `width: ${width}`)
     box.setAttribute('data-sized', '')
+  } else if (height) {
+    // Only a height, as a badge has: the picture that high, as wide as that makes it.
+    img.setAttribute('style', `height: ${height}`)
   }
   img.replaceWith(box)
   box.append(img)
