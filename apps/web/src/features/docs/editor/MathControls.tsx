@@ -136,9 +136,9 @@ export function MathControls({ editor }: { editor: Editor }) {
             const node = change.doc.nodeAt(pos)
             return node?.type.name === (current.display ? 'blockMath' : 'inlineMath') && node.attrs.latex === current.opened
           }
-          const moved = [change.mapping.mapResult(current.pos, 1), change.mapping.mapResult(current.pos, -1)].find(
-            (result) => !result.deleted && same(result.pos),
-          )
+          // Mapped forward only: what replaced the page, or what went right before it, isn't taken for it.
+          const result = change.mapping.mapResult(current.pos, 1)
+          const moved = !result.deleted && same(result.pos) ? result : undefined
           const all = twins(change.doc, current.display, current.opened)
           const at = moved ? moved.pos : all.length === current.of ? (all[current.nth] ?? null) : null
           setWriting(at === null ? null : { ...current, pos: at, ...formulaAt(change.doc, at, current.display, current.opened) })

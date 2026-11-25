@@ -693,3 +693,46 @@ describe('what a third look found', () => {
     expect(types(open(saved(rule))), saved(rule)).toContain('horizontalRule')
   })
 })
+
+describe('what a fourth look found', () => {
+  const cell = (...content: JSONContent[]): JSONContent => ({ type: 'doc', content: [{ type: 'table', content: [
+    { type: 'tableRow', content: [{ type: 'tableHeader', content: [{ type: 'paragraph', content: [text('h')] }] }] },
+    { type: 'tableRow', content: [{ type: 'tableCell', content }] },
+  ] }] })
+
+  it('saves a table\'s cell that holds a list, code or a heading under its text', () => {
+    for (const block of [
+      { type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [text('b')] }] }] },
+      { type: 'codeBlock', content: [text('c')] },
+      { type: 'heading', attrs: { level: 2 }, content: [text('t')] },
+      { type: 'horizontalRule' },
+    ]) {
+      const editor = open(cell({ type: 'paragraph', content: [text('a')] }, block), 'json')
+      expect(() => editor.getMarkdown(), block.type).not.toThrow()
+    }
+  })
+
+  it('escapes only the first line of a table\'s cell of several lines, the same from the first save on', () => {
+    const editor = open(cell({ type: 'paragraph', content: [text('a')] }, { type: 'paragraph', content: [text('# b')] }, { type: 'paragraph', content: [text('- c')] }), 'json')
+    const once = saved(editor)
+    expect(once).toContain('a<br># b<br>- c')
+    expect(saved(open(once))).toBe(once)
+  })
+
+  it('closes the field of a formula when the page replaced puts one alike where it was', async () => {
+    const element = document.body.appendChild(document.createElement('div'))
+    const editor = new Editor({ element, extensions: [...documentExtensions(), MathKeys], content: '$$\na\n$$\n\n$$\na\n$$', contentType: 'markdown' })
+    editors.push(editor)
+    const { createRoot } = await import('react-dom/client')
+    const { act } = await import('react')
+    const { MathControls } = await import('../src/features/docs/editor/MathControls')
+    const host = document.body.appendChild(document.createElement('div'))
+    const root = createRoot(host)
+    await act(async () => root.render(createElement(MathControls, { editor })))
+    await act(async () => mathStorage(editor)!.edit!(first(editor, 'blockMath')))
+    await act(async () => void editor.commands.setContent('$$\na\n$$', { contentType: 'markdown', emitUpdate: false }))
+    expect(host.querySelector('textarea')).toBeNull()
+    expect(saved(editor)).toBe('$$\na\n$$')
+    await act(async () => root.unmount())
+  })
+})

@@ -225,10 +225,15 @@ const FaithfulParagraph = Paragraph.extend({
     return helpers.createNode('paragraph', undefined, helpers.parseInline(token.tokens ?? []))
   },
   renderMarkdown(node, helpers, context) {
-    const markdown = escapeLineStarts(this.parent?.(node, helpers, context) ?? '')
+    const written = this.parent?.(node, helpers, context) ?? ''
     const parent = String(context?.parentType ?? '')
     // A table writes each line break of a cell as `<br>`: a line break inside a tag would undo it.
-    if (TABLE_PARENTS.has(parent)) return markdown
+    // Only the cell's first line starts it: after a `<br>`, nothing starts a block to escape.
+    if (TABLE_PARENTS.has(parent)) {
+      const end = written.indexOf('\n')
+      return end === -1 ? escapeLineStarts(written) : escapeLineStarts(written.slice(0, end)) + written.slice(end)
+    }
+    const markdown = escapeLineStarts(written)
     // An `<img>` tag that was alone on its line keeps its indentation, where it can't change the item it is in.
     const [only, ...more] = node.content ?? []
     // (Not on an item's first line, which follows its marker.)
@@ -528,7 +533,11 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
       return { type: 'text', text: `\uFDD3${key}:${formulas.length - 1}\uFDD4`, ...(node.marks ? { marks: node.marks } : {}) }
     }
     if (!node.content) return node
-    if ((node.type === 'tableCell' || node.type === 'tableHeader') && node.content.length > 1) return asText(oneLine(node), where, key)
+    if ((node.type === 'tableCell' || node.type === 'tableHeader') && node.content.length > 1) {
+      // A cell holding other blocks (a list, code) stays as it is.
+      const line = oneLine(node)
+      if (line !== node) return asText(line, where, key)
+    }
     // `ordered`: the node is an item of a numbered list.
     const inner = { heading: where.heading || node.type === 'heading', table: where.table || node.type === 'tableCell' || node.type === 'tableHeader', ordered: node.type === 'orderedList' }
     const written = { ...node, content: node.content.map((child) => asText(child, inner, key)) }
