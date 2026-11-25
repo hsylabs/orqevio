@@ -2,7 +2,7 @@ import { type AnyExtension, type JSONContent, Node } from '@tiptap/core'
 import Blockquote from '@tiptap/extension-blockquote'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
-import { ORDERED_LIST_MARKER_PATTERN, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
+import { ListItem, ORDERED_LIST_MARKER_PATTERN, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
 import Paragraph from '@tiptap/extension-paragraph'
 import { Table, TableKit } from '@tiptap/extension-table'
 import { Markdown, MarkdownManager, assumeContentType } from '@tiptap/markdown'
@@ -10,6 +10,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { t } from 'i18next'
 import { DocumentRules } from './block-commands'
 import { Callout, calloutFromQuote } from './callout'
+import { Toggle, ToggleTitle, foldToggles } from './toggle'
 import { FaithfulCodeBlock } from './code-block'
 
 /**
@@ -404,10 +405,43 @@ const FaithfulImage = Image.extend({
   },
 }).configure({ inline: true, allowBase64: false })
 
+// ── List items ───────────────────────────────────────────────────
+
+/** An item written without the whitespace-only line a block can leave at its end (a toggle's, a table's). */
+const withoutTrailingLine = (markdown: string) => markdown.replace(/\n[ \t]*$/, '')
+
+/**
+ * A list item read as blocks. In a tight list marked gives the lines after a heading, a toggle or
+ * other HTML as bare text, and @tiptap/extension-list makes only the first one a paragraph: the
+ * others went straight in the item, an invalid document whose text was escaped again on every
+ * save. Then, and only then, each is a paragraph, as in a loose list (an item of only `&nbsp;`
+ * read as a paragraph would be empty). Written without a trailing whitespace-only line, which
+ * would make the list loose, or split a task list in two; but with the one an empty last
+ * paragraph is written as, which is that paragraph.
+ */
+const FaithfulListItem = ListItem.extend({
+  parseMarkdown(token, helpers) {
+    if (!token.tokens?.some((child, index) => index > 0 && child.type === 'text')) return this.parent?.(token, helpers) ?? []
+    const tokens = token.tokens.map((child) => (child.type === 'text' ? { ...child, type: 'paragraph' } : child))
+    return this.parent?.({ ...token, tokens }, helpers) ?? []
+  },
+  renderMarkdown(node, helpers, context) {
+    const markdown = this.parent?.(node, helpers, context) ?? ''
+    const last = node.content?.at(-1)
+    return last?.type === 'paragraph' && !last.content?.length ? markdown : withoutTrailingLine(markdown)
+  },
+})
+
+const FaithfulTaskItem = TaskItem.extend({
+  renderMarkdown(node, helpers, context) {
+    return withoutTrailingLine(this.parent?.(node, helpers, context) ?? '')
+  },
+})
+
 // ── Tables ───────────────────────────────────────────────────────
 
 /**
- * A table of the document's top level, of a quote or of a callout is written without the blank lines
+ * A table of the document's top level, of a quote, a callout or a toggle is written without the blank lines
  * @tiptap/extension-table puts around it: blocks are already apart there. With them, two tables in a
  * row read back with an empty paragraph between them, one more on every save. In a list item they
  * hold its lines apart, and stay.
@@ -415,7 +449,7 @@ const FaithfulImage = Image.extend({
 const FaithfulTable = Table.extend({
   renderMarkdown(node, helpers, context) {
     const markdown = this.parent?.(node, helpers, context) ?? ''
-    return ['doc', 'blockquote', 'callout'].includes(String(context.parentType)) ? markdown.replace(/^\n+|\n+$/g, '') : markdown
+    return ['doc', 'blockquote', 'callout', 'toggle'].includes(String(context.parentType)) ? markdown.replace(/^\n+|\n+$/g, '') : markdown
   },
 })
 
@@ -442,8 +476,12 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
     return inCode ? text : encodeText(internals.escapeMarkdownSyntax(text))
   }
 
-  // Front matter stays at the top as written; the rest is read as usual.
-  const parse = manager.parse.bind(manager)
+  // Front matter stays at the top as written; the rest is read as usual, with its `<details>` as toggles (toggle.ts).
+  const read = manager.parse.bind(manager)
+  const parse = (markdown: string) => {
+    const doc = read(markdown)
+    return { ...doc, content: foldToggles(doc.content ?? []) }
+  }
   manager.parse = (markdown: string) => {
     const front = FRONT_MATTER.exec(markdown)
     if (!front) return parse(markdown)
@@ -495,7 +533,9 @@ export function documentExtensions(): AnyExtension[] {
       codeBlock: false,
       orderedList: false,
       blockquote: false,
+      listItem: false,
     }),
+    FaithfulListItem,
     FaithfulLink.configure({
       openOnClick: false,
       autolink: true,
@@ -509,10 +549,12 @@ export function documentExtensions(): AnyExtension[] {
     FaithfulParagraph,
     FaithfulBlockquote,
     Callout,
+    Toggle,
+    ToggleTitle,
     FaithfulMarkdown.configure({ markedOptions: { gfm: true } }),
     TaskList,
     // What a screen reader says for each checkbox, in the app's language.
-    TaskItem.configure({
+    FaithfulTaskItem.configure({
       nested: true,
       a11y: { checkboxLabel: (node) => (node.textContent ? t('docs:editor.taskCheckbox', { text: node.textContent }) : t('docs:editor.taskCheckboxEmpty')) },
     }),

@@ -492,6 +492,80 @@ blockquote.orq-callout > * + * {
 blockquote.orq-callout > .orq-callout-title + * {
   margin-top: 0;
 }
+/* A toggle (toggle.ts), HTML's <details>: an arrow left of its title shows or hides what it holds.
+   In the editor the arrow is a button and its state the view's; shown (a comment), it is the
+   browser's own <details>. On paper it is open. */
+.orq-prose .orq-toggle {
+  position: relative;
+  padding-left: 26px;
+}
+.orq-toggle-button {
+  position: absolute;
+  left: 0;
+  top: 0.18em;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.orq-toggle-button:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.orq-toggle-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.15s;
+}
+.orq-toggle[data-open] > .orq-toggle-button .orq-toggle-icon {
+  transform: rotate(90deg);
+}
+.orq-prose summary.orq-toggle-title {
+  display: block;
+  list-style: none;
+}
+.orq-prose summary.orq-toggle-title::-webkit-details-marker {
+  display: none;
+}
+.orq-toggle-content > * + *,
+details.orq-toggle > * + * {
+  margin-top: 0.7em;
+}
+/* Selected as a whole (Backspace right after a closed one), wherever it is: shaded as a selected block. */
+.orq-prose .orq-toggle.ProseMirror-selectednode {
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  border-radius: 6px;
+  outline: none;
+}
+/* Closed, it shows only its title; with the cursor in what it holds (undone, found), all of it. */
+.orq-toggle:not([data-open]):not(.orq-toggle--reveal) > .orq-toggle-content > :not(:first-child) {
+  display: none;
+}
+details.orq-toggle > summary {
+  cursor: pointer;
+}
+details.orq-toggle > summary::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0.55em;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--ink-3);
+  border-bottom: 1.5px solid var(--ink-3);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+details.orq-toggle[open] > summary::before {
+  transform: rotate(45deg);
+}
+
 /* Its menu's icons, in each type's colour. */
 .orq-callout-menu-icon.orq-callout-menu-icon {
   color: var(--callout);

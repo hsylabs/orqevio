@@ -8,6 +8,7 @@ const ICONS = {
   ],
   check: [['path', { d: 'M20 6 9 17l-5-5' }]],
   chevron: [['path', { d: 'm6 9 6 6 6-6' }]],
+  chevronRight: [['path', { d: 'm9 18 6-6-6-6' }]],
   // The callouts' (GitHub's alerts): note, tip, important, warning, caution.
   info: [
     ['circle', { cx: '12', cy: '12', r: '10' }],

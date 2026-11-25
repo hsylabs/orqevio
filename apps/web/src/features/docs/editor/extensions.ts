@@ -30,6 +30,8 @@ function createMenuExtension(name: string, char: string, kind: 'slash' | 'mentio
           allowSpaces: true,
           startOfLine: false,
           allowedPrefixes: [' ', ' ', '('],
+          // A toggle's title is one line of plain text: no block, mention or link goes in it.
+          allow: ({ state, range }) => state.doc.resolve(range.from).parent.type.name !== 'toggleTitle',
           items: async ({ query, editor }) => {
             const id = ++requestId
             store.set({ loading: true })

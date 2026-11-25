@@ -118,6 +118,11 @@
         "subtitle": "Un riquadro in evidenza: nota, suggerimento, avvertenza…",
         "keywords": "riquadro callout avviso nota suggerimento importante avvertenza attenzione"
       },
+      "toggle": {
+        "title": "Blocco espandibile",
+        "subtitle": "Un titolo che mostra o nasconde ciò che c’è sotto",
+        "keywords": "espandibile toggle details comprimi espandi nascondi mostra fisarmonica"
+      },
       "code": {
         "title": "Codice",
         "subtitle": "Blocco di codice",
@@ -217,6 +222,11 @@
       "typeOf": "Tipo di riquadro: {{type}}",
       "menu": "Tipo di riquadro",
       "remove": "Rimuovi il riquadro"
+    },
+    "toggle": {
+      "expand": "Mostra il contenuto",
+      "collapse": "Nascondi il contenuto",
+      "title": "Titolo del blocco espandibile"
     },
     "code": {
       "plain": "Testo semplice",

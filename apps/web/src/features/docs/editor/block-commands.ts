@@ -2,6 +2,7 @@ import { type Editor, Extension } from '@tiptap/core'
 import { Fragment, type Node as PMNode } from '@tiptap/pm/model'
 import { NodeSelection, Plugin, PluginKey, Selection, TextSelection, type Transaction } from '@tiptap/pm/state'
 import { type CalloutType, markerFor } from './callout'
+import { newToggle, unwrapToggle } from './toggle'
 import { JOIN_LISTS, ownChain, ownStep } from './own-step'
 
 /**
@@ -14,10 +15,10 @@ const ITEMS = new Set(['listItem', 'taskItem'])
 const LISTS: Record<string, Turn> = { bulletList: 'ul', orderedList: 'ol', taskList: 'todo' }
 
 /** What a block can be turned into, as in the «/» menu. */
-export type Turn = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'code'
-const ALL: Turn[] = ['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'todo', 'quote', 'callout', 'code']
+export type Turn = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'toggle' | 'code'
+const ALL: Turn[] = ['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'todo', 'quote', 'callout', 'toggle', 'code']
 /** The icons of the «/» menu for each of them. */
-export const TURN_ICONS: Record<Turn, string> = { p: 'T', h1: 'H1', h2: 'H2', h3: 'H3', ul: '•', ol: '1.', todo: '☑', quote: '❝', callout: 'ⓘ', code: '</>' }
+export const TURN_ICONS: Record<Turn, string> = { p: 'T', h1: 'H1', h2: 'H2', h3: 'H3', ul: '•', ol: '1.', todo: '☑', quote: '❝', callout: 'ⓘ', toggle: '▸', code: '</>' }
 
 
 export interface Block {
@@ -63,11 +64,14 @@ export function turns(doc: PMNode, pos: number): { current: Turn | null; options
   // A heading is one line, and a block of code only text: what wouldn't fit isn't offered.
   let lines = false
   let atoms = false
+  let marks = false
   node.descendants((child) => {
     if (child.type.name === 'hardBreak' || (child.isText && child.text?.includes('\n'))) lines = true
     else if (child.isInline && !child.isText) atoms = true
+    if (child.marks.length) marks = true
   })
-  const fits = (options: Turn[]) => options.filter((o) => !(lines && o.startsWith('h')) && !(atoms && o === 'code'))
+  // A toggle's title is one line of plain text: no formatting, links or pictures.
+  const fits = (options: Turn[]) => options.filter((o) => !(lines && (o.startsWith('h') || o === 'toggle')) && !(atoms && (o === 'code' || o === 'toggle')) && !(marks && o === 'toggle'))
   if (ITEMS.has(name)) return { current: LISTS[doc.resolve(pos).parent.type.name] ?? null, options: ['p', 'ul', 'ol', 'todo'] }
   if (name === 'paragraph') return { current: 'p', options: fits(ALL) }
   if (name === 'heading') {
@@ -77,6 +81,7 @@ export function turns(doc: PMNode, pos: number): { current: Turn | null; options
   if (name === 'codeBlock') return { current: 'code', options: fits(['p', 'h1', 'h2', 'h3', 'code']) }
   if (name === 'blockquote') return { current: 'quote', options: ['p', 'quote', 'callout'] }
   if (name === 'callout') return { current: 'callout', options: ['p', 'quote', 'callout'] }
+  if (name === 'toggle') return { current: 'toggle', options: ['p', 'toggle'] }
   return { current: null, options: [] }
 }
 
@@ -160,6 +165,22 @@ export function turnBlock(editor: Editor, pos: number, to: Turn) {
   const { current, options } = turns(editor.state.doc, pos)
   if (!node || to === current || !options.includes(to)) return false
   const name = node.type.name
+  // A toggle made of a line of text, with that text as its title; turned into text, its title and what it held.
+  if (to === 'toggle') {
+    return ownStep(editor, ({ tr }) => {
+      const toggle = newToggle(tr.doc.type.schema, node.textContent)
+      tr.replaceWith(pos, pos + node.nodeSize, toggle)
+      tr.setSelection(TextSelection.create(tr.doc, pos + 1 + toggle.firstChild!.nodeSize - 1))
+      return true
+    })
+  }
+  if (name === 'toggle' && to === 'p') {
+    return ownStep(editor, ({ tr }) => {
+      const paragraph = unwrapToggle(tr, pos, node)
+      tr.setSelection(TextSelection.create(tr.doc, pos + 1 + paragraph.content.size))
+      return true
+    }, { joinLists: true })
+  }
   // A quote and a callout hold blocks alike: one becomes the other as it is, a note for a new callout.
   if ((name === 'blockquote' && to === 'callout') || (name === 'callout' && to === 'quote')) {
     return ownStep(editor, ({ tr }) => {
