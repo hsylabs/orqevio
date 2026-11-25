@@ -128,6 +128,16 @@
         "subtitle": "Bloque de código",
         "keywords": "codigo code"
       },
+      "math": {
+        "title": "Fórmula",
+        "subtitle": "Una fórmula en su propio bloque, en LaTeX",
+        "keywords": "formula ecuacion matematicas math latex katex tex bloque"
+      },
+      "inlineMath": {
+        "title": "Fórmula en línea",
+        "subtitle": "Una fórmula dentro del texto, en LaTeX",
+        "keywords": "formula ecuacion matematicas math latex katex tex linea texto"
+      },
       "table": {
         "title": "Tabla",
         "subtitle": "3 × 3 con cabecera",
@@ -174,7 +184,8 @@
       "italic": "Cursiva",
       "strike": "Tachado",
       "code": "Código",
-      "link": "Enlace"
+      "link": "Enlace",
+      "math": "Fórmula"
     },
     "table": {
       "toolbar": "Tabla",
@@ -236,6 +247,18 @@
       "caption": "Pie de imagen",
       "captionPlaceholder": "Escribe el pie de la imagen",
       "resize": "Arrastra para cambiar el ancho"
+    },
+    "math": {
+      "field": "Fórmula en LaTeX",
+      "placeholder": "Por ejemplo: E = mc^2",
+      "done": "Hecho",
+      "keysInline": "Intro para guardar · Esc para cancelar",
+      "keysBlock": "Intro para guardar · Mayús+Intro para otra línea · Esc para cancelar",
+      "empty": "Fórmula vacía",
+      "error": "Error en la fórmula",
+      "hint": "Fórmula. Pulsa Intro para editarla.",
+      "dialog": "Editar fórmula",
+      "preview": "Vista previa"
     },
     "code": {
       "plain": "Texto plano",

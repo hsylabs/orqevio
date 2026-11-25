@@ -5,6 +5,7 @@ import { CALLOUT_ICONS, calloutName, calloutType } from './callout'
 import { languageClass, languageName } from './code-block'
 import { cssSize } from './image'
 import { highlightCode, loadCodeColours, whenCodeColoursLoad } from './code-languages'
+import { drawMath } from './math'
 import { documentExtensions } from './markdown'
 import { icon } from './svg-icons'
 
@@ -30,6 +31,7 @@ function render(markdown: string) {
   for (const code of root.querySelectorAll('pre:not([data-raw-html]):not([data-raw-markdown]) > code')) codeBlock(code, page)
   for (const quote of root.querySelectorAll('blockquote[data-callout]')) calloutTitle(quote, page)
   for (const img of root.querySelectorAll('img[title], img[width], img[height]')) imageCaption(img, page)
+  for (const formula of root.querySelectorAll<HTMLElement>('[data-type="inline-math"], [data-type="block-math"]')) mathShown(formula)
   // A task's box shows whether it is done; here it can't be ticked.
   for (const box of root.querySelectorAll('input[type="checkbox"]')) box.setAttribute('disabled', '')
   // The empty paragraph the editor keeps after a list or a table at the end is no part of it.
@@ -109,6 +111,13 @@ function imageCaption(img: Element, page: Document) {
     caption.textContent = title
     box.append(caption)
   }
+}
+
+/** A formula drawn as the editor draws it (math.ts): by KaTeX, or its source if KaTeX can't. */
+function mathShown(formula: HTMLElement) {
+  const display = formula.getAttribute('data-type') === 'block-math'
+  formula.className = display ? 'orq-math orq-math--block' : 'orq-math'
+  drawMath(formula, formula.getAttribute('data-latex') ?? '', display)
 }
 
 /** A callout's icon and its type's name on top, as the editor shows them (callout.ts). */

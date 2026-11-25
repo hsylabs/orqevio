@@ -12,6 +12,8 @@ import { Callout, calloutFromQuote } from './callout'
 import { Toggle, ToggleTitle, foldToggles } from './toggle'
 import { FaithfulImage, destination, imageFromTag, indentationOf, isLoneTag, quotedTitle } from './image'
 import { FaithfulCodeBlock } from './code-block'
+import { INLINE_HTML } from './inline-html'
+import { type BlockStarts, FaithfulBlockMath, FaithfulInlineMath, type InlineFormula, markDollars, markFormula, readInlineMath, readingReferences, settleDollars } from './math'
 
 /**
  * Documents are Markdown, often written by agents, and the editor saves the whole
@@ -27,11 +29,6 @@ export const SAFE_PROTOCOL = /^(https?:|mailto:|\/(?!\/))/i
 // The editor can't show HTML, so it keeps it as it was: an HTML block becomes a block
 // showing its source, an inline tag a chip showing the tag. Both are written back verbatim.
 
-/** CommonMark inline raw HTML: an open or closing tag, a comment, a processing instruction, a declaration or CDATA. */
-const ATTRIBUTE = String.raw`\s+[A-Za-z_:][\w.:-]*(?:\s*=\s*(?:[^\s"'=<>\x60]+|'[^']*'|"[^"]*"))?`
-const INLINE_HTML = new RegExp(
-  String.raw`^(?:<[A-Za-z][A-Za-z0-9-]*(?:${ATTRIBUTE})*\s*\/?>|<\/[A-Za-z][A-Za-z0-9-]*\s*>|<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<![A-Za-z][^>]*>|<!\[CDATA\[[\s\S]*?\]\]>)`,
-)
 
 export const RawHtmlBlock = Node.create({
   name: 'htmlBlock',
@@ -228,10 +225,15 @@ const FaithfulParagraph = Paragraph.extend({
     return helpers.createNode('paragraph', undefined, helpers.parseInline(token.tokens ?? []))
   },
   renderMarkdown(node, helpers, context) {
-    const markdown = escapeLineStarts(this.parent?.(node, helpers, context) ?? '')
+    const written = this.parent?.(node, helpers, context) ?? ''
     const parent = String(context?.parentType ?? '')
     // A table writes each line break of a cell as `<br>`: a line break inside a tag would undo it.
-    if (TABLE_PARENTS.has(parent)) return markdown
+    // Only the cell's first line starts it: after a `<br>`, nothing starts a block to escape.
+    if (TABLE_PARENTS.has(parent)) {
+      const end = written.indexOf('\n')
+      return end === -1 ? escapeLineStarts(written) : escapeLineStarts(written.slice(0, end)) + written.slice(end)
+    }
+    const markdown = escapeLineStarts(written)
     // An `<img>` tag that was alone on its line keeps its indentation, where it can't change the item it is in.
     const [only, ...more] = node.content ?? []
     // (Not on an item's first line, which follows its marker.)
@@ -445,7 +447,23 @@ const FaithfulListItem = ListItem.extend({
     return this.parent?.({ ...token, tokens }, helpers) ?? []
   },
   renderMarkdown(node, helpers, context) {
-    const markdown = this.parent?.(node, helpers, context) ?? ''
+    // An item read without a first line of text (TipTap's numbered lists read `1.` alone so) is
+    // written as one with an empty one, which is how the editor keeps it.
+    if (node.content?.length && node.content[0]!.type !== 'paragraph') node = { ...node, content: [{ type: 'paragraph' }, ...node.content] }
+    let markdown = this.parent?.(node, helpers, context) ?? ''
+    // An item that starts with a block: the empty line the editor keeps before it is no line, and a
+    // marker alone on its line would lose the item. In a bulleted list a formula of its own or a
+    // block of code goes on the marker's line, as it was written (`- $$x$$`, `- ```js`); anywhere
+    // else (a numbered list reads that line as text) the line keeps `&nbsp;`, as nested items have it.
+    const [first, second] = node.content ?? []
+    if (first?.type === 'paragraph' && !first.content?.length && second) {
+      if (context?.parentType === 'bulletList' && (second.type === 'blockMath' || second.type === 'codeBlock')) {
+        markdown = markdown.replace(/^([-+*] +)(?:&nbsp;)?\n[ \t]*/, '$1')
+      } else {
+        // A rule right under a line of text would make it a heading: a blank line between them.
+        markdown = markdown.replace(/^((?:[-+*]|\d{1,9}[.)]) +)(?:&nbsp;)?\n/, second.type === 'horizontalRule' ? '$1&nbsp;\n\n' : '$1&nbsp;\n')
+      }
+    }
     const last = node.content?.at(-1)
     return last?.type === 'paragraph' && !last.content?.length ? markdown : withoutTrailingLine(markdown)
   },
@@ -480,6 +498,7 @@ interface ManagerInternals {
   codeTypes: Set<string>
   escapeMarkdownSyntax(text: string): string
   encodeTextForMarkdown(text: string, node: JSONContent, parentNode?: JSONContent): string
+  renderNodeToMarkdown(node: JSONContent, ...rest: unknown[]): string
   parseInlineTokens(tokens: Token[]): JSONContent[]
   applyMarkToContent(markType: string, content: JSONContent[], attrs?: Record<string, unknown>): JSONContent[]
 }
@@ -488,17 +507,87 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
   const manager = new MarkdownManager(options)
   const internals = manager as unknown as ManagerInternals
 
+  // A formula in a line is written as text with its marks, in their run: `**a $x$ b**` and
+  // `[a $x$](…)` stay as they are. @tiptap/markdown closes the marks around any other inline node.
+  // Its form is chosen once its paragraph or heading is written, where it is (math.ts).
+  let formulas: InlineFormula[] = []
+  let placeholder = /$^/
+  /** Where formulas of their own can start in a paragraph that isn't read as others are (math.ts). */
+  let blockStarts = new WeakMap<JSONContent, BlockStarts>()
+  const asText = (node: JSONContent, where: { heading?: boolean; table?: boolean; ordered?: boolean }, key: string): JSONContent => {
+    if (node.type === 'inlineMath') {
+      const marks = (node.marks ?? []).map((mark) => mark.type)
+      const latex = String(node.attrs?.latex ?? '')
+      if (!latex.trim()) return { type: 'text', text: '' }
+      const raw = (node.attrs?.raw as string | null) ?? null
+      // Read with these marks and this source, it reads back the same; otherwise the delimiters of
+      // its marks in its source would end them there: `*` of italics or bold, `~` of strikes,
+      // brackets and backticks of a link.
+      const asRead = raw !== null && readInlineMath(raw)?.latex === latex && sameMarks(node.attrs?.rawMarks, marks)
+      const guarded =
+        !asRead &&
+        ((marks.some((mark) => mark === 'bold' || mark === 'italic') && latex.includes('*')) ||
+          (marks.includes('strike') && latex.includes('~')) ||
+          (marks.includes('link') && /[[\]`<>]/.test(latex)))
+      formulas.push({ latex, raw, oneLine: where.heading || where.table, inTable: where.table, guarded })
+      return { type: 'text', text: `\uFDD3${key}:${formulas.length - 1}\uFDD4`, ...(node.marks ? { marks: node.marks } : {}) }
+    }
+    if (!node.content) return node
+    if ((node.type === 'tableCell' || node.type === 'tableHeader') && node.content.length > 1) {
+      // A cell holding other blocks (a list, code) stays as it is.
+      const line = oneLine(node)
+      if (line !== node) return asText(line, where, key)
+    }
+    // `ordered`: the node is an item of a numbered list.
+    const inner = { heading: where.heading || node.type === 'heading', table: where.table || node.type === 'tableCell' || node.type === 'tableHeader', ordered: node.type === 'orderedList' }
+    const written = { ...node, content: node.content.map((child) => asText(child, inner, key)) }
+    // A task's text is read line by line, the first as text (@tiptap/extension-list); a numbered
+    // item's first line is read as text too.
+    const first = written.content[0]
+    if (first?.type === 'paragraph' && node.type === 'taskItem') blockStarts.set(first, 'lines')
+    else if (first?.type === 'paragraph' && node.type === 'listItem' && where.ordered) blockStarts.set(first, 'later')
+    return written
+  }
+
   internals.encodeTextForMarkdown = (text, node, parentNode) => {
+    const formula = placeholder.exec(text)
+    if (formula) return markFormula(Number(formula[1]))
     const inCode =
       (parentNode?.type != null && internals.codeTypes.has(parentNode.type)) ||
       (node.marks ?? []).some((m) => internals.codeTypes.has(typeof m === 'string' ? m : m.type))
-    return inCode ? text : encodeText(internals.escapeMarkdownSyntax(text))
+    // Each `$` is settled once its paragraph or heading is written: escaped where it would open a formula (math.ts).
+    return inCode ? text : markDollars(encodeText(internals.escapeMarkdownSyntax(text)))
+  }
+  const renderNodeToMarkdown = internals.renderNodeToMarkdown.bind(manager)
+  internals.renderNodeToMarkdown = (node, ...rest) => {
+    const markdown = renderNodeToMarkdown(node, ...rest)
+    if (node.type !== 'paragraph' && node.type !== 'heading') return markdown
+    // In a table, as the table writes its cell, its line breaks as `<br>`; no block starts there.
+    const [parent] = rest as [JSONContent | undefined]
+    if (TABLE_PARENTS.has(String(parent?.type ?? ''))) return settleDollars(markdown.replace(/[ \t]*\r?\n[ \t]*/g, '<br>'), formulas, { blocks: 'none' })
+    return settleDollars(markdown, formulas, { blocks: blockStarts.get(node) ?? 'all' })
+  }
+  // Text anywhere else is settled with the whole document after it: a `$` that might open a formula there is escaped.
+  const serialize = manager.serialize.bind(manager)
+  manager.serialize = (doc: JSONContent) => {
+    // A key of its own for each writing: a text that looks like a formula's place is no formula.
+    const key = Math.random().toString(36).slice(2, 10)
+    formulas = []
+    blockStarts = new WeakMap()
+    placeholder = new RegExp(`^\\uFDD3${key}:(\\d+)\\uFDD4$`)
+    try {
+      return settleDollars(serialize(asText(doc, {}, key)), formulas)
+    } finally {
+      formulas = []
+      placeholder = /$^/
+    }
   }
 
   // Front matter stays at the top as written; the rest is read as usual, with its `<details>` as toggles (toggle.ts).
   const read = manager.parse.bind(manager)
   const parse = (markdown: string) => {
-    const doc = read(markdown)
+    // Knowing the references the page defines: a formula never ends in the text of a link to one (math.ts).
+    const doc = readingReferences(markdown, () => read(markdown))
     return { ...doc, content: foldToggles(doc.content ?? []) }
   }
   manager.parse = (markdown: string) => {
@@ -512,14 +601,43 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
   internals.parseInlineTokens = (tokens) =>
     parseInlineTokens(tokens.map((t) => (t.type === 'text' && t.text ? { ...t, text: decodeNamedEntities(t.text) } : t)))
 
-  // Links around an image (a badge) stay on the image; marks only reach text otherwise.
+  // Links around an image (a badge) stay on the image, and any mark around a formula on the
+  // formula (`**$x$**`); marks only reach text otherwise.
   const applyMarkToContent = internals.applyMarkToContent.bind(manager)
   internals.applyMarkToContent = (markType, content, attrs) =>
-    applyMarkToContent(markType, content, attrs).map((node, i) =>
-      markType === 'link' && content[i]?.type === 'image' ? { ...node, marks: [...(node.marks ?? []), { type: markType, ...(attrs ? { attrs } : {}) }] } : node,
-    )
+    applyMarkToContent(markType, content, attrs).map((node, i) => {
+      const mark = { type: markType, ...(attrs ? { attrs } : {}) }
+      if (markType === 'link' && content[i]?.type === 'image') return { ...node, marks: [...(node.marks ?? []), mark] }
+      if (content[i]?.type !== 'inlineMath') return node
+      // The marks it was read in, with its source: written so again while they are the same (math.ts).
+      const read = [...((node.attrs?.rawMarks as string[] | null) ?? []), markType]
+      return { ...node, attrs: { ...node.attrs, rawMarks: read }, marks: [...(node.marks ?? []), mark] }
+    })
 
   return manager
+}
+
+/**
+ * A table's cell of several lines (paragraphs, formulas of their own) as one paragraph with line
+ * breaks: the table writes them so anyway, `a<br>b`, and so its `$` and formulas are settled as the
+ * rest are, before the table escapes its pipes and measures its columns.
+ */
+function oneLine(cell: JSONContent): JSONContent {
+  const blocks = cell.content ?? []
+  if (!blocks.every((block) => block.type === 'paragraph' || block.type === 'blockMath')) return cell
+  const content: JSONContent[] = []
+  blocks.forEach((block, index) => {
+    if (index) content.push({ type: 'hardBreak' })
+    if (block.type === 'blockMath') content.push({ type: 'inlineMath', attrs: { latex: block.attrs?.latex ?? '', raw: null } })
+    else content.push(...(block.content ?? []))
+  })
+  return { ...cell, content: [{ type: 'paragraph', content }] }
+}
+
+/** Whether the marks a formula was read in are the ones it has now. */
+function sameMarks(read: unknown, now: string[]) {
+  const before = Array.isArray(read) ? [...(read as string[])].sort() : []
+  return before.join() === [...now].sort().join()
 }
 
 /** @tiptap/markdown with the faithful manager; the same as its own setup otherwise. */
@@ -580,6 +698,8 @@ export function documentExtensions(): AnyExtension[] {
     TableKit.configure({ table: false }),
     FaithfulTable.configure({ resizable: false }),
     FaithfulImage,
+    FaithfulInlineMath,
+    FaithfulBlockMath,
     RawHtmlBlock,
     RawHtmlInline,
     RawMarkdownBlock,

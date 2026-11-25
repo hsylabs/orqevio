@@ -128,6 +128,16 @@
         "subtitle": "Bloco de código",
         "keywords": "código trecho code snippet"
       },
+      "math": {
+        "title": "Equação",
+        "subtitle": "Uma equação em um bloco próprio, em LaTeX",
+        "keywords": "equacao formula matematica math latex katex tex bloco"
+      },
+      "inlineMath": {
+        "title": "Equação em linha",
+        "subtitle": "Uma equação dentro do texto, em LaTeX",
+        "keywords": "equacao formula matematica math latex katex tex linha texto"
+      },
       "table": {
         "title": "Tabela",
         "subtitle": "3 × 3 com linha de cabeçalho",
@@ -174,7 +184,8 @@
       "italic": "Itálico",
       "strike": "Tachado",
       "code": "Código",
-      "link": "Link"
+      "link": "Link",
+      "math": "Equação"
     },
     "table": {
       "toolbar": "Tabela",
@@ -236,6 +247,18 @@
       "caption": "Legenda",
       "captionPlaceholder": "Escreva uma legenda",
       "resize": "Arraste para mudar a largura"
+    },
+    "math": {
+      "field": "Equação em LaTeX",
+      "placeholder": "Por exemplo: E = mc^2",
+      "done": "Concluído",
+      "keysInline": "Enter para salvar · Esc para cancelar",
+      "keysBlock": "Enter para salvar · Shift+Enter para outra linha · Esc para cancelar",
+      "empty": "Equação vazia",
+      "error": "Erro na equação",
+      "hint": "Equação. Pressione Enter para editá-la.",
+      "dialog": "Editar equação",
+      "preview": "Pré-visualização"
     },
     "code": {
       "plain": "Texto simples",

@@ -128,6 +128,16 @@
         "subtitle": "Blocco di codice",
         "keywords": "codice code snippet"
       },
+      "math": {
+        "title": "Equazione",
+        "subtitle": "Un’equazione su una riga a sé, in LaTeX",
+        "keywords": "equazione formula matematica math latex katex tex blocco"
+      },
+      "inlineMath": {
+        "title": "Equazione in linea",
+        "subtitle": "Un’equazione dentro il testo, in LaTeX",
+        "keywords": "equazione formula matematica math latex katex tex linea testo"
+      },
       "table": {
         "title": "Tabella",
         "subtitle": "3 × 3 con riga di intestazione",
@@ -174,7 +184,8 @@
       "italic": "Corsivo",
       "strike": "Barrato",
       "code": "Codice",
-      "link": "Link"
+      "link": "Link",
+      "math": "Equazione"
     },
     "table": {
       "toolbar": "Tabella",
@@ -236,6 +247,18 @@
       "caption": "Didascalia",
       "captionPlaceholder": "Scrivi una didascalia",
       "resize": "Trascina per cambiare la larghezza"
+    },
+    "math": {
+      "field": "Equazione in LaTeX",
+      "placeholder": "Per esempio: E = mc^2",
+      "done": "Fatto",
+      "keysInline": "Invio per salvare · Esc per annullare",
+      "keysBlock": "Invio per salvare · Maiusc+Invio per un’altra riga · Esc per annullare",
+      "empty": "Equazione vuota",
+      "error": "Errore nell’equazione",
+      "hint": "Equazione. Premi Invio per modificarla.",
+      "dialog": "Modifica equazione",
+      "preview": "Anteprima"
     },
     "code": {
       "plain": "Testo semplice",

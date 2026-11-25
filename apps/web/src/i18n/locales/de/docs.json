@@ -128,6 +128,16 @@
         "subtitle": "Codeblock",
         "keywords": "code codeblock snippet quelltext"
       },
+      "math": {
+        "title": "Formel",
+        "subtitle": "Eine Formel als eigener Block, in LaTeX",
+        "keywords": "formel gleichung mathematik mathe math latex katex tex block"
+      },
+      "inlineMath": {
+        "title": "Formel im Text",
+        "subtitle": "Eine Formel mitten im Text, in LaTeX",
+        "keywords": "formel gleichung mathematik mathe math latex katex tex inline text"
+      },
       "table": {
         "title": "Tabelle",
         "subtitle": "3 × 3 mit Kopfzeile",
@@ -174,7 +184,8 @@
       "italic": "Kursiv",
       "strike": "Durchgestrichen",
       "code": "Code",
-      "link": "Link"
+      "link": "Link",
+      "math": "Formel"
     },
     "table": {
       "toolbar": "Tabelle",
@@ -234,6 +245,18 @@
       "caption": "Bildunterschrift",
       "captionPlaceholder": "Bildunterschrift eingeben",
       "resize": "Ziehen, um die Breite zu ändern"
+    },
+    "math": {
+      "field": "Formel in LaTeX",
+      "placeholder": "Zum Beispiel: E = mc^2",
+      "done": "Fertig",
+      "keysInline": "Eingabe zum Speichern · Esc zum Abbrechen",
+      "keysBlock": "Eingabe zum Speichern · Umschalt+Eingabe für eine neue Zeile · Esc zum Abbrechen",
+      "empty": "Leere Formel",
+      "error": "Fehler in der Formel",
+      "hint": "Formel. Mit Eingabe bearbeitest du sie.",
+      "dialog": "Formel bearbeiten",
+      "preview": "Vorschau"
     },
     "code": {
       "plain": "Nur Text",

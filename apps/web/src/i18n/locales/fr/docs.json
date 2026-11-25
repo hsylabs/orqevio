@@ -128,6 +128,16 @@
         "subtitle": "Bloc de code",
         "keywords": "code extrait snippet"
       },
+      "math": {
+        "title": "Équation",
+        "subtitle": "Une équation sur sa propre ligne, en LaTeX",
+        "keywords": "equation formule mathematiques maths math latex katex tex bloc"
+      },
+      "inlineMath": {
+        "title": "Équation en ligne",
+        "subtitle": "Une équation dans le texte, en LaTeX",
+        "keywords": "equation formule mathematiques maths math latex katex tex ligne texte"
+      },
       "table": {
         "title": "Tableau",
         "subtitle": "3 × 3 avec une ligne d’en-tête",
@@ -174,7 +184,8 @@
       "italic": "Italique",
       "strike": "Barré",
       "code": "Code",
-      "link": "Lien"
+      "link": "Lien",
+      "math": "Équation"
     },
     "table": {
       "toolbar": "Tableau",
@@ -236,6 +247,18 @@
       "caption": "Légende",
       "captionPlaceholder": "Écrivez une légende",
       "resize": "Faites glisser pour changer la largeur"
+    },
+    "math": {
+      "field": "Équation en LaTeX",
+      "placeholder": "Par exemple : E = mc^2",
+      "done": "Terminé",
+      "keysInline": "Entrée pour enregistrer · Échap pour annuler",
+      "keysBlock": "Entrée pour enregistrer · Maj+Entrée pour une autre ligne · Échap pour annuler",
+      "empty": "Équation vide",
+      "error": "Erreur dans l’équation",
+      "hint": "Équation. Appuyez sur Entrée pour la modifier.",
+      "dialog": "Modifier l’équation",
+      "preview": "Aperçu"
     },
     "code": {
       "plain": "Texte brut",

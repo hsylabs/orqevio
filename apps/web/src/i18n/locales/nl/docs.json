@@ -128,6 +128,16 @@
         "subtitle": "Codeblok",
         "keywords": "code codeblok snippet"
       },
+      "math": {
+        "title": "Formule",
+        "subtitle": "Een formule als eigen blok, in LaTeX",
+        "keywords": "formule vergelijking wiskunde math latex katex tex blok"
+      },
+      "inlineMath": {
+        "title": "Formule in tekst",
+        "subtitle": "Een formule midden in de tekst, in LaTeX",
+        "keywords": "formule vergelijking wiskunde math latex katex tex inline tekst"
+      },
       "table": {
         "title": "Tabel",
         "subtitle": "3 × 3 met een kopregel",
@@ -174,7 +184,8 @@
       "italic": "Cursief",
       "strike": "Doorhalen",
       "code": "Code",
-      "link": "Link"
+      "link": "Link",
+      "math": "Formule"
     },
     "table": {
       "toolbar": "Tabel",
@@ -234,6 +245,18 @@
       "caption": "Bijschrift",
       "captionPlaceholder": "Schrijf een bijschrift",
       "resize": "Sleep om de breedte te wijzigen"
+    },
+    "math": {
+      "field": "Formule in LaTeX",
+      "placeholder": "Bijvoorbeeld: E = mc^2",
+      "done": "Klaar",
+      "keysInline": "Enter om op te slaan · Esc om te annuleren",
+      "keysBlock": "Enter om op te slaan · Shift+Enter voor een nieuwe regel · Esc om te annuleren",
+      "empty": "Lege formule",
+      "error": "Fout in de formule",
+      "hint": "Formule. Druk op Enter om hem te bewerken.",
+      "dialog": "Formule bewerken",
+      "preview": "Voorbeeld"
     },
     "code": {
       "plain": "Platte tekst",

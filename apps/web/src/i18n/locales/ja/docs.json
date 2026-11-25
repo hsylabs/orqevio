@@ -128,6 +128,16 @@
         "subtitle": "コードブロック",
         "keywords": "コード こーど code snippet"
       },
+      "math": {
+        "title": "数式",
+        "subtitle": "独立したブロックの数式（LaTeX）",
+        "keywords": "数式 すうしき 方程式 math latex katex tex ブロック"
+      },
+      "inlineMath": {
+        "title": "インライン数式",
+        "subtitle": "文中に入れる数式（LaTeX）",
+        "keywords": "数式 すうしき 方程式 math latex katex tex インライン"
+      },
       "table": {
         "title": "表",
         "subtitle": "見出し行付きの3 × 3",
@@ -174,7 +184,8 @@
       "italic": "斜体",
       "strike": "取り消し線",
       "code": "コード",
-      "link": "リンク"
+      "link": "リンク",
+      "math": "数式"
     },
     "table": {
       "toolbar": "表",
@@ -232,6 +243,18 @@
       "caption": "キャプション",
       "captionPlaceholder": "キャプションを入力",
       "resize": "ドラッグして幅を変更"
+    },
+    "math": {
+      "field": "LaTeXの数式",
+      "placeholder": "例：E = mc^2",
+      "done": "完了",
+      "keysInline": "Enterで保存・Escでキャンセル",
+      "keysBlock": "Enterで保存・Shift+Enterで改行・Escでキャンセル",
+      "empty": "空の数式",
+      "error": "数式にエラーがあります",
+      "hint": "数式です。Enterで編集できます。",
+      "dialog": "数式を編集",
+      "preview": "プレビュー"
     },
     "code": {
       "plain": "プレーンテキスト",
