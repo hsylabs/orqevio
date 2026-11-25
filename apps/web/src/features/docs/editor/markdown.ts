@@ -334,6 +334,8 @@ const ORDERED_ITEM = new RegExp(`^([ \\t]*)(${ORDERED_LIST_MARKER_PATTERN})([.)]
  */
 const EMPTY_ORDERED_ITEM = /^( {0,3})(\d{1,9}[.)])[ \t]*$/
 const FENCE = /^(`{3,}|~{3,})/
+/** The start of a block that runs on over the next lines: code, a formula, HTML. */
+const OPENS_A_BLOCK = /^(?:`{3}|~{3}|\$\$|<)/
 /**
  * Put before a line of code that looks like an item of an ordered list (`1. + 2` in a code block
  * under a numbered step), for the time @tiptap/extension-list reads the list: it would take the
@@ -347,20 +349,38 @@ const NOT_AN_ITEM = '\uE000'
  * the `.`), and then trims only the first line: in `1. paso` with `   - [ ] a` and `   - [x] b`
  * under it, the second task ends up inside the first. The extra column is taken off here first.
  *
- * An empty item, its number alone (`2.`) at the list's own margin, is an item, as CommonMark and
- * marked read it: it gets the space after its number that @tiptap/extension-list wants. Only there:
- * a number alone further in is a line of what the item above holds (code, a formula), as it was.
- * What comes right under an empty item is its own only if it is indented as its text would be;
- * anything else ends the list there, where marked ends it, rather than going into the item.
+ * An item of a list indented otherwise than its first, by up to three spaces and less than the
+ * text of the item above, is one more of its items, as CommonMark and marked read it; so in a list
+ * inside an item, from where the item's text starts. Its number is put in line with the others:
+ * @tiptap/extension-list made it an item of a list inside the one above (` 2.` under `1. uno`), or
+ * lost it if it was less indented than the first (`2.` under ` 1.`).
+ *
+ * An empty item, its number alone (`2.`) at the list's own margin, is an item too: it gets the
+ * space after its number that @tiptap/extension-list wants. A space or two off, so is it where
+ * nothing can be open under the item above (right under its line, or under an empty one). Only
+ * there: a number alone further in is a line of what the item above holds (code, a formula), as
+ * it was. What comes right under an
+ * empty item is its own only if it is indented as its text would be, with no blank line before
+ * it; another item of the list goes on with it, and anything else ends the list there, where
+ * marked ends it, rather than going into the item.
  */
 export function alignOrderedContinuations(src: string) {
   let item: { strippedThere: number; textColumn: number } | null = null
+  /**
+   * The lists open, from the list's own in: how far in the first item of each is, and the column
+   * the text of its item read last starts at, where what is less indented is no longer in it.
+   */
+  const levels: Array<{ margin: number; text: number }> = []
+  /** The list the item read last is one of, in `levels`: -1 if none. */
+  let level = -1
   /** The fence of a code block open under the item: its lines are code, whatever they look like. */
   let fence: { char: string; length: number } | null = null
   /** How far in the list's own items are, from its first. */
   let margin = -1
   /** Whether the item read last is empty, and nothing is its own yet. */
   let emptyItem = false
+  /** Whether nothing is open under the item read last: no text under its line, and no block on it. */
+  let clear = false
   const protect = !src.includes(NOT_AN_ITEM)
   let aligned = ''
   let previousBlank = false
@@ -374,21 +394,53 @@ export function alignOrderedContinuations(src: string) {
     if (fence && line.trim() && item && lead < item.textColumn) fence = null
     const empty = fence ? null : EMPTY_ORDERED_ITEM.exec(line)
     const atMargin = (indent: string) => margin === -1 || indent.length === margin
-    if (empty && atMargin(empty[1]!)) line = `${empty[1]}${empty[2]} `
-    const match = fence ? null : ORDERED_ITEM.exec(line)
+    const at = empty?.[1]!.length ?? -1
+    const bare = !!empty && (atMargin(empty[1]!) || (clear && margin <= 3 && levels.length > 0 && at < levels[0]!.text))
+    if (bare) line = `${' '.repeat(margin === -1 ? at : margin)}${empty![2]} `
+    let match = fence ? null : ORDERED_ITEM.exec(line)
+    level = -1
+    if (match && /^ *$/.test(match[1]!)) {
+      const at = match[1]!.length
+      // From the innermost list out: in the text of its item read last, it starts a list there;
+      // otherwise, up to three spaces in from where that list may start, it is one more of its items.
+      for (let depth = levels.length - 1; depth >= 0; depth--) {
+        const { margin: first, text } = levels[depth]!
+        const start = depth ? levels[depth - 1]!.text : 0
+        if (at >= text) {
+          if (at - text <= 3) level = levels.push({ margin: at, text: -1 }) - 1
+          break
+        }
+        if (at >= start && at - start <= 3) {
+          levels.length = depth + 1
+          level = depth
+          // One more item of the list, indented otherwise than its first: in line with the others.
+          if (at !== first && first - start <= 3) {
+            line = `${' '.repeat(first)}${line.slice(at)}`
+            match = ORDERED_ITEM.exec(line)
+          }
+          break
+        }
+      }
+      if (!levels.length) level = levels.push({ margin: at, text: -1 }) - 1
+    }
     if (emptyItem && line.trim() && !(match && atMargin(match[1]!))) {
       // Under an empty item, only what is indented as its text would be, with no blank line before it, is its own.
-      if (previousBlank || !item || lead < item.textColumn) return aligned.replace(/\n$/, '')
+      if (previousBlank || lead < item!.textColumn) return aligned.replace(/\n$/, '')
       emptyItem = false
     }
     if (match) {
       if (margin === -1) margin = match[1]!.length
-      emptyItem = !!empty && atMargin(empty[1]!)
+      emptyItem = bare
+      clear = !OPENS_A_BLOCK.test(line.slice(match[0].length))
       const [, indent = '', marker = '', , spaces = ''] = match
       // Five spaces or more after the marker: the text starts after one, and the rest is code.
       const gap = spaces.length > 4 ? 1 : spaces.length
       item = { strippedThere: indent.length + marker.length + 1, textColumn: indent.length + marker.length + 1 + gap }
+      if (level !== -1) levels[level]!.text = item.textColumn
     } else if (item && line.trim()) {
+      clear = false
+      // Less indented than the text of the item read last in a list inside another: that list is over.
+      while (levels.length > 1 && lead < levels.at(-1)!.text) levels.pop()
       // Text at the margin after a blank line: the list is over.
       if (lead === 0 && previousBlank && !fence) return aligned + src.slice(start)
       const text = line.trimStart()
@@ -440,6 +492,9 @@ const FaithfulOrderedList = OrderedList.extend({
       // Tried at the start of every block: only an ordered list is worth the work.
       const end = src.indexOf('\n')
       const first = end === -1 ? src : src.slice(0, end)
+      // Four spaces in, or a tab, where a block starts, a number is code (marked reads it so): read
+      // as a list, the items after it less indented were lost.
+      if (/^(?: {4}| {0,3}\t)/.test(first)) return undefined
       if (!ORDERED_ITEM.test(first) && !EMPTY_ORDERED_ITEM.test(first)) return orderedListTokenizer.tokenize(src, tokens, lexer)
       const aligned = alignOrderedContinuations(src)
       const token = orderedListTokenizer.tokenize(aligned, tokens, lexer)
@@ -479,7 +534,8 @@ function fillEmptyItems(nodes: JSONContent[]): JSONContent[] {
  * The helpers an item of a list is written with, but for each rule right under a paragraph with
  * text: the item writes its blocks one line under the other, and `---` under a line of text makes
  * it a heading (`***` is written `---` too), which lost the rule on the next save. Such a rule is
- * marked, and written after a blank line. A task's item reads that line as a rule: it stays so.
+ * marked, and written after a blank line. A task reads that line as a rule here, but marked and
+ * GitHub read a heading there too: it is written so as well.
  */
 function rulesApart(node: JSONContent, helpers: MarkdownRendererHelpers) {
   const content = node.content ?? []
@@ -510,13 +566,15 @@ const FaithfulListItem = ListItem.extend({
     return this.parent?.({ ...token, tokens }, helpers) ?? []
   },
   renderMarkdown(node, helpers, context) {
-    // An item read without a first line of text (TipTap's numbered lists read `1.` alone so) is
-    // written as one with an empty one, which is how the editor keeps it.
+    // An item without a first line of text (in content given as JSON) is written as one with an
+    // empty one, which is how the editor keeps it.
     if (node.content?.[0]?.type !== 'paragraph') node = { ...node, content: [emptyLine(), ...(node.content ?? [])] }
     const apart = rulesApart(node, helpers)
     let markdown = apart.write(this.parent?.(node, apart.helpers, context) ?? '')
-    // An empty item of a numbered list is its number alone, as it is written by hand (`2.`).
-    if (context?.parentType === 'orderedList' && node.content!.length === 1 && !node.content![0]!.content?.length) markdown = markdown.replace(/^(\d{1,9}[.)]) +$/, '$1')
+    // An empty item is its marker alone, as it is written by hand (`2.`, `-`): marked reads no item
+    // in `- ` with nothing after it, and an empty first item of a list so was lost on the next save.
+    const list = context?.parentType === 'orderedList' || context?.parentType === 'bulletList'
+    if (list && node.content!.length === 1 && !node.content![0]!.content?.length) markdown = markdown.replace(/^(\d{1,9}[.)]|[-+*]) +$/, '$1')
     // An item that starts with a block: the empty line the editor keeps before it is no line, and a
     // marker alone on its line would lose the item. In a bulleted list a formula of its own or a
     // block of code goes on the marker's line, as it was written (`- $$x$$`, `- ```js`); anywhere
@@ -535,9 +593,21 @@ const FaithfulListItem = ListItem.extend({
   },
 })
 
+/**
+ * A task read with the blocks under its first line, which marked gives as bare text when they
+ * follow a list there (`- [ ] t` with `  2.` and `  texto` under it): each is a paragraph, or
+ * the document is invalid. Written as a list item is, with each rule right under its text apart.
+ */
 const FaithfulTaskItem = TaskItem.extend({
+  parseMarkdown(token, helpers) {
+    const nested = token.nestedTokens as typeof token.tokens
+    if (!nested?.some((child) => child.type === 'text')) return this.parent?.(token, helpers) ?? []
+    const nestedTokens = nested.map((child) => (child.type === 'text' ? { ...child, type: 'paragraph' } : child))
+    return this.parent?.({ ...token, nestedTokens }, helpers) ?? []
+  },
   renderMarkdown(node, helpers, context) {
-    return withoutTrailingLine(this.parent?.(node, helpers, context) ?? '')
+    const apart = rulesApart(node, helpers)
+    return withoutTrailingLine(apart.write(this.parent?.(node, apart.helpers, context) ?? ''))
   },
 })
 
@@ -569,8 +639,38 @@ interface ManagerInternals {
   applyMarkToContent(markType: string, content: JSONContent[], attrs?: Record<string, unknown>): JSONContent[]
 }
 
+type MarkedList = (this: unknown, src: string) => { raw: string } | undefined | false
+interface MarkedInstance {
+  Tokenizer: { prototype: { list: MarkedList } }
+  use(extension: { tokenizer: { list: MarkedList } }): unknown
+}
+const readingBareNumbers = new WeakSet<object>()
+/**
+ * marked's own reading of a list, which a quote reads again with the lines that follow it without
+ * `>`, takes no list whose first item is a number with only spaces after it (`> 2. `, then
+ * `texto`): @tiptap/extension-list had read an empty item there, and the page couldn't be opened.
+ * It is read as the number alone, the same empty item.
+ */
+function readBareNumbers(instance: MarkedInstance) {
+  if (readingBareNumbers.has(instance)) return
+  readingBareNumbers.add(instance)
+  const list = instance.Tokenizer.prototype.list
+  instance.use({
+    tokenizer: {
+      list(src) {
+        const bare = /^( {0,3}\d{1,9}[.)])[ \t]+(?=\n|$)/.exec(src)
+        if (!bare) return false
+        const token = list.call(this, bare[1] + src.slice(bare[0].length))
+        // What it took from the source, as it was: marked goes on from there.
+        return token ? { ...token, raw: src.slice(0, token.raw.length + bare[0].length - bare[1]!.length) } : false
+      },
+    },
+  })
+}
+
 function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[0]) {
   const manager = new MarkdownManager(options)
+  readBareNumbers(manager.instance as unknown as MarkedInstance)
   const internals = manager as unknown as ManagerInternals
 
   // A formula in a line is written as text with its marks, in their run: `**a $x$ b**` and
