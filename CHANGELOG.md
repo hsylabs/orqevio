@@ -34,6 +34,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
 ### Fixed
 - **Two tables in a row in a document.** Each time the page was opened and saved, more blank lines appeared between them, and then an empty paragraph. They now stay as they were.
 - **GitHub alerts in documents.** An alert such as `> [!NOTE]`, written by an agent or brought from GitHub, stays an alert when the page is edited. It was saved as `> \[!NOTE\]`, and GitHub then showed a plain quote. This covers the five GitHub alerts and Obsidian callouts. A marker escaped on purpose, to show how an alert is written, stays escaped, also when its quote is copied and pasted.
+- **Lists in documents.** In a list item, the lines after a heading or a block of HTML had their formatting escaped once more on every save (`**b**` grew backslashes). A table at the end of a task item split its task list in two. Both stay as they were now.
 
 ## [1.4.1] - 2026-11-23
 

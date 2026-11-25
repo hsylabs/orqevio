@@ -401,6 +401,22 @@ describe('a toggle changed in the editor', () => {
     expect(saved(forward)).toBe(closed)
   })
 
+  it('at the end of a task item, leaves its task list one list', () => {
+    const once = open('- [ ] uno\n\n  <details>\n  <summary>A</summary>\n\n  Texto\n\n  </details>\n- [x] dos\n- [ ] tres').getMarkdown()
+    const again = open(once)
+    expect(again.getJSON().content?.map((node) => node.type)).toEqual(['taskList'])
+    expect(again.getMarkdown()).toBe(once)
+  })
+
+  it('empty in a list item, with a line after it, stays a toggle and the line stays as it is', () => {
+    const once = open('- uno\n\n  <details>\n  <summary>A</summary>\n\n  </details>\n\n  con snake_case y **b**').getMarkdown()
+    const again = open(once)
+    expect(() => again.state.doc.check()).not.toThrow()
+    expect(types(again)).toContain('toggle')
+    expect(again.getMarkdown()).toBe(once)
+    expect(once).toContain('con snake\\_case y **b**')
+  })
+
   it('in a list item, keeps the block after it apart, so that it is still a toggle when the page is read again', () => {
     for (const after of ['> Cita', '```js\n  x\n  ```', '<details>\n  <summary>Otro</summary>\n\n  Dos\n\n  </details>']) {
       const once = open(`- uno\n\n  <details>\n  <summary>En lista</summary>\n\n  Texto\n\n  </details>\n\n  ${after}`).getMarkdown()

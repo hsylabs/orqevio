@@ -2,7 +2,7 @@ import { type AnyExtension, type JSONContent, Node } from '@tiptap/core'
 import Blockquote from '@tiptap/extension-blockquote'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
-import { ORDERED_LIST_MARKER_PATTERN, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
+import { ListItem, ORDERED_LIST_MARKER_PATTERN, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
 import Paragraph from '@tiptap/extension-paragraph'
 import { Table, TableKit } from '@tiptap/extension-table'
 import { Markdown, MarkdownManager, assumeContentType } from '@tiptap/markdown'
@@ -405,6 +405,34 @@ const FaithfulImage = Image.extend({
   },
 }).configure({ inline: true, allowBase64: false })
 
+// ── List items ───────────────────────────────────────────────────
+
+/** An item written without the whitespace-only line a block can leave at its end (a toggle's, a table's). */
+const withoutTrailingLine = (markdown: string) => markdown.replace(/\n[ \t]*$/, '')
+
+/**
+ * A list item read as blocks. In a tight list marked gives the lines after a heading, a toggle or
+ * other HTML as bare text, and @tiptap/extension-list makes only the first one a paragraph: the
+ * others went straight in the item, an invalid document whose text was escaped again on every
+ * save. Each is a paragraph, as in a loose list. Written without a trailing whitespace-only line,
+ * which would make the list loose, or split a task list in two.
+ */
+const FaithfulListItem = ListItem.extend({
+  parseMarkdown(token, helpers) {
+    const tokens = token.tokens?.map((child) => (child.type === 'text' ? { ...child, type: 'paragraph' } : child))
+    return this.parent?.({ ...token, tokens }, helpers) ?? []
+  },
+  renderMarkdown(node, helpers, context) {
+    return withoutTrailingLine(this.parent?.(node, helpers, context) ?? '')
+  },
+})
+
+const FaithfulTaskItem = TaskItem.extend({
+  renderMarkdown(node, helpers, context) {
+    return withoutTrailingLine(this.parent?.(node, helpers, context) ?? '')
+  },
+})
+
 // ── Tables ───────────────────────────────────────────────────────
 
 /**
@@ -500,7 +528,9 @@ export function documentExtensions(): AnyExtension[] {
       codeBlock: false,
       orderedList: false,
       blockquote: false,
+      listItem: false,
     }),
+    FaithfulListItem,
     FaithfulLink.configure({
       openOnClick: false,
       autolink: true,
@@ -519,7 +549,7 @@ export function documentExtensions(): AnyExtension[] {
     FaithfulMarkdown.configure({ markedOptions: { gfm: true } }),
     TaskList,
     // What a screen reader says for each checkbox, in the app's language.
-    TaskItem.configure({
+    FaithfulTaskItem.configure({
       nested: true,
       a11y: { checkboxLabel: (node) => (node.textContent ? t('docs:editor.taskCheckbox', { text: node.textContent }) : t('docs:editor.taskCheckboxEmpty')) },
     }),

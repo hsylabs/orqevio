@@ -1,4 +1,4 @@
-import { type Editor, type JSONContent, Node, isMacOS, mergeAttributes } from '@tiptap/core'
+import { type Editor, type JSONContent, Node, isMacOS, isiOS, mergeAttributes } from '@tiptap/core'
 import { type Node as PMNode, Slice } from '@tiptap/pm/model'
 import { type EditorState, NodeSelection, Plugin, PluginKey, Selection, TextSelection, type Transaction } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, type NodeView } from '@tiptap/pm/view'
@@ -424,8 +424,9 @@ export const Toggle = Node.create({
   },
 })
 
-const BACKWARD = ['Backspace', 'Mod-Backspace', 'Shift-Backspace', ...(isMacOS() ? ['Alt-Backspace', 'Ctrl-h'] : [])]
-const FORWARD = ['Delete', 'Mod-Delete', ...(isMacOS() ? ['Ctrl-d', 'Ctrl-Alt-Backspace', 'Alt-Delete', 'Alt-d'] : [])]
+const MAC = isMacOS() || isiOS()
+const BACKWARD = ['Backspace', 'Mod-Backspace', 'Shift-Backspace', ...(MAC ? ['Alt-Backspace', 'Ctrl-h'] : [])]
+const FORWARD = ['Delete', 'Mod-Delete', ...(MAC ? ['Ctrl-d', 'Ctrl-Alt-Backspace', 'Alt-Delete', 'Alt-d'] : [])]
 
 /** At the end of a title: what the toggle holds comes up into it only if it is open (see intoTitle). */
 function deleteForward(editor: Editor) {

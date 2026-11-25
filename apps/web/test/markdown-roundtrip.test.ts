@@ -127,6 +127,21 @@ describe('Markdown round trip', () => {
     expect(roundTrip(first)).toBe(first)
   })
 
+  it('keeps the lines after a heading or HTML in a list item as they are, save after save', () => {
+    for (const markdown of ['- a\n\n  ## H\n\n  tras **b** y snake_case', '- uno\n\n  <div>x</div>\n\n  tras **b**']) {
+      const first = roundTrip(markdown)
+      expect(first).toContain('tras **b**')
+      expect(roundTrip(first)).toBe(first)
+      expect(roundTrip(roundTrip(first))).toBe(first)
+    }
+  })
+
+  it('keeps a task list with a table at the end of an item one list', () => {
+    const first = roundTrip('- [ ] a\n\n  | t |\n  | --- |\n  | x |\n- [x] b')
+    expect(open(first).getJSON().content?.map((node) => node.type)).toEqual(['taskList'])
+    expect(roundTrip(first)).toBe(first)
+  })
+
   it('writes text that looks like Markdown so it reads back as text', () => {
     // What the editor shows as plain text, e.g. after undoing a list or pasting Markdown as text.
     const lines = ['# título', '- lista', '+ lista', '1. lista', '1) lista', '> cita', '---', '- - -', '===']
