@@ -143,6 +143,7 @@ test('one click in a description puts the cursor where it lands', async ({ page 
     await expect(page.getByRole('dialog', { name: new RegExp(`^${title}`) })).toBeFocused()
     const clicked = box.locator(target.tag).filter({ hasText: new RegExp(`^${target.text}$`) })
     // Code is as wide as its text: its end, rather than its middle.
+    if ('atEnd' in target) await page.evaluate(() => document.fonts.ready)
     const size = 'atEnd' in target ? (await clicked.boundingBox())! : null
     await clicked.click(size ? { position: { x: size.width - 1, y: size.height / 2 } } : undefined)
     await page.keyboard.type('X')

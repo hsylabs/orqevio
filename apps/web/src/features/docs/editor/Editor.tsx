@@ -2,6 +2,8 @@ import type { AttachmentDTO, MeDTO, SearchResultDTO } from '@orqevio/shared'
 import { cardHref, docHref } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Placeholder } from '@tiptap/extensions'
+import type { Node as PMNode } from '@tiptap/pm/model'
+import { Selection } from '@tiptap/pm/state'
 import { EditorContent, useEditor } from '@tiptap/react'
 import { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -59,6 +61,13 @@ export async function uploadFile(file: File, target: UploadTarget): Promise<Atta
   // A copy before 1.2.1 with MAX_UPLOAD_MB set wrong gives no number: the server decides then.
   if (typeof limit === 'number' && file.size > limit) throw new ApiError(413, 'file_too_large', 'File too large')
   return api<AttachmentDTO>('POST', `/${target.type === 'page' ? 'pages' : 'cards'}/${target.id}/attachments`, file)
+}
+
+/** Where the text ends: before the empty paragraph the editor keeps after anything but a paragraph at the end. */
+function textEnd(doc: PMNode) {
+  const last = doc.lastChild
+  const kept = doc.childCount > 1 && last?.type.name === 'paragraph' && last.content.size === 0
+  return Selection.near(doc.resolve(kept ? doc.content.size - last.nodeSize : doc.content.size), -1)
 }
 
 /** Inserts the file where it was dropped (`pos`) or at the cursor, and returns the position right after it. */
@@ -190,7 +199,8 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
   const editor = useEditor({
     immediatelyRender: true,
     shouldRerenderOnTransaction: false,
-    autofocus: autofocus ? 'end' : false,
+    // Done in onCreate, at the end of the text rather than in that empty paragraph.
+    autofocus: false,
     extensions: [
       ...documentExtensions(),
       Placeholder.configure({
@@ -250,13 +260,21 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
         return false
       },
     },
-    onCreate: ({ editor }) => {
-      // The empty paragraph kept after a table, a list or code at the end (TrailingNode) comes with
-      // the first transaction. It comes now, out of the undo history, so that the first is not the
-      // one the editor's focus makes: in Firefox a click focuses before the selection it placed is
-      // read, and redrawing the document then put the cursor back where it was, at the start.
+    onMount: ({ editor }) => {
+      // The empty paragraph kept after anything but a paragraph at the end (TrailingNode) comes
+      // with the first transaction. It comes now, out of the undo history and with no update, so
+      // that the first is not the one a focus makes. In Firefox a click focuses before the selection
+      // it placed is read, and redrawing the document put the cursor back where it was, at the
+      // start. In Safari autofocus focuses while its own transaction is being made, which that
+      // change then left behind ("Applying a mismatched transaction").
       editor.view.dispatch(editor.state.tr.setMeta('addToHistory', false).setMeta('preventUpdate', true))
+    },
+    onCreate: ({ editor }) => {
       emitted.current = editor.getMarkdown()
+      if (autofocus) {
+        editor.view.dispatch(editor.state.tr.setSelection(textEnd(editor.state.doc)).setMeta('addToHistory', false))
+        editor.commands.focus()
+      }
     },
     // Content set from outside (another tab, an agent) is the new starting point.
     onTransaction: ({ editor, transaction }) => {
