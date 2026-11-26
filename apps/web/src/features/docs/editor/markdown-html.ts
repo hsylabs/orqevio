@@ -6,7 +6,7 @@ import { languageClass, languageName } from './code-block'
 import { cssSize } from './image'
 import { highlightCode, loadCodeColours, whenCodeColoursLoad } from './code-languages'
 import { drawMath } from './math'
-import { documentExtensions } from './markdown'
+import { documentExtensions, onlyDefinitions } from './markdown'
 import { icon } from './svg-icons'
 
 /**
@@ -28,6 +28,8 @@ function render(markdown: string) {
   const root = page.createElement('div')
   root.append(DOMSerializer.fromSchema(reader.schema).serializeFragment(doc.content, { document: page }))
   for (const link of root.querySelectorAll('a[href=""]')) link.removeAttribute('href')
+  // The definitions of links to references show nothing, as on GitHub: their links show where they go.
+  for (const source of root.querySelectorAll('pre[data-raw-markdown]')) if (onlyDefinitions(source.textContent ?? '')) source.remove()
   for (const code of root.querySelectorAll('pre:not([data-raw-html]):not([data-raw-markdown]) > code')) codeBlock(code, page)
   for (const quote of root.querySelectorAll('blockquote[data-callout]')) calloutTitle(quote, page)
   for (const img of root.querySelectorAll('img[title], img[width], img[height]')) imageCaption(img, page)

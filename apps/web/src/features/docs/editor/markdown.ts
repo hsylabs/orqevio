@@ -123,13 +123,22 @@ export const RawMarkdownBlock = Node.create({
       const end = src.indexOf('\n\n')
       return (end === -1 ? src : src.slice(0, end)).search(/(?:^|\n) {0,3}\[\^[^\]\s]+\]:/)
     },
-    tokenize: (src: string) => {
+    tokenize: (src: string, tokens: ReadonlyArray<{ type?: string }>) => {
       const match = /^ {0,3}\[\^[^\]\s]+\]:[^\n]*(?:\n(?: {4}|\t)[^\n]*)*/.exec(src)
-      const raw = match?.[0] ?? definitionsAt(src)
-      return raw ? { type: 'footnoteDefinition', raw, text: raw } : undefined
+      if (match) return { type: 'footnoteDefinition', raw: match[0], text: match[0] }
+      // A definition can't break into a paragraph: right after a line of text it is more of that
+      // text, as marked reads it. One line alone, with nothing read before it and away from the
+      // page's own tokens (which hold its `links`), is how @tiptap/markdown asks whether a line
+      // goes on with the text of a task or an item: it does.
+      const previous = tokens.at(-1)?.type
+      const asked = !tokens.length && !('links' in tokens) && src.indexOf('\n') === src.length - 1
+      if (previous === 'paragraph' || previous === 'text' || asked) return undefined
+      // Taken with the line ends after it, as marked takes a block; kept without them.
+      const raw = definitionsAt(src)
+      return raw ? { type: 'footnoteDefinition', raw, text: raw.replace(/\n+$/, '') } : undefined
     },
   },
-  parseMarkdown: (token, helpers) => helpers.createNode('rawMarkdownBlock', { markdown: String(token.raw ?? '') }),
+  parseMarkdown: (token, helpers) => helpers.createNode('rawMarkdownBlock', { markdown: String(token.text ?? token.raw ?? '') }),
   renderMarkdown: (node) => String(node.attrs?.markdown ?? ''),
 })
 
@@ -317,16 +326,11 @@ function balancedParentheses(href: string) {
 }
 
 // A link's address with spaces or angle brackets goes between `<>`, or it stops being a link.
-/**
- * How a link to a reference was written: `[texto][a]` (full), `[texto][]` (collapsed) or `[texto]`
- * (shortcut), with its label, and the text it had for the last two, whose label is their text.
- */
+/** How a link to a reference was written: `[texto][a]` (full), `[texto][]` (collapsed) or `[texto]` (shortcut), and its label. */
 interface LinkReference {
   form: 'full' | 'collapsed' | 'shortcut'
   label: string
-  text?: string
 }
-const textOf = (nodes: JSONContent[]): string => nodes.map((node) => node.text ?? textOf(node.content ?? [])).join('')
 
 // A link to a reference is written so again while the page still defines it with the same address
 // and title; otherwise, or one made in the editor, in line. @tiptap/markdown made them all in line.
@@ -336,17 +340,16 @@ const FaithfulLink = Link.extend({
   },
   parseMarkdown: (token, helpers) => {
     const raw = String(token.raw ?? '')
-    const content = helpers.parseInline(token.tokens || [])
     const named = /\]\[((?:\\[\s\S]|[^\\\]])*)\]$/.exec(raw)
     const own = /^\[([\s\S]*)\]$/.exec(raw)
     const reference: LinkReference | null = named?.[1]
       ? { form: 'full', label: named[1] }
       : named
-        ? { form: 'collapsed', label: raw.slice(1, -3), text: textOf(content) }
+        ? { form: 'collapsed', label: raw.slice(1, -3) }
         : own
-          ? { form: 'shortcut', label: own[1]!, text: textOf(content) }
+          ? { form: 'shortcut', label: own[1]! }
           : null
-    return helpers.applyMark('link', content, { href: token.href, title: token.title || null, reference })
+    return helpers.applyMark('link', helpers.parseInline(token.tokens || []), { href: token.href, title: token.title || null, reference })
   },
   renderMarkdown: (node, helpers) => {
     const href = String(node.attrs?.href ?? '')
@@ -355,6 +358,7 @@ const FaithfulLink = Link.extend({
     const reference = node.attrs?.reference as LinkReference | null | undefined
     const defined = reference ? writtenDefinitions.get(referenceKey(reference.label)) : undefined
     if (reference && defined && (defined.href ?? '') === href && (defined.title ?? '') === title) {
+      // Its form as the page is written: one that names its label by its text only where that text is it (linkForms).
       return reference.form === 'full' ? `[${text}][${reference.label}]` : reference.form === 'collapsed' ? `[${text}][]` : `[${text}]`
     }
     const address = /[\s<>]/.test(href) || !balancedParentheses(href) ? destination(href) : href
@@ -363,23 +367,36 @@ const FaithfulLink = Link.extend({
 })
 
 type Mark = NonNullable<JSONContent['marks']>[number]
+/** Text written as it is: letters, digits, and spaces and a few marks between them. */
+const PLAIN_LABEL = /^[\p{L}\p{N}](?:[\p{L}\p{N}.,'/-]| (?! ))*$/u
 /**
- * The document with each link written `[texto][]` or `[texto]` whose text changed since it was read
- * written `[texto][a]` instead: its label was its text. A link is written over its whole text, and
- * only there is the text known.
+ * The document with each link to a reference written `[texto][]` or `[texto]` so only where its
+ * text is still its label, written as it is: one text, no other mark, nothing a character would
+ * be escaped for. Elsewhere (the text changed, a mark added, `a_b` written `a\_b`) it is written
+ * `[texto][a]`, which names its label. And `[texto]` only with no `(`, `[` or `:` after it, which
+ * would make it a link in line, a label or a definition: `[texto][]` then. A link's text is only
+ * known here: @tiptap/markdown writes a link's two ends apart from its text.
  */
-function linksAsNamed(node: JSONContent): JSONContent {
+function linkForms(node: JSONContent): JSONContent {
   if (!node.content) return node
-  const content = node.content.map(linksAsNamed)
+  const content = node.content.map(linkForms)
   const linkOf = (child?: JSONContent) => child?.marks?.find((mark) => mark.type === 'link')
   for (let start = 0; start < content.length; ) {
     const link = linkOf(content[start])
     const reference = link?.attrs?.reference as LinkReference | null | undefined
     let end = start + 1
     while (end < content.length && JSON.stringify(linkOf(content[end])?.attrs) === JSON.stringify(link?.attrs)) end++
-    if (link && reference && reference.form !== 'full' && textOf(content.slice(start, end)) !== reference.text) {
-      const named: Mark = { ...link, attrs: { ...link.attrs, reference: { form: 'full', label: reference.label } } }
-      for (let i = start; i < end; i++) content[i] = { ...content[i], marks: content[i]!.marks!.map((mark) => (mark === linkOf(content[i]) ? named : mark)) }
+    if (link && reference && reference.form !== 'full') {
+      const run = content.slice(start, end)
+      const text = run.map((child) => child.text ?? '').join('')
+      const plain = run.every((child) => child.type === 'text' && child.marks?.length === 1) && text === reference.label && PLAIN_LABEL.test(text)
+      const after = content[end]
+      const free = !after || (after.type === 'text' && !linkOf(after) && !/^[([:]/.test(after.text ?? ''))
+      const form = !plain ? 'full' : reference.form === 'shortcut' && free ? 'shortcut' : 'collapsed'
+      if (form !== reference.form) {
+        const written: Mark = { ...link, attrs: { ...link.attrs, reference: { form, label: reference.label } } }
+        for (let i = start; i < end; i++) content[i] = { ...content[i], marks: content[i]!.marks!.map((mark) => (mark === linkOf(content[i]) ? written : mark)) }
+      }
     }
     start = end
   }
@@ -399,7 +416,7 @@ const plainLexer = () => (plainMarked ? new plainMarked.Lexer({ gfm: true }) : n
 /** A label as marked keys it. */
 const referenceKey = (label: string) => label.replace(/\s+/g, ' ').toLowerCase()
 
-/** The definitions of links to references that start `src`, one after another, as marked reads them; '' if none. */
+/** The definitions of links to references that start `src`, one after another, as marked reads them, with the line ends after them; '' if none. */
 function definitionsAt(src: string) {
   const lexer = /^ {0,3}\[/.test(src) ? plainLexer() : null
   if (!lexer) return ''
@@ -407,18 +424,28 @@ function definitionsAt(src: string) {
   for (let definition = lexer.tokenizer.def(src); definition; definition = lexer.tokenizer.def(src.slice(taken))) {
     taken += definition.raw.length
   }
-  // Without the blank lines after the last: blocks are written apart already.
-  return src.slice(0, taken).replace(/\n+$/, '')
+  return src.slice(0, taken)
 }
 
-/** The definitions of the page being read, wherever they are in it: a task reads its text before marked reaches them. */
+/** Whether `markdown` is only definitions of links to references, which a page shows nothing of (as GitHub). */
+export function onlyDefinitions(markdown: string) {
+  const text = markdown.replace(/\n+$/, '')
+  return !!text && !/^ {0,3}\[\^/m.test(text) && definitionsAt(text).replace(/\n+$/, '') === text
+}
+
+/**
+ * The definitions of the page being read, wherever they are in it, which the lexer of the page
+ * knows from the start (as marked knows those before): a task reads its text before marked reaches
+ * them, and `*`, `_` or `~` around a link to one would take its brackets.
+ */
 let readDefinitions: MarkedLinks | null = null
 /** The definitions of the page being written, from the blocks that hold them. */
 let writtenDefinitions = new Map<string, MarkedLinks[string]>()
 
-/** The definitions in `markdown`, keyed as marked keys them; the first of a label counts, as in marked. */
+/** The definitions in `markdown`, keyed as marked keys them; the first of a label counts, as in marked. Footnotes (`[^1]`) are none. */
 function definitionsIn(markdown: string): MarkedLinks {
-  return markdown.includes(']:') ? (plainLexer()?.lex(markdown).links ?? {}) : {}
+  const links = markdown.includes(']:') ? (plainLexer()?.lex(markdown).links ?? {}) : {}
+  return Object.fromEntries(Object.entries(links).filter(([label]) => !label.startsWith('^')))
 }
 
 /** The definitions the blocks of `doc` hold, as they will be written. */
@@ -620,21 +647,23 @@ type ListItemToken = { type: string; raw: string; tokens: Array<{ type: string; 
 type BlockLexer = { blockTokens: (src: string) => ListItemToken['tokens'] }
 
 /**
- * Each item of a numbered list whose first line starts a quote (`1. > cita`) read as blocks, as
- * CommonMark and marked read it: @tiptap/extension-list reads an item's first line as text, and
- * the quote became the text `> cita`. What is under it in the item is read with it; a list of
- * numbered items inside it is kept as it was read, and its items are read so too.
+ * Each item of a numbered list whose first line starts a quote (`1. > cita`) or is a definition of
+ * a link to a reference (`1. [a]: …`, which reads as one) read as blocks, as CommonMark and marked
+ * read it: @tiptap/extension-list reads an item's first line as text, and the quote became the
+ * text `> cita`. What is under it in the item is read with it; a list of numbered items inside it
+ * is kept as it was read, and its items are read so too.
  */
-function quotesFirst(items: ListItemToken[], lexer: BlockLexer) {
+function blocksFirst(items: ListItemToken[], lexer: BlockLexer) {
   for (const item of items) {
     if (item.type !== 'list_item') continue
     // The list of numbered items inside it is the last of what it holds, read by @tiptap/extension-list.
     const last = item.tokens.at(-1)
     const nested = last?.type === 'list' && 'typeMarker' in last ? (last as unknown as { items: ListItemToken[] }) : null
-    if (nested) quotesFirst(nested.items, lexer)
+    if (nested) blocksFirst(nested.items, lexer)
     const [line = '', ...rest] = item.raw.split('\n')
     const match = ORDERED_ITEM.exec(line)
-    if (!match || !/^>/.test(line.slice(match[0].length))) continue
+    const first = match ? line.slice(match[0].length) : ''
+    if (!match || !(/^>/.test(first) || (/^\[(?!\^)/.test(first) && definitionsAt(first)))) continue
     // Its lines from where its text starts, as @tiptap/extension-list takes them.
     const within = match[1]!.length + match[2]!.length + 1
     const text = [line.slice(match[0].length), ...rest.map((next) => next.slice(Math.min(within, next.length - next.trimStart().length)))].join('\n')
@@ -655,7 +684,7 @@ const FaithfulOrderedList = OrderedList.extend({
       // of a task or an item above it: read as it always was (`2.` alone is no list, and goes on).
       if (end === -1 || end === src.length - 1) {
         const token = orderedListTokenizer.tokenize(src, tokens, lexer)
-        if (token) quotesFirst((token as unknown as { items: ListItemToken[] }).items, lexer as BlockLexer)
+        if (token) blocksFirst((token as unknown as { items: ListItemToken[] }).items, lexer as BlockLexer)
         return token
       }
       const first = src.slice(0, end)
@@ -663,7 +692,7 @@ const FaithfulOrderedList = OrderedList.extend({
       const aligned = alignOrderedContinuations(src)
       const token = orderedListTokenizer.tokenize(aligned, tokens, lexer)
       if (!token) return token
-      quotesFirst((token as unknown as { items: ListItemToken[] }).items, lexer as BlockLexer)
+      blocksFirst((token as unknown as { items: ListItemToken[] }).items, lexer as BlockLexer)
       // Only marks put there now: a document that held the character already got none, and keeps it.
       if (!src.includes(NOT_AN_ITEM) && aligned.includes(NOT_AN_ITEM)) removeMarks(token)
       // What it took from the source, as it was: marked goes on from there.
@@ -726,11 +755,15 @@ function inParagraphs(content: JSONContent[]): JSONContent[] {
  * text: the item writes its blocks one line under the other, and `---` under a line of text makes
  * it a heading (`***` is written `---` too), which lost the rule on the next save. Such a rule is
  * marked, and written after a blank line. A task reads that line as a rule here, but marked and
- * GitHub read a heading there too: it is written so as well.
+ * GitHub read a heading there too: it is written so as well. So is a definition of a link to a
+ * reference (a block of source) after any block: right under a line, it is more of its text.
  */
 function rulesApart(node: JSONContent, helpers: MarkdownRendererHelpers) {
   const content = node.content ?? []
-  const apart = new Set(content.flatMap((child, index) => (child.type === 'horizontalRule' && content[index - 1]?.type === 'paragraph' && content[index - 1]!.content?.length ? [index] : [])))
+  const rule = (child: JSONContent, before?: JSONContent) => child.type === 'horizontalRule' && before?.type === 'paragraph' && !!before.content?.length
+  // Right after the empty first line of an item, it goes on the marker's line instead (FaithfulListItem).
+  const source = (child: JSONContent, index: number) => child.type === 'rawMarkdownBlock' && index > 0 && !(index === 1 && content[0]?.type === 'paragraph' && !content[0].content?.length)
+  const apart = new Set(content.flatMap((child, index) => (rule(child, content[index - 1]) || source(child, index) ? [index] : [])))
   if (!apart.size) return { helpers, write: (markdown: string) => markdown }
   // A mark of its own for each item written: text that holds the same characters is no rule.
   const mark = `\uE001${Math.random().toString(36).slice(2, 10)}\uE001`
@@ -767,14 +800,14 @@ const FaithfulListItem = ListItem.extend({
     const list = context?.parentType === 'orderedList' || context?.parentType === 'bulletList'
     if (list && node.content!.length === 1 && !node.content![0]!.content?.length) markdown = markdown.replace(/^(\d{1,9}[.)]|[-+*]) +$/, '$1')
     // An item that starts with a block: the empty line the editor keeps before it is no line, and a
-    // marker alone on its line would lose the item. A quote goes on the marker's line, as it is
-    // written (`- > cita`, `1. > cita`); so, in a bulleted list, do a formula of its own and a block
+    // marker alone on its line would lose the item. A quote or a definition goes on the marker's
+    // line, as it is written (`- > cita`, `1. [a]: …`); so, in a bulleted list, do a formula of its own and a block
     // of code (`- $$x$$`, `- ```js`). Anywhere else (a numbered list reads those lines as text) the
     // line keeps `&nbsp;`, as nested items have it.
     const [first, second] = node.content ?? []
     if (first?.type === 'paragraph' && !first.content?.length && second) {
-      const quote = second.type === 'blockquote' || second.type === 'callout'
-      if (quote || (context?.parentType === 'bulletList' && (second.type === 'blockMath' || second.type === 'codeBlock'))) {
+      const ownLine = second.type === 'blockquote' || second.type === 'callout' || second.type === 'rawMarkdownBlock'
+      if (ownLine || (context?.parentType === 'bulletList' && (second.type === 'blockMath' || second.type === 'codeBlock'))) {
         markdown = markdown.replace(/^((?:[-+*]|\d{1,9}[.)]) +)(?:&nbsp;)?\n[ \t]*/, '$1')
       } else {
         // A rule right under a line of text would make it a heading: a blank line between them.
@@ -824,6 +857,7 @@ const FaithfulTable = Table.extend({
 type Token = { type?: string; text?: string; raw?: string; tokens?: Token[] }
 /** The private methods of MarkdownManager 3.33.0 patched below; the round-trip tests catch any change. */
 interface ManagerInternals {
+  createLexer(): { tokens: { links: MarkedLinks } }
   codeTypes: Set<string>
   escapeMarkdownSyntax(text: string): string
   encodeTextForMarkdown(text: string, node: JSONContent, parentNode?: JSONContent): string
@@ -833,11 +867,10 @@ interface ManagerInternals {
 }
 
 type MarkedList = (this: unknown, src: string) => { raw: string } | undefined | false
-type MarkedRefLink = (this: unknown, src: string, links: MarkedLinks) => unknown
 interface MarkedInstance {
   Lexer: new (options: object) => PlainLexer
-  Tokenizer: { prototype: { list: MarkedList; reflink: MarkedRefLink } }
-  use(extension: { tokenizer: { list?: MarkedList; reflink?: MarkedRefLink } }): unknown
+  Tokenizer: { prototype: { list: MarkedList } }
+  use(extension: { tokenizer: { list: MarkedList } }): unknown
 }
 const readingListsAgain = new WeakSet<object>()
 /**
@@ -851,14 +884,8 @@ function readListsAgain(instance: MarkedInstance) {
   if (readingListsAgain.has(instance)) return
   readingListsAgain.add(instance)
   const list = instance.Tokenizer.prototype.list
-  const reflink = instance.Tokenizer.prototype.reflink
   instance.use({
     tokenizer: {
-      // A link to a reference knows every definition of the page, wherever it is (readDefinitions).
-      reflink(src, links) {
-        if (!readDefinitions) return false
-        return reflink.call(this, src, Object.assign(Object.create(readDefinitions), links)) ?? undefined
-      },
       list(src) {
         const token = list.call(this, src)
         if (token) return token
@@ -884,6 +911,13 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
   readListsAgain(manager.instance as unknown as MarkedInstance)
   plainMarked = manager.instance as unknown as MarkedInstance
   const internals = manager as unknown as ManagerInternals
+  // The lexer of the page knows its definitions from the start (readDefinitions).
+  const createLexer = internals.createLexer.bind(manager)
+  internals.createLexer = () => {
+    const lexer = createLexer()
+    if (readDefinitions) Object.assign(lexer.tokens.links, readDefinitions)
+    return lexer
+  }
 
   // A formula in a line is written as text with its marks, in their run: `**a $x$ b**` and
   // `[a $x$](…)` stay as they are. @tiptap/markdown closes the marks around any other inline node.
@@ -955,7 +989,7 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
     placeholder = new RegExp(`^\\uFDD3${key}:(\\d+)\\uFDD4$`)
     writtenDefinitions = definitionsOf(doc)
     try {
-      return settleDollars(serialize(asText(linksAsNamed(doc), {}, key)), formulas)
+      return settleDollars(serialize(asText(linkForms(doc), {}, key)), formulas)
     } finally {
       formulas = []
       placeholder = /$^/

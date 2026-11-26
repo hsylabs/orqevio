@@ -96,6 +96,14 @@ const kept: Array<[string, string]> = [
   ['a link to a reference in a numbered item', '1. ver [docs][r]\n\n[r]: https://r.test'],
   ['a link to a reference and its definition in a quote', '> Cita con [x][a].\n>\n> [a]: https://a.test'],
   ['a link to a reference with marks, its address between angle brackets', "Texto [**negrita**][a].\n\n[a]: <https://a.test/con espacio> 'T'"],
+  ['links to references next to each other, and one followed by another label', 'Ver [a] [b] y [a][b].\n\n[a]: https://a.test\n[b]: https://b.test'],
+  ['two definitions of a label, the first counting', '[a]: https://a.test\n[a]: https://otra.test\n\nVer [a].'],
+  ['emphasis around a link to a reference whose text holds its mark', '*x [b\\*][a] y*\n\n[a]: https://a.test'],
+  ['a definition in an item, after its text', '[t][a]\n\n- x\n\n  [a]: https://a.test'],
+  ['a definition at the start of an item', '- [a]: https://a.test'],
+  ['a definition in a task, after its text', '- [ ] x\n\n  [a]: https://a.test'],
+  ['a definition in a numbered item, after its text', '1. x\n\n   [a]: https://a.test'],
+  ['a definition at the start of a numbered item', '1. [a]: https://a.test'],
   ['an empty quote', '>'],
   ['an empty quote between paragraphs', 'Texto\n\n>\n\nMás'],
   ['an empty quote inside a quote', '> a\n>\n> >'],
@@ -163,6 +171,14 @@ const normalised: Array<[string, string, string]> = [
   ['a numbered item with only a space after its number in a quote, with a line after it', '> 2. \n>    b\ntexto', '> 2. b\n> texto'],
   ['a numbered item with only a space after its number in a quote, with a heading under it', '> 2. \n>    ## h\ntexto', '> 2. &nbsp;\n>    ## h\n>\n> texto'],
   ['an empty quote in an item, after a blank line', '- a\n\n  >', '- a\n  >'],
+  // Written `[texto][]` or `[texto]` only where the text is written as its label is.
+  ['a link to a reference whose label is escaped in its text', 'Ver [a_b][].\n\n[a_b]: https://a.test', 'Ver [a\\_b][a_b].\n\n[a_b]: https://a.test'],
+  ['a shortcut link to a reference whose label is escaped in its text', 'Ver [a*b].\n\n[a*b]: https://a.test', 'Ver [a\\*b][a*b].\n\n[a*b]: https://a.test'],
+  ['a shortcut link to a reference followed by parentheses', 'Ver [a]\\(b).\n\n[a]: https://a.test', 'Ver [a][](b).\n\n[a]: https://a.test'],
+  ['a shortcut link to a reference followed by a colon at the start of a line', '[a]\\: b\n\n[a]: https://a.test', '[a][]: b\n\n[a]: https://a.test'],
+  ['a definition with a heading right under it', '[a]: https://a.test\n## Siguiente', '[a]: https://a.test\n\n## Siguiente'],
+  // A definition can't break into a paragraph: there it is text, as marked reads it.
+  ['a line like a definition going on with a quote', '> cita [a]\n[a]: https://a.test', '> cita \\[a\\]\n> \\[a\\]: [https://a.test](https://a.test)'],
   ['a quote at the start of a numbered item, and a line that goes on with it', '1. > cita\ntexto', '1. > cita\n   > texto'],
   ['a numbered item four spaces in in a quote, with a line after it', '>     1. a\nx y', '> 1. a\n> x y'],
   ['numbered items five spaces in in a quote, with a line after them', '>      1. a\n>      2. b\nx y', '> 1. a\n> 2. b\n> x y'],
@@ -219,6 +235,8 @@ describe('Markdown round trip', () => {
     expect(edited((doc) => { texts(doc)[1]!.text = 'x'; texts(doc)[3]!.text = 'y' })).toBe('Ver [x][a] y [y][b] y [c][r].\n\n[a]: https://a.test\n[b]: https://b.test\n[r]: https://r.test')
     // Its address changed: the definition no longer says where it goes.
     expect(edited((doc) => { link(texts(doc)[5]!).attrs!.href = 'https://otra.test' })).toBe('Ver [a] y [b][] y [c](https://otra.test).\n\n[a]: https://a.test\n[b]: https://b.test\n[r]: https://r.test')
+    // A mark on its text: the text is no longer written as its label.
+    expect(edited((doc) => { texts(doc)[1]!.marks!.push({ type: 'bold' }) })).toBe('Ver [**a**][a] y [b][] y [c][r].\n\n[a]: https://a.test\n[b]: https://b.test\n[r]: https://r.test')
     // Its definition is gone.
     expect(edited((doc) => { doc.content!.pop() })).toBe('Ver [a](https://a.test) y [b](https://b.test) y [c](https://r.test).')
   })
