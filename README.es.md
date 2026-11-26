@@ -9,7 +9,7 @@ Orqevio reúne cuatro piezas y solo esas cuatro:
 | Módulo | Qué incluye |
 | --- | --- |
 | **Tareas** | Espacios, proyectos, tableros Kanban, columnas, tarjetas, etiquetas, fechas, checklists, archivo y adjuntos. |
-| **Documentación** | Páginas jerárquicas con editor por bloques que guarda Markdown, tablas sencillas, imágenes y archivos, y enlaces directos con tareas. |
+| **Documentación** | Páginas jerárquicas con editor por bloques que guarda Markdown: tablas, código, avisos, desplegables, fórmulas, imágenes y archivos, y enlaces directos con tareas. |
 | **Bóveda** | Credenciales y notas privadas cifradas de extremo a extremo, códigos de verificación en dos pasos (TOTP), importación y exportación, generador de contraseñas, clave de recuperación y bloqueo automático. |
 | **Agentes (MCP)** | Servidor MCP con permisos diferenciados por espacio, para que los agentes hagan casi todo lo que haces tú con tareas y documentos: consultar, escribir, reorganizar, adjuntar archivos y poner orden. Se conecta con OAuth (por ejemplo, como conector de Claude) o con un token. |
 
@@ -24,6 +24,7 @@ Y **nada de lo que hace un agente es definitivo.** Cualquier cambio se puede des
 ## Experiencia
 
 - **Relación directa entre tareas y documentos.** Escribe `@` en un documento para enlazar una tarea: el vínculo aparece en ambos lados. También puedes vincular documentos desde la tarjeta.
+- **Un editor como Notion, en el Markdown que lee GitHub.** Cada bloque tiene un asa para moverlo o convertirlo en otro, y un «+» para insertar uno debajo; la `/` y los atajos de Markdown funcionan mientras escribes. Tablas que se editan desde una barra, código con su lenguaje y sus colores, las alertas de GitHub, desplegables, imágenes con su ancho y su pie, y fórmulas en LaTeX. Lo que se guarda sigue siendo el Markdown que leen tus agentes y GitHub.
 - **Comentarios en las tarjetas.** Conversa con tus agentes en una tarjeta, en Markdown. Cada uno edita solo sus comentarios; tú puedes borrar cualquiera, y un agente solo los suyos. El tablero muestra cuántos tiene cada tarjeta.
 - **Páginas que te puedes llevar.** Descarga una página en Markdown, con sus archivos y, si quieres, sus subpáginas, o imprímela o guárdala en PDF, en negro sobre blanco.
 - **Tus agentes, en directo.** Cuando un agente crea o mueve una tarjeta, la ves aparecer con un halo azul y su nombre, y recibes un aviso. El punto del logotipo se vuelve azul mientras trabajan.
@@ -76,7 +77,7 @@ packages/shared Esquemas zod, permisos y tipos compartidos por API, MCP y client
 ```
 
 - **Una sola capa de dominio.** La API REST de la aplicación y las herramientas MCP llaman exactamente a los mismos servicios. Cada operación comprueba el acceso al espacio y el permiso concreto (`tasks:read`, `tasks:write`, `docs:read`, `docs:write`), así que las reglas se aplican una única vez.
-- **Markdown como formato canónico.** Documentos y descripciones se guardan en Markdown (GFM). Es portable, legible y lo que mejor entienden los LLM. Las referencias internas son enlaces normales: `[Título](/card/<id>)` y `[Título](/doc/<id>)`. Lo que el editor no sabe mostrar, como el HTML, se queda en el documento tal y como se escribió: el editor muestra su código, y editar el resto de la página no lo cambia.
+- **Markdown como formato canónico.** Documentos y descripciones se guardan en Markdown (GFM). Es portable, legible y lo que mejor entienden los LLM. Las referencias internas son enlaces normales: `[Título](/card/<id>)` y `[Título](/doc/<id>)`. Lo que el editor no sabe mostrar, como el HTML que no es un `<details>` ni un `<img>`, se queda en el documento tal y como se escribió: el editor muestra su código, y editar el resto de la página no lo cambia.
 - **Una copia, una base de datos.** Cada copia es de una persona y guarda todo en SQLite, con transacciones síncronas. El mismo código corre en dos sitios:
   - **Servidor propio (Docker o Node):** un único archivo (`DATA_DIR/orqevio.db`) más la carpeta de adjuntos.
   - **Cloudflare:** un Worker sirve la web y envía `/api` y `/mcp` a un único Durable Object, que guarda los datos en su propio SQLite; los adjuntos van a R2.
