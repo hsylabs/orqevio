@@ -18,6 +18,16 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: false,
     chunkSizeWarningLimit: 900,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          // KaTeX in a file of its own, still loaded with the editor: its name changes only when
+          // KaTeX does, so the browser keeps it from one version of Orqevio to the next, rather
+          // than downloading it again with every change to the editor.
+          groups: [{ name: 'katex', test: /[\\/]node_modules[\\/]katex[\\/]/ }],
+        },
+      },
+    },
   },
   worker: { format: 'es' },
 })
