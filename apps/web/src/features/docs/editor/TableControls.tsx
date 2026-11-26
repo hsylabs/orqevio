@@ -58,6 +58,8 @@ const GAP = 8
 const PILL = 14
 const OUT = 17
 const IN = 7
+/** How far a row's handle reaches out of the table on its left: the table's block handle keeps clear of it (BlockControls). */
+export const ROW_HANDLE_REACH = OUT
 const ALONG = 28
 /** The «+» along the bottom and the right of the table. */
 const PLUS = 24
@@ -98,8 +100,6 @@ export function TableControls({ editor }: { editor: Editor }) {
   const byKeyboard = useRef(false)
   const [, redraw] = useReducer((n: number) => n + 1, 0)
   const leaving = useRef<ReturnType<typeof setTimeout>>(undefined)
-  /** Whether the pointer is on one of the controls (a handle, a «+», the bar). */
-  const onControl = useRef(false)
   /** Whether a menu item ran, so the menu leaves the focus in the editor; and the selection to bring back if none did. */
   const acted = useRef(false)
   const before = useRef<SelectionBookmark | null>(null)
@@ -154,27 +154,33 @@ export function TableControls({ editor }: { editor: Editor }) {
   // The handles appear on the cell under a mouse or a pen; a finger has the bar.
   useEffect(() => {
     const dom = editor.view.dom
-    // Just above a table or left of it, where its handles are, up to the bar: the cell they are for.
-    // The pointer can go to a handle, or a little past it, without the handle going.
+    // Just above the table whose handles are showing, up to the bar, or left of it where that room is
+    // the editor's (in a list): the cell they are for. They stay while the pointer goes to a handle,
+    // or a little past it; they don't come from there.
     const beside = (x: number, y: number) => {
-      for (const table of dom.querySelectorAll('table')) {
-        const rect = table.getBoundingClientRect()
-        const view = (table.closest('.tableWrapper') ?? table).getBoundingClientRect()
-        const left = Math.max(rect.left, view.left)
-        const right = Math.min(rect.right, view.right)
-        const within = (cell: Element, along: 'x' | 'y') => {
-          const box = cell.getBoundingClientRect()
-          return along === 'x' ? x >= box.left && x < box.right : y >= box.top && y < box.bottom
-        }
-        if (x >= left && x < right && y >= rect.top - OUT - GAP && y < rect.top) return [...(table.rows[0]?.cells ?? [])].find((c) => within(c, 'x')) ?? null
-        if (y >= rect.top && y < rect.bottom && x >= left - OUT - GAP && x < left) return [...table.rows].find((r) => within(r, 'y'))?.cells[0] ?? null
+      const h = hoverRef.current
+      let table: Node | null = null
+      try {
+        table = h && editor.view.nodeDOM(h.pos)
+      } catch {
+        return null
       }
+      if (table instanceof HTMLElement && !(table instanceof HTMLTableElement)) table = table.querySelector('table')
+      if (!(table instanceof HTMLTableElement)) return null
+      const rect = table.getBoundingClientRect()
+      const view = (table.closest('.tableWrapper') ?? table).getBoundingClientRect()
+      const left = Math.max(rect.left, view.left)
+      const right = Math.min(rect.right, view.right)
+      const within = (cell: Element, along: 'x' | 'y') => {
+        const box = cell.getBoundingClientRect()
+        return along === 'x' ? x >= box.left && x < box.right : y >= box.top && y < box.bottom
+      }
+      if (x >= left && x < right && y >= rect.top - OUT - GAP && y < rect.top) return [...(table.rows[0]?.cells ?? [])].find((c) => within(c, 'x')) ?? null
+      if (y >= rect.top && y < rect.bottom && x >= left - OUT - GAP && x < left) return [...table.rows].find((r) => within(r, 'y'))?.cells[0] ?? null
       return null
     }
     const move = (event: PointerEvent) => {
       if (event.pointerType === 'touch' || !editor.isEditable) return
-      // Over the text, not on a control, even if the one it was on went without telling.
-      onControl.current = false
       const cell = (event.target as Element | null)?.closest?.('td, th') ?? beside(event.clientX, event.clientY)
       if (!cell || !dom.contains(cell)) return leave()
       stay()
@@ -214,20 +220,12 @@ export function TableControls({ editor }: { editor: Editor }) {
   }
   function leave() {
     clearTimeout(leaving.current)
+    // With the pointer on a handle, a «+» or the bar, the handles stay, however long it rests there.
+    // Asked when the time is up: React tells of the pointer coming onto a control before the editor
+    // tells of it leaving the text, which starts the timer again.
     leaving.current = setTimeout(() => {
-      if (!openRef.current && !onControl.current) setHover(null)
+      if (!openRef.current && !root.current?.querySelector(':hover')) setHover(null)
     }, 250)
-  }
-  // The pointer on a handle, a «+» or the bar: the handles stay, however long it rests there. A flag,
-  // as React tells of the pointer coming onto a control before the editor tells of it leaving the
-  // text, which starts the timer again.
-  function enter() {
-    onControl.current = true
-    stay()
-  }
-  function exit() {
-    onControl.current = false
-    leave()
   }
 
   /** Where the table is on screen, as the controls are placed: the part of it in view when it scrolls sideways. */
@@ -249,8 +247,8 @@ export function TableControls({ editor }: { editor: Editor }) {
   /**
    * Where the bar goes, from its height: above the table, clear of the room its columns' handles take
    * there. With no room above, at the top of the view while the table scrolls under it, down to its
-   * last row; but not over the columns' handles while they are in view: under the table then, or at
-   * the bottom of the view.
+   * last row; but not over the columns' handles while they are in view: under the table then, below
+   * its «+», or with no room there either, over its last rows, clear of that «+».
    */
   function barTop(g: NonNullable<ReturnType<typeof measure>>, height: number) {
     const box = scroller.current?.getBoundingClientRect()
@@ -259,9 +257,11 @@ export function TableControls({ editor }: { editor: Editor }) {
     const above = g.top - (touch ? 0 : OUT) - GAP - height
     if (above >= viewTop) return above
     const pinned = Math.min(viewTop, g.bottom - height)
-    if (touch || g.top + IN < viewTop) return pinned
+    // The columns' handles out of view above: nothing there to keep clear of.
+    if (touch || g.top + IN < viewTop - GAP) return pinned
     const below = g.bottom + PLUS_GAP + PLUS + GAP
-    return below + height <= viewBottom ? below : Math.max(viewBottom - height, pinned)
+    if (below + height <= viewBottom) return below
+    return Math.max(Math.min(viewBottom, g.bottom) - height, pinned)
   }
 
   function menuChange(o: boolean, which: Open) {
@@ -329,9 +329,10 @@ export function TableControls({ editor }: { editor: Editor }) {
       <div aria-live="polite" className="sr-only">
         {said}
       </div>
-      {showBar && renderBar()}
       {state.editable && hover && renderHandles(hover)}
       {state.editable && plusAt !== null && renderPlus(plusAt)}
+      {/* Last, over the rest where it has to sit on the table: its buttons take the clicks. */}
+      {showBar && renderBar()}
     </div>
   )
 
@@ -382,8 +383,8 @@ export function TableControls({ editor }: { editor: Editor }) {
         onFocus={redraw}
         onBlur={redraw}
         // The handles stay while the pointer goes over the bar, as they do over the room just under it.
-        onPointerEnter={enter}
-        onPointerLeave={exit}
+        onPointerEnter={stay}
+        onPointerLeave={leave}
         // A click keeps the cursor in the editor, on a phone the keyboard too. Not in the open menu.
         onMouseDown={(e) => e.currentTarget.contains(e.target as Node) && e.preventDefault()}
         className={cn('animate-pop absolute flex items-center gap-0.5 rounded-[12px] border border-line bg-surface p-1 shadow-lg', live)}
@@ -466,7 +467,7 @@ export function TableControls({ editor }: { editor: Editor }) {
     const handle = 'group absolute flex'
     const pill =
       'grid place-items-center rounded-[6px] border border-line bg-surface text-ink-3 shadow-sm group-hover:bg-hover group-hover:text-ink group-data-[state=open]:bg-accent-soft group-data-[state=open]:text-accent [&_svg]:size-[15px]'
-    const hold = { onPointerEnter: enter, onPointerLeave: exit }
+    const hold = { onPointerEnter: stay, onPointerLeave: leave }
 
     return (
       <>
@@ -569,7 +570,7 @@ export function TableControls({ editor }: { editor: Editor }) {
     if (!info || !g) return null
     const button =
       'absolute grid place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 [&_svg]:size-[15px]'
-    const hold = { onPointerEnter: enter, onPointerLeave: exit, onMouseDown: (e: { preventDefault(): void }) => e.preventDefault() }
+    const hold = { onPointerEnter: stay, onPointerLeave: leave, onMouseDown: (e: { preventDefault(): void }) => e.preventDefault() }
     // The one on the right as wide as the room the page leaves it, where the table fills the page's
     // width (a phone): more would make the page scroll sideways.
     const s = scroller.current

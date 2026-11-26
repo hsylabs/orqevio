@@ -511,7 +511,7 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {/* Wider on the left: the room the editor's block handle and «+» take, a finger's size on a phone (BlockControls). */}
+        {/* Wider on the left on a phone: the room the editor's block handle takes there, a finger's size (BlockControls). */}
         <article className="mx-auto w-full max-w-[780px] pt-12 pr-6 pl-9 sm:px-12 sm:pt-16">
           <div className="group/title">
             <IconPicker

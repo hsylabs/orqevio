@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { createProject, expect, openNewWorkspace, test } from './helpers'
 
 // Editing a table as in Notion: a bar above it, a handle on each row and column, a «+» at the
@@ -181,6 +181,25 @@ test('in a card, Escape on the bar goes back to the text and leaves the card ope
 })
 
 type Box = { x: number; y: number; width: number; height: number }
+// What scrolls the page or the card a table is in is found from outside the table's own box, which
+// scrolls sideways (and so counts as scrolling).
+/** Scrolls the page or the card so that the top of the table `target` is in is `offset` px under the top of the view. */
+async function scrollTableTo(target: Locator, offset: number) {
+  await target.evaluate((el, offset) => {
+    const table = el.closest('table') ?? el
+    let scroller = (table.closest('.tableWrapper') ?? table).parentElement
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement
+    scroller!.scrollTop += table.getBoundingClientRect().top - scroller!.getBoundingClientRect().top - offset
+  }, offset)
+}
+/** The top of what scrolls the page or the card `target` is in, and how far it scrolls sideways. */
+async function viewOf(target: Locator) {
+  return target.evaluate((el) => {
+    let scroller = (el.closest('.tableWrapper') ?? el).parentElement
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement
+    return { top: scroller!.getBoundingClientRect().top, sideways: scroller!.scrollWidth - scroller!.clientWidth }
+  })
+}
 /** How far apart two boxes are, in whole pixels (Firefox places them to a fraction): 0 or less where they touch or overlap. */
 const apart = (a: Box, b: Box) => Math.round(Math.max(b.x - (a.x + a.width), a.x - (b.x + b.width), b.y - (a.y + a.height), a.y - (b.y + b.height)))
 
@@ -243,12 +262,7 @@ test('the bar keeps clear of the columns’ handles, and they stay while the poi
 
   // The table at the top of the view, with no room for the bar above it: the bar goes elsewhere, and
   // both the handle and the bar can be pressed.
-  await cell('Fruta').evaluate((th) => {
-    let scroller = th.parentElement
-    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement
-    const table = th.closest('table')!
-    scroller!.scrollTop += table.getBoundingClientRect().top - scroller!.getBoundingClientRect().top - 20
-  })
+  await scrollTableTo(cell('Fruta'), 20)
   await cell('Pera').click()
   await cell('Fruta').hover()
   await expect(column).toBeVisible()
@@ -263,6 +277,98 @@ test('the bar keeps clear of the columns’ handles, and they stay while the poi
   await expect(bar.getByRole('button', { name: 'Centrar columna' })).toHaveAttribute('aria-pressed', 'true')
 })
 
+test('in a card, the table’s own handle is inside the card and apart from its rows’ and columns’ handles', async ({ page }) => {
+  const workspaceId = await openNewWorkspace(page, 'Tablas tarjeta asas E2E')
+  const boardId = await createProject(page, 'Notas')
+  const columns = ((await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string }> }).columns
+  const card = (await (await page.request.post(`/api/columns/${columns[0]!.id}/cards`, { data: { title: 'Precios', description: `Antes\n\n${TABLE}` } })).json()) as { id: string }
+  await page.goto(`/w/${workspaceId}/b/${boardId}?card=${card.id}`)
+  const description = page.getByRole('textbox', { name: 'Descripción de la tarjeta' })
+  await description.locator('th').filter({ hasText: /^Fruta$/ }).hover()
+  const table = page.getByRole('button', { name: 'Opciones del bloque' })
+  const row = page.getByRole('button', { name: 'Opciones de la fila' })
+  const column = page.getByRole('button', { name: 'Opciones de la columna' })
+  await expect(table).toBeVisible()
+  await expect(row).toBeVisible()
+  const box = (await table.boundingBox())!
+  const sheet = (await page.getByRole('dialog').boundingBox())!
+  expect(box.x).toBeGreaterThanOrEqual(sheet.x)
+  expect(apart(box, (await row.boundingBox())!)).toBeGreaterThanOrEqual(4)
+  expect(apart(box, (await column.boundingBox())!)).toBeGreaterThanOrEqual(4)
+  // It opens the table's menu.
+  await table.click()
+  await expect(page.getByRole('menuitem', { name: 'Duplicar' })).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  // In a narrow window, with no room on its left, it goes above the table's top-left corner.
+  await page.setViewportSize({ width: 600, height: 800 })
+  const fruta = description.locator('th').filter({ hasText: /^Fruta$/ })
+  // Well inside the card's scroll, as it opens, not right at its top edge, where the corner is out of view.
+  await scrollTableTo(fruta, 140)
+  await fruta.hover()
+  await expect(row).toBeVisible()
+  const narrow = (await table.boundingBox())!
+  const top = (await description.locator('table').boundingBox())!
+  expect(narrow.x).toBeGreaterThanOrEqual((await page.getByRole('dialog').boundingBox())!.x)
+  expect(narrow.y + narrow.height).toBeLessThanOrEqual(top.y)
+  expect(apart(narrow, (await row.boundingBox())!)).toBeGreaterThanOrEqual(4)
+  expect(apart(narrow, (await column.boundingBox())!)).toBeGreaterThanOrEqual(4)
+
+  // Up to it step by step from the header, over the line above the table: still the table's, whose
+  // menu turns it into nothing (a paragraph's would).
+  const from = (await fruta.boundingBox())!
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
+  await page.mouse.move(narrow.x + narrow.width / 2, narrow.y + narrow.height / 2, { steps: 12 })
+  const reached = (await table.boundingBox())!
+  expect(reached.y + reached.height).toBeLessThanOrEqual(top.y)
+  await page.mouse.down()
+  await page.mouse.up()
+  await expect(page.getByRole('menuitem', { name: 'Duplicar' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Convertir en' })).toHaveCount(0)
+})
+
+test('the «+» under a table keeps clear of the block after it: a click there goes to that block', async ({ page }) => {
+  const { editor, saved, rows, cell } = await openTable(page, 'Tablas debajo E2E')
+  await cell('Pera').click()
+  const add = page.getByRole('button', { name: 'Añadir una fila' })
+  await expect(add).toBeVisible()
+  const after = (await editor.getByText('Después', { exact: true }).boundingBox())!
+  expect(apart((await add.boundingBox())!, after)).toBeGreaterThanOrEqual(0)
+  // At the very top of its first line, just before its first letter.
+  await page.mouse.click(after.x + 3, after.y + 2)
+  await page.keyboard.type('Y ')
+  await expect.poll(saved).toContain('Y Después')
+  expect(await rows()).toEqual([['Fruta', 'Precio'], ['Pera', '2'], ['Uva', '3']])
+})
+
+test('with no room above or under a table, the bar sits over its last row, clear of its «+» and its columns’ handles', async ({ page }) => {
+  const filler = Array.from({ length: 30 }, (_, i) => `Párrafo ${i + 1}`).join('\n\n')
+  const body = Array.from({ length: 12 }, (_, i) => `| Fila ${i + 1} | ${i + 1} | x |`)
+  const tall = ['| Fruta | Precio | Origen |', '| ----- | -----: | ------ |', ...body].join('\n')
+  const { editor, cell } = await openTable(page, 'Tablas alta E2E', `${filler}\n\n${tall}\n\n${filler}`)
+  const table = editor.locator('table')
+  // A view just taller than the table, with less room under it than the bar needs, and the table at its top.
+  const height = (await table.boundingBox())!.height
+  const { top: scrollerTop } = await viewOf(table)
+  await page.setViewportSize({ width: 1280, height: Math.round(scrollerTop + 20 + height + 40) })
+  await scrollTableTo(table, 20)
+  await cell('Fila 3').click()
+  await cell('Fruta').hover()
+  const bar = page.getByRole('toolbar', { name: 'Tabla' })
+  const column = page.getByRole('button', { name: 'Opciones de la columna' })
+  const add = page.getByRole('button', { name: 'Añadir una fila' })
+  await expect(column).toBeVisible()
+  await expect(add).toBeVisible()
+  const b = (await bar.boundingBox())!
+  expect(apart(b, (await column.boundingBox())!)).toBeGreaterThanOrEqual(8)
+  expect(apart(b, (await add.boundingBox())!)).toBeGreaterThanOrEqual(1)
+  await page.screenshot({ path: test.info().outputPath('bar-over-last-row.png') })
+  // Its buttons take the clicks.
+  await cell('Fila 3').click()
+  await bar.getByRole('button', { name: 'Centrar columna' }).click()
+  await expect(bar.getByRole('button', { name: 'Centrar columna' })).toHaveAttribute('aria-pressed', 'true')
+})
+
 test.describe('on a phone', () => {
   test.use({ hasTouch: true, viewport: { width: 390, height: 844 } })
 
@@ -273,11 +379,7 @@ test.describe('on a phone', () => {
     await expect(plus).toBeVisible()
     const box = (await plus.boundingBox())!
     expect(box.x + box.width).toBeLessThanOrEqual(390)
-    const sideways = await cell('Pera').evaluate((td) => {
-      let scroller = td.parentElement
-      while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement
-      return scroller!.scrollWidth - scroller!.clientWidth
-    })
+    const { sideways } = await viewOf(cell('Pera'))
     expect(sideways).toBe(0)
   })
 
