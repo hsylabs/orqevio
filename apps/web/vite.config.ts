@@ -21,9 +21,10 @@ export default defineConfig({
     rolldownOptions: {
       output: {
         codeSplitting: {
-          // KaTeX in a file of its own, still loaded with the editor: its name changes only when
-          // KaTeX does, so the browser keeps it from one version of Orqevio to the next, rather
-          // than downloading it again with every change to the editor.
+          // KaTeX in files of its own (code and styles), still loaded with the editor. It imports
+          // nothing, so their names change only when KaTeX, or the tools that build it, change:
+          // the browser keeps them from one version of Orqevio to the next, rather than
+          // downloading them again with every change to the editor.
           groups: [{ name: 'katex', test: /[\\/]node_modules[\\/]katex[\\/]/ }],
         },
       },
