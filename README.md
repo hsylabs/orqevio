@@ -9,7 +9,7 @@ Orqevio brings together four pieces, and only those four:
 | Module | What's included |
 | --- | --- |
 | **Tasks** | Workspaces, projects, Kanban boards, columns, cards, labels, due dates, checklists, archive and attachments. |
-| **Docs** | Nested pages in a block editor that saves Markdown, with simple tables, images, files and direct links to tasks. |
+| **Docs** | Nested pages in a block editor that saves Markdown: tables, code, callouts, toggles, equations, images and files, and direct links to tasks. |
 | **Vault** | End-to-end-encrypted credentials and private notes, two-step verification codes (TOTP), import and export, a password generator, a recovery key and auto-lock. |
 | **Agents (MCP)** | An MCP server with per-workspace permissions, so agents can do nearly everything you do with tasks and docs: look things up, write, rearrange, attach files and tidy up. It connects with OAuth (for example, as a Claude connector) or with a token. |
 
@@ -24,6 +24,7 @@ And **nothing an agent does is final.** Every change can be undone for 30 days, 
 ## Highlights
 
 - **Tasks and documents, linked both ways.** Type `@` in a document to link a task, and the link shows up on both sides. You can also link documents from the card.
+- **An editor like Notion, in the Markdown GitHub reads.** Each block has a handle to move it or turn it into another, and a «+» to insert one below; `/` and the Markdown shortcuts work as you type. Tables you edit from a bar, code in its language and colors, GitHub's alerts, toggles, images with their width and caption, and LaTeX equations. What is saved is still the Markdown your agents and GitHub read, as it was written.
 - **Comments on cards.** You and your agents talk on a card in Markdown. Each edits only their own comments; you can delete any, an agent only its own. The board shows how many each card has.
 - **Pages you can take with you.** Download a page as Markdown, with its files and, if you want, its subpages, or print it or save it as PDF, dark on white.
 - **Watch your agents work.** When an agent creates or moves a card, you see it appear with a blue halo and the agent's name, and you get a notification. The dot in the logo turns blue while they work.

@@ -6,6 +6,8 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-26
+
 ### Added
 - **Editing tables in documents, as in Notion.** A table could only be created; changing it meant editing its Markdown by hand. Now:
   - With the cursor in a table, a bar above it inserts rows and columns and aligns the column. Its menu moves or deletes rows and columns, or the whole table. On a phone it appears with a tap.
