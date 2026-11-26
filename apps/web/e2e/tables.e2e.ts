@@ -5,10 +5,10 @@ import { createProject, expect, openNewWorkspace, test } from './helpers'
 // edges. What they make is a Markdown table, the same one agents and GitHub read.
 const TABLE = ['| Fruta | Precio |', '| ----- | -----: |', '| Pera  | 2      |', '| Uva   | 3      |'].join('\n')
 
-async function openTable(page: Page, name: string) {
+async function openTable(page: Page, name: string, content = `Antes\n\n${TABLE}\n\nDespués`) {
   const workspace = (await (await page.request.post('/api/workspaces', { data: { name } })).json()) as { id: string }
   const project = (await (await page.request.post(`/api/workspaces/${workspace.id}/projects`, { data: { name: 'Notas' } })).json()) as { id: string }
-  const created = await page.request.post(`/api/projects/${project.id}/pages`, { data: { title: 'Precios', content: `Antes\n\n${TABLE}\n\nDespués` } })
+  const created = await page.request.post(`/api/projects/${project.id}/pages`, { data: { title: 'Precios', content } })
   expect(created.status(), await created.text()).toBe(201)
   const pageId = ((await created.json()) as { id: string }).id
   await page.goto(`/w/${workspace.id}/d/${pageId}`)
@@ -153,6 +153,15 @@ test('edit a table from the handles of its rows and columns and its «+»', asyn
   await page.screenshot({ path: test.info().outputPath('table.png') })
 })
 
+// The empty line the editor keeps after a table at the end came with the first click, and in
+// Firefox drawing it put the cursor back at the start of the page.
+test('one click in a page that ends in a table puts the cursor where it lands', async ({ page }) => {
+  const { saved, cell } = await openTable(page, 'Tablas al final E2E', `Antes\n\n${TABLE}`)
+  await cell('Pera').click()
+  await page.keyboard.type('X')
+  await expect.poll(saved).toMatch(/^Antes\n\n\| Fruta \| Precio \|\n.+\n\| PeraX \| 2 +\|\n\| Uva +\| 3 +\|\n*$/)
+})
+
 test('in a card, Escape on the bar goes back to the text and leaves the card open', async ({ page }) => {
   const workspaceId = await openNewWorkspace(page, 'Tablas tarjeta E2E')
   const boardId = await createProject(page, 'Notas')
@@ -160,11 +169,7 @@ test('in a card, Escape on the bar goes back to the text and leaves the card ope
   const card = (await (await page.request.post(`/api/columns/${columns[0]!.id}/cards`, { data: { title: 'Precios', description: TABLE } })).json()) as { id: string }
   await page.goto(`/w/${workspaceId}/b/${boardId}?card=${card.id}`)
   const description = page.getByRole('textbox', { name: 'Descripción de la tarjeta' })
-  // In Firefox the first click into a card's description puts the cursor at its start, wherever it
-  // was (it happened before the table controls too); the second lands where it was.
-  const pera = description.locator('td').filter({ hasText: /^Pera$/ })
-  await pera.click()
-  await pera.click()
+  await description.locator('td').filter({ hasText: /^Pera$/ }).click()
   const bar = page.getByRole('toolbar', { name: 'Tabla' })
   await expect(bar.getByRole('button', { name: 'Insertar fila encima' })).toBeEnabled()
   await expect(bar).toBeVisible()
