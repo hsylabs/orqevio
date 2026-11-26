@@ -251,6 +251,11 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       },
     },
     onCreate: ({ editor }) => {
+      // The empty paragraph kept after a table, a list or code at the end (TrailingNode) comes with
+      // the first transaction. It comes now, out of the undo history, so that the first is not the
+      // one the editor's focus makes: in Firefox a click focuses before the selection it placed is
+      // read, and redrawing the document then put the cursor back where it was, at the start.
+      editor.view.dispatch(editor.state.tr.setMeta('addToHistory', false).setMeta('preventUpdate', true))
       emitted.current = editor.getMarkdown()
     },
     // Content set from outside (another tab, an agent) is the new starting point.

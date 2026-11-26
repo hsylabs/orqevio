@@ -113,3 +113,41 @@ test("an open card shows an agent's description and asks before overwriting it",
   const expected = (e: string) => /status of 409 \(Conflict\)/.test(e)
   consoleErrors.splice(0, consoleErrors.length, ...consoleErrors.filter((e) => !expected(e)))
 })
+
+// One click into a card's description puts the cursor where it lands. In Firefox it went to the
+// start when the description ended in a table, a list or code: that click made the editor add the empty
+// line it keeps after them, and drawing it put back the cursor it had before the click. With the
+// sheet holding the focus, as it does when it opens, the click is also the editor's first focus.
+test('one click in a description puts the cursor where it lands', async ({ page }) => {
+  const workspaceId = await openNewWorkspace(page, 'Primer clic E2E')
+  const boardId = await createProject(page, 'Notas')
+  const columns = ((await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string }> }).columns
+  const table = ['| Fruta | Precio |', '| ----- | -----: |', '| Pera  | 2      |', '| Uva   | 3      |'].join('\n')
+  const cases = [
+    { title: 'Precios con tabla', description: `Antes\n\n${table}`, target: { tag: 'td', text: 'Pera' }, typed: /^Antes\n\n\| Fruta \| Precio \|\n.+\n\| PeraX \| 2 +\|\n\| Uva +\| 3 +\|\n*$/ },
+    { title: 'Dos párrafos', description: 'Uno\n\nDos', target: { tag: 'p', text: 'Dos' }, typed: /^Uno\n\nDosX\n*$/ },
+    { title: 'Lista al final', description: 'Uno\n\n- a\n- bb', target: { tag: 'li', text: 'bb' }, typed: /^Uno\n\n- a\n- bbX\n*$/ },
+    { title: 'Código al final', description: 'Uno\n\n```\nlínea\n```', target: { tag: 'code', text: 'línea', atEnd: true }, typed: /^Uno\n\n```\nlíneaX\n```\n*$/ },
+  ]
+  const ids: string[] = []
+  for (const { title, description } of cases) {
+    const created = await page.request.post(`/api/columns/${columns[0]!.id}/cards`, { data: { title, description } })
+    expect(created.status(), await created.text()).toBe(201)
+    ids.push(((await created.json()) as { id: string }).id)
+  }
+  await page.goto(`/w/${workspaceId}/b/${boardId}`)
+  const box = page.getByRole('textbox', { name: 'Descripción de la tarjeta' })
+  for (const [i, { title, target, typed }] of cases.entries()) {
+    await page.getByRole('button', { name: title, exact: true }).click()
+    // The sheet has the focus, as it takes it when it opens.
+    await expect(page.getByRole('dialog', { name: new RegExp(`^${title}`) })).toBeFocused()
+    const clicked = box.locator(target.tag).filter({ hasText: new RegExp(`^${target.text}$`) })
+    // Code is as wide as its text: its end, rather than its middle.
+    const size = 'atEnd' in target ? (await clicked.boundingBox())! : null
+    await clicked.click(size ? { position: { x: size.width - 1, y: size.height / 2 } } : undefined)
+    await page.keyboard.type('X')
+    await expect.poll(async () => ((await (await page.request.get(`/api/cards/${ids[i]}`)).json()) as { description: string }).description).toMatch(typed)
+    await page.keyboard.press('Escape')
+    await expect(box).toHaveCount(0)
+  }
+})
