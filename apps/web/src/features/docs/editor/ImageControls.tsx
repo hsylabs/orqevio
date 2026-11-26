@@ -140,7 +140,8 @@ export function ImageControls({ editor }: { editor: Editor }) {
 
     /** Back to the editor, its cursor or selection as it was: a cursor next to the image stays a cursor. */
     function back() {
-      editor.commands.focus(undefined, { scrollIntoView: false })
+      // Now and once, as the table's bar: TipTap's focus command focuses Safari again a frame later.
+      editor.view.focus()
     }
 
     function saveCaption(done: 'save' | 'cancel') {

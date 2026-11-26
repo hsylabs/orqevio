@@ -295,7 +295,10 @@ export function TableControls({ editor }: { editor: Editor }) {
       if (!event.currentTarget.contains(event.target as Node)) return
       if (event.key === 'Escape' && !isConverting(event)) {
         event.preventDefault()
-        editor.commands.focus()
+        // Now and once: TipTap's focus command focuses Safari again a frame later, which took the
+        // focus back from a key pressed right after, such as Alt+F10 to come back to the bar.
+        editor.view.focus()
+        editor.commands.scrollIntoView()
         return
       }
       const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')]
