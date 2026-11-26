@@ -59,6 +59,7 @@
   },
   "editor": {
     "placeholder": "Escribe, o pulsa «/» para insertar…",
+    "lineHint": "Pulsa «/» para insertar…",
     "headingPlaceholder": "Encabezado",
     "label": "Contenido",
     "uploading": "Subiendo {{name}}…",
@@ -172,7 +173,8 @@
       "slash": "Insertar bloque",
       "mention": "Enlazar tarea o página",
       "searching": "Buscando…",
-      "noMatches": "Sin coincidencias"
+      "noMatches": "Sin coincidencias",
+      "shortcut": "Atajo de Markdown: {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… o /doc/…",
@@ -217,6 +219,8 @@
     "block": {
       "handle": "Opciones del bloque",
       "handleHint": "Arrastra para moverlo. Haz clic, o pulsa {{key}}, para ver sus opciones.",
+      "insertBelow": "Insertar debajo",
+      "insertHint": "Haz clic para insertar un bloque debajo.",
       "turnInto": "Convertir en",
       "duplicate": "Duplicar",
       "moveUp": "Subir",

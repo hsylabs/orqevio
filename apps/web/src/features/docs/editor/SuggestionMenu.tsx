@@ -57,10 +57,19 @@ export function SuggestionMenu({ store, emptyLabel }: { store: SuggestionStore; 
                 className={cn('flex w-full items-center gap-3 rounded-[9px] px-2 py-1.5 text-left', i === state.index && 'bg-hover')}
               >
                 <span className="grid size-8 shrink-0 place-items-center rounded-[8px] border border-line bg-sheet font-mono text-[12px] font-medium text-ink-2">{item.icon}</span>
-                <span className="min-w-0">
+                <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13.5px] font-medium text-ink">{item.title}</span>
                   {item.subtitle && <span className="block truncate text-[12px] text-ink-3">{item.subtitle}</span>}
                 </span>
+                {/* What typed at the start of a line makes the same: Markdown, as GitHub reads it. */}
+                {item.shortcut && (
+                  <>
+                    <kbd aria-hidden="true" className="kbd shrink-0">
+                      {item.shortcut}
+                    </kbd>
+                    <span className="sr-only">{t('editor.menu.shortcut', { keys: item.shortcut })}</span>
+                  </>
+                )}
               </button>
             </div>
           )

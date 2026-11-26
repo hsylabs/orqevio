@@ -59,6 +59,7 @@
   },
   "editor": {
     "placeholder": "入力するか、「/」で挿入…",
+    "lineHint": "「/」で挿入…",
     "headingPlaceholder": "見出し",
     "label": "内容",
     "uploading": "{{name}}をアップロード中…",
@@ -172,7 +173,8 @@
       "slash": "ブロックを挿入",
       "mention": "タスクやページをリンク",
       "searching": "検索中…",
-      "noMatches": "一致するものはありません"
+      "noMatches": "一致するものはありません",
+      "shortcut": "Markdown のショートカット: {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… または /doc/…",
@@ -213,6 +215,8 @@
     "block": {
       "handle": "ブロックのオプション",
       "handleHint": "ドラッグして移動します。クリックするか{{key}}を押すとオプションを表示します。",
+      "insertBelow": "下に挿入",
+      "insertHint": "クリックすると下にブロックを挿入します。",
       "turnInto": "変換",
       "duplicate": "複製",
       "moveUp": "上へ移動",

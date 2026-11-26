@@ -59,6 +59,7 @@
   },
   "editor": {
     "placeholder": "Schrijf, of druk op ‘/’ om iets in te voegen…",
+    "lineHint": "Druk op ‘/’ om iets in te voegen…",
     "headingPlaceholder": "Kop",
     "label": "Inhoud",
     "uploading": "{{name}} uploaden…",
@@ -172,7 +173,8 @@
       "slash": "Blok invoegen",
       "mention": "Taak of pagina koppelen",
       "searching": "Zoeken…",
-      "noMatches": "Geen resultaten"
+      "noMatches": "Geen resultaten",
+      "shortcut": "Markdown-snelkoppeling: {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… of /doc/…",
@@ -215,6 +217,8 @@
     "block": {
       "handle": "Blokopties",
       "handleHint": "Sleep om te verplaatsen. Klik, of druk op {{key}}, voor de opties.",
+      "insertBelow": "Hieronder invoegen",
+      "insertHint": "Klik om hieronder een blok in te voegen.",
       "turnInto": "Omzetten naar",
       "duplicate": "Dupliceren",
       "moveUp": "Omhoog",

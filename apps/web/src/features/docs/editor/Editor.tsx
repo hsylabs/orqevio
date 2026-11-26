@@ -22,6 +22,7 @@ import { MathControls } from './MathControls'
 import { MathKeys, startMath } from './math'
 import { FormatMenu } from './FormatMenu'
 import { BlockKeys, Mentions, SlashCommands } from './extensions'
+import { MARKDOWN_SHORTCUTS } from './block-commands'
 import { documentExtensions } from './markdown'
 import { SuggestionMenu } from './SuggestionMenu'
 import { TableControls } from './TableControls'
@@ -137,6 +138,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       icon,
       group: t(`editor.groups.${group}`),
       keywords: t(`editor.slash.${id}.keywords`),
+      shortcut: MARKDOWN_SHORTCUTS[id as keyof typeof MARKDOWN_SHORTCUTS],
       run,
     })
     const items: Array<MenuItem & { keywords: string }> = [
@@ -203,13 +205,20 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
     autofocus: false,
     extensions: [
       ...documentExtensions(),
+      // On the empty line with the cursor: a heading's name; the page's or field's own hint when it
+      // is all empty; elsewhere how to insert a block, shown only while the editor has the focus
+      // (editor.css). It follows the cursor, not the focus: a decoration that changed with the focus
+      // would redraw the page as a click focuses it, before the click's cursor is read.
       Placeholder.configure({
-        placeholder: ({ node, pos }) =>
+        placeholder: ({ editor, node, pos }) =>
           node.type.name === 'heading'
             ? tRef.current('editor.headingPlaceholder')
-            : pos === 0
+            : pos === 0 && editor.isEmpty
               ? (placeholderRef.current ?? tRef.current('editor.placeholder'))
-              : '',
+              : node.type.name === 'paragraph'
+                ? tRef.current('editor.lineHint')
+                : '',
+        emptyNodeClass: ({ editor, node, pos }) => (node.type.name === 'paragraph' && !(pos === 0 && editor.isEmpty) ? 'is-empty orq-line-hint' : 'is-empty'),
         showOnlyCurrent: true,
       }),
       SlashCommands.configure({ store: slashStore, items: slashItems }),

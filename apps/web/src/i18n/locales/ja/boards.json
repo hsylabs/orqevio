@@ -137,7 +137,7 @@
       "titleCount_other": "コメント · {{count}}",
       "list": "コメント",
       "empty": "まだコメントはありません。進捗、質問、決定をここに残しましょう。エージェントもここに書き込めます。",
-      "placeholder": "コメントを書く… Markdown を使えます。",
+      "placeholder": "コメントを書くか、「/」で挿入… Markdown を使えます。",
       "label": "新しいコメント",
       "hint": "<kbd>{{mod}}</kbd>+<kbd>Enter</kbd>で送信",
       "submit": "コメントする",

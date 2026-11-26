@@ -38,6 +38,11 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - A click on an equation opens its source under it, with how it looks as it is typed and what is wrong with it if anything; Enter with one selected too. Enter saves, Shift+Enter starts another line in one of its own, Escape leaves it as it was. Each change is undone on its own; emptied, the equation goes.
   - What is saved is what GitHub reads: `$…$` in a line (or `` $`…`$ `` for one with characters Markdown would read), and `$$` on lines of their own around one of its own, or a fence of `math`. Each one is written back as it was. An equation copied from a page drawn with KaTeX or MathML, such as an AI chat or Wikipedia, is pasted with its source.
   - A `$` of text stays text: prices such as `$5 y $10` are no equations, and a `$` that would open one is saved escaped, `\$`. What an equation holds never runs nor links anywhere.
+- **Inserting a block without knowing the «/», as in Notion.** Lists, tables, images, equations and the rest were inserted only from the «/» menu, and only a page left empty said so.
+  - On the empty line with the cursor, «Press “/” to insert…» says how, while the editor has the focus. An empty page, card description or comment keeps its own hint, and a comment's now names the «/» too.
+  - A «+» left of each block's handle opens the «/» menu on a line below the block, its search included; closed without a choice, the page is as it was, and what is chosen is undone in one step. Where there is no room on the left, in a card or on a phone, it is under the handle. From the keyboard, the block's menu (Ctrl+/) has **Insert below**.
+  - The «/» menu and **Turn into** show the Markdown each block can also be typed with: `#`, `##` and `###`, `-`, `1.` and `[]`, `>`, ```` ``` ````, `---`, and `$$…$$` and `$$$…$$$` for equations.
+  - What is saved doesn't change.
 
 ### Fixed
 - **Two tables in a row in a document.** Each time the page was opened and saved, more blank lines appeared between them, and then an empty paragraph. They now stay as they were.

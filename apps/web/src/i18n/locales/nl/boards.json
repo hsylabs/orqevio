@@ -140,7 +140,7 @@
       "titleCount_other": "Opmerkingen · {{count}}",
       "list": "Opmerkingen",
       "empty": "Nog geen opmerkingen. Noteer hier voortgang, vragen of besluiten; ook agents kunnen hier schrijven.",
-      "placeholder": "Schrijf een opmerking… Markdown werkt.",
+      "placeholder": "Schrijf een opmerking, of druk op ‘/’ om iets in te voegen… Markdown werkt.",
       "label": "Nieuwe opmerking",
       "hint": "<kbd>{{mod}}</kbd>+<kbd>Enter</kbd> om te verzenden",
       "submit": "Plaatsen",

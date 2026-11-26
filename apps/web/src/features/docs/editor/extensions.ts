@@ -3,6 +3,7 @@ import type { Editor, Range } from '@tiptap/core'
 import { PluginKey } from '@tiptap/pm/state'
 import Suggestion from '@tiptap/suggestion'
 import { blockAt, canMove, moveBlock } from './block-commands'
+import { chosenRange, insertBelowPlugin, slashKey } from './insert-below'
 import { readPending } from './own-step'
 import type { MenuItem, SuggestionStore } from './suggestion-store'
 
@@ -11,7 +12,7 @@ interface MenuExtensionOptions {
   items: (query: string, editor: Editor) => MenuItem[] | Promise<MenuItem[]>
 }
 
-function createMenuExtension(name: string, char: string, kind: 'slash' | 'mention') {
+function createMenuExtension(name: string, char: string, kind: 'slash' | 'mention', pluginKey: PluginKey) {
   return Extension.create<MenuExtensionOptions>({
     name,
     addOptions() {
@@ -24,7 +25,7 @@ function createMenuExtension(name: string, char: string, kind: 'slash' | 'mentio
       let requestId = 0
       return [
         Suggestion<MenuItem, MenuItem>({
-          pluginKey: new PluginKey(name),
+          pluginKey,
           editor: this.editor,
           char,
           allowSpaces: true,
@@ -39,7 +40,8 @@ function createMenuExtension(name: string, char: string, kind: 'slash' | 'mentio
             if (id === requestId) store.set({ loading: false })
             return items
           },
-          command: ({ editor, range, props }) => props.run(editor, range),
+          // On a line the «+» of a block opened, the choice acts on the line made anew (insert-below.ts).
+          command: ({ editor, range, props }) => props.run(editor, kind === 'slash' ? chosenRange(editor, range) : range),
           render: () => ({
             onStart: (props) => {
               store.set({ open: true, kind, items: props.items, index: 0, rect: props.clientRect?.() ?? null, query: props.query, command: props.command })
@@ -75,8 +77,8 @@ function createMenuExtension(name: string, char: string, kind: 'slash' | 'mentio
   })
 }
 
-export const SlashCommands = createMenuExtension('slashCommands', '/', 'slash')
-export const Mentions = createMenuExtension('mentions', '@', 'mention')
+export const SlashCommands = createMenuExtension('slashCommands', '/', 'slash', slashKey)
+export const Mentions = createMenuExtension('mentions', '@', 'mention', new PluginKey('mentions'))
 
 export type { Range }
 
@@ -110,5 +112,9 @@ export const BlockKeys = Extension.create<object, { openMenu: ((pos: number) => 
       return true
     }
     return { 'Mod-Shift-ArrowUp': move(-1), 'Mod-Shift-ArrowDown': move(1), 'Mod-/': menu }
+  },
+  // The line a block's «+» opens for the «/» menu.
+  addProseMirrorPlugins() {
+    return [insertBelowPlugin(this.editor)]
   },
 })
