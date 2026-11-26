@@ -840,6 +840,10 @@ details.orq-toggle[open] > summary::before {
   pointer-events: none;
   color: var(--ink-3);
 }
+/* How to insert a block, on the empty line with the cursor: only while the editor has the focus. */
+.orq-prose:not(.ProseMirror-focused) .orq-line-hint::before {
+  content: none;
+}
 .orq-prose .ProseMirror-gapcursor::after {
   border-top-color: var(--ink);
 }

@@ -19,6 +19,23 @@ export type Turn = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | '
 const ALL: Turn[] = ['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'todo', 'quote', 'callout', 'toggle', 'code']
 /** The icons of the «/» menu for each of them. */
 export const TURN_ICONS: Record<Turn, string> = { p: 'T', h1: 'H1', h2: 'H2', h3: 'H3', ul: '•', ol: '1.', todo: '☑', quote: '❝', callout: 'ⓘ', toggle: '▸', code: '</>' }
+/**
+ * What typed at the start of a line makes the block, shown beside it in the «/» menu and «Turn into».
+ * Each is the editor's own input rule (StarterKit, and @tiptap/extension-mathematics for formulas).
+ */
+export const MARKDOWN_SHORTCUTS: Partial<Record<Turn | 'hr' | 'math' | 'inlineMath', string>> = {
+  h1: '#',
+  h2: '##',
+  h3: '###',
+  ul: '-',
+  ol: '1.',
+  todo: '[]',
+  quote: '>',
+  code: '```',
+  hr: '---',
+  math: '$$$…$$$',
+  inlineMath: '$$…$$',
+}
 
 
 export interface Block {

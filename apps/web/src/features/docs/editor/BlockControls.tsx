@@ -1,7 +1,7 @@
 import type { Editor } from '@tiptap/core'
 import { NodeSelection, Selection, type SelectionBookmark, type Transaction } from '@tiptap/pm/state'
 import { useEditorState } from '@tiptap/react'
-import { ArrowDown, ArrowUp, ClipboardCopy, Code, Copy, GripVertical, Info, Repeat, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ClipboardCopy, Code, Copy, GripVertical, Info, Plus, Repeat, Trash2 } from 'lucide-react'
 import { type DragEvent, useEffect, useReducer, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { isMac } from '../../../components/ui/Kbd'
@@ -11,11 +11,14 @@ import { CalloutTypeItems } from './CalloutControls'
 import { codeStorage, copyCode } from './code-block'
 import { changeOf, followBlock } from './own-step'
 import { TOGGLE_VIEW } from './toggle'
-import { TURN_ICONS, blockAt, canMove, deleteBlock, duplicateBlock, moveBlock, turnBlock, turns } from './block-commands'
+import { MARKDOWN_SHORTCUTS, TURN_ICONS, blockAt, canMove, deleteBlock, duplicateBlock, moveBlock, turnBlock, turns } from './block-commands'
+import { closeOpenedFor, openBelow } from './insert-below'
 
 const WIDTH = 18
 const HEIGHT = 24
 const GAP = 6
+/** Between the «+» and the handle, left of it. */
+const PLUS_GAP = 2
 /** Room for a list item's bullet or number, left of its text. */
 const MARKER = 20
 
@@ -25,6 +28,8 @@ const SHIFT = isMac ? '⇧' : 'Shift+'
 /**
  * The handle of a block, as in Notion: ⋮⋮ left of the block under the pointer, or of the block with
  * the cursor on a phone. Dragged, it moves the block; clicked (or Ctrl+/), it opens the block's menu.
+ * The «+» left of it opens the «/» menu on a line below the block (insert-below.ts); from the
+ * keyboard, so does «Insert below» in the block's menu.
  */
 export function BlockControls({ editor }: { editor: Editor }) {
   const { t } = useTranslation('docs')
@@ -60,6 +65,13 @@ export function BlockControls({ editor }: { editor: Editor }) {
   const languages = useRef<number | null>(null)
   /** A callout inside the block with the cursor (in a list item, in a quote): its types are in the block's menu too. */
   const [inner, setInner] = useState<number | null>(null)
+  /** What would cut the «+» off on its left: the box the editor scrolls in, such as a card's panel. */
+  const clip = useRef<Element | null>(null)
+  useEffect(() => {
+    let el = root.current?.parentElement ?? null
+    while (el && getComputedStyle(el).overflowX === 'visible') el = el.parentElement
+    clip.current = el
+  }, [])
 
   // The handle follows its block as the page changes, scrolls or resizes.
   useEffect(() => {
@@ -182,7 +194,12 @@ export function BlockControls({ editor }: { editor: Editor }) {
   openMenuRef.current = openMenu
 
   /** The menu acts on its block, selected while it is open to show which one. */
-  function openMenu(pos: number) {
+  function openMenu(at: number) {
+    // A line a «+» opened goes first, and the block is where that leaves it; not on the line itself.
+    const pos = closeOpenedFor(editor, at)
+    // The open line's own handle: back to the line and its «/» menu.
+    if (pos === null) return editor.view.focus()
+    if (!editor.state.doc.nodeAt(pos)) return
     before.current = editor.state.selection.getBookmark()
     setInner(calloutWithin(pos))
     editor.view.dispatch(editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, pos)))
@@ -310,94 +327,121 @@ export function BlockControls({ editor }: { editor: Editor }) {
     const left = box.left - (node.type.name === 'listItem' ? MARKER : 0) - WIDTH - GAP - base.left
     const { current, options } = turns(editor.state.doc, pos)
     const label = t('editor.block.handle')
+    const side = base.left + left - WIDTH - PLUS_GAP >= Math.max(0, clip.current?.getBoundingClientRect().left ?? 0)
     const callout = node.type.name === 'callout' ? pos : menu === pos && inner !== null && editor.state.doc.nodeAt(inner)?.type.name === 'callout' ? inner : null
 
     return (
       <div className={cn('absolute', live)} style={{ top, left, width: WIDTH, height: HEIGHT }} onPointerEnter={stay} onPointerLeave={leave}>
-        <MenuRoot open={menu === pos} onOpenChange={closeMenu}>
-          {/* Where the menu opens from; the handle itself opens it on a click, so that it can be dragged. */}
-          <MenuTrigger asChild>
-            <span aria-hidden="true" aria-label={label} className="pointer-events-none absolute inset-0" />
-          </MenuTrigger>
-          <MenuContent align="start" onCloseAutoFocus={closeFocus}>
-            {options.length > 0 && (
-              <MenuSub>
-                <MenuSubTrigger icon={<Repeat />}>{t('editor.block.turnInto')}</MenuSubTrigger>
-                <MenuSubContent>
-                  {options.map((option) => (
-                    <MenuItem
-                      key={option}
-                      icon={<span className="w-[15px] text-center font-mono text-[11px] text-ink-3">{TURN_ICONS[option]}</span>}
-                      current={option === current}
-                      disabled={option === current}
-                      onSelect={act(() => turnBlock(editor, pos, option))}
-                    >
-                      {t(`editor.slash.${option}.title`)}
-                    </MenuItem>
-                  ))}
-                </MenuSubContent>
-              </MenuSub>
-            )}
-            {callout !== null && (
-              <MenuSub>
-                <MenuSubTrigger icon={<Info />}>{t('editor.callout.menu')}</MenuSubTrigger>
-                <MenuSubContent>
-                  {/* Not an action that places the cursor: it goes back where it was, in the callout. */}
-                  <CalloutTypeItems editor={editor} pos={callout} />
-                </MenuSubContent>
-              </MenuSub>
-            )}
-            {node.type.name === 'codeBlock' && (
-              <>
-                <MenuItem icon={<Code />} onSelect={() => (languages.current = pos)}>
-                  {t('editor.block.language')}
-                </MenuItem>
-                <MenuItem icon={<ClipboardCopy />} onSelect={() => void copyCode(node.textContent)}>
-                  {t('editor.code.copy')}
-                </MenuItem>
-              </>
-            )}
-            <MenuItem icon={<Copy />} onSelect={act(() => duplicateBlock(editor, pos))}>
-              {t('editor.block.duplicate')}
-            </MenuItem>
-            <MenuItem icon={<ArrowUp />} shortcut={`${MOD}${SHIFT}↑`} disabled={!canMove(editor.state.doc, pos, -1)} onSelect={act(() => moveBlock(editor, pos, -1))}>
-              {t('editor.block.moveUp')}
-            </MenuItem>
-            <MenuItem icon={<ArrowDown />} shortcut={`${MOD}${SHIFT}↓`} disabled={!canMove(editor.state.doc, pos, 1)} onSelect={act(() => moveBlock(editor, pos, 1))}>
-              {t('editor.block.moveDown')}
-            </MenuItem>
-            <MenuSeparator />
-            <MenuItem icon={<Trash2 />} danger onSelect={act(() => deleteBlock(editor, pos))}>
-              {t('editor.block.delete')}
-            </MenuItem>
-          </MenuContent>
-        </MenuRoot>
         <button
           type="button"
           tabIndex={-1}
-          draggable
-          aria-label={label}
-          aria-haspopup="menu"
-          aria-expanded={menu === pos}
-          title={t('editor.block.handleHint', { key: `${MOD}/` })}
-          className="grid size-full cursor-grab place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 active:cursor-grabbing aria-expanded:bg-accent-soft aria-expanded:text-accent [&_svg]:size-[15px]"
-          // A finger's tap keeps the cursor in the editor, and the phone's keyboard open. Without its
-          // press, Safari sends no click: the finger opens the menu as it lifts.
+          aria-label={t('editor.block.insertBelow')}
+          title={t('editor.block.insertHint')}
+          className="absolute grid place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 [&_svg]:size-[15px]"
+          // Left of the handle, or under it where there is no room on its left (a card, a phone).
+          style={side ? { left: -WIDTH - PLUS_GAP, top: 0, width: WIDTH, height: HEIGHT } : { left: 0, top: HEIGHT + PLUS_GAP, width: WIDTH, height: HEIGHT }}
+          // The cursor and the focus stay in the editor, and on a phone its keyboard stays open. Without
+          // its press, Safari sends no click: a finger inserts as it lifts.
           onPointerDown={(e) => {
             finger.current = e.pointerType === 'touch'
-            if (finger.current) e.preventDefault()
-            else if (e.button === 0 && !e.ctrlKey) held.current = true
+            e.preventDefault()
           }}
-          onPointerUp={(e) => e.pointerType === 'touch' && openMenu(pos)}
-          onClick={() => !finger.current && openMenu(pos)}
-          onDragStart={(e) => drag(e, pos)}
-          onDragEnd={() => {
-            held.current = false
-            editor.view.dragging = null
-          }}
+          onPointerUp={(e) => e.pointerType === 'touch' && openBelow(editor, pos)}
+          onClick={() => !finger.current && openBelow(editor, pos)}
         >
-          <GripVertical />
+          <Plus />
         </button>
+        <div className="absolute inset-0">
+          <MenuRoot open={menu === pos} onOpenChange={closeMenu}>
+            {/* Where the menu opens from; the handle itself opens it on a click, so that it can be dragged. */}
+            <MenuTrigger asChild>
+              <span aria-hidden="true" aria-label={label} className="pointer-events-none absolute inset-0" />
+            </MenuTrigger>
+            <MenuContent align="start" onCloseAutoFocus={closeFocus}>
+              <MenuItem icon={<Plus />} onSelect={act(() => openBelow(editor, pos))}>
+                {t('editor.block.insertBelow')}
+              </MenuItem>
+              <MenuSeparator />
+              {options.length > 0 && (
+                <MenuSub>
+                  <MenuSubTrigger icon={<Repeat />}>{t('editor.block.turnInto')}</MenuSubTrigger>
+                  <MenuSubContent>
+                    {options.map((option) => (
+                      <MenuItem
+                        key={option}
+                        icon={<span className="w-[15px] text-center font-mono text-[11px] text-ink-3">{TURN_ICONS[option]}</span>}
+                        current={option === current}
+                        disabled={option === current}
+                        shortcut={MARKDOWN_SHORTCUTS[option]}
+                        onSelect={act(() => turnBlock(editor, pos, option))}
+                      >
+                        {t(`editor.slash.${option}.title`)}
+                      </MenuItem>
+                    ))}
+                  </MenuSubContent>
+                </MenuSub>
+              )}
+              {callout !== null && (
+                <MenuSub>
+                  <MenuSubTrigger icon={<Info />}>{t('editor.callout.menu')}</MenuSubTrigger>
+                  <MenuSubContent>
+                    {/* Not an action that places the cursor: it goes back where it was, in the callout. */}
+                    <CalloutTypeItems editor={editor} pos={callout} />
+                  </MenuSubContent>
+                </MenuSub>
+              )}
+              {node.type.name === 'codeBlock' && (
+                <>
+                  <MenuItem icon={<Code />} onSelect={() => (languages.current = pos)}>
+                    {t('editor.block.language')}
+                  </MenuItem>
+                  <MenuItem icon={<ClipboardCopy />} onSelect={() => void copyCode(node.textContent)}>
+                    {t('editor.code.copy')}
+                  </MenuItem>
+                </>
+              )}
+              <MenuItem icon={<Copy />} onSelect={act(() => duplicateBlock(editor, pos))}>
+                {t('editor.block.duplicate')}
+              </MenuItem>
+              <MenuItem icon={<ArrowUp />} shortcut={`${MOD}${SHIFT}↑`} disabled={!canMove(editor.state.doc, pos, -1)} onSelect={act(() => moveBlock(editor, pos, -1))}>
+                {t('editor.block.moveUp')}
+              </MenuItem>
+              <MenuItem icon={<ArrowDown />} shortcut={`${MOD}${SHIFT}↓`} disabled={!canMove(editor.state.doc, pos, 1)} onSelect={act(() => moveBlock(editor, pos, 1))}>
+                {t('editor.block.moveDown')}
+              </MenuItem>
+              <MenuSeparator />
+              <MenuItem icon={<Trash2 />} danger onSelect={act(() => deleteBlock(editor, pos))}>
+                {t('editor.block.delete')}
+              </MenuItem>
+            </MenuContent>
+          </MenuRoot>
+          <button
+            type="button"
+            tabIndex={-1}
+            draggable
+            aria-label={label}
+            aria-haspopup="menu"
+            aria-expanded={menu === pos}
+            title={t('editor.block.handleHint', { key: `${MOD}/` })}
+            className="grid size-full cursor-grab place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 active:cursor-grabbing aria-expanded:bg-accent-soft aria-expanded:text-accent [&_svg]:size-[15px]"
+            // A finger's tap keeps the cursor in the editor, and the phone's keyboard open. Without its
+            // press, Safari sends no click: the finger opens the menu as it lifts.
+            onPointerDown={(e) => {
+              finger.current = e.pointerType === 'touch'
+              if (finger.current) e.preventDefault()
+              else if (e.button === 0 && !e.ctrlKey) held.current = true
+            }}
+            onPointerUp={(e) => e.pointerType === 'touch' && openMenu(pos)}
+            onClick={() => !finger.current && openMenu(pos)}
+            onDragStart={(e) => drag(e, pos)}
+            onDragEnd={() => {
+              held.current = false
+              editor.view.dragging = null
+            }}
+          >
+            <GripVertical />
+          </button>
+        </div>
       </div>
     )
   }

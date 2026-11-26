@@ -140,7 +140,7 @@
       "titleCount_other": "Kommentare · {{count}}",
       "list": "Kommentare",
       "empty": "Noch keine Kommentare. Halte hier Fortschritte, Fragen oder Entscheidungen fest; auch Agenten können hier schreiben.",
-      "placeholder": "Kommentar schreiben… Markdown wird unterstützt.",
+      "placeholder": "Kommentar schreiben oder „/“ zum Einfügen drücken… Markdown wird unterstützt.",
       "label": "Neuer Kommentar",
       "hint": "<kbd>{{mod}}</kbd>+<kbd>Enter</kbd> zum Senden",
       "submit": "Kommentieren",

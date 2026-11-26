@@ -1,6 +1,6 @@
 import type { AttachmentDTO, MeDTO, SearchResultDTO } from '@orqevio/shared'
 import { cardHref, docHref } from '@orqevio/shared'
-import type { Editor as TiptapEditor } from '@tiptap/core'
+import type { ChainedCommands, Range, Editor as TiptapEditor } from '@tiptap/core'
 import { Placeholder } from '@tiptap/extensions'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import { Selection } from '@tiptap/pm/state'
@@ -22,6 +22,8 @@ import { MathControls } from './MathControls'
 import { MathKeys, startMath } from './math'
 import { FormatMenu } from './FormatMenu'
 import { BlockKeys, Mentions, SlashCommands } from './extensions'
+import { MARKDOWN_SHORTCUTS } from './block-commands'
+import { opensLine } from './insert-below'
 import { documentExtensions } from './markdown'
 import { SuggestionMenu } from './SuggestionMenu'
 import { TableControls } from './TableControls'
@@ -61,6 +63,23 @@ export async function uploadFile(file: File, target: UploadTarget): Promise<Atta
   // A copy before 1.2.1 with MAX_UPLOAD_MB set wrong gives no number: the server decides then.
   if (typeof limit === 'number' && file.size > limit) throw new ApiError(413, 'file_too_large', 'File too large')
   return api<AttachmentDTO>('POST', `/${target.type === 'page' ? 'pages' : 'cards'}/${target.id}/attachments`, file)
+}
+
+/**
+ * The «/» menu's list: toggled, except on a line right in an item whose list is already of that
+ * kind, which toggling would take out. A line deeper in the item (in a quote there) gets its own
+ * list, as TipTap's toggleList decides.
+ */
+function toList(editor: TiptapEditor, range: Range, list: string, toggle: (chain: ChainedCommands) => ChainedCommands) {
+  const chain = editor.chain().focus().deleteRange(range)
+  const { $from, $to } = editor.state.selection
+  const lines = $from.blockRange($to)
+  for (let depth = $from.depth; depth > 0; depth--) {
+    const name = $from.node(depth).type.name
+    if (name !== 'bulletList' && name !== 'orderedList' && name !== 'taskList') continue
+    return (name === list && lines && lines.depth - depth <= 1 ? chain : toggle(chain)).run()
+  }
+  return toggle(chain).run()
 }
 
 /** Where the text ends: before the empty paragraph the editor keeps after anything but a paragraph at the end. */
@@ -137,6 +156,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       icon,
       group: t(`editor.groups.${group}`),
       keywords: t(`editor.slash.${id}.keywords`),
+      shortcut: MARKDOWN_SHORTCUTS[id as keyof typeof MARKDOWN_SHORTCUTS],
       run,
     })
     const items: Array<MenuItem & { keywords: string }> = [
@@ -144,9 +164,10 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       item('h1', 'H1', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setHeading({ level: 1 }).run()),
       item('h2', 'H2', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setHeading({ level: 2 }).run()),
       item('h3', 'H3', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setHeading({ level: 3 }).run()),
-      item('ul', '•', 'lists', (e, r) => e.chain().focus().deleteRange(r).toggleBulletList().run()),
-      item('ol', '1.', 'lists', (e, r) => e.chain().focus().deleteRange(r).toggleOrderedList().run()),
-      item('todo', '☑', 'lists', (e, r) => e.chain().focus().deleteRange(r).toggleTaskList().run()),
+      // In an item of the same kind of list, as on the line a «+» opens below one, it stays an item.
+      item('ul', '•', 'lists', (e, r) => toList(e, r, 'bulletList', (c) => c.toggleBulletList())),
+      item('ol', '1.', 'lists', (e, r) => toList(e, r, 'orderedList', (c) => c.toggleOrderedList())),
+      item('todo', '☑', 'lists', (e, r) => toList(e, r, 'taskList', (c) => c.toggleTaskList())),
       item('quote', '❝', 'blocks', (e, r) => e.chain().focus().deleteRange(r).toggleBlockquote().run()),
       item('callout', 'ⓘ', 'blocks', (e, r) => e.chain().focus().deleteRange(r).wrapIn('callout', { marker: markerFor('note') }).run()),
       item('toggle', '▸', 'blocks', (e, r) => e.chain().focus().deleteRange(r).command(({ tr }) => insertToggle(tr)).run()),
@@ -203,13 +224,20 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
     autofocus: false,
     extensions: [
       ...documentExtensions(),
+      // On the empty line with the cursor: a heading's name; the page's or field's own hint when it
+      // is all empty; elsewhere how to insert a block, shown only while the editor has the focus
+      // (editor.css). It follows the cursor, not the focus: a decoration that changed with the focus
+      // would redraw the page as a click focuses it, before the click's cursor is read.
       Placeholder.configure({
-        placeholder: ({ node, pos }) =>
+        placeholder: ({ editor, node, pos }) =>
           node.type.name === 'heading'
             ? tRef.current('editor.headingPlaceholder')
-            : pos === 0
+            : pos === 0 && editor.isEmpty
               ? (placeholderRef.current ?? tRef.current('editor.placeholder'))
-              : '',
+              : node.type.name === 'paragraph'
+                ? tRef.current('editor.lineHint')
+                : '',
+        emptyNodeClass: ({ editor, node, pos }) => (node.type.name === 'paragraph' && !(pos === 0 && editor.isEmpty) ? 'is-empty orq-line-hint' : 'is-empty'),
         showOnlyCurrent: true,
       }),
       SlashCommands.configure({ store: slashStore, items: slashItems }),
@@ -278,7 +306,8 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
     },
     // Content set from outside (another tab, an agent) is the new starting point.
     onTransaction: ({ editor, transaction }) => {
-      if (transaction.docChanged && transaction.getMeta('preventUpdate')) emitted.current = editor.getMarkdown()
+      // Not the line a block's «+» opens: what it holds isn't written yet (insert-below.ts).
+      if (transaction.docChanged && transaction.getMeta('preventUpdate') && !opensLine(transaction)) emitted.current = editor.getMarkdown()
     },
     onUpdate: ({ editor }) => {
       const markdown = editor.getMarkdown()

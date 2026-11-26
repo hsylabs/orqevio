@@ -140,7 +140,7 @@
       "titleCount_other": "Comments · {{count}}",
       "list": "Comments",
       "empty": "No comments yet. Leave progress, a question or a decision here; agents can write here too.",
-      "placeholder": "Write a comment… Markdown works.",
+      "placeholder": "Write a comment, or press “/” to insert… Markdown works.",
       "label": "New comment",
       "hint": "<kbd>{{mod}}</kbd>+<kbd>Enter</kbd> to send",
       "submit": "Comment",

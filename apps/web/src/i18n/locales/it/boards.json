@@ -143,7 +143,7 @@
       "titleCount_other": "Commenti · {{count}}",
       "list": "Commenti",
       "empty": "Ancora nessun commento. Lascia qui avanzamenti, dubbi o decisioni; anche gli agenti possono scrivere qui.",
-      "placeholder": "Scrivi un commento… Supporta Markdown.",
+      "placeholder": "Scrivi un commento, o premi «/» per inserire… Supporta Markdown.",
       "label": "Nuovo commento",
       "hint": "<kbd>{{mod}}</kbd>+<kbd>Invio</kbd> per inviare",
       "submit": "Commenta",
