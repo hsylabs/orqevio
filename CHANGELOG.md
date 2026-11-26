@@ -9,7 +9,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
 ## [1.5.0] - 2026-11-26
 
 ### Added
-- **Editing tables in documents, as in Notion.** A table's rows and columns could hardly be changed without editing its Markdown by hand. Now:
+- **Editing tables in documents, as in Notion.** A table's rows and columns could hardly be changed without editing its Markdown. Now:
   - With the cursor in a table, a bar above it inserts rows and columns and aligns the column. Its menu moves or deletes rows and columns, or the whole table. On a phone it appears with a tap.
   - With a mouse, a handle on the row and the column under the pointer opens their menu. A «+» below and to the right adds a row or a column at the end.
   - From the keyboard, Alt+F10 goes to the bar, the arrows move along it and Escape goes back to the text.
@@ -21,7 +21,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - Each action is undone on its own. Front matter stays at the top, and a list item moves within its list. Comments have no handles.
 - **Code blocks with their language, colors and a copy button, as in Notion.** For scripts, commands and prompts:
   - A bar along the top of each code block shows its language. Clicked, it opens the list of languages, with a search box; a language the list doesn't know, such as `mermaid`, can be used as it is written. From the keyboard, the block's menu (Ctrl+/) has **Language…** and **Copy code**.
-  - The code is colored in its language, with the theme's tones in light and dark mode and on paper. A block without a language, such as a prompt, keeps no colours. The colours load apart from the editor, so a page opens as fast as before.
+  - The code is colored in its language, with the theme's tones in light and dark mode and on paper. A block without a language, such as a prompt, keeps no colors. The colors load apart from the editor, so a page opens as fast as before.
   - The copy button copies the code as it is. Comments and printed pages show the language and the colors too, and comments have the copy button.
   - What is saved is still a Markdown fence, as agents and GitHub read it: ` ```python `. Changing the language keeps the rest of the fence's line (` ```ts title="a.ts" `), and `ts` stays `ts`. Each change is undone on its own.
 - **Callouts in documents, as in Notion: GitHub's alerts.** A quote that starts with `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]` or `[!CAUTION]` on a line of its own shows as a tinted box with its icon and its type's name, in the editor, in comments and on paper.
@@ -29,7 +29,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - The «/» menu has **Callout**, and **Turn into** makes text, a heading or a quote into one, and back.
   - What is saved is still the quote GitHub reads as an alert, as it was written: a marker in small letters or a blank line after it stays. An Obsidian callout with a title, or a marker escaped on purpose, stays a quote. An alert copied from a page of GitHub is pasted as a callout.
 - **Toggles in documents, as in Notion: HTML's `<details>`.** A `<details>` with its `<summary>`, as GitHub shows it, is a title with an arrow that shows or hides what is under it, in the editor and in comments; on paper it is open. Both ways of writing it are read: the summary right under `<details>`, or after a blank line as in GitHub's own guide.
-  - The title is one line of plain text: what is typed or pasted in it stays text, never formatting. Enter in it goes into what it holds, or to a new line after it when it is closed; Ctrl+Enter (⌘↵) shows or hides it, except in a comment, where it sends the comment; Backspace at its start makes it text again. Backspace right after a closed toggle selects it, rather than hiding the line in it.
+  - The title is one line of plain text: what is typed or pasted in it stays text, never formatting. Enter in it goes into what it holds, or to a new line after it when it is closed; Ctrl+Enter (⌘↵) shows or hides it, except in a comment, where it sends the comment, or saves it when editing one; Backspace at its start makes it text again. Backspace right after a closed toggle selects it, rather than hiding the line in it.
   - The «/» menu has **Toggle**, and **Turn into** makes a line of plain text into one, and back.
   - What is saved is still the `<details>` as it was written, `open` included; its summary is written anew only when its text changes. Opening or closing a toggle is not a change to the page, and a page brought up to date from another tab or an agent keeps the toggles as the reader left them. A `<details>` written all on one block, without a summary, or closed inside other HTML stays as it was.
 - **Image width and caption in documents, as in Notion, in a form GitHub reads.** An image has a bar above it, when it is selected or alone on the line with the cursor (Alt+F10 from the keyboard, a tap on a phone): a quarter, half, three quarters or all of the line, its own size, and its caption. Its right edge can also be dragged to any width.
@@ -40,7 +40,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - A click on an equation opens its source under it, with how it looks as it is typed and what is wrong with it if anything; Enter with one selected too. Enter saves, Shift+Enter starts another line in one of its own, Escape leaves it as it was. Each change is undone on its own; emptied, the equation goes.
   - What is saved is what GitHub reads: `$…$` in a line (or `` $`…`$ `` for one with characters Markdown would read), and `$$` on lines of their own around one of its own, or a fence of `math`. Each one is written back as it was. An equation copied from a page drawn with KaTeX or MathML, such as an AI chat or Wikipedia, is pasted with its source.
   - A `$` of text stays text: prices such as `$5 and $10` are no equations, and a `$` that would open one is saved escaped, `\$`. What an equation holds never runs nor links anywhere.
-- **Inserting a block without knowing the «/», as in Notion.** Tables, images, files and the rest could be inserted only from the «/» menu, and only a page left empty said so.
+- **Inserting a block without knowing the «/», as in Notion.** The «/» menu was the only menu that inserted a block, and only a page left empty said so.
   - On the empty line with the cursor, «Press “/” to insert…» says how, while the editor has the focus. An empty page, card description or comment keeps its own hint, and a comment's now names the «/» too.
   - A «+» left of each block's handle opens the «/» menu on a line below the block, its search included; below a list item the line is its next item. Closed without a choice, the page is as it was, and a block chosen goes with one undo (an equation, an image or a file, inserted once written or picked, with two). Where there is no room on the left, in a card or on a phone, it is under the handle. From the keyboard, the block's menu (Ctrl+/) has **Insert below**.
   - In a list item, the «/» menu's list of the same kind leaves it in its list; it took it out.

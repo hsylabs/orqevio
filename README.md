@@ -77,7 +77,7 @@ packages/shared zod schemas, permissions and types shared by the API, MCP and cl
 ```
 
 - **One domain layer.** The app's REST API and the MCP tools call exactly the same services. Every operation checks access to the workspace and the specific permission (`tasks:read`, `tasks:write`, `docs:read`, `docs:write`), so the rules are enforced in one place.
-- **Markdown as the canonical format.** Documents and descriptions are stored as Markdown (GFM). It's portable, readable and what LLMs understand best. Internal references are ordinary links: `[Title](/card/<id>)` and `[Title](/doc/<id>)`. What the editor can't show, such as other HTML, stays in the document as it was written: it shows its source, and editing the rest of the page doesn't change it.
+- **Markdown as the canonical format.** Documents and descriptions are stored as Markdown (GFM). It's portable, readable and what LLMs understand best. Internal references are ordinary links: `[Title](/card/<id>)` and `[Title](/doc/<id>)`. What the editor can't show, such as HTML other than a `<details>` or an `<img>`, stays in the document as it was written: it shows its source, and editing the rest of the page doesn't change it.
 - **One copy, one database.** Each copy belongs to one person and keeps everything in SQLite, with synchronous transactions. The same code runs in two places:
   - **Your own server (Docker or Node):** a single file (`DATA_DIR/orqevio.db`) plus the attachments folder.
   - **Cloudflare:** a Worker serves the web app and sends `/api` and `/mcp` to a single Durable Object, which keeps the data in its own SQLite database; attachments go to R2.
