@@ -24,6 +24,8 @@ const GAP = 4
 const PLUS_GAP = 2
 /** Between a table's handle and its rows' handles, which reach out of its left edge (TableControls), or its top-left corner. */
 const TABLE_GAP = 4
+/** How much wider than a table's handle and «+» above its corner the way to them is taken to be. */
+const TOWARD = 4
 /** Room for a list item's bullet or number, left of its text. */
 const MARKER = 20
 
@@ -53,6 +55,8 @@ export function BlockControls({ editor }: { editor: Editor }) {
   const [hover, setHover] = useState<number | null>(null)
   const hoverRef = useRef<number | null>(null)
   hoverRef.current = hover
+  /** Where the pointer last was over a table, maybe on its way to the table's handle above its corner. */
+  const lastOnTable = useRef<{ x: number; y: number } | null>(null)
   const [menu, setMenu] = useState<number | null>(null)
   /** The block whose menu is closing: its handle stays until the menu has put the focus back. */
   const [closing, setClosing] = useState<number | null>(null)
@@ -124,6 +128,7 @@ export function BlockControls({ editor }: { editor: Editor }) {
       // On the way up to a table's handle above its corner, over the line above the table.
       if (towardCorner(event)) return stay()
       const block = itemAt(event) ?? blockAtHeight(event)
+      lastOnTable.current = block && editor.state.doc.nodeAt(block.pos)?.type.name === 'table' ? { x: event.clientX, y: event.clientY } : null
       if (!block) return leave()
       stay()
       if (menuRef.current === null) setHover(block.pos)
@@ -213,10 +218,16 @@ export function BlockControls({ editor }: { editor: Editor }) {
     return !touch && box.left - size - GAP - (ROW_HANDLE_REACH + TABLE_GAP - GAP) < clipLeft
   }
 
-  /** Whether the pointer is between the table it is on and its handle above its corner, or the «+» above that: still the table's. */
+  /**
+   * Whether the pointer, off the table it was on, is on its way to the table's handle above its
+   * corner, or the «+» above that: within the triangle from where it left the table to them, as a
+   * menu keeps its submenu. Still the table's then, though it goes over the line above the table;
+   * straight up onto that line, the line's own.
+   */
   function towardCorner(event: PointerEvent) {
     const at = hoverRef.current
-    if (at === null || editor.state.doc.nodeAt(at)?.type.name !== 'table') return false
+    const from = lastOnTable.current
+    if (at === null || !from || editor.state.doc.nodeAt(at)?.type.name !== 'table') return false
     let dom: Node | null = null
     try {
       dom = editor.view.nodeDOM(at)
@@ -225,7 +236,19 @@ export function BlockControls({ editor }: { editor: Editor }) {
     }
     if (!(dom instanceof HTMLElement)) return false
     const box = dom.getBoundingClientRect()
-    return atCorner(box) && event.clientY >= box.top - TABLE_GAP - 2 * size - PLUS_GAP && event.clientY < box.top && event.clientX <= box.right
+    const { clientX: x, clientY: y } = event
+    if (y >= box.top || !atCorner(box)) return false
+    // The handle and the «+» above it, a little wider.
+    const left = box.left - size - GAP - TOWARD
+    const right = box.left - GAP + TOWARD
+    const top = box.top - TABLE_GAP - 2 * size - PLUS_GAP - TOWARD
+    const bottom = box.top - TABLE_GAP + TOWARD
+    if (x >= left && x <= right && y >= top && y <= bottom) return true
+    // Which side of the line from a to b the pointer is on.
+    const side = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.sign((b.x - a.x) * (y - a.y) - (b.y - a.y) * (x - a.x))
+    const corners = [from, { x: right, y: top }, { x: left, y: bottom }]
+    const sides = corners.map((a, i) => side(a, corners[(i + 1) % 3]!))
+    return sides.every((s) => s >= 0) || sides.every((s) => s <= 0)
   }
 
   const openMenuRef = useRef(openMenu)

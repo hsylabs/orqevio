@@ -327,6 +327,16 @@ test('in a card, the table’s own handle is inside the card and apart from its 
   await expect(page.getByRole('menuitem', { name: 'Convertir en' })).toHaveCount(0)
   await page.keyboard.press('Escape')
 
+  // Straight up from the table onto the line above it, not toward the corner: that line's own handle.
+  const precio = (await description.locator('th').filter({ hasText: /^Precio$/ }).boundingBox())!
+  const before = (await description.getByText('Antes', { exact: true }).boundingBox())!
+  await page.mouse.move(precio.x + precio.width / 2, precio.y + precio.height / 2)
+  await page.mouse.move(precio.x + precio.width / 2, before.y + before.height / 2, { steps: 8 })
+  await expect.poll(async () => {
+    const box = (await table.boundingBox())!
+    return Math.abs(box.y + box.height / 2 - (before.y + before.height / 2))
+  }).toBeLessThan(3)
+
   // The same way up to its «+», above its handle: the table's, which opens the «/» menu under the table.
   const plus = page.getByRole('button', { name: 'Insertar debajo' })
   await fruta.hover()
