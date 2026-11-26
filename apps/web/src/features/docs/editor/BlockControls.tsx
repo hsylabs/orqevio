@@ -12,7 +12,7 @@ import { codeStorage, copyCode } from './code-block'
 import { changeOf, followBlock } from './own-step'
 import { TOGGLE_VIEW } from './toggle'
 import { MARKDOWN_SHORTCUTS, TURN_ICONS, blockAt, canMove, deleteBlock, duplicateBlock, moveBlock, turnBlock, turns } from './block-commands'
-import { openBelow } from './insert-below'
+import { closeOpenedFor, openBelow } from './insert-below'
 
 const WIDTH = 18
 const HEIGHT = 24
@@ -194,7 +194,10 @@ export function BlockControls({ editor }: { editor: Editor }) {
   openMenuRef.current = openMenu
 
   /** The menu acts on its block, selected while it is open to show which one. */
-  function openMenu(pos: number) {
+  function openMenu(at: number) {
+    // A line a «+» opened goes first, and the block is where that leaves it; not on the line itself.
+    const pos = closeOpenedFor(editor, at)
+    if (pos === null || !editor.state.doc.nodeAt(pos)) return
     before.current = editor.state.selection.getBookmark()
     setInner(calloutWithin(pos))
     editor.view.dispatch(editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, pos)))

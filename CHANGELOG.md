@@ -40,7 +40,8 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - A `$` of text stays text: prices such as `$5 y $10` are no equations, and a `$` that would open one is saved escaped, `\$`. What an equation holds never runs nor links anywhere.
 - **Inserting a block without knowing the «/», as in Notion.** Lists, tables, images, equations and the rest were inserted only from the «/» menu, and only a page left empty said so.
   - On the empty line with the cursor, «Press “/” to insert…» says how, while the editor has the focus. An empty page, card description or comment keeps its own hint, and a comment's now names the «/» too.
-  - A «+» left of each block's handle opens the «/» menu on a line below the block, its search included; closed without a choice, the page is as it was, and what is chosen is undone in one step. Where there is no room on the left, in a card or on a phone, it is under the handle. From the keyboard, the block's menu (Ctrl+/) has **Insert below**.
+  - A «+» left of each block's handle opens the «/» menu on a line below the block, its search included; below a list item the line is its next item. Closed without a choice, the page is as it was, and a block chosen goes with one undo (an equation, an image or a file, inserted once written or picked, with two). Where there is no room on the left, in a card or on a phone, it is under the handle. From the keyboard, the block's menu (Ctrl+/) has **Insert below**.
+  - In a list item, the «/» menu's list of the same kind leaves it in its list; it took it out.
   - The «/» menu and **Turn into** show the Markdown each block can also be typed with: `#`, `##` and `###`, `-`, `1.` and `[]`, `>`, ```` ``` ````, `---`, and `$$…$$` and `$$$…$$$` for equations.
   - What is saved doesn't change.
 

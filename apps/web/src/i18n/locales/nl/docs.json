@@ -174,7 +174,7 @@
       "mention": "Taak of pagina koppelen",
       "searching": "Zoeken…",
       "noMatches": "Geen resultaten",
-      "shortcut": "Markdown-snelkoppeling: {{keys}}"
+      "shortcut": "Markdown-sneltoets: {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… of /doc/…",

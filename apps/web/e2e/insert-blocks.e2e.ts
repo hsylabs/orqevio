@@ -78,6 +78,7 @@ test('the «+» beside a block opens the «/» menu on a line below it', async (
   await expect(editor.locator(':scope > *').nth(1)).toHaveJSProperty('tagName', 'H2')
   await page.keyboard.press('ControlOrMeta+z')
   await expect(editor.locator(':scope > h2')).toHaveCount(0)
+  await expect(editor.locator(':scope > p')).toHaveCount(2)
   await expect(editor).toHaveText('UnoDos')
 
   // Its search works as the «/» does.
@@ -88,8 +89,7 @@ test('the «+» beside a block opens the «/» menu on a line below it', async (
   await page.keyboard.type('Cajas')
   await expect.poll(saved).toBe('Uno\n\n1. Cajas\n\nDos')
 
-  // Below an item, the next item, as Enter and «/» there would make it: «Texto» makes it a line of
-  // text, after the list.
+  // Below an item, the next item, as Enter at its end would make it; its own kind of list keeps it one.
   await editor.getByText('Cajas').hover()
   await plus.click()
   await expect(editor.locator('ol > li')).toHaveCount(2)
@@ -98,9 +98,46 @@ test('the «+» beside a block opens the «/» menu on a line below it', async (
   await expect(editor.locator('ol > li')).toHaveCount(1)
   await editor.getByText('Cajas').hover()
   await plus.click()
-  await menu.getByRole('option', { name: /Texto Párrafo normal/ }).click()
+  await menu.getByRole('option', { name: /Lista numerada/ }).click()
   await page.keyboard.type('Cinta')
-  await expect.poll(saved).toBe('Uno\n\n1. Cajas\n\nCinta\n\nDos')
+  await expect.poll(saved).toBe('Uno\n\n1. Cajas\n2. Cinta\n\nDos')
+})
+
+test('only one line of the «+» is open, and what was typed in it is not left saved', async ({ page }) => {
+  const { editor, saved } = await openPage(page, 'Más una línea E2E', 'Uno\n\nDos')
+  const plus = page.getByRole('button', { name: 'Insertar debajo' })
+  const menu = page.getByRole('listbox', { name: 'Insertar bloque' })
+  const slashes = editor.locator(':scope > p').filter({ hasText: /^\// })
+
+  // A second «+» closes the first line.
+  await editor.getByText('Uno', { exact: true }).hover()
+  await plus.click()
+  await editor.getByText('Dos', { exact: true }).hover()
+  await plus.click()
+  await expect(slashes).toHaveCount(1)
+  await expect(editor.locator(':scope > *').nth(2)).toHaveText('/')
+  await page.keyboard.press('Escape')
+  await expect(slashes).toHaveCount(0)
+
+  // Typed in and taken back, saved on the way: closing it saves the page without it.
+  await editor.getByText('Uno', { exact: true }).hover()
+  await plus.click()
+  await page.keyboard.type('xyz')
+  await expect.poll(saved).toBe('Uno\n\n/xyz\n\nDos')
+  for (let i = 0; i < 3; i++) await page.keyboard.press('Backspace')
+  await expect(menu).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(slashes).toHaveCount(0)
+  await expect.poll(saved).toBe('Uno\n\nDos')
+
+  // A block's handle, with a line open: the line goes and the menu is that block's.
+  await editor.getByText('Uno', { exact: true }).hover()
+  await plus.click()
+  await editor.getByText('Dos', { exact: true }).hover()
+  await page.getByRole('button', { name: 'Opciones del bloque' }).click()
+  await page.getByRole('menuitem', { name: 'Duplicar' }).click()
+  await expect(slashes).toHaveCount(0)
+  await expect.poll(saved).toBe('Uno\n\nDos\n\nDos')
 })
 
 test('from the keyboard, «Insertar debajo» in the block menu does the same', async ({ page }) => {
