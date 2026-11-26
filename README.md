@@ -24,7 +24,7 @@ And **nothing an agent does is final.** Every change can be undone for 30 days, 
 ## Highlights
 
 - **Tasks and documents, linked both ways.** Type `@` in a document to link a task, and the link shows up on both sides. You can also link documents from the card.
-- **An editor like Notion, in the Markdown GitHub reads.** Each block has a handle to move it or turn it into another, and a «+» to insert one below; `/` and the Markdown shortcuts work as you type. Tables you edit from a bar, code in its language and colors, GitHub's alerts, toggles, images with their width and caption, and LaTeX equations. What is saved is still the Markdown your agents and GitHub read, as it was written.
+- **An editor like Notion, in the Markdown GitHub reads.** Each block has a handle to move it or turn it into another, and a "+" to insert one below; `/` and the Markdown shortcuts work as you type. Tables you edit from a bar, code with its language and colors, GitHub's alerts, toggles, images with their width and caption, and LaTeX equations. What is saved is still the Markdown your agents and GitHub read.
 - **Comments on cards.** You and your agents talk on a card in Markdown. Each edits only their own comments; you can delete any, an agent only its own. The board shows how many each card has.
 - **Pages you can take with you.** Download a page as Markdown, with its files and, if you want, its subpages, or print it or save it as PDF, dark on white.
 - **Watch your agents work.** When an agent creates or moves a card, you see it appear with a blue halo and the agent's name, and you get a notification. The dot in the logo turns blue while they work.
@@ -77,7 +77,7 @@ packages/shared zod schemas, permissions and types shared by the API, MCP and cl
 ```
 
 - **One domain layer.** The app's REST API and the MCP tools call exactly the same services. Every operation checks access to the workspace and the specific permission (`tasks:read`, `tasks:write`, `docs:read`, `docs:write`), so the rules are enforced in one place.
-- **Markdown as the canonical format.** Documents and descriptions are stored as Markdown (GFM). It's portable, readable and what LLMs understand best. Internal references are ordinary links: `[Title](/card/<id>)` and `[Title](/doc/<id>)`. What the editor can't show, such as HTML, stays in the document as it was written: it shows its source, and editing the rest of the page doesn't change it.
+- **Markdown as the canonical format.** Documents and descriptions are stored as Markdown (GFM). It's portable, readable and what LLMs understand best. Internal references are ordinary links: `[Title](/card/<id>)` and `[Title](/doc/<id>)`. What the editor can't show, such as other HTML, stays in the document as it was written: it shows its source, and editing the rest of the page doesn't change it.
 - **One copy, one database.** Each copy belongs to one person and keeps everything in SQLite, with synchronous transactions. The same code runs in two places:
   - **Your own server (Docker or Node):** a single file (`DATA_DIR/orqevio.db`) plus the attachments folder.
   - **Cloudflare:** a Worker serves the web app and sends `/api` and `/mcp` to a single Durable Object, which keeps the data in its own SQLite database; attachments go to R2.
