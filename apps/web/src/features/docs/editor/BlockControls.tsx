@@ -14,11 +14,15 @@ import { TOGGLE_VIEW } from './toggle'
 import { MARKDOWN_SHORTCUTS, TURN_ICONS, blockAt, canMove, deleteBlock, duplicateBlock, moveBlock, turnBlock, turns } from './block-commands'
 import { closeOpenedFor, openBelow } from './insert-below'
 
-const WIDTH = 18
-const HEIGHT = 24
-const GAP = 6
+/** The handle and the «+», each: 24 px, the least WCAG asks of a target (2.5.8); 32 px for a finger. */
+const SIZE = 24
+const TOUCH_SIZE = 32
+/** Between the handle and its block's text. The page leaves room for both (DocPage, CardSheet). */
+const GAP = 4
 /** Between the «+» and the handle, left of it. */
 const PLUS_GAP = 2
+/** Between a table's handle and its top-left corner: its rows and columns have handles of their own along its edges (TableControls). */
+const CORNER_GAP = 4
 /** Room for a list item's bullet or number, left of its text. */
 const MARKER = 20
 
@@ -44,6 +48,7 @@ export function BlockControls({ editor }: { editor: Editor }) {
   })
   // Without a pointer that hovers (a phone), the handle is the one of the block with the cursor.
   const touch = useRef(typeof matchMedia === 'function' && matchMedia('(hover: none)').matches).current
+  const size = touch ? TOUCH_SIZE : SIZE
   const [hover, setHover] = useState<number | null>(null)
   const [menu, setMenu] = useState<number | null>(null)
   /** The block whose menu is closing: its handle stays until the menu has put the focus back. */
@@ -54,6 +59,8 @@ export function BlockControls({ editor }: { editor: Editor }) {
   closingRef.current = closing
   const [, redraw] = useReducer((n: number) => n + 1, 0)
   const leaving = useRef<ReturnType<typeof setTimeout>>(undefined)
+  /** Whether the pointer is on the handle or its «+». */
+  const onControl = useRef(false)
   /** Whether a handle is pressed or dragged: it stays where it is, whatever the pointer goes over. */
   const held = useRef(false)
   /** Whether the handle was pressed by a finger, which opens the menu as it lifts, not with a click. */
@@ -113,6 +120,8 @@ export function BlockControls({ editor }: { editor: Editor }) {
     const dom = editor.view.dom
     const move = (event: PointerEvent) => {
       if (event.pointerType === 'touch' || !editor.isEditable || held.current) return
+      // Over the text, not on the handle, even if the one it was on went without telling.
+      onControl.current = false
       const block = itemAt(event) ?? blockAtHeight(event)
       if (!block) return leave()
       stay()
@@ -187,7 +196,18 @@ export function BlockControls({ editor }: { editor: Editor }) {
   }
   function leave() {
     clearTimeout(leaving.current)
-    leaving.current = setTimeout(() => !held.current && setHover(null), 250)
+    leaving.current = setTimeout(() => !held.current && !onControl.current && setHover(null), 250)
+  }
+  // The pointer on the handle or the «+»: they stay, however long it rests there. A flag, as React
+  // tells of the pointer coming onto them before the editor tells of it leaving the text, which
+  // starts the timer again.
+  function enter() {
+    onControl.current = true
+    stay()
+  }
+  function exit() {
+    onControl.current = false
+    leave()
   }
 
   const openMenuRef = useRef(openMenu)
@@ -309,9 +329,11 @@ export function BlockControls({ editor }: { editor: Editor }) {
     if (!node || !(dom instanceof HTMLElement) || !root.current) return null
     const base = root.current.getBoundingClientRect()
     const box = dom.getBoundingClientRect()
-    // Level with the block's first line of text, or its top for a table, a rule or HTML.
+    const table = node.type.name === 'table'
+    // Level with the block's first line of text, or its top for a rule or HTML. A table's is above
+    // its top-left corner, clear of the handles of its first row and its columns.
     let line = { top: box.top, bottom: box.top + Math.min(box.height, 28) }
-    if (!node.isAtom && node.type.name !== 'table') {
+    if (!node.isAtom && !table) {
       const first = Selection.findFrom(editor.state.doc.resolve(pos + 1), 1, true)
       if (first && first.from < pos + node.nodeSize) {
         try {
@@ -322,24 +344,25 @@ export function BlockControls({ editor }: { editor: Editor }) {
         }
       }
     }
-    const top = (line.top + line.bottom) / 2 - HEIGHT / 2 - base.top
+    const top = table ? box.top - CORNER_GAP - size - base.top : (line.top + line.bottom) / 2 - size / 2 - base.top
     // A bullet or a number sits left of its item's box; a task's checkbox is inside it.
-    const left = box.left - (node.type.name === 'listItem' ? MARKER : 0) - WIDTH - GAP - base.left
+    const left = box.left - (node.type.name === 'listItem' ? MARKER : 0) - size - GAP - base.left
     const { current, options } = turns(editor.state.doc, pos)
     const label = t('editor.block.handle')
-    const side = base.left + left - WIDTH - PLUS_GAP >= Math.max(0, clip.current?.getBoundingClientRect().left ?? 0)
+    const side = base.left + left - size - PLUS_GAP >= Math.max(0, clip.current?.getBoundingClientRect().left ?? 0)
     const callout = node.type.name === 'callout' ? pos : menu === pos && inner !== null && editor.state.doc.nodeAt(inner)?.type.name === 'callout' ? inner : null
 
     return (
-      <div className={cn('absolute', live)} style={{ top, left, width: WIDTH, height: HEIGHT }} onPointerEnter={stay} onPointerLeave={leave}>
+      <div className={cn('absolute', live)} style={{ top, left, width: size, height: size }} onPointerEnter={enter} onPointerLeave={exit}>
         <button
           type="button"
           tabIndex={-1}
           aria-label={t('editor.block.insertBelow')}
           title={t('editor.block.insertHint')}
-          className="absolute grid place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 [&_svg]:size-[15px]"
-          // Left of the handle, or under it where there is no room on its left (a card, a phone).
-          style={side ? { left: -WIDTH - PLUS_GAP, top: 0, width: WIDTH, height: HEIGHT } : { left: 0, top: HEIGHT + PLUS_GAP, width: WIDTH, height: HEIGHT }}
+          className="absolute grid place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 [&_svg]:size-4"
+          // Left of the handle, or where there is no room on its left (a card, a phone) under it; a
+          // table's above it, as its first row's handle is under it.
+          style={side ? { left: -size - PLUS_GAP, top: 0, width: size, height: size } : { left: 0, top: (table ? -1 : 1) * (size + PLUS_GAP), width: size, height: size }}
           // The cursor and the focus stay in the editor, and on a phone its keyboard stays open. Without
           // its press, Safari sends no click: a finger inserts as it lifts.
           onPointerDown={(e) => {
@@ -423,7 +446,7 @@ export function BlockControls({ editor }: { editor: Editor }) {
             aria-haspopup="menu"
             aria-expanded={menu === pos}
             title={t('editor.block.handleHint', { key: `${MOD}/` })}
-            className="grid size-full cursor-grab place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 active:cursor-grabbing aria-expanded:bg-accent-soft aria-expanded:text-accent [&_svg]:size-[15px]"
+            className="grid size-full cursor-grab place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 active:cursor-grabbing aria-expanded:bg-accent-soft aria-expanded:text-accent [&_svg]:size-4"
             // A finger's tap keeps the cursor in the editor, and the phone's keyboard open. Without its
             // press, Safari sends no click: the finger opens the menu as it lifts.
             onPointerDown={(e) => {

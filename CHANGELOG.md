@@ -8,6 +8,11 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ### Changed
 - **Less to download after an update.** The code that draws equations (KaTeX) now comes in files of its own, still loaded with the editor. From the next update on, the browser keeps the ones it already has unless KaTeX itself changed, instead of downloading them again with the editor. The editor's own file is a quarter smaller (226 KB compressed instead of 301).
+- **Bigger buttons around blocks and tables in documents.** The «+» and the ⋮⋮ beside each block are 24 px, and 32 px on a phone, where pages leave a little more room on the left for them. A table's row and column handles can be pressed anywhere in 24 × 28 px around them, and the «+» along its bottom and right is 24 px. A table's own ⋮⋮, for the whole table, sits above its top-left corner, apart from its first row's handle.
+
+### Fixed
+- **Handles that went away under the pointer.** The «+» and the ⋮⋮ beside a block, and a table's row and column handles and «+», went a quarter of a second after the pointer stopped on them, so they often couldn't be pressed. They now stay while the pointer is on them.
+- **A table's bar in the way of its column handles.** With the cursor in a table, its bar sat right on top of the handles above its columns: a pointer going up to one often landed on the bar, and the handle went. The bar now keeps clear of them, the handles stay while the pointer goes over the bar or the room between, and where there is no room for it above the table, it goes under the table, or to the bottom of the view, rather than over the handles.
 
 ## [1.5.0] - 2026-11-26
 

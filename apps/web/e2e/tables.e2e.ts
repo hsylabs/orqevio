@@ -180,8 +180,106 @@ test('in a card, Escape on the bar goes back to the text and leaves the card ope
   await expect(page.getByLabel('Título de la tarjeta')).toHaveValue('Precios')
 })
 
+type Box = { x: number; y: number; width: number; height: number }
+/** How far apart two boxes are, in whole pixels (Firefox places them to a fraction): 0 or less where they touch or overlap. */
+const apart = (a: Box, b: Box) => Math.round(Math.max(b.x - (a.x + a.width), a.x - (b.x + b.width), b.y - (a.y + a.height), a.y - (b.y + b.height)))
+
+test('the handles and the «+» are big enough to press, and apart from the table’s own handle', async ({ page }) => {
+  const { cell } = await openTable(page, 'Tablas tamaños E2E')
+  await cell('Fruta').hover()
+  const handles = {
+    row: page.getByRole('button', { name: 'Opciones de la fila' }),
+    column: page.getByRole('button', { name: 'Opciones de la columna' }),
+    addRow: page.getByRole('button', { name: 'Añadir una fila' }),
+    addColumn: page.getByRole('button', { name: 'Añadir una columna' }),
+  }
+  // WCAG 2.5.8 asks for 24 px. With the pointer resting on one, it stays (in 1.5.0 it went after 250 ms).
+  for (const [name, handle] of Object.entries(handles)) {
+    await expect(handle, name).toBeVisible()
+    const box = (await handle.boundingBox())!
+    expect(Math.min(box.width, box.height), name).toBeGreaterThanOrEqual(24)
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 3 })
+    await page.waitForTimeout(400)
+    await expect(handle, name).toBeVisible()
+  }
+  await cell('Fruta').hover()
+  // The table's own handle, for the whole table, doesn't touch its first row's.
+  const table = page.getByRole('button', { name: 'Opciones del bloque' })
+  await expect(table).toBeVisible()
+  expect(apart((await table.boundingBox())!, (await handles.row.boundingBox())!)).toBeGreaterThanOrEqual(4)
+  expect(apart((await table.boundingBox())!, (await handles.column.boundingBox())!)).toBeGreaterThanOrEqual(4)
+})
+
+test('the bar keeps clear of the columns’ handles, and they stay while the pointer goes to them', async ({ page }) => {
+  // Long enough to scroll, for a table at the top of the view.
+  const filler = Array.from({ length: 30 }, (_, i) => `Párrafo ${i + 1}`).join('\n\n')
+  const { cell } = await openTable(page, 'Tablas barra E2E', `${filler}\n\n${TABLE}\n\n${filler}`)
+  const bar = page.getByRole('toolbar', { name: 'Tabla' })
+  const column = page.getByRole('button', { name: 'Opciones de la columna' })
+
+  // The cursor in a cell, the pointer on the first header cell, under the bar.
+  await cell('Pera').click()
+  await expect(bar).toBeVisible()
+  await cell('Fruta').hover()
+  await expect(column).toBeVisible()
+  const b = (await bar.boundingBox())!
+  const c = (await column.boundingBox())!
+  expect(apart(b, c)).toBeGreaterThanOrEqual(8)
+
+  // Up to the handle and a little past it, then over the bar and back: the handle doesn't go.
+  const x = c.x + c.width / 2
+  await page.mouse.move(x, c.y - 4, { steps: 4 })
+  await page.waitForTimeout(400)
+  await expect(column).toBeVisible()
+  await page.mouse.move(x, b.y + b.height / 2, { steps: 4 })
+  await page.waitForTimeout(400)
+  await expect(column).toBeVisible()
+  await page.mouse.move(x, c.y + c.height / 2, { steps: 4 })
+  await page.mouse.down()
+  await page.mouse.up()
+  await expect(page.getByRole('menuitem', { name: 'Insertar columna a la izquierda' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('menu')).toBeHidden()
+
+  // The table at the top of the view, with no room for the bar above it: the bar goes elsewhere, and
+  // both the handle and the bar can be pressed.
+  await cell('Fruta').evaluate((th) => {
+    let scroller = th.parentElement
+    while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement
+    const table = th.closest('table')!
+    scroller!.scrollTop += table.getBoundingClientRect().top - scroller!.getBoundingClientRect().top - 20
+  })
+  await cell('Pera').click()
+  await cell('Fruta').hover()
+  await expect(column).toBeVisible()
+  const top = (await column.boundingBox())!
+  expect(apart((await bar.boundingBox())!, top)).toBeGreaterThanOrEqual(8)
+  await page.screenshot({ path: test.info().outputPath('bar-table-at-top.png') })
+  await column.click()
+  await expect(page.getByRole('menuitem', { name: 'Insertar columna a la izquierda' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await cell('Pera').click()
+  await bar.getByRole('button', { name: 'Centrar columna' }).click()
+  await expect(bar.getByRole('button', { name: 'Centrar columna' })).toHaveAttribute('aria-pressed', 'true')
+})
+
 test.describe('on a phone', () => {
   test.use({ hasTouch: true, viewport: { width: 390, height: 844 } })
+
+  test('the «+» of a table that fills the screen doesn’t make the page scroll sideways', async ({ page }) => {
+    const { cell } = await openTable(page, 'Tablas móvil ancho E2E')
+    await cell('Pera').tap()
+    const plus = page.getByRole('button', { name: 'Añadir una columna' })
+    await expect(plus).toBeVisible()
+    const box = (await plus.boundingBox())!
+    expect(box.x + box.width).toBeLessThanOrEqual(390)
+    const sideways = await cell('Pera').evaluate((td) => {
+      let scroller = td.parentElement
+      while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement
+      return scroller!.scrollWidth - scroller!.clientWidth
+    })
+    expect(sideways).toBe(0)
+  })
 
   test('tapping a cell brings the bar, inside the screen', async ({ page }) => {
     const { rows, cell } = await openTable(page, 'Tablas móvil E2E')
