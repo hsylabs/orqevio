@@ -45,11 +45,17 @@ const refresh = (cardId: string, boardId: string) =>
     queryClient.invalidateQueries({ queryKey: keys.board(boardId) }),
   ])
 
-/** Ctrl+Enter (⌘+Enter) sends, before the editor takes it for a line break. */
+/**
+ * Ctrl+Enter (⌘+Enter) sends, before the editor takes it for a line break. From a field of the
+ * editor's own, as a formula's source or an image's caption, it leaves the field first, which puts
+ * what it holds in the text, as a click on the button does; `send` then reads the text as it is.
+ */
 const sendOn = (send: () => void) => (event: KeyboardEvent) => {
   if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey) || isConverting(event)) return
   event.preventDefault()
   event.stopPropagation()
+  const field = event.target
+  if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) field.blur()
   send()
 }
 
@@ -161,14 +167,17 @@ function Composer({ card, onSent }: { card: CardDetailDTO; onSent: () => void })
   const { workspaceId, me } = useWorkspace()
   const draftKey = newDraft(me.user.id, card.id)
   const [text, setText] = useState(() => drafts.get(draftKey)?.text ?? '')
+  // The text as the editor last gave it, also between renders: what a field put in it just now.
+  const latest = useRef(text)
   const [sending, setSending] = useState(false)
   const editor = useRef<TiptapEditor | null>(null)
   const hint = useId()
   const { empty, tooLong, over } = measure(text)
 
   async function send() {
-    if (empty || tooLong || sending) return
-    const body = text
+    const body = latest.current
+    const now = measure(body)
+    if (now.empty || now.tooLong || sending) return
     setSending(true)
     // Nothing typed while it goes is lost: the box waits.
     editor.current?.setEditable(false)
@@ -204,6 +213,7 @@ function Composer({ card, onSent }: { card: CardDetailDTO; onSent: () => void })
         ariaLabel={t('sheet.comments.label')}
         ariaDescribedBy={hint}
         onChange={(markdown) => {
+          latest.current = markdown
           setText(markdown)
           keep(draftKey, markdown)
         }}
@@ -362,16 +372,20 @@ function EditComment({ comment, draftKey, focus, cardId, boardId, onDone }: { co
   // The version the edit began from: changed since, the edit left on closing the card is dropped.
   const [base] = useState(comment.updatedAt)
   const [text, setText] = useState(initial)
+  // The text as the editor last gave it, also between renders: what a field put in it just now.
+  const latest = useRef(text)
   const [saving, setSaving] = useState(false)
   const editor = useRef<TiptapEditor | null>(null)
   const { empty, tooLong, over } = measure(text)
 
   async function save() {
-    if (empty || tooLong || saving) return
+    const body = latest.current
+    const now = measure(body)
+    if (now.empty || now.tooLong || saving) return
     setSaving(true)
     editor.current?.setEditable(false)
     try {
-      await patch(`/comments/${comment.id}`, { body: text })
+      await patch(`/comments/${comment.id}`, { body })
       drafts.delete(draftKey)
       await refresh(cardId, boardId)
       onDone()
@@ -397,6 +411,7 @@ function EditComment({ comment, draftKey, focus, cardId, boardId, onDone }: { co
         onReady={(instance) => (editor.current = instance)}
         ariaLabel={t('sheet.comments.editLabel')}
         onChange={(markdown) => {
+          latest.current = markdown
           setText(markdown)
           keep(draftKey, markdown, base)
         }}

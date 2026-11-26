@@ -157,3 +157,62 @@ test('a comment that ends in a list is edited from its end, and left as it was i
   await expect(editor).toHaveCount(0)
   await expect(comment.getByRole('listitem').last()).toHaveText('cinta y tijeras')
 })
+
+test('Ctrl+Enter from a formula’s or a caption’s field sends what was typed in it, as the button does', async ({ page }) => {
+  const { workspaceId, boardId, cardId } = await setup(page, 'Comentarios campos E2E')
+  // A picture of the card's own, made in the browser, in a comment to edit.
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 240
+    canvas.height = 120
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#3b82f6'
+    context.fillRect(0, 0, 240, 120)
+    return canvas.toDataURL('image/png').split(',')[1]!
+  })
+  const uploaded = await page.request.post(`/api/cards/${cardId}/attachments`, { headers: { 'Content-Type': 'image/png', 'X-File-Name': 'plano.png' }, data: Buffer.from(png, 'base64') })
+  expect(uploaded.status(), await uploaded.text()).toBe(201)
+  const src = ((await uploaded.json()) as { url: string }).url
+  const posted = await page.request.post(`/api/cards/${cardId}/comments`, { data: { body: `Plano\n\n![plano](${src})` } })
+  expect(posted.status(), await posted.text()).toBe(201)
+  const bodies = async () => ((await (await page.request.get(`/api/cards/${cardId}/comments`)).json()) as { comments: Array<{ body: string }> }).comments.map((c) => c.body.trim())
+  await page.goto(`/w/${workspaceId}/b/${boardId}`)
+  await page.getByRole('button', { name: 'Contratar la furgoneta' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Contratar la furgoneta' })
+  const formulaField = page.getByRole('dialog', { name: 'Editar fórmula' }).getByRole('textbox', { name: 'Fórmula en LaTeX' })
+
+  // A new comment, sent from its formula's field: with the formula as it was just changed.
+  const box = sheet.getByRole('textbox', { name: 'Nuevo comentario' })
+  await box.click()
+  await page.keyboard.type('Coste $$x$$ ')
+  await box.locator('.orq-math .katex-html').click()
+  await expect(formulaField).toBeFocused()
+  await formulaField.fill('y^2')
+  await page.keyboard.press('ControlOrMeta+Enter')
+  await expect.poll(bodies).toContain('Coste $y^2$')
+  // The box, empty, for the next one.
+  await expect(box).toBeFocused()
+  await expect(box.locator('.orq-math')).toHaveCount(0)
+
+  // The same, with the button.
+  await page.keyboard.type('Peso $$m$$ ')
+  await box.locator('.orq-math .katex-html').click()
+  await formulaField.fill('m_0')
+  await sheet.getByRole('button', { name: 'Comentar', exact: true }).click()
+  await expect.poll(bodies).toContain('Peso $m_0$')
+
+  // A comment edited, saved from its image's caption: with the caption.
+  const plan = sheet.getByRole('list', { name: 'Comentarios' }).getByRole('listitem').filter({ hasText: 'Plano' })
+  await plan.getByRole('button', { name: 'Acciones del comentario' }).click()
+  await page.getByRole('menuitem', { name: 'Editar' }).click()
+  const editor = sheet.getByRole('textbox', { name: 'Editar el comentario' })
+  await editor.locator('.orq-image img').click()
+  await page.getByRole('toolbar', { name: 'Imagen' }).getByRole('button', { name: 'Pie de imagen' }).click()
+  const caption = page.getByRole('textbox', { name: 'Pie de imagen' })
+  await expect(caption).toBeFocused()
+  await caption.fill('Planta baja')
+  await page.keyboard.press('ControlOrMeta+Enter')
+  await expect(editor).toHaveCount(0)
+  await expect.poll(bodies).toContain(`Plano\n\n![plano](${src} "Planta baja")`)
+  await expect(plan.locator('.orq-image-caption')).toHaveText('Planta baja')
+})
