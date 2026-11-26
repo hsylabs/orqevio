@@ -448,17 +448,20 @@ function definitionsIn(markdown: string): MarkedLinks {
   return Object.fromEntries(Object.entries(links).filter(([label]) => !label.startsWith('^')))
 }
 
-/** The definitions the blocks of `doc` hold, as they will be written. */
+/** The definitions the blocks of `doc` hold, as they will be written, and those blocks' source. */
 function definitionsOf(doc: JSONContent) {
   const found = new Map<string, MarkedLinks[string]>()
+  const sources: string[] = []
   const visit = (node: JSONContent) => {
     if (node.type === 'rawMarkdownBlock') {
-      for (const [label, definition] of Object.entries(definitionsIn(String(node.attrs?.markdown ?? '')))) if (!found.has(label)) found.set(label, definition)
+      const source = String(node.attrs?.markdown ?? '')
+      sources.push(source)
+      for (const [label, definition] of Object.entries(definitionsIn(source))) if (!found.has(label)) found.set(label, definition)
     }
     node.content?.forEach(visit)
   }
   visit(doc)
-  return found
+  return { definitions: found, source: sources.join('\n\n') }
 }
 
 // ── Ordered lists ────────────────────────────────────────────────
@@ -987,9 +990,11 @@ function faithfulManager(options: ConstructorParameters<typeof MarkdownManager>[
     formulas = []
     blockStarts = new WeakMap()
     placeholder = new RegExp(`^\\uFDD3${key}:(\\d+)\\uFDD4$`)
-    writtenDefinitions = definitionsOf(doc)
+    const { definitions, source } = definitionsOf(doc)
+    writtenDefinitions = definitions
     try {
-      return settleDollars(serialize(asText(linkForms(doc), {}, key)), formulas)
+      // Knowing the references the page defines, as it is read: a `$` before a link to one opens no formula there (math.ts).
+      return readingReferences(source, () => settleDollars(serialize(asText(linkForms(doc), {}, key)), formulas))
     } finally {
       formulas = []
       placeholder = /$^/
