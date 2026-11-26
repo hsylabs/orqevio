@@ -104,6 +104,10 @@ const kept: Array<[string, string]> = [
   ['a definition in a task, after its text', '- [ ] x\n\n  [a]: https://a.test'],
   ['a definition in a numbered item, after its text', '1. x\n\n   [a]: https://a.test'],
   ['a definition at the start of a numbered item', '1. [a]: https://a.test'],
+  ['a price before a link to a reference whose label has a `$`', 'Precio $5 [t][a$] y $6\n\n[a$]: https://a.test'],
+  ['a task whose box is a link to a reference', '- [x] y\n\n[x]: https://a.test'],
+  ['footnotes in items, under their text', '- x\n  [^1]: nota\n- y'],
+  ['a page of one definition', '[a]: https://a.test'],
   ['an empty quote', '>'],
   ['an empty quote between paragraphs', 'Texto\n\n>\n\nMás'],
   ['an empty quote inside a quote', '> a\n>\n> >'],
@@ -177,6 +181,16 @@ const normalised: Array<[string, string, string]> = [
   ['a shortcut link to a reference followed by parentheses', 'Ver [a]\\(b).\n\n[a]: https://a.test', 'Ver [a][](b).\n\n[a]: https://a.test'],
   ['a shortcut link to a reference followed by a colon at the start of a line', '[a]\\: b\n\n[a]: https://a.test', '[a][]: b\n\n[a]: https://a.test'],
   ['a definition with a heading right under it', '[a]: https://a.test\n## Siguiente', '[a]: https://a.test\n\n## Siguiente'],
+  ['a link to a reference whose label ends in a space', 'Ver [a ].\n\n[a ]: https://a.test', 'Ver [a][a ] .\n\n[a ]: https://a.test'],
+  ['a shortcut link `[x]` to a reference', '- a [x] y\n\n[x]: https://a.test', '- a [x][] y\n\n[x]: https://a.test'],
+  // Read as marked reads it: a footnote's definition is no link's, whatever its text.
+  ['a footnote after a definition of a link', 'Texto[^1] [a].\n\n[a]: https://a.test\n[^1]: https://nota.test\n    más texto', 'Texto[^1] [a].\n\n[a]: https://a.test\n\n[^1]: https://nota.test\n    más texto'],
+  // A definition right under a task or a formula is one too, as TipTap reads it, and its link one.
+  ['a definition right under a task', '- [ ] t\n[a]: https://a.test\n\nVer [a].', '- [ ] t\n\n[a]: https://a.test\n\nVer [a].'],
+  ['a definition right under a formula', '$$\nx\n$$\n[a]: https://a.test\n\nVer [a].', '$$\nx\n$$\n\n[a]: https://a.test\n\nVer [a].'],
+  ['definitions first in items of a loose list', '* [a]: https://a.test\n\n* [b]: https://b.test\n\nVer [a] y [b].', '- [a]: https://a.test\n- [b]: https://b.test\n\nVer [a] y [b].'],
+  ['a definition in a quote ending in an empty line', '> [a]: https://a.test\n>\n\nVer [a].', '> [a]: https://a.test\n\nVer [a].'],
+  ['a definition with a line end after it', '[a]: https://a.test\n', '[a]: https://a.test'],
   // A definition can't break into a paragraph: there it is text, as marked reads it.
   ['a line like a definition going on with a quote', '> cita [a]\n[a]: https://a.test', '> cita \\[a\\]\n> \\[a\\]: [https://a.test](https://a.test)'],
   ['a quote at the start of a numbered item, and a line that goes on with it', '1. > cita\ntexto', '1. > cita\n   > texto'],
