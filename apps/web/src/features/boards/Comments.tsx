@@ -47,8 +47,8 @@ const refresh = (cardId: string, boardId: string) =>
 
 /**
  * Ctrl+Enter (⌘+Enter) sends, before the editor takes it for a line break. From a field of the
- * editor's own, as a formula's source or an image's caption, it leaves the field first, which puts
- * what it holds in the text, as a click on the button does; `send` then reads the text as it is.
+ * editor's own, it leaves the field first, as a click on the button does: a formula's source or an
+ * image's caption is then in the text, and `send` reads the text as it is.
  */
 const sendOn = (send: () => void) => (event: KeyboardEvent) => {
   if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey) || isConverting(event)) return
@@ -57,6 +57,11 @@ const sendOn = (send: () => void) => (event: KeyboardEvent) => {
   const field = event.target
   if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) field.blur()
   send()
+}
+
+/** Nothing sent: the focus, if leaving a field of the editor left it nowhere, back in the box. */
+function keepFocus(editor: TiptapEditor | null) {
+  if (editor && !editor.isDestroyed && (!document.activeElement || document.activeElement === document.body)) editor.view.focus()
 }
 
 /** Whether a text can be sent: something that shows, within the limit. */
@@ -177,7 +182,7 @@ function Composer({ card, onSent }: { card: CardDetailDTO; onSent: () => void })
   async function send() {
     const body = latest.current
     const now = measure(body)
-    if (now.empty || now.tooLong || sending) return
+    if (now.empty || now.tooLong || sending) return keepFocus(editor.current)
     setSending(true)
     // Nothing typed while it goes is lost: the box waits.
     editor.current?.setEditable(false)
@@ -381,7 +386,7 @@ function EditComment({ comment, draftKey, focus, cardId, boardId, onDone }: { co
   async function save() {
     const body = latest.current
     const now = measure(body)
-    if (now.empty || now.tooLong || saving) return
+    if (now.empty || now.tooLong || saving) return keepFocus(editor.current)
     setSaving(true)
     editor.current?.setEditable(false)
     try {

@@ -200,6 +200,18 @@ test('Ctrl+Enter from a formula’s or a caption’s field sends what was typed 
   await formulaField.fill('m_0')
   await sheet.getByRole('button', { name: 'Comentar', exact: true }).click()
   await expect.poll(bodies).toContain('Peso $m_0$')
+  await expect(box.locator('.orq-math')).toHaveCount(0)
+
+  // Nothing to send, from a new formula left empty: the box keeps the focus.
+  await expect(box).toBeFocused()
+  await page.keyboard.type('/en línea')
+  await expect(page.getByRole('listbox', { name: 'Insertar bloque' }).getByRole('option', { selected: true })).toContainText('Fórmula en línea')
+  await page.keyboard.press('Enter')
+  await expect(formulaField).toBeFocused()
+  await page.keyboard.press('ControlOrMeta+Enter')
+  await expect(formulaField).toHaveCount(0)
+  await expect(box).toBeFocused()
+  expect(await bodies()).toHaveLength(3)
 
   // A comment edited, saved from its image's caption: with the caption.
   const plan = sheet.getByRole('list', { name: 'Comentarios' }).getByRole('listitem').filter({ hasText: 'Plano' })
