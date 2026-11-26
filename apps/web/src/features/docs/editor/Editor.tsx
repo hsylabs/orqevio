@@ -1,7 +1,9 @@
 import type { AttachmentDTO, MeDTO, SearchResultDTO } from '@orqevio/shared'
 import { cardHref, docHref } from '@orqevio/shared'
-import type { Editor as TiptapEditor } from '@tiptap/core'
+import type { ChainedCommands, Range, Editor as TiptapEditor } from '@tiptap/core'
 import { Placeholder } from '@tiptap/extensions'
+import type { Node as PMNode } from '@tiptap/pm/model'
+import { Selection } from '@tiptap/pm/state'
 import { EditorContent, useEditor } from '@tiptap/react'
 import { useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -10,10 +12,21 @@ import { toast } from 'sonner'
 import { ApiError, api, errorMessage, get } from '../../../lib/api'
 import { cn } from '../../../lib/cn'
 import { keys, queryClient } from '../../../lib/queries'
+import { BlockControls } from './BlockControls'
+import { CalloutControls } from './CalloutControls'
+import { markerFor } from './callout'
+import { insertToggle, outOfTitle } from './toggle'
+import { CodeControls } from './CodeControls'
+import { ImageControls } from './ImageControls'
+import { MathControls } from './MathControls'
+import { MathKeys, startMath } from './math'
 import { FormatMenu } from './FormatMenu'
-import { Mentions, SlashCommands } from './extensions'
+import { BlockKeys, Mentions, SlashCommands } from './extensions'
+import { MARKDOWN_SHORTCUTS } from './block-commands'
+import { opensLine } from './insert-below'
 import { documentExtensions } from './markdown'
 import { SuggestionMenu } from './SuggestionMenu'
+import { TableControls } from './TableControls'
 import { type MenuItem, createSuggestionStore } from './suggestion-store'
 import '../../../styles/editor.css'
 
@@ -36,9 +49,11 @@ interface EditorProps {
   ariaLabel?: string
   /** The id of what tells more about the field (a hint with its keyboard shortcut). */
   ariaDescribedBy?: string
+  /** The handle of each block, to move it and turn it into another; not in a short text such as a comment. */
+  blockHandles?: boolean
 }
 
-type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'code' | 'table' | 'hr' | 'mention' | 'image' | 'file'
+type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'toggle' | 'code' | 'math' | 'inlineMath' | 'table' | 'hr' | 'mention' | 'image' | 'file'
 type SlashGroup = 'blocks' | 'lists' | 'insert'
 
 export async function uploadFile(file: File, target: UploadTarget): Promise<AttachmentDTO> {
@@ -50,22 +65,48 @@ export async function uploadFile(file: File, target: UploadTarget): Promise<Atta
   return api<AttachmentDTO>('POST', `/${target.type === 'page' ? 'pages' : 'cards'}/${target.id}/attachments`, file)
 }
 
+/**
+ * The «/» menu's list: toggled, except on a line right in an item whose list is already of that
+ * kind, which toggling would take out. A line deeper in the item (in a quote there) gets its own
+ * list, as TipTap's toggleList decides.
+ */
+function toList(editor: TiptapEditor, range: Range, list: string, toggle: (chain: ChainedCommands) => ChainedCommands) {
+  const chain = editor.chain().focus().deleteRange(range)
+  const { $from, $to } = editor.state.selection
+  const lines = $from.blockRange($to)
+  for (let depth = $from.depth; depth > 0; depth--) {
+    const name = $from.node(depth).type.name
+    if (name !== 'bulletList' && name !== 'orderedList' && name !== 'taskList') continue
+    return (name === list && lines && lines.depth - depth <= 1 ? chain : toggle(chain)).run()
+  }
+  return toggle(chain).run()
+}
+
+/** Where the text ends: before the empty paragraph the editor keeps after anything but a paragraph at the end. */
+function textEnd(doc: PMNode) {
+  const last = doc.lastChild
+  const kept = doc.childCount > 1 && last?.type.name === 'paragraph' && last.content.size === 0 && doc.child(doc.childCount - 2).type.name !== 'paragraph'
+  return Selection.near(doc.resolve(kept ? doc.content.size - last.nodeSize : doc.content.size), -1)
+}
+
 /** Inserts the file where it was dropped (`pos`) or at the cursor, and returns the position right after it. */
 function insertAttachment(editor: TiptapEditor, attachment: AttachmentDTO, pos?: number) {
   const content = attachment.isImage
     ? { type: 'image', attrs: { src: attachment.url, alt: attachment.filename } }
     : { type: 'paragraph', content: [{ type: 'text', text: attachment.filename, marks: [{ type: 'link', attrs: { href: attachment.url } }] }] }
   const chain = editor.chain().focus()
-  if (pos === undefined) {
+  // A toggle's title holds only text: the file goes under it, or after the toggle when it is closed.
+  const at = outOfTitle(editor.state.doc, pos ?? editor.state.selection.from)
+  if (pos === undefined && at === editor.state.selection.from) {
     chain.insertContent(content).run()
     return undefined
   }
   // Inserting leaves the cursor right after what it inserted.
-  chain.insertContentAt(pos, content).run()
-  return editor.state.selection.to
+  chain.insertContentAt(at, content).run()
+  return pos === undefined ? undefined : editor.state.selection.to
 }
 
-export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel, ariaDescribedBy }: EditorProps) {
+export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel, ariaDescribedBy, blockHandles = true }: EditorProps) {
   const { t } = useTranslation('docs')
   // TipTap keeps the callbacks it was created with: they read the current language and placeholder from refs.
   const tRef = useRef(t)
@@ -115,6 +156,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       icon,
       group: t(`editor.groups.${group}`),
       keywords: t(`editor.slash.${id}.keywords`),
+      shortcut: MARKDOWN_SHORTCUTS[id as keyof typeof MARKDOWN_SHORTCUTS],
       run,
     })
     const items: Array<MenuItem & { keywords: string }> = [
@@ -122,11 +164,16 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       item('h1', 'H1', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setHeading({ level: 1 }).run()),
       item('h2', 'H2', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setHeading({ level: 2 }).run()),
       item('h3', 'H3', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setHeading({ level: 3 }).run()),
-      item('ul', '•', 'lists', (e, r) => e.chain().focus().deleteRange(r).toggleBulletList().run()),
-      item('ol', '1.', 'lists', (e, r) => e.chain().focus().deleteRange(r).toggleOrderedList().run()),
-      item('todo', '☑', 'lists', (e, r) => e.chain().focus().deleteRange(r).toggleTaskList().run()),
+      // In an item of the same kind of list, as on the line a «+» opens below one, it stays an item.
+      item('ul', '•', 'lists', (e, r) => toList(e, r, 'bulletList', (c) => c.toggleBulletList())),
+      item('ol', '1.', 'lists', (e, r) => toList(e, r, 'orderedList', (c) => c.toggleOrderedList())),
+      item('todo', '☑', 'lists', (e, r) => toList(e, r, 'taskList', (c) => c.toggleTaskList())),
       item('quote', '❝', 'blocks', (e, r) => e.chain().focus().deleteRange(r).toggleBlockquote().run()),
+      item('callout', 'ⓘ', 'blocks', (e, r) => e.chain().focus().deleteRange(r).wrapIn('callout', { marker: markerFor('note') }).run()),
+      item('toggle', '▸', 'blocks', (e, r) => e.chain().focus().deleteRange(r).command(({ tr }) => insertToggle(tr)).run()),
       item('code', '</>', 'blocks', (e, r) => e.chain().focus().deleteRange(r).toggleCodeBlock().run()),
+      item('math', '∑', 'blocks', (e, r) => startMath(e, r, true)),
+      item('inlineMath', '√x', 'insert', (e, r) => startMath(e, r, false)),
       item('table', '▦', 'insert', (e, r) => e.chain().focus().deleteRange(r).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()),
       item('hr', '—', 'insert', (e, r) => e.chain().focus().deleteRange(r).setHorizontalRule().run()),
       item('mention', '@', 'insert', (e, r) => e.chain().focus().deleteRange(r).insertContent('@').run()),
@@ -173,16 +220,30 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
   const editor = useEditor({
     immediatelyRender: true,
     shouldRerenderOnTransaction: false,
-    autofocus: autofocus ? 'end' : false,
+    // Done in onCreate, at the end of the text rather than in that empty paragraph.
+    autofocus: false,
     extensions: [
       ...documentExtensions(),
+      // On the empty line with the cursor: a heading's name; the page's or field's own hint when it
+      // is all empty; elsewhere how to insert a block, shown only while the editor has the focus
+      // (editor.css). It follows the cursor, not the focus: a decoration that changed with the focus
+      // would redraw the page as a click focuses it, before the click's cursor is read.
       Placeholder.configure({
-        placeholder: ({ node, pos }) =>
-          node.type.name === 'heading' ? tRef.current('editor.headingPlaceholder') : pos === 0 ? (placeholderRef.current ?? tRef.current('editor.placeholder')) : '',
+        placeholder: ({ editor, node, pos }) =>
+          node.type.name === 'heading'
+            ? tRef.current('editor.headingPlaceholder')
+            : pos === 0 && editor.isEmpty
+              ? (placeholderRef.current ?? tRef.current('editor.placeholder'))
+              : node.type.name === 'paragraph'
+                ? tRef.current('editor.lineHint')
+                : '',
+        emptyNodeClass: ({ editor, node, pos }) => (node.type.name === 'paragraph' && !(pos === 0 && editor.isEmpty) ? 'is-empty orq-line-hint' : 'is-empty'),
         showOnlyCurrent: true,
       }),
       SlashCommands.configure({ store: slashStore, items: slashItems }),
       Mentions.configure({ store: mentionStore, items: mentionItems }),
+      MathKeys,
+      ...(blockHandles ? [BlockKeys] : []),
     ],
     content,
     contentType: 'markdown',
@@ -227,12 +288,26 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
         return false
       },
     },
+    onMount: ({ editor }) => {
+      // The empty paragraph kept after anything but a paragraph at the end (TrailingNode) comes
+      // with the first transaction. It comes now, out of the undo history and with no update, so
+      // that the first is not the one a focus makes. In Firefox a click focuses before the selection
+      // it placed is read, and redrawing the document put the cursor back where it was, at the
+      // start. In Safari autofocus focuses while its own transaction is being made, which that
+      // change then left behind ("Applying a mismatched transaction").
+      editor.view.dispatch(editor.state.tr.setMeta('addToHistory', false).setMeta('preventUpdate', true))
+    },
     onCreate: ({ editor }) => {
       emitted.current = editor.getMarkdown()
+      if (autofocus) {
+        editor.view.dispatch(editor.state.tr.setSelection(textEnd(editor.state.doc)).setMeta('addToHistory', false))
+        editor.commands.focus()
+      }
     },
     // Content set from outside (another tab, an agent) is the new starting point.
     onTransaction: ({ editor, transaction }) => {
-      if (transaction.docChanged && transaction.getMeta('preventUpdate')) emitted.current = editor.getMarkdown()
+      // Not the line a block's «+» opens: what it holds isn't written yet (insert-below.ts).
+      if (transaction.docChanged && transaction.getMeta('preventUpdate') && !opensLine(transaction)) emitted.current = editor.getMarkdown()
     },
     onUpdate: ({ editor }) => {
       const markdown = editor.getMarkdown()
@@ -255,6 +330,12 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
     <div className={cn('relative', className)}>
       <EditorContent editor={editor} />
       {editor && <FormatMenu editor={editor} />}
+      {editor && <TableControls editor={editor} />}
+      {editor && <CodeControls editor={editor} />}
+      {editor && <CalloutControls editor={editor} />}
+      {editor && <ImageControls editor={editor} />}
+      {editor && <MathControls editor={editor} />}
+      {editor && blockHandles && <BlockControls editor={editor} />}
       <SuggestionMenu store={slashStore} emptyLabel={t('editor.noBlocks')} />
       <SuggestionMenu store={mentionStore} emptyLabel={t('editor.mentionHint')} />
       <input

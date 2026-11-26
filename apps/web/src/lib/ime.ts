@@ -13,8 +13,11 @@ export function isConverting(event: KeyboardEvent | ReactKeyboardEvent) {
 
 /**
  * For a dialog, a sheet or a popover, which closes on Escape anywhere in it: the Escape that drops
- * a conversion in one of its fields leaves it open.
+ * a conversion in one of its fields leaves it open, and so does one pressed in something that
+ * takes Escape as its own (`data-own-escape`), as the bar of a table, from which Escape goes back
+ * to the text.
  */
-export function keepOpenWhileConverting(event: KeyboardEvent) {
-  if (isConverting(event)) event.preventDefault()
+export function keepOpenOnOwnEscape(event: KeyboardEvent) {
+  const target = event.target as { closest?: (selector: string) => unknown } | null
+  if (isConverting(event) || target?.closest?.('[data-own-escape]')) event.preventDefault()
 }

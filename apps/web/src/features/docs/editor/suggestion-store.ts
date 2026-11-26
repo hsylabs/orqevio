@@ -7,6 +7,8 @@ export interface MenuItem {
   subtitle?: string
   group?: string
   icon?: string
+  /** What typed makes the same, shown beside it (Markdown: `#`, `-`…). */
+  shortcut?: string
   run: (editor: Editor, range: Range) => void
 }
 

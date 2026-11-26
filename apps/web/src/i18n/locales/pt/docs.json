@@ -59,6 +59,7 @@
   },
   "editor": {
     "placeholder": "Escreva ou pressione “/” para inserir…",
+    "lineHint": "Pressione “/” para inserir…",
     "headingPlaceholder": "Título",
     "label": "Conteúdo",
     "uploading": "Enviando {{name}}…",
@@ -113,10 +114,30 @@
         "subtitle": "Destaque um trecho",
         "keywords": "citação destaque quote blockquote"
       },
+      "callout": {
+        "title": "Destaque",
+        "subtitle": "Uma caixa em destaque: nota, dica, aviso…",
+        "keywords": "destaque callout alerta nota dica importante aviso cuidado"
+      },
+      "toggle": {
+        "title": "Recolhível",
+        "subtitle": "Um título que mostra ou oculta o que está abaixo",
+        "keywords": "recolhível toggle details recolher expandir ocultar mostrar acordeão"
+      },
       "code": {
         "title": "Código",
         "subtitle": "Bloco de código",
         "keywords": "código trecho code snippet"
+      },
+      "math": {
+        "title": "Equação",
+        "subtitle": "Uma equação em um bloco próprio, em LaTeX",
+        "keywords": "equacao formula matematica math latex katex tex bloco"
+      },
+      "inlineMath": {
+        "title": "Equação em linha",
+        "subtitle": "Uma equação dentro do texto, em LaTeX",
+        "keywords": "equacao formula matematica math latex katex tex linha texto"
       },
       "table": {
         "title": "Tabela",
@@ -152,7 +173,8 @@
       "slash": "Inserir bloco",
       "mention": "Vincular tarefa ou página",
       "searching": "Buscando…",
-      "noMatches": "Nenhuma correspondência"
+      "noMatches": "Nenhuma correspondência",
+      "shortcut": "Atalho Markdown: {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… ou /doc/…",
@@ -164,7 +186,93 @@
       "italic": "Itálico",
       "strike": "Tachado",
       "code": "Código",
-      "link": "Link"
+      "link": "Link",
+      "math": "Equação"
+    },
+    "table": {
+      "toolbar": "Tabela",
+      "hint": "Tabela. Pressione Alt+F10 para editar as linhas e colunas.",
+      "rowAbove": "Inserir linha acima",
+      "rowBelow": "Inserir linha abaixo",
+      "columnLeft": "Inserir coluna à esquerda",
+      "columnRight": "Inserir coluna à direita",
+      "alignLeft": "Alinhar coluna à esquerda",
+      "alignCenter": "Centralizar coluna",
+      "alignRight": "Alinhar coluna à direita",
+      "more": "Mais opções da tabela",
+      "moveRowUp": "Mover linha para cima",
+      "moveRowDown": "Mover linha para baixo",
+      "moveColumnLeft": "Mover coluna para a esquerda",
+      "moveColumnRight": "Mover coluna para a direita",
+      "deleteRows_one": "Excluir linha",
+      "deleteRows_many": "Excluir {{count}} linhas",
+      "deleteRows_other": "Excluir {{count}} linhas",
+      "deleteColumns_one": "Excluir coluna",
+      "deleteColumns_many": "Excluir {{count}} colunas",
+      "deleteColumns_other": "Excluir {{count}} colunas",
+      "deleteTable": "Excluir tabela",
+      "rowMenu": "Opções da linha",
+      "columnMenu": "Opções da coluna",
+      "addRow": "Adicionar uma linha",
+      "addColumn": "Adicionar uma coluna"
+    },
+    "block": {
+      "handle": "Opções do bloco",
+      "handleHint": "Arraste para mover. Clique, ou pressione {{key}}, para ver as opções.",
+      "insertBelow": "Inserir abaixo",
+      "insertHint": "Clique para inserir um bloco abaixo.",
+      "turnInto": "Transformar em",
+      "duplicate": "Duplicar",
+      "moveUp": "Mover para cima",
+      "moveDown": "Mover para baixo",
+      "language": "Linguagem…",
+      "delete": "Excluir"
+    },
+    "callout": {
+      "note": "Nota",
+      "tip": "Dica",
+      "important": "Importante",
+      "warning": "Aviso",
+      "caution": "Cuidado",
+      "typeOf": "Tipo de destaque: {{type}}",
+      "menu": "Tipo de destaque",
+      "remove": "Remover o destaque"
+    },
+    "toggle": {
+      "expand": "Mostrar o conteúdo",
+      "collapse": "Ocultar o conteúdo",
+      "title": "Título do recolhível"
+    },
+    "image": {
+      "toolbar": "Imagem",
+      "hint": "Imagem. Pressione Alt+F10 para mudar a largura ou a legenda.",
+      "width": "Largura: {{size}}",
+      "original": "Tamanho original",
+      "caption": "Legenda",
+      "captionPlaceholder": "Escreva uma legenda",
+      "resize": "Arraste para mudar a largura"
+    },
+    "math": {
+      "field": "Equação em LaTeX",
+      "placeholder": "Por exemplo: E = mc^2",
+      "done": "Concluído",
+      "keysInline": "Enter para salvar · Esc para cancelar",
+      "keysBlock": "Enter para salvar · Shift+Enter para outra linha · Esc para cancelar",
+      "empty": "Equação vazia",
+      "error": "Erro na equação",
+      "hint": "Equação. Pressione Enter para editá-la.",
+      "dialog": "Editar equação",
+      "preview": "Pré-visualização"
+    },
+    "code": {
+      "plain": "Texto simples",
+      "language": "Linguagem: {{name}}",
+      "copy": "Copiar código",
+      "copied": "Código copiado",
+      "search": "Procurar uma linguagem…",
+      "picker": "Linguagem do bloco de código",
+      "noResults": "Nenhuma linguagem corresponde",
+      "use": "Usar “{{name}}”"
     },
     "taskCheckbox": "Tarefa: {{text}}",
     "taskCheckboxEmpty": "Tarefa sem texto"

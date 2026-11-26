@@ -51,6 +51,7 @@ test('editing a page keeps the Markdown the editor cannot show', async ({ page }
     '#### Detalles',
     `[![build](${badge})](https://ci.example.com)`,
     '<details>\n<summary>Más</summary>\n\nDentro **negrita**\n\n</details>',
+    '<div align="center">\nCentrado\n</div>',
     'Pulsa <kbd>Ctrl</kbd>, AT&T y a < b',
     '\\# no es un título',
     'Final',
@@ -61,8 +62,9 @@ test('editing a page keeps the Markdown the editor cannot show', async ({ page }
   await page.goto(`/w/${workspaceId}/d/${pageId}`)
   const editor = page.getByRole('textbox', { name: 'Contenido de la página' })
   await expect(editor.getByRole('heading', { level: 4, name: 'Detalles' })).toBeVisible()
-  // HTML shows as its source.
-  await expect(editor.locator('pre[data-raw-html]').first()).toHaveText('<details>\n<summary>Más</summary>')
+  // A <details> is a toggle; other HTML shows as its source.
+  await expect(editor.locator('.orq-toggle-title')).toHaveText('Más')
+  await expect(editor.locator('pre[data-raw-html]').first()).toHaveText('<div align="center">\nCentrado\n</div>')
   await expect(editor.locator('code[data-raw-html]').first()).toHaveText('<kbd>')
   await editor.getByText('Final').click()
   await page.keyboard.press('End')

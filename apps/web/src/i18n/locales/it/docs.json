@@ -59,6 +59,7 @@
   },
   "editor": {
     "placeholder": "Scrivi, o premi «/» per inserire…",
+    "lineHint": "Premi «/» per inserire…",
     "headingPlaceholder": "Titolo",
     "label": "Contenuto",
     "uploading": "Caricamento di {{name}}…",
@@ -113,10 +114,30 @@
         "subtitle": "Metti in risalto un passaggio",
         "keywords": "citazione quote blockquote"
       },
+      "callout": {
+        "title": "Riquadro",
+        "subtitle": "Un riquadro in evidenza: nota, suggerimento, avvertenza…",
+        "keywords": "riquadro callout avviso nota suggerimento importante avvertenza attenzione"
+      },
+      "toggle": {
+        "title": "Blocco espandibile",
+        "subtitle": "Un titolo che mostra o nasconde ciò che c’è sotto",
+        "keywords": "espandibile toggle details comprimi espandi nascondi mostra fisarmonica"
+      },
       "code": {
         "title": "Codice",
         "subtitle": "Blocco di codice",
         "keywords": "codice code snippet"
+      },
+      "math": {
+        "title": "Equazione",
+        "subtitle": "Un’equazione su una riga a sé, in LaTeX",
+        "keywords": "equazione formula matematica math latex katex tex blocco"
+      },
+      "inlineMath": {
+        "title": "Equazione in linea",
+        "subtitle": "Un’equazione dentro il testo, in LaTeX",
+        "keywords": "equazione formula matematica math latex katex tex linea testo"
       },
       "table": {
         "title": "Tabella",
@@ -152,7 +173,8 @@
       "slash": "Inserisci blocco",
       "mention": "Collega attività o pagina",
       "searching": "Ricerca in corso…",
-      "noMatches": "Nessun risultato"
+      "noMatches": "Nessun risultato",
+      "shortcut": "Scorciatoia Markdown: {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… o /doc/…",
@@ -164,7 +186,93 @@
       "italic": "Corsivo",
       "strike": "Barrato",
       "code": "Codice",
-      "link": "Link"
+      "link": "Link",
+      "math": "Equazione"
+    },
+    "table": {
+      "toolbar": "Tabella",
+      "hint": "Tabella. Premi Alt+F10 per modificarne righe e colonne.",
+      "rowAbove": "Inserisci riga sopra",
+      "rowBelow": "Inserisci riga sotto",
+      "columnLeft": "Inserisci colonna a sinistra",
+      "columnRight": "Inserisci colonna a destra",
+      "alignLeft": "Allinea colonna a sinistra",
+      "alignCenter": "Centra colonna",
+      "alignRight": "Allinea colonna a destra",
+      "more": "Altre opzioni della tabella",
+      "moveRowUp": "Sposta riga su",
+      "moveRowDown": "Sposta riga giù",
+      "moveColumnLeft": "Sposta colonna a sinistra",
+      "moveColumnRight": "Sposta colonna a destra",
+      "deleteRows_one": "Elimina riga",
+      "deleteRows_many": "Elimina {{count}} righe",
+      "deleteRows_other": "Elimina {{count}} righe",
+      "deleteColumns_one": "Elimina colonna",
+      "deleteColumns_many": "Elimina {{count}} colonne",
+      "deleteColumns_other": "Elimina {{count}} colonne",
+      "deleteTable": "Elimina tabella",
+      "rowMenu": "Opzioni della riga",
+      "columnMenu": "Opzioni della colonna",
+      "addRow": "Aggiungi una riga",
+      "addColumn": "Aggiungi una colonna"
+    },
+    "block": {
+      "handle": "Opzioni del blocco",
+      "handleHint": "Trascina per spostarlo. Fai clic, o premi {{key}}, per le sue opzioni.",
+      "insertBelow": "Inserisci sotto",
+      "insertHint": "Fai clic per inserire un blocco sotto.",
+      "turnInto": "Trasforma in",
+      "duplicate": "Duplica",
+      "moveUp": "Sposta su",
+      "moveDown": "Sposta giù",
+      "language": "Linguaggio…",
+      "delete": "Elimina"
+    },
+    "callout": {
+      "note": "Nota",
+      "tip": "Suggerimento",
+      "important": "Importante",
+      "warning": "Avvertenza",
+      "caution": "Attenzione",
+      "typeOf": "Tipo di riquadro: {{type}}",
+      "menu": "Tipo di riquadro",
+      "remove": "Rimuovi il riquadro"
+    },
+    "toggle": {
+      "expand": "Mostra il contenuto",
+      "collapse": "Nascondi il contenuto",
+      "title": "Titolo del blocco espandibile"
+    },
+    "image": {
+      "toolbar": "Immagine",
+      "hint": "Immagine. Premi Alt+F10 per cambiarne la larghezza o la didascalia.",
+      "width": "Larghezza: {{size}}",
+      "original": "Dimensione originale",
+      "caption": "Didascalia",
+      "captionPlaceholder": "Scrivi una didascalia",
+      "resize": "Trascina per cambiare la larghezza"
+    },
+    "math": {
+      "field": "Equazione in LaTeX",
+      "placeholder": "Per esempio: E = mc^2",
+      "done": "Fatto",
+      "keysInline": "Invio per salvare · Esc per annullare",
+      "keysBlock": "Invio per salvare · Maiusc+Invio per un’altra riga · Esc per annullare",
+      "empty": "Equazione vuota",
+      "error": "Errore nell’equazione",
+      "hint": "Equazione. Premi Invio per modificarla.",
+      "dialog": "Modifica equazione",
+      "preview": "Anteprima"
+    },
+    "code": {
+      "plain": "Testo semplice",
+      "language": "Linguaggio: {{name}}",
+      "copy": "Copia il codice",
+      "copied": "Codice copiato",
+      "search": "Cerca un linguaggio…",
+      "picker": "Linguaggio del blocco di codice",
+      "noResults": "Nessun linguaggio corrisponde",
+      "use": "Usa «{{name}}»"
     },
     "taskCheckbox": "Da fare: {{text}}",
     "taskCheckboxEmpty": "Cosa da fare vuota"

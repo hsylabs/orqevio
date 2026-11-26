@@ -14,6 +14,8 @@ import { dateTime, formatNumber, relativeTime } from '../../lib/format'
 import { keys, queryClient, useComments } from '../../lib/queries'
 import { restoreFromTrash } from '../../lib/trash'
 import { Editor } from '../docs/editor/Editor'
+import { copyCode } from '../docs/editor/code-block'
+import { useCodeColours } from '../docs/editor/code-languages'
 import { markdownToHtml } from '../docs/editor/markdown-html'
 import { useWorkspace } from '../shell/workspace'
 import { isConverting } from '../../lib/ime'
@@ -43,12 +45,23 @@ const refresh = (cardId: string, boardId: string) =>
     queryClient.invalidateQueries({ queryKey: keys.board(boardId) }),
   ])
 
-/** Ctrl+Enter (⌘+Enter) sends, before the editor takes it for a line break. */
+/**
+ * Ctrl+Enter (⌘+Enter) sends, before the editor takes it for a line break. From a field of the
+ * editor's own, it leaves the field first, as a click on the button does: a formula's source or an
+ * image's caption is then in the text, and `send` reads the text as it is.
+ */
 const sendOn = (send: () => void) => (event: KeyboardEvent) => {
   if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey) || isConverting(event)) return
   event.preventDefault()
   event.stopPropagation()
+  const field = event.target
+  if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) field.blur()
   send()
+}
+
+/** Nothing sent: the focus, if leaving a field of the editor left it nowhere, back in the box. */
+function keepFocus(editor: TiptapEditor | null) {
+  if (editor && !editor.isDestroyed && (!document.activeElement || document.activeElement === document.body)) editor.view.focus()
 }
 
 /** Whether a text can be sent: something that shows, within the limit. */
@@ -159,14 +172,17 @@ function Composer({ card, onSent }: { card: CardDetailDTO; onSent: () => void })
   const { workspaceId, me } = useWorkspace()
   const draftKey = newDraft(me.user.id, card.id)
   const [text, setText] = useState(() => drafts.get(draftKey)?.text ?? '')
+  // The text as the editor last gave it, also between renders: what a field put in it just now.
+  const latest = useRef(text)
   const [sending, setSending] = useState(false)
   const editor = useRef<TiptapEditor | null>(null)
   const hint = useId()
   const { empty, tooLong, over } = measure(text)
 
   async function send() {
-    if (empty || tooLong || sending) return
-    const body = text
+    const body = latest.current
+    const now = measure(body)
+    if (now.empty || now.tooLong || sending) return keepFocus(editor.current)
     setSending(true)
     // Nothing typed while it goes is lost: the box waits.
     editor.current?.setEditable(false)
@@ -194,6 +210,7 @@ function Composer({ card, onSent }: { card: CardDetailDTO; onSent: () => void })
         content={drafts.get(draftKey)?.text ?? ''}
         workspaceId={workspaceId}
         compact
+        blockHandles={false}
         upload={{ type: 'card', id: card.id }}
         onUploaded={() => void refresh(card.id, card.boardId)}
         onReady={(instance) => (editor.current = instance)}
@@ -201,6 +218,7 @@ function Composer({ card, onSent }: { card: CardDetailDTO; onSent: () => void })
         ariaLabel={t('sheet.comments.label')}
         ariaDescribedBy={hint}
         onChange={(markdown) => {
+          latest.current = markdown
           setText(markdown)
           keep(draftKey, markdown)
         }}
@@ -232,8 +250,17 @@ function Limit({ tooLong, over }: { tooLong: boolean; over: number }) {
 /** A comment as Markdown, shown, not edited: links are followed, inside the app or in a new tab. */
 function Body({ markdown }: { markdown: string }) {
   const navigate = useNavigate()
-  const html = useMemo(() => markdownToHtml(markdown), [markdown])
+  const { i18n } = useTranslation()
+  const colours = useCodeColours()
+  // Written again with the code's colours once they come, and in the app's language.
+  const html = useMemo(() => markdownToHtml(markdown), [markdown, colours, i18n.language])
   const follow = (event: MouseEvent) => {
+    // A code block's button copies its code.
+    const copy = (event.target as HTMLElement).closest('[data-copy-code]')
+    if (copy) {
+      void copyCode(copy.closest('.orq-code')?.querySelector('pre')?.textContent ?? '')
+      return
+    }
     const link = (event.target as HTMLElement).closest('a')
     if (!link) return
     // A link without an address the editor allows has none: it leads nowhere, rather than reloading the app.
@@ -350,16 +377,20 @@ function EditComment({ comment, draftKey, focus, cardId, boardId, onDone }: { co
   // The version the edit began from: changed since, the edit left on closing the card is dropped.
   const [base] = useState(comment.updatedAt)
   const [text, setText] = useState(initial)
+  // The text as the editor last gave it, also between renders: what a field put in it just now.
+  const latest = useRef(text)
   const [saving, setSaving] = useState(false)
   const editor = useRef<TiptapEditor | null>(null)
   const { empty, tooLong, over } = measure(text)
 
   async function save() {
-    if (empty || tooLong || saving) return
+    const body = latest.current
+    const now = measure(body)
+    if (now.empty || now.tooLong || saving) return keepFocus(editor.current)
     setSaving(true)
     editor.current?.setEditable(false)
     try {
-      await patch(`/comments/${comment.id}`, { body: text })
+      await patch(`/comments/${comment.id}`, { body })
       drafts.delete(draftKey)
       await refresh(cardId, boardId)
       onDone()
@@ -378,12 +409,14 @@ function EditComment({ comment, draftKey, focus, cardId, boardId, onDone }: { co
         content={initial}
         workspaceId={workspaceId}
         compact
+        blockHandles={false}
         autofocus={focus}
         upload={{ type: 'card', id: cardId }}
         onUploaded={() => void refresh(cardId, boardId)}
         onReady={(instance) => (editor.current = instance)}
         ariaLabel={t('sheet.comments.editLabel')}
         onChange={(markdown) => {
+          latest.current = markdown
           setText(markdown)
           keep(draftKey, markdown, base)
         }}

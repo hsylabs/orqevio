@@ -59,6 +59,7 @@
   },
   "editor": {
     "placeholder": "Write, or press “/” to insert…",
+    "lineHint": "Press “/” to insert…",
     "headingPlaceholder": "Heading",
     "label": "Content",
     "uploading": "Uploading {{name}}…",
@@ -113,10 +114,30 @@
         "subtitle": "Make a passage stand out",
         "keywords": "quote blockquote"
       },
+      "callout": {
+        "title": "Callout",
+        "subtitle": "A highlighted box: note, tip, warning…",
+        "keywords": "callout alert admonition note tip important warning caution"
+      },
+      "toggle": {
+        "title": "Toggle",
+        "subtitle": "A title that shows or hides what is under it",
+        "keywords": "toggle details collapse expand fold hide show accordion"
+      },
       "code": {
         "title": "Code",
         "subtitle": "Code block",
         "keywords": "code snippet"
+      },
+      "math": {
+        "title": "Equation",
+        "subtitle": "An equation on a line of its own, in LaTeX",
+        "keywords": "equation formula math maths latex katex tex block"
+      },
+      "inlineMath": {
+        "title": "Inline equation",
+        "subtitle": "An equation within the text, in LaTeX",
+        "keywords": "equation formula math maths latex katex tex inline text"
       },
       "table": {
         "title": "Table",
@@ -152,7 +173,8 @@
       "slash": "Insert block",
       "mention": "Link a task or page",
       "searching": "Searching…",
-      "noMatches": "No matches"
+      "noMatches": "No matches",
+      "shortcut": "Markdown shortcut: {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… or /doc/…",
@@ -164,7 +186,91 @@
       "italic": "Italic",
       "strike": "Strikethrough",
       "code": "Code",
-      "link": "Link"
+      "link": "Link",
+      "math": "Equation"
+    },
+    "table": {
+      "toolbar": "Table",
+      "hint": "Table. Press Alt+F10 to edit its rows and columns.",
+      "rowAbove": "Insert row above",
+      "rowBelow": "Insert row below",
+      "columnLeft": "Insert column to the left",
+      "columnRight": "Insert column to the right",
+      "alignLeft": "Align column left",
+      "alignCenter": "Center column",
+      "alignRight": "Align column right",
+      "more": "More table options",
+      "moveRowUp": "Move row up",
+      "moveRowDown": "Move row down",
+      "moveColumnLeft": "Move column left",
+      "moveColumnRight": "Move column right",
+      "deleteRows_one": "Delete row",
+      "deleteRows_other": "Delete {{count}} rows",
+      "deleteColumns_one": "Delete column",
+      "deleteColumns_other": "Delete {{count}} columns",
+      "deleteTable": "Delete table",
+      "rowMenu": "Row options",
+      "columnMenu": "Column options",
+      "addRow": "Add a row",
+      "addColumn": "Add a column"
+    },
+    "block": {
+      "handle": "Block options",
+      "handleHint": "Drag to move. Click, or press {{key}}, for its options.",
+      "insertBelow": "Insert below",
+      "insertHint": "Click to insert a block below.",
+      "turnInto": "Turn into",
+      "duplicate": "Duplicate",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "language": "Language…",
+      "delete": "Delete"
+    },
+    "callout": {
+      "note": "Note",
+      "tip": "Tip",
+      "important": "Important",
+      "warning": "Warning",
+      "caution": "Caution",
+      "typeOf": "Callout type: {{type}}",
+      "menu": "Callout type",
+      "remove": "Remove the callout"
+    },
+    "toggle": {
+      "expand": "Show the content",
+      "collapse": "Hide the content",
+      "title": "Toggle title"
+    },
+    "image": {
+      "toolbar": "Image",
+      "hint": "Image. Press Alt+F10 to change its width or caption.",
+      "width": "Width: {{size}}",
+      "original": "Original size",
+      "caption": "Caption",
+      "captionPlaceholder": "Write a caption",
+      "resize": "Drag to change the width"
+    },
+    "math": {
+      "field": "Equation in LaTeX",
+      "placeholder": "For example: E = mc^2",
+      "done": "Done",
+      "keysInline": "Enter to save · Esc to cancel",
+      "keysBlock": "Enter to save · Shift+Enter for a new line · Esc to cancel",
+      "empty": "Empty equation",
+      "error": "Error in the equation",
+      "hint": "Equation. Press Enter to edit it.",
+      "dialog": "Edit equation",
+      "preview": "Preview"
+    },
+    "code": {
+      "plain": "Plain text",
+      "language": "Language: {{name}}",
+      "copy": "Copy code",
+      "copied": "Code copied",
+      "search": "Search for a language…",
+      "picker": "Code block language",
+      "noResults": "No language matches",
+      "use": "Use “{{name}}”"
     },
     "taskCheckbox": "To-do: {{text}}",
     "taskCheckboxEmpty": "Empty to-do"

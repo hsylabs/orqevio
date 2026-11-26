@@ -5,6 +5,7 @@ import { Phrases } from '../../components/Phrases'
 import { Button } from '../../components/ui/Button'
 import { Dialog } from '../../components/ui/Dialog'
 import { downloadFrom } from '../../lib/download'
+import { useCodeColours } from './editor/code-languages'
 import { markdownToHtml } from './editor/markdown-html'
 
 /**
@@ -50,13 +51,16 @@ export async function picturesReady(root: ParentNode | null, waitAtMost = 3000) 
  * takes the place of everything else only while it is there, so printing any other page is as before.
  */
 export function PrintView({ title, icon, markdown }: { title: string; icon: string | null; markdown: string }) {
-  const html = useMemo(() => markdownToHtml(markdown), [markdown])
+  const colours = useCodeColours()
+  const html = useMemo(() => markdownToHtml(markdown), [markdown, colours])
   const text = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     document.documentElement.classList.add('orq-printing')
     return () => document.documentElement.classList.remove('orq-printing')
   }, [])
   useLayoutEffect(() => {
+    // On paper nothing opens: every toggle is shown open.
+    for (const details of text.current?.querySelectorAll('details') ?? []) details.open = true
     // On paper there is nothing to click: each link shows where it leads, in full, unless its text already says it.
     for (const link of text.current?.querySelectorAll('a[href]') ?? []) {
       const href = link.getAttribute('href') ?? ''

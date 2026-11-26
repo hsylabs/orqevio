@@ -19,6 +19,7 @@ import { relativeTime } from '../../lib/format'
 import { keys, queryClient, useCard } from '../../lib/queries'
 import { onCardEvent, useAgentHighlight } from '../../lib/realtime'
 import { Editor } from '../docs/editor/Editor'
+import { showTogglesAsBefore, togglesShown } from '../docs/editor/toggle'
 import { useWorkspace } from '../shell/workspace'
 import { Attachments } from './Attachments'
 import { DueChip } from './CardItem'
@@ -202,7 +203,12 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
     version.current = latest.version
     pendingDesc.current = null
     clearTimeout(descTimer.current)
-    editorRef.current?.commands.setContent(latest.description, { contentType: 'markdown', emitUpdate: false })
+    const editor = editorRef.current
+    if (!editor) return
+    // The toggles the reader opened or closed stay so.
+    const shown = togglesShown(editor.state.doc)
+    editor.commands.setContent(latest.description, { contentType: 'markdown', emitUpdate: false })
+    showTogglesAsBefore(editor, shown)
   }
 
   /** Shows a newer description from elsewhere, or flags a conflict if there are edits it would discard. */

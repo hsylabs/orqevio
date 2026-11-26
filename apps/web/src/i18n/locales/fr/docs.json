@@ -59,6 +59,7 @@
   },
   "editor": {
     "placeholder": "Écrivez, ou tapez « / » pour insérer…",
+    "lineHint": "Tapez « / » pour insérer…",
     "headingPlaceholder": "Titre",
     "label": "Contenu",
     "uploading": "Envoi de {{name}}…",
@@ -113,10 +114,30 @@
         "subtitle": "Mettre un passage en valeur",
         "keywords": "citation quote blockquote"
       },
+      "callout": {
+        "title": "Encadré",
+        "subtitle": "Un encadré mis en évidence : remarque, astuce, avertissement…",
+        "keywords": "encadré callout alerte remarque astuce important avertissement attention"
+      },
+      "toggle": {
+        "title": "Bloc dépliant",
+        "subtitle": "Un titre qui affiche ou masque ce qu’il y a dessous",
+        "keywords": "dépliant toggle details replier déplier masquer afficher accordéon"
+      },
       "code": {
         "title": "Code",
         "subtitle": "Bloc de code",
         "keywords": "code extrait snippet"
+      },
+      "math": {
+        "title": "Équation",
+        "subtitle": "Une équation sur sa propre ligne, en LaTeX",
+        "keywords": "equation formule mathematiques maths math latex katex tex bloc"
+      },
+      "inlineMath": {
+        "title": "Équation en ligne",
+        "subtitle": "Une équation dans le texte, en LaTeX",
+        "keywords": "equation formule mathematiques maths math latex katex tex ligne texte"
       },
       "table": {
         "title": "Tableau",
@@ -152,7 +173,8 @@
       "slash": "Insérer un bloc",
       "mention": "Lier une tâche ou une page",
       "searching": "Recherche…",
-      "noMatches": "Aucun résultat"
+      "noMatches": "Aucun résultat",
+      "shortcut": "Raccourci Markdown : {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… ou /doc/…",
@@ -164,7 +186,93 @@
       "italic": "Italique",
       "strike": "Barré",
       "code": "Code",
-      "link": "Lien"
+      "link": "Lien",
+      "math": "Équation"
+    },
+    "table": {
+      "toolbar": "Tableau",
+      "hint": "Tableau. Appuyez sur Alt+F10 pour modifier ses lignes et ses colonnes.",
+      "rowAbove": "Insérer une ligne au-dessus",
+      "rowBelow": "Insérer une ligne en dessous",
+      "columnLeft": "Insérer une colonne à gauche",
+      "columnRight": "Insérer une colonne à droite",
+      "alignLeft": "Aligner la colonne à gauche",
+      "alignCenter": "Centrer la colonne",
+      "alignRight": "Aligner la colonne à droite",
+      "more": "Plus d’options du tableau",
+      "moveRowUp": "Monter la ligne",
+      "moveRowDown": "Descendre la ligne",
+      "moveColumnLeft": "Déplacer la colonne à gauche",
+      "moveColumnRight": "Déplacer la colonne à droite",
+      "deleteRows_one": "Supprimer la ligne",
+      "deleteRows_many": "Supprimer les {{count}} lignes",
+      "deleteRows_other": "Supprimer les {{count}} lignes",
+      "deleteColumns_one": "Supprimer la colonne",
+      "deleteColumns_many": "Supprimer les {{count}} colonnes",
+      "deleteColumns_other": "Supprimer les {{count}} colonnes",
+      "deleteTable": "Supprimer le tableau",
+      "rowMenu": "Options de la ligne",
+      "columnMenu": "Options de la colonne",
+      "addRow": "Ajouter une ligne",
+      "addColumn": "Ajouter une colonne"
+    },
+    "block": {
+      "handle": "Options du bloc",
+      "handleHint": "Faites glisser pour le déplacer. Cliquez, ou appuyez sur {{key}}, pour ses options.",
+      "insertBelow": "Insérer en dessous",
+      "insertHint": "Cliquez pour insérer un bloc en dessous.",
+      "turnInto": "Transformer en",
+      "duplicate": "Dupliquer",
+      "moveUp": "Monter",
+      "moveDown": "Descendre",
+      "language": "Langage…",
+      "delete": "Supprimer"
+    },
+    "callout": {
+      "note": "Remarque",
+      "tip": "Astuce",
+      "important": "Important",
+      "warning": "Avertissement",
+      "caution": "Attention",
+      "typeOf": "Type d’encadré : {{type}}",
+      "menu": "Type d’encadré",
+      "remove": "Retirer l’encadré"
+    },
+    "toggle": {
+      "expand": "Afficher le contenu",
+      "collapse": "Masquer le contenu",
+      "title": "Titre du bloc dépliant"
+    },
+    "image": {
+      "toolbar": "Image",
+      "hint": "Image. Appuyez sur Alt+F10 pour changer sa largeur ou sa légende.",
+      "width": "Largeur : {{size}}",
+      "original": "Taille d’origine",
+      "caption": "Légende",
+      "captionPlaceholder": "Écrivez une légende",
+      "resize": "Faites glisser pour changer la largeur"
+    },
+    "math": {
+      "field": "Équation en LaTeX",
+      "placeholder": "Par exemple : E = mc^2",
+      "done": "Terminé",
+      "keysInline": "Entrée pour enregistrer · Échap pour annuler",
+      "keysBlock": "Entrée pour enregistrer · Maj+Entrée pour une autre ligne · Échap pour annuler",
+      "empty": "Équation vide",
+      "error": "Erreur dans l’équation",
+      "hint": "Équation. Appuyez sur Entrée pour la modifier.",
+      "dialog": "Modifier l’équation",
+      "preview": "Aperçu"
+    },
+    "code": {
+      "plain": "Texte brut",
+      "language": "Langage : {{name}}",
+      "copy": "Copier le code",
+      "copied": "Code copié",
+      "search": "Rechercher un langage…",
+      "picker": "Langage du bloc de code",
+      "noResults": "Aucun langage ne correspond",
+      "use": "Utiliser « {{name}} »"
     },
     "taskCheckbox": "Tâche : {{text}}",
     "taskCheckboxEmpty": "Tâche vide"

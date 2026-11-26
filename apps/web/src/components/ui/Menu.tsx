@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react'
 import { DropdownMenu as M } from 'radix-ui'
 import { type ReactNode, useCallback, useRef } from 'react'
 import { cn } from '../../lib/cn'
@@ -5,7 +6,20 @@ import { cn } from '../../lib/cn'
 export const MenuRoot = M.Root
 export const MenuTrigger = M.Trigger
 
-export function MenuContent({ children, align = 'end', className, side }: { children: ReactNode; align?: 'start' | 'end' | 'center'; className?: string; side?: 'top' | 'bottom' | 'left' | 'right' }) {
+export function MenuContent({
+  children,
+  align = 'end',
+  className,
+  side,
+  onCloseAutoFocus,
+}: {
+  children: ReactNode
+  align?: 'start' | 'end' | 'center'
+  className?: string
+  side?: 'top' | 'bottom' | 'left' | 'right'
+  /** Where the focus goes when the menu closes; preventing the event keeps it from the menu's button. */
+  onCloseAutoFocus?: (event: Event) => void
+}) {
   // A field meant to take the focus (see Field) that an item brought up, a form say, couldn't take
   // it while the menu was open: it gets it when the menu closes, instead of the menu's button.
   const before = useRef<Set<Element>>(new Set())
@@ -17,6 +31,8 @@ export function MenuContent({ children, align = 'end', className, side }: { chil
       <M.Content
         ref={opened}
         onCloseAutoFocus={(e) => {
+          onCloseAutoFocus?.(e)
+          if (e.defaultPrevented) return
           const field = [...document.querySelectorAll<HTMLElement>('[data-autofocus]')].find((el) => !before.current.has(el))
           if (!field) return
           e.preventDefault()
@@ -75,5 +91,32 @@ export function MenuRadioItem({ value, children, icon }: { value: string; childr
         <span className="block size-1.5 rounded-full bg-accent" />
       </M.ItemIndicator>
     </M.RadioItem>
+  )
+}
+
+export const MenuSub = M.Sub
+
+/** An item that opens a menu of its own, to the side: with the pointer, the right arrow or Enter. */
+export function MenuSubTrigger({ icon, children }: { icon?: ReactNode; children: ReactNode }) {
+  return (
+    <M.SubTrigger className="flex h-8 cursor-default items-center gap-2.5 rounded-[8px] px-2 text-[13px] text-ink outline-none select-none data-[highlighted]:bg-hover data-[state=open]:bg-hover [&_svg]:size-[15px] [&_svg]:text-ink-3">
+      {icon}
+      <span className="flex-1 truncate">{children}</span>
+      <ChevronRight className="size-3.5!" />
+    </M.SubTrigger>
+  )
+}
+
+export function MenuSubContent({ children }: { children: ReactNode }) {
+  return (
+    <M.Portal>
+      <M.SubContent
+        sideOffset={4}
+        collisionPadding={12}
+        className="z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[200px] overflow-y-auto rounded-[12px] border border-line bg-surface p-1 shadow-lg outline-none"
+      >
+        {children}
+      </M.SubContent>
+    </M.Portal>
   )
 }

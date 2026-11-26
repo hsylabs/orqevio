@@ -59,6 +59,7 @@
   },
   "editor": {
     "placeholder": "Schrijf, of druk op ‘/’ om iets in te voegen…",
+    "lineHint": "Druk op ‘/’ om iets in te voegen…",
     "headingPlaceholder": "Kop",
     "label": "Inhoud",
     "uploading": "{{name}} uploaden…",
@@ -113,10 +114,30 @@
         "subtitle": "Laat een passage opvallen",
         "keywords": "citaat quote blockquote"
       },
+      "callout": {
+        "title": "Kader",
+        "subtitle": "Een opvallend kader: opmerking, tip, waarschuwing…",
+        "keywords": "kader callout melding opmerking tip belangrijk waarschuwing let op"
+      },
+      "toggle": {
+        "title": "Uitklapblok",
+        "subtitle": "Een titel die toont of verbergt wat eronder staat",
+        "keywords": "uitklappen toggle details inklappen verbergen tonen accordeon"
+      },
       "code": {
         "title": "Code",
         "subtitle": "Codeblok",
         "keywords": "code codeblok snippet"
+      },
+      "math": {
+        "title": "Formule",
+        "subtitle": "Een formule als eigen blok, in LaTeX",
+        "keywords": "formule vergelijking wiskunde math latex katex tex blok"
+      },
+      "inlineMath": {
+        "title": "Formule in tekst",
+        "subtitle": "Een formule midden in de tekst, in LaTeX",
+        "keywords": "formule vergelijking wiskunde math latex katex tex inline tekst"
       },
       "table": {
         "title": "Tabel",
@@ -152,7 +173,8 @@
       "slash": "Blok invoegen",
       "mention": "Taak of pagina koppelen",
       "searching": "Zoeken…",
-      "noMatches": "Geen resultaten"
+      "noMatches": "Geen resultaten",
+      "shortcut": "Markdown-sneltoets: {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… of /doc/…",
@@ -164,7 +186,91 @@
       "italic": "Cursief",
       "strike": "Doorhalen",
       "code": "Code",
-      "link": "Link"
+      "link": "Link",
+      "math": "Formule"
+    },
+    "table": {
+      "toolbar": "Tabel",
+      "hint": "Tabel. Druk op Alt+F10 om de rijen en kolommen te bewerken.",
+      "rowAbove": "Rij erboven invoegen",
+      "rowBelow": "Rij eronder invoegen",
+      "columnLeft": "Kolom links invoegen",
+      "columnRight": "Kolom rechts invoegen",
+      "alignLeft": "Kolom links uitlijnen",
+      "alignCenter": "Kolom centreren",
+      "alignRight": "Kolom rechts uitlijnen",
+      "more": "Meer tabelopties",
+      "moveRowUp": "Rij omhoog",
+      "moveRowDown": "Rij omlaag",
+      "moveColumnLeft": "Kolom naar links",
+      "moveColumnRight": "Kolom naar rechts",
+      "deleteRows_one": "Rij verwijderen",
+      "deleteRows_other": "{{count}} rijen verwijderen",
+      "deleteColumns_one": "Kolom verwijderen",
+      "deleteColumns_other": "{{count}} kolommen verwijderen",
+      "deleteTable": "Tabel verwijderen",
+      "rowMenu": "Rijopties",
+      "columnMenu": "Kolomopties",
+      "addRow": "Rij toevoegen",
+      "addColumn": "Kolom toevoegen"
+    },
+    "block": {
+      "handle": "Blokopties",
+      "handleHint": "Sleep om te verplaatsen. Klik, of druk op {{key}}, voor de opties.",
+      "insertBelow": "Hieronder invoegen",
+      "insertHint": "Klik om hieronder een blok in te voegen.",
+      "turnInto": "Omzetten naar",
+      "duplicate": "Dupliceren",
+      "moveUp": "Omhoog",
+      "moveDown": "Omlaag",
+      "language": "Taal…",
+      "delete": "Verwijderen"
+    },
+    "callout": {
+      "note": "Opmerking",
+      "tip": "Tip",
+      "important": "Belangrijk",
+      "warning": "Waarschuwing",
+      "caution": "Let op",
+      "typeOf": "Soort kader: {{type}}",
+      "menu": "Soort kader",
+      "remove": "Kader verwijderen"
+    },
+    "toggle": {
+      "expand": "Inhoud tonen",
+      "collapse": "Inhoud verbergen",
+      "title": "Titel van het uitklapblok"
+    },
+    "image": {
+      "toolbar": "Afbeelding",
+      "hint": "Afbeelding. Druk op Alt+F10 om de breedte of het bijschrift te wijzigen.",
+      "width": "Breedte: {{size}}",
+      "original": "Oorspronkelijke grootte",
+      "caption": "Bijschrift",
+      "captionPlaceholder": "Schrijf een bijschrift",
+      "resize": "Sleep om de breedte te wijzigen"
+    },
+    "math": {
+      "field": "Formule in LaTeX",
+      "placeholder": "Bijvoorbeeld: E = mc^2",
+      "done": "Klaar",
+      "keysInline": "Enter om op te slaan · Esc om te annuleren",
+      "keysBlock": "Enter om op te slaan · Shift+Enter voor een nieuwe regel · Esc om te annuleren",
+      "empty": "Lege formule",
+      "error": "Fout in de formule",
+      "hint": "Formule. Druk op Enter om hem te bewerken.",
+      "dialog": "Formule bewerken",
+      "preview": "Voorbeeld"
+    },
+    "code": {
+      "plain": "Platte tekst",
+      "language": "Taal: {{name}}",
+      "copy": "Code kopiëren",
+      "copied": "Code gekopieerd",
+      "search": "Taal zoeken…",
+      "picker": "Taal van het codeblok",
+      "noResults": "Geen taal gevonden",
+      "use": "“{{name}}” gebruiken"
     },
     "taskCheckbox": "Taak: {{text}}",
     "taskCheckboxEmpty": "Lege taak"

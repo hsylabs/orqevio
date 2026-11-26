@@ -30,6 +30,7 @@ import { MovePageDialog } from './MovePageDialog'
 import { DownloadDialog, PrintView, downloadPage, picturesReady } from './PageExport'
 import { useRestore } from '../trash/restore'
 import { isConverting } from '../../lib/ime'
+import { showTogglesAsBefore, togglesShown } from './editor/toggle'
 
 type SaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error'
 
@@ -308,7 +309,10 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
       dirty.current = false
       const editor = editorRef.current
       if (editor) {
+        // The toggles the reader opened or closed stay so.
+        const shown = togglesShown(editor.state.doc)
         editor.commands.setContent(fresh.content, { contentType: 'markdown', emitUpdate: false })
+        showTogglesAsBefore(editor, shown)
         // What came from elsewhere is not this person's to undo, and what they did before no longer
         // fits the text: the editor's history starts again here, so Ctrl+Z can't take the new text
         // back (and save the page without it), nor scramble it.

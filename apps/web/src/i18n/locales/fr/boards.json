@@ -143,7 +143,7 @@
       "titleCount_other": "Commentaires · {{count}}",
       "list": "Commentaires",
       "empty": "Aucun commentaire pour l’instant. Notez ici une avancée, une question ou une décision ; les agents peuvent aussi écrire ici.",
-      "placeholder": "Écrire un commentaire… Markdown accepté.",
+      "placeholder": "Écrivez un commentaire, ou tapez « / » pour insérer… Markdown accepté.",
       "label": "Nouveau commentaire",
       "hint": "<kbd>{{mod}}</kbd>+<kbd>Entrée</kbd> pour envoyer",
       "submit": "Commenter",

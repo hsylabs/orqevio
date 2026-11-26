@@ -59,6 +59,7 @@
   },
   "editor": {
     "placeholder": "Schreib los oder drücke „/“ zum Einfügen…",
+    "lineHint": "Drücke „/“ zum Einfügen…",
     "headingPlaceholder": "Überschrift",
     "label": "Inhalt",
     "uploading": "{{name}} wird hochgeladen…",
@@ -113,10 +114,30 @@
         "subtitle": "Eine Passage hervorheben",
         "keywords": "zitat quote blockquote"
       },
+      "callout": {
+        "title": "Hinweisbox",
+        "subtitle": "Ein hervorgehobener Kasten: Hinweis, Tipp, Warnung…",
+        "keywords": "hinweisbox callout hinweis tipp wichtig warnung vorsicht"
+      },
+      "toggle": {
+        "title": "Aufklappbereich",
+        "subtitle": "Ein Titel, der zeigt oder verbirgt, was darunter steht",
+        "keywords": "aufklappen toggle details zuklappen einklappen ausblenden einblenden akkordeon"
+      },
       "code": {
         "title": "Code",
         "subtitle": "Codeblock",
         "keywords": "code codeblock snippet quelltext"
+      },
+      "math": {
+        "title": "Formel",
+        "subtitle": "Eine Formel als eigener Block, in LaTeX",
+        "keywords": "formel gleichung mathematik mathe math latex katex tex block"
+      },
+      "inlineMath": {
+        "title": "Formel im Text",
+        "subtitle": "Eine Formel mitten im Text, in LaTeX",
+        "keywords": "formel gleichung mathematik mathe math latex katex tex inline text"
       },
       "table": {
         "title": "Tabelle",
@@ -152,7 +173,8 @@
       "slash": "Block einfügen",
       "mention": "Aufgabe oder Seite verknüpfen",
       "searching": "Suche läuft…",
-      "noMatches": "Keine Treffer"
+      "noMatches": "Keine Treffer",
+      "shortcut": "Markdown-Kürzel: {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… oder /doc/…",
@@ -164,7 +186,91 @@
       "italic": "Kursiv",
       "strike": "Durchgestrichen",
       "code": "Code",
-      "link": "Link"
+      "link": "Link",
+      "math": "Formel"
+    },
+    "table": {
+      "toolbar": "Tabelle",
+      "hint": "Tabelle. Mit Alt+F10 bearbeitest du ihre Zeilen und Spalten.",
+      "rowAbove": "Zeile oberhalb einfügen",
+      "rowBelow": "Zeile unterhalb einfügen",
+      "columnLeft": "Spalte links einfügen",
+      "columnRight": "Spalte rechts einfügen",
+      "alignLeft": "Spalte linksbündig",
+      "alignCenter": "Spalte zentrieren",
+      "alignRight": "Spalte rechtsbündig",
+      "more": "Weitere Tabellenoptionen",
+      "moveRowUp": "Zeile nach oben",
+      "moveRowDown": "Zeile nach unten",
+      "moveColumnLeft": "Spalte nach links",
+      "moveColumnRight": "Spalte nach rechts",
+      "deleteRows_one": "Zeile löschen",
+      "deleteRows_other": "{{count}} Zeilen löschen",
+      "deleteColumns_one": "Spalte löschen",
+      "deleteColumns_other": "{{count}} Spalten löschen",
+      "deleteTable": "Tabelle löschen",
+      "rowMenu": "Zeilenoptionen",
+      "columnMenu": "Spaltenoptionen",
+      "addRow": "Zeile hinzufügen",
+      "addColumn": "Spalte hinzufügen"
+    },
+    "block": {
+      "handle": "Blockoptionen",
+      "handleHint": "Zum Verschieben ziehen. Für Optionen klicken oder {{key}} drücken.",
+      "insertBelow": "Darunter einfügen",
+      "insertHint": "Klicken, um darunter einen Block einzufügen.",
+      "turnInto": "Umwandeln in",
+      "duplicate": "Duplizieren",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten",
+      "language": "Sprache…",
+      "delete": "Löschen"
+    },
+    "callout": {
+      "note": "Hinweis",
+      "tip": "Tipp",
+      "important": "Wichtig",
+      "warning": "Warnung",
+      "caution": "Vorsicht",
+      "typeOf": "Art der Hinweisbox: {{type}}",
+      "menu": "Art der Hinweisbox",
+      "remove": "Hinweisbox entfernen"
+    },
+    "toggle": {
+      "expand": "Inhalt anzeigen",
+      "collapse": "Inhalt ausblenden",
+      "title": "Titel des Aufklappbereichs"
+    },
+    "image": {
+      "toolbar": "Bild",
+      "hint": "Bild. Mit Alt+F10 änderst du seine Breite oder Bildunterschrift.",
+      "width": "Breite: {{size}}",
+      "original": "Originalgröße",
+      "caption": "Bildunterschrift",
+      "captionPlaceholder": "Bildunterschrift eingeben",
+      "resize": "Ziehen, um die Breite zu ändern"
+    },
+    "math": {
+      "field": "Formel in LaTeX",
+      "placeholder": "Zum Beispiel: E = mc^2",
+      "done": "Fertig",
+      "keysInline": "Eingabe zum Speichern · Esc zum Abbrechen",
+      "keysBlock": "Eingabe zum Speichern · Umschalt+Eingabe für eine neue Zeile · Esc zum Abbrechen",
+      "empty": "Leere Formel",
+      "error": "Fehler in der Formel",
+      "hint": "Formel. Mit Eingabe bearbeitest du sie.",
+      "dialog": "Formel bearbeiten",
+      "preview": "Vorschau"
+    },
+    "code": {
+      "plain": "Nur Text",
+      "language": "Sprache: {{name}}",
+      "copy": "Code kopieren",
+      "copied": "Code kopiert",
+      "search": "Sprache suchen…",
+      "picker": "Sprache des Codeblocks",
+      "noResults": "Keine Sprache gefunden",
+      "use": "„{{name}}“ verwenden"
     },
     "taskCheckbox": "To-do: {{text}}",
     "taskCheckboxEmpty": "Leeres To-do"

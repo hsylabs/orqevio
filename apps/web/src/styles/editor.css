@@ -151,6 +151,210 @@
   box-shadow: none;
   font-size: inherit;
 }
+
+/* A code block (code-block.ts): a bar along its top with its language, which opens the list of
+   languages, and a button that copies the code. The language shows when it has one; the button
+   comes with the pointer, the cursor or the keyboard, and stays on a screen without a pointer. */
+.orq-code {
+  position: relative;
+}
+.orq-prose .orq-code > pre {
+  padding-top: 38px;
+}
+.orq-code-bar {
+  position: absolute;
+  top: 7px;
+  left: 9px;
+  right: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 26px;
+  font-family: var(--font-sans);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.orq-code-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  max-width: 70%;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--ink-3);
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    opacity 0.15s;
+}
+.orq-code-lang > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+button.orq-code-lang {
+  cursor: pointer;
+}
+button.orq-code-lang:hover,
+button.orq-code-lang[aria-expanded='true'] {
+  background: var(--hover);
+  color: var(--ink);
+}
+.orq-code-chevron {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.orq-code-copy {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  margin-left: auto;
+  border-radius: 7px;
+  color: var(--ink-3);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    opacity 0.15s;
+}
+.orq-code-copy:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.orq-code-icon {
+  grid-area: 1 / 1;
+  width: 15px;
+  height: 15px;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+.orq-code-icon--done,
+.orq-code-copy.is-done .orq-code-icon:not(.orq-code-icon--done) {
+  opacity: 0;
+  transform: scale(0.5);
+}
+.orq-code-copy.is-done .orq-code-icon--done {
+  opacity: 1;
+  transform: none;
+  color: var(--ok);
+}
+/* No language: «Plain text» only comes with the buttons. */
+.orq-code[data-plain] .orq-code-lang {
+  opacity: 0;
+}
+.orq-code:hover :is(.orq-code-copy, .orq-code-lang, .orq-code-chevron),
+.ProseMirror-focused .orq-code--current :is(.orq-code-copy, .orq-code-lang, .orq-code-chevron),
+.orq-code-bar :is(.orq-code-lang, .orq-code-copy):focus-visible,
+.orq-code-lang[aria-expanded='true'],
+.orq-code-lang[aria-expanded='true'] .orq-code-chevron,
+.orq-code-copy.is-done {
+  opacity: 1;
+}
+@media (hover: none) {
+  .orq-code-copy,
+  .orq-code-chevron {
+    opacity: 1;
+  }
+}
+/* Shown, not edited (a comment, a page printed): the language is a name, not a button. */
+.ProseMirror[contenteditable='false'] .orq-code-lang,
+span.orq-code-lang {
+  pointer-events: none;
+}
+.ProseMirror[contenteditable='false'] .orq-code-chevron,
+span.orq-code-lang .orq-code-chevron {
+  display: none;
+}
+.orq-code.ProseMirror-selectednode > pre {
+  background: color-mix(in oklab, var(--accent) 10%, var(--sunken));
+}
+.orq-prose--compact .orq-code > pre {
+  padding-top: 34px;
+}
+.orq-prose--compact .orq-code-bar {
+  top: 5px;
+}
+
+/* Its colours, from highlight.js: the theme's tones, each one readable on the block (4.5:1 or more). */
+:root {
+  --code-keyword: #b83a16;
+  --code-string: #22764a;
+  --code-number: #8a5a0e;
+  --code-comment: #6e685d;
+  --code-function: #6b3fc0;
+  --code-type: #0e6e80;
+  --code-attr: #9a2f6a;
+}
+:root[data-theme='dark'] {
+  --code-keyword: #ff865f;
+  --code-string: #6fcf97;
+  --code-number: #e0a643;
+  --code-comment: #958f83;
+  --code-function: #b9a4ff;
+  --code-type: #5fc8d8;
+  --code-attr: #f27ab3;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) {
+    --code-keyword: #ff865f;
+    --code-string: #6fcf97;
+    --code-number: #e0a643;
+    --code-comment: #958f83;
+    --code-function: #b9a4ff;
+    --code-type: #5fc8d8;
+    --code-attr: #f27ab3;
+  }
+}
+.orq-prose :is(.hljs-keyword, .hljs-selector-tag, .hljs-name, .hljs-doctag, .hljs-section, .hljs-meta .hljs-keyword) {
+  color: var(--code-keyword);
+}
+.orq-prose :is(.hljs-string, .hljs-regexp, .hljs-symbol, .hljs-char, .hljs-template-tag, .hljs-meta .hljs-string) {
+  color: var(--code-string);
+}
+.orq-prose :is(.hljs-number, .hljs-literal, .hljs-bullet, .hljs-link) {
+  color: var(--code-number);
+}
+.orq-prose :is(.hljs-comment, .hljs-quote) {
+  color: var(--code-comment);
+  font-style: italic;
+}
+.orq-prose :is(.hljs-title, .hljs-title.function_, .hljs-function .hljs-title) {
+  color: var(--code-function);
+}
+.orq-prose :is(.hljs-type, .hljs-built_in, .hljs-title.class_, .hljs-title.class_.inherited__, .hljs-class .hljs-title) {
+  color: var(--code-type);
+}
+.orq-prose :is(.hljs-attr, .hljs-attribute, .hljs-property, .hljs-variable, .hljs-template-variable, .hljs-selector-id, .hljs-selector-class, .hljs-selector-attr, .hljs-selector-pseudo, .hljs-params .hljs-variable) {
+  color: var(--code-attr);
+}
+.orq-prose :is(.hljs-meta, .hljs-subst) {
+  color: var(--code-comment);
+}
+.orq-prose .hljs-addition {
+  color: var(--code-string);
+}
+.orq-prose .hljs-deletion {
+  color: var(--danger);
+}
+.orq-prose .hljs-emphasis {
+  font-style: italic;
+}
+.orq-prose .hljs-strong {
+  font-weight: 650;
+}
 .orq-prose blockquote {
   border-left: 3px solid var(--accent);
   padding: 2px 0 2px 16px;
@@ -158,6 +362,216 @@
   font-family: var(--font-display);
   font-variation-settings: 'SOFT' 80;
   font-size: 1.08em;
+}
+
+/* A callout (callout.ts), GitHub's alert: a tinted box in its type's colour, with its icon and its
+   name on top. In the editor the name is a button that opens the menu of types; shown (a comment,
+   a page printed), it is only a name. Each name reads at 4.5:1 or more on its box, also hovered. */
+.orq-prose .orq-callout {
+  padding: 8px 16px 10px 14px;
+  border-left: 3px solid var(--callout);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--callout) 8%, transparent);
+  color: var(--ink);
+  font-family: inherit;
+  font-variation-settings: normal;
+  font-size: inherit;
+}
+.orq-callout--note {
+  --callout: var(--c-teal);
+  --callout-ink: #0d6573;
+}
+.orq-callout--tip {
+  --callout: var(--c-jade);
+  --callout-ink: #135f3f;
+}
+.orq-callout--important {
+  --callout: var(--c-iris);
+  --callout-ink: #5536b8;
+}
+.orq-callout--warning {
+  --callout: var(--c-amber);
+  --callout-ink: #7a4f0a;
+}
+.orq-callout--caution {
+  --callout: var(--danger);
+  --callout-ink: #a02520;
+}
+:root[data-theme='dark'] .orq-callout--note {
+  --callout-ink: #5cc8db;
+}
+:root[data-theme='dark'] .orq-callout--tip {
+  --callout-ink: #5fcf9c;
+}
+:root[data-theme='dark'] .orq-callout--important {
+  --callout-ink: #b3a2ff;
+}
+:root[data-theme='dark'] .orq-callout--warning {
+  --callout-ink: #f0b63a;
+}
+:root[data-theme='dark'] .orq-callout--caution {
+  --callout-ink: #ff8a80;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) .orq-callout--note {
+    --callout-ink: #5cc8db;
+  }
+  :root:not([data-theme='light']):not([data-theme='dark']) .orq-callout--tip {
+    --callout-ink: #5fcf9c;
+  }
+  :root:not([data-theme='light']):not([data-theme='dark']) .orq-callout--important {
+    --callout-ink: #b3a2ff;
+  }
+  :root:not([data-theme='light']):not([data-theme='dark']) .orq-callout--warning {
+    --callout-ink: #f0b63a;
+  }
+  :root:not([data-theme='light']):not([data-theme='dark']) .orq-callout--caution {
+    --callout-ink: #ff8a80;
+  }
+}
+.orq-callout-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2px;
+  font-family: var(--font-sans);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.orq-callout-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  margin-left: -6px;
+  padding: 0 6px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--callout-ink);
+  transition: background-color 0.15s;
+}
+button.orq-callout-type {
+  cursor: pointer;
+}
+button.orq-callout-type:hover,
+button.orq-callout-type[aria-expanded='true'] {
+  background: color-mix(in oklab, var(--callout) 12%, transparent);
+}
+.orq-callout-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.orq-callout-chevron {
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.orq-callout:hover .orq-callout-chevron,
+.orq-callout-type:focus-visible .orq-callout-chevron,
+.orq-callout-type[aria-expanded='true'] .orq-callout-chevron {
+  opacity: 1;
+}
+@media (hover: none) {
+  .orq-callout-chevron {
+    opacity: 1;
+  }
+}
+.ProseMirror[contenteditable='false'] .orq-callout-type {
+  pointer-events: none;
+}
+.ProseMirror[contenteditable='false'] .orq-callout-chevron {
+  display: none;
+}
+.orq-callout-body > * + *,
+blockquote.orq-callout > * + * {
+  margin-top: 0.7em;
+}
+blockquote.orq-callout > .orq-callout-title + * {
+  margin-top: 0;
+}
+/* A toggle (toggle.ts), HTML's <details>: an arrow left of its title shows or hides what it holds.
+   In the editor the arrow is a button and its state the view's; shown (a comment), it is the
+   browser's own <details>. On paper it is open. */
+.orq-prose .orq-toggle {
+  position: relative;
+  padding-left: 26px;
+}
+.orq-toggle-button {
+  position: absolute;
+  left: 0;
+  top: 0.18em;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.orq-toggle-button:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.orq-toggle-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.15s;
+}
+.orq-toggle[data-open] > .orq-toggle-button .orq-toggle-icon {
+  transform: rotate(90deg);
+}
+.orq-prose summary.orq-toggle-title {
+  display: block;
+  list-style: none;
+}
+.orq-prose summary.orq-toggle-title::-webkit-details-marker {
+  display: none;
+}
+.orq-toggle-content > * + *,
+details.orq-toggle > * + * {
+  margin-top: 0.7em;
+}
+/* Selected as a whole (Backspace right after a closed one), wherever it is: shaded as a selected block. */
+.orq-prose .orq-toggle.ProseMirror-selectednode {
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  border-radius: 6px;
+  outline: none;
+}
+/* Closed, it shows only its title; with the cursor in what it holds (undone, found), all of it. */
+.orq-toggle:not([data-open]):not(.orq-toggle--reveal) > .orq-toggle-content > :not(:first-child) {
+  display: none;
+}
+details.orq-toggle > summary {
+  cursor: pointer;
+}
+details.orq-toggle > summary::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0.55em;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--ink-3);
+  border-bottom: 1.5px solid var(--ink-3);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+details.orq-toggle[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+/* Its menu's icons, in each type's colour. */
+.orq-callout-menu-icon.orq-callout-menu-icon {
+  color: var(--callout);
+}
+.orq-prose .orq-callout.ProseMirror-selectednode {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 45%, transparent);
 }
 .orq-prose hr {
   border: none;
@@ -292,9 +706,131 @@
   border-radius: 4px;
   box-shadow: none;
 }
-.orq-prose img.ProseMirror-selectednode {
+.orq-prose img.ProseMirror-selectednode,
+.orq-prose .orq-image.ProseMirror-selectednode img {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+/* The editor's own mark after an image at the end of a line is no picture: none of their look. */
+.orq-prose img.ProseMirror-separator {
+  display: inline;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+/* An image with its caption under it (image.ts, and outside the editor markdown-html.ts): as wide as
+   the picture, or the width it was given, a share of the line or pixels, never wider than the line. */
+.orq-prose .orq-image {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 1.2em 0;
+}
+/* The picture and the handle on its edge (the editor's); outside the editor the picture is right in the box. */
+.orq-prose .orq-image-frame {
+  position: relative;
+  display: block;
+}
+.orq-prose .orq-image img {
+  margin: 0;
+}
+.orq-prose .orq-image[data-sized] img {
+  width: 100%;
+}
+.orq-prose a .orq-image {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 0.15em;
+}
+/* As wide as the picture, whatever its length: never wider than the box. */
+.orq-prose .orq-image-caption {
+  display: block;
+  width: 0;
+  min-width: 100%;
+  margin-top: 0.5em;
+  font-size: 0.875em;
+  line-height: 1.45;
+  color: var(--ink-2);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.orq-prose .orq-image-caption[hidden] {
+  display: none;
+}
+/* Its right edge, dragged to give it a width: shown with the pointer on it, or selected on a phone. */
+.orq-prose .orq-image-handle {
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  width: 6px;
+  height: min(48px, 40%);
+  min-height: 20px;
+  transform: translateY(-50%);
+  border-radius: 3px;
+  border: 1px solid var(--surface);
+  background: var(--ink-2);
+  opacity: 0;
+  cursor: ew-resize;
+  touch-action: none;
+  transition: opacity 120ms;
+}
+.orq-prose .orq-image:hover .orq-image-handle,
+.orq-prose .orq-image.ProseMirror-selectednode .orq-image-handle,
+.orq-prose .orq-image[data-resizing] .orq-image-handle {
+  opacity: 1;
+}
+.orq-prose .orq-image[data-resizing] .orq-image-handle {
+  background: var(--accent);
+}
+.orq-prose[contenteditable='false'] .orq-image-handle,
+.orq-prose a .orq-image-handle {
+  display: none;
+}
+
+/* Formulas (math.ts), drawn by KaTeX in the text's colour. In the editor a click opens their source. */
+.orq-prose .orq-math {
+  border-radius: 4px;
+}
+.orq-prose[contenteditable='true'] .orq-math {
+  cursor: pointer;
+}
+.orq-prose[contenteditable='true'] .orq-math:hover {
+  background: var(--hover);
+}
+.orq-prose .orq-math.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  background: var(--accent-soft);
+}
+/* One of its own: centred, and scrolled sideways when wider than the page rather than past its edge. */
+.orq-prose .orq-math--block {
+  display: block;
+  margin: 1em 0;
+  padding: 0.35em 0.5em;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-align: center;
+}
+.orq-prose .orq-math--block .katex-display,
+.orq-math-preview .katex-display {
+  margin: 0;
+}
+/* Its source, where KaTeX can't draw it; and an empty one, saying so. */
+.orq-prose .orq-math--error,
+.orq-math-preview.orq-math--error {
+  color: var(--danger);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.875em;
+  white-space: pre-wrap;
+}
+.orq-prose .orq-math--empty,
+.orq-math-preview.orq-math--empty {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.orq-math-preview {
+  min-height: 1.5em;
+  font-size: 15px;
 }
 .orq-prose .is-empty::before,
 .orq-prose p.is-editor-empty:first-child::before {
@@ -304,8 +840,19 @@
   pointer-events: none;
   color: var(--ink-3);
 }
+/* How to insert a block, on the empty line with the cursor: only while the editor has the focus. */
+.orq-prose:not(.ProseMirror-focused) .orq-line-hint::before {
+  content: none;
+}
 .orq-prose .ProseMirror-gapcursor::after {
   border-top-color: var(--ink);
+}
+/* A whole block selected (its handle's menu is open on it): shaded, as the cells of a selected row. */
+.orq-prose > .ProseMirror-selectednode:not(.orq-raw-html, .orq-code, .orq-callout),
+.orq-prose li.ProseMirror-selectednode {
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  border-radius: 6px;
+  outline: none;
 }
 .ProseMirror-dropcursor {
   background: var(--accent) !important;
@@ -368,6 +915,18 @@
     --surface: #ffffff;
     --accent: #c9431d;
     --accent-soft: #fbe6dd;
+    --code-keyword: #b83a16;
+    --code-string: #22764a;
+    --code-number: #8a5a0e;
+    --code-comment: #6e685d;
+    --code-function: #6b3fc0;
+    --code-type: #0e6e80;
+    --code-attr: #9a2f6a;
+    --c-teal: #1b93a6;
+    --c-jade: #2a9668;
+    --c-iris: #7657e0;
+    --c-amber: #d29a12;
+    --danger: #bd3029;
     color: var(--ink);
     background: #fff;
   }
@@ -404,7 +963,7 @@
     overflow-wrap: anywhere;
   }
   /* Page breaks never cut a table, a block of code, a picture or a quote, nor leave a heading alone. */
-  .orq-print :is(table, pre, img, figure, blockquote, tr, li) {
+  .orq-print :is(table, pre, img, figure, blockquote, tr, li, .orq-image) {
     break-inside: avoid;
   }
   .orq-print :is(h1, h2, h3, h4, h5, h6) {
@@ -429,6 +988,29 @@
   .orq-print pre code {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+  }
+  /* On paper a code block says its language, and has nothing to press: one without has no bar. */
+  .orq-print .orq-code-copy {
+    display: none;
+  }
+  .orq-print .orq-code[data-plain] > pre {
+    padding-top: 14px;
+  }
+  /* A callout's name in the light theme's tones, as everything on paper, whatever the theme's rules say. */
+  .orq-print .orq-callout--note {
+    --callout-ink: #0d6573 !important;
+  }
+  .orq-print .orq-callout--tip {
+    --callout-ink: #135f3f !important;
+  }
+  .orq-print .orq-callout--important {
+    --callout-ink: #5536b8 !important;
+  }
+  .orq-print .orq-callout--warning {
+    --callout-ink: #7a4f0a !important;
+  }
+  .orq-print .orq-callout--caution {
+    --callout-ink: #a02520 !important;
   }
   .orq-print table {
     width: 100%;

@@ -59,6 +59,7 @@
   },
   "editor": {
     "placeholder": "Escribe, o pulsa «/» para insertar…",
+    "lineHint": "Pulsa «/» para insertar…",
     "headingPlaceholder": "Encabezado",
     "label": "Contenido",
     "uploading": "Subiendo {{name}}…",
@@ -113,10 +114,30 @@
         "subtitle": "Destaca un fragmento",
         "keywords": "cita quote blockquote"
       },
+      "callout": {
+        "title": "Aviso",
+        "subtitle": "Un recuadro destacado: nota, consejo, advertencia…",
+        "keywords": "aviso callout alerta nota consejo importante advertencia precaución"
+      },
+      "toggle": {
+        "title": "Desplegable",
+        "subtitle": "Un título que muestra u oculta lo que hay debajo",
+        "keywords": "desplegable toggle details plegar ocultar mostrar acordeón"
+      },
       "code": {
         "title": "Código",
         "subtitle": "Bloque de código",
         "keywords": "codigo code"
+      },
+      "math": {
+        "title": "Fórmula",
+        "subtitle": "Una fórmula en su propio bloque, en LaTeX",
+        "keywords": "formula ecuacion matematicas math latex katex tex bloque"
+      },
+      "inlineMath": {
+        "title": "Fórmula en línea",
+        "subtitle": "Una fórmula dentro del texto, en LaTeX",
+        "keywords": "formula ecuacion matematicas math latex katex tex linea texto"
       },
       "table": {
         "title": "Tabla",
@@ -152,7 +173,8 @@
       "slash": "Insertar bloque",
       "mention": "Enlazar tarea o página",
       "searching": "Buscando…",
-      "noMatches": "Sin coincidencias"
+      "noMatches": "Sin coincidencias",
+      "shortcut": "Atajo de Markdown: {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… o /doc/…",
@@ -164,7 +186,93 @@
       "italic": "Cursiva",
       "strike": "Tachado",
       "code": "Código",
-      "link": "Enlace"
+      "link": "Enlace",
+      "math": "Fórmula"
+    },
+    "table": {
+      "toolbar": "Tabla",
+      "hint": "Tabla. Pulsa Alt+F10 para editar sus filas y columnas.",
+      "rowAbove": "Insertar fila encima",
+      "rowBelow": "Insertar fila debajo",
+      "columnLeft": "Insertar columna a la izquierda",
+      "columnRight": "Insertar columna a la derecha",
+      "alignLeft": "Alinear columna a la izquierda",
+      "alignCenter": "Centrar columna",
+      "alignRight": "Alinear columna a la derecha",
+      "more": "Más opciones de la tabla",
+      "moveRowUp": "Subir fila",
+      "moveRowDown": "Bajar fila",
+      "moveColumnLeft": "Mover columna a la izquierda",
+      "moveColumnRight": "Mover columna a la derecha",
+      "deleteRows_one": "Eliminar fila",
+      "deleteRows_many": "Eliminar {{count}} filas",
+      "deleteRows_other": "Eliminar {{count}} filas",
+      "deleteColumns_one": "Eliminar columna",
+      "deleteColumns_many": "Eliminar {{count}} columnas",
+      "deleteColumns_other": "Eliminar {{count}} columnas",
+      "deleteTable": "Eliminar tabla",
+      "rowMenu": "Opciones de la fila",
+      "columnMenu": "Opciones de la columna",
+      "addRow": "Añadir una fila",
+      "addColumn": "Añadir una columna"
+    },
+    "block": {
+      "handle": "Opciones del bloque",
+      "handleHint": "Arrastra para moverlo. Haz clic, o pulsa {{key}}, para ver sus opciones.",
+      "insertBelow": "Insertar debajo",
+      "insertHint": "Haz clic para insertar un bloque debajo.",
+      "turnInto": "Convertir en",
+      "duplicate": "Duplicar",
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "language": "Lenguaje…",
+      "delete": "Eliminar"
+    },
+    "callout": {
+      "note": "Nota",
+      "tip": "Consejo",
+      "important": "Importante",
+      "warning": "Advertencia",
+      "caution": "Precaución",
+      "typeOf": "Tipo de aviso: {{type}}",
+      "menu": "Tipo de aviso",
+      "remove": "Quitar el aviso"
+    },
+    "toggle": {
+      "expand": "Mostrar el contenido",
+      "collapse": "Ocultar el contenido",
+      "title": "Título del desplegable"
+    },
+    "image": {
+      "toolbar": "Imagen",
+      "hint": "Imagen. Pulsa Alt+F10 para cambiar su ancho o su pie.",
+      "width": "Ancho: {{size}}",
+      "original": "Tamaño original",
+      "caption": "Pie de imagen",
+      "captionPlaceholder": "Escribe el pie de la imagen",
+      "resize": "Arrastra para cambiar el ancho"
+    },
+    "math": {
+      "field": "Fórmula en LaTeX",
+      "placeholder": "Por ejemplo: E = mc^2",
+      "done": "Hecho",
+      "keysInline": "Intro para guardar · Esc para cancelar",
+      "keysBlock": "Intro para guardar · Mayús+Intro para otra línea · Esc para cancelar",
+      "empty": "Fórmula vacía",
+      "error": "Error en la fórmula",
+      "hint": "Fórmula. Pulsa Intro para editarla.",
+      "dialog": "Editar fórmula",
+      "preview": "Vista previa"
+    },
+    "code": {
+      "plain": "Texto plano",
+      "language": "Lenguaje: {{name}}",
+      "copy": "Copiar código",
+      "copied": "Código copiado",
+      "search": "Buscar un lenguaje…",
+      "picker": "Lenguaje del bloque de código",
+      "noResults": "Ningún lenguaje coincide",
+      "use": "Usar «{{name}}»"
     },
     "taskCheckbox": "Tarea: {{text}}",
     "taskCheckboxEmpty": "Tarea sin texto"

@@ -59,6 +59,7 @@
   },
   "editor": {
     "placeholder": "入力するか、「/」で挿入…",
+    "lineHint": "「/」で挿入…",
     "headingPlaceholder": "見出し",
     "label": "内容",
     "uploading": "{{name}}をアップロード中…",
@@ -113,10 +114,30 @@
         "subtitle": "文章の一部を目立たせる",
         "keywords": "引用 いんよう quote blockquote"
       },
+      "callout": {
+        "title": "注意書き",
+        "subtitle": "目立つ枠：注記、ヒント、警告など",
+        "keywords": "注意書き コールアウト callout 注記 ヒント 重要 警告 注意"
+      },
+      "toggle": {
+        "title": "折りたたみ",
+        "subtitle": "下の内容を表示・非表示にする見出し",
+        "keywords": "折りたたみ トグル toggle details 展開 隠す 表示 アコーディオン"
+      },
       "code": {
         "title": "コード",
         "subtitle": "コードブロック",
         "keywords": "コード こーど code snippet"
+      },
+      "math": {
+        "title": "数式",
+        "subtitle": "独立したブロックの数式（LaTeX）",
+        "keywords": "数式 すうしき 方程式 math latex katex tex ブロック"
+      },
+      "inlineMath": {
+        "title": "インライン数式",
+        "subtitle": "文中に入れる数式（LaTeX）",
+        "keywords": "数式 すうしき 方程式 math latex katex tex インライン"
       },
       "table": {
         "title": "表",
@@ -152,7 +173,8 @@
       "slash": "ブロックを挿入",
       "mention": "タスクやページをリンク",
       "searching": "検索中…",
-      "noMatches": "一致するものはありません"
+      "noMatches": "一致するものはありません",
+      "shortcut": "Markdown のショートカット: {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… または /doc/…",
@@ -164,7 +186,89 @@
       "italic": "斜体",
       "strike": "取り消し線",
       "code": "コード",
-      "link": "リンク"
+      "link": "リンク",
+      "math": "数式"
+    },
+    "table": {
+      "toolbar": "表",
+      "hint": "表です。Alt+F10で行と列を編集できます。",
+      "rowAbove": "上に行を挿入",
+      "rowBelow": "下に行を挿入",
+      "columnLeft": "左に列を挿入",
+      "columnRight": "右に列を挿入",
+      "alignLeft": "列を左揃え",
+      "alignCenter": "列を中央揃え",
+      "alignRight": "列を右揃え",
+      "more": "表のその他のオプション",
+      "moveRowUp": "行を上へ移動",
+      "moveRowDown": "行を下へ移動",
+      "moveColumnLeft": "列を左へ移動",
+      "moveColumnRight": "列を右へ移動",
+      "deleteRows_other": "{{count}}行を削除",
+      "deleteColumns_other": "{{count}}列を削除",
+      "deleteTable": "表を削除",
+      "rowMenu": "行のオプション",
+      "columnMenu": "列のオプション",
+      "addRow": "行を追加",
+      "addColumn": "列を追加"
+    },
+    "block": {
+      "handle": "ブロックのオプション",
+      "handleHint": "ドラッグして移動します。クリックするか{{key}}を押すとオプションを表示します。",
+      "insertBelow": "下に挿入",
+      "insertHint": "クリックすると下にブロックを挿入します。",
+      "turnInto": "変換",
+      "duplicate": "複製",
+      "moveUp": "上へ移動",
+      "moveDown": "下へ移動",
+      "language": "言語…",
+      "delete": "削除"
+    },
+    "callout": {
+      "note": "注記",
+      "tip": "ヒント",
+      "important": "重要",
+      "warning": "警告",
+      "caution": "注意",
+      "typeOf": "注意書きの種類：{{type}}",
+      "menu": "注意書きの種類",
+      "remove": "注意書きを解除"
+    },
+    "toggle": {
+      "expand": "内容を表示",
+      "collapse": "内容を隠す",
+      "title": "折りたたみの見出し"
+    },
+    "image": {
+      "toolbar": "画像",
+      "hint": "画像です。Alt+F10で幅やキャプションを変更できます。",
+      "width": "幅：{{size}}",
+      "original": "元のサイズ",
+      "caption": "キャプション",
+      "captionPlaceholder": "キャプションを入力",
+      "resize": "ドラッグして幅を変更"
+    },
+    "math": {
+      "field": "LaTeXの数式",
+      "placeholder": "例：E = mc^2",
+      "done": "完了",
+      "keysInline": "Enterで保存・Escでキャンセル",
+      "keysBlock": "Enterで保存・Shift+Enterで改行・Escでキャンセル",
+      "empty": "空の数式",
+      "error": "数式にエラーがあります",
+      "hint": "数式です。Enterで編集できます。",
+      "dialog": "数式を編集",
+      "preview": "プレビュー"
+    },
+    "code": {
+      "plain": "プレーンテキスト",
+      "language": "言語：{{name}}",
+      "copy": "コードをコピー",
+      "copied": "コードをコピーしました",
+      "search": "言語を検索…",
+      "picker": "コードブロックの言語",
+      "noResults": "一致する言語がありません",
+      "use": "「{{name}}」を使う"
     },
     "taskCheckbox": "ToDo：{{text}}",
     "taskCheckboxEmpty": "空のToDo"
