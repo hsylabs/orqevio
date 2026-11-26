@@ -569,10 +569,10 @@ describe('what a second look found', () => {
       expect(saved(editor), second.type).toMatch(/^1\. &nbsp;\n {3}/)
       expect(types(open(saved(editor))), saved(editor)).toEqual(types(editor))
     }
-    // Any other block first in an item, in a bulleted list too.
+    // A quote goes on the marker's line, as it is written, in a bulleted list too.
     const quote = open({ type: 'doc', content: [{ type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph' }, { type: 'blockquote', content: [{ type: 'paragraph', content: [text('q')] }] }] }] }] }, 'json')
-    expect(saved(quote)).toBe('- &nbsp;\n  > q')
-    expect(saved(open(saved(quote)))).toBe('- &nbsp;\n  > q')
+    expect(saved(quote)).toBe('- > q')
+    expect(saved(open(saved(quote)))).toBe('- > q')
   })
 
   it('goes into a numbered item from the editor and comes back the same', () => {
@@ -861,8 +861,9 @@ describe('what a fifth look found', () => {
       const editor = open(markdown)
       expect(latexOf(editor), markdown).toEqual([])
       expect(linked(editor), markdown).toMatch(/^US\$/)
-      // Written as a link of its own (the editor keeps no references), backticks of its text escaped.
-      expect(saved(editor), markdown).toMatch(/\[US\$(?:\\`\\`)?\]\(https:\/\/example\.com\)/)
+      // Written naming its reference, by its label where its text is no plain label, the price as it was.
+      expect(saved(editor), markdown).toMatch(/Costs \$5 \[US\$(?:\\`\\`)?\]\[(?:r|US\$)\] here/)
+      expect(linked(open(saved(editor))), markdown).toMatch(/^US\$/)
     }
   })
 

@@ -51,4 +51,13 @@ describe('a comment shown as HTML', () => {
     expect(html).toContain('<table')
     expect(markdownToHtml(markdown)).toBe(html)
   })
+
+  it('shows links to references where they go, and nothing of their definitions, as GitHub', () => {
+    const html = markdownToHtml('Ver [docs][r] y [a].\n\n[r]: https://r.test\n[a]: https://a.test')
+    expect(html).toContain('href="https://r.test"')
+    expect(html).toContain('href="https://a.test"')
+    expect(html).not.toContain(']:')
+    // A footnote's definition is no link's: it shows as it was written.
+    expect(markdownToHtml('Texto[^1]\n\n[^1]: Nota')).toContain('[^1]: Nota')
+  })
 })

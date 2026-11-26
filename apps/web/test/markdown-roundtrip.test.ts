@@ -79,6 +79,38 @@ const kept: Array<[string, string]> = [
   ['an empty first item of a bulleted list', '-\n- b'],
   ['an empty bulleted list after text', 'Texto\n\n-'],
   ['a line like an empty item in a code block of a numbered list', '1. paso\n   ```\n   2.\n   ```\n2. otro'],
+  ['a quote at the start of an item', '- > cita\n  > x'],
+  ['a quote as one item of several', '- a\n- > cita\n- c'],
+  ['a quote at the start of a numbered item', '1. > cita'],
+  ['a quote of two lines at the start of a numbered item', '1. > cita\n   > x'],
+  ['a quote as one numbered item of several', '1. uno\n2. > cita\n3. tres'],
+  ['a quote at the start of a numbered item inside another', '1. a\n   1. > cita\n2. b'],
+  ['an alert at the start of an item', '- > [!NOTE]\n  > Aviso'],
+  ['an alert at the start of a numbered item', '1. > [!NOTE]\n   > Aviso'],
+  ['a link to a reference and its definition', 'Texto con [enlace][a].\n\n[a]: https://example.com'],
+  ['links to references, full and collapsed, and their definitions with a title', 'Ver [docs][r] y [otro][].\n\n[r]: https://r.test\n[otro]: https://o.test "Título"'],
+  ['a definition before the shortcut link to it', '[a]: https://example.com\n\nTexto [a].'],
+  ['definitions apart, one unused, and a label in capitals', 'Uno [x][a] dos [y][A].\n\n[a]: https://a.test\n\n[b]: https://b.test'],
+  ['a link to a reference in a task', '- [ ] ver [docs][r]\n\n[r]: https://r.test'],
+  ['a link to a reference in an item', '- ver [docs][r]\n\n[r]: https://r.test'],
+  ['a link to a reference in a numbered item', '1. ver [docs][r]\n\n[r]: https://r.test'],
+  ['a link to a reference and its definition in a quote', '> Cita con [x][a].\n>\n> [a]: https://a.test'],
+  ['a link to a reference with marks, its address between angle brackets', "Texto [**negrita**][a].\n\n[a]: <https://a.test/con espacio> 'T'"],
+  ['links to references next to each other, and one followed by another label', 'Ver [a] [b] y [a][b].\n\n[a]: https://a.test\n[b]: https://b.test'],
+  ['two definitions of a label, the first counting', '[a]: https://a.test\n[a]: https://otra.test\n\nVer [a].'],
+  ['emphasis around a link to a reference whose text holds its mark', '*x [b\\*][a] y*\n\n[a]: https://a.test'],
+  ['a definition in an item, after its text', '[t][a]\n\n- x\n\n  [a]: https://a.test'],
+  ['a definition at the start of an item', '- [a]: https://a.test'],
+  ['a definition in a task, after its text', '- [ ] x\n\n  [a]: https://a.test'],
+  ['a definition in a numbered item, after its text', '1. x\n\n   [a]: https://a.test'],
+  ['a definition at the start of a numbered item', '1. [a]: https://a.test'],
+  ['a price before a link to a reference whose label has a `$`', 'Precio $5 [t][a$] y $6\n\n[a$]: https://a.test'],
+  ['a task whose box is a link to a reference', '- [x] y\n\n[x]: https://a.test'],
+  ['footnotes in items, under their text', '- x\n  [^1]: nota\n- y'],
+  ['a page of one definition', '[a]: https://a.test'],
+  ['an empty quote', '>'],
+  ['an empty quote between paragraphs', 'Texto\n\n>\n\nMás'],
+  ['an empty quote inside a quote', '> a\n>\n> >'],
 ]
 
 /** Read the same again: written in another, equivalent way. */
@@ -142,6 +174,26 @@ const normalised: Array<[string, string, string]> = [
   // marked reads a list whose number has only spaces after it again in a quote, with the lines after it.
   ['a numbered item with only a space after its number in a quote, with a line after it', '> 2. \n>    b\ntexto', '> 2. b\n> texto'],
   ['a numbered item with only a space after its number in a quote, with a heading under it', '> 2. \n>    ## h\ntexto', '> 2. &nbsp;\n>    ## h\n>\n> texto'],
+  ['an empty quote in an item, after a blank line', '- a\n\n  >', '- a\n  >'],
+  // Written `[texto][]` or `[texto]` only where the text is written as its label is.
+  ['a link to a reference whose label is escaped in its text', 'Ver [a_b][].\n\n[a_b]: https://a.test', 'Ver [a\\_b][a_b].\n\n[a_b]: https://a.test'],
+  ['a shortcut link to a reference whose label is escaped in its text', 'Ver [a*b].\n\n[a*b]: https://a.test', 'Ver [a\\*b][a*b].\n\n[a*b]: https://a.test'],
+  ['a shortcut link to a reference followed by parentheses', 'Ver [a]\\(b).\n\n[a]: https://a.test', 'Ver [a][](b).\n\n[a]: https://a.test'],
+  ['a shortcut link to a reference followed by a colon at the start of a line', '[a]\\: b\n\n[a]: https://a.test', '[a][]: b\n\n[a]: https://a.test'],
+  ['a definition with a heading right under it', '[a]: https://a.test\n## Siguiente', '[a]: https://a.test\n\n## Siguiente'],
+  ['a link to a reference whose label ends in a space', 'Ver [a ].\n\n[a ]: https://a.test', 'Ver [a][a ] .\n\n[a ]: https://a.test'],
+  ['a shortcut link `[x]` to a reference', '- a [x] y\n\n[x]: https://a.test', '- a [x][] y\n\n[x]: https://a.test'],
+  // Read as marked reads it: a footnote's definition is no link's, whatever its text.
+  ['a footnote after a definition of a link', 'Texto[^1] [a].\n\n[a]: https://a.test\n[^1]: https://nota.test\n    más texto', 'Texto[^1] [a].\n\n[a]: https://a.test\n\n[^1]: https://nota.test\n    más texto'],
+  // A definition right under a task or a formula is one too, as TipTap reads it, and its link one.
+  ['a definition right under a task', '- [ ] t\n[a]: https://a.test\n\nVer [a].', '- [ ] t\n\n[a]: https://a.test\n\nVer [a].'],
+  ['a definition right under a formula', '$$\nx\n$$\n[a]: https://a.test\n\nVer [a].', '$$\nx\n$$\n\n[a]: https://a.test\n\nVer [a].'],
+  ['definitions first in items of a loose list', '* [a]: https://a.test\n\n* [b]: https://b.test\n\nVer [a] y [b].', '- [a]: https://a.test\n- [b]: https://b.test\n\nVer [a] y [b].'],
+  ['a definition in a quote ending in an empty line', '> [a]: https://a.test\n>\n\nVer [a].', '> [a]: https://a.test\n\nVer [a].'],
+  ['a definition with a line end after it', '[a]: https://a.test\n', '[a]: https://a.test'],
+  // A definition can't break into a paragraph: there it is text, as marked reads it.
+  ['a line like a definition going on with a quote', '> cita [a]\n[a]: https://a.test', '> cita \\[a\\]\n> \\[a\\]: [https://a.test](https://a.test)'],
+  ['a quote at the start of a numbered item, and a line that goes on with it', '1. > cita\ntexto', '1. > cita\n   > texto'],
   ['a numbered item four spaces in in a quote, with a line after it', '>     1. a\nx y', '> 1. a\n> x y'],
   ['numbered items five spaces in in a quote, with a line after them', '>      1. a\n>      2. b\nx y', '> 1. a\n> 2. b\n> x y'],
   // A number alone further in than the list's own items is a line of the block it is in, as it was.
@@ -174,6 +226,33 @@ describe('Markdown round trip', () => {
       expect(() => editor.state.doc.check(), markdown).not.toThrow()
       expect(roundTrip(roundTrip(markdown)), markdown).toBe(roundTrip(markdown))
     }
+  })
+
+  it('reads text left bare in an item as a line of it', () => {
+    for (const markdown of ['- a\n  > 2. uno\n  4. uno\n\n     fue', '- a\n  > b\n\n  c']) {
+      const editor = open(markdown)
+      expect(() => editor.state.doc.check(), markdown).not.toThrow()
+      expect(roundTrip(roundTrip(markdown)), markdown).toBe(roundTrip(markdown))
+    }
+  })
+
+  it('writes a link to a reference in line once its address or its definition changes, and by its label once its text does', () => {
+    const markdown = 'Ver [a] y [b][] y [c][r].\n\n[a]: https://a.test\n[b]: https://b.test\n[r]: https://r.test'
+    const edited = (change: (doc: JSONContent) => void) => {
+      const doc = open(markdown).getJSON()
+      change(doc)
+      return open(doc).getMarkdown()
+    }
+    const texts = (doc: JSONContent) => doc.content![0]!.content!
+    const link = (node: JSONContent) => node.marks!.find((mark) => mark.type === 'link')!
+    // Its text changed: `[a]` and `[b][]` named their definitions by their text.
+    expect(edited((doc) => { texts(doc)[1]!.text = 'x'; texts(doc)[3]!.text = 'y' })).toBe('Ver [x][a] y [y][b] y [c][r].\n\n[a]: https://a.test\n[b]: https://b.test\n[r]: https://r.test')
+    // Its address changed: the definition no longer says where it goes.
+    expect(edited((doc) => { link(texts(doc)[5]!).attrs!.href = 'https://otra.test' })).toBe('Ver [a] y [b][] y [c](https://otra.test).\n\n[a]: https://a.test\n[b]: https://b.test\n[r]: https://r.test')
+    // A mark on its text: the text is no longer written as its label.
+    expect(edited((doc) => { texts(doc)[1]!.marks!.push({ type: 'bold' }) })).toBe('Ver [**a**][a] y [b][] y [c][r].\n\n[a]: https://a.test\n[b]: https://b.test\n[r]: https://r.test')
+    // Its definition is gone.
+    expect(edited((doc) => { doc.content!.pop() })).toBe('Ver [a](https://a.test) y [b](https://b.test) y [c](https://r.test).')
   })
 
   it('reads an empty item as an empty line to write in, as the editor makes one', () => {
