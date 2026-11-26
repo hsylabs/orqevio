@@ -168,18 +168,22 @@ export function insertBelowPlugin(editor: Editor) {
     view: (view) => {
       // A press elsewhere closes the menu as it goes down: the line goes once the click is done,
       // so that what is under the pointer doesn't move up between the press and the click.
+      // Only the main button's press: another's (a context menu) or a drag may never be followed by
+      // its release, which would keep the line from going.
       const doc = view.dom.ownerDocument
+      const win = doc.defaultView
       let pressed = false
       let waiting = false
-      const down = () => (pressed = true)
+      const down = (event: PointerEvent) => (pressed = event.isPrimary && event.button === 0)
       const up = () => {
         pressed = false
         if (waiting) setTimeout(() => settle(editor))
         waiting = false
       }
+      const ends = ['pointerup', 'pointercancel', 'contextmenu', 'dragstart'] as const
       doc.addEventListener('pointerdown', down, true)
-      doc.addEventListener('pointerup', up, true)
-      doc.addEventListener('pointercancel', up, true)
+      for (const type of ends) doc.addEventListener(type, up, true)
+      win?.addEventListener('blur', up)
       return {
         update(view) {
           const opened = openedKey.getState(view.state)
@@ -190,8 +194,8 @@ export function insertBelowPlugin(editor: Editor) {
         },
         destroy() {
           doc.removeEventListener('pointerdown', down, true)
-          doc.removeEventListener('pointerup', up, true)
-          doc.removeEventListener('pointercancel', up, true)
+          for (const type of ends) doc.removeEventListener(type, up, true)
+          win?.removeEventListener('blur', up)
         },
       }
     },

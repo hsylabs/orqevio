@@ -197,7 +197,9 @@ export function BlockControls({ editor }: { editor: Editor }) {
   function openMenu(at: number) {
     // A line a «+» opened goes first, and the block is where that leaves it; not on the line itself.
     const pos = closeOpenedFor(editor, at)
-    if (pos === null || !editor.state.doc.nodeAt(pos)) return
+    // The open line's own handle: back to the line and its «/» menu.
+    if (pos === null) return editor.view.focus()
+    if (!editor.state.doc.nodeAt(pos)) return
     before.current = editor.state.selection.getBookmark()
     setInner(calloutWithin(pos))
     editor.view.dispatch(editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, pos)))

@@ -65,13 +65,19 @@ export async function uploadFile(file: File, target: UploadTarget): Promise<Atta
   return api<AttachmentDTO>('POST', `/${target.type === 'page' ? 'pages' : 'cards'}/${target.id}/attachments`, file)
 }
 
-/** The «/» menu's list: toggled, except in an item whose own list is already of that kind, which it would take out. */
+/**
+ * The «/» menu's list: toggled, except on a line right in an item whose list is already of that
+ * kind, which toggling would take out. A line deeper in the item (in a quote there) gets its own
+ * list, as TipTap's toggleList decides.
+ */
 function toList(editor: TiptapEditor, range: Range, list: string, toggle: (chain: ChainedCommands) => ChainedCommands) {
   const chain = editor.chain().focus().deleteRange(range)
-  const { $from } = editor.state.selection
+  const { $from, $to } = editor.state.selection
+  const lines = $from.blockRange($to)
   for (let depth = $from.depth; depth > 0; depth--) {
     const name = $from.node(depth).type.name
-    if (name === 'bulletList' || name === 'orderedList' || name === 'taskList') return (name === list ? chain : toggle(chain)).run()
+    if (name !== 'bulletList' && name !== 'orderedList' && name !== 'taskList') continue
+    return (name === list && lines && lines.depth - depth <= 1 ? chain : toggle(chain)).run()
   }
   return toggle(chain).run()
 }
