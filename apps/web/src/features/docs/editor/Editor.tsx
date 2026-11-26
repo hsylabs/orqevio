@@ -66,7 +66,7 @@ export async function uploadFile(file: File, target: UploadTarget): Promise<Atta
 /** Where the text ends: before the empty paragraph the editor keeps after anything but a paragraph at the end. */
 function textEnd(doc: PMNode) {
   const last = doc.lastChild
-  const kept = doc.childCount > 1 && last?.type.name === 'paragraph' && last.content.size === 0
+  const kept = doc.childCount > 1 && last?.type.name === 'paragraph' && last.content.size === 0 && doc.child(doc.childCount - 2).type.name !== 'paragraph'
   return Selection.near(doc.resolve(kept ? doc.content.size - last.nodeSize : doc.content.size), -1)
 }
 
