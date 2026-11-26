@@ -224,7 +224,7 @@ export function TableControls({ editor }: { editor: Editor }) {
     // Asked when the time is up: React tells of the pointer coming onto a control before the editor
     // tells of it leaving the text, which starts the timer again.
     leaving.current = setTimeout(() => {
-      if (!openRef.current && !root.current?.querySelector(':hover')) setHover(null)
+      if (!openRef.current && !root.current?.querySelector(':hover') && !editor.view.dom.querySelector('td:hover, th:hover')) setHover(null)
     }, 250)
   }
 
@@ -248,9 +248,10 @@ export function TableControls({ editor }: { editor: Editor }) {
    * Where the bar goes, from its height: above the table, clear of the room its columns' handles take
    * there. With no room above, at the top of the view while the table scrolls under it, down to its
    * last row; but not over the columns' handles while they are in view: under the table then, below
-   * its «+», or with no room there either, over its last rows, clear of that «+».
+   * its «+», or with no room there either, over the table, clear of that «+» and of the rows being
+   * edited: above them, or else under them.
    */
-  function barTop(g: NonNullable<ReturnType<typeof measure>>, height: number) {
+  function barTop(g: NonNullable<ReturnType<typeof measure>>, height: number, s: NonNullable<ReturnType<typeof spotOf>>) {
     const box = scroller.current?.getBoundingClientRect()
     const viewTop = Math.max(0, box?.top ?? 0) + GAP
     const viewBottom = Math.min(box?.bottom ?? window.innerHeight, window.innerHeight) - GAP
@@ -261,7 +262,13 @@ export function TableControls({ editor }: { editor: Editor }) {
     if (touch || g.top + IN < viewTop - GAP) return pinned
     const below = g.bottom + PLUS_GAP + PLUS + GAP
     if (below + height <= viewBottom) return below
-    return Math.max(Math.min(viewBottom, g.bottom) - height, pinned)
+    const high = Math.max(viewTop, g.top + IN + GAP)
+    const low = Math.min(viewBottom, g.bottom) - height
+    const first = g.table.rows[s.top]?.getBoundingClientRect()
+    const last = g.table.rows[s.bottom - 1]?.getBoundingClientRect()
+    if (first && first.top - GAP - height >= high) return first.top - GAP - height
+    if (last && last.bottom + GAP <= low) return last.bottom + GAP
+    return Math.max(low, pinned)
   }
 
   function menuChange(o: boolean, which: Open) {
@@ -279,6 +286,9 @@ export function TableControls({ editor }: { editor: Editor }) {
     byKeyboard.current = false
     if (which === 'bar') {
       setBarClosing(false)
+      // The pointer went from the bar into its menu, with no leaving the bar to tell of: the handles go
+      // if it isn't on a cell or a control any more.
+      leave()
       // After an action, the editor, where it worked. Closed without one: the menu's button from the keyboard, the editor with a pointer.
       if (!ran && keyboard) return
       event.preventDefault()
@@ -342,7 +352,7 @@ export function TableControls({ editor }: { editor: Editor }) {
     const s = spot!
     const g = measure(s.pos)
     if (!g) return null
-    const y = barTop(g, bar.current?.offsetHeight ?? 36)
+    const y = barTop(g, bar.current?.offsetHeight ?? 36, s)
     const align = s.align ?? 'left'
     const rows = s.bottom - s.top
     const columns = s.right - s.left

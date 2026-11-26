@@ -213,7 +213,7 @@ export function BlockControls({ editor }: { editor: Editor }) {
     return !touch && box.left - size - GAP - (ROW_HANDLE_REACH + TABLE_GAP - GAP) < clipLeft
   }
 
-  /** Whether the pointer is between the table it is on and its handle above its corner: still the table's. */
+  /** Whether the pointer is between the table it is on and its handle above its corner, or the «+» above that: still the table's. */
   function towardCorner(event: PointerEvent) {
     const at = hoverRef.current
     if (at === null || editor.state.doc.nodeAt(at)?.type.name !== 'table') return false
@@ -225,7 +225,7 @@ export function BlockControls({ editor }: { editor: Editor }) {
     }
     if (!(dom instanceof HTMLElement)) return false
     const box = dom.getBoundingClientRect()
-    return atCorner(box) && event.clientY >= box.top - TABLE_GAP - size && event.clientY < box.top && event.clientX <= box.right
+    return atCorner(box) && event.clientY >= box.top - TABLE_GAP - 2 * size - PLUS_GAP && event.clientY < box.top && event.clientX <= box.right
   }
 
   const openMenuRef = useRef(openMenu)

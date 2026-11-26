@@ -325,6 +325,19 @@ test('in a card, the table’s own handle is inside the card and apart from its 
   await page.mouse.up()
   await expect(page.getByRole('menuitem', { name: 'Duplicar' })).toBeVisible()
   await expect(page.getByRole('menuitem', { name: 'Convertir en' })).toHaveCount(0)
+  await page.keyboard.press('Escape')
+
+  // The same way up to its «+», above its handle: the table's, which opens the «/» menu under the table.
+  const plus = page.getByRole('button', { name: 'Insertar debajo' })
+  await fruta.hover()
+  await expect(plus).toBeVisible()
+  const p = (await plus.boundingBox())!
+  expect(p.y + p.height).toBeLessThanOrEqual(narrow.y)
+  await page.mouse.move(p.x + p.width / 2, p.y + p.height / 2, { steps: 15 })
+  expect((await plus.boundingBox())!.y).toBeCloseTo(p.y, 0)
+  await page.mouse.down()
+  await page.mouse.up()
+  await expect(page.getByRole('listbox', { name: 'Insertar bloque' })).toBeVisible()
 })
 
 test('the «+» under a table keeps clear of the block after it: a click there goes to that block', async ({ page }) => {
@@ -367,6 +380,10 @@ test('with no room above or under a table, the bar sits over its last row, clear
   await cell('Fila 3').click()
   await bar.getByRole('button', { name: 'Centrar columna' }).click()
   await expect(bar.getByRole('button', { name: 'Centrar columna' })).toHaveAttribute('aria-pressed', 'true')
+  // With the cursor in the last row, as after adding one, it keeps clear of that row too.
+  await cell('Fila 12').click()
+  await expect(bar).toBeVisible()
+  expect(apart((await bar.boundingBox())!, (await cell('Fila 12').boundingBox())!)).toBeGreaterThanOrEqual(1)
 })
 
 test.describe('on a phone', () => {

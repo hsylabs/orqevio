@@ -12,7 +12,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ### Fixed
 - **Handles that went away under the pointer.** The «+» and the ⋮⋮ beside a block, and a table's row and column handles and «+», went a quarter of a second after the pointer stopped on them, so they often couldn't be pressed. They now stay while the pointer is on them.
-- **A table's bar in the way of its column handles.** With the cursor in a table, its bar sat right against the handles above its columns, and over them with the table at the top of the view: a pointer going up to one often landed on the bar, and the handle went. The bar now keeps clear of them, the handles stay while the pointer goes over the bar or the room between, and where there is no room for the bar above the table, it goes under the table, or over its last rows, rather than over the handles.
+- **A table's bar in the way of its column handles.** With the cursor in a table, its bar sat right against the handles above its columns, and over them with the table at the top of the view: a pointer going up to one often landed on the bar, and the handle went. The bar now keeps clear of them, the handles stay while the pointer goes over the bar or the room between, and where there is no room for the bar above the table, it goes under the table, or over it, clear of the rows being edited, rather than over the handles.
 
 ## [1.5.0] - 2026-11-26
 
