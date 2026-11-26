@@ -59,7 +59,7 @@
   },
   "editor": {
     "placeholder": "Écrivez, ou tapez « / » pour insérer…",
-    "lineHint": "Tapez « / » pour insérer…",
+    "lineHint": "Tapez « / » pour insérer…",
     "headingPlaceholder": "Titre",
     "label": "Contenu",
     "uploading": "Envoi de {{name}}…",
@@ -174,7 +174,7 @@
       "mention": "Lier une tâche ou une page",
       "searching": "Recherche…",
       "noMatches": "Aucun résultat",
-      "shortcut": "Raccourci Markdown : {{keys}}"
+      "shortcut": "Raccourci Markdown : {{keys}}"
     },
     "format": {
       "linkPlaceholder": "https://… ou /doc/…",
