@@ -1,3 +1,4 @@
+import { searchable } from '@orqevio/shared'
 import { Command, defaultFilter } from 'cmdk'
 import { Dialog as D } from 'radix-ui'
 import { Bot, FileText, FolderOpen, House, LockKeyhole, Moon, Plus, Search, Settings, SquareKanban, Sun, Trash2 } from 'lucide-react'
@@ -47,7 +48,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   }
 
   const projects = overview?.projects ?? []
-  const contentResults = (search.data ?? []).filter(() => debounced.trim().length >= 2)
+  const contentResults = (search.data ?? []).filter(() => searchable(debounced))
   const dark = document.documentElement.dataset.theme === 'dark'
 
   return (
