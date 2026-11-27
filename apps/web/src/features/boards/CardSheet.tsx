@@ -112,7 +112,9 @@ function Row({ icon, label, children }: { icon: ReactNode; label: string; childr
 
 function Section({ title, icon, children, action }: { title: string; icon?: ReactNode; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="border-t border-line px-6 py-5 sm:px-8">
+    // Wider on the left: the room the description's block handle takes (BlockControls), a finger's
+    // size on a phone, and with a mouse a table's, clear of its rows' handles.
+    <section className="border-t border-line py-5 pr-6 pl-9 sm:pr-8 sm:pl-12">
       <div className="mb-3 flex items-center gap-2">
         {icon && <span className="text-ink-3 [&_svg]:size-[15px]">{icon}</span>}
         <h3 className="text-[11.5px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{title}</h3>
@@ -410,7 +412,8 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="px-6 pt-6 pb-5 sm:px-8">
+        {/* Wider on the left, as each Section: the room the description's block handle takes, a finger's size on a phone. */}
+        <div className="pt-6 pr-6 pb-5 pl-9 sm:pr-8 sm:pl-12">
           <div className="grid">
             <textarea
               ref={titleRef}

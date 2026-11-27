@@ -50,7 +50,20 @@ type Hover = { pos: number; row: number; col: number }
 type Open = 'bar' | 'row' | 'col' | null
 
 const GAP = 8
-const HANDLE = 20
+/**
+ * A row's or a column's handle: drawn 14 px across on the table's edge, pressed anywhere 24 px across
+ * and 28 px along it (WCAG 2.5.8 asks for 24). It reaches out of the table more than into it, short of
+ * a cell's text: cells are padded 7 px top and bottom, 11 px on the sides.
+ */
+const PILL = 14
+const OUT = 17
+const IN = 7
+/** How far a row's handle reaches out of the table on its left: the table's block handle keeps clear of it (BlockControls). */
+export const ROW_HANDLE_REACH = OUT
+const ALONG = 28
+/** The «+» along the bottom and the right of the table. */
+const PLUS = 24
+const PLUS_GAP = 2
 
 /**
  * The controls of a table, as in Notion:
@@ -73,6 +86,8 @@ export function TableControls({ editor }: { editor: Editor }) {
       editable: e.isEditable,
     }),
   })
+  // Without a pointer that hovers (a phone), there are no handles: nothing to keep the bar clear of.
+  const touch = useRef(typeof matchMedia === 'function' && matchMedia('(hover: none)').matches).current
   const [hover, setHover] = useState<Hover | null>(null)
   const hoverRef = useRef<Hover | null>(null)
   hoverRef.current = hover
@@ -139,9 +154,34 @@ export function TableControls({ editor }: { editor: Editor }) {
   // The handles appear on the cell under a mouse or a pen; a finger has the bar.
   useEffect(() => {
     const dom = editor.view.dom
+    // Just above the table whose handles are showing, up to the bar, or left of it where that room is
+    // the editor's (in a list): the cell they are for. They stay while the pointer goes to a handle,
+    // or a little past it; they don't come from there.
+    const beside = (x: number, y: number) => {
+      const h = hoverRef.current
+      let table: Node | null = null
+      try {
+        table = h && editor.view.nodeDOM(h.pos)
+      } catch {
+        return null
+      }
+      if (table instanceof HTMLElement && !(table instanceof HTMLTableElement)) table = table.querySelector('table')
+      if (!(table instanceof HTMLTableElement)) return null
+      const rect = table.getBoundingClientRect()
+      const view = (table.closest('.tableWrapper') ?? table).getBoundingClientRect()
+      const left = Math.max(rect.left, view.left)
+      const right = Math.min(rect.right, view.right)
+      const within = (cell: Element, along: 'x' | 'y') => {
+        const box = cell.getBoundingClientRect()
+        return along === 'x' ? x >= box.left && x < box.right : y >= box.top && y < box.bottom
+      }
+      if (x >= left && x < right && y >= rect.top - OUT - GAP && y < rect.top) return [...(table.rows[0]?.cells ?? [])].find((c) => within(c, 'x')) ?? null
+      if (y >= rect.top && y < rect.bottom && x >= left - OUT - GAP && x < left) return [...table.rows].find((r) => within(r, 'y'))?.cells[0] ?? null
+      return null
+    }
     const move = (event: PointerEvent) => {
       if (event.pointerType === 'touch' || !editor.isEditable) return
-      const cell = (event.target as Element | null)?.closest?.('td, th')
+      const cell = (event.target as Element | null)?.closest?.('td, th') ?? beside(event.clientX, event.clientY)
       if (!cell || !dom.contains(cell)) return leave()
       stay()
       if (openRef.current) return
@@ -180,8 +220,11 @@ export function TableControls({ editor }: { editor: Editor }) {
   }
   function leave() {
     clearTimeout(leaving.current)
+    // With the pointer on a handle, a «+» or the bar, the handles stay, however long it rests there.
+    // Asked when the time is up: React tells of the pointer coming onto a control before the editor
+    // tells of it leaving the text, which starts the timer again.
     leaving.current = setTimeout(() => {
-      if (!openRef.current) setHover(null)
+      if (!openRef.current && !root.current?.querySelector(':hover') && !editor.view.dom.querySelector('td:hover, th:hover')) setHover(null)
     }, 250)
   }
 
@@ -201,6 +244,33 @@ export function TableControls({ editor }: { editor: Editor }) {
     return { base, table, top: rect.top, bottom: rect.bottom, left: Math.max(rect.left, box.left), right: Math.min(rect.right, box.right) }
   }
 
+  /**
+   * Where the bar goes, from its height: above the table, clear of the room its columns' handles take
+   * there. With no room above, at the top of the view while the table scrolls under it, down to its
+   * last row; but not over the columns' handles while they are in view: under the table then, below
+   * its «+», or with no room there either, over the table, clear of that «+» and of the rows being
+   * edited: above them, or else under them.
+   */
+  function barTop(g: NonNullable<ReturnType<typeof measure>>, height: number, s: NonNullable<ReturnType<typeof spotOf>>) {
+    const box = scroller.current?.getBoundingClientRect()
+    const viewTop = Math.max(0, box?.top ?? 0) + GAP
+    const viewBottom = Math.min(box?.bottom ?? window.innerHeight, window.innerHeight) - GAP
+    const above = g.top - (touch ? 0 : OUT) - GAP - height
+    if (above >= viewTop) return above
+    const pinned = Math.min(viewTop, g.bottom - height)
+    // The columns' handles out of view above: nothing there to keep clear of.
+    if (touch || g.top + IN < viewTop - GAP) return pinned
+    const below = g.bottom + PLUS_GAP + PLUS + GAP
+    if (below + height <= viewBottom) return below
+    const high = Math.max(viewTop, g.top + IN + GAP)
+    const low = Math.min(viewBottom, g.bottom) - height
+    const first = g.table.rows[s.top]?.getBoundingClientRect()
+    const last = g.table.rows[s.bottom - 1]?.getBoundingClientRect()
+    if (first && first.top - GAP - height >= high) return first.top - GAP - height
+    if (last && last.bottom + GAP <= low) return last.bottom + GAP
+    return Math.max(low, pinned)
+  }
+
   function menuChange(o: boolean, which: Open) {
     setOpen((current) => (o ? which : current === which ? null : current))
     if (!o && which === 'bar') setBarClosing(true)
@@ -216,6 +286,9 @@ export function TableControls({ editor }: { editor: Editor }) {
     byKeyboard.current = false
     if (which === 'bar') {
       setBarClosing(false)
+      // The pointer went from the bar into its menu, with no leaving the bar to tell of: the handles go
+      // if it isn't on a cell or a control any more.
+      leave()
       // After an action, the editor, where it worked. Closed without one: the menu's button from the keyboard, the editor with a pointer.
       if (!ran && keyboard) return
       event.preventDefault()
@@ -266,9 +339,10 @@ export function TableControls({ editor }: { editor: Editor }) {
       <div aria-live="polite" className="sr-only">
         {said}
       </div>
-      {showBar && renderBar()}
       {state.editable && hover && renderHandles(hover)}
       {state.editable && plusAt !== null && renderPlus(plusAt)}
+      {/* Last, over the rest where it has to sit on the table: its buttons take the clicks. */}
+      {showBar && renderBar()}
     </div>
   )
 
@@ -278,9 +352,7 @@ export function TableControls({ editor }: { editor: Editor }) {
     const s = spot!
     const g = measure(s.pos)
     if (!g) return null
-    const height = bar.current?.offsetHeight ?? 36
-    const viewTop = Math.max(0, scroller.current?.getBoundingClientRect().top ?? 0) + GAP
-    const y = Math.min(Math.max(g.top - height - GAP, viewTop), g.bottom - height)
+    const y = barTop(g, bar.current?.offsetHeight ?? 36, s)
     const align = s.align ?? 'left'
     const rows = s.bottom - s.top
     const columns = s.right - s.left
@@ -320,6 +392,9 @@ export function TableControls({ editor }: { editor: Editor }) {
         onKeyDown={onKeyDown}
         onFocus={redraw}
         onBlur={redraw}
+        // The handles stay while the pointer goes over the bar, as they do over the room just under it.
+        onPointerEnter={stay}
+        onPointerLeave={leave}
         // A click keeps the cursor in the editor, on a phone the keyboard too. Not in the open menu.
         onMouseDown={(e) => e.currentTarget.contains(e.target as Node) && e.preventDefault()}
         className={cn('animate-pop absolute flex items-center gap-0.5 rounded-[12px] border border-line bg-surface p-1 shadow-lg', live)}
@@ -398,7 +473,10 @@ export function TableControls({ editor }: { editor: Editor }) {
       before.current = editor.state.selection.getBookmark()
       selectLine(editor, h.pos, line)
     }
-    const handle = 'absolute grid place-items-center rounded-[6px] border border-line bg-surface text-ink-3 shadow-sm hover:bg-hover hover:text-ink data-[state=open]:bg-accent-soft data-[state=open]:text-accent [&_svg]:size-[13px]'
+    // The button is what can be pressed; the pill in it, what shows, on the table's edge.
+    const handle = 'group absolute flex'
+    const pill =
+      'grid place-items-center rounded-[6px] border border-line bg-surface text-ink-3 shadow-sm group-hover:bg-hover group-hover:text-ink group-data-[state=open]:bg-accent-soft group-data-[state=open]:text-accent [&_svg]:size-[15px]'
     const hold = { onPointerEnter: stay, onPointerLeave: leave }
 
     return (
@@ -410,12 +488,14 @@ export function TableControls({ editor }: { editor: Editor }) {
               tabIndex={-1}
               aria-label={t('editor.table.rowMenu')}
               title={t('editor.table.rowMenu')}
-              className={cn(handle, live)}
-              style={{ width: HANDLE - 6, height: HANDLE, left: g.left - g.base.left - (HANDLE - 6) / 2, top: r.top - g.base.top + r.height / 2 - HANDLE / 2 }}
+              className={cn(handle, 'items-center justify-end', live)}
+              style={{ width: OUT + IN, height: ALONG, left: g.left - g.base.left - OUT, top: r.top - g.base.top + r.height / 2 - ALONG / 2 }}
               onPointerDown={take({ row: h.row })}
               {...hold}
             >
-              <GripVertical />
+              <span className={pill} style={{ width: PILL, height: ALONG - 4 }}>
+                <GripVertical />
+              </span>
             </button>
           </MenuTrigger>
           <MenuContent align="start" side="right" onCloseAutoFocus={(e) => closeFocus(e, 'row')}>
@@ -445,17 +525,19 @@ export function TableControls({ editor }: { editor: Editor }) {
                 tabIndex={-1}
                 aria-label={t('editor.table.columnMenu')}
                 title={t('editor.table.columnMenu')}
-                className={cn(handle, live)}
+                className={cn(handle, 'items-end justify-center', live)}
                 style={{
-                  width: HANDLE,
-                  height: HANDLE - 6,
-                  left: Math.min(Math.max(c.left + c.width / 2, g.left + HANDLE / 2), g.right - HANDLE / 2) - g.base.left - HANDLE / 2,
-                  top: g.top - g.base.top - (HANDLE - 6) / 2,
+                  width: ALONG,
+                  height: OUT + IN,
+                  left: Math.min(Math.max(c.left + c.width / 2, g.left + ALONG / 2), g.right - ALONG / 2) - g.base.left - ALONG / 2,
+                  top: g.top - g.base.top - OUT,
                 }}
                 onPointerDown={take({ col: h.col })}
                 {...hold}
               >
-                <GripHorizontal />
+                <span className={pill} style={{ width: ALONG - 4, height: PILL }}>
+                  <GripHorizontal />
+                </span>
               </button>
             </MenuTrigger>
             <MenuContent align="start" onCloseAutoFocus={(e) => closeFocus(e, 'col')}>
@@ -497,8 +579,13 @@ export function TableControls({ editor }: { editor: Editor }) {
     const g = measure(pos)
     if (!info || !g) return null
     const button =
-      'absolute grid place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 [&_svg]:size-[13px]'
+      'absolute grid place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 [&_svg]:size-[15px]'
     const hold = { onPointerEnter: stay, onPointerLeave: leave, onMouseDown: (e: { preventDefault(): void }) => e.preventDefault() }
+    // The one on the right as wide as the room the page leaves it, where the table fills the page's
+    // width (a phone): more would make the page scroll sideways.
+    const s = scroller.current
+    const edge = s ? s.getBoundingClientRect().left + s.clientLeft + s.clientWidth : document.documentElement.clientWidth
+    const side = Math.max(16, Math.min(PLUS, edge - g.right - PLUS_GAP))
     return (
       <>
         <button
@@ -507,7 +594,7 @@ export function TableControls({ editor }: { editor: Editor }) {
           aria-label={t('editor.table.addRow')}
           title={t('editor.table.addRow')}
           className={cn(button, live)}
-          style={{ left: g.left - g.base.left, top: g.bottom - g.base.top + 2, width: g.right - g.left, height: 16 }}
+          style={{ left: g.left - g.base.left, top: g.bottom - g.base.top + PLUS_GAP, width: g.right - g.left, height: PLUS }}
           onClick={() => insertRow(editor, pos, info.rows, 0)}
           {...hold}
         >
@@ -519,7 +606,7 @@ export function TableControls({ editor }: { editor: Editor }) {
           aria-label={t('editor.table.addColumn')}
           title={t('editor.table.addColumn')}
           className={cn(button, live)}
-          style={{ left: g.right - g.base.left + 2, top: g.top - g.base.top, width: 16, height: g.bottom - g.top }}
+          style={{ left: g.right - g.base.left + PLUS_GAP, top: g.top - g.base.top, width: side, height: g.bottom - g.top }}
           onClick={() => insertColumn(editor, pos, info.columns, 0)}
           {...hold}
         >

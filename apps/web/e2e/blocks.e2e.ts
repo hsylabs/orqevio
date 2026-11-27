@@ -166,6 +166,22 @@ test('in a card: handles in its description, none in its comments', async ({ pag
   await expect(handle).toBeHidden()
 })
 
+test('the handle and the «+» are big enough to press', async ({ page }) => {
+  const { text } = await openPage(page, 'Bloques tamaños E2E', 'Uno\n\nDos')
+  // WCAG 2.5.8 asks for 24 px. With the pointer resting on one, it stays (in 1.5.0 it went after 250 ms).
+  for (const name of ['Opciones del bloque', 'Insertar debajo']) {
+    await text('Dos').hover()
+    const button = page.getByRole('button', { name })
+    await expect(button).toBeVisible()
+    const box = (await button.boundingBox())!
+    expect(Math.min(box.width, box.height), name).toBeGreaterThanOrEqual(24)
+    expect(box.x + box.width, name).toBeLessThanOrEqual((await text('Dos').boundingBox())!.x)
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 3 })
+    await page.waitForTimeout(400)
+    await expect(button, name).toBeVisible()
+  }
+})
+
 test.describe('on a phone', () => {
   test.use({ hasTouch: true, viewport: { width: 390, height: 844 } })
 
@@ -176,6 +192,12 @@ test.describe('on a phone', () => {
     await expect(handle).toBeVisible()
     const box = (await handle.boundingBox())!
     expect(box.x).toBeGreaterThanOrEqual(0)
+    // A finger's size, clear of the text.
+    expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(32)
+    expect(box.x + box.width).toBeLessThanOrEqual((await text('Dos').boundingBox())!.x)
+    const plus = (await page.getByRole('button', { name: 'Insertar debajo' }).boundingBox())!
+    expect(Math.min(plus.width, plus.height)).toBeGreaterThanOrEqual(32)
+    expect(plus.x).toBeGreaterThanOrEqual(0)
     await handle.tap()
     await page.getByRole('menuitem', { name: 'Subir' }).tap()
     await expect.poll(saved).toBe('Dos\n\nUno')

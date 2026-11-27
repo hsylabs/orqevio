@@ -13,12 +13,19 @@ import { changeOf, followBlock } from './own-step'
 import { TOGGLE_VIEW } from './toggle'
 import { MARKDOWN_SHORTCUTS, TURN_ICONS, blockAt, canMove, deleteBlock, duplicateBlock, moveBlock, turnBlock, turns } from './block-commands'
 import { closeOpenedFor, openBelow } from './insert-below'
+import { ROW_HANDLE_REACH } from './TableControls'
 
-const WIDTH = 18
-const HEIGHT = 24
-const GAP = 6
+/** The handle and the «+», each: 24 px, the least WCAG asks of a target (2.5.8); 32 px for a finger. */
+const SIZE = 24
+const TOUCH_SIZE = 32
+/** Between the handle and its block's text. The page leaves room for both (DocPage, CardSheet). */
+const GAP = 4
 /** Between the «+» and the handle, left of it. */
 const PLUS_GAP = 2
+/** Between a table's handle and its rows' handles, which reach out of its left edge (TableControls), or its top-left corner. */
+const TABLE_GAP = 4
+/** How much wider than a table's handle and «+» above its corner the way to them is taken to be. */
+const TOWARD = 4
 /** Room for a list item's bullet or number, left of its text. */
 const MARKER = 20
 
@@ -44,7 +51,12 @@ export function BlockControls({ editor }: { editor: Editor }) {
   })
   // Without a pointer that hovers (a phone), the handle is the one of the block with the cursor.
   const touch = useRef(typeof matchMedia === 'function' && matchMedia('(hover: none)').matches).current
+  const size = touch ? TOUCH_SIZE : SIZE
   const [hover, setHover] = useState<number | null>(null)
+  const hoverRef = useRef<number | null>(null)
+  hoverRef.current = hover
+  /** Where the pointer last was over a table, maybe on its way to the table's handle above its corner. */
+  const lastOnTable = useRef<{ x: number; y: number } | null>(null)
   const [menu, setMenu] = useState<number | null>(null)
   /** The block whose menu is closing: its handle stays until the menu has put the focus back. */
   const [closing, setClosing] = useState<number | null>(null)
@@ -113,7 +125,10 @@ export function BlockControls({ editor }: { editor: Editor }) {
     const dom = editor.view.dom
     const move = (event: PointerEvent) => {
       if (event.pointerType === 'touch' || !editor.isEditable || held.current) return
+      // On the way up to a table's handle above its corner, over the line above the table.
+      if (towardCorner(event)) return stay()
       const block = itemAt(event) ?? blockAtHeight(event)
+      lastOnTable.current = block && editor.state.doc.nodeAt(block.pos)?.type.name === 'table' ? { x: event.clientX, y: event.clientY } : null
       if (!block) return leave()
       stay()
       if (menuRef.current === null) setHover(block.pos)
@@ -187,7 +202,53 @@ export function BlockControls({ editor }: { editor: Editor }) {
   }
   function leave() {
     clearTimeout(leaving.current)
-    leaving.current = setTimeout(() => !held.current && setHover(null), 250)
+    // With the pointer on the handle or the «+», they stay, however long it rests there. Asked when
+    // the time is up: React tells of the pointer coming onto them before the editor tells of it
+    // leaving the text, which starts the timer again.
+    leaving.current = setTimeout(() => !held.current && !root.current?.querySelector(':hover') && setHover(null), 250)
+  }
+
+  /**
+   * Whether a table's handle goes above its top-left corner: under a mouse, its rows have handles of
+   * their own on its left edge (TableControls), which it keeps clear of, further left where there is
+   * room for that (not in a narrow window).
+   */
+  function atCorner(box: DOMRect) {
+    const clipLeft = Math.max(0, clip.current?.getBoundingClientRect().left ?? 0)
+    return !touch && box.left - size - GAP - (ROW_HANDLE_REACH + TABLE_GAP - GAP) < clipLeft
+  }
+
+  /**
+   * Whether the pointer, off the table it was on, is on its way to the table's handle above its
+   * corner, or the «+» above that: within the triangle from where it left the table to them, as a
+   * menu keeps its submenu. Still the table's then, though it goes over the line above the table;
+   * straight up onto that line, the line's own.
+   */
+  function towardCorner(event: PointerEvent) {
+    const at = hoverRef.current
+    const from = lastOnTable.current
+    if (at === null || !from || editor.state.doc.nodeAt(at)?.type.name !== 'table') return false
+    let dom: Node | null = null
+    try {
+      dom = editor.view.nodeDOM(at)
+    } catch {
+      return false
+    }
+    if (!(dom instanceof HTMLElement)) return false
+    const box = dom.getBoundingClientRect()
+    const { clientX: x, clientY: y } = event
+    if (y >= box.top || !atCorner(box)) return false
+    // The handle and the «+» above it, a little wider.
+    const left = box.left - size - GAP - TOWARD
+    const right = box.left - GAP + TOWARD
+    const top = box.top - TABLE_GAP - 2 * size - PLUS_GAP - TOWARD
+    const bottom = box.top - TABLE_GAP + TOWARD
+    if (x >= left && x <= right && y >= top && y <= bottom) return true
+    // Which side of the line from a to b the pointer is on.
+    const side = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.sign((b.x - a.x) * (y - a.y) - (b.y - a.y) * (x - a.x))
+    const corners = [from, { x: right, y: top }, { x: left, y: bottom }]
+    const sides = corners.map((a, i) => side(a, corners[(i + 1) % 3]!))
+    return sides.every((s) => s >= 0) || sides.every((s) => s <= 0)
   }
 
   const openMenuRef = useRef(openMenu)
@@ -322,24 +383,30 @@ export function BlockControls({ editor }: { editor: Editor }) {
         }
       }
     }
-    const top = (line.top + line.bottom) / 2 - HEIGHT / 2 - base.top
+    const clipLeft = Math.max(0, clip.current?.getBoundingClientRect().left ?? 0)
     // A bullet or a number sits left of its item's box; a task's checkbox is inside it.
-    const left = box.left - (node.type.name === 'listItem' ? MARKER : 0) - WIDTH - GAP - base.left
+    let left = box.left - (node.type.name === 'listItem' ? MARKER : 0) - size - GAP - base.left
+    let top = (line.top + line.bottom) / 2 - size / 2 - base.top
+    // A table's keeps clear of its rows' handles: further left, or above its top-left corner.
+    const corner = node.type.name === 'table' && atCorner(box)
+    if (corner) top = box.top - TABLE_GAP - size - base.top
+    else if (node.type.name === 'table' && !touch) left -= ROW_HANDLE_REACH + TABLE_GAP - GAP
     const { current, options } = turns(editor.state.doc, pos)
     const label = t('editor.block.handle')
-    const side = base.left + left - WIDTH - PLUS_GAP >= Math.max(0, clip.current?.getBoundingClientRect().left ?? 0)
+    const side = base.left + left - size - PLUS_GAP >= clipLeft
     const callout = node.type.name === 'callout' ? pos : menu === pos && inner !== null && editor.state.doc.nodeAt(inner)?.type.name === 'callout' ? inner : null
 
     return (
-      <div className={cn('absolute', live)} style={{ top, left, width: WIDTH, height: HEIGHT }} onPointerEnter={stay} onPointerLeave={leave}>
+      <div className={cn('absolute', live)} style={{ top, left, width: size, height: size }} onPointerEnter={stay} onPointerLeave={leave}>
         <button
           type="button"
           tabIndex={-1}
           aria-label={t('editor.block.insertBelow')}
           title={t('editor.block.insertHint')}
-          className="absolute grid place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 [&_svg]:size-[15px]"
-          // Left of the handle, or under it where there is no room on its left (a card, a phone).
-          style={side ? { left: -WIDTH - PLUS_GAP, top: 0, width: WIDTH, height: HEIGHT } : { left: 0, top: HEIGHT + PLUS_GAP, width: WIDTH, height: HEIGHT }}
+          className="absolute grid place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 [&_svg]:size-4"
+          // Left of the handle, or where there is no room on its left (a card, a phone, a narrow
+          // window) under it; above it at a table's corner, as the table is under it.
+          style={side ? { left: -size - PLUS_GAP, top: 0, width: size, height: size } : { left: 0, top: (corner ? -1 : 1) * (size + PLUS_GAP), width: size, height: size }}
           // The cursor and the focus stay in the editor, and on a phone its keyboard stays open. Without
           // its press, Safari sends no click: a finger inserts as it lifts.
           onPointerDown={(e) => {
@@ -423,7 +490,7 @@ export function BlockControls({ editor }: { editor: Editor }) {
             aria-haspopup="menu"
             aria-expanded={menu === pos}
             title={t('editor.block.handleHint', { key: `${MOD}/` })}
-            className="grid size-full cursor-grab place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 active:cursor-grabbing aria-expanded:bg-accent-soft aria-expanded:text-accent [&_svg]:size-[15px]"
+            className="grid size-full cursor-grab place-items-center rounded-[6px] text-ink-4 transition-colors hover:bg-hover hover:text-ink-2 active:cursor-grabbing aria-expanded:bg-accent-soft aria-expanded:text-accent [&_svg]:size-4"
             // A finger's tap keeps the cursor in the editor, and the phone's keyboard open. Without its
             // press, Safari sends no click: the finger opens the menu as it lifts.
             onPointerDown={(e) => {

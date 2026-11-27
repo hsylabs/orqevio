@@ -657,6 +657,11 @@ details.orq-toggle[open] > summary::before {
   overflow-x: auto;
   margin: 1em 0;
 }
+/* Being edited, room under a table for its «+» that adds a row (TableControls), clear of the block
+   after it: a click there to leave the table would add a row. */
+.ProseMirror[contenteditable='true'] .tableWrapper {
+  margin-bottom: 28px;
+}
 .orq-prose th,
 .orq-prose td {
   border-bottom: 1px solid var(--line);
