@@ -18,6 +18,7 @@ import {
   type TrashNodeDTO,
   type TrashTreeDTO,
   type UpdateStatusDTO,
+  searchable,
 } from '@orqevio/shared'
 import { QueryClient, keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { ApiError, get, onSessionEnded, sessionEnded } from './api'
@@ -144,7 +145,7 @@ export const useSearch = (wid: string, q: string, type?: 'card' | 'page', archiv
     queryKey: [...keys.search(wid, q), type ?? 'all', archived],
     queryFn: ({ signal }) =>
       get<SearchResultDTO[]>(`/workspaces/${wid}/search?q=${encodeURIComponent(q)}${type ? `&type=${type}` : ''}${archived ? '&archived=1' : ''}`, signal),
-    enabled: q.trim().length >= 2,
+    enabled: searchable(q),
     placeholderData: keepPreviousData,
     staleTime: 10_000,
   })

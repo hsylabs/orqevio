@@ -1,4 +1,15 @@
-import type { RestoredDTO, TrashConflictDTO, TrashKind, TrashNodeDTO, TrashPlaceKind, TrashPlanDTO, TrashPlanManyDTO, TrashPlanNodeDTO, TrashRelationDTO } from '@orqevio/shared'
+import {
+  type RestoredDTO,
+  type TrashConflictDTO,
+  type TrashKind,
+  type TrashNodeDTO,
+  type TrashPlaceKind,
+  type TrashPlanDTO,
+  type TrashPlanManyDTO,
+  type TrashPlanNodeDTO,
+  type TrashRelationDTO,
+  searchable,
+} from '@orqevio/shared'
 import { ChevronRight } from 'lucide-react'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -968,7 +979,7 @@ function CardSearch({ workspaceId, value, onChange }: { workspaceId: string; val
         <span className="text-[12px] font-medium text-ink-3">{t('picker.card')}</span>
         <input className="field h-9" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('picker.searchCard')} />
       </label>
-      {q.trim().length >= 2 && (
+      {searchable(q) && (
         <ul className="max-h-[160px] overflow-y-auto rounded-[10px] border border-line p-1" aria-label={t('picker.results')}>
           {results.length === 0 && !found.isFetching && <li className="px-2 py-1.5 text-ink-3">{t('picker.noCards')}</li>}
           {results.map((r) => (

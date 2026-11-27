@@ -37,7 +37,8 @@ const keys = {
 function everything(sql: RawSql) {
   const tables: Record<string, unknown[][]> = {}
   for (const [name] of sql.rows("SELECT name FROM sqlite_master WHERE type = 'table' AND substr(name, 1, 7) <> 'sqlite_' ORDER BY name")) {
-    if (name === 'sessions' || name === 'instance' || /_fts_(?:data|idx|content|docsize|config)$/.test(String(name))) continue
+    // A full-text index's own tables are laid out by how its rows went in; its rows are compared.
+    if (name === 'sessions' || name === 'instance' || /_(?:fts|trigram)_(?:data|idx|content|docsize|config)$/.test(String(name))) continue
     try {
       tables[String(name)] = [...sql.rows(`SELECT rowid, * FROM "${name}" ORDER BY rowid`)]
     } catch {
@@ -183,8 +184,7 @@ describe('backups', () => {
     const earlier = await copy({ migrationsDir: old, backupDir: shared })
     const before = await signUp(earlier, 'Lucía Martín')
     const { boardId, columns } = await seedBoard(before.client, before.workspaceId)
-    // Written into the tables as that version has them: today's code for cards also reads their
-    // comments, whose table only the last migration makes.
+    // Written straight into the tables, as that version has them.
     const card = crypto.randomUUID()
     earlier.sql.run(
       'INSERT INTO cards (id, workspace_id, board_id, column_id, title, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -208,8 +208,10 @@ describe('backups', () => {
     expect(restored.status, JSON.stringify(restored.body)).toBe(200)
     expect((await now.client.get('/api/auth/me')).body.user.name).toBe('Lucía Martín')
     expect((await now.client.get(`/api/cards/${card}`)).body.title).toBe('De la versión anterior')
-    // The migration the backup didn't have ran afterwards.
-    expect([...fresh.sql.rows("SELECT name FROM sqlite_master WHERE type = 'table'")].flat()).toContain('card_comments')
+    // The migration the backup didn't have ran afterwards, and indexed what the backup brought.
+    expect([...fresh.sql.rows("SELECT name FROM sqlite_master WHERE type = 'table'")].flat()).toContain('cards_trigram')
+    const found = (await now.client.get(`/api/workspaces/${before.workspaceId}/search?q=ersión`)).body as Array<{ title: string }>
+    expect(found.map((r) => r.title)).toEqual(['De la versión anterior'])
     expect([...fresh.sql.rows('SELECT name FROM pragma_table_info(?)', 'oauth_tokens')].flat()).toContain('scopes')
     expect([...fresh.sql.rows('SELECT count(*) FROM __drizzle_migrations')][0]![0]).toBe(journal.entries.length + 1)
   })

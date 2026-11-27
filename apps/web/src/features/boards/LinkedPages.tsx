@@ -1,4 +1,4 @@
-import type { CardDetailDTO, TrashedDTO } from '@orqevio/shared'
+import { type CardDetailDTO, type TrashedDTO, searchable } from '@orqevio/shared'
 import { FileText, Link2, Search, X } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -19,7 +19,7 @@ export function LinkedPages({ card }: { card: CardDetailDTO }) {
   const linked = new Set(card.pages.map((p) => p.id))
   const project = overview?.projects.find((p) => p.id === card.board.projectId)
   const suggestions =
-    query.trim().length >= 2
+    searchable(query)
       ? (search.data ?? []).map((r) => ({ id: r.id, title: r.title, icon: r.icon, hint: r.projectName }))
       : (project?.pages ?? []).slice(0, 8).map((p) => ({ id: p.id, title: p.title, icon: p.icon, hint: project?.name ?? '' }))
 
@@ -84,7 +84,7 @@ export function LinkedPages({ card }: { card: CardDetailDTO }) {
         </div>
         <div className="max-h-[260px] overflow-y-auto pt-1">
           {suggestions.filter((s) => !linked.has(s.id)).length === 0 ? (
-            <p className="px-2 py-3 text-[12.5px] text-ink-3">{query.trim().length >= 2 ? t('linked.noResults') : t('linked.hint')}</p>
+            <p className="px-2 py-3 text-[12.5px] text-ink-3">{searchable(query) ? t('linked.noResults') : t('linked.hint')}</p>
           ) : (
             suggestions
               .filter((s) => !linked.has(s.id))

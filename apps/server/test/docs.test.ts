@@ -120,6 +120,90 @@ describe('documents', () => {
     expect((await other.client.get(`/api/workspaces/${other.workspaceId}/search?q=cancion`)).body).toEqual([])
   })
 
+  it('finds words inside a run of text, in languages written without spaces and in compounds', async () => {
+    const { client, workspaceId } = await signUp(h, 'Idiomas')
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const search = async (q: string) =>
+      ((await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent(q)}`)).body as Array<{ title: string; comment?: unknown }>).map((r) => r.title)
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: '会議の議事録を作成する' })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: '编写会议记录' })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'สร้างบันทึกการประชุม' })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: '회의 기록을 작성하다' })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Viaje a İstanbul' })
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Projektplan', content: 'Termine und Aufgaben' })
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Canción', content: '本日の議題について' })
+
+    // In Japanese, Chinese and Thai, a word in the middle of the text: three characters or more
+    // through trigrams, fewer read as they are. In 1.5.0 only the start of the run was found.
+    expect(await search('議事録')).toEqual(['会議の議事録を作成する'])
+    expect(await search('会議')).toEqual(['会議の議事録を作成する'])
+    expect(await search('作成')).toEqual(['会議の議事録を作成する'])
+    expect(await search('会议')).toEqual(['编写会议记录'])
+    expect(await search('记录')).toEqual(['编写会议记录'])
+    expect(await search('บันทึก')).toEqual(['สร้างบันทึกการประชุม'])
+    expect(await search('議題')).toEqual(['Canción'])
+    // Korean separates its words: a short word is still found at its start, as before.
+    expect(await search('기록')).toEqual(['회의 기록을 작성하다'])
+    // Accents and case, and a word inside a compound.
+    expect(await search('cancion')).toEqual(['Canción'])
+    expect(await search('istanbul')).toEqual(['Viaje a İstanbul'])
+    expect(await search('plan')).toEqual(['Projektplan'])
+    // Several terms, each looked for its own way: all of them must be there.
+    expect(await search('会議 作成')).toEqual(['会議の議事録を作成する'])
+    expect(await search('会議 记录')).toEqual([])
+  })
+
+  it('reads terms with punctuation or loose accents as words, and leaves out what only an id in a link has', async () => {
+    const { client, workspaceId } = await signUp(h, 'Casos')
+    const { projectId, columns } = await seedBoard(client, workspaceId)
+    const found = async (q: string) =>
+      (await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent(q)}`)).body as Array<{ title: string; excerpt: string }>
+    const search = async (q: string) => (await found(q)).map((r) => r.title)
+    const team = (await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Plan de l’équipe', description: 'Enviar un e mail al equipo' })).body
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Reunión 会議の準備', description: 'equipo okay' })
+    // Yoruba: a grave accent NFC doesn't join to «ọ», and the trigram index leaves out.
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'M\u1ecd\u0300r\u00e0n rere' })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Notas tailandesas', description: `${'อื่น ๆ '.repeat(40)}บันทึกสำคัญ ที่นี่` })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Notas coreanas', description: `${'다른 내용 '.repeat(30)}회의기록입니다 끝` })
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Enlaces', content: `Ver [la tarea](/card/${team.id}).` })
+
+    // With an apostrophe or a hyphen, as the word index reads them: «l’équipe» and «e mail» too.
+    expect(await search("l'équipe")).toEqual(['Plan de l’équipe'])
+    expect(await search('e-mail')).toEqual(['Plan de l’équipe'])
+    expect(await search('m\u1ecd\u0300')).toEqual(['M\u1ecd\u0300r\u00e0n rere'])
+    // Terms of each kind together: anywhere, read as they are, at the start of a word.
+    expect(await search('equipo 会議')).toEqual(['Reunión 会議の準備'])
+    expect(await search('ok 会議')).toEqual(['Reunión 会議の準備'])
+    // The id of the card the page links to is in its Markdown, but isn't what the page says.
+    expect(await search(team.id.slice(0, 8))).toEqual([])
+    expect(await search('Enlaces')).toEqual(['Enlaces'])
+    // Many pages found by the id alone, ahead of one that has the term: that one is still found.
+    for (let i = 0; i < 20; i++) await client.post(`/api/projects/${projectId}/pages`, { title: `Enlace ${i}`, content: `[a](/card/${team.id}) [b](/card/${team.id})` })
+    await client.post(`/api/projects/${projectId}/pages`, { title: 'Código', content: `${'texto '.repeat(50)}ref ${team.id.slice(0, 8)}` })
+    expect(await search(team.id.slice(0, 8))).toEqual(['Código'])
+    // The excerpt shows the term, also where folding the text changes its length (Thai marks, Korean syllables).
+    expect((await found('สำคัญ'))[0]?.excerpt).toContain('บันทึกสำคัญ')
+    expect((await found('기록입니다'))[0]?.excerpt).toContain('회의기록입니다')
+    // A control character in the query is left out.
+    expect((await client.get(`/api/workspaces/${workspaceId}/search?q=abc%00`)).status).toBe(200)
+  })
+
+  it('finds comments and ranks titles first with terms read as they are', async () => {
+    const { client, workspaceId } = await signUp(h, 'Comentarios CJK')
+    const { columns } = await seedBoard(client, workspaceId)
+    const search = async (q: string) =>
+      ((await client.get(`/api/workspaces/${workspaceId}/search?q=${encodeURIComponent(q)}&type=card`)).body as Array<{ title: string; comment?: unknown }>).map(
+        (r) => `${r.title}${r.comment ? ' (comentario)' : ''}`,
+      )
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: '准备材料', description: '下周的会议需要' })
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: '会议安排' })
+    const commented = await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: '其他' })
+    await client.post(`/api/cards/${commented.body.id}/comments`, { body: '请看会议纪要' })
+    // The title first, then the description, then what a comment says.
+    expect(await search('会议')).toEqual(['会议安排', '准备材料', '其他 (comentario)'])
+    expect(await search('会议纪要')).toEqual(['其他 (comentario)'])
+  })
+
   it('ranks title matches first even when their bodies are long', async () => {
     const { client, workspaceId } = await signUp(h, 'Ranking')
     const { columns } = await seedBoard(client, workspaceId)
