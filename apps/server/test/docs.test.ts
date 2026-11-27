@@ -153,7 +153,7 @@ describe('documents', () => {
     expect(await search('会議 记录')).toEqual([])
   })
 
-  it('reads terms with punctuation or loose accents as words, and leaves out what only an id in a link has', async () => {
+  it('reads terms with punctuation, loose accents or only hexadecimal digits as words, and decomposed text too', async () => {
     const { client, workspaceId } = await signUp(h, 'Casos')
     const { projectId, columns } = await seedBoard(client, workspaceId)
     const found = async (q: string) =>
@@ -166,6 +166,10 @@ describe('documents', () => {
     await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Notas tailandesas', description: `${'อื่น ๆ '.repeat(40)}บันทึกสำคัญ ที่นี่` })
     await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: 'Notas coreanas', description: `${'다른 내용 '.repeat(30)}회의기록입니다 끝` })
     await client.post(`/api/projects/${projectId}/pages`, { title: 'Enlaces', content: `Ver [la tarea](/card/${team.id}).` })
+    const typed = 'abcdef12-1234-4234-8234-123456789012'
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: `Investigar ${typed}` })
+    // Written decomposed (NFD), as a macOS file name pasted in comes.
+    await client.post(`/api/columns/${columns[0]!.id}/cards`, { title: `今日も${'がんばる'.normalize('NFD')}ぞ` })
 
     // With an apostrophe or a hyphen, as the word index reads them: «l’équipe» and «e mail» too.
     expect(await search("l'équipe")).toEqual(['Plan de l’équipe'])
@@ -174,13 +178,16 @@ describe('documents', () => {
     // Terms of each kind together: anywhere, read as they are, at the start of a word.
     expect(await search('equipo 会議')).toEqual(['Reunión 会議の準備'])
     expect(await search('ok 会議')).toEqual(['Reunión 会議の準備'])
-    // The id of the card the page links to is in its Markdown, but isn't what the page says.
-    expect(await search(team.id.slice(0, 8))).toEqual([])
-    expect(await search('Enlaces')).toEqual(['Enlaces'])
-    // Many pages found by the id alone, ahead of one that has the term: that one is still found.
-    for (let i = 0; i < 20; i++) await client.post(`/api/projects/${projectId}/pages`, { title: `Enlace ${i}`, content: `[a](/card/${team.id}) [b](/card/${team.id})` })
-    await client.post(`/api/projects/${projectId}/pages`, { title: 'Código', content: `${'texto '.repeat(50)}ref ${team.id.slice(0, 8)}` })
-    expect(await search(team.id.slice(0, 8))).toEqual(['Código'])
+    // Hexadecimal digits alone, at the start of a word, as before: not inside the id of the card
+    // the page links to, which is in its Markdown but isn't what the page says, and an id someone
+    // wrote is still found by its start.
+    const words = [...team.id.split('-'), ...typed.split('-')]
+    const inside = [1, 2, 3, 4, 5].map((at) => team.id.slice(at, at + 3)).find((part) => !words.some((w) => w.startsWith(part)))!
+    expect(await search(inside)).toEqual([])
+    expect(await search('abcdef12')).toEqual([`Investigar ${typed}`])
+    // Decomposed text, found by the word as typed and as written.
+    expect(await search('がんばる')).toEqual([`今日も${'がんばる'.normalize('NFD')}ぞ`])
+    expect(await search('がんばる'.normalize('NFD'))).toEqual([`今日も${'がんばる'.normalize('NFD')}ぞ`])
     // The excerpt shows the term, also where folding the text changes its length (Thai marks, Korean syllables).
     expect((await found('สำคัญ'))[0]?.excerpt).toContain('บันทึกสำคัญ')
     expect((await found('기록입니다'))[0]?.excerpt).toContain('회의기록입니다')

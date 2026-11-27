@@ -58,10 +58,16 @@ export function searchTerms(raw: string) {
  *   it is, being too short for trigrams;
  * - `word`, shorter otherwise («ok», 기록), or with something other than letters and digits in it
  *   («l'équipe», «e-mail»): at the start of a word, in the word index (0001), which reads «l’équipe»
- *   and «e mail» as the same words.
+ *   and «e mail» as the same words. So are terms of hexadecimal digits alone («bed», «2025»), as
+ *   before: anywhere, they would be found in the ids of the references to cards, pages and files
+ *   that Markdown holds.
+ *
+ * `forms` are the term as typed (NFC) and decomposed (NFD) if that differs: text is indexed as it
+ * was written, and some of it comes decomposed (がんばる pasted from a macOS file name).
  */
 export interface Term {
   text: string
+  forms: string[]
   by: 'trigram' | 'text' | 'word'
 }
 
@@ -71,21 +77,31 @@ export interface Term {
  */
 const trigramLength = (text: string) => [...text.replace(/[\u0300-\u036f]/g, '')].length
 
-export function planTerms(terms: string[]): Term[] {
-  return terms.map((text) => ({
-    text,
-    by: !/^[\p{L}\p{M}\p{N}]+$/u.test(text) ? 'word' : trigramLength(text) >= 3 ? 'trigram' : UNSPACED_SCRIPT.test(text) ? 'text' : 'word',
-  }))
+const kindOf = (text: string): Term['by'] => {
+  if (!/^[\p{L}\p{M}\p{N}]+$/u.test(text) || /^[0-9a-f]+$/.test(fold(text))) return 'word'
+  return trigramLength(text) >= 3 ? 'trigram' : UNSPACED_SCRIPT.test(text) ? 'text' : 'word'
 }
 
-/** FTS5 query, every term a phrase: at the start of a word in the word index, anywhere in the trigram one. */
+export function planTerms(terms: string[]): Term[] {
+  return terms.map((text) => ({ text, forms: [...new Set([text, text.normalize('NFD')])], by: kindOf(text) }))
+}
+
+/**
+ * FTS5 query, every term a phrase in each of its forms: at the start of a word in the word index,
+ * anywhere in the trigram one.
+ */
 const ftsQuery = (terms: Term[], column?: string) => {
-  const query = terms.map((t) => (t.by === 'word' ? `"${t.text}"*` : `"${t.text}"`)).join(' ')
+  const query = terms
+    .map((t) => {
+      const phrases = t.forms.map((f) => (t.by === 'word' ? `"${f}"*` : `"${f}"`))
+      return phrases.length > 1 ? `(${phrases.join(' OR ')})` : phrases[0]
+    })
+    .join(' AND ')
   return column ? `${column} : (${query})` : query
 }
 
-/** A LIKE pattern for the term anywhere, its own % and _ taken as they are. */
-const likePattern = (term: Term) => `%${term.text.replace(/[\\%_]/g, '\\$&')}%`
+/** A LIKE pattern for a form of a term anywhere, its own % and _ taken as they are. */
+const likePattern = (form: string) => `%${form.replace(/[\\%_]/g, '\\$&')}%`
 
 /** One kind of thing searched: its table, its two indexes and the table that links their rowids to its rows. */
 interface Searched {
@@ -137,7 +153,7 @@ function finder(kind: Searched, terms: Term[]) {
 
   const inIndex = (by: 'trigram' | 'word', column?: string) => sql`m.id IN (SELECT rowid FROM ${indexOf(by)} WHERE ${indexOf(by)} MATCH ${ftsQuery(groups[by], column)})`
   const like = (term: Term, columns: string[]) => sql`(${sql.join(
-    columns.map((c) => sql`${x}.${raw(c)} LIKE ${likePattern(term)} ESCAPE '\\'`),
+    columns.flatMap((c) => term.forms.map((f) => sql`${x}.${raw(c)} LIKE ${likePattern(f)} ESCAPE '\\'`)),
     sql` OR `,
   )})`
 
@@ -153,34 +169,6 @@ function finder(kind: Searched, terms: Term[]) {
   }
   const inTitle = titled.length ? sql.join(titled, sql` AND `) : sql`0 = 1`
   return { from, where, inTitle }
-}
-
-/**
- * Ids in references to cards, pages and files, which the trigram index holds as written in the
- * Markdown: «bed» or «123» are found in some of them.
- */
-const IDS = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
-
-/** Whether every term looked for in the trigram index is in one of `texts` as well, ids aside. */
-function holds(texts: string[], terms: Term[]) {
-  const looked = terms.filter((t) => t.by === 'trigram')
-  if (!looked.length) return true
-  const inTexts = texts.map((t) => fold(t.replace(IDS, ' ')))
-  return looked.every((t) => inTexts.some((f) => f.includes(fold(t.text))))
-}
-
-/**
- * The first `limit` rows `query` finds that `keep` keeps. Rows found by an id alone are few, so the
- * rows are asked for again, more of them, only when some were left out and there may be more.
- */
-function firstKept<T>(query: (limit: number) => T[], keep: (row: T) => boolean, limit: number) {
-  let rows = query(limit)
-  let kept = rows.filter(keep)
-  if (kept.length < rows.length && rows.length === limit) {
-    rows = query(limit * 4)
-    kept = rows.filter(keep)
-  }
-  return kept.slice(0, limit)
 }
 
 function excerpt(text: string, terms: string[], size = 140) {
@@ -214,7 +202,7 @@ export class SearchService {
 
     if (types.includes('card') && hasScope(actor, 'tasks:read')) {
       const cards = finder(CARDS, planned)
-      const query = (count: number) => this.deps.db.all<{
+      const rows = this.deps.db.all<{
         id: string
         title: string
         description: string
@@ -233,8 +221,8 @@ export class SearchService {
         JOIN projects p ON p.id = b.project_id
         WHERE c.workspace_id = ${workspaceId} AND (${opts.archived ? 1 : 0} OR c.archived_at IS NULL) AND ${cards.where}
         ORDER BY (${cards.inTitle}) DESC, f.rank, c.updated_at DESC
-        LIMIT ${count}`)
-      for (const r of firstKept(query, (r) => holds([r.title, r.description], planned), limit)) {
+        LIMIT ${limit}`)
+      for (const r of rows) {
         results.push({
           type: 'card',
           id: r.id,
@@ -257,7 +245,7 @@ export class SearchService {
       const room = limit - results.length
       if (room > 0) {
         const found = finder(COMMENTS, planned)
-        const query = (count: number) => this.deps.db.all<{
+        const comments = this.deps.db.all<{
           id: string
           body: string
           authorName: string
@@ -285,8 +273,8 @@ export class SearchService {
           )
           WHERE place = 1
           ORDER BY rank, createdAt DESC
-          LIMIT ${count}`)
-        for (const r of firstKept(query, (r) => holds([r.body], planned), room)) {
+          LIMIT ${room}`)
+        for (const r of comments) {
           results.push({
             type: 'card',
             id: r.cardId,
@@ -307,14 +295,14 @@ export class SearchService {
 
     if (types.includes('page') && hasScope(actor, 'docs:read')) {
       const pages = finder(PAGES, planned)
-      const query = (count: number) => this.deps.db.all<{ id: string; title: string; icon: string | null; content: string; projectId: string; projectName: string }>(sql`
+      const rows = this.deps.db.all<{ id: string; title: string; icon: string | null; content: string; projectId: string; projectName: string }>(sql`
         SELECT pg.id, pg.title, pg.icon, pg.content, p.id AS projectId, p.name AS projectName
         FROM ${pages.from}
         JOIN projects p ON p.id = pg.project_id
         WHERE pg.workspace_id = ${workspaceId} AND ${pages.where}
         ORDER BY (${pages.inTitle}) DESC, f.rank, pg.updated_at DESC
-        LIMIT ${count}`)
-      for (const r of firstKept(query, (r) => holds([r.title, r.content], planned), limit)) {
+        LIMIT ${limit}`)
+      for (const r of rows) {
         results.push({
           type: 'page',
           id: r.id,
