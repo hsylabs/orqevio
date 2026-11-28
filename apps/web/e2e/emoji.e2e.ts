@@ -117,11 +117,12 @@ test('a «:» in the text opens nothing and leaves Enter and the arrows alone, a
   await page.keyboard.type('Uno :a')
   await expect(emojiMenu(page)).toBeHidden()
   await page.keyboard.press('ArrowLeft')
-  await page.keyboard.type('b')
+  await page.keyboard.press('ArrowLeft')
+  await page.keyboard.type('y')
   await page.keyboard.press('End')
   await page.keyboard.press('Enter')
   await page.keyboard.type('Dos')
-  await expect.poll(saved).toMatch(/^Hora: 10:30, remarque :\n\nUno :ba\n\nDos\n\n```ruby\nx = 1\n```\n*$/)
+  await expect.poll(saved).toMatch(/^Hora: 10:30, remarque :\n\nUno y:a\n\nDos\n\n```ruby\nx = 1\n```\n*$/)
 
   // In code: no list, and a shortcode stays as typed.
   await editor.getByText('x = 1').click()
