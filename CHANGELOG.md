@@ -29,6 +29,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - «Video» and «Audio» in the «/» menu pick one to upload.
   - Only this copy's own attachments are played, by the type the server keeps for them: MP4, WebM, MOV and Ogg video, and MP3, M4A, AAC, WAV, Ogg, Opus, WebM and FLAC audio. What the browser can't play stays a link.
   - The server sends these with their own type, so that a page can play them (opened on their own, they are still downloaded), and any attachment a piece at a time when asked (HTTP ranges): a video can be played from any point, and Safari plays one at all.
+- **A date as text, from the «/» menu.** «Date» writes a day as the app's language writes it in full («28 de noviembre de 2026», «November 28, 2026»), so the Markdown keeps it as plain text that anyone, or any agent, reads. Enter takes today; «Tomorrow», «Yesterday» or any day of a calendar can be picked instead. No reminder comes with it.
 
 ### Changed
 - **Less to download after an update.** The code that draws equations (KaTeX) now comes in files of its own, still loaded with the editor. From the next update on, the browser keeps the ones it already has unless KaTeX itself changed, instead of downloading them again with the editor. The editor's own file is a quarter smaller (226 KB compressed instead of 301).

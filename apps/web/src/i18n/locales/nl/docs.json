@@ -227,6 +227,12 @@
         "keywords": "emoji emoticon smiley pictogram gezicht",
         "hint": "Een emoji in de tekst. Je kunt ook : en de naam typen, of de hele code, zoals :rocket:."
       },
+      "date": {
+        "title": "Datum",
+        "subtitle": "Vandaag of een andere dag, als tekst",
+        "keywords": "datum vandaag morgen gisteren dag kalender date today",
+        "hint": "Een datum als tekst, in de taal van de app: vandaag, morgen, gisteren of de dag die je kiest."
+      },
       "page": {
         "title": "Pagina",
         "subtitle": "Een pagina binnen deze",
@@ -379,6 +385,9 @@
     "media": {
       "video": "Video: {{name}}",
       "audio": "Audio: {{name}}"
+    },
+    "date": {
+      "title": "Datum invoegen"
     },
     "taskCheckbox": "Taak: {{text}}",
     "taskCheckboxEmpty": "Lege taak"

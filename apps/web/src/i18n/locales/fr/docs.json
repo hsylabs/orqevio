@@ -227,6 +227,12 @@
         "keywords": "emoji émoji émoticône smiley icône visage",
         "hint": "Un emoji dans le texte. Vous pouvez aussi taper « : » et son nom, ou son code entier (:rocket:)."
       },
+      "date": {
+        "title": "Date",
+        "subtitle": "Aujourd’hui ou un autre jour, en texte",
+        "keywords": "date aujourd’hui aujourdhui demain hier jour calendrier today",
+        "hint": "Une date écrite en texte, dans la langue de l’app : aujourd’hui, demain, hier ou le jour choisi."
+      },
       "page": {
         "title": "Page",
         "subtitle": "Une page dans celle-ci",
@@ -381,6 +387,9 @@
     "media": {
       "video": "Vidéo : {{name}}",
       "audio": "Audio : {{name}}"
+    },
+    "date": {
+      "title": "Insérer une date"
     },
     "taskCheckbox": "Tâche : {{text}}",
     "taskCheckboxEmpty": "Tâche vide"

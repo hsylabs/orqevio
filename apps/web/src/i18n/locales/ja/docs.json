@@ -227,6 +227,12 @@
         "keywords": "絵文字 えもじ 顔文字 アイコン emoji smiley",
         "hint": "テキストに絵文字を入れます。: と名前、または :rocket: のようなコード全体を入力しても入れられます。"
       },
+      "date": {
+        "title": "日付",
+        "subtitle": "今日やほかの日をテキストで",
+        "keywords": "日付 今日 明日 昨日 カレンダー ひづけ きょう date today",
+        "hint": "アプリの言語でテキストとして書く日付。今日、明日、昨日、または選んだ日。"
+      },
       "page": {
         "title": "ページ",
         "subtitle": "このページの中のページ",
@@ -377,6 +383,9 @@
     "media": {
       "video": "動画: {{name}}",
       "audio": "音声: {{name}}"
+    },
+    "date": {
+      "title": "日付を挿入"
     },
     "taskCheckbox": "ToDo：{{text}}",
     "taskCheckboxEmpty": "空のToDo"

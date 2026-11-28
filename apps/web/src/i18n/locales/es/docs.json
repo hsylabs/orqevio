@@ -227,6 +227,12 @@
         "keywords": "emoji emoticono emoticon icono cara smiley",
         "hint": "Un emoji en el texto. También puedes escribir : y su nombre, o su código entero, como :rocket:."
       },
+      "date": {
+        "title": "Fecha",
+        "subtitle": "Hoy u otro día, como texto",
+        "keywords": "fecha hoy dia mañana ayer calendario date today",
+        "hint": "Una fecha escrita como texto, en el idioma de la app: hoy, mañana, ayer o el día que elijas."
+      },
       "page": {
         "title": "Página",
         "subtitle": "Una página dentro de esta",
@@ -381,6 +387,9 @@
     "media": {
       "video": "Vídeo: {{name}}",
       "audio": "Audio: {{name}}"
+    },
+    "date": {
+      "title": "Insertar una fecha"
     },
     "taskCheckbox": "Tarea: {{text}}",
     "taskCheckboxEmpty": "Tarea sin texto"

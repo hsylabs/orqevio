@@ -1,16 +1,12 @@
-import type { Locale } from '@orqevio/shared'
-import { type Locale as DateLocale, addDays, nextMonday } from 'date-fns'
-import { de, enUS, es, fr, it, ja, nl, ptBR } from 'date-fns/locale'
+import { addDays, nextMonday } from 'date-fns'
 import { type ReactNode, useState } from 'react'
 import { DayPicker } from 'react-day-picker'
 import { useTranslation } from 'react-i18next'
 import { Popover } from '../../components/ui/Popover'
 import { currentLocale } from '../../i18n'
+import { DATE_LOCALES } from '../../lib/date-locales'
 import { dueToLocalDate, localDateToDue } from '../../lib/format'
 import '../../styles/daypicker.css'
-
-/** The calendar's month and weekday names, in the language the app is showing. */
-const DATE_LOCALES: Record<Locale, DateLocale> = { en: enUS, es, fr, pt: ptBR, it, de, nl, ja }
 
 export function DuePicker({ value, onChange, trigger }: { value: string | null; onChange: (iso: string | null) => void; trigger: ReactNode }) {
   const { t } = useTranslation('boards')
