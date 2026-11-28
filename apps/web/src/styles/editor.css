@@ -328,22 +328,21 @@ span.orq-code-lang .orq-code-chevron {
   white-space: pre-wrap;
   color: var(--ink-2);
 }
-/* Its drawing alone: the code shows only while the cursor is in it, in the editor being written in;
-   or its code alone. */
-.orq-code[data-view='diagram']:not(.ProseMirror-focused .orq-code--current) > pre,
+/* Its drawing in place of its code, once it is drawn: in the editor, in «diagram» view while the
+   cursor isn't in it (in the editor being written in); shown, not edited (a comment, paper), always.
+   Where it can't be drawn, or isn't yet, its code stays. In «code» view, its code alone. */
+.orq-code[data-drawn]:not([data-view]) > pre,
+.orq-code[data-view='diagram'][data-drawn]:not(.ProseMirror-focused .orq-code--current) > pre,
 .orq-code[data-view='code'] > .orq-diagram {
   display: none;
 }
-.orq-code[data-view='diagram']:not(.ProseMirror-focused .orq-code--current) > .orq-diagram,
-.orq-code[data-diagram][data-drawn]:not([data-error]) > .orq-diagram {
+.orq-code[data-drawn]:not([data-view]) > .orq-diagram,
+.orq-code[data-view='diagram'][data-drawn]:not(.ProseMirror-focused .orq-code--current) > .orq-diagram {
   margin-top: 0;
   padding-top: 40px;
 }
-/* Shown, not edited: the drawing in place of the code, which stays where it can't be drawn. */
-.orq-code[data-diagram][data-drawn]:not([data-error]) > pre {
-  display: none;
-}
-.orq-code[data-diagram]:not([data-view]):not([data-drawn]) > .orq-diagram:empty {
+/* Nothing to show yet: no empty box. */
+.orq-code[data-diagram]:not([data-drawn]):not([data-error]) > .orq-diagram:empty {
   display: none;
 }
 .orq-diagram-views {

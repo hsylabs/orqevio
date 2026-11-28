@@ -179,14 +179,20 @@ export function showDrawing(box: HTMLElement, drawing: Drawing) {
   return false
 }
 
+/** Marks a diagram's block as drawn (its drawing in place of its code) or not drawn (`data-error`). */
+export function markDrawn(block: HTMLElement, drawn: boolean | null) {
+  block.toggleAttribute('data-drawn', drawn === true)
+  block.toggleAttribute('data-error', drawn === false)
+}
+
 /** Shows a diagram shown, not edited, as `drawing`: its code hidden once it is drawn, shown if it can't be. */
 function shownAs(block: HTMLElement, box: HTMLElement, drawing: Drawing) {
-  block.toggleAttribute('data-error', !showDrawing(box, drawing))
-  block.setAttribute('data-drawn', '')
+  markDrawn(block, showDrawing(box, drawing))
+  block.setAttribute('data-shown', '')
 }
 
 const diagramsIn = (root: ParentNode | null) =>
-  [...(root?.querySelectorAll<HTMLElement>('.orq-code[data-diagram]:not([data-drawn]):not([data-drawing])') ?? [])].flatMap((block) => {
+  [...(root?.querySelectorAll<HTMLElement>('.orq-code[data-diagram]:not([data-shown]):not([data-drawing])') ?? [])].flatMap((block) => {
     const box = block.querySelector<HTMLElement>('.orq-diagram')
     const code = block.querySelector('pre')?.textContent ?? ''
     return box && code.trim() ? [{ block, box, code }] : []

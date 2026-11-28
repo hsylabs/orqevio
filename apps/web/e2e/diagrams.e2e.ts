@@ -84,6 +84,12 @@ test('a diagram from the «/» menu starts from one, and one that can\'t be draw
   await expect(block.locator('.orq-diagram')).toContainText('No se puede dibujar el diagrama:')
   await expect(block).toHaveAttribute('data-error', '')
   await snap(page, testInfo.outputPath('diagram-error.png'))
+  // With the cursor elsewhere too: no drawing to show in its place.
+  await editor.getByText('Uno', { exact: true }).click()
+  await expect(block.locator(':scope > pre')).toBeVisible()
+  await expect(block.locator('.orq-diagram')).toContainText('No se puede dibujar el diagrama:')
+  // A press on its box puts the cursor back at the end of its code.
+  await block.locator('.orq-diagram').click()
   await page.keyboard.press('Backspace')
   await page.keyboard.press('Backspace')
   await page.keyboard.press('Backspace')

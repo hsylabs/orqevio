@@ -6,7 +6,7 @@ import { Decoration, DecorationSet, type NodeView } from '@tiptap/pm/view'
 import i18next, { t } from 'i18next'
 import { copyText } from '../../../components/ui/CopyButton'
 import { codeColoursLoaded, findLanguage, highlighter, languageOf, loadCodeColours, PLAIN, whenCodeColoursLoad } from './code-languages'
-import { type Drawing, diagramLink, drawDiagram, drawnBefore, isDiagram, onThemeChange, showDrawing } from './diagram'
+import { type Drawing, diagramLink, drawDiagram, drawnBefore, isDiagram, markDrawn, onThemeChange, showDrawing } from './diagram'
 import { readPending } from './own-step'
 import { icon } from './svg-icons'
 
@@ -157,7 +157,7 @@ class CodeBlockView implements NodeView {
     // Drawn before (the page opened again): shown at once.
     const before = drawnBefore(this.node.textContent)
     if (before && this.node.textContent.trim()) {
-      this.dom.toggleAttribute('data-error', !showDrawing(box, before))
+      markDrawn(this.dom, showDrawing(box, before))
       this.diagram.drawn = this.node.textContent
     }
     this.showAs('diagram')
@@ -186,7 +186,7 @@ class CodeBlockView implements NodeView {
       const request = ++diagram.request
       if (!code.trim()) {
         diagram.box.textContent = t('docs:editor.diagram.empty')
-        this.dom.removeAttribute('data-error')
+        markDrawn(this.dom, null)
         return
       }
       let drawing: Drawing
@@ -199,7 +199,7 @@ class CodeBlockView implements NodeView {
       }
       // Something newer is being drawn, or the block is gone.
       if (request !== diagram.request || this.diagram !== diagram) return
-      this.dom.toggleAttribute('data-error', !showDrawing(diagram.box, drawing))
+      markDrawn(this.dom, showDrawing(diagram.box, drawing))
     }, wait)
   }
 
