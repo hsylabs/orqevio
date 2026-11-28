@@ -13,6 +13,12 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - Beside the block marked, a small drawing of it and a sentence on what it is for. It follows the arrows and the pointer, and isn't shown where there is no room beside the menu, as on a phone.
   - «Close menu · Esc» at its foot.
 - **A page inside a page, from the «/» menu.** In a document, «Page» asks for its name, makes the page inside the one edited, and leaves a link to it where the «/» was.
+- **Emoji.** The emoji itself goes in the text, so the Markdown keeps it as it is. In a document, a card's description and a comment:
+  - «:» and two letters or more of its name list the emoji that match, by their names in the app's language («:cohete») or by GitHub's shortcodes («:rocket»). A «:» with fewer letters, as in «10:30» or after a space as French writes it, opens nothing.
+  - A whole shortcode, as GitHub writes them, turns into its emoji as its second «:» is typed: `:tada:` gives 🎉. Backspace right after brings the shortcode back.
+  - «Emoji» in the «/» menu lists them before a name is typed, the last ones chosen in this browser first.
+  - In code, a «:» stays a «:».
+  - The names come from [emojibase](https://emojibase.dev) (MIT): about 90 KB compressed for each language, downloaded the first time a «:» and a name are typed.
 
 ### Changed
 - **Less to download after an update.** The code that draws equations (KaTeX) now comes in files of its own, still loaded with the editor. From the next update on, the browser keeps the ones it already has unless KaTeX itself changed, instead of downloading them again with the editor. The editor's own file is a quarter smaller (226 KB compressed instead of 301).

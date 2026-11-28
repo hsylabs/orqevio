@@ -13,6 +13,7 @@ import { ApiError, api, errorMessage, get } from '../../../lib/api'
 import { cn } from '../../../lib/cn'
 import { keys, queryClient } from '../../../lib/queries'
 import { localPref, setLocalPref } from '../../../lib/theme'
+import { currentLocale } from '../../../i18n'
 import { BlockControls } from './BlockControls'
 import { CalloutControls } from './CalloutControls'
 import { markerFor } from './callout'
@@ -22,7 +23,8 @@ import { ImageControls } from './ImageControls'
 import { MathControls } from './MathControls'
 import { MathKeys, startMath } from './math'
 import { FormatMenu } from './FormatMenu'
-import { BlockKeys, Mentions, SlashCommands } from './extensions'
+import { BlockKeys, EmojiCommands, EmojiShortcodes, Mentions, SlashCommands, emojiKey } from './extensions'
+import { type Emoji, browseEmoji, byShortcode, loadEmoji, rememberEmoji, searchEmoji } from './emoji'
 import { MARKDOWN_SHORTCUTS } from './block-commands'
 import { opensLine } from './insert-below'
 import { documentExtensions } from './markdown'
@@ -76,6 +78,7 @@ type SlashId =
   | 'table'
   | 'hr'
   | 'mention'
+  | 'emoji'
   | 'page'
   | 'image'
   | 'file'
@@ -150,6 +153,9 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
   const navigate = useNavigate()
   const slashStore = useMemo(createSuggestionStore, [])
   const mentionStore = useMemo(createSuggestionStore, [])
+  const emojiStore = useMemo(createSuggestionStore, [])
+  /** Whether the «:» was put by the «/» menu's «Emoji», which lists the emoji before a name is typed. */
+  const emojiBrowse = useRef(false)
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
   /** The Markdown last loaded or reported as changed. */
@@ -240,6 +246,12 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       item('table', '▦', 'insert', (e, r) => e.chain().focus().deleteRange(r).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()),
       item('hr', '—', 'insert', (e, r) => e.chain().focus().deleteRange(r).setHorizontalRule().run()),
       item('mention', '@', 'insert', (e, r) => e.chain().focus().deleteRange(r).insertContent('@').run()),
+      item('emoji', '😀', 'insert', (e, r) => {
+        emojiBrowse.current = true
+        e.chain().focus().deleteRange(r).insertContent(':').run()
+        // Where no «:» menu starts, as in code, the next «:» is typed: nothing is listed before its name.
+        if (!emojiKey.getState(e.state)?.active) emojiBrowse.current = false
+      }),
     ]
     if (uploadRef.current) {
       items.push(
@@ -283,6 +295,47 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
     }
   }
 
+  // With a name of two letters or more, as Slack does, so that a «:» in the text opens nothing; from
+  // the «/» menu, at once. The emoji are loaded as soon as a «:» could start one.
+  const emojiStarts = (query: string) => {
+    if (query) void loadEmoji(currentLocale()).catch(() => {})
+    return query ? query.length >= 2 : emojiBrowse.current
+  }
+
+  const emojiItems = async (query: string): Promise<MenuItem[]> => {
+    const t = tRef.current
+    let list: Emoji[]
+    try {
+      list = await loadEmoji(currentLocale())
+    } catch {
+      return []
+    }
+    const locale = currentLocale()
+    const toItem = (emoji: Emoji, group?: string): MenuItem => ({
+      id: `emoji-${emoji.char}`,
+      title: emoji.label.charAt(0).toLocaleUpperCase(locale) + emoji.label.slice(1),
+      // Its shortcode, which typed whole makes it too, under its name: some are long.
+      subtitle: emoji.codes[0] && `:${emoji.codes[0]}:`,
+      icon: emoji.char,
+      group,
+      run: (editor, range) => {
+        rememberEmoji(emoji.char)
+        editor.chain().focus().deleteRange(range).insertContent(emoji.char).run()
+      },
+    })
+    if (query) return searchEmoji(list, query).map((emoji) => toItem(emoji))
+    if (!emojiBrowse.current) return []
+    const { recent, first } = browseEmoji(list)
+    return [...recent.map((emoji) => toItem(emoji, t('editor.groups.recent'))), ...first.map((emoji) => toItem(emoji, t('editor.groups.emoji')))]
+  }
+
+  // A whole shortcode once the emoji are loaded; the first one typed before that loads them.
+  const emojiByShortcode = (code: string) => {
+    const char = byShortcode(code)
+    if (!char) void loadEmoji(currentLocale()).catch(() => {})
+    return char
+  }
+
   const editor = useEditor({
     immediatelyRender: true,
     shouldRerenderOnTransaction: false,
@@ -308,6 +361,8 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       }),
       SlashCommands.configure({ store: slashStore, items: slashItems }),
       Mentions.configure({ store: mentionStore, items: mentionItems }),
+      EmojiCommands.configure({ store: emojiStore, items: emojiItems, starts: emojiStarts, onExit: () => (emojiBrowse.current = false) }),
+      EmojiShortcodes.configure({ find: emojiByShortcode }),
       MathKeys,
       ...(blockHandles ? [BlockKeys] : []),
     ],
@@ -404,6 +459,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       {editor && blockHandles && <BlockControls editor={editor} />}
       <SuggestionMenu store={slashStore} emptyLabel={t('editor.noBlocks')} />
       <SuggestionMenu store={mentionStore} emptyLabel={t('editor.mentionHint')} />
+      <SuggestionMenu store={emojiStore} emptyLabel="" />
       <input
         ref={fileInput}
         type="file"

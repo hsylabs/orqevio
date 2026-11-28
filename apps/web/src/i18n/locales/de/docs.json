@@ -78,7 +78,9 @@
       "insert": "Einfügen",
       "tasks": "Aufgaben",
       "pages": "Seiten",
-      "suggested": "Vorschläge"
+      "suggested": "Vorschläge",
+      "recent": "Zuletzt verwendet",
+      "emoji": "Emoji"
     },
     "slash": {
       "p": {
@@ -195,6 +197,12 @@
         "keywords": "erwähnung erwähnen verknüpfen link aufgabe seite mention",
         "hint": "Ein Link zu einer Aufgabe oder Seite: @ und ihren Namen eingeben."
       },
+      "emoji": {
+        "title": "Emoji",
+        "subtitle": "Tippe : und den Namen",
+        "keywords": "emoji emoticon smiley symbol gesicht",
+        "hint": "Ein Emoji im Text. Du kannst auch : und seinen Namen eingeben, oder seinen ganzen Code wie :rocket:."
+      },
       "page": {
         "title": "Seite",
         "subtitle": "Eine Seite in dieser Seite",
@@ -221,6 +229,7 @@
     "menu": {
       "slash": "Block einfügen",
       "mention": "Aufgabe oder Seite verknüpfen",
+      "emoji": "Emoji einfügen",
       "searching": "Suche läuft…",
       "noMatches": "Keine Treffer",
       "shortcut": "Markdown-Kürzel: {{keys}}",

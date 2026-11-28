@@ -120,6 +120,20 @@ const PREVIEWS: Record<string, () => ReactNode> = {
       <Line width="34%" style={{ background: 'var(--accent)', opacity: 0.45 }} />
     </span>
   ),
+  emoji: () => (
+    <span className="flex flex-col gap-2.5">
+      <span className="flex items-center gap-1.5">
+        <Line width="34%" />
+        <span className="text-[17px] leading-none">🚀</span>
+        <Line width="22%" />
+      </span>
+      <span className="flex gap-2 text-[17px] leading-none">
+        {['😀', '👍', '🎉', '❤️', '🔥'].map((emoji) => (
+          <span key={emoji}>{emoji}</span>
+        ))}
+      </span>
+    </span>
+  ),
   page: () => (
     <span className="flex flex-col gap-2.5">
       <Line width="70%" />

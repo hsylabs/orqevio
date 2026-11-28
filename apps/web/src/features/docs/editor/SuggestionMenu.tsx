@@ -9,7 +9,7 @@ import { type SuggestionStore, useSuggestionState } from './suggestion-store'
 const GAP = 8
 const PREVIEW_WIDTH = 216
 
-/** Floating menu for "/" commands and "@" references, positioned at the caret. */
+/** Floating menu for "/" commands, "@" references and ":" emoji, positioned at the caret. */
 export function SuggestionMenu({ store, emptyLabel }: { store: SuggestionStore; emptyLabel: string }) {
   const { t } = useTranslation('docs')
   const state = useSuggestionState(store)
@@ -55,7 +55,8 @@ export function SuggestionMenu({ store, emptyLabel }: { store: SuggestionStore; 
 
   if (!state.open) return null
   const showEmpty = state.items.length === 0
-  if (showEmpty && state.kind === 'slash') return null
+  // Only the «@» menu says what to type: the others are there only while something matches.
+  if (showEmpty && state.kind !== 'mention') return null
 
   let lastGroup: string | undefined
   return createPortal(
@@ -72,7 +73,7 @@ export function SuggestionMenu({ store, emptyLabel }: { store: SuggestionStore; 
         <div
           ref={list}
           role="listbox"
-          aria-label={state.kind === 'slash' ? t('editor.menu.slash') : t('editor.menu.mention')}
+          aria-label={t(`editor.menu.${state.kind}`)}
           className="max-h-[320px] overflow-y-auto p-1.5"
           onScroll={placePreview}
         >
@@ -94,7 +95,14 @@ export function SuggestionMenu({ store, emptyLabel }: { store: SuggestionStore; 
                     onClick={() => store.choose(i)}
                     className={cn('flex w-full items-center gap-3 rounded-[9px] px-2 py-1.5 text-left', i === state.index && 'bg-hover')}
                   >
-                    <span className="grid size-8 shrink-0 place-items-center rounded-[8px] border border-line bg-sheet font-mono text-[12px] font-medium text-ink-2">{item.icon}</span>
+                    <span
+                      className={cn(
+                        'grid size-8 shrink-0 place-items-center rounded-[8px] border border-line bg-sheet',
+                        state.kind === 'emoji' ? 'text-[18px] leading-none' : 'font-mono text-[12px] font-medium text-ink-2',
+                      )}
+                    >
+                      {item.icon}
+                    </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13.5px] font-medium text-ink">{item.title}</span>
                       {item.subtitle && <span className="block truncate text-[12px] text-ink-3">{item.subtitle}</span>}

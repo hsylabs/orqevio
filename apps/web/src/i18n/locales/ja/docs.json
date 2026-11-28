@@ -78,7 +78,9 @@
       "insert": "挿入",
       "tasks": "タスク",
       "pages": "ページ",
-      "suggested": "候補"
+      "suggested": "候補",
+      "recent": "最近使ったもの",
+      "emoji": "絵文字"
     },
     "slash": {
       "p": {
@@ -195,6 +197,12 @@
         "keywords": "メンション リンク タスク ページ めんしょん りんく mention link task page",
         "hint": "タスクやページへのリンク。@ と名前を入力します。"
       },
+      "emoji": {
+        "title": "絵文字",
+        "subtitle": ":と名前を入力",
+        "keywords": "絵文字 えもじ 顔文字 アイコン emoji smiley",
+        "hint": "テキストに絵文字を入れます。: と名前、または :rocket: のようなコード全体を入力しても入れられます。"
+      },
       "page": {
         "title": "ページ",
         "subtitle": "このページの中のページ",
@@ -221,6 +229,7 @@
     "menu": {
       "slash": "ブロックを挿入",
       "mention": "タスクやページをリンク",
+      "emoji": "絵文字を挿入",
       "searching": "検索中…",
       "noMatches": "一致するものはありません",
       "shortcut": "Markdown のショートカット: {{keys}}",

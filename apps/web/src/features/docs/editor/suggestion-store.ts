@@ -15,9 +15,11 @@ export interface MenuItem {
   run: (editor: Editor, range: Range) => void
 }
 
+export type MenuKind = 'slash' | 'mention' | 'emoji'
+
 export interface SuggestionState {
   open: boolean
-  kind: 'slash' | 'mention'
+  kind: MenuKind
   items: MenuItem[]
   index: number
   rect: DOMRect | null

@@ -78,7 +78,9 @@
       "insert": "Insert",
       "tasks": "Tasks",
       "pages": "Pages",
-      "suggested": "Suggestions"
+      "suggested": "Suggestions",
+      "recent": "Recent",
+      "emoji": "Emoji"
     },
     "slash": {
       "p": {
@@ -195,6 +197,12 @@
         "keywords": "mention link task page",
         "hint": "A link to a task or a page: type @ and its name."
       },
+      "emoji": {
+        "title": "Emoji",
+        "subtitle": "Type : and its name",
+        "keywords": "emoji emoticon smiley icon face",
+        "hint": "An emoji in the text. You can also type : and its name, or its whole code, such as :rocket:."
+      },
       "page": {
         "title": "Page",
         "subtitle": "A page inside this one",
@@ -221,6 +229,7 @@
     "menu": {
       "slash": "Insert block",
       "mention": "Link a task or page",
+      "emoji": "Insert emoji",
       "searching": "Searching…",
       "noMatches": "No matches",
       "shortcut": "Markdown shortcut: {{keys}}",
