@@ -28,7 +28,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
 - **Video and audio played where they are linked.** A video or a sound attached to a document or a card, linked alone on its line as the editor puts a file (`[clip.mp4](/api/attachments/…)`), plays under its link, in a document, a card's description and a comment. Its Markdown stays the link, which GitHub shows as one.
   - «Video» and «Audio» in the «/» menu pick one to upload.
   - Only this copy's own attachments are played, by the type the server keeps for them: MP4, WebM, MOV and Ogg video, and MP3, M4A, AAC, WAV, Ogg, Opus, WebM and FLAC audio. What the browser can't play stays a link.
-  - The server sends these with their own type, still sandboxed, so that they can be played, and any attachment a piece at a time when asked (HTTP ranges): a video can be played from any point, and Safari plays one at all.
+  - The server sends these with their own type, so that a page can play them (opened on their own, they are still downloaded), and any attachment a piece at a time when asked (HTTP ranges): a video can be played from any point, and Safari plays one at all.
 
 ### Changed
 - **Less to download after an update.** The code that draws equations (KaTeX) now comes in files of its own, still loaded with the editor. From the next update on, the browser keeps the ones it already has unless KaTeX itself changed, instead of downloading them again with the editor. The editor's own file is a quarter smaller (226 KB compressed instead of 301).

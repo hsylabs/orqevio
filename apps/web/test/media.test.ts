@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 import type { AttachmentDTO } from '@orqevio/shared'
 import { Editor } from '@tiptap/core'
+import { EditorState } from '@tiptap/pm/state'
 import i18next from 'i18next'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import docs from '../src/i18n/locales/es/docs.json'
+import docsEn from '../src/i18n/locales/en/docs.json'
 import { documentExtensions } from '../src/features/docs/editor/markdown'
 import { markdownToHtml } from '../src/features/docs/editor/markdown-html'
-import { AttachmentMedia, playable, setPlayable, showPlayers } from '../src/features/docs/editor/media'
+import { AttachmentMedia, mediaKey, playable, setPlayable, showPlayers } from '../src/features/docs/editor/media'
 
 // A video or a sound attached here plays where it is linked, alone on its line, as Notion plays
 // one; its Markdown stays the link, which GitHub shows as one. Only this copy's own attachments.
@@ -27,7 +29,7 @@ const attachment = (id: string, filename: string, mimeType: string): AttachmentD
 const ATTACHMENTS = [attachment(VIDEO, 'clip.mp4', 'video/mp4'), attachment(SOUND, 'nota.m4a', 'audio/x-m4a'), attachment(PDF, 'informe.pdf', 'application/pdf')]
 
 beforeAll(async () => {
-  await i18next.init({ lng: 'es', resources: { es: { docs } }, ns: ['docs'] })
+  await i18next.init({ lng: 'es', resources: { es: { docs }, en: { docs: docsEn } }, ns: ['docs'] })
 })
 
 const editors: Editor[] = []
@@ -110,6 +112,33 @@ describe('in the editor', () => {
     expect(editor.can().undo()).toBe(false)
     editor.commands.setContent('Nada')
     expect(players(editor.view.dom)).toEqual([])
+  })
+
+  it('still plays once its text is reloaded from the server, which makes the editor\'s state anew', () => {
+    const editor = open(`[clip.mp4](/api/attachments/${VIDEO})`)
+    // As DocPage does with what another tab or an agent saved: the history starts again there.
+    editor.commands.setContent(`Nuevo\n\n[nota.m4a](/api/attachments/${SOUND})`, { contentType: 'markdown', emitUpdate: false })
+    const { doc, plugins, selection } = editor.state
+    editor.view.updateState(EditorState.create({ doc, plugins, selection }))
+    expect(players(editor.view.dom).map((player) => player.kind)).toEqual(['audio'])
+  })
+
+  it('leaves a file dropped on it, or a block moved over it, to the editor; its controls are its own', () => {
+    const editor = open(`[clip.mp4](/api/attachments/${VIDEO})`)
+    const [widget] = mediaKey.getState(editor.state)!.decorations.find()
+    const stops = (type: string) => (widget!.spec as { stopEvent: (event: Event) => boolean }).stopEvent(new Event(type))
+    expect(['dragenter', 'dragover', 'drop', 'mousedown', 'click', 'keydown'].map(stops)).toEqual([false, false, false, true, true, true])
+  })
+
+  it('says its name in the language the app turns to', async () => {
+    const editor = open(`[clip.mp4](/api/attachments/${VIDEO})`)
+    try {
+      await i18next.changeLanguage('en')
+      expect(players(editor.view.dom)[0]?.name).toBe('Video: clip.mp4')
+    } finally {
+      await i18next.changeLanguage('es')
+    }
+    expect(players(editor.view.dom)[0]?.name).toBe('Vídeo: clip.mp4')
   })
 
   it('one the browser can\'t play hides, and its link stays', () => {

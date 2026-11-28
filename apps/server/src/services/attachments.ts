@@ -13,12 +13,13 @@ import type { Deps } from './deps'
 import type { HistoryService } from './history'
 import type { TrashService } from './trash'
 
-/**
- * Raster images are rendered inline, and video and audio a browser plays are played inline;
- * everything else (SVG and PDF included) is served as a download.
- */
+/** Raster images are rendered inline; everything else (SVG and PDF included) is served as a download. */
 const INLINE_IMAGES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif'])
-const shownInline = (mimeType: string) => INLINE_IMAGES.has(mimeType) || mediaKind(mimeType) !== null
+/**
+ * Sent with its own type: a picture, and video and audio a browser plays, for a page to play them
+ * (opened on their own, they are downloaded all the same). Anything else is sent as bytes.
+ */
+const typed = (mimeType: string) => INLINE_IMAGES.has(mimeType) || mediaKind(mimeType) !== null
 
 export const toAttachmentDTO = (a: typeof attachments.$inferSelect): AttachmentDTO => ({
   id: a.id,
@@ -208,7 +209,7 @@ export class AttachmentService {
     if (range === 'unsatisfiable') throw new AppError(416, 'range_not_satisfiable', 'The range asked for is outside the file', undefined, { 'Content-Range': `bytes */${row.size}` })
     const body = await this.deps.storage.stream(row.storageKey, range ?? undefined)
     if (!body) throw notFound('Attachment')
-    return { meta: row, inline: shownInline(row.mimeType), range, body }
+    return { meta: row, inline: INLINE_IMAGES.has(row.mimeType), typed: typed(row.mimeType), range, body }
   }
 
   /** To the trash. Agents need write access to where it is, and to be allowed to delete and move. */

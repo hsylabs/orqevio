@@ -350,9 +350,9 @@ export function createApi(env: Env) {
     })
   }
   api.get('/attachments/:id', async (c) => {
-    const { meta, inline, range, body } = await c.get('services').attachments.open(requireActor(c), c.req.param('id'), c.req.header('range'))
+    const { meta, inline, typed, range, body } = await c.get('services').attachments.open(requireActor(c), c.req.param('id'), c.req.header('range'))
     const headers = {
-      'Content-Type': inline ? meta.mimeType : 'application/octet-stream',
+      'Content-Type': typed ? meta.mimeType : 'application/octet-stream',
       'Content-Disposition': contentDisposition(inline ? 'inline' : 'attachment', meta.filename),
       // A video is asked for a piece at a time, to play it from any point.
       'Accept-Ranges': 'bytes',

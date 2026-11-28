@@ -128,6 +128,14 @@ test('a sound plays under its link; one written in a line of text, or not played
   expect(await saved()).toBe(content)
   await snap(page, testInfo.outputPath('media-audio.png'))
 
+  // Changed elsewhere (another tab, an agent): the page reloads its text, and its sound still plays.
+  const current = (await (await page.request.get(`/api/pages/${pageId}`)).json()) as { version: number }
+  const changed = await page.request.patch(`/api/pages/${pageId}`, { data: { content: `Desde otra pestaña\n\n${content}`, baseVersion: current.version } })
+  expect(changed.status(), await changed.text()).toBe(200)
+  await expect(editor.getByText('Desde otra pestaña')).toBeVisible()
+  await expect(audio).toHaveCount(1)
+  await loaded(audio)
+
   // From the «/» menu, a sound is picked as one.
   await editor.getByText('aquí.', { exact: false }).click()
   await page.keyboard.press('End')

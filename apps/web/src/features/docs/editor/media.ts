@@ -3,7 +3,7 @@ import { Extension } from '@tiptap/core'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
-import { t } from 'i18next'
+import i18next, { t } from 'i18next'
 
 /**
  * Video and audio attached here, played where they are linked: a paragraph that holds only a link
@@ -31,6 +31,15 @@ const kindOf = (href: string | null, known: Playable) => {
   return (id && known.get(id)) || null
 }
 
+/** A player's name, said in the app's language: «Video: clip.mp4». */
+const label = (media: HTMLMediaElement) =>
+  media.setAttribute('aria-label', t(`docs:editor.media.${media.localName === 'audio' ? 'audio' : 'video'}`, { name: media.dataset.name ?? '' }))
+
+// In the language the app turns to, as the players already shown are.
+i18next.on('languageChanged', () => {
+  for (const media of document.querySelectorAll<HTMLMediaElement>('.orq-media > video, .orq-media > audio')) label(media)
+})
+
 /** A player of `src`, named `name`; one the browser can't play hides, and its link stays. */
 export function player(kind: MediaKind, src: string, name: string) {
   const box = document.createElement('span')
@@ -42,7 +51,8 @@ export function player(kind: MediaKind, src: string, name: string) {
   media.preload = 'metadata'
   // On an iPhone, in its place rather than full screen.
   if (kind === 'video') media.setAttribute('playsinline', '')
-  media.setAttribute('aria-label', t(`docs:editor.media.${kind}`, { name }))
+  media.dataset.name = name
+  label(media)
   media.addEventListener('error', () => box.setAttribute('data-error', ''))
   media.src = src
   box.append(media)
@@ -86,8 +96,9 @@ function decorate(doc: PMNode, known: Playable) {
         side: 1,
         key: `${kind}\u0000${href}\u0000${name}`,
         ignoreSelection: true,
-        // Its controls are its own: a press on them doesn't place the cursor.
-        stopEvent: () => true,
+        // Its controls are its own: a press on them doesn't place the cursor. A file dropped on it is
+        // the editor's, as anywhere else on the page.
+        stopEvent: (event) => !event.type.startsWith('drag') && event.type !== 'drop',
       }),
     )
     return false
@@ -100,17 +111,21 @@ export function setPlayable(view: EditorView, known: Playable) {
   view.dispatch(view.state.tr.setMeta(mediaKey, known).setMeta('addToHistory', false))
 }
 
-export const AttachmentMedia = Extension.create({
+export const AttachmentMedia = Extension.create<object, { known: Playable }>({
   name: 'attachmentMedia',
+  addStorage: () => ({ known: new Map() }),
   addProseMirrorPlugins() {
+    // Kept beyond the editor's state: one made again (a page reloaded from the server) plays them too.
+    const storage = this.storage
     return [
       new Plugin<MediaState>({
         key: mediaKey,
         state: {
-          init: () => ({ known: new Map(), decorations: DecorationSet.empty }),
+          init: (_, state) => ({ known: storage.known, decorations: decorate(state.doc, storage.known) }),
           apply: (tr, value, _old, state) => {
             const known = (tr.getMeta(mediaKey) as Playable | undefined) ?? value.known
             if (!tr.docChanged && known === value.known) return value
+            storage.known = known
             return { known, decorations: decorate(state.doc, known) }
           },
         },

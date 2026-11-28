@@ -25,7 +25,7 @@ async function upload(name: string, type: string, bytes: Uint8Array) {
 const counting = (length: number) => Uint8Array.from({ length }, (_, i) => i % 256)
 
 describe('a video or a sound', () => {
-  it('is sent with its own type, to be played, still sandboxed and never sniffed', async () => {
+  it('is sent with its own type, to be played, still a download opened on its own, sandboxed and never sniffed', async () => {
     for (const [name, type] of [
       ['clip.mp4', 'video/mp4'],
       ['clip.webm', 'video/webm'],
@@ -38,7 +38,8 @@ describe('a video or a sound', () => {
       const res = await get()
       expect(res.status, name).toBe(200)
       expect(res.headers.get('content-type')).toBe(type)
-      expect(res.headers.get('content-disposition')).toMatch(/^inline/)
+      // Opened on its own, a page made to play it couldn't load it (this CSP): it is downloaded.
+      expect(res.headers.get('content-disposition')).toMatch(/^attachment/)
       expect(res.headers.get('accept-ranges')).toBe('bytes')
       expect(res.headers.get('x-content-type-options')).toBe('nosniff')
       expect(res.headers.get('content-security-policy')).toBe("default-src 'none'; sandbox")
