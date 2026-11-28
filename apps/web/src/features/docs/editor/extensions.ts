@@ -109,14 +109,13 @@ function createMenuExtension(name: string, char: string, kind: MenuKind, pluginK
 }
 
 /**
- * Whether a menu's character at `$pos` starts a word: at the start of a line or after a line break,
- * or after one of `PREFIXES`. TipTap looks only in the text it is in, which ends where bold or code
- * does: «**Nota**:12» isn't a «:» for an emoji.
+ * Whether a menu's character at `$pos` starts a word: at the start of a line, after what isn't text
+ * (a line break, a picture, a formula), or after one of `PREFIXES`. TipTap looks only in the text it
+ * is in, which ends where bold or code does: «**Nota**:12» isn't a «:» for an emoji.
  */
 function startsWord($pos: ResolvedPos) {
   const before = $pos.nodeBefore
-  if (!before || before.type.name === 'hardBreak') return true
-  return before.isText && PREFIXES.includes(before.text!.slice(-1))
+  return !before?.isText || PREFIXES.includes(before.text!.slice(-1))
 }
 
 /** Whether `pos` is in code, a block or a span, where what is typed is kept as typed. */
@@ -147,14 +146,12 @@ export const EmojiShortcodes = Extension.create<{ find: (code: string) => string
     const { find } = this.options
     return [
       new InputRule({
-        // What comes before is looked at, not taken: TipTap checks that what is taken is in the text, and
-        // it writes what isn't text there, a line break as well, as %leaf%.
-        find: /(?<=^|[\s(]|%leaf%):([a-z0-9_+-]+):$/,
+        find: /:([a-z0-9_+-]+):$/,
         handler: ({ state, range, match }) => {
           // The typed «:» is already in the text, and the shortcode ends at the end of the range.
           const from = range.to - match[0].length
-          const before = state.doc.resolve(from).nodeBefore
-          if (before && !before.isText && before.type.name !== 'hardBreak') return null
+          // Where the «:» menu would start: not within a word, nor right after bold or code.
+          if (!startsWord(state.doc.resolve(from))) return null
           const char = find(match[1]!)
           if (!char) return null
           state.tr.insertText(char, from, range.to)

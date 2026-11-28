@@ -114,8 +114,8 @@ describe('searching', () => {
 
 describe('what starts the «:» menu', () => {
   it('two letters or more of a name, a digit, or +1 and -1', () => {
-    for (const name of ['ro', 'cohete', '12', '+1', '-1', 'ねこ', 'DD']) expect(isEmojiName(name), name).toBe(true)
-    for (const other of ['', 'r', 'P', '-D', '-P', '-)', '))', '+', ' a']) expect(isEmojiName(other), other).toBe(false)
+    for (const name of ['ro', 'cohete', '12', '+1', '-1', 'ねこ', 'DD', '火', 'ね', 'ネ']) expect(isEmojiName(name), name).toBe(true)
+    for (const other of ['', 'r', 'P', 'é', '1', '-D', '-P', '-)', '))', '+', ' a']) expect(isEmojiName(other), other).toBe(false)
   })
 
   it('opens after a space, a bracket or at the start of a line, with a name', () => {
@@ -147,10 +147,12 @@ describe('what starts the «:» menu', () => {
     }
   })
 
-  it('opens after a line break', () => {
-    const editor = open({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Uno' }, { type: 'hardBreak' }, { type: 'text', text: ':fu' }] }] })
-    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.atEnd(editor.state.doc)))
-    expect(menuOpen(editor)).toBe(true)
+  it('opens after a line break, a picture or a formula, which are no text', () => {
+    for (const leaf of [{ type: 'hardBreak' }, { type: 'image', attrs: { src: '/a.png', alt: 'a' } }, { type: 'inlineMath', attrs: { latex: 'x' } }]) {
+      const editor = open({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Uno' }, leaf, { type: 'text', text: ':fu' }] }] })
+      editor.view.dispatch(editor.state.tr.setSelection(TextSelection.atEnd(editor.state.doc)))
+      expect(menuOpen(editor), leaf.type).toBe(true)
+    }
   })
 
   it('stays closed in code', () => {
@@ -205,13 +207,20 @@ describe('a shortcode typed whole', () => {
     expect(text.getMarkdown().trim()).toBe('hora:rocket: 10:30: :nada: :Rocket:')
   })
 
-  it('after a line break too, but not after a formula', () => {
-    const editor = open({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Uno' }, { type: 'hardBreak' }] }] })
+  it('where the «:» menu would start: after a line break, a picture or a formula too', () => {
+    for (const leaf of [{ type: 'hardBreak' }, { type: 'image', attrs: { src: '/a.png', alt: 'a' } }, { type: 'inlineMath', attrs: { latex: 'x' } }]) {
+      const editor = open({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Uno' }, leaf] }] })
+      editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 5)))
+      type(editor, ':tada:')
+      expect(editor.state.doc.firstChild!.lastChild!.text, leaf.type).toBe('🎉')
+    }
+  })
+
+  it('not right after bold or code', () => {
+    const editor = open({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Nota', marks: [{ type: 'bold' }] }] }] })
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.atEnd(editor.state.doc)).setStoredMarks([]))
     type(editor, ':tada:')
-    expect(editor.state.doc.textContent).toBe('Uno🎉')
-    const math = open('$x$')
-    type(math, ':tada:')
-    expect(math.getMarkdown().trim()).toBe('$x$:tada:')
+    expect(editor.getMarkdown().trim()).toBe('**Nota**:tada:')
   })
 
   it('comes back with Backspace right after', () => {

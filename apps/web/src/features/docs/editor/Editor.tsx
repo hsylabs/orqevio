@@ -300,6 +300,8 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
   // in the text opens nothing. The emoji are loaded as soon as a «:» could start one.
   const emojiStarts = (query: string, from: number) => {
     if (query) void loadEmoji(currentLocale()).catch(() => {})
+    // At another «:», the one the «/» menu put is no more.
+    if (from !== emojiBrowseAt.current) emojiBrowseAt.current = null
     return from === emojiBrowseAt.current || isEmojiName(query)
   }
 

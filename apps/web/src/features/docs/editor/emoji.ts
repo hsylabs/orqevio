@@ -50,10 +50,11 @@ export const foldWord = (text: string) =>
 
 /**
  * Whether what follows a «:» is the start of an emoji's name: two letters or more, as Slack asks,
- * starting with a letter or a digit, or `+1` and `-1`. A «:» in the text then opens nothing, nor a
- * smiley typed as one: «10:30», «:-D», «:P».
+ * starting with a letter or a digit, or `+1` and `-1`; in Japanese, one is a word already (火, ねこ's
+ * ね). A «:» in the text then opens nothing, nor a smiley typed as one: «10:30», «:-D», «:P».
  */
-export const isEmojiName = (query: string) => query.length >= 2 && /^(?:[\p{L}\p{N}]|[+-]\d)/u.test(query)
+export const isEmojiName = (query: string) =>
+  query.length >= 2 ? /^(?:[\p{L}\p{N}]|[+-]\d)/u.test(query) : /^[\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}]$/u.test(query)
 
 /** Skin tones and hair, which only modify another emoji. */
 const COMPONENTS = 2
