@@ -163,13 +163,13 @@
         "title": "Equação",
         "subtitle": "Uma equação em um bloco próprio, em LaTeX",
         "keywords": "equacao formula matematica math latex katex tex bloco",
-        "hint": "Uma fórmula em uma linha própria, escrita em LaTeX."
+        "hint": "Uma equação em uma linha própria, escrita em LaTeX."
       },
       "inlineMath": {
         "title": "Equação em linha",
         "subtitle": "Uma equação dentro do texto, em LaTeX",
         "keywords": "equacao formula matematica math latex katex tex linha texto",
-        "hint": "Uma fórmula dentro de uma linha de texto, escrita em LaTeX."
+        "hint": "Uma equação dentro de uma linha de texto, escrita em LaTeX."
       },
       "table": {
         "title": "Tabela",

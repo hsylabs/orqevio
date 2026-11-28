@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { cn } from '../../../lib/cn'
@@ -28,7 +28,8 @@ export function SuggestionMenu({ store, emptyLabel }: { store: SuggestionStore; 
     setPos({ top, left })
   }, [state.open, state.rect, state.items.length])
 
-  useEffect(() => {
+  // Before the preview is placed beside it.
+  useLayoutEffect(() => {
     list.current?.querySelector<HTMLElement>('[data-active="true"]')?.scrollIntoView({ block: 'nearest' })
   }, [state.index])
 
@@ -62,8 +63,11 @@ export function SuggestionMenu({ store, emptyLabel }: { store: SuggestionStore; 
       <div
         ref={ref}
         style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999 }}
-        className="animate-pop fixed z-50 flex w-[300px] flex-col overflow-hidden rounded-[14px] border border-line bg-surface shadow-lg"
+        // Its own pointer events: a card's sheet, a modal dialog, takes them away from the rest of the page.
+        className="animate-pop pointer-events-auto fixed z-50 flex w-[300px] flex-col overflow-hidden rounded-[14px] border border-line bg-surface shadow-lg"
         onMouseDown={(e) => e.preventDefault()}
+        // Placed again once the menu has popped in to its full size.
+        onAnimationEnd={placePreview}
       >
         <div
           ref={list}
@@ -114,7 +118,7 @@ export function SuggestionMenu({ store, emptyLabel }: { store: SuggestionStore; 
           // As Esc does: the menu goes, and what was typed stays.
           <button
             type="button"
-            onClick={() => store.set({ open: false })}
+            onClick={() => state.close?.()}
             className="flex items-center justify-between border-t border-line px-3.5 py-2 text-left text-[12.5px] text-ink-2 hover:bg-hover"
           >
             {t('editor.menu.close')}

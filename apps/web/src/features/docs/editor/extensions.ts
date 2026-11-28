@@ -1,7 +1,7 @@
 import { Extension } from '@tiptap/core'
 import type { Editor, Range } from '@tiptap/core'
 import { PluginKey } from '@tiptap/pm/state'
-import Suggestion from '@tiptap/suggestion'
+import Suggestion, { exitSuggestion } from '@tiptap/suggestion'
 import { blockAt, canMove, moveBlock } from './block-commands'
 import { chosenRange, insertBelowPlugin, slashKey } from './insert-below'
 import { readPending } from './own-step'
@@ -44,7 +44,16 @@ function createMenuExtension(name: string, char: string, kind: 'slash' | 'mentio
           command: ({ editor, range, props }) => props.run(editor, kind === 'slash' ? chosenRange(editor, range) : range),
           render: () => ({
             onStart: (props) => {
-              store.set({ open: true, kind, items: props.items, index: 0, rect: props.clientRect?.() ?? null, query: props.query, command: props.command })
+              store.set({
+                open: true,
+                kind,
+                items: props.items,
+                index: 0,
+                rect: props.clientRect?.() ?? null,
+                query: props.query,
+                command: props.command,
+                close: () => exitSuggestion(props.editor.view, pluginKey),
+              })
             },
             onUpdate: (props) => {
               store.set({ items: props.items, index: 0, rect: props.clientRect?.() ?? null, query: props.query, command: props.command })
@@ -69,7 +78,7 @@ function createMenuExtension(name: string, char: string, kind: 'slash' | 'mentio
               }
               return false
             },
-            onExit: () => store.set({ open: false, items: [], command: null }),
+            onExit: () => store.set({ open: false, items: [], command: null, close: null }),
           }),
         }),
       ]

@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { cn } from '../../../lib/cn'
 
 /**
  * A small drawing of what a block of the «/» menu looks like, beside the option it is on, as
@@ -101,7 +102,7 @@ const PREVIEWS: Record<string, () => ReactNode> = {
   table: () => (
     <span className="grid grid-cols-3 overflow-hidden rounded-[4px] border border-line-strong">
       {Array.from({ length: 9 }, (_, i) => (
-        <span key={i} className={i < 3 ? 'h-5 border-r border-b border-line-strong bg-ink/[0.05] last:border-r-0' : 'h-5 border-r border-b border-line-strong'} />
+        <span key={i} className={cn('h-5 border-line-strong', i % 3 < 2 && 'border-r', i < 6 && 'border-b', i < 3 && 'bg-ink/[0.05]')} />
       ))}
     </span>
   ),

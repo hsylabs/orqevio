@@ -24,11 +24,13 @@ export interface SuggestionState {
   query: string
   loading: boolean
   command: ((item: MenuItem) => void) | null
+  /** Ends the suggestion as Esc does: what was typed stays, and Enter makes a new line again. */
+  close: (() => void) | null
 }
 
 /** Small external store bridging TipTap's suggestion plugin and the React menu. */
 export function createSuggestionStore() {
-  let state: SuggestionState = { open: false, kind: 'slash', items: [], index: 0, rect: null, query: '', loading: false, command: null }
+  let state: SuggestionState = { open: false, kind: 'slash', items: [], index: 0, rect: null, query: '', loading: false, command: null, close: null }
   const listeners = new Set<() => void>()
   const set = (patch: Partial<SuggestionState>) => {
     state = { ...state, ...patch }

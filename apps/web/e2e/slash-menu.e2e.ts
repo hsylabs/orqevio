@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
-import { expect, test } from './helpers'
+import { createProject, expect, openNewWorkspace, test } from './helpers'
 
 // The «/» menu as Notion's: headings 4 to 6, the last blocks chosen first as «Sugerencias», a
 // footer that closes it, and a drawing of the block marked beside it, with what it is for.
@@ -28,7 +28,7 @@ async function slashAfter(page: Page, editor: Locator, text: string) {
   return menu
 }
 
-test('headings 4 to 6 are in the «/» menu, with their shortcut, and «####» makes one too', async ({ page }) => {
+test('headings 4 to 6 are in the «/» menu, with their shortcut, which typed makes them too', async ({ page }) => {
   const { editor, saved } = await openPage(page, 'Títulos E2E', 'Uno')
   const menu = await slashAfter(page, editor, 'Uno')
   await expect(menu.getByRole('option', { name: /Título 4/ }).locator('kbd')).toHaveText('####')
@@ -73,7 +73,7 @@ test('beside the block marked, a drawing of it and what it is for, which follows
   expect(Math.abs(box.y - option.y)).toBeLessThan(12)
   await page.screenshot({ path: testInfo.outputPath('slash-preview-h1.png') })
 
-  // With the pointer too, and for every block drawn.
+  // With the pointer too.
   await menu.getByRole('option', { name: /Lista de tareas/ }).hover()
   await expect(preview).toContainText('Una lista de tareas, cada una con su casilla para marcarla al terminar.')
   await menu.getByRole('option', { name: /Tabla/ }).hover()
@@ -118,6 +118,30 @@ test('«Cerrar menú» at its foot closes it as Esc does, leaving what was typed
   await expect(menu).toBeHidden()
   await expect(editor).toBeFocused()
   await expect.poll(saved).toBe('Uno\n\n/')
+  // Over: Enter makes a new line, rather than the block that was marked.
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Dos')
+  await expect(editor.locator(':scope > p')).toHaveCount(3)
+  await expect.poll(saved).toBe('Uno\n\n/\n\nDos')
+})
+
+test('in a card’s sheet, the menu takes the pointer as well', async ({ page }) => {
+  const workspaceId = await openNewWorkspace(page, 'Menú en ficha E2E')
+  const boardId = await createProject(page, 'Notas')
+  const columns = ((await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string }> }).columns
+  const card = (await (await page.request.post(`/api/columns/${columns[0]!.id}/cards`, { data: { title: 'Mudanza' } })).json()) as { id: string }
+  await page.goto(`/w/${workspaceId}/b/${boardId}?card=${card.id}`)
+  const box = page.getByRole('textbox', { name: 'Nuevo comentario' })
+  await box.click()
+  await page.keyboard.type('/')
+  const menu = page.getByRole('listbox', { name: 'Insertar bloque' })
+  await menu.getByRole('option', { name: /Lista de tareas/ }).hover()
+  await expect(page.getByTestId('slash-preview')).toContainText('Una lista de tareas')
+  await menu.getByRole('option', { name: /Lista de tareas/ }).click()
+  await expect(box.getByRole('checkbox')).toHaveCount(1)
+  await page.keyboard.type('Cajas /')
+  await page.getByRole('button', { name: /Cerrar menú/ }).click()
+  await expect(menu).toBeHidden()
 })
 
 test.describe('on a phone', () => {

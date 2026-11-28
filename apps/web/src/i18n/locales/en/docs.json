@@ -145,7 +145,7 @@
         "title": "Callout",
         "subtitle": "A highlighted box: note, tip, warning…",
         "keywords": "callout alert admonition note tip important warning caution",
-        "hint": "Draws attention to a note, a tip or a warning, in a coloured box."
+        "hint": "Draws attention to a note, a tip or a warning, in a colored box."
       },
       "toggle": {
         "title": "Toggle",
@@ -157,13 +157,13 @@
         "title": "Code",
         "subtitle": "Code block",
         "keywords": "code snippet",
-        "hint": "Code in a fixed-width font, coloured by its language."
+        "hint": "Code in a fixed-width font, colored by its language."
       },
       "math": {
         "title": "Equation",
         "subtitle": "An equation on a line of its own, in LaTeX",
         "keywords": "equation formula math maths latex katex tex block",
-        "hint": "An equation on a line of its own, written in LaTeX."
+        "hint": "Shows an equation centered on a line of its own. Write it in LaTeX."
       },
       "inlineMath": {
         "title": "Inline equation",
