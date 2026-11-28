@@ -71,98 +71,135 @@
       "lists": "Lijsten",
       "insert": "Invoegen",
       "tasks": "Taken",
-      "pages": "Pagina’s"
+      "pages": "Pagina’s",
+      "suggested": "Suggesties"
     },
     "slash": {
       "p": {
         "title": "Tekst",
         "subtitle": "Gewone alinea",
-        "keywords": "tekst alinea paragraaf text paragraph"
+        "keywords": "tekst alinea paragraaf text paragraph",
+        "hint": "Gewone tekst. Begin gewoon te typen."
       },
       "h1": {
         "title": "Kop 1",
         "subtitle": "Grote kop",
-        "keywords": "kop titel koptekst heading h1"
+        "keywords": "kop titel koptekst heading h1",
+        "hint": "De grootste kop, voor de hoofdsecties van de pagina."
       },
       "h2": {
         "title": "Kop 2",
         "subtitle": "Sectiekop",
-        "keywords": "kop titel koptekst heading h2"
+        "keywords": "kop titel koptekst heading h2",
+        "hint": "Een kop voor een sectie."
       },
       "h3": {
         "title": "Kop 3",
         "subtitle": "Subsectie",
-        "keywords": "kop titel koptekst heading h3"
+        "keywords": "kop titel koptekst heading h3",
+        "hint": "Een kop voor een subsectie."
+      },
+      "h4": {
+        "title": "Kop 4",
+        "subtitle": "Kleine kop",
+        "keywords": "kop titel koptekst heading h4",
+        "hint": "Een kleine kop, binnen een subsectie."
+      },
+      "h5": {
+        "title": "Kop 5",
+        "subtitle": "Kleinere kop",
+        "keywords": "kop titel koptekst heading h5",
+        "hint": "Een nog kleinere kop."
+      },
+      "h6": {
+        "title": "Kop 6",
+        "subtitle": "Kleinste kop",
+        "keywords": "kop titel koptekst heading h6",
+        "hint": "De kleinste kop."
       },
       "ul": {
         "title": "Lijst",
         "subtitle": "Lijst met opsommingstekens",
-        "keywords": "lijst opsomming opsommingstekens bullet list ul"
+        "keywords": "lijst opsomming opsommingstekens bullet list ul",
+        "hint": "Een lijst met punten, elk met een opsommingsteken."
       },
       "ol": {
         "title": "Genummerde lijst",
         "subtitle": "1, 2, 3…",
-        "keywords": "lijst genummerd nummering numbered ordered ol"
+        "keywords": "lijst genummerd nummering numbered ordered ol",
+        "hint": "Een lijst met stappen, op volgorde genummerd."
       },
       "todo": {
         "title": "Takenlijst",
         "subtitle": "Selectievakjes om af te vinken",
-        "keywords": "todo taak taken checklist afvinken vinkje check"
+        "keywords": "todo taak taken checklist afvinken vinkje check",
+        "hint": "Een lijst met taken, elk met een vakje om af te vinken als het klaar is."
       },
       "quote": {
         "title": "Citaat",
         "subtitle": "Laat een passage opvallen",
-        "keywords": "citaat quote blockquote"
+        "keywords": "citaat quote blockquote",
+        "hint": "Laat een passage opvallen, als citaat."
       },
       "callout": {
         "title": "Kader",
         "subtitle": "Een opvallend kader: opmerking, tip, waarschuwing…",
-        "keywords": "kader callout melding opmerking tip belangrijk waarschuwing let op"
+        "keywords": "kader callout melding opmerking tip belangrijk waarschuwing let op",
+        "hint": "Vestigt de aandacht op een notitie, tip of waarschuwing, in een gekleurd kader."
       },
       "toggle": {
         "title": "Uitklapblok",
         "subtitle": "Een titel die toont of verbergt wat eronder staat",
-        "keywords": "uitklappen toggle details inklappen verbergen tonen accordeon"
+        "keywords": "uitklappen toggle details inklappen verbergen tonen accordeon",
+        "hint": "Een titel die verbergt wat eronder staat tot je hem opent."
       },
       "code": {
         "title": "Code",
         "subtitle": "Codeblok",
-        "keywords": "code codeblok snippet"
+        "keywords": "code codeblok snippet",
+        "hint": "Code in een lettertype met vaste breedte, gekleurd naar de taal."
       },
       "math": {
         "title": "Formule",
         "subtitle": "Een formule als eigen blok, in LaTeX",
-        "keywords": "formule vergelijking wiskunde math latex katex tex blok"
+        "keywords": "formule vergelijking wiskunde math latex katex tex blok",
+        "hint": "Een formule op een eigen regel, geschreven in LaTeX."
       },
       "inlineMath": {
         "title": "Formule in tekst",
         "subtitle": "Een formule midden in de tekst, in LaTeX",
-        "keywords": "formule vergelijking wiskunde math latex katex tex inline tekst"
+        "keywords": "formule vergelijking wiskunde math latex katex tex inline tekst",
+        "hint": "Een formule binnen een regel tekst, geschreven in LaTeX."
       },
       "table": {
         "title": "Tabel",
         "subtitle": "3 × 3 met een kopregel",
-        "keywords": "tabel raster table grid"
+        "keywords": "tabel raster table grid",
+        "hint": "Rijen en kolommen, met een kopregel."
       },
       "hr": {
         "title": "Scheidingslijn",
         "subtitle": "Horizontale lijn",
-        "keywords": "scheidingslijn scheiding lijn divider separator hr"
+        "keywords": "scheidingslijn scheiding lijn divider separator hr",
+        "hint": "Een lijn tussen twee delen van de pagina."
       },
       "mention": {
         "title": "Taak of pagina koppelen",
         "subtitle": "Typ @ en zoek",
-        "keywords": "vermelding vermelden koppeling link taak pagina mention"
+        "keywords": "vermelding vermelden koppeling link taak pagina mention",
+        "hint": "Een link naar een taak of pagina: typ @ en de naam."
       },
       "image": {
         "title": "Afbeelding",
         "subtitle": "Upload een PNG, JPG, GIF, WebP of AVIF",
-        "keywords": "afbeelding foto plaatje image picture"
+        "keywords": "afbeelding foto plaatje image picture",
+        "hint": "Een afbeelding die je vanaf je apparaat uploadt, getoond op de pagina."
       },
       "file": {
         "title": "Bestand",
         "subtitle": "Voeg een bestand toe",
-        "keywords": "bestand bijlage uploaden file attachment"
+        "keywords": "bestand bijlage uploaden file attachment",
+        "hint": "Elk bestand, bijgevoegd en gelinkt vanaf de pagina."
       }
     },
     "mention": {
@@ -174,7 +211,8 @@
       "mention": "Taak of pagina koppelen",
       "searching": "Zoeken…",
       "noMatches": "Geen resultaten",
-      "shortcut": "Markdown-sneltoets: {{keys}}"
+      "shortcut": "Markdown-sneltoets: {{keys}}",
+      "close": "Menu sluiten"
     },
     "format": {
       "linkPlaceholder": "https://… of /doc/…",

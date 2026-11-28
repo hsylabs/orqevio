@@ -15,10 +15,26 @@ const ITEMS = new Set(['listItem', 'taskItem'])
 const LISTS: Record<string, Turn> = { bulletList: 'ul', orderedList: 'ol', taskList: 'todo' }
 
 /** What a block can be turned into, as in the «/» menu. */
-export type Turn = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'toggle' | 'code'
-const ALL: Turn[] = ['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'todo', 'quote', 'callout', 'toggle', 'code']
+export type Turn = 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'toggle' | 'code'
+const HEADINGS: Turn[] = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
+const ALL: Turn[] = ['p', ...HEADINGS, 'ul', 'ol', 'todo', 'quote', 'callout', 'toggle', 'code']
 /** The icons of the «/» menu for each of them. */
-export const TURN_ICONS: Record<Turn, string> = { p: 'T', h1: 'H1', h2: 'H2', h3: 'H3', ul: '•', ol: '1.', todo: '☑', quote: '❝', callout: 'ⓘ', toggle: '▸', code: '</>' }
+export const TURN_ICONS: Record<Turn, string> = {
+  p: 'T',
+  h1: 'H1',
+  h2: 'H2',
+  h3: 'H3',
+  h4: 'H4',
+  h5: 'H5',
+  h6: 'H6',
+  ul: '•',
+  ol: '1.',
+  todo: '☑',
+  quote: '❝',
+  callout: 'ⓘ',
+  toggle: '▸',
+  code: '</>',
+}
 /**
  * What typed at the start of a line makes the block, shown beside it in the «/» menu and «Turn into».
  * Each is the editor's own input rule (StarterKit, and @tiptap/extension-mathematics for formulas).
@@ -27,6 +43,9 @@ export const MARKDOWN_SHORTCUTS: Partial<Record<Turn | 'hr' | 'math' | 'inlineMa
   h1: '#',
   h2: '##',
   h3: '###',
+  h4: '####',
+  h5: '#####',
+  h6: '######',
   ul: '-',
   ol: '1.',
   todo: '[]',
@@ -93,9 +112,9 @@ export function turns(doc: PMNode, pos: number): { current: Turn | null; options
   if (name === 'paragraph') return { current: 'p', options: fits(ALL) }
   if (name === 'heading') {
     const level = node.attrs.level as number
-    return { current: level <= 3 ? (`h${level}` as Turn) : null, options: fits(ALL) }
+    return { current: `h${level}` as Turn, options: fits(ALL) }
   }
-  if (name === 'codeBlock') return { current: 'code', options: fits(['p', 'h1', 'h2', 'h3', 'code']) }
+  if (name === 'codeBlock') return { current: 'code', options: fits(['p', ...HEADINGS, 'code']) }
   if (name === 'blockquote') return { current: 'quote', options: ['p', 'quote', 'callout'] }
   if (name === 'callout') return { current: 'callout', options: ['p', 'quote', 'callout'] }
   if (name === 'toggle') return { current: 'toggle', options: ['p', 'toggle'] }
@@ -230,7 +249,7 @@ export function turnBlock(editor: Editor, pos: number, to: Turn) {
     // Each lift as far as it goes: in a list of another kind the item can stop being one on the way.
     if (item && to === 'p') for (const type of lifts) chain.command(({ commands }) => (commands.liftListItem(type), true))
     else if (to === 'p') chain.setParagraph()
-    else if (to === 'h1' || to === 'h2' || to === 'h3') chain.setHeading({ level: Number(to[1]) as 1 | 2 | 3 })
+    else if (HEADINGS.includes(to)) chain.setHeading({ level: Number(to[1]) as 1 | 2 | 3 | 4 | 5 | 6 })
     else if (to === 'ul') chain.toggleBulletList()
     else if (to === 'ol') chain.toggleOrderedList()
     else if (to === 'todo') chain.toggleTaskList()

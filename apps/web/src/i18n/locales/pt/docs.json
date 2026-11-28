@@ -71,98 +71,135 @@
       "lists": "Listas",
       "insert": "Inserir",
       "tasks": "Tarefas",
-      "pages": "Páginas"
+      "pages": "Páginas",
+      "suggested": "Sugestões"
     },
     "slash": {
       "p": {
         "title": "Texto",
         "subtitle": "Parágrafo simples",
-        "keywords": "texto parágrafo corpo text paragraph"
+        "keywords": "texto parágrafo corpo text paragraph",
+        "hint": "Texto simples. É só começar a escrever."
       },
       "h1": {
         "title": "Título 1",
         "subtitle": "Título grande",
-        "keywords": "título cabeçalho heading h1"
+        "keywords": "título cabeçalho heading h1",
+        "hint": "O maior título, para as seções principais da página."
       },
       "h2": {
         "title": "Título 2",
         "subtitle": "Título de seção",
-        "keywords": "título cabeçalho seção heading h2"
+        "keywords": "título cabeçalho seção heading h2",
+        "hint": "Um título de seção."
       },
       "h3": {
         "title": "Título 3",
         "subtitle": "Subseção",
-        "keywords": "título cabeçalho subseção heading h3"
+        "keywords": "título cabeçalho subseção heading h3",
+        "hint": "Um título de subseção."
+      },
+      "h4": {
+        "title": "Título 4",
+        "subtitle": "Título pequeno",
+        "keywords": "título cabeçalho heading h4",
+        "hint": "Um título pequeno, dentro de uma subseção."
+      },
+      "h5": {
+        "title": "Título 5",
+        "subtitle": "Título menor",
+        "keywords": "título cabeçalho heading h5",
+        "hint": "Um título ainda menor."
+      },
+      "h6": {
+        "title": "Título 6",
+        "subtitle": "O menor título",
+        "keywords": "título cabeçalho heading h6",
+        "hint": "O menor título."
       },
       "ul": {
         "title": "Lista",
         "subtitle": "Lista com marcadores",
-        "keywords": "lista marcadores tópicos bullet ul"
+        "keywords": "lista marcadores tópicos bullet ul",
+        "hint": "Uma lista de itens, cada um com seu marcador."
       },
       "ol": {
         "title": "Lista numerada",
         "subtitle": "1, 2, 3…",
-        "keywords": "lista numerada ordenada números ol"
+        "keywords": "lista numerada ordenada números ol",
+        "hint": "Uma lista de passos, numerados em ordem."
       },
       "todo": {
         "title": "Lista de tarefas",
         "subtitle": "Caixas de seleção para marcar",
-        "keywords": "tarefas pendências checklist caixa todo check"
+        "keywords": "tarefas pendências checklist caixa todo check",
+        "hint": "Uma lista de tarefas, cada uma com uma caixa para marcar quando terminar."
       },
       "quote": {
         "title": "Citação",
         "subtitle": "Destaque um trecho",
-        "keywords": "citação destaque quote blockquote"
+        "keywords": "citação destaque quote blockquote",
+        "hint": "Destaca um trecho como citação."
       },
       "callout": {
         "title": "Destaque",
         "subtitle": "Uma caixa em destaque: nota, dica, aviso…",
-        "keywords": "destaque callout alerta nota dica importante aviso cuidado"
+        "keywords": "destaque callout alerta nota dica importante aviso cuidado",
+        "hint": "Chama a atenção para uma nota, uma dica ou um aviso, em um quadro colorido."
       },
       "toggle": {
         "title": "Recolhível",
         "subtitle": "Um título que mostra ou oculta o que está abaixo",
-        "keywords": "recolhível toggle details recolher expandir ocultar mostrar acordeão"
+        "keywords": "recolhível toggle details recolher expandir ocultar mostrar acordeão",
+        "hint": "Um título que esconde o que está abaixo até ser aberto."
       },
       "code": {
         "title": "Código",
         "subtitle": "Bloco de código",
-        "keywords": "código trecho code snippet"
+        "keywords": "código trecho code snippet",
+        "hint": "Código em fonte de largura fixa, colorido conforme a linguagem."
       },
       "math": {
         "title": "Equação",
         "subtitle": "Uma equação em um bloco próprio, em LaTeX",
-        "keywords": "equacao formula matematica math latex katex tex bloco"
+        "keywords": "equacao formula matematica math latex katex tex bloco",
+        "hint": "Uma fórmula em uma linha própria, escrita em LaTeX."
       },
       "inlineMath": {
         "title": "Equação em linha",
         "subtitle": "Uma equação dentro do texto, em LaTeX",
-        "keywords": "equacao formula matematica math latex katex tex linha texto"
+        "keywords": "equacao formula matematica math latex katex tex linha texto",
+        "hint": "Uma fórmula dentro de uma linha de texto, escrita em LaTeX."
       },
       "table": {
         "title": "Tabela",
         "subtitle": "3 × 3 com linha de cabeçalho",
-        "keywords": "tabela grade table"
+        "keywords": "tabela grade table",
+        "hint": "Linhas e colunas, com uma linha de cabeçalho."
       },
       "hr": {
         "title": "Divisor",
         "subtitle": "Linha horizontal",
-        "keywords": "divisor separador linha divider hr"
+        "keywords": "divisor separador linha divider hr",
+        "hint": "Uma linha entre duas partes da página."
       },
       "mention": {
         "title": "Vincular tarefa ou página",
         "subtitle": "Digite @ e busque",
-        "keywords": "menção mencionar vincular link tarefa página mention"
+        "keywords": "menção mencionar vincular link tarefa página mention",
+        "hint": "Um link para uma tarefa ou página: digite @ e o nome dela."
       },
       "image": {
         "title": "Imagem",
         "subtitle": "Envie um PNG, JPG, GIF, WebP ou AVIF",
-        "keywords": "imagem foto figura image"
+        "keywords": "imagem foto figura image",
+        "hint": "Uma imagem enviada do seu dispositivo, exibida na página."
       },
       "file": {
         "title": "Arquivo",
         "subtitle": "Anexe qualquer arquivo",
-        "keywords": "arquivo anexo enviar upload file"
+        "keywords": "arquivo anexo enviar upload file",
+        "hint": "Qualquer arquivo, anexado e com link na página."
       }
     },
     "mention": {
@@ -174,7 +211,8 @@
       "mention": "Vincular tarefa ou página",
       "searching": "Buscando…",
       "noMatches": "Nenhuma correspondência",
-      "shortcut": "Atalho Markdown: {{keys}}"
+      "shortcut": "Atalho Markdown: {{keys}}",
+      "close": "Fechar menu"
     },
     "format": {
       "linkPlaceholder": "https://… ou /doc/…",

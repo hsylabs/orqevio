@@ -9,6 +9,9 @@ export interface MenuItem {
   icon?: string
   /** What typed makes the same, shown beside it (Markdown: `#`, `-`…). */
   shortcut?: string
+  /** For a block of the «/» menu: what is drawn beside it while it is the one marked, and what is said under the drawing. */
+  preview?: string
+  hint?: string
   run: (editor: Editor, range: Range) => void
 }
 

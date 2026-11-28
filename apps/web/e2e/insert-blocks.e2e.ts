@@ -98,7 +98,8 @@ test('the «+» beside a block opens the «/» menu on a line below it', async (
   await expect(editor.locator('ol > li')).toHaveCount(1)
   await editor.getByText('Cajas').hover()
   await plus.click()
-  await menu.getByRole('option', { name: /Lista numerada/ }).click()
+  // The list chosen before comes first too, among the «Sugerencias»: either is the same.
+  await menu.getByRole('option', { name: /Lista numerada/ }).first().click()
   await page.keyboard.type('Cinta')
   await expect.poll(saved).toBe('Uno\n\n1. Cajas\n2. Cinta\n\nDos')
 })

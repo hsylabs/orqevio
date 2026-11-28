@@ -71,98 +71,135 @@
       "lists": "Lists",
       "insert": "Insert",
       "tasks": "Tasks",
-      "pages": "Pages"
+      "pages": "Pages",
+      "suggested": "Suggestions"
     },
     "slash": {
       "p": {
         "title": "Text",
         "subtitle": "Plain paragraph",
-        "keywords": "text paragraph body"
+        "keywords": "text paragraph body",
+        "hint": "Plain text. Just start writing."
       },
       "h1": {
         "title": "Heading 1",
         "subtitle": "Large heading",
-        "keywords": "heading title h1"
+        "keywords": "heading title h1",
+        "hint": "The largest heading, for the main sections of the page."
       },
       "h2": {
         "title": "Heading 2",
         "subtitle": "Section heading",
-        "keywords": "heading title h2"
+        "keywords": "heading title h2",
+        "hint": "A heading for a section."
       },
       "h3": {
         "title": "Heading 3",
         "subtitle": "Subsection",
-        "keywords": "heading title h3"
+        "keywords": "heading title h3",
+        "hint": "A heading for a subsection."
+      },
+      "h4": {
+        "title": "Heading 4",
+        "subtitle": "Small heading",
+        "keywords": "heading title h4",
+        "hint": "A small heading, within a subsection."
+      },
+      "h5": {
+        "title": "Heading 5",
+        "subtitle": "Smaller heading",
+        "keywords": "heading title h5",
+        "hint": "A smaller heading still."
+      },
+      "h6": {
+        "title": "Heading 6",
+        "subtitle": "Smallest heading",
+        "keywords": "heading title h6",
+        "hint": "The smallest heading."
       },
       "ul": {
         "title": "List",
         "subtitle": "Bulleted list",
-        "keywords": "list bullet bulleted ul"
+        "keywords": "list bullet bulleted ul",
+        "hint": "A list of points, each with a bullet."
       },
       "ol": {
         "title": "Numbered list",
         "subtitle": "1, 2, 3…",
-        "keywords": "list numbered ordered ol"
+        "keywords": "list numbered ordered ol",
+        "hint": "A list of steps, numbered in order."
       },
       "todo": {
         "title": "To-do list",
         "subtitle": "Checkboxes to tick off",
-        "keywords": "todo task checklist check"
+        "keywords": "todo task checklist check",
+        "hint": "A list of tasks, each with a box to tick when it is done."
       },
       "quote": {
         "title": "Quote",
         "subtitle": "Make a passage stand out",
-        "keywords": "quote blockquote"
+        "keywords": "quote blockquote",
+        "hint": "Sets a passage apart, as a quotation."
       },
       "callout": {
         "title": "Callout",
         "subtitle": "A highlighted box: note, tip, warning…",
-        "keywords": "callout alert admonition note tip important warning caution"
+        "keywords": "callout alert admonition note tip important warning caution",
+        "hint": "Draws attention to a note, a tip or a warning, in a coloured box."
       },
       "toggle": {
         "title": "Toggle",
         "subtitle": "A title that shows or hides what is under it",
-        "keywords": "toggle details collapse expand fold hide show accordion"
+        "keywords": "toggle details collapse expand fold hide show accordion",
+        "hint": "A title that hides what is under it until it is opened."
       },
       "code": {
         "title": "Code",
         "subtitle": "Code block",
-        "keywords": "code snippet"
+        "keywords": "code snippet",
+        "hint": "Code in a fixed-width font, coloured by its language."
       },
       "math": {
         "title": "Equation",
         "subtitle": "An equation on a line of its own, in LaTeX",
-        "keywords": "equation formula math maths latex katex tex block"
+        "keywords": "equation formula math maths latex katex tex block",
+        "hint": "An equation on a line of its own, written in LaTeX."
       },
       "inlineMath": {
         "title": "Inline equation",
         "subtitle": "An equation within the text, in LaTeX",
-        "keywords": "equation formula math maths latex katex tex inline text"
+        "keywords": "equation formula math maths latex katex tex inline text",
+        "hint": "An equation within a line of text, written in LaTeX."
       },
       "table": {
         "title": "Table",
         "subtitle": "3 × 3 with a header row",
-        "keywords": "table grid"
+        "keywords": "table grid",
+        "hint": "Rows and columns, with a header row."
       },
       "hr": {
         "title": "Divider",
         "subtitle": "Horizontal line",
-        "keywords": "divider separator hr line rule"
+        "keywords": "divider separator hr line rule",
+        "hint": "A line between two parts of the page."
       },
       "mention": {
         "title": "Link a task or page",
         "subtitle": "Type @ and search",
-        "keywords": "mention link task page"
+        "keywords": "mention link task page",
+        "hint": "A link to a task or a page: type @ and its name."
       },
       "image": {
         "title": "Image",
         "subtitle": "Upload a PNG, JPG, GIF, WebP or AVIF",
-        "keywords": "image photo picture"
+        "keywords": "image photo picture",
+        "hint": "A picture uploaded from your device, shown in the page."
       },
       "file": {
         "title": "File",
         "subtitle": "Attach any file",
-        "keywords": "file attachment upload"
+        "keywords": "file attachment upload",
+        "hint": "Any file, attached and linked from the page."
       }
     },
     "mention": {
@@ -174,7 +211,8 @@
       "mention": "Link a task or page",
       "searching": "Searching…",
       "noMatches": "No matches",
-      "shortcut": "Markdown shortcut: {{keys}}"
+      "shortcut": "Markdown shortcut: {{keys}}",
+      "close": "Close menu"
     },
     "format": {
       "linkPlaceholder": "https://… or /doc/…",

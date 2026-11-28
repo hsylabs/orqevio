@@ -6,6 +6,13 @@ To update your copy, see [Updates](README.md#updates) in the README.
 
 ## [Unreleased]
 
+### Added
+- **A «/» menu more like Notion's.** In a document, a card's description and a comment:
+  - Headings 4, 5 and 6, with their Markdown shortcut (`####`, `#####`, `######`), also in a block's «Turn into».
+  - Under «Suggestions», the last three blocks chosen in this browser come first, until something is typed.
+  - Beside the block marked, a small drawing of it and a sentence on what it is for. It follows the arrows and the pointer, and isn't shown where there is no room beside the menu, as on a phone.
+  - «Close menu · Esc» at its foot.
+
 ### Changed
 - **Less to download after an update.** The code that draws equations (KaTeX) now comes in files of its own, still loaded with the editor. From the next update on, the browser keeps the ones it already has unless KaTeX itself changed, instead of downloading them again with the editor. The editor's own file is a quarter smaller (226 KB compressed instead of 301).
 - **Bigger buttons around blocks and tables in documents.** The «+» and the ⋮⋮ beside each block are 24 px, and 32 px on a phone, where pages leave a little more room on the left for them. A table's row and column handles can be pressed anywhere in 24 × 28 px around them, and the «+» along its bottom and right is 24 px (on a phone, the one on the right as wide as the room the page leaves it). While a document is edited, a table has a little more room under it, for its «+». A table's own ⋮⋮, for the whole table, keeps clear of its rows' handles: a little further left, or above its top-left corner in a window too narrow for that. A card's panel leaves a little more room on the left for them too.

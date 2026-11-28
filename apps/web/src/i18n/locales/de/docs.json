@@ -71,98 +71,135 @@
       "lists": "Listen",
       "insert": "Einfügen",
       "tasks": "Aufgaben",
-      "pages": "Seiten"
+      "pages": "Seiten",
+      "suggested": "Vorschläge"
     },
     "slash": {
       "p": {
         "title": "Text",
         "subtitle": "Normaler Absatz",
-        "keywords": "text absatz fließtext paragraph"
+        "keywords": "text absatz fließtext paragraph",
+        "hint": "Einfacher Text. Einfach losschreiben."
       },
       "h1": {
         "title": "Überschrift 1",
         "subtitle": "Große Überschrift",
-        "keywords": "überschrift titel heading h1"
+        "keywords": "überschrift titel heading h1",
+        "hint": "Die größte Überschrift, für die Hauptabschnitte der Seite."
       },
       "h2": {
         "title": "Überschrift 2",
         "subtitle": "Abschnittsüberschrift",
-        "keywords": "überschrift titel abschnitt heading h2"
+        "keywords": "überschrift titel abschnitt heading h2",
+        "hint": "Eine Überschrift für einen Abschnitt."
       },
       "h3": {
         "title": "Überschrift 3",
         "subtitle": "Unterabschnitt",
-        "keywords": "überschrift titel unterabschnitt heading h3"
+        "keywords": "überschrift titel unterabschnitt heading h3",
+        "hint": "Eine Überschrift für einen Unterabschnitt."
+      },
+      "h4": {
+        "title": "Überschrift 4",
+        "subtitle": "Kleine Überschrift",
+        "keywords": "überschrift titel heading h4",
+        "hint": "Eine kleine Überschrift innerhalb eines Unterabschnitts."
+      },
+      "h5": {
+        "title": "Überschrift 5",
+        "subtitle": "Kleinere Überschrift",
+        "keywords": "überschrift titel heading h5",
+        "hint": "Eine noch kleinere Überschrift."
+      },
+      "h6": {
+        "title": "Überschrift 6",
+        "subtitle": "Kleinste Überschrift",
+        "keywords": "überschrift titel heading h6",
+        "hint": "Die kleinste Überschrift."
       },
       "ul": {
         "title": "Liste",
         "subtitle": "Aufzählung",
-        "keywords": "liste aufzählung punkte stichpunkte bullet ul"
+        "keywords": "liste aufzählung punkte stichpunkte bullet ul",
+        "hint": "Eine Liste von Punkten, jeder mit Aufzählungszeichen."
       },
       "ol": {
         "title": "Nummerierte Liste",
         "subtitle": "1, 2, 3…",
-        "keywords": "liste nummeriert nummerierung ol"
+        "keywords": "liste nummeriert nummerierung ol",
+        "hint": "Eine Liste von Schritten, der Reihe nach nummeriert."
       },
       "todo": {
         "title": "To-do-Liste",
         "subtitle": "Kästchen zum Abhaken",
-        "keywords": "todo aufgabe checkliste kontrollkästchen check"
+        "keywords": "todo aufgabe checkliste kontrollkästchen check",
+        "hint": "Eine Liste von Aufgaben, jede mit einem Kästchen zum Abhaken."
       },
       "quote": {
         "title": "Zitat",
         "subtitle": "Eine Passage hervorheben",
-        "keywords": "zitat quote blockquote"
+        "keywords": "zitat quote blockquote",
+        "hint": "Hebt eine Passage als Zitat hervor."
       },
       "callout": {
         "title": "Hinweisbox",
         "subtitle": "Ein hervorgehobener Kasten: Hinweis, Tipp, Warnung…",
-        "keywords": "hinweisbox callout hinweis tipp wichtig warnung vorsicht"
+        "keywords": "hinweisbox callout hinweis tipp wichtig warnung vorsicht",
+        "hint": "Lenkt die Aufmerksamkeit auf eine Notiz, einen Tipp oder eine Warnung, in einem farbigen Kasten."
       },
       "toggle": {
         "title": "Aufklappbereich",
         "subtitle": "Ein Titel, der zeigt oder verbirgt, was darunter steht",
-        "keywords": "aufklappen toggle details zuklappen einklappen ausblenden einblenden akkordeon"
+        "keywords": "aufklappen toggle details zuklappen einklappen ausblenden einblenden akkordeon",
+        "hint": "Ein Titel, der verbirgt, was darunter steht, bis man ihn öffnet."
       },
       "code": {
         "title": "Code",
         "subtitle": "Codeblock",
-        "keywords": "code codeblock snippet quelltext"
+        "keywords": "code codeblock snippet quelltext",
+        "hint": "Code in einer Schrift mit fester Breite, nach seiner Sprache eingefärbt."
       },
       "math": {
         "title": "Formel",
         "subtitle": "Eine Formel als eigener Block, in LaTeX",
-        "keywords": "formel gleichung mathematik mathe math latex katex tex block"
+        "keywords": "formel gleichung mathematik mathe math latex katex tex block",
+        "hint": "Eine Formel in einer eigenen Zeile, in LaTeX geschrieben."
       },
       "inlineMath": {
         "title": "Formel im Text",
         "subtitle": "Eine Formel mitten im Text, in LaTeX",
-        "keywords": "formel gleichung mathematik mathe math latex katex tex inline text"
+        "keywords": "formel gleichung mathematik mathe math latex katex tex inline text",
+        "hint": "Eine Formel innerhalb einer Textzeile, in LaTeX geschrieben."
       },
       "table": {
         "title": "Tabelle",
         "subtitle": "3 × 3 mit Kopfzeile",
-        "keywords": "tabelle raster table"
+        "keywords": "tabelle raster table",
+        "hint": "Zeilen und Spalten, mit einer Kopfzeile."
       },
       "hr": {
         "title": "Trennlinie",
         "subtitle": "Horizontale Linie",
-        "keywords": "trennlinie trenner linie divider hr"
+        "keywords": "trennlinie trenner linie divider hr",
+        "hint": "Eine Linie zwischen zwei Teilen der Seite."
       },
       "mention": {
         "title": "Aufgabe oder Seite verknüpfen",
         "subtitle": "Tippe @ und suche",
-        "keywords": "erwähnung erwähnen verknüpfen link aufgabe seite mention"
+        "keywords": "erwähnung erwähnen verknüpfen link aufgabe seite mention",
+        "hint": "Ein Link zu einer Aufgabe oder Seite: @ und ihren Namen eingeben."
       },
       "image": {
         "title": "Bild",
         "subtitle": "PNG, JPG, GIF, WebP oder AVIF hochladen",
-        "keywords": "bild foto grafik image"
+        "keywords": "bild foto grafik image",
+        "hint": "Ein Bild, von deinem Gerät hochgeladen und auf der Seite angezeigt."
       },
       "file": {
         "title": "Datei",
         "subtitle": "Beliebige Datei anhängen",
-        "keywords": "datei anhang hochladen upload file"
+        "keywords": "datei anhang hochladen upload file",
+        "hint": "Eine beliebige Datei, angehängt und von der Seite verlinkt."
       }
     },
     "mention": {
@@ -174,7 +211,8 @@
       "mention": "Aufgabe oder Seite verknüpfen",
       "searching": "Suche läuft…",
       "noMatches": "Keine Treffer",
-      "shortcut": "Markdown-Kürzel: {{keys}}"
+      "shortcut": "Markdown-Kürzel: {{keys}}",
+      "close": "Menü schließen"
     },
     "format": {
       "linkPlaceholder": "https://… oder /doc/…",
