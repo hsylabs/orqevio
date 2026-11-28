@@ -96,9 +96,18 @@ describe('block handle', () => {
 
   it('turns a block into what the «/» menu offers', () => {
     const editor = open('Hola\n\nAdiós')
-    expect(turns(editor.state.doc, block(editor, 'Hola'))).toEqual({ current: 'p', options: ['p', 'h1', 'h2', 'h3', 'ul', 'ol', 'todo', 'quote', 'callout', 'toggle', 'code'] })
+    expect(turns(editor.state.doc, block(editor, 'Hola'))).toEqual({
+      current: 'p',
+      options: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'todo', 'quote', 'callout', 'toggle', 'code'],
+    })
     turnBlock(editor, block(editor, 'Hola'), 'h2')
     expect(saved(editor)).toBe('## Hola\n\nAdiós')
+    // The smaller headings too, each its own kind.
+    turnBlock(editor, block(editor, 'Hola'), 'h5')
+    expect(saved(editor)).toBe('##### Hola\n\nAdiós')
+    expect(turns(editor.state.doc, block(editor, 'Hola')).current).toBe('h5')
+    turnBlock(editor, block(editor, 'Hola'), 'h4')
+    expect(saved(editor)).toBe('#### Hola\n\nAdiós')
     turnBlock(editor, block(editor, 'Hola'), 'todo')
     expect(saved(editor)).toBe('- [ ] Hola\n\nAdiós')
     // A list item: back to text, out of the list.

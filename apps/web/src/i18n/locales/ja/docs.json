@@ -71,98 +71,135 @@
       "lists": "リスト",
       "insert": "挿入",
       "tasks": "タスク",
-      "pages": "ページ"
+      "pages": "ページ",
+      "suggested": "候補"
     },
     "slash": {
       "p": {
         "title": "テキスト",
         "subtitle": "通常の段落",
-        "keywords": "テキスト 段落 本文 てきすと だんらく text paragraph"
+        "keywords": "テキスト 段落 本文 てきすと だんらく text paragraph",
+        "hint": "通常のテキスト。そのまま書き始められます。"
       },
       "h1": {
         "title": "見出し1",
         "subtitle": "大見出し",
-        "keywords": "見出し 大見出し タイトル みだし heading title h1"
+        "keywords": "見出し 大見出し タイトル みだし heading title h1",
+        "hint": "最も大きな見出し。ページの主なセクションに。"
       },
       "h2": {
         "title": "見出し2",
         "subtitle": "中見出し",
-        "keywords": "見出し 中見出し タイトル みだし heading title h2"
+        "keywords": "見出し 中見出し タイトル みだし heading title h2",
+        "hint": "セクションの見出し。"
       },
       "h3": {
         "title": "見出し3",
         "subtitle": "小見出し",
-        "keywords": "見出し 小見出し タイトル みだし heading title h3"
+        "keywords": "見出し 小見出し タイトル みだし heading title h3",
+        "hint": "サブセクションの見出し。"
+      },
+      "h4": {
+        "title": "見出し4",
+        "subtitle": "小さな見出し",
+        "keywords": "見出し タイトル みだし heading title h4",
+        "hint": "サブセクションの中の小さな見出し。"
+      },
+      "h5": {
+        "title": "見出し5",
+        "subtitle": "さらに小さな見出し",
+        "keywords": "見出し タイトル みだし heading title h5",
+        "hint": "さらに小さな見出し。"
+      },
+      "h6": {
+        "title": "見出し6",
+        "subtitle": "最も小さな見出し",
+        "keywords": "見出し タイトル みだし heading title h6",
+        "hint": "最も小さな見出し。"
       },
       "ul": {
         "title": "リスト",
         "subtitle": "箇条書きリスト",
-        "keywords": "リスト 箇条書き りすと かじょうがき list bullet ul"
+        "keywords": "リスト 箇条書き りすと かじょうがき list bullet ul",
+        "hint": "項目のリスト。各項目に箇条書きの記号が付きます。"
       },
       "ol": {
         "title": "番号付きリスト",
         "subtitle": "1、2、3…",
-        "keywords": "リスト 番号 番号付き りすと ばんごう list numbered ordered ol"
+        "keywords": "リスト 番号 番号付き りすと ばんごう list numbered ordered ol",
+        "hint": "手順のリスト。順番に番号が付きます。"
       },
       "todo": {
         "title": "ToDoリスト",
         "subtitle": "チェックボックスで完了を管理",
-        "keywords": "todo やること タスク チェックリスト チェック たすく task checklist check"
+        "keywords": "todo やること タスク チェックリスト チェック たすく task checklist check",
+        "hint": "タスクのリスト。終わったらチェックを入れます。"
       },
       "quote": {
         "title": "引用",
         "subtitle": "文章の一部を目立たせる",
-        "keywords": "引用 いんよう quote blockquote"
+        "keywords": "引用 いんよう quote blockquote",
+        "hint": "一節を引用として目立たせます。"
       },
       "callout": {
         "title": "注意書き",
         "subtitle": "目立つ枠：注記、ヒント、警告など",
-        "keywords": "注意書き コールアウト callout 注記 ヒント 重要 警告 注意"
+        "keywords": "注意書き コールアウト callout 注記 ヒント 重要 警告 注意",
+        "hint": "メモ・ヒント・注意を色付きの枠で目立たせます。"
       },
       "toggle": {
         "title": "折りたたみ",
         "subtitle": "下の内容を表示・非表示にする見出し",
-        "keywords": "折りたたみ トグル toggle details 展開 隠す 表示 アコーディオン"
+        "keywords": "折りたたみ トグル toggle details 展開 隠す 表示 アコーディオン",
+        "hint": "開くまで下の内容を隠すタイトル。"
       },
       "code": {
         "title": "コード",
         "subtitle": "コードブロック",
-        "keywords": "コード こーど code snippet"
+        "keywords": "コード こーど code snippet",
+        "hint": "等幅フォントのコード。言語に合わせて色分けされます。"
       },
       "math": {
         "title": "数式",
         "subtitle": "独立したブロックの数式（LaTeX）",
-        "keywords": "数式 すうしき 方程式 math latex katex tex ブロック"
+        "keywords": "数式 すうしき 方程式 math latex katex tex ブロック",
+        "hint": "独立した行の数式。LaTeX で書きます。"
       },
       "inlineMath": {
         "title": "インライン数式",
         "subtitle": "文中に入れる数式（LaTeX）",
-        "keywords": "数式 すうしき 方程式 math latex katex tex インライン"
+        "keywords": "数式 すうしき 方程式 math latex katex tex インライン",
+        "hint": "テキストの行の中の数式。LaTeX で書きます。"
       },
       "table": {
         "title": "表",
         "subtitle": "見出し行付きの3 × 3",
-        "keywords": "表 テーブル ひょう てーぶる table grid"
+        "keywords": "表 テーブル ひょう てーぶる table grid",
+        "hint": "行と列の表。見出し行付き。"
       },
       "hr": {
         "title": "区切り線",
         "subtitle": "水平線",
-        "keywords": "区切り線 区切り 線 水平線 くぎり divider separator hr line"
+        "keywords": "区切り線 区切り 線 水平線 くぎり divider separator hr line",
+        "hint": "ページの2つの部分を分ける線。"
       },
       "mention": {
         "title": "タスクやページをリンク",
         "subtitle": "@を入力して検索",
-        "keywords": "メンション リンク タスク ページ めんしょん りんく mention link task page"
+        "keywords": "メンション リンク タスク ページ めんしょん りんく mention link task page",
+        "hint": "タスクやページへのリンク。@ と名前を入力します。"
       },
       "image": {
         "title": "画像",
         "subtitle": "PNG、JPG、GIF、WebP、AVIFをアップロード",
-        "keywords": "画像 写真 イメージ がぞう しゃしん image photo picture"
+        "keywords": "画像 写真 イメージ がぞう しゃしん image photo picture",
+        "hint": "デバイスからアップロードしてページに表示する画像。"
       },
       "file": {
         "title": "ファイル",
         "subtitle": "任意のファイルを添付",
-        "keywords": "ファイル 添付 アップロード ふぁいる てんぷ file attachment upload"
+        "keywords": "ファイル 添付 アップロード ふぁいる てんぷ file attachment upload",
+        "hint": "ページに添付してリンクする任意のファイル。"
       }
     },
     "mention": {
@@ -174,7 +211,8 @@
       "mention": "タスクやページをリンク",
       "searching": "検索中…",
       "noMatches": "一致するものはありません",
-      "shortcut": "Markdown のショートカット: {{keys}}"
+      "shortcut": "Markdown のショートカット: {{keys}}",
+      "close": "メニューを閉じる"
     },
     "format": {
       "linkPlaceholder": "https://… または /doc/…",

@@ -71,98 +71,135 @@
       "lists": "Listes",
       "insert": "Insérer",
       "tasks": "Tâches",
-      "pages": "Pages"
+      "pages": "Pages",
+      "suggested": "Suggestions"
     },
     "slash": {
       "p": {
         "title": "Texte",
         "subtitle": "Paragraphe simple",
-        "keywords": "texte paragraphe corps text paragraph"
+        "keywords": "texte paragraphe corps text paragraph",
+        "hint": "Du texte simple. Commencez à écrire."
       },
       "h1": {
         "title": "Titre 1",
         "subtitle": "Grand titre",
-        "keywords": "titre intertitre en-tête heading h1"
+        "keywords": "titre intertitre en-tête heading h1",
+        "hint": "Le plus grand titre, pour les sections principales de la page."
       },
       "h2": {
         "title": "Titre 2",
         "subtitle": "Titre de section",
-        "keywords": "titre intertitre section heading h2"
+        "keywords": "titre intertitre section heading h2",
+        "hint": "Un titre de section."
       },
       "h3": {
         "title": "Titre 3",
         "subtitle": "Sous-section",
-        "keywords": "titre sous-titre intertitre heading h3"
+        "keywords": "titre sous-titre intertitre heading h3",
+        "hint": "Un titre de sous-section."
+      },
+      "h4": {
+        "title": "Titre 4",
+        "subtitle": "Petit titre",
+        "keywords": "titre intertitre en-tête heading h4",
+        "hint": "Un petit titre, dans une sous-section."
+      },
+      "h5": {
+        "title": "Titre 5",
+        "subtitle": "Titre plus petit",
+        "keywords": "titre intertitre en-tête heading h5",
+        "hint": "Un titre plus petit encore."
+      },
+      "h6": {
+        "title": "Titre 6",
+        "subtitle": "Le plus petit titre",
+        "keywords": "titre intertitre en-tête heading h6",
+        "hint": "Le plus petit titre."
       },
       "ul": {
         "title": "Liste",
         "subtitle": "Liste à puces",
-        "keywords": "liste puces bullet ul"
+        "keywords": "liste puces bullet ul",
+        "hint": "Une liste de points, chacun avec sa puce."
       },
       "ol": {
         "title": "Liste numérotée",
         "subtitle": "1, 2, 3…",
-        "keywords": "liste numérotée ordonnée numéros ol"
+        "keywords": "liste numérotée ordonnée numéros ol",
+        "hint": "Une liste d’étapes, numérotées dans l’ordre."
       },
       "todo": {
         "title": "Liste de tâches",
         "subtitle": "Cases à cocher",
-        "keywords": "tâches checklist todo cases cocher"
+        "keywords": "tâches checklist todo cases cocher",
+        "hint": "Une liste de tâches, chacune avec une case à cocher une fois terminée."
       },
       "quote": {
         "title": "Citation",
         "subtitle": "Mettre un passage en valeur",
-        "keywords": "citation quote blockquote"
+        "keywords": "citation quote blockquote",
+        "hint": "Met un passage en valeur, comme une citation."
       },
       "callout": {
         "title": "Encadré",
         "subtitle": "Un encadré mis en évidence : remarque, astuce, avertissement…",
-        "keywords": "encadré callout alerte remarque astuce important avertissement attention"
+        "keywords": "encadré callout alerte remarque astuce important avertissement attention",
+        "hint": "Attire l’attention sur une note, un conseil ou un avertissement, dans un encadré coloré."
       },
       "toggle": {
         "title": "Bloc dépliant",
         "subtitle": "Un titre qui affiche ou masque ce qu’il y a dessous",
-        "keywords": "dépliant toggle details replier déplier masquer afficher accordéon"
+        "keywords": "dépliant toggle details replier déplier masquer afficher accordéon",
+        "hint": "Un titre qui masque ce qu’il y a dessous jusqu’à ce qu’on l’ouvre."
       },
       "code": {
         "title": "Code",
         "subtitle": "Bloc de code",
-        "keywords": "code extrait snippet"
+        "keywords": "code extrait snippet",
+        "hint": "Du code en police à chasse fixe, coloré selon son langage."
       },
       "math": {
         "title": "Équation",
         "subtitle": "Une équation sur sa propre ligne, en LaTeX",
-        "keywords": "equation formule mathematiques maths math latex katex tex bloc"
+        "keywords": "equation formule mathematiques maths math latex katex tex bloc",
+        "hint": "Une équation sur sa propre ligne, écrite en LaTeX."
       },
       "inlineMath": {
         "title": "Équation en ligne",
         "subtitle": "Une équation dans le texte, en LaTeX",
-        "keywords": "equation formule mathematiques maths math latex katex tex ligne texte"
+        "keywords": "equation formule mathematiques maths math latex katex tex ligne texte",
+        "hint": "Une équation dans une ligne de texte, écrite en LaTeX."
       },
       "table": {
         "title": "Tableau",
         "subtitle": "3 × 3 avec une ligne d’en-tête",
-        "keywords": "tableau table grille"
+        "keywords": "tableau table grille",
+        "hint": "Des lignes et des colonnes, avec une ligne d’en-tête."
       },
       "hr": {
         "title": "Séparateur",
         "subtitle": "Ligne horizontale",
-        "keywords": "séparateur ligne trait hr divider"
+        "keywords": "séparateur ligne trait hr divider",
+        "hint": "Une ligne entre deux parties de la page."
       },
       "mention": {
         "title": "Lier une tâche ou une page",
         "subtitle": "Tapez @ et cherchez",
-        "keywords": "mention lien lier tâche page link"
+        "keywords": "mention lien lier tâche page link",
+        "hint": "Un lien vers une tâche ou une page : tapez @ et son nom."
       },
       "image": {
         "title": "Image",
         "subtitle": "Importer un PNG, JPG, GIF, WebP ou AVIF",
-        "keywords": "image photo illustration"
+        "keywords": "image photo illustration",
+        "hint": "Une image envoyée depuis votre appareil, affichée dans la page."
       },
       "file": {
         "title": "Fichier",
         "subtitle": "Joindre n’importe quel fichier",
-        "keywords": "fichier pièce jointe importer file"
+        "keywords": "fichier pièce jointe importer file",
+        "hint": "N’importe quel fichier, joint et lié depuis la page."
       }
     },
     "mention": {
@@ -174,7 +211,8 @@
       "mention": "Lier une tâche ou une page",
       "searching": "Recherche…",
       "noMatches": "Aucun résultat",
-      "shortcut": "Raccourci Markdown : {{keys}}"
+      "shortcut": "Raccourci Markdown : {{keys}}",
+      "close": "Fermer le menu"
     },
     "format": {
       "linkPlaceholder": "https://… ou /doc/…",

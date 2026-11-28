@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { ApiError, api, errorMessage, get } from '../../../lib/api'
 import { cn } from '../../../lib/cn'
 import { keys, queryClient } from '../../../lib/queries'
+import { localPref, setLocalPref } from '../../../lib/theme'
 import { BlockControls } from './BlockControls'
 import { CalloutControls } from './CalloutControls'
 import { markerFor } from './callout'
@@ -53,8 +54,38 @@ interface EditorProps {
   blockHandles?: boolean
 }
 
-type SlashId = 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'toggle' | 'code' | 'math' | 'inlineMath' | 'table' | 'hr' | 'mention' | 'image' | 'file'
+type SlashId =
+  | 'p'
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'h4'
+  | 'h5'
+  | 'h6'
+  | 'ul'
+  | 'ol'
+  | 'todo'
+  | 'quote'
+  | 'callout'
+  | 'toggle'
+  | 'code'
+  | 'math'
+  | 'inlineMath'
+  | 'table'
+  | 'hr'
+  | 'mention'
+  | 'image'
+  | 'file'
 type SlashGroup = 'blocks' | 'lists' | 'insert'
+
+/** The blocks of the «/» menu last chosen in this browser, the latest first, offered first as «Suggestions». */
+const RECENT_KEY = 'slashRecent'
+const RECENT_COUNT = 3
+const recentSlash = () => {
+  const ids = localPref<unknown>(RECENT_KEY, [])
+  return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : []
+}
+const rememberSlash = (id: SlashId) => setLocalPref(RECENT_KEY, [id, ...recentSlash().filter((other) => other !== id)].slice(0, RECENT_COUNT))
 
 export async function uploadFile(file: File, target: UploadTarget): Promise<AttachmentDTO> {
   // The server refuses oversized files before reading them, which browsers report as a
@@ -157,13 +188,21 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       group: t(`editor.groups.${group}`),
       keywords: t(`editor.slash.${id}.keywords`),
       shortcut: MARKDOWN_SHORTCUTS[id as keyof typeof MARKDOWN_SHORTCUTS],
-      run,
+      preview: id,
+      hint: t(`editor.slash.${id}.hint`),
+      run: (editor, range) => {
+        rememberSlash(id)
+        run(editor, range)
+      },
     })
     const items: Array<MenuItem & { keywords: string }> = [
       item('p', 'T', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setParagraph().run()),
       item('h1', 'H1', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setHeading({ level: 1 }).run()),
       item('h2', 'H2', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setHeading({ level: 2 }).run()),
       item('h3', 'H3', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setHeading({ level: 3 }).run()),
+      item('h4', 'H4', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setHeading({ level: 4 }).run()),
+      item('h5', 'H5', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setHeading({ level: 5 }).run()),
+      item('h6', 'H6', 'blocks', (e, r) => e.chain().focus().deleteRange(r).setHeading({ level: 6 }).run()),
       // In an item of the same kind of list, as on the line a «+» opens below one, it stays an item.
       item('ul', '•', 'lists', (e, r) => toList(e, r, 'bulletList', (c) => c.toggleBulletList())),
       item('ol', '1.', 'lists', (e, r) => toList(e, r, 'orderedList', (c) => c.toggleOrderedList())),
@@ -185,7 +224,10 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       )
     }
     const q = query.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')
-    return items.filter((i) => !q || `${i.title} ${i.keywords}`.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').includes(q))
+    if (q) return items.filter((i) => `${i.title} ${i.keywords}`.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').includes(q))
+    // Before anything is typed, the last ones chosen come first, as well as in their place.
+    const suggested = recentSlash().flatMap((id) => items.filter((i) => i.id === id))
+    return [...suggested.map((i) => ({ ...i, id: `recent-${i.id}`, group: t('editor.groups.suggested') })), ...items]
   }
 
   const mentionItems = async (query: string): Promise<MenuItem[]> => {

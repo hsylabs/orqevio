@@ -71,98 +71,135 @@
       "lists": "Listas",
       "insert": "Insertar",
       "tasks": "Tareas",
-      "pages": "Páginas"
+      "pages": "Páginas",
+      "suggested": "Sugerencias"
     },
     "slash": {
       "p": {
         "title": "Texto",
         "subtitle": "Párrafo normal",
-        "keywords": "texto parrafo paragraph"
+        "keywords": "texto parrafo paragraph",
+        "hint": "Texto normal. Empieza a escribir."
       },
       "h1": {
         "title": "Título 1",
         "subtitle": "Encabezado grande",
-        "keywords": "titulo heading h1"
+        "keywords": "titulo heading h1",
+        "hint": "El título más grande, para las secciones principales de la página."
       },
       "h2": {
         "title": "Título 2",
         "subtitle": "Encabezado de sección",
-        "keywords": "titulo heading h2"
+        "keywords": "titulo heading h2",
+        "hint": "Un título para una sección."
       },
       "h3": {
         "title": "Título 3",
         "subtitle": "Subsección",
-        "keywords": "titulo heading h3"
+        "keywords": "titulo heading h3",
+        "hint": "Un título para una subsección."
+      },
+      "h4": {
+        "title": "Título 4",
+        "subtitle": "Encabezado pequeño",
+        "keywords": "titulo heading h4",
+        "hint": "Un título pequeño, dentro de una subsección."
+      },
+      "h5": {
+        "title": "Título 5",
+        "subtitle": "Encabezado más pequeño",
+        "keywords": "titulo heading h5",
+        "hint": "Un título más pequeño aún."
+      },
+      "h6": {
+        "title": "Título 6",
+        "subtitle": "El encabezado más pequeño",
+        "keywords": "titulo heading h6",
+        "hint": "El título más pequeño."
       },
       "ul": {
         "title": "Lista",
         "subtitle": "Lista con viñetas",
-        "keywords": "lista bullet viñetas ul"
+        "keywords": "lista bullet viñetas ul",
+        "hint": "Una lista de puntos, cada uno con su viñeta."
       },
       "ol": {
         "title": "Lista numerada",
         "subtitle": "1, 2, 3…",
-        "keywords": "lista numerada ordered ol"
+        "keywords": "lista numerada ordered ol",
+        "hint": "Una lista de pasos, numerados en orden."
       },
       "todo": {
         "title": "Lista de tareas",
         "subtitle": "Casillas para marcar",
-        "keywords": "tareas checklist todo check"
+        "keywords": "tareas checklist todo check",
+        "hint": "Una lista de tareas, cada una con su casilla para marcarla al terminar."
       },
       "quote": {
         "title": "Cita",
         "subtitle": "Destaca un fragmento",
-        "keywords": "cita quote blockquote"
+        "keywords": "cita quote blockquote",
+        "hint": "Destaca un fragmento como cita."
       },
       "callout": {
         "title": "Aviso",
         "subtitle": "Un recuadro destacado: nota, consejo, advertencia…",
-        "keywords": "aviso callout alerta nota consejo importante advertencia precaución"
+        "keywords": "aviso callout alerta nota consejo importante advertencia precaución",
+        "hint": "Llama la atención sobre una nota, un consejo o una advertencia, en un recuadro de color."
       },
       "toggle": {
         "title": "Desplegable",
         "subtitle": "Un título que muestra u oculta lo que hay debajo",
-        "keywords": "desplegable toggle details plegar ocultar mostrar acordeón"
+        "keywords": "desplegable toggle details plegar ocultar mostrar acordeón",
+        "hint": "Un título que oculta lo que hay debajo hasta que se abre."
       },
       "code": {
         "title": "Código",
         "subtitle": "Bloque de código",
-        "keywords": "codigo code"
+        "keywords": "codigo code",
+        "hint": "Código en letra de ancho fijo, coloreado según su lenguaje."
       },
       "math": {
         "title": "Fórmula",
         "subtitle": "Una fórmula en su propio bloque, en LaTeX",
-        "keywords": "formula ecuacion matematicas math latex katex tex bloque"
+        "keywords": "formula ecuacion matematicas math latex katex tex bloque",
+        "hint": "Una fórmula en su propia línea, escrita en LaTeX."
       },
       "inlineMath": {
         "title": "Fórmula en línea",
         "subtitle": "Una fórmula dentro del texto, en LaTeX",
-        "keywords": "formula ecuacion matematicas math latex katex tex linea texto"
+        "keywords": "formula ecuacion matematicas math latex katex tex linea texto",
+        "hint": "Una fórmula dentro de una línea de texto, escrita en LaTeX."
       },
       "table": {
         "title": "Tabla",
         "subtitle": "3 × 3 con cabecera",
-        "keywords": "tabla table"
+        "keywords": "tabla table",
+        "hint": "Filas y columnas, con una fila de cabecera."
       },
       "hr": {
         "title": "Separador",
         "subtitle": "Línea horizontal",
-        "keywords": "separador divider hr linea"
+        "keywords": "separador divider hr linea",
+        "hint": "Una línea entre dos partes de la página."
       },
       "mention": {
         "title": "Enlazar tarea o página",
         "subtitle": "Escribe @ y busca",
-        "keywords": "mencion enlace tarea pagina link mention"
+        "keywords": "mencion enlace tarea pagina link mention",
+        "hint": "Un enlace a una tarea o a una página: escribe @ y su nombre."
       },
       "image": {
         "title": "Imagen",
         "subtitle": "Sube PNG, JPG, GIF, WebP o AVIF",
-        "keywords": "imagen image foto"
+        "keywords": "imagen image foto",
+        "hint": "Una imagen subida desde tu dispositivo, que se ve en la página."
       },
       "file": {
         "title": "Archivo",
         "subtitle": "Adjunta cualquier archivo",
-        "keywords": "archivo adjunto file attachment"
+        "keywords": "archivo adjunto file attachment",
+        "hint": "Cualquier archivo, adjunto y enlazado desde la página."
       }
     },
     "mention": {
@@ -174,7 +211,8 @@
       "mention": "Enlazar tarea o página",
       "searching": "Buscando…",
       "noMatches": "Sin coincidencias",
-      "shortcut": "Atajo de Markdown: {{keys}}"
+      "shortcut": "Atajo de Markdown: {{keys}}",
+      "close": "Cerrar menú"
     },
     "format": {
       "linkPlaceholder": "https://… o /doc/…",

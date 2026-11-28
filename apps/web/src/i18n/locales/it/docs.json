@@ -71,98 +71,135 @@
       "lists": "Elenchi",
       "insert": "Inserisci",
       "tasks": "Attività",
-      "pages": "Pagine"
+      "pages": "Pagine",
+      "suggested": "Suggerimenti"
     },
     "slash": {
       "p": {
         "title": "Testo",
         "subtitle": "Paragrafo semplice",
-        "keywords": "testo paragrafo corpo text paragraph"
+        "keywords": "testo paragrafo corpo text paragraph",
+        "hint": "Testo semplice. Inizia a scrivere."
       },
       "h1": {
         "title": "Titolo 1",
         "subtitle": "Titolo grande",
-        "keywords": "titolo intestazione heading h1"
+        "keywords": "titolo intestazione heading h1",
+        "hint": "Il titolo più grande, per le sezioni principali della pagina."
       },
       "h2": {
         "title": "Titolo 2",
         "subtitle": "Titolo di sezione",
-        "keywords": "titolo intestazione sezione heading h2"
+        "keywords": "titolo intestazione sezione heading h2",
+        "hint": "Un titolo di sezione."
       },
       "h3": {
         "title": "Titolo 3",
         "subtitle": "Sottosezione",
-        "keywords": "titolo sottotitolo intestazione heading h3"
+        "keywords": "titolo sottotitolo intestazione heading h3",
+        "hint": "Un titolo di sottosezione."
+      },
+      "h4": {
+        "title": "Titolo 4",
+        "subtitle": "Titolo piccolo",
+        "keywords": "titolo intestazione heading h4",
+        "hint": "Un titolo piccolo, dentro una sottosezione."
+      },
+      "h5": {
+        "title": "Titolo 5",
+        "subtitle": "Titolo più piccolo",
+        "keywords": "titolo intestazione heading h5",
+        "hint": "Un titolo ancora più piccolo."
+      },
+      "h6": {
+        "title": "Titolo 6",
+        "subtitle": "Il titolo più piccolo",
+        "keywords": "titolo intestazione heading h6",
+        "hint": "Il titolo più piccolo."
       },
       "ul": {
         "title": "Elenco",
         "subtitle": "Elenco puntato",
-        "keywords": "elenco lista puntato punti bullet ul"
+        "keywords": "elenco lista puntato punti bullet ul",
+        "hint": "Un elenco di punti, ognuno con il suo pallino."
       },
       "ol": {
         "title": "Elenco numerato",
         "subtitle": "1, 2, 3…",
-        "keywords": "elenco lista numerato ordinato numeri ol"
+        "keywords": "elenco lista numerato ordinato numeri ol",
+        "hint": "Un elenco di passaggi, numerati in ordine."
       },
       "todo": {
         "title": "Lista di cose da fare",
         "subtitle": "Caselle da spuntare",
-        "keywords": "attività checklist todo caselle spunta"
+        "keywords": "attività checklist todo caselle spunta",
+        "hint": "Un elenco di attività, ognuna con una casella da spuntare quando è fatta."
       },
       "quote": {
         "title": "Citazione",
         "subtitle": "Metti in risalto un passaggio",
-        "keywords": "citazione quote blockquote"
+        "keywords": "citazione quote blockquote",
+        "hint": "Mette in risalto un passaggio, come citazione."
       },
       "callout": {
         "title": "Riquadro",
         "subtitle": "Un riquadro in evidenza: nota, suggerimento, avvertenza…",
-        "keywords": "riquadro callout avviso nota suggerimento importante avvertenza attenzione"
+        "keywords": "riquadro callout avviso nota suggerimento importante avvertenza attenzione",
+        "hint": "Richiama l’attenzione su una nota, un consiglio o un avviso, in un riquadro colorato."
       },
       "toggle": {
         "title": "Blocco espandibile",
         "subtitle": "Un titolo che mostra o nasconde ciò che c’è sotto",
-        "keywords": "espandibile toggle details comprimi espandi nascondi mostra fisarmonica"
+        "keywords": "espandibile toggle details comprimi espandi nascondi mostra fisarmonica",
+        "hint": "Un titolo che nasconde ciò che c’è sotto finché non lo si apre."
       },
       "code": {
         "title": "Codice",
         "subtitle": "Blocco di codice",
-        "keywords": "codice code snippet"
+        "keywords": "codice code snippet",
+        "hint": "Codice in carattere a larghezza fissa, colorato secondo il suo linguaggio."
       },
       "math": {
         "title": "Equazione",
         "subtitle": "Un’equazione su una riga a sé, in LaTeX",
-        "keywords": "equazione formula matematica math latex katex tex blocco"
+        "keywords": "equazione formula matematica math latex katex tex blocco",
+        "hint": "Un’equazione su una riga a sé, scritta in LaTeX."
       },
       "inlineMath": {
         "title": "Equazione in linea",
         "subtitle": "Un’equazione dentro il testo, in LaTeX",
-        "keywords": "equazione formula matematica math latex katex tex linea testo"
+        "keywords": "equazione formula matematica math latex katex tex linea testo",
+        "hint": "Un’equazione dentro una riga di testo, scritta in LaTeX."
       },
       "table": {
         "title": "Tabella",
         "subtitle": "3 × 3 con riga di intestazione",
-        "keywords": "tabella table griglia"
+        "keywords": "tabella table griglia",
+        "hint": "Righe e colonne, con una riga di intestazione."
       },
       "hr": {
         "title": "Separatore",
         "subtitle": "Linea orizzontale",
-        "keywords": "separatore divisore linea riga hr divider"
+        "keywords": "separatore divisore linea riga hr divider",
+        "hint": "Una linea tra due parti della pagina."
       },
       "mention": {
         "title": "Collega attività o pagina",
         "subtitle": "Digita @ e cerca",
-        "keywords": "menzione collegamento link attività pagina mention"
+        "keywords": "menzione collegamento link attività pagina mention",
+        "hint": "Un link a un’attività o a una pagina: scrivi @ e il suo nome."
       },
       "image": {
         "title": "Immagine",
         "subtitle": "Carica un PNG, JPG, GIF, WebP o AVIF",
-        "keywords": "immagine foto image"
+        "keywords": "immagine foto image",
+        "hint": "Un’immagine caricata dal tuo dispositivo, mostrata nella pagina."
       },
       "file": {
         "title": "File",
         "subtitle": "Allega qualsiasi file",
-        "keywords": "file allegato carica upload"
+        "keywords": "file allegato carica upload",
+        "hint": "Qualsiasi file, allegato e collegato dalla pagina."
       }
     },
     "mention": {
@@ -174,7 +211,8 @@
       "mention": "Collega attività o pagina",
       "searching": "Ricerca in corso…",
       "noMatches": "Nessun risultato",
-      "shortcut": "Scorciatoia Markdown: {{keys}}"
+      "shortcut": "Scorciatoia Markdown: {{keys}}",
+      "close": "Chiudi menu"
     },
     "format": {
       "linkPlaceholder": "https://… o /doc/…",
