@@ -98,7 +98,7 @@ describe('block handle', () => {
     const editor = open('Hola\n\nAdiós')
     expect(turns(editor.state.doc, block(editor, 'Hola'))).toEqual({
       current: 'p',
-      options: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'todo', 'quote', 'callout', 'toggle', 'code'],
+      options: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'todo', 'quote', 'callout', 'toggle', 'toggleH1', 'toggleH2', 'toggleH3', 'code'],
     })
     turnBlock(editor, block(editor, 'Hola'), 'h2')
     expect(saved(editor)).toBe('## Hola\n\nAdiós')

@@ -85,6 +85,69 @@ test('in a comment, a toggle is the browser\'s own', async ({ page }) => {
   await expect(comment.getByText('Línea 1')).toBeVisible()
 })
 
+test('a toggle heading from the «/» menu: its title a heading, as GitHub shows one in a <details>', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  const { editor, saved } = await openPage(page, 'Títulos desplegables E2E', '')
+  await editor.click()
+  await page.keyboard.type('/desplegable 2')
+  const option = page.getByRole('option', { name: /Título desplegable 2/ })
+  await expect(option).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByTestId('slash-preview')).toContainText('Un título para una sección que muestra u oculta lo que hay debajo.')
+  await page.screenshot({ path: testInfo.outputPath('toggle-heading-preview.png') })
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('¿Cómo se instala?')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Con un comando.')
+  await expect.poll(saved).toBe('<details>\n<summary><h2>¿Cómo se instala?</h2></summary>\n\nCon un comando.\n\n</details>')
+  // Read as the heading it is, and as big as one, its arrow on its line.
+  const title = editor.getByRole('heading', { level: 2, name: '¿Cómo se instala?' })
+  await expect(title).toBeVisible()
+  const size = await title.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))
+  expect(size).toBeGreaterThan(20)
+  expect(await title.evaluate((element) => getComputedStyle(element).fontWeight)).toBe('560')
+  const arrow = (await editor.getByRole('button', { name: 'Ocultar el contenido' }).boundingBox())!
+  const line = (await title.boundingBox())!
+  expect(Math.abs(arrow.y + arrow.height / 2 - (line.y + size * 1.22 / 2))).toBeLessThan(3)
+  await page.screenshot({ path: testInfo.outputPath('toggle-heading.png') })
+
+  // «Turn into» another level, a toggle of text, and back.
+  await page.keyboard.press('ControlOrMeta+/')
+  await page.getByRole('menuitem', { name: 'Convertir en' }).press('ArrowRight')
+  await expect(page.getByRole('menuitem', { name: /Título desplegable 2/ })).toBeDisabled()
+  await page.getByRole('menuitem', { name: /Título desplegable 1/ }).click()
+  await expect.poll(saved).toBe('<details>\n<summary><h1>¿Cómo se instala?</h1></summary>\n\nCon un comando.\n\n</details>')
+  await expect(editor.getByRole('heading', { level: 1, name: '¿Cómo se instala?' })).toBeVisible()
+})
+
+test('a toggle heading written elsewhere, and in a comment the browser\'s own with its heading', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  const content = '<details>\n<summary><h1>Guía</h1></summary>\n\nUno\n\n</details>\n\n<details>\n<summary><h3>Preguntas</h3></summary>\n\nDos\n\n</details>\n\nFin'
+  const { editor, saved } = await openPage(page, 'Títulos desplegables escritos E2E', content)
+  await expect(editor.getByRole('heading', { level: 1, name: 'Guía' })).toBeVisible()
+  await expect(editor.getByRole('heading', { level: 3, name: 'Preguntas' })).toBeVisible()
+  await expect(editor.getByText('Dos', { exact: true })).toBeHidden()
+  await editor.getByRole('button', { name: 'Mostrar el contenido' }).nth(1).click()
+  await expect(editor.getByText('Dos', { exact: true })).toBeVisible()
+  await page.screenshot({ path: testInfo.outputPath('toggle-headings-written.png') })
+  expect(await saved()).toBe(content)
+
+  const workspaceId = await openNewWorkspace(page, 'Títulos desplegables comentario E2E')
+  const boardId = await createProject(page, 'Notas')
+  const columns = ((await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string }> }).columns
+  const card = (await (await page.request.post(`/api/columns/${columns[0]!.id}/cards`, { data: { title: 'Registro' } })).json()) as { id: string }
+  await page.request.post(`/api/cards/${card.id}/comments`, { data: { body: '<details>\n<summary><h2>Ver el registro</h2></summary>\n\nLínea 1\n\n</details>' } })
+  await page.goto(`/w/${workspaceId}/b/${boardId}?card=${card.id}`)
+  const comment = page.locator('.orq-prose--note').filter({ hasText: 'Ver el registro' })
+  const heading = comment.getByRole('heading', { level: 2, name: 'Ver el registro' })
+  await expect(heading).toBeVisible()
+  // As the same heading is in the editor.
+  expect(await heading.evaluate((element) => getComputedStyle(element).fontWeight)).toBe('560')
+  await expect(comment.getByText('Línea 1')).toBeHidden()
+  await heading.click()
+  await expect(comment.getByText('Línea 1')).toBeVisible()
+  await comment.screenshot({ path: testInfo.outputPath('toggle-heading-comment.png') })
+})
+
 test.describe('on a phone', () => {
   test.use({ hasTouch: true, viewport: { width: 390, height: 844 } })
 

@@ -161,6 +161,24 @@
         "keywords": "espandibile toggle details comprimi espandi nascondi mostra fisarmonica",
         "hint": "Un titolo che nasconde ciò che c’è sotto finché non lo si apre."
       },
+      "toggleH1": {
+        "title": "Titolo espandibile 1",
+        "subtitle": "Titolo grande che comprime ciò che c’è sotto",
+        "keywords": "titolo espandibile toggle heading h1 details comprimi espandi fisarmonica",
+        "hint": "Un titolo per una sezione principale della pagina che mostra o nasconde ciò che c’è sotto."
+      },
+      "toggleH2": {
+        "title": "Titolo espandibile 2",
+        "subtitle": "Titolo medio che comprime ciò che c’è sotto",
+        "keywords": "titolo espandibile toggle heading h2 details comprimi espandi fisarmonica",
+        "hint": "Un titolo per una sezione che mostra o nasconde ciò che c’è sotto."
+      },
+      "toggleH3": {
+        "title": "Titolo espandibile 3",
+        "subtitle": "Titolo piccolo che comprime ciò che c’è sotto",
+        "keywords": "titolo espandibile toggle heading h3 details comprimi espandi fisarmonica",
+        "hint": "Un titolo piccolo che mostra o nasconde ciò che c’è sotto."
+      },
       "code": {
         "title": "Codice",
         "subtitle": "Blocco di codice",

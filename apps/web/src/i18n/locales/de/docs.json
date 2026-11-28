@@ -161,6 +161,24 @@
         "keywords": "aufklappen toggle details zuklappen einklappen ausblenden einblenden akkordeon",
         "hint": "Ein Titel, der verbirgt, was darunter steht, bis man ihn öffnet."
       },
+      "toggleH1": {
+        "title": "Aufklappbare Überschrift 1",
+        "subtitle": "Große Überschrift, die einklappt, was darunter steht",
+        "keywords": "überschrift aufklappen toggle heading h1 details einklappen akkordeon",
+        "hint": "Eine Überschrift für einen Hauptabschnitt der Seite, die zeigt oder verbirgt, was darunter steht."
+      },
+      "toggleH2": {
+        "title": "Aufklappbare Überschrift 2",
+        "subtitle": "Mittlere Überschrift, die einklappt, was darunter steht",
+        "keywords": "überschrift aufklappen toggle heading h2 details einklappen akkordeon",
+        "hint": "Eine Überschrift für einen Abschnitt, die zeigt oder verbirgt, was darunter steht."
+      },
+      "toggleH3": {
+        "title": "Aufklappbare Überschrift 3",
+        "subtitle": "Kleine Überschrift, die einklappt, was darunter steht",
+        "keywords": "überschrift aufklappen toggle heading h3 details einklappen akkordeon",
+        "hint": "Eine kleine Überschrift, die zeigt oder verbirgt, was darunter steht."
+      },
       "code": {
         "title": "Code",
         "subtitle": "Codeblock",

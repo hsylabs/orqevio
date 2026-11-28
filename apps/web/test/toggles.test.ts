@@ -9,7 +9,7 @@ import docs from '../src/i18n/locales/es/docs.json'
 import { turnBlock, turns } from '../src/features/docs/editor/block-commands'
 import { documentExtensions } from '../src/features/docs/editor/markdown'
 import { markdownToHtml } from '../src/features/docs/editor/markdown-html'
-import { insertToggle, outOfTitle, setToggleOpen, showTogglesAsBefore, togglesShown } from '../src/features/docs/editor/toggle'
+import { insertToggle, levelOf, outOfTitle, setToggleOpen, showTogglesAsBefore, togglesShown } from '../src/features/docs/editor/toggle'
 
 // HTML's <details> as a toggle in the editor: a title that shows or hides what is under it, written
 // back as the HTML and Markdown it was.
@@ -463,6 +463,149 @@ describe('a toggle changed in the editor', () => {
     cursorIn(editor, 'toggleTitle', 'start')
     press(editor, 'Backspace')
     expect(saved(editor)).toBe('Más\n\nDentro')
+  })
+})
+
+describe('a toggle whose title is a heading', () => {
+  const github = '<details>\n<summary><h2>Más</h2></summary>\n\nDentro\n\n</details>'
+
+  it('is read as GitHub writes it, shown as that heading, and written back the same', () => {
+    const editor = open(github, 'markdown', true)
+    expect(saved(editor)).toBe(github)
+    expect(editor.state.doc.nodeAt(first(editor, 'toggleTitle'))!.textContent).toBe('Más')
+    expect(editor.view.dom.querySelector('.orq-toggle')!.getAttribute('data-level')).toBe('2')
+    const title = editor.view.dom.querySelector('.orq-toggle-title')!
+    expect([title.getAttribute('role'), title.getAttribute('aria-level')]).toEqual(['heading', '2'])
+  })
+
+  it('keeps its heading, with its attributes, once its title changes', () => {
+    const editor = open('<details>\n<summary><h3 id="faq">Más</h3></summary>\n\nDentro\n\n</details>')
+    cursorIn(editor, 'toggleTitle')
+    editor.commands.insertContent(' & <datos>')
+    expect(saved(editor)).toBe('<details>\n<summary><h3 id="faq">Más &amp; &lt;datos&gt;</h3></summary>\n\nDentro\n\n</details>')
+  })
+
+  it('is one heading alone: two, or text around one, are a title of text', () => {
+    expect(levelOf('<h2>Más</h2>')).toBe(2)
+    expect(levelOf(' <H6 class="x">Más</H6>\n')).toBe(6)
+    for (const other of ['<h2>Uno</h2> <h3>Dos</h3>', 'Ver <h2>Más</h2>', '<h2>Más', '<h7>Más</h7>', '<b>Más</b>', '']) expect(levelOf(other), other).toBe(0)
+    const editor = open('<details>\n<summary><h2>Uno</h2> <h3>Dos</h3></summary>\n\nDentro\n\n</details>')
+    cursorIn(editor, 'toggleTitle')
+    editor.commands.insertContent('!')
+    expect(saved(editor)).toBe('<details>\n<summary>Uno Dos!</summary>\n\nDentro\n\n</details>')
+  })
+
+  it('is put in place of an empty line from the «/» menu, at levels 1 to 3', () => {
+    for (const level of [1, 2, 3]) {
+      const editor = open('', 'markdown', true)
+      editor.commands.command(({ tr }) => insertToggle(tr, level))
+      editor.commands.insertContent('Título')
+      expect(saved(editor)).toBe(`<details>\n<summary><h${level}>Título</h${level}></summary>\n\n</details>`)
+    }
+  })
+
+  it('is made from a line of text or a heading, turned into another level or a toggle, and back into text', () => {
+    const editor = open('Pregunta\n\n### Sección')
+    expect(turns(editor.state.doc, 0).options).toEqual(expect.arrayContaining(['toggle', 'toggleH1', 'toggleH2', 'toggleH3']))
+    turnBlock(editor, 0, 'toggleH2')
+    expect(saved(editor)).toBe('<details>\n<summary><h2>Pregunta</h2></summary>\n\n</details>\n\n### Sección')
+    cursorIn(editor, 'paragraph')
+    editor.commands.insertContent('Respuesta')
+    const toggle = first(editor, 'toggle')
+    expect(turns(editor.state.doc, toggle)).toEqual({ current: 'toggleH2', options: ['p', 'toggle', 'toggleH1', 'toggleH2', 'toggleH3'] })
+    turnBlock(editor, toggle, 'toggleH1')
+    expect(saved(editor)).toBe('<details>\n<summary><h1>Pregunta</h1></summary>\n\nRespuesta\n\n</details>\n\n### Sección')
+    turnBlock(editor, toggle, 'toggle')
+    expect(saved(editor)).toBe('<details>\n<summary>Pregunta</summary>\n\nRespuesta\n\n</details>\n\n### Sección')
+    turnBlock(editor, toggle, 'p')
+    expect(saved(editor)).toBe('Pregunta\n\nRespuesta\n\n### Sección')
+    // A heading keeps its text as the title.
+    const heading = first(editor, 'heading')
+    turnBlock(editor, heading, 'toggleH3')
+    expect(saved(editor)).toBe('Pregunta\n\nRespuesta\n\n<details>\n<summary><h3>Sección</h3></summary>\n\n</details>')
+  })
+
+  it('of level 4 to 6, written elsewhere, is none of the menu\'s but can be turned into one', () => {
+    const editor = open('<details>\n<summary><h5>Nota</h5></summary>\n\nDentro\n\n</details>')
+    expect(turns(editor.state.doc, 0).current).toBeNull()
+    turnBlock(editor, 0, 'toggleH3')
+    expect(saved(editor)).toBe('<details>\n<summary><h3>Nota</h3></summary>\n\nDentro\n\n</details>')
+  })
+
+  it('is the browser\'s own <details> in a comment, with its heading in its summary', () => {
+    expect(markdownToHtml(github)).toMatch(/^<details [^>]*class="orq-toggle" data-level="2"><summary class="orq-toggle-title"><h2>Más<\/h2><\/summary><p>Dentro<\/p><\/details>$/)
+  })
+
+  it('is read from a <details> copied from GitHub, its heading as its title', () => {
+    expect(open('<details><summary><h2>Más</h2></summary><p>Dentro</p></details>', 'html').getMarkdown()).toBe(github)
+    // As GitHub shows a heading: wrapped, with a link to it that has no text.
+    const shown = '<details><summary><div class="markdown-heading"><h2 class="heading-element">Más</h2><a id="user-content-más" class="anchor" href="#más"><svg></svg></a></div></summary><p>Dentro</p></details>'
+    expect(open(shown, 'html').getMarkdown()).toBe(github)
+    expect(open(open(github).getHTML(), 'html').getMarkdown()).toBe(github)
+  })
+
+  it('is no heading pasted with text around its heading, and its text keeps its spaces', () => {
+    expect(open('<details><summary>Nota: <h2>Más</h2></summary><p>Dentro</p></details>', 'html').getMarkdown()).toBe('<details>\n<summary>Nota: Más</summary>\n\nDentro\n\n</details>')
+    expect(open('<details><summary>Línea<br>dos <b>y</b> <i>tres</i></summary><p>Dentro</p></details>', 'html').getMarkdown()).toBe('<details>\n<summary>Línea dos y tres</summary>\n\nDentro\n\n</details>')
+    expect(open('<details><summary><h2>A</h2><p>B</p></summary><p>Dentro</p></details>', 'html').getMarkdown()).toBe('<details>\n<summary>A B</summary>\n\nDentro\n\n</details>')
+  })
+
+  it('copied in part with its title and pasted, keeps the spaces of the title', () => {
+    const editor = open('<details>\n<summary>Hola mundo</summary>\n\nCuerpo\n\n</details>\n\nPara', 'markdown', true)
+    setToggleOpen(editor, 0, true)
+    const title = first(editor, 'toggleTitle')
+    const body = first(editor, 'paragraph')
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, title + 1 + 'Hola'.length, body + 1 + 'Cuerpo'.length)))
+    const { dom } = editor.view.serializeForClipboard(editor.state.selection.content())
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.atEnd(editor.state.doc)))
+    // jsdom has no ClipboardEvent, which ProseMirror makes for a paste.
+    globalThis.ClipboardEvent ??= class extends Event {
+      clipboardData = null
+    } as unknown as typeof ClipboardEvent
+    editor.view.pasteHTML(dom.innerHTML)
+    expect(saved(editor)).toMatch(/\n\nPara mundo/)
+  })
+
+  it('keeps its heading\'s attributes and what its title holds when its level changes, with `>` in an attribute too', () => {
+    const editor = open('<details>\n<summary><h2 id="faq" title="a>b"><a href="/x">Enlace</a> &amp; <code>c</code></h2></summary>\n\nDentro\n\n</details>', 'markdown', true)
+    expect(levelOf(String(editor.state.doc.firstChild!.attrs.summary))).toBe(2)
+    turnBlock(editor, 0, 'toggleH1')
+    expect(saved(editor)).toBe('<details>\n<summary><h1 id="faq" title="a>b"><a href="/x">Enlace</a> &amp; <code>c</code></h1></summary>\n\nDentro\n\n</details>')
+    expect(editor.view.dom.querySelector('.orq-toggle')!.getAttribute('data-level')).toBe('1')
+    expect(editor.view.dom.querySelector('.orq-toggle-title')!.getAttribute('aria-level')).toBe('1')
+    turnBlock(editor, 0, 'toggle')
+    expect(saved(editor)).toBe('<details>\n<summary><a href="/x">Enlace</a> &amp; <code>c</code></summary>\n\nDentro\n\n</details>')
+    expect(editor.view.dom.querySelector('.orq-toggle')!.hasAttribute('data-level')).toBe(false)
+    expect(editor.view.dom.querySelector('.orq-toggle-title')!.hasAttribute('role')).toBe(false)
+    turnBlock(editor, 0, 'toggleH3')
+    expect(saved(editor)).toBe('<details>\n<summary><h3><a href="/x">Enlace</a> &amp; <code>c</code></h3></summary>\n\nDentro\n\n</details>')
+    // Its title changed first, it is written anew as text.
+    cursorIn(editor, 'toggleTitle')
+    editor.commands.insertContent('!')
+    turnBlock(editor, 0, 'toggleH2')
+    expect(saved(editor)).toBe('<details>\n<summary><h2>Enlace &amp; c!</h2></summary>\n\nDentro\n\n</details>')
+  })
+
+  it('of text with a heading in it, turned into a heading, is its text in that heading, once', () => {
+    const editor = open('<details>\n<summary>Nota: <h2>Más</h2></summary>\n\nDentro\n\n</details>', 'markdown', true)
+    expect(turns(editor.state.doc, 0).current).toBe('toggle')
+    turnBlock(editor, 0, 'toggleH1')
+    expect(saved(editor)).toBe('<details>\n<summary><h1>Nota: Más</h1></summary>\n\nDentro\n\n</details>')
+    expect(turns(editor.state.doc, 0).current).toBe('toggleH1')
+    expect(editor.view.dom.querySelector('.orq-toggle')!.getAttribute('data-level')).toBe('1')
+  })
+
+  it('is read from an empty heading pasted, and a pasted summary\'s blocks keep their words apart', () => {
+    expect(levelOf(String(open('<details><summary><h2></h2></summary><p>Dentro</p></details>', 'html').state.doc.firstChild!.attrs.summary))).toBe(2)
+    expect(open('<details><summary><figure>A</figure><span>B</span></summary><p>Dentro</p></details>', 'html').getMarkdown()).toBe('<details>\n<summary>A B</summary>\n\nDentro\n\n</details>')
+  })
+
+  it('keeps an attribute with `>` in it closed when its title changes', () => {
+    const editor = open('<details>\n<summary><h2 title="a>b">Más</h2></summary>\n\nDentro\n\n</details>')
+    cursorIn(editor, 'toggleTitle')
+    editor.commands.insertContent('!')
+    expect(saved(editor)).toBe('<details>\n<summary><h2 title="a>b">Más!</h2></summary>\n\nDentro\n\n</details>')
+    expect(markdownToHtml(saved(editor))).toContain('<h2>Más!</h2>')
   })
 })
 

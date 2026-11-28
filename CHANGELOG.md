@@ -19,6 +19,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - «Emoji» in the «/» menu lists them before a name is typed, the last ones chosen in this browser first.
   - In code, a «:» stays a «:».
   - The names come from [emojibase](https://emojibase.dev) (MIT): about 90 KB compressed for each language, downloaded the first time a «:» and a name are typed.
+- **Toggle headings.** «Toggle heading 1», «2» and «3» in the «/» menu and in a block's «Turn into»: a toggle whose title is a heading, written as GitHub shows one, `<details>` with `<summary><h2>…</h2></summary>`. A toggle written so elsewhere, at any level, is shown as that heading too, in a document, a card's description and a comment, and keeps its heading when its title is changed. One copied from a web page such as GitHub keeps its heading as its title.
 
 ### Changed
 - **Less to download after an update.** The code that draws equations (KaTeX) now comes in files of its own, still loaded with the editor. From the next update on, the browser keeps the ones it already has unless KaTeX itself changed, instead of downloading them again with the editor. The editor's own file is a quarter smaller (226 KB compressed instead of 301).

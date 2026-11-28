@@ -161,6 +161,24 @@
         "keywords": "折りたたみ トグル toggle details 展開 隠す 表示 アコーディオン",
         "hint": "開くまで下の内容を隠すタイトル。"
       },
+      "toggleH1": {
+        "title": "折りたたみ見出し1",
+        "subtitle": "下の内容を折りたたむ大見出し",
+        "keywords": "折りたたみ 見出し トグル toggle heading h1 details 展開",
+        "hint": "ページの主なセクションの見出し。下の内容を表示・非表示にします。"
+      },
+      "toggleH2": {
+        "title": "折りたたみ見出し2",
+        "subtitle": "下の内容を折りたたむ中見出し",
+        "keywords": "折りたたみ 見出し トグル toggle heading h2 details 展開",
+        "hint": "セクションの見出し。下の内容を表示・非表示にします。"
+      },
+      "toggleH3": {
+        "title": "折りたたみ見出し3",
+        "subtitle": "下の内容を折りたたむ小見出し",
+        "keywords": "折りたたみ 見出し トグル toggle heading h3 details 展開",
+        "hint": "小さな見出し。下の内容を表示・非表示にします。"
+      },
       "code": {
         "title": "コード",
         "subtitle": "コードブロック",

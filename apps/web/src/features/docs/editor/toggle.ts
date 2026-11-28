@@ -1,5 +1,5 @@
 import { type Editor, type JSONContent, Node, isMacOS, isiOS, mergeAttributes } from '@tiptap/core'
-import { type Node as PMNode, Slice } from '@tiptap/pm/model'
+import { Fragment, type Node as PMNode, Slice } from '@tiptap/pm/model'
 import { type EditorState, NodeSelection, Plugin, PluginKey, Selection, TextSelection, type Transaction } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, type NodeView } from '@tiptap/pm/view'
 import i18next, { t } from 'i18next'
@@ -41,6 +41,17 @@ export function summaryText(html: string) {
   return decoder.content.textContent ?? ''
 }
 
+/** The text of a pasted element, a space where a line or a block of it ends. */
+const BREAKS = /^(?:BR|P|DIV|H[1-6]|LI|UL|OL|DL|DT|DD|TR|TD|TH|TABLE|CAPTION|BLOCKQUOTE|PRE|HR|SECTION|ARTICLE|HEADER|FOOTER|NAV|ASIDE|MAIN|ADDRESS|FIGURE|FIGCAPTION|DETAILS|SUMMARY)$/
+function textOf(node: globalThis.Node): string {
+  let text = ''
+  for (const child of node.childNodes) {
+    if (child.nodeType === 3) text += child.textContent
+    else if (child.nodeType === 1) text += BREAKS.test((child as Element).tagName) ? ` ${textOf(child)} ` : textOf(child)
+  }
+  return text
+}
+
 /** Spaces and line breaks as HTML shows them: one space. */
 const oneSpace = (text: string) => text.replace(/[\t\n\f\r ]+/g, ' ')
 /** …and none at either end. */
@@ -48,6 +59,20 @@ const collapse = (text: string) => oneSpace(text).replace(/^ | $/g, '')
 
 /** The title a summary is shown with. */
 const titleOf = (summary: string) => collapse(summaryText(summary))
+
+/**
+ * A summary that is a heading, as GitHub shows a toggle's title as one: `<h2>…</h2>`, with nothing
+ * around it nor another heading in it. Its tags, as written, are kept around a title written anew.
+ */
+const HEADING = /^(<h([1-6])(?:\s(?:[^>"']|"[^"]*"|'[^']*')*)?>)([\s\S]*)(<\/h\2\s*>)$/i
+function headingOf(summary: string) {
+  const found = HEADING.exec(summary.trim())
+  return found && !/<\/?h[1-6](?=[\s>])/i.test(found[3]!) ? { open: found[1]!, level: Number(found[2]), inner: found[3]!, close: found[4]! } : null
+}
+/** The level of the heading a toggle's title is (1 to 6), or 0 for a title of text. */
+export const levelOf = (summary: string) => headingOf(summary)?.level ?? 0
+/** A summary for `html` as a heading of `level`, or as text for 0. */
+const asLevel = (html: string, level: number) => (level ? `<h${level}>${html}</h${level}>` : html)
 
 /** Text written as a summary: what HTML would read as a tag or an entity, escaped. */
 const encode = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\u00a0/g, '&nbsp;')
@@ -223,6 +248,9 @@ class ToggleView implements NodeView {
 
   private render = () => {
     const open = !!this.node.attrs.open
+    const level = levelOf(String(this.node.attrs.summary))
+    if (level) this.dom.setAttribute('data-level', String(level))
+    else this.dom.removeAttribute('data-level')
     this.dom.toggleAttribute('data-open', open)
     this.button.setAttribute('aria-expanded', String(open))
     this.button.setAttribute('aria-label', t(open ? 'docs:editor.toggle.collapse' : 'docs:editor.toggle.expand'))
@@ -231,7 +259,7 @@ class ToggleView implements NodeView {
 
   update(node: PMNode) {
     if (node.type !== this.node.type) return false
-    const changed = node.attrs.open !== this.node.attrs.open
+    const changed = node.attrs.open !== this.node.attrs.open || node.attrs.summary !== this.node.attrs.summary
     this.node = node
     if (changed) this.render()
     return true
@@ -257,11 +285,13 @@ class ToggleView implements NodeView {
  * as one line of text.
  */
 const decorating = new PluginKey<{ language: string; set: DecorationSet }>('toggleDecorations')
-/** The placeholders of the empty titles of a page. */
+/** The placeholders of the empty titles of a page, and what the titles that are headings are. */
 function placeholders(doc: PMNode) {
   const found: Decoration[] = []
   doc.descendants((node, pos) => {
     if (node.type.name === 'toggleTitle' && node.content.size === 0) found.push(Decoration.node(pos, pos + node.nodeSize, { class: 'is-empty', 'data-placeholder': t('docs:editor.toggle.title') }))
+    const level = node.type.name === 'toggle' ? levelOf(String(node.attrs.summary)) : 0
+    if (level) found.push(Decoration.node(pos + 1, pos + 1 + node.firstChild!.nodeSize, { role: 'heading', 'aria-level': String(level) }))
     return !node.isTextblock
   })
   return DecorationSet.create(doc, found)
@@ -310,7 +340,19 @@ export const ToggleTitle = Node.create({
   code: true,
   whitespace: 'normal',
   parseHTML() {
-    return [{ tag: 'summary' }]
+    return [
+      // One of a web page with more than text in it (a heading, as GitHub's toggle headings, whose level
+      // goes to the toggle): its text, a space where a line or a block ends.
+      {
+        tag: 'summary',
+        getAttrs: (dom: HTMLElement) => (dom.children.length ? null : false),
+        getContent: (dom, schema) => {
+          const text = collapse(textOf(dom))
+          return Fragment.from(text ? schema.text(text) : [])
+        },
+      },
+      { tag: 'summary' },
+    ]
   },
   renderHTML({ HTMLAttributes }) {
     return ['summary', mergeAttributes(HTMLAttributes, { class: 'orq-toggle-title' }), 0]
@@ -339,7 +381,19 @@ export const Toggle = Node.create({
     return {
       // The opening block as written, around its summary, and the closing one.
       head: checked('head', isHead, NEW.head),
-      summary: checked('summary', isSummary, ''),
+      summary: {
+        ...checked('summary', isSummary, ''),
+        // Copied from a web page with a heading as its summary, as GitHub shows a toggle heading: a title of its level.
+        parseHTML: (element: HTMLElement) => {
+          const value = element.getAttribute('data-summary')
+          if (value !== null && isSummary(value)) return value
+          // One heading that holds all its text, also within what wraps it (GitHub's `markdown-heading`).
+          const summary = [...element.children].find((child) => child.tagName === 'SUMMARY')
+          const headings = summary?.querySelectorAll('h1, h2, h3, h4, h5, h6') ?? []
+          const heading = headings.length === 1 && collapse(textOf(headings[0]!)) === collapse(textOf(summary!))
+          return asLevel('', heading ? Number(headings[0]!.tagName[1]) : 0)
+        },
+      },
       tail: checked('tail', (value) => TAIL.test(value), NEW.tail),
       closing: checked('closing', (value) => CLOSING.test(value), NEW.closing),
       open: { default: false, parseHTML: (element) => element.hasAttribute('open'), renderHTML: (attributes) => (attributes.open ? { open: '' } : {}) },
@@ -351,8 +405,9 @@ export const Toggle = Node.create({
     return [{ tag: 'details', priority: 60 }]
   },
 
-  renderHTML({ HTMLAttributes }) {
-    return ['details', mergeAttributes(HTMLAttributes, { class: 'orq-toggle' }), 0]
+  renderHTML({ node, HTMLAttributes }) {
+    const level = levelOf(String(node.attrs.summary))
+    return ['details', mergeAttributes(HTMLAttributes, { class: 'orq-toggle', ...(level ? { 'data-level': String(level) } : {}) }), 0]
   },
 
   renderMarkdown: (node, helpers, context) => {
@@ -360,8 +415,10 @@ export const Toggle = Node.create({
     const [title, ...blocks] = node.content ?? []
     const text = collapse((title?.content ?? []).map((child) => child.text ?? '').join(''))
     const raw = String(attrs.summary ?? '')
-    // As written while its text is the same; written anew, as text, once it changed.
-    const summary = text === titleOf(raw) ? raw : encode(text)
+    // As written while its text is the same; written anew, as text, once it changed: in its heading's
+    // tags if it is one.
+    const heading = headingOf(raw)
+    const summary = text === titleOf(raw) ? raw : heading ? `${heading.open}${encode(text)}${heading.close}` : encode(text)
     const opening = `${attrs.head ?? NEW.head}${summary}${attrs.tail ?? NEW.tail}`
     const closing = String(attrs.closing ?? NEW.closing)
     // The empty line a toggle has in the editor for nothing held isn't written; one it was read with is.
@@ -569,20 +626,34 @@ export function unwrapToggle(tr: Transaction, pos: number, node: PMNode) {
 }
 
 /** A new toggle, open as it is being written: its title (some text, or none) and an empty line under it. */
-export function newToggle(schema: Transaction['doc']['type']['schema'], title = '') {
-  return schema.nodes.toggle!.create({ open: true }, [schema.nodes.toggleTitle!.create(null, title ? schema.text(title) : null), schema.nodes.paragraph!.create()])
+/** A new toggle, open, with `title`: a heading of `level` (1 to 6), or text for 0. */
+export function newToggle(schema: Transaction['doc']['type']['schema'], title = '', level = 0) {
+  return schema.nodes.toggle!.create({ open: true, summary: asLevel(encode(title), level) }, [schema.nodes.toggleTitle!.create(null, title ? schema.text(title) : null), schema.nodes.paragraph!.create()])
+}
+
+/** The toggle at `pos` with its title a heading of `level`, or text for 0: what it holds stays. */
+export function setToggleLevel(tr: Transaction, pos: number, node: PMNode, level: number) {
+  const raw = String(node.attrs.summary)
+  const text = collapse(node.firstChild!.textContent)
+  const heading = headingOf(raw)
+  // What it holds as written (links, code, a heading's own attributes) while its title is the same.
+  const inner = text !== titleOf(raw) ? encode(text) : heading ? heading.inner : raw.trim()
+  const kept = level && heading ? `${heading.open.replace(/^<h[1-6]/i, `<h${level}`)}${inner}</h${level}>` : asLevel(inner, level)
+  // Not where what it holds would not make that heading (a heading in it already): its text, anew.
+  const summary = levelOf(kept) === level ? kept : asLevel(encode(text), level)
+  tr.setNodeMarkup(pos, undefined, { ...node.attrs, summary })
 }
 
 /**
  * Puts a new toggle in place of the empty line with the cursor, or after its block where one can go,
  * with the cursor in its title. Not in a table's cell, whose Markdown is a line, nor in a title.
  */
-export function insertToggle(tr: Transaction) {
+export function insertToggle(tr: Transaction, level = 0) {
   const { $from } = tr.selection
   const type = tr.doc.type.schema.nodes.toggle!
   for (let depth = $from.depth; depth > 0; depth--) if (String($from.node(depth).type.spec.tableRole ?? '').endsWith('cell')) return false
   if ($from.parent.type.name === 'toggleTitle') return false
-  const toggle = newToggle(tr.doc.type.schema)
+  const toggle = newToggle(tr.doc.type.schema, '', level)
   if ($from.parent.isTextblock && $from.parent.content.size === 0 && $from.depth > 0) {
     const index = $from.index($from.depth - 1)
     if ($from.node($from.depth - 1).canReplaceWith(index, index + 1, type)) {

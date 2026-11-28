@@ -2,7 +2,7 @@ import { type Editor, Extension } from '@tiptap/core'
 import { Fragment, type Node as PMNode } from '@tiptap/pm/model'
 import { NodeSelection, Plugin, PluginKey, Selection, TextSelection, type Transaction } from '@tiptap/pm/state'
 import { type CalloutType, markerFor } from './callout'
-import { newToggle, unwrapToggle } from './toggle'
+import { levelOf, newToggle, setToggleLevel, unwrapToggle } from './toggle'
 import { JOIN_LISTS, ownChain, ownStep } from './own-step'
 
 /**
@@ -15,9 +15,13 @@ const ITEMS = new Set(['listItem', 'taskItem'])
 const LISTS: Record<string, Turn> = { bulletList: 'ul', orderedList: 'ol', taskList: 'todo' }
 
 /** What a block can be turned into, as in the «/» menu. */
-export type Turn = 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'toggle' | 'code'
+export type Turn = 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'ul' | 'ol' | 'todo' | 'quote' | 'callout' | 'toggle' | 'toggleH1' | 'toggleH2' | 'toggleH3' | 'code'
 const HEADINGS: Turn[] = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
-const ALL: Turn[] = ['p', ...HEADINGS, 'ul', 'ol', 'todo', 'quote', 'callout', 'toggle', 'code']
+/** A toggle, and one whose title is a heading of level 1 to 3 (Notion's toggle headings). */
+const TOGGLES: Turn[] = ['toggle', 'toggleH1', 'toggleH2', 'toggleH3']
+/** The level of the title of a toggle among `TOGGLES`. */
+const toggleLevel = (turn: Turn) => (turn === 'toggle' ? 0 : Number(turn.slice(-1)))
+const ALL: Turn[] = ['p', ...HEADINGS, 'ul', 'ol', 'todo', 'quote', 'callout', ...TOGGLES, 'code']
 /** The icons of the «/» menu for each of them. */
 export const TURN_ICONS: Record<Turn, string> = {
   p: 'T',
@@ -33,6 +37,9 @@ export const TURN_ICONS: Record<Turn, string> = {
   quote: '❝',
   callout: 'ⓘ',
   toggle: '▸',
+  toggleH1: '▸H1',
+  toggleH2: '▸H2',
+  toggleH3: '▸H3',
   code: '</>',
 }
 /**
@@ -107,7 +114,10 @@ export function turns(doc: PMNode, pos: number): { current: Turn | null; options
     if (child.marks.length) marks = true
   })
   // A toggle's title is one line of plain text: no formatting, links or pictures.
-  const fits = (options: Turn[]) => options.filter((o) => !(lines && (o.startsWith('h') || o === 'toggle')) && !(atoms && (o === 'code' || o === 'toggle')) && !(marks && o === 'toggle'))
+  const fits = (options: Turn[]) => {
+    const toggle = (o: Turn) => TOGGLES.includes(o)
+    return options.filter((o) => !(lines && (o.startsWith('h') || toggle(o))) && !(atoms && (o === 'code' || toggle(o))) && !(marks && toggle(o)))
+  }
   if (ITEMS.has(name)) return { current: LISTS[doc.resolve(pos).parent.type.name] ?? null, options: ['p', 'ul', 'ol', 'todo'] }
   if (name === 'paragraph') return { current: 'p', options: fits(ALL) }
   if (name === 'heading') {
@@ -117,7 +127,11 @@ export function turns(doc: PMNode, pos: number): { current: Turn | null; options
   if (name === 'codeBlock') return { current: 'code', options: fits(['p', ...HEADINGS, 'code']) }
   if (name === 'blockquote') return { current: 'quote', options: ['p', 'quote', 'callout'] }
   if (name === 'callout') return { current: 'callout', options: ['p', 'quote', 'callout'] }
-  if (name === 'toggle') return { current: 'toggle', options: ['p', 'toggle'] }
+  if (name === 'toggle') {
+    // Its title a heading of level 4 to 6 (written elsewhere) is none of the menu's.
+    const level = levelOf(String(node.attrs.summary))
+    return { current: level > 3 ? null : TOGGLES[level]!, options: ['p', ...TOGGLES] }
+  }
   return { current: null, options: [] }
 }
 
@@ -201,10 +215,18 @@ export function turnBlock(editor: Editor, pos: number, to: Turn) {
   const { current, options } = turns(editor.state.doc, pos)
   if (!node || to === current || !options.includes(to)) return false
   const name = node.type.name
-  // A toggle made of a line of text, with that text as its title; turned into text, its title and what it held.
-  if (to === 'toggle') {
+  // A toggle as another: its title a heading or text, and what it holds as it is.
+  if (name === 'toggle' && TOGGLES.includes(to)) {
     return ownStep(editor, ({ tr }) => {
-      const toggle = newToggle(tr.doc.type.schema, node.textContent)
+      setToggleLevel(tr, pos, node, toggleLevel(to))
+      tr.setSelection(TextSelection.create(tr.doc, pos + node.firstChild!.nodeSize))
+      return true
+    })
+  }
+  // A toggle made of a line of text, with that text as its title; turned into text, its title and what it held.
+  if (TOGGLES.includes(to)) {
+    return ownStep(editor, ({ tr }) => {
+      const toggle = newToggle(tr.doc.type.schema, node.textContent, toggleLevel(to))
       tr.replaceWith(pos, pos + node.nodeSize, toggle)
       tr.setSelection(TextSelection.create(tr.doc, pos + 1 + toggle.firstChild!.nodeSize - 1))
       return true

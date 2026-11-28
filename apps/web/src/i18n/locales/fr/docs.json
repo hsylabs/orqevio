@@ -161,6 +161,24 @@
         "keywords": "dépliant toggle details replier déplier masquer afficher accordéon",
         "hint": "Un titre qui masque ce qu’il y a dessous jusqu’à ce qu’on l’ouvre."
       },
+      "toggleH1": {
+        "title": "Titre dépliant 1",
+        "subtitle": "Grand titre qui replie ce qu’il y a dessous",
+        "keywords": "titre dépliant toggle heading h1 details replier déplier accordéon",
+        "hint": "Un titre pour une section principale de la page, qui affiche ou masque ce qu’il y a dessous."
+      },
+      "toggleH2": {
+        "title": "Titre dépliant 2",
+        "subtitle": "Titre moyen qui replie ce qu’il y a dessous",
+        "keywords": "titre dépliant toggle heading h2 details replier déplier accordéon",
+        "hint": "Un titre pour une section, qui affiche ou masque ce qu’il y a dessous."
+      },
+      "toggleH3": {
+        "title": "Titre dépliant 3",
+        "subtitle": "Petit titre qui replie ce qu’il y a dessous",
+        "keywords": "titre dépliant toggle heading h3 details replier déplier accordéon",
+        "hint": "Un petit titre qui affiche ou masque ce qu’il y a dessous."
+      },
       "code": {
         "title": "Code",
         "subtitle": "Bloc de code",
