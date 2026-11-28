@@ -55,6 +55,12 @@
       "title": "Ohne Speichern verlassen?",
       "body": "Deine letzten Änderungen an dieser Seite wurden nicht gespeichert und gehen verloren.",
       "confirm": "Ohne Speichern verlassen"
+    },
+    "subpage": {
+      "title": "Neue Seite",
+      "label": "Name der Seite",
+      "placeholder": "z. B. Notizen",
+      "confirm": "Seite erstellen"
     }
   },
   "editor": {
@@ -188,6 +194,12 @@
         "subtitle": "Tippe @ und suche",
         "keywords": "erwähnung erwähnen verknüpfen link aufgabe seite mention",
         "hint": "Ein Link zu einer Aufgabe oder Seite: @ und ihren Namen eingeben."
+      },
+      "page": {
+        "title": "Seite",
+        "subtitle": "Eine Seite in dieser Seite",
+        "keywords": "seite unterseite dokument neu page",
+        "hint": "Erstellt eine Seite in dieser Seite und verlinkt sie hier."
       },
       "image": {
         "title": "Bild",

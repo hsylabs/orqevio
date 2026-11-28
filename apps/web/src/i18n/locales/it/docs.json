@@ -55,6 +55,12 @@
       "title": "Uscire senza salvare?",
       "body": "Le tue ultime modifiche a questa pagina non sono state salvate e andranno perse.",
       "confirm": "Esci senza salvare"
+    },
+    "subpage": {
+      "title": "Nuova pagina",
+      "label": "Nome della pagina",
+      "placeholder": "es. Note",
+      "confirm": "Crea pagina"
     }
   },
   "editor": {
@@ -188,6 +194,12 @@
         "subtitle": "Digita @ e cerca",
         "keywords": "menzione collegamento link attività pagina mention",
         "hint": "Un link a un’attività o a una pagina: scrivi @ e il suo nome."
+      },
+      "page": {
+        "title": "Pagina",
+        "subtitle": "Una pagina dentro questa",
+        "keywords": "pagina sottopagina documento figlia nuova page",
+        "hint": "Crea una pagina dentro questa e la collega qui."
       },
       "image": {
         "title": "Immagine",

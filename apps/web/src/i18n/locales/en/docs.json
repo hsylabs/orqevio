@@ -55,6 +55,12 @@
       "title": "Leave without saving?",
       "body": "Your latest changes to this page weren’t saved and will be lost.",
       "confirm": "Leave without saving"
+    },
+    "subpage": {
+      "title": "New page",
+      "label": "Page name",
+      "placeholder": "e.g. Notes",
+      "confirm": "Create page"
     }
   },
   "editor": {
@@ -188,6 +194,12 @@
         "subtitle": "Type @ and search",
         "keywords": "mention link task page",
         "hint": "A link to a task or a page: type @ and its name."
+      },
+      "page": {
+        "title": "Page",
+        "subtitle": "A page inside this one",
+        "keywords": "page subpage document child new",
+        "hint": "Makes a page inside this one and links to it here."
       },
       "image": {
         "title": "Image",

@@ -14,7 +14,9 @@ async function openPage(page: Page, name: string, content: string) {
   const editor = page.getByRole('textbox', { name: 'Contenido de la página' })
   await expect(editor).toBeVisible()
   const saved = async () => ((await (await page.request.get(`/api/pages/${pageId}`)).json()) as { content: string }).content
-  return { editor, saved }
+  /** The pages of the project, as its tree lists them. */
+  const pages = async () => (await (await page.request.get(`/api/projects/${project.id}/pages`)).json()) as Array<{ id: string; parentId: string | null; title: string }>
+  return { editor, saved, pages, pageId }
 }
 
 /** Opens the «/» menu on a new line after the text given. */
@@ -135,6 +137,8 @@ test('in a card’s sheet, the menu takes the pointer as well', async ({ page })
   await box.click()
   await page.keyboard.type('/')
   const menu = page.getByRole('listbox', { name: 'Insertar bloque' })
+  // A card has no pages inside it.
+  await expect(menu.getByRole('option', { name: /^Página / })).toHaveCount(0)
   await menu.getByRole('option', { name: /Lista de tareas/ }).hover()
   await expect(page.getByTestId('slash-preview')).toContainText('Una lista de tareas')
   await menu.getByRole('option', { name: /Lista de tareas/ }).click()
@@ -142,6 +146,38 @@ test('in a card’s sheet, the menu takes the pointer as well', async ({ page })
   await page.keyboard.type('Cajas /')
   await page.getByRole('button', { name: /Cerrar menú/ }).click()
   await expect(menu).toBeHidden()
+})
+
+test('«Página» makes a page inside this one, once named, and links to it where the «/» was', async ({ page }, testInfo) => {
+  const { editor, saved, pages, pageId } = await openPage(page, 'Subpágina E2E', 'Uno')
+  await slashAfter(page, editor, 'Uno')
+  await page.keyboard.type('página')
+  await page.keyboard.press('Enter')
+  const dialog = page.getByRole('dialog', { name: 'Nueva página' })
+  await dialog.getByLabel('Nombre de la página').fill('Anexo')
+  await page.screenshot({ path: testInfo.outputPath('subpage-name.png') })
+  await dialog.getByRole('button', { name: 'Crear página' }).click()
+  await expect(dialog).toBeHidden()
+  const link = editor.getByRole('link', { name: 'Anexo' })
+  await expect(link).toBeVisible()
+  const made = (await pages()).find((p) => p.title === 'Anexo')!
+  expect(made.parentId).toBe(pageId)
+  await expect(link).toHaveAttribute('href', new RegExp(`/doc/${made.id}$`))
+  await expect.poll(saved).toMatch(new RegExp(`^Uno\\n\\n\\[Anexo\\]\\(/doc/${made.id}\\)\\s*$`))
+  // In the page tree, under this one.
+  await expect(page.getByRole('link', { name: 'Anexo' }).first()).toBeVisible()
+  await page.screenshot({ path: testInfo.outputPath('subpage-link.png') })
+
+  // From the «+» of a block too; and dismissed, nothing is made.
+  await editor.getByText('Uno', { exact: true }).hover()
+  await page.getByRole('button', { name: 'Insertar debajo' }).click()
+  await page.keyboard.type('página')
+  await page.keyboard.press('Enter')
+  await dialog.getByLabel('Nombre de la página').fill('Otra')
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  expect((await pages()).map((p) => p.title)).not.toContain('Otra')
+  await expect(editor.getByRole('link')).toHaveCount(1)
 })
 
 test.describe('on a phone', () => {

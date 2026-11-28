@@ -55,6 +55,12 @@
       "title": "¿Salir sin guardar?",
       "body": "Tus últimos cambios en esta página no se han guardado y se perderán.",
       "confirm": "Salir sin guardar"
+    },
+    "subpage": {
+      "title": "Nueva página",
+      "label": "Nombre de la página",
+      "placeholder": "p. ej. Notas",
+      "confirm": "Crear página"
     }
   },
   "editor": {
@@ -188,6 +194,12 @@
         "subtitle": "Escribe @ y busca",
         "keywords": "mencion enlace tarea pagina link mention",
         "hint": "Un enlace a una tarea o a una página: escribe @ y su nombre."
+      },
+      "page": {
+        "title": "Página",
+        "subtitle": "Una página dentro de esta",
+        "keywords": "pagina subpagina documento hija nueva page",
+        "hint": "Crea una página dentro de esta y la enlaza aquí."
       },
       "image": {
         "title": "Imagen",

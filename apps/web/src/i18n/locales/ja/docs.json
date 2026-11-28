@@ -55,6 +55,12 @@
       "title": "保存せずに移動しますか？",
       "body": "このページへの最新の変更は保存されておらず、失われます。",
       "confirm": "保存せずに移動"
+    },
+    "subpage": {
+      "title": "新しいページ",
+      "label": "ページ名",
+      "placeholder": "例: メモ",
+      "confirm": "ページを作成"
     }
   },
   "editor": {
@@ -188,6 +194,12 @@
         "subtitle": "@を入力して検索",
         "keywords": "メンション リンク タスク ページ めんしょん りんく mention link task page",
         "hint": "タスクやページへのリンク。@ と名前を入力します。"
+      },
+      "page": {
+        "title": "ページ",
+        "subtitle": "このページの中のページ",
+        "keywords": "ページ サブページ ドキュメント 新規 page subpage",
+        "hint": "このページの中にページを作り、ここにリンクします。"
       },
       "image": {
         "title": "画像",

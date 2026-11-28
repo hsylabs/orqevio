@@ -52,6 +52,8 @@ interface EditorProps {
   ariaDescribedBy?: string
   /** The handle of each block, to move it and turn it into another; not in a short text such as a comment. */
   blockHandles?: boolean
+  /** Makes a page inside the one edited, for the «/» menu's «Page»: its id and title, or null if none was made. */
+  newSubpage?: () => Promise<{ id: string; title: string } | null>
 }
 
 type SlashId =
@@ -74,6 +76,7 @@ type SlashId =
   | 'table'
   | 'hr'
   | 'mention'
+  | 'page'
   | 'image'
   | 'file'
 type SlashGroup = 'blocks' | 'lists' | 'insert'
@@ -137,7 +140,7 @@ function insertAttachment(editor: TiptapEditor, attachment: AttachmentDTO, pos?:
   return pos === undefined ? undefined : editor.state.selection.to
 }
 
-export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel, ariaDescribedBy, blockHandles = true }: EditorProps) {
+export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel, ariaDescribedBy, blockHandles = true, newSubpage }: EditorProps) {
   const { t } = useTranslation('docs')
   // TipTap keeps the callbacks it was created with: they read the current language and placeholder from refs.
   const tRef = useRef(t)
@@ -155,6 +158,8 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
   uploadRef.current = upload
   const onUploadedRef = useRef(onUploaded)
   onUploadedRef.current = onUploaded
+  const newSubpageRef = useRef(newSubpage)
+  newSubpageRef.current = newSubpage
   const fileInput = useRef<HTMLInputElement>(null)
   const pendingUploadKind = useRef<'image' | 'file'>('image')
 
@@ -207,6 +212,25 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       item('ul', '•', 'lists', (e, r) => toList(e, r, 'bulletList', (c) => c.toggleBulletList())),
       item('ol', '1.', 'lists', (e, r) => toList(e, r, 'orderedList', (c) => c.toggleOrderedList())),
       item('todo', '☑', 'lists', (e, r) => toList(e, r, 'taskList', (c) => c.toggleTaskList())),
+      // In a document, a page inside it: made once named, and its link goes where the «/» was.
+      ...(newSubpageRef.current
+        ? [
+            item('page', '¶', 'blocks', (e, r) => {
+              e.chain().focus().deleteRange(r).run()
+              const at = e.state.selection.from
+              void newSubpageRef.current?.().then((made) => {
+                if (!made || e.isDestroyed) return
+                e.chain()
+                  .focus()
+                  .insertContentAt(Math.min(at, e.state.doc.content.size), [
+                    { type: 'text', text: made.title, marks: [{ type: 'link', attrs: { href: docHref(made.id) } }] },
+                    { type: 'text', text: ' ' },
+                  ])
+                  .run()
+              })
+            }),
+          ]
+        : []),
       item('quote', '❝', 'blocks', (e, r) => e.chain().focus().deleteRange(r).toggleBlockquote().run()),
       item('callout', 'ⓘ', 'blocks', (e, r) => e.chain().focus().deleteRange(r).wrapIn('callout', { marker: markerFor('note') }).run()),
       item('toggle', '▸', 'blocks', (e, r) => e.chain().focus().deleteRange(r).command(({ tr }) => insertToggle(tr)).run()),

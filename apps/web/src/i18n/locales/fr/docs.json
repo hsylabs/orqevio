@@ -55,6 +55,12 @@
       "title": "Quitter sans enregistrer ?",
       "body": "Vos dernières modifications de cette page n’ont pas été enregistrées et seront perdues.",
       "confirm": "Quitter sans enregistrer"
+    },
+    "subpage": {
+      "title": "Nouvelle page",
+      "label": "Nom de la page",
+      "placeholder": "p. ex. Notes",
+      "confirm": "Créer la page"
     }
   },
   "editor": {
@@ -188,6 +194,12 @@
         "subtitle": "Tapez @ et cherchez",
         "keywords": "mention lien lier tâche page link",
         "hint": "Un lien vers une tâche ou une page : tapez @ et son nom."
+      },
+      "page": {
+        "title": "Page",
+        "subtitle": "Une page dans celle-ci",
+        "keywords": "page sous-page document enfant nouvelle",
+        "hint": "Crée une page dans celle-ci et ajoute un lien vers elle ici."
       },
       "image": {
         "title": "Image",
