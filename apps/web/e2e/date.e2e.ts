@@ -81,6 +81,8 @@ test('tomorrow, yesterday or a day of the calendar; Esc leaves the text as it wa
   dialog = await chooseDate(page, editor, '20 de marzo de 2026')
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
+  // Back in the editor once the dialog has gone.
+  await expect(editor).toBeFocused()
   await page.keyboard.type('Fin')
   await expect.poll(saved).toBe('Uno\n\n6 de marzo de 2026\n\n4 de marzo de 2026\n\n20 de marzo de 2026\n\nFin')
 })
