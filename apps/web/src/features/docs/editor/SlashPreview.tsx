@@ -37,6 +37,24 @@ function Rows({ marker }: { marker: (i: number) => ReactNode }) {
   )
 }
 
+/** A player's «play». */
+function PlayMark({ className }: { className: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
+      <path d="M8 5.5v13l10.5-6.5z" />
+    </svg>
+  )
+}
+
+/** How far a player has gone. */
+function Progress() {
+  return (
+    <span className="relative block h-[4px] w-full rounded-full bg-ink-3/30">
+      <span className="absolute inset-y-0 left-0 w-[38%] rounded-full bg-accent/70" />
+    </span>
+  )
+}
+
 const HEADING_SIZES: Record<string, number> = { h1: 30, h2: 24, h3: 20, h4: 17, h5: 15, h6: 13 }
 /** A type specimen, the same in every language. */
 const SPECIMEN = 'Aa'
@@ -164,6 +182,27 @@ const PREVIEWS: Record<string, () => ReactNode> = {
         <circle cx="9" cy="10" r="1.8" />
         <path d="m4 18 5-5 3 3 3-3 5 5" />
       </svg>
+    </span>
+  ),
+  // A player: what it plays, and how far it has gone.
+  video: () => (
+    <span className="flex flex-col gap-2">
+      <span className="relative grid h-[64px] place-items-center overflow-hidden rounded-[6px] bg-ink/[0.12]">
+        <PlayMark className="size-6 text-ink-2" />
+        <span className="absolute inset-x-2 bottom-2">
+          <Progress />
+        </span>
+      </span>
+      <Line width="46%" style={{ background: 'var(--accent)', opacity: 0.55 }} />
+    </span>
+  ),
+  audio: () => (
+    <span className="flex flex-col gap-2.5">
+      <Line width="40%" style={{ background: 'var(--accent)', opacity: 0.55 }} />
+      <span className="flex items-center gap-2.5 rounded-full border border-line-strong px-3 py-2">
+        <PlayMark className="size-3 shrink-0 text-ink-2" />
+        <Progress />
+      </span>
     </span>
   ),
   file: () => (

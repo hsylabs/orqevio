@@ -48,3 +48,9 @@ export function commentExcerpt(body: string, max = 120): string {
   const plain = markdownToPlainText(body) || body.replace(/\s+/g, ' ').trim()
   return [...plain].length > max ? `${[...plain].slice(0, max - 1).join('')}…` : plain
 }
+
+/** The id of an attachment of this copy that `href` leads to (`/api/attachments/<uuid>`), if it does. */
+export function attachmentIdOf(href: string) {
+  const match = new RegExp(`^/api/attachments/(${UUID})$`, 'i').exec(href.trim())
+  return match ? match[1]!.toLowerCase() : null
+}

@@ -239,6 +239,18 @@
         "keywords": "imagem foto figura image",
         "hint": "Uma imagem enviada do seu dispositivo, exibida na página."
       },
+      "video": {
+        "title": "Vídeo",
+        "subtitle": "Envie um MP4, WebM ou MOV",
+        "keywords": "vídeo filme gravação clipe mp4 webm mov video",
+        "hint": "Um vídeo enviado do seu dispositivo, reproduzido na página. O Markdown mantém o link."
+      },
+      "audio": {
+        "title": "Áudio",
+        "subtitle": "Envie um MP3, M4A, WAV, Ogg ou FLAC",
+        "keywords": "áudio som música gravação voz podcast mp3 audio",
+        "hint": "Um áudio enviado do seu dispositivo, reproduzido na página. O Markdown mantém o link."
+      },
       "file": {
         "title": "Arquivo",
         "subtitle": "Anexe qualquer arquivo",
@@ -365,6 +377,10 @@
       "empty": "Escreva o diagrama em Mermaid.",
       "error": "Não é possível desenhar o diagrama:",
       "slow": "O diagrama demorou demais para ser desenhado."
+    },
+    "media": {
+      "video": "Vídeo: {{name}}",
+      "audio": "Áudio: {{name}}"
     },
     "taskCheckbox": "Tarefa: {{text}}",
     "taskCheckboxEmpty": "Tarefa sem texto"

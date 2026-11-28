@@ -239,6 +239,18 @@
         "keywords": "bild foto grafik image",
         "hint": "Ein Bild, von deinem Gerät hochgeladen und auf der Seite angezeigt."
       },
+      "video": {
+        "title": "Video",
+        "subtitle": "MP4, WebM oder MOV hochladen",
+        "keywords": "video film aufnahme clip mp4 webm mov",
+        "hint": "Ein Video, von deinem Gerät hochgeladen und auf der Seite abgespielt. Im Markdown bleibt sein Link."
+      },
+      "audio": {
+        "title": "Audio",
+        "subtitle": "MP3, M4A, WAV, Ogg oder FLAC hochladen",
+        "keywords": "audio ton musik aufnahme stimme podcast mp3",
+        "hint": "Eine Audiodatei, von deinem Gerät hochgeladen und auf der Seite abgespielt. Im Markdown bleibt ihr Link."
+      },
       "file": {
         "title": "Datei",
         "subtitle": "Beliebige Datei anhängen",
@@ -363,6 +375,10 @@
       "empty": "Schreibe das Diagramm in Mermaid.",
       "error": "Das Diagramm kann nicht gezeichnet werden:",
       "slow": "Das Zeichnen des Diagramms hat zu lange gedauert."
+    },
+    "media": {
+      "video": "Video: {{name}}",
+      "audio": "Audio: {{name}}"
     },
     "taskCheckbox": "To-do: {{text}}",
     "taskCheckboxEmpty": "Leeres To-do"

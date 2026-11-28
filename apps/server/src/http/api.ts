@@ -350,16 +350,20 @@ export function createApi(env: Env) {
     })
   }
   api.get('/attachments/:id', async (c) => {
-    const { meta, inline, body } = await c.get('services').attachments.open(requireActor(c), c.req.param('id'))
+    const { meta, inline, range, body } = await c.get('services').attachments.open(requireActor(c), c.req.param('id'), c.req.header('range'))
+    const headers = {
+      'Content-Type': inline ? meta.mimeType : 'application/octet-stream',
+      'Content-Disposition': contentDisposition(inline ? 'inline' : 'attachment', meta.filename),
+      // A video is asked for a piece at a time, to play it from any point.
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'private, max-age=3600',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; sandbox",
+    }
+    if (!range) return new Response(body, { headers: { ...headers, 'Content-Length': String(meta.size) } })
     return new Response(body, {
-      headers: {
-        'Content-Type': inline ? meta.mimeType : 'application/octet-stream',
-        'Content-Length': String(meta.size),
-        'Content-Disposition': contentDisposition(inline ? 'inline' : 'attachment', meta.filename),
-        'Cache-Control': 'private, max-age=3600',
-        'X-Content-Type-Options': 'nosniff',
-        'Content-Security-Policy': "default-src 'none'; sandbox",
-      },
+      status: 206,
+      headers: { ...headers, 'Content-Length': String(range.end - range.start + 1), 'Content-Range': `bytes ${range.start}-${range.end}/${meta.size}` },
     })
   })
   api.delete('/attachments/:id', async (c) => c.json({ trashId: await c.get('services').attachments.remove(requireActor(c), c.req.param('id')) } satisfies TrashedDTO))

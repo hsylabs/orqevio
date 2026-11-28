@@ -1,5 +1,5 @@
-import type { AttachmentDTO, MeDTO, SearchResultDTO } from '@orqevio/shared'
-import { cardHref, docHref } from '@orqevio/shared'
+import type { AttachmentDTO, MediaKind, MeDTO, SearchResultDTO } from '@orqevio/shared'
+import { cardHref, docHref, mediaKind } from '@orqevio/shared'
 import type { ChainedCommands, Range, Editor as TiptapEditor } from '@tiptap/core'
 import { Placeholder } from '@tiptap/extensions'
 import type { Node as PMNode } from '@tiptap/pm/model'
@@ -28,6 +28,7 @@ import { type Emoji, browseEmoji, byShortcode, isEmojiName, loadEmoji, rememberE
 import { MARKDOWN_SHORTCUTS } from './block-commands'
 import { opensLine } from './insert-below'
 import { documentExtensions } from './markdown'
+import { AttachmentMedia, playable, setPlayable } from './media'
 import { SuggestionMenu } from './SuggestionMenu'
 import { TableControls } from './TableControls'
 import { type MenuItem, createSuggestionStore } from './suggestion-store'
@@ -56,6 +57,8 @@ interface EditorProps {
   blockHandles?: boolean
   /** Makes a page inside the one edited, for the «/» menu's «Page»: its id and title, or null if none was made. */
   newSubpage?: () => Promise<{ id: string; title: string } | null>
+  /** The attachments of what is edited: the video and audio among them play where they are linked. */
+  attachments?: readonly AttachmentDTO[]
 }
 
 type SlashId =
@@ -85,6 +88,8 @@ type SlashId =
   | 'emoji'
   | 'page'
   | 'image'
+  | 'video'
+  | 'audio'
   | 'file'
 type SlashGroup = 'blocks' | 'lists' | 'insert'
 
@@ -150,7 +155,17 @@ function insertAttachment(editor: TiptapEditor, attachment: AttachmentDTO, pos?:
   return pos === undefined ? undefined : editor.state.selection.to
 }
 
-export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel, ariaDescribedBy, blockHandles = true, newSubpage }: EditorProps) {
+const UPLOAD_ICONS = { image: '▣', video: '▶', audio: '♪', file: '⎘' }
+
+/** What the file picker the «/» menu opens offers, by the option chosen. */
+const PICKED: Record<'image' | 'video' | 'audio' | 'file', string> = {
+  image: 'image/png,image/jpeg,image/gif,image/webp,image/avif',
+  video: 'video/*',
+  audio: 'audio/*',
+  file: '',
+}
+
+export function Editor({ content, onChange, placeholder, workspaceId, upload, compact, autofocus, onReady, onUploaded, className, ariaLabel, ariaDescribedBy, blockHandles = true, newSubpage, attachments }: EditorProps) {
   const { t } = useTranslation('docs')
   // TipTap keeps the callbacks it was created with: they read the current language and placeholder from refs.
   const tRef = useRef(t)
@@ -173,8 +188,12 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
   onUploadedRef.current = onUploaded
   const newSubpageRef = useRef(newSubpage)
   newSubpageRef.current = newSubpage
+  const attachmentsRef = useRef(attachments)
+  attachmentsRef.current = attachments
   const fileInput = useRef<HTMLInputElement>(null)
-  const pendingUploadKind = useRef<'image' | 'file'>('image')
+  const pendingUploadKind = useRef<keyof typeof PICKED>('image')
+  /** The video and audio uploaded here, played before the list of attachments has them. */
+  const uploaded = useRef(new Map<string, MediaKind>())
 
   async function handleFiles(editor: TiptapEditor, files: File[], pos?: number) {
     const target = uploadRef.current
@@ -184,6 +203,11 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       const id = toast.loading(t('editor.uploading', { name: file.name }))
       try {
         const attachment = await uploadFile(file, target)
+        const kind = mediaKind(attachment.mimeType)
+        if (kind && !editor.isDestroyed) {
+          uploaded.current.set(attachment.id, kind)
+          setPlayable(editor.view, new Map([...playable(attachmentsRef.current ?? []), ...uploaded.current]))
+        }
         // Each one after the previous, in the order they were dropped.
         pos = insertAttachment(editor, attachment, pos)
         onUploadedRef.current?.(attachment)
@@ -280,8 +304,13 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
     ]
     if (uploadRef.current) {
       items.push(
-        item('image', '▣', 'insert', (e, r) => { e.chain().focus().deleteRange(r).run(); pendingUploadKind.current = 'image'; fileInput.current?.click() }),
-        item('file', '⎘', 'insert', (e, r) => { e.chain().focus().deleteRange(r).run(); pendingUploadKind.current = 'file'; fileInput.current?.click() }),
+        ...(['image', 'video', 'audio', 'file'] as const).map((kind) =>
+          item(kind, UPLOAD_ICONS[kind], 'insert', (e, r) => {
+            e.chain().focus().deleteRange(r).run()
+            pendingUploadKind.current = kind
+            fileInput.current?.click()
+          }),
+        ),
       )
     }
     const q = query.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')
@@ -391,6 +420,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       EmojiCommands.configure({ store: emojiStore, items: emojiItems, starts: emojiStarts, onExit: () => (emojiBrowseAt.current = null) }),
       EmojiShortcodes.configure({ find: emojiByShortcode }),
       MathKeys,
+      AttachmentMedia,
       ...(blockHandles ? [BlockKeys] : []),
     ],
     content,
@@ -474,6 +504,10 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor])
 
+  useEffect(() => {
+    if (editor && !editor.isDestroyed) setPlayable(editor.view, new Map([...playable(attachments ?? []), ...uploaded.current]))
+  }, [editor, attachments])
+
   return (
     <div className={cn('relative', className)}>
       <EditorContent editor={editor} />
@@ -500,7 +534,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
         }}
         accept={undefined}
         onClick={(e) => {
-          ;(e.target as HTMLInputElement).accept = pendingUploadKind.current === 'image' ? 'image/png,image/jpeg,image/gif,image/webp,image/avif' : ''
+          ;(e.target as HTMLInputElement).accept = PICKED[pendingUploadKind.current]
         }}
       />
     </div>

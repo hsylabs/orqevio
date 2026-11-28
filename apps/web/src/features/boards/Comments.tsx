@@ -1,4 +1,4 @@
-import { type CardDetailDTO, type CommentDTO, MAX_COMMENT, type TrashedDTO, characters } from '@orqevio/shared'
+import { type AttachmentDTO, type CardDetailDTO, type CommentDTO, MAX_COMMENT, type TrashedDTO, characters } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { Ellipsis, Pencil, Trash } from 'lucide-react'
 import { type KeyboardEvent, type MouseEvent, memo, useEffect, useId, useMemo, useRef, useState } from 'react'
@@ -17,6 +17,7 @@ import { Editor } from '../docs/editor/Editor'
 import { copyCode } from '../docs/editor/code-block'
 import { useCodeColours } from '../docs/editor/code-languages'
 import { diagramHref, drawDiagrams } from '../docs/editor/diagram'
+import { playable, showPlayers } from '../docs/editor/media'
 import { markdownToHtml } from '../docs/editor/markdown-html'
 import { useWorkspace } from '../shell/workspace'
 import { isConverting } from '../../lib/ime'
@@ -115,7 +116,7 @@ export function Comments({ card }: { card: CardDetailDTO }) {
       {shown.length > 0 ? (
         <ol ref={list} tabIndex={-1} className="flex flex-col gap-4 outline-none" aria-label={t('sheet.comments.list')}>
           {shown.map((comment) => (
-            <CommentItem key={comment.id} comment={comment} cardId={card.id} boardId={card.boardId} onRemoved={setRemoved} />
+            <CommentItem key={comment.id} comment={comment} cardId={card.id} boardId={card.boardId} attachments={card.attachmentList} onRemoved={setRemoved} />
           ))}
         </ol>
       ) : comments.isError ? (
@@ -214,6 +215,7 @@ function Composer({ card, onSent }: { card: CardDetailDTO; onSent: () => void })
         blockHandles={false}
         upload={{ type: 'card', id: card.id }}
         onUploaded={() => void refresh(card.id, card.boardId)}
+        attachments={card.attachmentList}
         onReady={(instance) => (editor.current = instance)}
         placeholder={t('sheet.comments.placeholder')}
         ariaLabel={t('sheet.comments.label')}
@@ -248,8 +250,11 @@ function Limit({ tooLong, over }: { tooLong: boolean; over: number }) {
   )
 }
 
-/** A comment as Markdown, shown, not edited: links are followed, inside the app or in a new tab. */
-function Body({ markdown }: { markdown: string }) {
+/**
+ * A comment as Markdown, shown, not edited: links are followed, inside the app or in a new tab, and
+ * the card's video and audio play under their link.
+ */
+function Body({ markdown, attachments }: { markdown: string; attachments: readonly AttachmentDTO[] }) {
   const navigate = useNavigate()
   const { i18n } = useTranslation()
   const colours = useCodeColours()
@@ -258,6 +263,8 @@ function Body({ markdown }: { markdown: string }) {
   const shown = useRef<HTMLDivElement>(null)
   // Its diagrams, drawn once it is shown.
   useEffect(() => void drawDiagrams(shown.current), [html])
+  const known = useMemo(() => playable(attachments), [attachments])
+  useEffect(() => showPlayers(shown.current, known), [html, known])
   const follow = (event: MouseEvent) => {
     // A code block's button copies its code.
     const copy = (event.target as HTMLElement).closest('[data-copy-code]')
@@ -291,7 +298,19 @@ function Body({ markdown }: { markdown: string }) {
   )
 }
 
-const CommentItem = memo(function CommentItem({ comment, cardId, boardId, onRemoved }: { comment: CommentDTO; cardId: string; boardId: string; onRemoved: (trashId: string) => void }) {
+const CommentItem = memo(function CommentItem({
+  comment,
+  cardId,
+  boardId,
+  attachments,
+  onRemoved,
+}: {
+  comment: CommentDTO
+  cardId: string
+  boardId: string
+  attachments: readonly AttachmentDTO[]
+  onRemoved: (trashId: string) => void
+}) {
   const { t } = useTranslation(['boards', 'activity'])
   const { me } = useWorkspace()
   const draftKey = editDraft(me.user.id, comment.id)
@@ -375,13 +394,33 @@ const CommentItem = memo(function CommentItem({ comment, cardId, boardId, onRemo
             </MenuRoot>
           )}
         </div>
-        {editing ? <EditComment comment={comment} draftKey={draftKey} focus={begun} cardId={cardId} boardId={boardId} onDone={stopEditing} /> : <Body markdown={comment.body} />}
+        {editing ? (
+          <EditComment comment={comment} draftKey={draftKey} focus={begun} cardId={cardId} boardId={boardId} attachments={attachments} onDone={stopEditing} />
+        ) : (
+          <Body markdown={comment.body} attachments={attachments} />
+        )}
       </div>
     </li>
   )
 })
 
-function EditComment({ comment, draftKey, focus, cardId, boardId, onDone }: { comment: CommentDTO; draftKey: string; focus: boolean; cardId: string; boardId: string; onDone: () => void }) {
+function EditComment({
+  comment,
+  draftKey,
+  focus,
+  cardId,
+  boardId,
+  attachments,
+  onDone,
+}: {
+  comment: CommentDTO
+  draftKey: string
+  focus: boolean
+  cardId: string
+  boardId: string
+  attachments: readonly AttachmentDTO[]
+  onDone: () => void
+}) {
   const { t } = useTranslation('boards')
   const { workspaceId } = useWorkspace()
   const [initial] = useState(() => pendingEdit(draftKey, comment) ?? comment.body)
@@ -424,6 +463,7 @@ function EditComment({ comment, draftKey, focus, cardId, boardId, onDone }: { co
         autofocus={focus}
         upload={{ type: 'card', id: cardId }}
         onUploaded={() => void refresh(cardId, boardId)}
+        attachments={attachments}
         onReady={(instance) => (editor.current = instance)}
         ariaLabel={t('sheet.comments.editLabel')}
         onChange={(markdown) => {

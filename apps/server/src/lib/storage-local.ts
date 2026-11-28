@@ -4,6 +4,7 @@ import path from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web'
+import type { ByteRange } from './byte-range'
 import { type AttachmentStorage, STORAGE_KEY, WORKSPACE_ID } from './storage'
 import { exactLength } from './upload-stream'
 
@@ -36,11 +37,11 @@ export class LocalStorage implements AttachmentStorage {
     }
   }
 
-  async stream(key: string): Promise<ReadableStream | null> {
+  async stream(key: string, range?: ByteRange): Promise<ReadableStream | null> {
     const file = this.resolve(key)
     const info = await stat(file).catch(() => null)
     if (!info) return null
-    return Readable.toWeb(createReadStream(file)) as ReadableStream
+    return Readable.toWeb(createReadStream(file, range && { start: range.start, end: range.end })) as ReadableStream
   }
 
   async exists(key: string) {
