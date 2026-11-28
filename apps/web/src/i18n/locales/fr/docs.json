@@ -185,6 +185,12 @@
         "keywords": "code extrait snippet",
         "hint": "Du code en police à chasse fixe, coloré selon son langage."
       },
+      "mermaid": {
+        "title": "Diagramme Mermaid",
+        "subtitle": "Un diagramme dessiné à partir de son code",
+        "keywords": "diagramme mermaid organigramme flux graphique séquence gantt",
+        "hint": "Un diagramme écrit en Mermaid, comme GitHub le dessine : son code est enregistré et son dessin affiché."
+      },
       "math": {
         "title": "Équation",
         "subtitle": "Une équation sur sa propre ligne, en LaTeX",
@@ -350,6 +356,15 @@
       "picker": "Langage du bloc de code",
       "noResults": "Aucun langage ne correspond",
       "use": "Utiliser « {{name}} »"
+    },
+    "diagram": {
+      "views": "Afficher le diagramme en",
+      "diagram": "Diagramme",
+      "code": "Code",
+      "both": "Les deux",
+      "empty": "Écrivez le diagramme en Mermaid.",
+      "error": "Impossible de dessiner le diagramme :",
+      "slow": "Le diagramme a mis trop de temps à se dessiner."
     },
     "taskCheckbox": "Tâche : {{text}}",
     "taskCheckboxEmpty": "Tâche vide"

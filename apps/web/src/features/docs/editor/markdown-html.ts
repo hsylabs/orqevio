@@ -5,6 +5,7 @@ import { CALLOUT_ICONS, calloutName, calloutType } from './callout'
 import { languageClass, languageName } from './code-block'
 import { cssSize } from './image'
 import { highlightCode, loadCodeColours, whenCodeColoursLoad } from './code-languages'
+import { isDiagram } from './diagram'
 import { drawMath } from './math'
 import { documentExtensions, onlyDefinitions } from './markdown'
 import { icon } from './svg-icons'
@@ -92,6 +93,13 @@ function codeBlock(code: Element, page: Document) {
   bar.append(shown, copy)
   pre.replaceWith(box)
   box.append(bar, pre)
+  // A diagram: drawn in its place once shown, by drawDiagrams (diagram.ts); its code stays to be copied.
+  if (isDiagram(info)) {
+    box.setAttribute('data-diagram', '')
+    const drawing = page.createElement('div')
+    drawing.className = 'orq-diagram'
+    box.append(drawing)
+  }
 }
 
 /**

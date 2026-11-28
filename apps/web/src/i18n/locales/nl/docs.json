@@ -185,6 +185,12 @@
         "keywords": "code codeblok snippet",
         "hint": "Code in een lettertype met vaste breedte, gekleurd naar de taal."
       },
+      "mermaid": {
+        "title": "Mermaid-diagram",
+        "subtitle": "Een diagram getekend uit de code",
+        "keywords": "diagram mermaid stroomdiagram grafiek sequentie gantt",
+        "hint": "Een diagram in Mermaid, zoals GitHub het tekent: de code wordt opgeslagen en de tekening getoond."
+      },
       "math": {
         "title": "Formule",
         "subtitle": "Een formule als eigen blok, in LaTeX",
@@ -348,6 +354,15 @@
       "picker": "Taal van het codeblok",
       "noResults": "Geen taal gevonden",
       "use": "“{{name}}” gebruiken"
+    },
+    "diagram": {
+      "views": "Diagram tonen als",
+      "diagram": "Diagram",
+      "code": "Code",
+      "both": "Beide",
+      "empty": "Schrijf het diagram in Mermaid.",
+      "error": "Het diagram kan niet worden getekend:",
+      "slow": "Het tekenen van het diagram duurde te lang."
     },
     "taskCheckbox": "Taak: {{text}}",
     "taskCheckboxEmpty": "Lege taak"
