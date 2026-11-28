@@ -185,6 +185,12 @@
         "keywords": "code snippet",
         "hint": "Code in a fixed-width font, colored by its language."
       },
+      "mermaid": {
+        "title": "Mermaid diagram",
+        "subtitle": "A diagram drawn from its code",
+        "keywords": "diagram mermaid flowchart chart sequence gantt graph",
+        "hint": "A diagram written in Mermaid, as GitHub draws it: its code is saved and its drawing shown."
+      },
       "math": {
         "title": "Equation",
         "subtitle": "An equation on a line of its own, in LaTeX",
@@ -348,6 +354,14 @@
       "picker": "Code block language",
       "noResults": "No language matches",
       "use": "Use “{{name}}”"
+    },
+    "diagram": {
+      "views": "Show the diagram as",
+      "diagram": "Diagram",
+      "code": "Code",
+      "both": "Both",
+      "empty": "Write the diagram in Mermaid.",
+      "error": "The diagram can’t be drawn:"
     },
     "taskCheckbox": "To-do: {{text}}",
     "taskCheckboxEmpty": "Empty to-do"

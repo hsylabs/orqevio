@@ -76,6 +76,7 @@ type SlashId =
   | 'toggleH2'
   | 'toggleH3'
   | 'code'
+  | 'mermaid'
   | 'math'
   | 'inlineMath'
   | 'table'
@@ -86,6 +87,9 @@ type SlashId =
   | 'image'
   | 'file'
 type SlashGroup = 'blocks' | 'lists' | 'insert'
+
+/** What a new diagram starts with, to be written over. */
+const DIAGRAM_START = 'flowchart LR\n  A --> B --> C'
 
 /** The blocks of the «/» menu last chosen in this browser, the latest first, offered first as «Suggestions». */
 const RECENT_KEY = 'slashRecent'
@@ -251,6 +255,19 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       item('math', '∑', 'blocks', (e, r) => startMath(e, r, true)),
       item('inlineMath', '√x', 'insert', (e, r) => startMath(e, r, false)),
       item('table', '▦', 'insert', (e, r) => e.chain().focus().deleteRange(r).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()),
+      // A diagram in Mermaid, with one to start from: its drawing shows under its code (diagram.ts).
+      item('mermaid', '◇', 'insert', (e, r) =>
+        e
+          .chain()
+          .focus()
+          .deleteRange(r)
+          .setCodeBlock({ language: 'mermaid' })
+          .command(({ tr }) => {
+            tr.insertText(DIAGRAM_START)
+            return true
+          })
+          .run(),
+      ),
       item('hr', '—', 'insert', (e, r) => e.chain().focus().deleteRange(r).setHorizontalRule().run()),
       item('mention', '@', 'insert', (e, r) => e.chain().focus().deleteRange(r).insertContent('@').run()),
       item('emoji', '😀', 'insert', (e, r) => {

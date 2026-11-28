@@ -163,6 +163,8 @@
 }
 .orq-code-bar {
   position: absolute;
+  /* Over a diagram's drawing, which takes its place. */
+  z-index: 1;
   top: 7px;
   left: 9px;
   right: 7px;
@@ -286,6 +288,96 @@ span.orq-code-lang .orq-code-chevron {
 }
 .orq-prose--compact .orq-code-bar {
   top: 5px;
+}
+
+/* A diagram (diagram.ts): a code block in Mermaid, its drawing under its code or in its place. A
+   switch in its bar shows the drawing (and the code while the cursor is in it), the code, or both.
+   What it draws stays in its box: nothing in it can be painted, or fixed, outside of it. */
+.orq-diagram {
+  position: relative;
+  margin-top: 6px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow: auto;
+  contain: layout paint;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.ProseMirror[contenteditable='true'] .orq-diagram {
+  cursor: pointer;
+}
+.orq-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+.orq-diagram-error-title {
+  margin: 0 0 6px;
+  text-align: left;
+  color: var(--danger);
+  font-weight: 600;
+}
+.orq-prose .orq-diagram pre.orq-diagram-error {
+  margin: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  text-align: left;
+  white-space: pre-wrap;
+  color: var(--ink-2);
+}
+/* Its drawing alone: the code shows only while the cursor is in it; or its code alone. */
+.orq-code[data-view='diagram']:not(.orq-code--current) > pre,
+.orq-code[data-view='code'] > .orq-diagram {
+  display: none;
+}
+.orq-code[data-view='diagram']:not(.orq-code--current) > .orq-diagram,
+.orq-code[data-diagram][data-drawn]:not([data-error]) > .orq-diagram {
+  margin-top: 0;
+  padding-top: 40px;
+}
+/* Shown, not edited: the drawing in place of the code, which stays where it can't be drawn. */
+.orq-code[data-diagram][data-drawn]:not([data-error]) > pre {
+  display: none;
+}
+.orq-code[data-diagram]:not([data-view]):not([data-drawn]) > .orq-diagram:empty {
+  display: none;
+}
+.orq-diagram-views {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: auto;
+  padding: 2px;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--ink) 5%, transparent);
+}
+.orq-diagram-views + .orq-code-copy {
+  margin-left: 0;
+}
+.orq-diagram-views > button {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.orq-diagram-views > button:hover {
+  color: var(--ink);
+}
+.orq-diagram-views > button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line);
+}
+.ProseMirror[contenteditable='false'] .orq-diagram-views {
+  display: none;
 }
 
 /* Its colours, from highlight.js: the theme's tones, each one readable on the block (4.5:1 or more). */
@@ -1070,6 +1162,13 @@ details.orq-toggle[open] > summary::before {
   }
   .orq-print .orq-code[data-plain] > pre {
     padding-top: 14px;
+  }
+  /* A diagram on paper is its drawing, kept whole on its page. */
+  .orq-print .orq-diagram {
+    overflow: visible;
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid var(--line);
   }
   /* A callout's name in the light theme's tones, as everything on paper, whatever the theme's rules say. */
   .orq-print .orq-callout--note {

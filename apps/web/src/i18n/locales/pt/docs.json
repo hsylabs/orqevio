@@ -185,6 +185,12 @@
         "keywords": "código trecho code snippet",
         "hint": "Código em fonte de largura fixa, colorido conforme a linguagem."
       },
+      "mermaid": {
+        "title": "Diagrama Mermaid",
+        "subtitle": "Um diagrama desenhado a partir do código",
+        "keywords": "diagrama mermaid fluxograma gráfico sequência gantt",
+        "hint": "Um diagrama escrito em Mermaid, como o GitHub o desenha: o código é salvo e o desenho é mostrado."
+      },
       "math": {
         "title": "Equação",
         "subtitle": "Uma equação em um bloco próprio, em LaTeX",
@@ -350,6 +356,14 @@
       "picker": "Linguagem do bloco de código",
       "noResults": "Nenhuma linguagem corresponde",
       "use": "Usar “{{name}}”"
+    },
+    "diagram": {
+      "views": "Mostrar o diagrama como",
+      "diagram": "Diagrama",
+      "code": "Código",
+      "both": "Ambos",
+      "empty": "Escreva o diagrama em Mermaid.",
+      "error": "Não é possível desenhar o diagrama:"
     },
     "taskCheckbox": "Tarefa: {{text}}",
     "taskCheckboxEmpty": "Tarefa sem texto"

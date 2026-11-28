@@ -120,6 +120,16 @@ const PREVIEWS: Record<string, () => ReactNode> = {
       <Line width="34%" style={{ background: 'var(--accent)', opacity: 0.45 }} />
     </span>
   ),
+  mermaid: () => (
+    <span className="flex items-center gap-1 py-2">
+      {['A', 'B', 'C'].map((name, i) => (
+        <span key={name} className="flex flex-1 items-center gap-1">
+          {i > 0 && <span className="text-[11px] leading-none text-ink-3">→</span>}
+          <span className="grid h-7 flex-1 place-items-center rounded-[5px] border border-line-strong bg-ink/[0.04] text-[10px] leading-none font-medium text-ink-2">{name}</span>
+        </span>
+      ))}
+    </span>
+  ),
   emoji: () => (
     <span className="flex flex-col gap-2.5">
       <span className="flex items-center gap-1.5">

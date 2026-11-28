@@ -16,6 +16,7 @@ import { restoreFromTrash } from '../../lib/trash'
 import { Editor } from '../docs/editor/Editor'
 import { copyCode } from '../docs/editor/code-block'
 import { useCodeColours } from '../docs/editor/code-languages'
+import { drawDiagrams } from '../docs/editor/diagram'
 import { markdownToHtml } from '../docs/editor/markdown-html'
 import { useWorkspace } from '../shell/workspace'
 import { isConverting } from '../../lib/ime'
@@ -254,6 +255,9 @@ function Body({ markdown }: { markdown: string }) {
   const colours = useCodeColours()
   // Written again with the code's colours once they come, and in the app's language.
   const html = useMemo(() => markdownToHtml(markdown), [markdown, colours, i18n.language])
+  const shown = useRef<HTMLDivElement>(null)
+  // Its diagrams, drawn once it is shown.
+  useEffect(() => void drawDiagrams(shown.current), [html])
   const follow = (event: MouseEvent) => {
     // A code block's button copies its code.
     const copy = (event.target as HTMLElement).closest('[data-copy-code]')
@@ -272,6 +276,7 @@ function Body({ markdown }: { markdown: string }) {
   }
   return (
     <div
+      ref={shown}
       className="orq-prose orq-prose--compact orq-prose--note mt-1 overflow-x-auto rounded-[10px] bg-surface px-3 py-2 break-words"
       onClick={follow}
       // What the editor itself would show, from its schema: escaped text and allowed addresses only.

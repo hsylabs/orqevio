@@ -6,6 +6,7 @@ import { Decoration, DecorationSet, type NodeView } from '@tiptap/pm/view'
 import i18next, { t } from 'i18next'
 import { copyText } from '../../../components/ui/CopyButton'
 import { codeColoursLoaded, findLanguage, highlighter, languageOf, loadCodeColours, PLAIN, whenCodeColoursLoad } from './code-languages'
+import { type Drawing, drawDiagram, isDiagram, onThemeChange, showDrawing } from './diagram'
 import { readPending } from './own-step'
 import { icon } from './svg-icons'
 
@@ -24,6 +25,8 @@ export const codeStorage = (editor: Editor) => (editor.storage as unknown as { c
 export function languageName(info: string | null | undefined) {
   const word = languageOf(info)
   if (!word) return ''
+  // Drawn rather than coloured (diagram.ts).
+  if (isDiagram(word)) return 'Mermaid'
   if (PLAIN.has(word.toLowerCase())) return t('docs:editor.code.plain')
   return findLanguage(word)?.name ?? word
 }
@@ -44,6 +47,11 @@ export const copyCode = (code: string) => copyText(code, { message: t('docs:edit
  * the list of languages) and a button that copies the code. The bar is no part of the document: it
  * is never selected, edited, copied with the text or saved.
  */
+/** How a diagram is shown: its drawing (its code too while the cursor is in it), its code, or both. */
+type DiagramView = 'diagram' | 'code' | 'both'
+const DIAGRAM_VIEWS: DiagramView[] = ['diagram', 'code', 'both']
+const VIEW_LABELS = { diagram: 'docs:editor.diagram.diagram', code: 'docs:editor.diagram.code', both: 'docs:editor.diagram.both' } as const
+
 class CodeBlockView implements NodeView {
   dom: HTMLElement
   contentDOM: HTMLElement
@@ -52,6 +60,8 @@ class CodeBlockView implements NodeView {
   private name: HTMLSpanElement
   private copy: HTMLButtonElement
   private done: ReturnType<typeof setTimeout> | undefined
+  /** For a diagram: its drawing, how it is shown, and what was drawn last. */
+  private diagram: { box: HTMLElement; views: HTMLElement; view: DiagramView; drawn: string | null; request: number; timer?: ReturnType<typeof setTimeout>; stop: () => void } | null = null
 
   constructor(
     private node: PMNode,
@@ -79,6 +89,7 @@ class CodeBlockView implements NodeView {
     this.contentDOM = document.createElement('code')
     pre.append(this.contentDOM)
     this.dom.append(this.bar, pre)
+    if (isDiagram(node.attrs.language as string | null)) this.startDiagram()
 
     // A press on the bar leaves the cursor and the focus where they were, in the editor.
     for (const button of [this.language, this.copy]) button.addEventListener('mousedown', (event) => event.preventDefault())
@@ -107,28 +118,115 @@ class CodeBlockView implements NodeView {
     const className = languageClass(info)
     if (className) this.contentDOM.className = className
     else this.contentDOM.removeAttribute('class')
+    if (this.diagram) {
+      this.diagram.views.setAttribute('aria-label', t('docs:editor.diagram.views'))
+      for (const button of this.diagram.views.querySelectorAll<HTMLButtonElement>('button')) button.textContent = t(VIEW_LABELS[button.dataset.view as DiagramView])
+      if (!this.node.textContent.trim()) this.diagram.box.textContent = t('docs:editor.diagram.empty')
+    }
+  }
+
+  /** A diagram: a switch in its bar between its drawing, its code or both, and its drawing under its code. */
+  private startDiagram() {
+    const views = document.createElement('div')
+    views.className = 'orq-diagram-views'
+    views.setAttribute('role', 'group')
+    for (const view of DIAGRAM_VIEWS) {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.dataset.view = view
+      button.addEventListener('mousedown', (event) => event.preventDefault())
+      button.addEventListener('click', () => this.showAs(view))
+      views.append(button)
+    }
+    this.bar.insertBefore(views, this.copy)
+    const box = document.createElement('div')
+    box.className = 'orq-diagram'
+    box.contentEditable = 'false'
+    // A press on the drawing puts the cursor at the end of its code, which shows with it.
+    box.addEventListener('mousedown', (event) => event.preventDefault())
+    box.addEventListener('click', () => {
+      const pos = this.getPos()
+      if (pos === undefined || !this.editor.isEditable) return
+      this.editor.chain().focus().setTextSelection(pos + this.node.nodeSize - 1).run()
+    })
+    this.dom.append(box)
+    this.dom.setAttribute('data-diagram', '')
+    this.diagram = { box, views, view: 'diagram', drawn: null, request: 0, stop: onThemeChange(() => this.redraw(0, true)) }
+    this.showAs('diagram')
+  }
+
+  private showAs(view: DiagramView) {
+    if (!this.diagram) return
+    this.diagram.view = view
+    this.dom.dataset.view = view
+    for (const button of this.diagram.views.querySelectorAll<HTMLButtonElement>('button')) button.setAttribute('aria-pressed', String(button.dataset.view === view))
+    this.redraw(0)
+  }
+
+  /** Draws the diagram again in `wait` ms, unless what it would draw is what it shows (`again`: it is anyway). */
+  private redraw(wait: number, again = false) {
+    const diagram = this.diagram
+    if (!diagram) return
+    clearTimeout(diagram.timer)
+    if (again) diagram.drawn = null
+    // Its code alone shows: drawn once it is to be seen.
+    if (diagram.view === 'code') return
+    diagram.timer = setTimeout(async () => {
+      const code = this.node.textContent
+      if (code === diagram.drawn) return
+      diagram.drawn = code
+      const request = ++diagram.request
+      if (!code.trim()) {
+        diagram.box.textContent = t('docs:editor.diagram.empty')
+        this.dom.removeAttribute('data-error')
+        return
+      }
+      let drawing: Drawing
+      try {
+        drawing = await drawDiagram(code)
+      } catch {
+        // Mermaid couldn't be loaded: drawn when the code changes again.
+        diagram.drawn = null
+        return
+      }
+      // Something newer is being drawn, or the block is gone.
+      if (request !== diagram.request || this.diagram !== diagram) return
+      this.dom.toggleAttribute('data-error', !showDrawing(diagram.box, drawing))
+    }, wait)
   }
 
   update(node: PMNode) {
     if (node.type !== this.node.type) return false
+    // Becoming a diagram or no longer one: drawn anew.
+    if (isDiagram(node.attrs.language as string | null) !== !!this.diagram) return false
     const relabel = node.attrs.language !== this.node.attrs.language
+    const changed = node.textContent !== this.node.textContent
     this.node = node
     if (relabel) this.render()
+    // While it is typed, once a pause comes.
+    if (changed) this.redraw(400)
     return true
   }
 
-  // The bar's buttons are its own: the editor neither selects nor reads anything there.
+  // The bar's buttons and the drawing are its own: the editor neither selects nor reads anything there.
   stopEvent(event: Event) {
-    return event.target instanceof Node && this.bar.contains(event.target)
+    return event.target instanceof Node && (this.bar.contains(event.target) || !!this.diagram?.box.contains(event.target))
   }
 
   ignoreMutation(mutation: MutationRecord | { type: 'selection'; target: Node }) {
-    return this.bar.contains(mutation.target)
+    if (this.bar.contains(mutation.target) || this.diagram?.box.contains(mutation.target)) return true
+    // How it is shown (its view, a drawing that couldn't be made) is its own too.
+    return mutation.type === 'attributes' && mutation.target === this.dom && mutation.attributeName !== 'class'
   }
 
   destroy() {
     clearTimeout(this.done)
     i18next.off('languageChanged', this.render)
+    if (this.diagram) {
+      clearTimeout(this.diagram.timer)
+      this.diagram.stop()
+      this.diagram = null
+    }
   }
 }
 

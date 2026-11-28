@@ -185,6 +185,12 @@
         "keywords": "code codeblock snippet quelltext",
         "hint": "Code in einer Schrift mit fester Breite, nach seiner Sprache eingefärbt."
       },
+      "mermaid": {
+        "title": "Mermaid-Diagramm",
+        "subtitle": "Ein Diagramm, aus seinem Code gezeichnet",
+        "keywords": "diagramm mermaid flussdiagramm grafik sequenz gantt",
+        "hint": "Ein in Mermaid geschriebenes Diagramm, wie GitHub es zeichnet: Der Code wird gespeichert, die Zeichnung angezeigt."
+      },
       "math": {
         "title": "Formel",
         "subtitle": "Eine Formel als eigener Block, in LaTeX",
@@ -348,6 +354,14 @@
       "picker": "Sprache des Codeblocks",
       "noResults": "Keine Sprache gefunden",
       "use": "„{{name}}“ verwenden"
+    },
+    "diagram": {
+      "views": "Diagramm anzeigen als",
+      "diagram": "Diagramm",
+      "code": "Code",
+      "both": "Beides",
+      "empty": "Schreibe das Diagramm in Mermaid.",
+      "error": "Das Diagramm kann nicht gezeichnet werden:"
     },
     "taskCheckbox": "To-do: {{text}}",
     "taskCheckboxEmpty": "Leeres To-do"

@@ -33,7 +33,9 @@ describe('the language of a code block', () => {
     expect(languageName('TS')).toBe('TypeScript')
     expect(languageName('yml')).toBe('YAML')
     expect(languageName('shell')).toBe('Bash')
-    expect(languageName('mermaid')).toBe('mermaid')
+    expect(languageName('zig')).toBe('zig')
+    // Drawn rather than coloured (diagram.ts).
+    expect(languageName('mermaid')).toBe('Mermaid')
     expect(languageName('')).toBe('')
     expect(findLanguage('c#')?.id).toBe('csharp')
   })
@@ -114,7 +116,7 @@ describe('a code block shown as HTML (a comment, a page printed)', () => {
   })
 
   it('shows a language it does not know as written, and no name for one without', () => {
-    expect(markdownToHtml('```mermaid\ngraph TD\n```')).toContain('<span>mermaid</span>')
+    expect(markdownToHtml('```zig\nconst x = 1;\n```')).toContain('<span>zig</span>')
     const plain = markdownToHtml('```\nUn prompt\n```')
     expect(plain).toContain('<div class="orq-code" data-plain="">')
     expect(plain).toContain('<code>Un prompt</code>')

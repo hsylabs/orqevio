@@ -185,6 +185,12 @@
         "keywords": "コード こーど code snippet",
         "hint": "等幅フォントのコード。言語に合わせて色分けされます。"
       },
+      "mermaid": {
+        "title": "Mermaid 図",
+        "subtitle": "コードから描く図",
+        "keywords": "図 ダイアグラム mermaid フローチャート シーケンス ガント",
+        "hint": "Mermaid で書いた図。GitHub と同じように描きます。コードが保存され、図が表示されます。"
+      },
       "math": {
         "title": "数式",
         "subtitle": "独立したブロックの数式（LaTeX）",
@@ -346,6 +352,14 @@
       "picker": "コードブロックの言語",
       "noResults": "一致する言語がありません",
       "use": "「{{name}}」を使う"
+    },
+    "diagram": {
+      "views": "図の表示",
+      "diagram": "図",
+      "code": "コード",
+      "both": "両方",
+      "empty": "Mermaid で図を書いてください。",
+      "error": "図を描けません:"
     },
     "taskCheckbox": "ToDo：{{text}}",
     "taskCheckboxEmpty": "空のToDo"

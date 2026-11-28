@@ -29,6 +29,7 @@ import { IconPicker } from './IconPicker'
 import { HistoryDialog } from '../history/HistoryDialog'
 import { MovePageDialog } from './MovePageDialog'
 import { DownloadDialog, PrintView, downloadPage, picturesReady } from './PageExport'
+import { drawDiagrams } from './editor/diagram'
 import { useRestore } from '../trash/restore'
 import { isConverting } from '../../lib/ime'
 import { showTogglesAsBefore, togglesShown } from './editor/toggle'
@@ -444,6 +445,8 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
   async function print() {
     flushSync(() => setPrinting(latest.current))
     const view = document.querySelector('.orq-print-root')
+    // Its diagrams drawn on paper, when it has any.
+    if (view?.querySelector('[data-diagram]')) await drawDiagrams(view)
     if (![...(view?.querySelectorAll('img') ?? [])].every((img) => img.complete)) await picturesReady(view)
     window.print()
   }
