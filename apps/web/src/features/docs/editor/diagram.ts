@@ -75,58 +75,77 @@ export const drawnBefore = (code: string, paper = false) => drawn.get(keyOf(code
 
 let count = 0
 
-export type Drawing = { svg: string } | { error: string }
+export type Drawing = { svg: string; id: string } | { error: string }
+
+/**
+ * Diagrams are drawn one after another, each with its own settings: Mermaid keeps one set for all, and
+ * a diagram's own `%%{init}%%` changes it until it is reset. Its own queue is left out: one that never
+ * ends (a picture that never comes) would hold up every other.
+ */
+let queue: Promise<unknown> = Promise.resolve()
+function inTurn<T>(job: () => Promise<T>) {
+  const run = queue.then(job, job)
+  queue = run.catch(() => {})
+  return run
+}
 
 /** `code` drawn (light on `paper`, whatever the app's theme): its SVG, cleaned, or why it can't be drawn. */
 export async function drawDiagram(code: string, paper = false): Promise<Drawing> {
   const light = lightFor(paper)
   const key = keyOf(code, light)
-  const before = drawn.get(key)
-  if (before) return before
   const { mermaid, purify } = await load()
-  const id = `orq-diagram-${++count}`
-  let drawing: Drawing
-  let late = false
-  try {
-    mermaid.initialize({
-      startOnLoad: false,
-      securityLevel: 'strict',
-      suppressErrorRendering: true,
-      theme: light ? 'neutral' : 'dark',
-      fontFamily: getComputedStyle(document.body).fontFamily,
-      secure: SECURE,
-    })
+  return inTurn(async () => {
+    const before = drawn.get(key)
+    if (before) {
+      // The latest used is the last to go.
+      drawn.delete(key)
+      drawn.set(key, before)
+      return before
+    }
+    const id = `orq-diagram-${++count}`
     let timer: ReturnType<typeof setTimeout> | undefined
-    const tooLong = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => {
-        late = true
-        reject(new Error(t('docs:editor.diagram.slow')))
-      }, TOO_LONG)
-    })
     try {
-      const { svg } = await Promise.race([mermaid.render(id, code), tooLong])
-      drawing = { svg: cleanSvg(purify, svg) }
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        suppressErrorRendering: true,
+        theme: light ? 'neutral' : 'dark',
+        fontFamily: getComputedStyle(document.body).fontFamily,
+        secure: SECURE,
+        // No picture in a label: Mermaid waits for each to load before it goes on.
+        dompurifyConfig: { FORBID_TAGS: ['img', 'picture', 'video', 'audio', 'source'] },
+      })
+      const tooLong = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(t('docs:editor.diagram.slow'))), TOO_LONG)
+      })
+      const { svg } = await Promise.race([mermaid.mermaidAPI.render(id, code), tooLong])
+      const drawing = { svg: cleanSvg(purify, svg), id }
+      drawn.set(key, drawing)
+      if (drawn.size > KEPT) drawn.delete(drawn.keys().next().value!)
+      return drawing
+    } catch (error) {
+      // A setting it was given in `%%{init}%%` that couldn't be read stays in Mermaid's until it is
+      // reset, and every other diagram would fail with it.
+      try {
+        mermaid.mermaidAPI.reset()
+      } catch {
+        // Nothing more to undo.
+      }
+      // What it was drawing in, left behind when it couldn't.
+      document.getElementById(id)?.remove()
+      document.getElementById(`d${id}`)?.remove()
+      // Not kept: drawn again another time, as what failed may not fail then.
+      return { error: error instanceof Error ? error.message : String(error) }
     } finally {
       clearTimeout(timer)
     }
-  } catch (error) {
-    // A setting it was given in `%%{init}%%` that couldn't be read stays in Mermaid's own until it is
-    // reset, and every other diagram would fail with it.
-    try {
-      mermaid.mermaidAPI.reset()
-    } catch {
-      // Nothing more to undo.
-    }
-    // What it was drawing in, left behind when it couldn't.
-    document.getElementById(id)?.remove()
-    document.getElementById(`d${id}`)?.remove()
-    drawing = { error: error instanceof Error ? error.message : String(error) }
-  }
-  // One that took too long is tried again another time.
-  if (late) return drawing
-  drawn.set(key, drawing)
-  if (drawn.size > KEPT) drawn.delete(drawn.keys().next().value!)
-  return drawing
+  })
+}
+
+/** A safe address of a link in a drawing (http or https), if it has one. */
+export function diagramHref(link: Element) {
+  const href = link.getAttribute('href') ?? link.getAttribute('xlink:href')
+  return href && /^https?:\/\//i.test(href.trim()) ? href.trim() : null
 }
 
 /**
@@ -137,15 +156,17 @@ export function diagramLink(event: MouseEvent) {
   const link = event.target instanceof Element ? event.target.closest('a') : null
   if (!link) return false
   event.preventDefault()
-  const href = link.getAttribute('href') ?? link.getAttribute('xlink:href')
-  if (href && /^https?:/i.test(href) && (event.metaKey || event.ctrlKey)) window.open(href, '_blank', 'noopener,noreferrer')
+  const href = diagramHref(link)
+  if (href && (event.metaKey || event.ctrlKey)) window.open(href, '_blank', 'noopener,noreferrer')
   return true
 }
 
 /** Shows `drawing` in `box`: the drawing, or why there is none, as text. */
 export function showDrawing(box: HTMLElement, drawing: Drawing) {
   if ('svg' in drawing) {
-    box.innerHTML = drawing.svg
+    // Shown elsewhere too (a page printed, the same diagram twice): its ids, and what refers to them
+    // (an arrow's head), made its own.
+    box.innerHTML = drawing.svg.replace(new RegExp(`${drawing.id}(?![0-9])`, 'g'), `orq-diagram-${++count}`)
     return true
   }
   const title = document.createElement('p')

@@ -66,6 +66,8 @@ export function PrintView({ title, icon, markdown }: { title: string; icon: stri
     showDrawnBefore(text.current, true)
     // On paper there is nothing to click: each link shows where it leads, in full, unless its text already says it.
     for (const link of text.current?.querySelectorAll('a[href]') ?? []) {
+      // Those in a diagram's drawing are in its boxes: its address would run out of them.
+      if (link.closest('.orq-diagram')) continue
       const href = link.getAttribute('href') ?? ''
       if (href.startsWith('#')) continue
       let address: string

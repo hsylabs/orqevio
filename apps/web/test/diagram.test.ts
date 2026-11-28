@@ -3,7 +3,7 @@ import DOMPurify from 'dompurify'
 import i18next from 'i18next'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import docs from '../src/i18n/locales/es/docs.json'
-import { cleanSvg, diagramLink, drawDiagram, drawnBefore, isDiagram } from '../src/features/docs/editor/diagram'
+import { cleanSvg, diagramHref, diagramLink, drawDiagram, drawnBefore, isDiagram, showDrawing } from '../src/features/docs/editor/diagram'
 import { markdownToHtml } from '../src/features/docs/editor/markdown-html'
 
 // Diagrams in Mermaid, as GitHub draws them: the code is what is saved, and its drawing is shown,
@@ -66,7 +66,7 @@ describe('drawing with Mermaid', () => {
   it('draws a diagram, once: drawn again, it is the same drawing', async () => {
     const svg = await svgOf('flowchart LR\n  Idea --> Plan')
     expect(svg).toContain('Idea')
-    expect(drawnBefore('flowchart LR\n  Idea --> Plan')).toEqual({ svg })
+    expect(drawnBefore('flowchart LR\n  Idea --> Plan')).toEqual({ svg, id: expect.stringMatching(/^orq-diagram-\d+$/) })
     expect(await drawDiagram('flowchart LR\n  Idea --> Plan')).toBe(drawnBefore('flowchart LR\n  Idea --> Plan'))
   }, 20_000)
 
@@ -76,6 +76,50 @@ describe('drawing with Mermaid', () => {
     const poisoned = await drawDiagram('%%{init: {"theme": "base", "themeVariables": {"primaryColor": "nope"}}}%%\nflowchart LR\n  X --> Y')
     expect('error' in poisoned).toBe(true)
     expect(await svgOf('flowchart LR\n  Uno --> Dos')).toContain('Dos')
+  }, 20_000)
+
+  it('drawn at once, each with its own settings: one that can\'t be read harms none of the others', async () => {
+    const [bad, good, rough] = await Promise.all([
+      drawDiagram('%%{init: {"theme": "base", "themeVariables": {"primaryColor": "nope"}}}%%\nflowchart LR\n  P --> Q'),
+      drawDiagram('flowchart LR\n  Tres --> Cuatro'),
+      drawDiagram('%%{init: {"look": "handDrawn"}}%%\nflowchart LR\n  Cinco --> Seis'),
+    ])
+    expect('error' in bad).toBe(true)
+    expect('svg' in good && good.svg).toContain('Cuatro')
+    expect('svg' in rough && rough.svg).toContain('Seis')
+    // What failed isn't kept: it is drawn again another time.
+    expect(drawnBefore('%%{init: {"theme": "base", "themeVariables": {"primaryColor": "nope"}}}%%\nflowchart LR\n  P --> Q')).toBeUndefined()
+  }, 20_000)
+
+  it('drawn at once dark and for paper, each in its own colours', async () => {
+    document.documentElement.dataset.theme = 'dark'
+    try {
+      // After another, so that both wait their turn.
+      const [, onScreen, onPaper] = await Promise.all([
+        drawDiagram('flowchart LR\n  Antes --> Luego'),
+        drawDiagram('flowchart LR\n  Noche --> Dia'),
+        drawDiagram('flowchart LR\n  Noche --> Dia', true),
+      ])
+      const fill = (drawing: typeof onScreen) => ('svg' in drawing ? /\.node rect[^{]*\{[^}]*fill:([^;]+);/.exec(drawing.svg)?.[1] : undefined)
+      expect(fill(onScreen)).toBeDefined()
+      expect(fill(onScreen)).not.toBe(fill(onPaper))
+      expect(drawnBefore('flowchart LR\n  Noche --> Dia')).toBe(onScreen)
+      expect(drawnBefore('flowchart LR\n  Noche --> Dia', true)).toBe(onPaper)
+    } finally {
+      delete document.documentElement.dataset.theme
+    }
+  }, 20_000)
+
+  it('shown twice, has ids of its own each time, and what refers to them follows', async () => {
+    const drawing = await drawDiagram('flowchart LR\n  Ida --> Vuelta')
+    const [one, two] = [document.createElement('div'), document.createElement('div')]
+    showDrawing(one, drawing)
+    showDrawing(two, drawing)
+    const ids = (box: HTMLElement) => [...box.querySelectorAll('[id]')].map((element) => element.id)
+    expect(ids(one).filter((id) => ids(two).includes(id))).toEqual([])
+    const marker = two.querySelector('[marker-end]')?.getAttribute('marker-end')
+    expect(marker).toMatch(/^url\(#orq-diagram-\d+_/)
+    expect(two.querySelector(`[id="${/#([^)]+)/.exec(marker!)![1]}"]`)).not.toBeNull()
   }, 20_000)
 
   it('runs nothing from what it holds, whatever its own settings ask', async () => {
@@ -95,6 +139,17 @@ describe('drawing with Mermaid', () => {
 })
 
 describe('a link in a drawing', () => {
+  it('has an address only to a web page', () => {
+    const link = (href: string, name = 'href') => {
+      const a = document.createElementNS('http://www.w3.org/2000/svg', 'a')
+      a.setAttribute(name, href)
+      return a
+    }
+    expect(diagramHref(link('https://example.com/a'))).toBe('https://example.com/a')
+    expect(diagramHref(link('http://example.com/a', 'xlink:href'))).toBe('http://example.com/a')
+    for (const href of ['//example.com', 'javascript:alert(1)', 'tel:123', 'data:text/html,x', '/doc/x']) expect(diagramHref(link(href)), href).toBeNull()
+  })
+
   it('leads nowhere with a plain click, and to a new tab with Ctrl (⌘)', () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
     // Read as it is dispatched: the event's target is set then.

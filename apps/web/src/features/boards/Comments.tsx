@@ -16,7 +16,7 @@ import { restoreFromTrash } from '../../lib/trash'
 import { Editor } from '../docs/editor/Editor'
 import { copyCode } from '../docs/editor/code-block'
 import { useCodeColours } from '../docs/editor/code-languages'
-import { drawDiagrams } from '../docs/editor/diagram'
+import { diagramHref, drawDiagrams } from '../docs/editor/diagram'
 import { markdownToHtml } from '../docs/editor/markdown-html'
 import { useWorkspace } from '../shell/workspace'
 import { isConverting } from '../../lib/ime'
@@ -269,6 +269,12 @@ function Body({ markdown }: { markdown: string }) {
     if (!link) return
     // A link without an address the editor allows has none: it leads nowhere, rather than reloading the app.
     event.preventDefault()
+    // One in a diagram's drawing, which Mermaid wrote: to a web page only, in a new tab.
+    if (link.closest('.orq-diagram')) {
+      const href = diagramHref(link)
+      if (href) window.open(href, '_blank', 'noopener,noreferrer')
+      return
+    }
     const href = link.getAttribute('href')
     if (!href) return
     if (/^\/(card|doc)\//.test(href)) navigate(href)

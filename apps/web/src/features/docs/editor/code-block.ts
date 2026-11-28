@@ -268,6 +268,8 @@ const currentCode = (name: string) =>
         const down = event.key === 'ArrowDown'
         const { selection } = view.state
         if (!selection.empty || !selection.$head.parent.isTextblock || !view.endOfTextblock(down ? 'down' : 'up')) return false
+        // A toggle's title and what it holds are the toggle's own to go between (toggle.ts).
+        if (selection.$head.parent.type.name === 'toggleTitle') return false
         const $edge = view.state.doc.resolve(down ? selection.$head.after() : selection.$head.before())
         const next = down ? $edge.nodeAfter : $edge.nodeBefore
         if (next?.type.name !== name || !isDiagram(next.attrs.language as string | null)) return false
