@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, test } from './helpers'
+import { createProject, expect, openNewWorkspace, test } from './helpers'
 
 // The «/» menu's «Date» writes a day as text, as the app's language writes it in full: today with
 // Enter, tomorrow, yesterday, or any day of a calendar. The Markdown keeps it as it is.
@@ -52,6 +52,8 @@ test('a date from the «/» menu: today with Enter, as the language writes it, a
 
   const dialog = page.getByRole('dialog', { name: 'Insertar una fecha' })
   await expect(dialog.getByRole('button', { name: 'Hoy', exact: true })).toBeFocused()
+  // Its calendar, said in the app's language too.
+  await expect(dialog.getByRole('button', { name: 'Ir al mes siguiente' })).toBeVisible()
   await expect(dialog.getByRole('button', { name: 'Hoy', exact: true })).toHaveAttribute('title', '5 de marzo de 2026')
   await snap(page, testInfo.outputPath('date-dialog.png'))
   await page.keyboard.press('Enter')
@@ -85,4 +87,30 @@ test('tomorrow, yesterday or a day of the calendar; Esc leaves the text as it wa
   await expect(editor).toBeFocused()
   await page.keyboard.type('Fin')
   await expect.poll(saved).toBe('Uno\n\n6 de marzo de 2026\n\n4 de marzo de 2026\n\n20 de marzo de 2026\n\nFin')
+})
+
+test('in a comment, Ctrl+Enter in the dialog sends nothing: the date goes in the box, and then it is sent', async ({ page }) => {
+  await page.clock.setFixedTime(new Date(2026, 2, 5, 10, 0))
+  const workspaceId = await openNewWorkspace(page, 'Fecha comentario E2E')
+  const boardId = await createProject(page, 'Notas')
+  const columns = ((await (await page.request.get(`/api/boards/${boardId}`)).json()) as { columns: Array<{ id: string }> }).columns
+  const card = (await (await page.request.post(`/api/columns/${columns[0]!.id}/cards`, { data: { title: 'Entrega' } })).json()) as { id: string }
+  await page.goto(`/w/${workspaceId}/b/${boardId}?card=${card.id}`)
+  const box = page.getByRole('textbox', { name: 'Nuevo comentario' })
+  await box.click()
+  await page.keyboard.type('Entrega el /fecha')
+  await expect(page.getByRole('option', { name: /Fecha/ })).toHaveAttribute('aria-selected', 'true')
+  await page.keyboard.press('Enter')
+  const dialog = page.getByRole('dialog', { name: 'Insertar una fecha' })
+  await expect(dialog.getByRole('button', { name: 'Hoy', exact: true })).toBeFocused()
+  await page.keyboard.press('ControlOrMeta+Enter')
+  await page.waitForTimeout(300)
+  await expect(dialog).toBeVisible()
+  const bodies = async () => ((await (await page.request.get(`/api/cards/${card.id}/comments`)).json()) as { comments: Array<{ body: string }> }).comments.map((comment) => comment.body)
+  expect(await bodies()).toEqual([])
+  await page.keyboard.press('Enter')
+  await expect(box).toContainText('Entrega el 5 de marzo de 2026')
+  await expect(box).toBeFocused()
+  await page.keyboard.press('ControlOrMeta+Enter')
+  await expect.poll(bodies).toEqual(['Entrega el 5 de marzo de 2026'])
 })
