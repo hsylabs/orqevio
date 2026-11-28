@@ -120,6 +120,19 @@ const PREVIEWS: Record<string, () => ReactNode> = {
       <Line width="34%" style={{ background: 'var(--accent)', opacity: 0.45 }} />
     </span>
   ),
+  page: () => (
+    <span className="flex flex-col gap-2.5">
+      <Line width="70%" />
+      <span className="flex items-center gap-2">
+        <svg viewBox="0 0 24 24" className="size-4 shrink-0 text-ink-2" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+          <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+          <path d="M14 3v6h6" />
+        </svg>
+        <Line width="48%" style={{ background: 'var(--accent)', opacity: 0.55 }} />
+      </span>
+      <Line width="56%" />
+    </span>
+  ),
   image: () => (
     <span className="grid h-[68px] place-items-center rounded-[6px] bg-ink/[0.06]">
       <svg viewBox="0 0 24 24" className="size-7 text-ink-3" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">

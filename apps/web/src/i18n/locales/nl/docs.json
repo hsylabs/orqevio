@@ -55,6 +55,12 @@
       "title": "Weggaan zonder op te slaan?",
       "body": "Je laatste wijzigingen op deze pagina zijn niet opgeslagen en gaan verloren.",
       "confirm": "Weggaan zonder opslaan"
+    },
+    "subpage": {
+      "title": "Nieuwe pagina",
+      "label": "Naam van de pagina",
+      "placeholder": "bijv. Notities",
+      "confirm": "Pagina maken"
     }
   },
   "editor": {
@@ -188,6 +194,12 @@
         "subtitle": "Typ @ en zoek",
         "keywords": "vermelding vermelden koppeling link taak pagina mention",
         "hint": "Een link naar een taak of pagina: typ @ en de naam."
+      },
+      "page": {
+        "title": "Pagina",
+        "subtitle": "Een pagina binnen deze",
+        "keywords": "pagina subpagina document nieuw page",
+        "hint": "Maakt een pagina binnen deze en zet hier een link ernaar."
       },
       "image": {
         "title": "Afbeelding",

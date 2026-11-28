@@ -1,4 +1,4 @@
-import type { ActorRef, PageDTO, RealtimeEvent, TrashTreeDTO } from '@orqevio/shared'
+import type { ActorRef, PageDTO, PageNodeDTO, RealtimeEvent, TrashTreeDTO } from '@orqevio/shared'
 import { MAX_MARKDOWN, characters, extractReferences } from '@orqevio/shared'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { EditorState } from '@tiptap/pm/state'
@@ -11,8 +11,9 @@ import { toast } from 'sonner'
 import { fitTitle, usePhrasedField } from '../../components/Phrases'
 import { Button } from '../../components/ui/Button'
 import { useConfirm } from '../../components/ui/confirm'
+import { usePrompt } from '../../components/ui/prompt'
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from '../../components/ui/Menu'
-import { ApiError, errorMessage, get, patch } from '../../lib/api'
+import { ApiError, errorMessage, get, patch, post } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import { formatNumber, relativeTime } from '../../lib/format'
 import { keys, queryClient, usePage } from '../../lib/queries'
@@ -75,6 +76,7 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
   const confirm = useConfirm()
   const location = useLocation()
   const actions = useStructureActions(workspaceId)
+  const prompt = usePrompt()
   const agent = useAgentHighlight(page.id)
 
   const [title, setTitle] = useState(page.title)
@@ -661,6 +663,25 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
               upload={{ type: 'page', id: page.id }}
               onUploaded={() => void queryClient.invalidateQueries({ queryKey: keys.page(page.id) })}
               ariaLabel={t('page.content')}
+              newSubpage={async () => {
+                const title = await prompt({
+                  title: t('page.subpage.title'),
+                  label: t('page.subpage.label'),
+                  placeholder: t('page.subpage.placeholder'),
+                  confirmLabel: t('page.subpage.confirm'),
+                  maxLength: 200,
+                })
+                if (!title) return null
+                try {
+                  const made = await post<PageNodeDTO>(`/projects/${page.projectId}/pages`, { title, parentId: page.id })
+                  void queryClient.invalidateQueries({ queryKey: keys.overview(workspaceId) })
+                  void queryClient.invalidateQueries({ queryKey: keys.page(page.id) })
+                  return { id: made.id, title: made.title }
+                } catch (error) {
+                  toast.error(errorMessage(error))
+                  return null
+                }
+              }}
               onReady={(editor) => (editorRef.current = editor)}
               onChange={(md) => {
                 latest.current = md

@@ -55,6 +55,12 @@
       "title": "Sair sem salvar?",
       "body": "Suas últimas alterações nesta página não foram salvas e serão perdidas.",
       "confirm": "Sair sem salvar"
+    },
+    "subpage": {
+      "title": "Nova página",
+      "label": "Nome da página",
+      "placeholder": "ex.: Notas",
+      "confirm": "Criar página"
     }
   },
   "editor": {
@@ -188,6 +194,12 @@
         "subtitle": "Digite @ e busque",
         "keywords": "menção mencionar vincular link tarefa página mention",
         "hint": "Um link para uma tarefa ou página: digite @ e o nome dela."
+      },
+      "page": {
+        "title": "Página",
+        "subtitle": "Uma página dentro desta",
+        "keywords": "página subpágina documento filha nova page",
+        "hint": "Cria uma página dentro desta e coloca um link para ela aqui."
       },
       "image": {
         "title": "Imagem",

@@ -12,6 +12,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - Under «Suggestions», the last three blocks chosen in this browser come first, until something is typed.
   - Beside the block marked, a small drawing of it and a sentence on what it is for. It follows the arrows and the pointer, and isn't shown where there is no room beside the menu, as on a phone.
   - «Close menu · Esc» at its foot.
+- **A page inside a page, from the «/» menu.** In a document, «Page» asks for its name, makes the page inside the one edited, and leaves a link to it where the «/» was.
 
 ### Changed
 - **Less to download after an update.** The code that draws equations (KaTeX) now comes in files of its own, still loaded with the editor. From the next update on, the browser keeps the ones it already has unless KaTeX itself changed, instead of downloading them again with the editor. The editor's own file is a quarter smaller (226 KB compressed instead of 301).
