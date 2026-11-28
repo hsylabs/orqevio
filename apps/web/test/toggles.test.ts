@@ -538,7 +538,60 @@ describe('a toggle whose title is a heading', () => {
 
   it('is read from a <details> copied from GitHub, its heading as its title', () => {
     expect(open('<details><summary><h2>Más</h2></summary><p>Dentro</p></details>', 'html').getMarkdown()).toBe(github)
+    // As GitHub shows a heading: wrapped, with a link to it that has no text.
+    const shown = '<details><summary><div class="markdown-heading"><h2 class="heading-element">Más</h2><a id="user-content-más" class="anchor" href="#más"><svg></svg></a></div></summary><p>Dentro</p></details>'
+    expect(open(shown, 'html').getMarkdown()).toBe(github)
     expect(open(open(github).getHTML(), 'html').getMarkdown()).toBe(github)
+  })
+
+  it('is no heading pasted with text around its heading, and its text keeps its spaces', () => {
+    expect(open('<details><summary>Nota: <h2>Más</h2></summary><p>Dentro</p></details>', 'html').getMarkdown()).toBe('<details>\n<summary>Nota: Más</summary>\n\nDentro\n\n</details>')
+    expect(open('<details><summary>Línea<br>dos <b>y</b> <i>tres</i></summary><p>Dentro</p></details>', 'html').getMarkdown()).toBe('<details>\n<summary>Línea dos y tres</summary>\n\nDentro\n\n</details>')
+    expect(open('<details><summary><h2>A</h2><p>B</p></summary><p>Dentro</p></details>', 'html').getMarkdown()).toBe('<details>\n<summary>A B</summary>\n\nDentro\n\n</details>')
+  })
+
+  it('copied in part with its title and pasted, keeps the spaces of the title', () => {
+    const editor = open('<details>\n<summary>Hola mundo</summary>\n\nCuerpo\n\n</details>\n\nPara', 'markdown', true)
+    setToggleOpen(editor, 0, true)
+    const title = first(editor, 'toggleTitle')
+    const body = first(editor, 'paragraph')
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, title + 1 + 'Hola'.length, body + 1 + 'Cuerpo'.length)))
+    const { dom } = editor.view.serializeForClipboard(editor.state.selection.content())
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.atEnd(editor.state.doc)))
+    // jsdom has no ClipboardEvent, which ProseMirror makes for a paste.
+    globalThis.ClipboardEvent ??= class extends Event {
+      clipboardData = null
+    } as unknown as typeof ClipboardEvent
+    editor.view.pasteHTML(dom.innerHTML)
+    expect(saved(editor)).toMatch(/\n\nPara mundo/)
+  })
+
+  it('keeps its heading\'s attributes and what its title holds when its level changes, with `>` in an attribute too', () => {
+    const editor = open('<details>\n<summary><h2 id="faq" title="a>b"><a href="/x">Enlace</a> &amp; <code>c</code></h2></summary>\n\nDentro\n\n</details>', 'markdown', true)
+    expect(levelOf(String(editor.state.doc.firstChild!.attrs.summary))).toBe(2)
+    turnBlock(editor, 0, 'toggleH1')
+    expect(saved(editor)).toBe('<details>\n<summary><h1 id="faq" title="a>b"><a href="/x">Enlace</a> &amp; <code>c</code></h1></summary>\n\nDentro\n\n</details>')
+    expect(editor.view.dom.querySelector('.orq-toggle')!.getAttribute('data-level')).toBe('1')
+    expect(editor.view.dom.querySelector('.orq-toggle-title')!.getAttribute('aria-level')).toBe('1')
+    turnBlock(editor, 0, 'toggle')
+    expect(saved(editor)).toBe('<details>\n<summary><a href="/x">Enlace</a> &amp; <code>c</code></summary>\n\nDentro\n\n</details>')
+    expect(editor.view.dom.querySelector('.orq-toggle')!.hasAttribute('data-level')).toBe(false)
+    expect(editor.view.dom.querySelector('.orq-toggle-title')!.hasAttribute('role')).toBe(false)
+    turnBlock(editor, 0, 'toggleH3')
+    expect(saved(editor)).toBe('<details>\n<summary><h3><a href="/x">Enlace</a> &amp; <code>c</code></h3></summary>\n\nDentro\n\n</details>')
+    // Its title changed first, it is written anew as text.
+    cursorIn(editor, 'toggleTitle')
+    editor.commands.insertContent('!')
+    turnBlock(editor, 0, 'toggleH2')
+    expect(saved(editor)).toBe('<details>\n<summary><h2>Enlace &amp; c!</h2></summary>\n\nDentro\n\n</details>')
+  })
+
+  it('keeps an attribute with `>` in it closed when its title changes', () => {
+    const editor = open('<details>\n<summary><h2 title="a>b">Más</h2></summary>\n\nDentro\n\n</details>')
+    cursorIn(editor, 'toggleTitle')
+    editor.commands.insertContent('!')
+    expect(saved(editor)).toBe('<details>\n<summary><h2 title="a>b">Más!</h2></summary>\n\nDentro\n\n</details>')
+    expect(markdownToHtml(saved(editor))).toContain('<h2>Más!</h2>')
   })
 })
 

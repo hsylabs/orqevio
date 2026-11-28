@@ -41,6 +41,17 @@ export function summaryText(html: string) {
   return decoder.content.textContent ?? ''
 }
 
+/** The text of a pasted element, a space where a line or a block of it ends. */
+const BREAKS = /^(?:BR|P|DIV|H[1-6]|LI|UL|OL|DL|DT|DD|TR|TD|TH|TABLE|BLOCKQUOTE|PRE|HR|SECTION|ARTICLE|HEADER|FOOTER)$/
+function textOf(node: globalThis.Node): string {
+  let text = ''
+  for (const child of node.childNodes) {
+    if (child.nodeType === 3) text += child.textContent
+    else if (child.nodeType === 1) text += BREAKS.test((child as Element).tagName) ? ` ${textOf(child)} ` : textOf(child)
+  }
+  return text
+}
+
 /** Spaces and line breaks as HTML shows them: one space. */
 const oneSpace = (text: string) => text.replace(/[\t\n\f\r ]+/g, ' ')
 /** …and none at either end. */
@@ -53,10 +64,10 @@ const titleOf = (summary: string) => collapse(summaryText(summary))
  * A summary that is a heading, as GitHub shows a toggle's title as one: `<h2>…</h2>`, with nothing
  * around it nor another heading in it. Its tags, as written, are kept around a title written anew.
  */
-const HEADING = /^(<h([1-6])(?:\s[^>]*)?>)([\s\S]*)(<\/h\2\s*>)$/i
+const HEADING = /^(<h([1-6])(?:\s(?:[^>"']|"[^"]*"|'[^']*')*)?>)([\s\S]*)(<\/h\2\s*>)$/i
 function headingOf(summary: string) {
   const found = HEADING.exec(summary.trim())
-  return found && !/<\/?h[1-6](?=[\s>])/i.test(found[3]!) ? { open: found[1]!, level: Number(found[2]), close: found[4]! } : null
+  return found && !/<\/?h[1-6](?=[\s>])/i.test(found[3]!) ? { open: found[1]!, level: Number(found[2]), inner: found[3]!, close: found[4]! } : null
 }
 /** The level of the heading a toggle's title is (1 to 6), or 0 for a title of text. */
 export const levelOf = (summary: string) => headingOf(summary)?.level ?? 0
@@ -329,11 +340,19 @@ export const ToggleTitle = Node.create({
   code: true,
   whitespace: 'normal',
   parseHTML() {
-    // Its text, whatever holds it: a heading in it (GitHub's toggle headings) gives its level to the toggle.
-    return [{ tag: 'summary', getContent: (dom, schema) => {
-      const text = collapse(dom.textContent ?? '')
-      return Fragment.from(text ? schema.text(text) : [])
-    } }]
+    return [
+      // One of a web page with more than text in it (a heading, as GitHub's toggle headings, whose level
+      // goes to the toggle): its text, a space where a line or a block ends.
+      {
+        tag: 'summary',
+        getAttrs: (dom: HTMLElement) => (dom.children.length ? null : false),
+        getContent: (dom, schema) => {
+          const text = collapse(textOf(dom))
+          return Fragment.from(text ? schema.text(text) : [])
+        },
+      },
+      { tag: 'summary' },
+    ]
   },
   renderHTML({ HTMLAttributes }) {
     return ['summary', mergeAttributes(HTMLAttributes, { class: 'orq-toggle-title' }), 0]
@@ -368,9 +387,11 @@ export const Toggle = Node.create({
         parseHTML: (element: HTMLElement) => {
           const value = element.getAttribute('data-summary')
           if (value !== null && isSummary(value)) return value
+          // One heading that holds all its text, also within what wraps it (GitHub's `markdown-heading`).
           const summary = [...element.children].find((child) => child.tagName === 'SUMMARY')
-          const heading = summary?.children.length === 1 ? summary.firstElementChild : null
-          return asLevel('', heading && /^H[1-6]$/.test(heading.tagName) ? Number(heading.tagName[1]) : 0)
+          const headings = summary?.querySelectorAll('h1, h2, h3, h4, h5, h6') ?? []
+          const text = headings.length === 1 ? collapse(textOf(headings[0]!)) : ''
+          return asLevel('', text && text === collapse(textOf(summary!)) ? Number(headings[0]!.tagName[1]) : 0)
         },
       },
       tail: checked('tail', (value) => TAIL.test(value), NEW.tail),
@@ -612,7 +633,13 @@ export function newToggle(schema: Transaction['doc']['type']['schema'], title = 
 
 /** The toggle at `pos` with its title a heading of `level`, or text for 0: what it holds stays. */
 export function setToggleLevel(tr: Transaction, pos: number, node: PMNode, level: number) {
-  tr.setNodeMarkup(pos, undefined, { ...node.attrs, summary: asLevel(encode(collapse(node.firstChild!.textContent)), level) })
+  const raw = String(node.attrs.summary)
+  const text = collapse(node.firstChild!.textContent)
+  const heading = headingOf(raw)
+  // What it holds as written (links, code, a heading's own attributes) while its title is the same.
+  const inner = text !== titleOf(raw) ? encode(text) : heading ? heading.inner : raw.trim()
+  const summary = level && heading ? `${heading.open.replace(/^<h[1-6]/i, `<h${level}`)}${inner}</h${level}>` : asLevel(inner, level)
+  tr.setNodeMarkup(pos, undefined, { ...node.attrs, summary })
 }
 
 /**

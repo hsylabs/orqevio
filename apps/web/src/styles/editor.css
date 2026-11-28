@@ -612,15 +612,16 @@ details.orq-toggle[open] > summary::before {
   font-weight: 650;
   color: var(--ink);
 }
+/* Each as specific as the rule above, which it follows. */
 .orq-prose :is(.orq-toggle[data-level='1'], .orq-toggle[data-level='2'], .orq-toggle[data-level='3']) > .orq-toggle-content > .orq-toggle-title,
-.orq-prose details.orq-toggle > summary > :is(h1, h2, h3) {
+.orq-prose details.orq-toggle[data-level] > summary > :is(h1, h2, h3) {
   font-family: var(--font-display);
   font-variation-settings: 'SOFT' 60;
   font-weight: 560;
   letter-spacing: -0.018em;
 }
 .orq-prose .orq-toggle[data-level='6'] > .orq-toggle-content > .orq-toggle-title,
-.orq-prose details.orq-toggle > summary > h6 {
+.orq-prose details.orq-toggle[data-level] > summary > h6 {
   color: var(--ink-2);
 }
 /* Shown, the heading is on the arrow's line, as on GitHub. */

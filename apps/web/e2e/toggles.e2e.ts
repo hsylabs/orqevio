@@ -104,6 +104,7 @@ test('a toggle heading from the «/» menu: its title a heading, as GitHub shows
   await expect(title).toBeVisible()
   const size = await title.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))
   expect(size).toBeGreaterThan(20)
+  expect(await title.evaluate((element) => getComputedStyle(element).fontWeight)).toBe('560')
   const arrow = (await editor.getByRole('button', { name: 'Ocultar el contenido' }).boundingBox())!
   const line = (await title.boundingBox())!
   expect(Math.abs(arrow.y + arrow.height / 2 - (line.y + size * 1.22 / 2))).toBeLessThan(3)
@@ -139,6 +140,8 @@ test('a toggle heading written elsewhere, and in a comment the browser\'s own wi
   const comment = page.locator('.orq-prose--note').filter({ hasText: 'Ver el registro' })
   const heading = comment.getByRole('heading', { level: 2, name: 'Ver el registro' })
   await expect(heading).toBeVisible()
+  // As the same heading is in the editor.
+  expect(await heading.evaluate((element) => getComputedStyle(element).fontWeight)).toBe('560')
   await expect(comment.getByText('Línea 1')).toBeHidden()
   await heading.click()
   await expect(comment.getByText('Línea 1')).toBeVisible()
