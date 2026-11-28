@@ -42,7 +42,7 @@ export function summaryText(html: string) {
 }
 
 /** The text of a pasted element, a space where a line or a block of it ends. */
-const BREAKS = /^(?:BR|P|DIV|H[1-6]|LI|UL|OL|DL|DT|DD|TR|TD|TH|TABLE|BLOCKQUOTE|PRE|HR|SECTION|ARTICLE|HEADER|FOOTER)$/
+const BREAKS = /^(?:BR|P|DIV|H[1-6]|LI|UL|OL|DL|DT|DD|TR|TD|TH|TABLE|CAPTION|BLOCKQUOTE|PRE|HR|SECTION|ARTICLE|HEADER|FOOTER|NAV|ASIDE|MAIN|ADDRESS|FIGURE|FIGCAPTION|DETAILS|SUMMARY)$/
 function textOf(node: globalThis.Node): string {
   let text = ''
   for (const child of node.childNodes) {
@@ -390,8 +390,8 @@ export const Toggle = Node.create({
           // One heading that holds all its text, also within what wraps it (GitHub's `markdown-heading`).
           const summary = [...element.children].find((child) => child.tagName === 'SUMMARY')
           const headings = summary?.querySelectorAll('h1, h2, h3, h4, h5, h6') ?? []
-          const text = headings.length === 1 ? collapse(textOf(headings[0]!)) : ''
-          return asLevel('', text && text === collapse(textOf(summary!)) ? Number(headings[0]!.tagName[1]) : 0)
+          const heading = headings.length === 1 && collapse(textOf(headings[0]!)) === collapse(textOf(summary!))
+          return asLevel('', heading ? Number(headings[0]!.tagName[1]) : 0)
         },
       },
       tail: checked('tail', (value) => TAIL.test(value), NEW.tail),
@@ -638,7 +638,9 @@ export function setToggleLevel(tr: Transaction, pos: number, node: PMNode, level
   const heading = headingOf(raw)
   // What it holds as written (links, code, a heading's own attributes) while its title is the same.
   const inner = text !== titleOf(raw) ? encode(text) : heading ? heading.inner : raw.trim()
-  const summary = level && heading ? `${heading.open.replace(/^<h[1-6]/i, `<h${level}`)}${inner}</h${level}>` : asLevel(inner, level)
+  const kept = level && heading ? `${heading.open.replace(/^<h[1-6]/i, `<h${level}`)}${inner}</h${level}>` : asLevel(inner, level)
+  // Not where what it holds would not make that heading (a heading in it already): its text, anew.
+  const summary = levelOf(kept) === level ? kept : asLevel(encode(text), level)
   tr.setNodeMarkup(pos, undefined, { ...node.attrs, summary })
 }
 

@@ -586,6 +586,20 @@ describe('a toggle whose title is a heading', () => {
     expect(saved(editor)).toBe('<details>\n<summary><h2>Enlace &amp; c!</h2></summary>\n\nDentro\n\n</details>')
   })
 
+  it('of text with a heading in it, turned into a heading, is its text in that heading, once', () => {
+    const editor = open('<details>\n<summary>Nota: <h2>Más</h2></summary>\n\nDentro\n\n</details>', 'markdown', true)
+    expect(turns(editor.state.doc, 0).current).toBe('toggle')
+    turnBlock(editor, 0, 'toggleH1')
+    expect(saved(editor)).toBe('<details>\n<summary><h1>Nota: Más</h1></summary>\n\nDentro\n\n</details>')
+    expect(turns(editor.state.doc, 0).current).toBe('toggleH1')
+    expect(editor.view.dom.querySelector('.orq-toggle')!.getAttribute('data-level')).toBe('1')
+  })
+
+  it('is read from an empty heading pasted, and a pasted summary\'s blocks keep their words apart', () => {
+    expect(levelOf(String(open('<details><summary><h2></h2></summary><p>Dentro</p></details>', 'html').state.doc.firstChild!.attrs.summary))).toBe(2)
+    expect(open('<details><summary><figure>A</figure><span>B</span></summary><p>Dentro</p></details>', 'html').getMarkdown()).toBe('<details>\n<summary>A B</summary>\n\nDentro\n\n</details>')
+  })
+
   it('keeps an attribute with `>` in it closed when its title changes', () => {
     const editor = open('<details>\n<summary><h2 title="a>b">Más</h2></summary>\n\nDentro\n\n</details>')
     cursorIn(editor, 'toggleTitle')
