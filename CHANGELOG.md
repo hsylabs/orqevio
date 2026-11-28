@@ -14,7 +14,7 @@ To update your copy, see [Updates](README.md#updates) in the README.
   - «Close menu · Esc» at its foot.
 - **A page inside a page, from the «/» menu.** In a document, «Page» asks for its name, makes the page inside the one edited, and leaves a link to it where the «/» was.
 - **Emoji.** The emoji itself goes in the text, so the Markdown keeps it as it is. In a document, a card's description and a comment:
-  - «:» and two letters or more of its name list the emoji that match, by their names in the app's language («:cohete») or by GitHub's shortcodes («:rocket»). A «:» with fewer letters, as in «10:30» or after a space as French writes it, opens nothing.
+  - «:» and two letters or more of its name (one is enough in Japanese) list the emoji that match, by their names in the app's language («:cohete») or by GitHub's shortcodes («:rocket»). Otherwise a «:» opens nothing, so «10:30», a space before it as French writes it, or a smiley such as «:-D» are typed as always, and so is a «:» right after bold or code.
   - A whole shortcode, as GitHub writes them, turns into its emoji as its second «:» is typed: `:tada:` gives 🎉. Backspace right after brings the shortcode back.
   - «Emoji» in the «/» menu lists them before a name is typed, the last ones chosen in this browser first.
   - In code, a «:» stays a «:».
