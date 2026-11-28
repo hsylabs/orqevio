@@ -78,7 +78,9 @@
       "insert": "Invoegen",
       "tasks": "Taken",
       "pages": "Pagina’s",
-      "suggested": "Suggesties"
+      "suggested": "Suggesties",
+      "recent": "Recent",
+      "emoji": "Emoji"
     },
     "slash": {
       "p": {
@@ -195,6 +197,12 @@
         "keywords": "vermelding vermelden koppeling link taak pagina mention",
         "hint": "Een link naar een taak of pagina: typ @ en de naam."
       },
+      "emoji": {
+        "title": "Emoji",
+        "subtitle": "Typ : en de naam",
+        "keywords": "emoji emoticon smiley pictogram gezicht",
+        "hint": "Een emoji in de tekst. Je kunt ook : en de naam typen, of de hele code, zoals :rocket:."
+      },
       "page": {
         "title": "Pagina",
         "subtitle": "Een pagina binnen deze",
@@ -221,6 +229,7 @@
     "menu": {
       "slash": "Blok invoegen",
       "mention": "Taak of pagina koppelen",
+      "emoji": "Emoji invoegen",
       "searching": "Zoeken…",
       "noMatches": "Geen resultaten",
       "shortcut": "Markdown-sneltoets: {{keys}}",

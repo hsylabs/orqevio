@@ -78,7 +78,9 @@
       "insert": "Inserisci",
       "tasks": "Attività",
       "pages": "Pagine",
-      "suggested": "Suggerimenti"
+      "suggested": "Suggerimenti",
+      "recent": "Recenti",
+      "emoji": "Emoji"
     },
     "slash": {
       "p": {
@@ -195,6 +197,12 @@
         "keywords": "menzione collegamento link attività pagina mention",
         "hint": "Un link a un’attività o a una pagina: scrivi @ e il suo nome."
       },
+      "emoji": {
+        "title": "Emoji",
+        "subtitle": "Digita : e il suo nome",
+        "keywords": "emoji emoticon faccina icona smiley",
+        "hint": "Un’emoji nel testo. Puoi anche scrivere : e il suo nome, o il suo codice intero, come :rocket:."
+      },
       "page": {
         "title": "Pagina",
         "subtitle": "Una pagina dentro questa",
@@ -221,6 +229,7 @@
     "menu": {
       "slash": "Inserisci blocco",
       "mention": "Collega attività o pagina",
+      "emoji": "Inserisci emoji",
       "searching": "Ricerca in corso…",
       "noMatches": "Nessun risultato",
       "shortcut": "Scorciatoia Markdown: {{keys}}",
