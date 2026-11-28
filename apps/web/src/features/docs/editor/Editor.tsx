@@ -5,7 +5,7 @@ import { Placeholder } from '@tiptap/extensions'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import { Selection } from '@tiptap/pm/state'
 import { EditorContent, useEditor } from '@tiptap/react'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -19,6 +19,7 @@ import { CalloutControls } from './CalloutControls'
 import { markerFor } from './callout'
 import { insertToggle, outOfTitle } from './toggle'
 import { CodeControls } from './CodeControls'
+import { DateDialog, dateText } from './DateDialog'
 import { ImageControls } from './ImageControls'
 import { MathControls } from './MathControls'
 import { MathKeys, startMath } from './math'
@@ -86,6 +87,7 @@ type SlashId =
   | 'hr'
   | 'mention'
   | 'emoji'
+  | 'date'
   | 'page'
   | 'image'
   | 'video'
@@ -191,6 +193,8 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
   const attachmentsRef = useRef(attachments)
   attachmentsRef.current = attachments
   const fileInput = useRef<HTMLInputElement>(null)
+  /** The «/» menu's «Date» is asking which day. */
+  const [pickingDate, setPickingDate] = useState(false)
   const pendingUploadKind = useRef<keyof typeof PICKED>('image')
   /** The video and audio uploaded here, played before the list of attachments has them. */
   const uploaded = useRef(new Map<string, MediaKind>())
@@ -300,6 +304,11 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
         e.chain().focus().deleteRange(r).insertContent(':').run()
         // Where no «:» menu starts, as in code, it is only a «:».
         if (!emojiKey.getState(e.state)?.active) emojiBrowseAt.current = null
+      }),
+      // A date as text, where the «/» was: the cursor stays there while the day is chosen.
+      item('date', '📅', 'insert', (e, r) => {
+        e.chain().focus().deleteRange(r).run()
+        setPickingDate(true)
       }),
     ]
     if (uploadRef.current) {
@@ -521,6 +530,15 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       <SuggestionMenu store={slashStore} emptyLabel={t('editor.noBlocks')} />
       <SuggestionMenu store={mentionStore} emptyLabel={t('editor.mentionHint')} />
       <SuggestionMenu store={emojiStore} emptyLabel="" />
+      <DateDialog
+        open={pickingDate}
+        onClose={() => setPickingDate(false)}
+        onPick={(date) => {
+          setPickingDate(false)
+          // As an emoji goes in: the text alone, with nothing after it to linger at the end of a line.
+          if (editor && !editor.isDestroyed) editor.chain().focus().insertContent({ type: 'text', text: dateText(date) }).run()
+        }}
+      />
       <input
         ref={fileInput}
         type="file"

@@ -162,6 +162,23 @@ const PREVIEWS: Record<string, () => ReactNode> = {
       </span>
     </span>
   ),
+  // A month, a day marked in it, and the day written in the text.
+  date: () => (
+    <span className="flex flex-col gap-2.5">
+      <span className="block rounded-[6px] border border-line-strong p-1.5">
+        <span className="mb-1.5 block h-[5px] w-[40%] rounded-full bg-ink-3/40" />
+        <span className="grid grid-cols-7 gap-[3px]">
+          {Array.from({ length: 21 }, (_, i) => (
+            <span key={i} className={i === 11 ? 'block h-[7px] rounded-[2px] bg-accent' : 'block h-[7px] rounded-[2px] bg-ink-3/20'} />
+          ))}
+        </span>
+      </span>
+      <span className="flex items-center gap-1.5">
+        <Line width="22%" />
+        <Line width="44%" style={{ background: 'var(--accent)', opacity: 0.55 }} />
+      </span>
+    </span>
+  ),
   page: () => (
     <span className="flex flex-col gap-2.5">
       <Line width="70%" />

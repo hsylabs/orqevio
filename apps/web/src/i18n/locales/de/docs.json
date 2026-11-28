@@ -227,6 +227,12 @@
         "keywords": "emoji emoticon smiley symbol gesicht",
         "hint": "Ein Emoji im Text. Du kannst auch : und seinen Namen eingeben, oder seinen ganzen Code wie :rocket:."
       },
+      "date": {
+        "title": "Datum",
+        "subtitle": "Heute oder ein anderer Tag, als Text",
+        "keywords": "datum heute morgen gestern tag kalender date today",
+        "hint": "Ein Datum als Text, in der Sprache der App: heute, morgen, gestern oder der Tag, den du wählst."
+      },
       "page": {
         "title": "Seite",
         "subtitle": "Eine Seite in dieser Seite",
@@ -379,6 +385,9 @@
     "media": {
       "video": "Video: {{name}}",
       "audio": "Audio: {{name}}"
+    },
+    "date": {
+      "title": "Datum einfügen"
     },
     "taskCheckbox": "To-do: {{text}}",
     "taskCheckboxEmpty": "Leeres To-do"

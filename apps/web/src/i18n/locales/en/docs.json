@@ -227,6 +227,12 @@
         "keywords": "emoji emoticon smiley icon face",
         "hint": "An emoji in the text. You can also type : and its name, or its whole code, such as :rocket:."
       },
+      "date": {
+        "title": "Date",
+        "subtitle": "Today or another day, as text",
+        "keywords": "date today tomorrow yesterday day calendar",
+        "hint": "A date written as text, in the app’s language: today, tomorrow, yesterday or the day you pick."
+      },
       "page": {
         "title": "Page",
         "subtitle": "A page inside this one",
@@ -379,6 +385,9 @@
     "media": {
       "video": "Video: {{name}}",
       "audio": "Audio: {{name}}"
+    },
+    "date": {
+      "title": "Insert a date"
     },
     "taskCheckbox": "To-do: {{text}}",
     "taskCheckboxEmpty": "Empty to-do"
