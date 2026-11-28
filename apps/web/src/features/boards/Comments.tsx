@@ -54,8 +54,8 @@ const refresh = (cardId: string, boardId: string) =>
  */
 const sendOn = (send: () => void) => (event: KeyboardEvent) => {
   if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey) || isConverting(event)) return
-  // Not from a dialog the editor opened (the «/» menu's «Date»): it is in another place on the page,
-  // though React passes its keys on here.
+  // Not from a dialog or a list the editor opened elsewhere on the page (the «/» menu's «Date», a code
+  // block's languages), though React passes its keys on here: there, Enter is theirs.
   if (!(event.currentTarget instanceof Node && event.target instanceof Node && event.currentTarget.contains(event.target))) return
   event.preventDefault()
   event.stopPropagation()
