@@ -83,10 +83,13 @@ describe('any other file', () => {
     expect(new TextDecoder().decode(await piece.arrayBuffer())).toBe('%PDF')
   })
 
-  it('declared as a video but a picture is a picture, as it was', async () => {
+  it('declared as a video but a picture is a picture, as it was: shown in its place', async () => {
     const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0])
-    const { body } = await upload('falso.mp4', 'video/mp4', png)
+    const { body, get } = await upload('falso.mp4', 'video/mp4', png)
     expect(body).toMatchObject({ mimeType: 'image/png', isImage: true })
+    const res = await get()
+    expect(res.headers.get('content-type')).toBe('image/png')
+    expect(res.headers.get('content-disposition')).toMatch(/^inline/)
   })
 })
 
