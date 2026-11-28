@@ -37,8 +37,23 @@ const LABELS: Record<string, () => Promise<{ default: Compact[] }>> = {
   ja: () => import('emojibase-data/ja/compact.json'),
 }
 
-/** Lowercase, without accents, as the search reads both. */
-export const foldWord = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+/**
+ * As the search reads a name and what is typed: lowercase, without accents, and in katakana, which a
+ * Japanese name may be written in or not: «ねこ» finds «ネコ». The marks of Japanese (が, ぱ) stay.
+ */
+export const foldWord = (text: string) =>
+  text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[\u3041-\u3096]/g, (kana) => String.fromCharCode(kana.charCodeAt(0) + 0x60))
+
+/**
+ * Whether what follows a «:» is the start of an emoji's name: two letters or more, as Slack asks,
+ * starting with a letter or a digit, or `+1` and `-1`. A «:» in the text then opens nothing, nor a
+ * smiley typed as one: «10:30», «:-D», «:P».
+ */
+export const isEmojiName = (query: string) => query.length >= 2 && /^(?:[\p{L}\p{N}]|[+-]\d)/u.test(query)
 
 /** Skin tones and hair, which only modify another emoji. */
 const COMPONENTS = 2
@@ -73,18 +88,20 @@ export function loadEmoji(locale: string): Promise<Emoji[]> {
 
 /**
  * The emoji that match `query`, best first: its shortcode or its name exactly, then a name that
- * starts with it, then a shortcode or any other word that starts with it, then a word that holds
- * it. A name, in the app's language, goes before a shortcode, in English.
+ * starts with it, then a shortcode or any other word that starts with it, then, for three letters or
+ * more or in a language written without spaces, a word that holds it. A name, in the app's
+ * language, goes before a shortcode, in English.
  */
 export function searchEmoji(list: Emoji[], query: string, limit = 40): Emoji[] {
   const q = foldWord(query.trim())
   if (!q) return []
+  const within = q.length >= 3 || /[^\p{ASCII}]/u.test(q)
   const rank = (e: Emoji) => {
     const label = foldWord(e.label)
     if (e.codes.includes(q) || label === q) return 0
     if (label.startsWith(q)) return 1
     if (` ${e.words}`.includes(` ${q}`)) return 2
-    return e.words.includes(q) ? 3 : 4
+    return within && e.words.includes(q) ? 3 : 4
   }
   return list
     .map((e) => ({ e, r: rank(e) }))

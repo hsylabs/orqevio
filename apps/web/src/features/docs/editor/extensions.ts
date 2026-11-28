@@ -1,6 +1,6 @@
 import { Extension, InputRule } from '@tiptap/core'
 import type { Editor, Range } from '@tiptap/core'
-import type { Node as PMNode } from '@tiptap/pm/model'
+import type { Node as PMNode, ResolvedPos } from '@tiptap/pm/model'
 import { PluginKey } from '@tiptap/pm/state'
 import Suggestion, { exitSuggestion } from '@tiptap/suggestion'
 import { blockAt, canMove, moveBlock } from './block-commands'
@@ -11,8 +11,8 @@ import type { MenuItem, MenuKind, SuggestionStore } from './suggestion-store'
 interface MenuExtensionOptions {
   store: SuggestionStore | null
   items: (query: string, editor: Editor) => MenuItem[] | Promise<MenuItem[]>
-  /** Whether the menu starts for what follows its character: always, unless said otherwise. */
-  starts: (query: string) => boolean
+  /** Whether the menu is there for what follows its character, which is at `from`: always, unless said otherwise. */
+  starts: (query: string, from: number) => boolean
   /** Called once the menu has ended, whichever way. */
   onExit: () => void
 }
@@ -38,13 +38,13 @@ function createMenuExtension(name: string, char: string, kind: MenuKind, pluginK
           allowSpaces,
           startOfLine: false,
           allowedPrefixes: PREFIXES,
-          allow: ({ state, range, isActive }) => {
+          allow: ({ state, range }) => {
             const $from = state.doc.resolve(range.from)
             // A toggle's title is one line of plain text: no block, mention or link goes in it.
             if ($from.parent.type.name === 'toggleTitle') return false
+            if (!startsWord($from)) return false
             if (!inCode && inCodeAt(state.doc, range.from)) return false
-            // Once it has started, it goes on while what follows its character still matches.
-            return isActive || starts(state.doc.textBetween(range.from + char.length, range.to))
+            return starts(state.doc.textBetween(range.from + char.length, range.to), range.from)
           },
           items: async ({ query, editor }) => {
             const id = ++requestId
@@ -72,8 +72,13 @@ function createMenuExtension(name: string, char: string, kind: MenuKind, pluginK
               store.set({ items: props.items, index: 0, rect: props.clientRect?.() ?? null, query: props.query, command: props.command })
             },
             onKeyDown: ({ event }) => {
-              // With nothing listed, nothing to move through or choose: the keys do what they do in the text.
-              if (!store.get().items.length && event.key !== 'Escape') return false
+              const { items, loading } = store.get()
+              if (!items.length && event.key !== 'Escape') {
+                // While a search is on its way, the arrows wait for what it lists.
+                if (loading && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) return true
+                // With nothing listed, nothing to move through or choose: the keys do what they do in the text.
+                return false
+              }
               if (event.key === 'ArrowDown') {
                 store.move(1)
                 return true
@@ -101,6 +106,17 @@ function createMenuExtension(name: string, char: string, kind: MenuKind, pluginK
       ]
     },
   })
+}
+
+/**
+ * Whether a menu's character at `$pos` starts a word: at the start of a line or after a line break,
+ * or after one of `PREFIXES`. TipTap looks only in the text it is in, which ends where bold or code
+ * does: «**Nota**:12» isn't a «:» for an emoji.
+ */
+function startsWord($pos: ResolvedPos) {
+  const before = $pos.nodeBefore
+  if (!before || before.type.name === 'hardBreak') return true
+  return before.isText && PREFIXES.includes(before.text!.slice(-1))
 }
 
 /** Whether `pos` is in code, a block or a span, where what is typed is kept as typed. */
@@ -131,12 +147,17 @@ export const EmojiShortcodes = Extension.create<{ find: (code: string) => string
     const { find } = this.options
     return [
       new InputRule({
-        find: /(?:^|[\s(])(:([a-z0-9_+-]+):)$/,
+        // What comes before is looked at, not taken: TipTap checks that what is taken is in the text, and
+        // it writes what isn't text there, a line break as well, as %leaf%.
+        find: /(?<=^|[\s(]|%leaf%):([a-z0-9_+-]+):$/,
         handler: ({ state, range, match }) => {
-          const char = find(match[2]!)
-          if (!char) return null
           // The typed «:» is already in the text, and the shortcode ends at the end of the range.
-          state.tr.insertText(char, range.to - match[1]!.length, range.to)
+          const from = range.to - match[0].length
+          const before = state.doc.resolve(from).nodeBefore
+          if (before && !before.isText && before.type.name !== 'hardBreak') return null
+          const char = find(match[1]!)
+          if (!char) return null
+          state.tr.insertText(char, from, range.to)
         },
       }),
     ]

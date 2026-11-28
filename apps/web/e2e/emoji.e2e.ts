@@ -111,8 +111,16 @@ test('a shortcode typed whole turns into its emoji, and Backspace brings it back
 test('a «:» in the text opens nothing and leaves Enter and the arrows alone, and in code it is only a «:»', async ({ page }) => {
   const { editor, saved } = await openPage(page, 'Dos puntos E2E', 'Hora\n\n```ruby\nx = 1\n```')
   await endOf(page, editor, 'Hora')
-  // As a time, as French writes it, and with one letter after it.
-  await page.keyboard.type(': 10:30, remarque :')
+  // The emoji loaded first, so that what follows would show if it opened.
+  await page.keyboard.type(' :fue')
+  await expect(emojiMenu(page)).toBeVisible()
+  // Open, with nothing that matches: nothing is listed, and Enter makes a line.
+  await page.keyboard.type('zq')
+  await expect(emojiMenu(page)).toBeHidden()
+  await page.keyboard.press('Enter')
+  // A time, French spacing, smileys, right after code, and one letter.
+  await page.keyboard.type('10:30, remarque : :-D :DD ver `index.ts`:fue')
+  await expect(emojiMenu(page)).toBeHidden()
   await page.keyboard.press('Enter')
   await page.keyboard.type('Uno :a')
   await expect(emojiMenu(page)).toBeHidden()
@@ -122,13 +130,37 @@ test('a «:» in the text opens nothing and leaves Enter and the arrows alone, a
   await page.keyboard.press('End')
   await page.keyboard.press('Enter')
   await page.keyboard.type('Dos')
-  await expect.poll(saved).toMatch(/^Hora: 10:30, remarque :\n\nUno y:a\n\nDos\n\n```ruby\nx = 1\n```\n*$/)
+  await expect.poll(saved).toMatch(/^Hora :fuezq\n\n10:30, remarque : :-D :DD ver `index\.ts`:fue\n\nUno y:a\n\nDos\n\n```ruby\nx = 1\n```\n*$/)
 
-  // In code: no list, and a shortcode stays as typed.
+  // In code: no list, Enter makes a line of code, and a shortcode stays as typed.
   await editor.getByText('x = 1').click()
   await page.keyboard.press('End')
-  await page.keyboard.type(' :rocket')
+  await page.keyboard.type(' :roc')
   await expect(emojiMenu(page)).toBeHidden()
-  await page.keyboard.type(':')
-  await expect.poll(saved).toContain('x = 1 :rocket:')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('y = :tada:')
+  await expect.poll(saved).toContain('```ruby\nx = 1 :roc\ny = :tada:\n```')
+})
+
+test('the list «Emoji» opens stays at its «:», and goes as the cursor leaves it', async ({ page }) => {
+  const { editor, saved } = await openPage(page, 'Lista en su sitio E2E', 'Nota :\n\nUno')
+  await endOf(page, editor, 'Uno')
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('/emoji')
+  await page.keyboard.press('Enter')
+  const menu = emojiMenu(page)
+  await expect(menu.getByRole('option').first()).toContainText('😀')
+  // One letter keeps it open, searching.
+  await page.keyboard.type('f')
+  await expect(menu.getByRole('option').first()).toBeVisible()
+  await page.keyboard.press('Backspace')
+  await expect(menu.getByRole('option').first()).toContainText('😀')
+
+  // Elsewhere, after another «:», there is no list: Enter makes a line there.
+  await editor.getByText('Nota :').click()
+  await page.keyboard.press('End')
+  await expect(menu).toBeHidden()
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('dos')
+  await expect.poll(saved).toMatch(/^Nota :\n\ndos\n\nUno\n\n:\n*$/)
 })

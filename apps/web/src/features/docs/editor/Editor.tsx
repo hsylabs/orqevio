@@ -24,7 +24,7 @@ import { MathControls } from './MathControls'
 import { MathKeys, startMath } from './math'
 import { FormatMenu } from './FormatMenu'
 import { BlockKeys, EmojiCommands, EmojiShortcodes, Mentions, SlashCommands, emojiKey } from './extensions'
-import { type Emoji, browseEmoji, byShortcode, loadEmoji, rememberEmoji, searchEmoji } from './emoji'
+import { type Emoji, browseEmoji, byShortcode, isEmojiName, loadEmoji, rememberEmoji, searchEmoji } from './emoji'
 import { MARKDOWN_SHORTCUTS } from './block-commands'
 import { opensLine } from './insert-below'
 import { documentExtensions } from './markdown'
@@ -154,8 +154,8 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
   const slashStore = useMemo(createSuggestionStore, [])
   const mentionStore = useMemo(createSuggestionStore, [])
   const emojiStore = useMemo(createSuggestionStore, [])
-  /** Whether the «:» was put by the «/» menu's «Emoji», which lists the emoji before a name is typed. */
-  const emojiBrowse = useRef(false)
+  /** Where the «/» menu's «Emoji» put its «:», which lists the emoji before a name is typed. */
+  const emojiBrowseAt = useRef<number | null>(null)
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
   /** The Markdown last loaded or reported as changed. */
@@ -247,10 +247,11 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       item('hr', '—', 'insert', (e, r) => e.chain().focus().deleteRange(r).setHorizontalRule().run()),
       item('mention', '@', 'insert', (e, r) => e.chain().focus().deleteRange(r).insertContent('@').run()),
       item('emoji', '😀', 'insert', (e, r) => {
-        emojiBrowse.current = true
+        // Where the «/» was: its menu starts as the «:» goes in.
+        emojiBrowseAt.current = r.from
         e.chain().focus().deleteRange(r).insertContent(':').run()
-        // Where no «:» menu starts, as in code, the next «:» is typed: nothing is listed before its name.
-        if (!emojiKey.getState(e.state)?.active) emojiBrowse.current = false
+        // Where no «:» menu starts, as in code, it is only a «:».
+        if (!emojiKey.getState(e.state)?.active) emojiBrowseAt.current = null
       }),
     ]
     if (uploadRef.current) {
@@ -295,11 +296,11 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
     }
   }
 
-  // With a name of two letters or more, as Slack does, so that a «:» in the text opens nothing; from
-  // the «/» menu, at once. The emoji are loaded as soon as a «:» could start one.
-  const emojiStarts = (query: string) => {
+  // The «:» the «/» menu put, whatever follows it; any other, with the start of a name, so that a «:»
+  // in the text opens nothing. The emoji are loaded as soon as a «:» could start one.
+  const emojiStarts = (query: string, from: number) => {
     if (query) void loadEmoji(currentLocale()).catch(() => {})
-    return query ? query.length >= 2 : emojiBrowse.current
+    return from === emojiBrowseAt.current || isEmojiName(query)
   }
 
   const emojiItems = async (query: string): Promise<MenuItem[]> => {
@@ -324,7 +325,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       },
     })
     if (query) return searchEmoji(list, query).map((emoji) => toItem(emoji))
-    if (!emojiBrowse.current) return []
+    if (emojiBrowseAt.current === null) return []
     const { recent, first } = browseEmoji(list)
     return [...recent.map((emoji) => toItem(emoji, t('editor.groups.recent'))), ...first.map((emoji) => toItem(emoji, t('editor.groups.emoji')))]
   }
@@ -361,7 +362,7 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       }),
       SlashCommands.configure({ store: slashStore, items: slashItems }),
       Mentions.configure({ store: mentionStore, items: mentionItems }),
-      EmojiCommands.configure({ store: emojiStore, items: emojiItems, starts: emojiStarts, onExit: () => (emojiBrowse.current = false) }),
+      EmojiCommands.configure({ store: emojiStore, items: emojiItems, starts: emojiStarts, onExit: () => (emojiBrowseAt.current = null) }),
       EmojiShortcodes.configure({ find: emojiByShortcode }),
       MathKeys,
       ...(blockHandles ? [BlockKeys] : []),

@@ -1,16 +1,46 @@
 // @vitest-environment jsdom
-import { Editor } from '@tiptap/core'
+import { Editor, type JSONContent } from '@tiptap/core'
+import { TextSelection } from '@tiptap/pm/state'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { type Emoji, browseEmoji, byShortcode, loadEmoji, rememberEmoji, searchEmoji } from '../src/features/docs/editor/emoji'
-import { EmojiShortcodes } from '../src/features/docs/editor/extensions'
+import { type Emoji, browseEmoji, byShortcode, foldWord, isEmojiName, loadEmoji, rememberEmoji, searchEmoji } from '../src/features/docs/editor/emoji'
+import { EmojiCommands, EmojiShortcodes, emojiKey } from '../src/features/docs/editor/extensions'
 import { documentExtensions } from '../src/features/docs/editor/markdown'
+import { createSuggestionStore } from '../src/features/docs/editor/suggestion-store'
 
 // The emoji of the «:» menu, found by their names in the app's language and by GitHub's shortcodes.
 let es: Emoji[]
 let en: Emoji[]
+let ja: Emoji[]
 beforeAll(async () => {
-  ;[es, en] = await Promise.all([loadEmoji('es-ES'), loadEmoji('en')])
+  ;[es, en, ja] = await Promise.all([loadEmoji('es-ES'), loadEmoji('en'), loadEmoji('ja')])
 })
+
+const editors: Editor[] = []
+afterEach(() => editors.splice(0).forEach((e) => e.destroy()))
+
+/** An editor with the «:» menu and the shortcodes, the cursor at the end of what it holds. */
+function open(content: string | JSONContent = '') {
+  const editor = new Editor({
+    extensions: [
+      ...documentExtensions(),
+      EmojiCommands.configure({ store: createSuggestionStore(), items: () => [], starts: (query) => isEmojiName(query) }),
+      EmojiShortcodes.configure({ find: byShortcode }),
+    ],
+    content,
+    ...(typeof content === 'string' ? { contentType: 'markdown' as const } : {}),
+  })
+  editors.push(editor)
+  editor.commands.focus('end')
+  return editor
+}
+/** Typed key by key, as the browser sends it, so that the input rules run. */
+function type(editor: Editor, text: string) {
+  for (const char of text) {
+    const { from, to } = editor.state.selection
+    if (!editor.view.someProp('handleTextInput', (handle) => handle(editor.view, from, to, char, () => editor.state.tr.insertText(char, from, to)))) editor.view.dispatch(editor.state.tr.insertText(char, from, to))
+  }
+}
+const menuOpen = (editor: Editor) => !!emojiKey.getState(editor.state)?.active
 
 const chars = (list: Emoji[]) => list.map((e) => e.char)
 
@@ -65,6 +95,71 @@ describe('searching', () => {
     expect(searchEmoji(es, '  ')).toEqual([])
     expect(searchEmoji(es, 'a', 5)).toHaveLength(5)
   })
+
+  it('finds nothing for a smiley typed as one, in any language', () => {
+    for (const list of [es, en]) for (const smiley of ['DD', 'xd', 'xp', '-D', '-P']) expect(searchEmoji(list, smiley), smiley).toEqual([])
+  })
+
+  it('in Japanese, finds a name in katakana typed in hiragana, and keeps the marks that make another sound', () => {
+    expect(chars(searchEmoji(ja, 'ねこ'))).toContain('🐈')
+    // «パンダ», «パンケーキ», «食パン»…, not «バンザイ».
+    const bread = chars(searchEmoji(ja, 'パン'))
+    expect(bread[0]).toBe('🐼')
+    expect(bread).toContain('🍞')
+    expect(bread).not.toContain('🙌')
+    expect(foldWord('が')).not.toBe(foldWord('か'))
+    expect(foldWord('Canción')).toBe('cancion')
+  })
+})
+
+describe('what starts the «:» menu', () => {
+  it('two letters or more of a name, a digit, or +1 and -1', () => {
+    for (const name of ['ro', 'cohete', '12', '+1', '-1', 'ねこ', 'DD']) expect(isEmojiName(name), name).toBe(true)
+    for (const other of ['', 'r', 'P', '-D', '-P', '-)', '))', '+', ' a']) expect(isEmojiName(other), other).toBe(false)
+  })
+
+  it('opens after a space, a bracket or at the start of a line, with a name', () => {
+    const editor = open()
+    type(editor, 'Uno :a')
+    expect(menuOpen(editor)).toBe(false)
+    type(editor, 'b')
+    expect(menuOpen(editor)).toBe(true)
+    type(editor, ' (:ro')
+    expect(menuOpen(editor)).toBe(true)
+    const start = open()
+    type(start, ':fu')
+    expect(menuOpen(start)).toBe(true)
+  })
+
+  it('stays closed for a «:» in the text: a time, French spacing, a smiley, within a word', () => {
+    const editor = open()
+    for (const text of ['Hora: 10:30', ' remarque :', ' ', ' :-D', ' :P', ' hola:fuego']) {
+      type(editor, text)
+      expect(menuOpen(editor), text).toBe(false)
+    }
+  })
+
+  it('stays closed right after bold or code, which ends no word', () => {
+    for (const mark of ['bold', 'code']) {
+      const editor = open({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'ver ' }, { type: 'text', text: 'index.ts', marks: [{ type: mark }] }, { type: 'text', text: ':12' }] }] })
+      editor.view.dispatch(editor.state.tr.setSelection(TextSelection.atEnd(editor.state.doc)))
+      expect(menuOpen(editor), mark).toBe(false)
+    }
+  })
+
+  it('opens after a line break', () => {
+    const editor = open({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Uno' }, { type: 'hardBreak' }, { type: 'text', text: ':fu' }] }] })
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.atEnd(editor.state.doc)))
+    expect(menuOpen(editor)).toBe(true)
+  })
+
+  it('stays closed in code', () => {
+    const editor = open('```\nx\n```')
+    editor.commands.setTextSelection(2)
+    type(editor, ' :rocket')
+    expect(editor.state.selection.$from.parent.type.name).toBe('codeBlock')
+    expect(menuOpen(editor)).toBe(false)
+  })
 })
 
 describe('before a name is typed', () => {
@@ -89,23 +184,6 @@ describe('before a name is typed', () => {
 })
 
 describe('a shortcode typed whole', () => {
-  const editors: Editor[] = []
-  afterEach(() => editors.splice(0).forEach((e) => e.destroy()))
-
-  const open = (markdown = '') => {
-    const editor = new Editor({ extensions: [...documentExtensions(), EmojiShortcodes.configure({ find: byShortcode })], content: markdown, contentType: 'markdown' })
-    editors.push(editor)
-    editor.commands.focus('end')
-    return editor
-  }
-  /** Typed key by key, as the browser sends it, so that the input rules run. */
-  const type = (editor: Editor, text: string) => {
-    for (const char of text) {
-      const { from, to } = editor.state.selection
-      if (!editor.view.someProp('handleTextInput', (handle) => handle(editor.view, from, to, char, () => editor.state.tr.insertText(char, from, to)))) editor.view.dispatch(editor.state.tr.insertText(char, from, to))
-    }
-  }
-
   it('turns into its emoji as the second «:» is typed', () => {
     const editor = open()
     type(editor, 'Listo :rocket: ya')
@@ -127,11 +205,20 @@ describe('a shortcode typed whole', () => {
     expect(text.getMarkdown().trim()).toBe('hora:rocket: 10:30: :nada: :Rocket:')
   })
 
+  it('after a line break too, but not after a formula', () => {
+    const editor = open({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Uno' }, { type: 'hardBreak' }] }] })
+    type(editor, ':tada:')
+    expect(editor.state.doc.textContent).toBe('Uno🎉')
+    const math = open('$x$')
+    type(math, ':tada:')
+    expect(math.getMarkdown().trim()).toBe('$x$:tada:')
+  })
+
   it('comes back with Backspace right after', () => {
     const editor = open()
     type(editor, 'Hola :wave:')
     expect(editor.getMarkdown().trim()).toBe('Hola 👋')
-    editor.commands.undoInputRule()
+    editor.view.dom.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true, cancelable: true }))
     expect(editor.getMarkdown().trim()).toBe('Hola :wave:')
   })
 })
