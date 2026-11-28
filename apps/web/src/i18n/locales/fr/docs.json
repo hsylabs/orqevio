@@ -239,6 +239,18 @@
         "keywords": "image photo illustration",
         "hint": "Une image envoyée depuis votre appareil, affichée dans la page."
       },
+      "video": {
+        "title": "Vidéo",
+        "subtitle": "Importer un MP4, WebM ou MOV",
+        "keywords": "vidéo film enregistrement clip mp4 webm mov video",
+        "hint": "Une vidéo envoyée depuis votre appareil, lue dans la page. Le Markdown garde son lien."
+      },
+      "audio": {
+        "title": "Audio",
+        "subtitle": "Importer un MP3, M4A, WAV, Ogg ou FLAC",
+        "keywords": "audio son musique enregistrement voix podcast mp3",
+        "hint": "Un son envoyé depuis votre appareil, lu dans la page. Le Markdown garde son lien."
+      },
       "file": {
         "title": "Fichier",
         "subtitle": "Joindre n’importe quel fichier",
@@ -365,6 +377,10 @@
       "empty": "Écrivez le diagramme en Mermaid.",
       "error": "Impossible de dessiner le diagramme :",
       "slow": "Le diagramme a mis trop de temps à se dessiner."
+    },
+    "media": {
+      "video": "Vidéo : {{name}}",
+      "audio": "Audio : {{name}}"
     },
     "taskCheckbox": "Tâche : {{text}}",
     "taskCheckboxEmpty": "Tâche vide"

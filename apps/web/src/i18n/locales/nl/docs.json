@@ -239,6 +239,18 @@
         "keywords": "afbeelding foto plaatje image picture",
         "hint": "Een afbeelding die je vanaf je apparaat uploadt, getoond op de pagina."
       },
+      "video": {
+        "title": "Video",
+        "subtitle": "Upload een MP4, WebM of MOV",
+        "keywords": "video film opname clip mp4 webm mov",
+        "hint": "Een video die je vanaf je apparaat uploadt, afgespeeld op de pagina. In de Markdown blijft de link staan."
+      },
+      "audio": {
+        "title": "Audio",
+        "subtitle": "Upload een MP3, M4A, WAV, Ogg of FLAC",
+        "keywords": "audio geluid muziek opname stem podcast mp3",
+        "hint": "Een geluidsbestand dat je vanaf je apparaat uploadt, afgespeeld op de pagina. In de Markdown blijft de link staan."
+      },
       "file": {
         "title": "Bestand",
         "subtitle": "Voeg een bestand toe",
@@ -363,6 +375,10 @@
       "empty": "Schrijf het diagram in Mermaid.",
       "error": "Het diagram kan niet worden getekend:",
       "slow": "Het tekenen van het diagram duurde te lang."
+    },
+    "media": {
+      "video": "Video: {{name}}",
+      "audio": "Audio: {{name}}"
     },
     "taskCheckbox": "Taak: {{text}}",
     "taskCheckboxEmpty": "Lege taak"

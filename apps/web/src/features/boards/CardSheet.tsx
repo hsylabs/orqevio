@@ -509,6 +509,7 @@ function CardBody({ card, board, onClose }: { card: CardDetailDTO; board: BoardD
             compact
             upload={{ type: 'card', id: card.id }}
             onUploaded={() => void refresh()}
+            attachments={card.attachmentList}
             onReady={(editor) => (editorRef.current = editor)}
             placeholder={t('sheet.descriptionPlaceholder')}
             ariaLabel={t('sheet.descriptionLabel')}

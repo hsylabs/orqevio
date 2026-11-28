@@ -1,3 +1,4 @@
+import type { ByteRange } from '../lib/byte-range'
 import { type AttachmentStorage, STORAGE_KEY, WORKSPACE_ID } from '../lib/storage'
 
 /** Attachment storage in an R2 bucket (Cloudflare). */
@@ -22,8 +23,8 @@ export class R2Storage implements AttachmentStorage {
     if (stored.status === 'rejected') throw stored.reason
   }
 
-  async stream(key: string): Promise<ReadableStream | null> {
-    const object = await this.bucket.get(this.check(key))
+  async stream(key: string, range?: ByteRange): Promise<ReadableStream | null> {
+    const object = await this.bucket.get(this.check(key), range && { range: { offset: range.start, length: range.end - range.start + 1 } })
     return object?.body ?? null
   }
 

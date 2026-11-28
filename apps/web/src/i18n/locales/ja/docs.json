@@ -239,6 +239,18 @@
         "keywords": "画像 写真 イメージ がぞう しゃしん image photo picture",
         "hint": "デバイスからアップロードしてページに表示する画像。"
       },
+      "video": {
+        "title": "動画",
+        "subtitle": "MP4、WebM、MOVをアップロード",
+        "keywords": "動画 ビデオ 映像 録画 どうが びでお video movie mp4",
+        "hint": "デバイスからアップロードしてページで再生する動画。Markdown にはそのリンクが残ります。"
+      },
+      "audio": {
+        "title": "音声",
+        "subtitle": "MP3、M4A、WAV、Ogg、FLACをアップロード",
+        "keywords": "音声 オーディオ 音楽 録音 おんせい おーでぃお audio sound mp3",
+        "hint": "デバイスからアップロードしてページで再生する音声。Markdown にはそのリンクが残ります。"
+      },
       "file": {
         "title": "ファイル",
         "subtitle": "任意のファイルを添付",
@@ -361,6 +373,10 @@
       "empty": "Mermaid で図を書いてください。",
       "error": "図を描けません:",
       "slow": "図を描くのに時間がかかりすぎました。"
+    },
+    "media": {
+      "video": "動画: {{name}}",
+      "audio": "音声: {{name}}"
     },
     "taskCheckbox": "ToDo：{{text}}",
     "taskCheckboxEmpty": "空のToDo"

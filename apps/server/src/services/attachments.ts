@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { type AttachmentDTO, attachmentMoveInput, clip, withoutBidiControls } from '@orqevio/shared'
+import { type AttachmentDTO, attachmentMoveInput, clip, mediaKind, withoutBidiControls } from '@orqevio/shared'
 import { eq, sql } from 'drizzle-orm'
 import { type Actor, actorRef } from '../auth/actor'
 import { attachments, cards, pages } from '../db/schema'
+import { byteRange } from '../lib/byte-range'
 import { AppError, badRequest, notFound, uninstalled } from '../lib/errors'
 import { LengthMismatchError, exactLength, peek } from '../lib/upload-stream'
 import { parse } from '../lib/validate'
@@ -12,8 +13,13 @@ import type { Deps } from './deps'
 import type { HistoryService } from './history'
 import type { TrashService } from './trash'
 
-/** Raster images are rendered inline; everything else (SVG included) is served as a download. */
+/** Raster images are rendered inline; everything else (SVG and PDF included) is served as a download. */
 const INLINE_IMAGES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif'])
+/**
+ * Sent with its own type: a picture, and video and audio a browser plays, for a page to play them
+ * (opened on their own, they are downloaded all the same). Anything else is sent as bytes.
+ */
+const typed = (mimeType: string) => INLINE_IMAGES.has(mimeType) || mediaKind(mimeType) !== null
 
 export const toAttachmentDTO = (a: typeof attachments.$inferSelect): AttachmentDTO => ({
   id: a.id,
@@ -193,14 +199,17 @@ export class AttachmentService {
     })
   }
 
-  async open(actor: Actor, attachmentId: string) {
+  /** The file, or the bytes of it an HTTP `Range` header asks for (`range` says which: null for the whole file). */
+  async open(actor: Actor, attachmentId: string, rangeHeader?: string) {
     const [row] = await this.deps.db.select().from(attachments).where(eq(attachments.id, attachmentId))
     if (!row) throw notFound('Attachment')
     this.access.requireScope(actor, row.pageId ? 'docs:read' : 'tasks:read')
     await this.access.workspace(actor, row.workspaceId)
-    const body = await this.deps.storage.stream(row.storageKey)
+    const range = byteRange(rangeHeader, row.size)
+    if (range === 'unsatisfiable') throw new AppError(416, 'range_not_satisfiable', 'The range asked for is outside the file', undefined, { 'Content-Range': `bytes */${row.size}` })
+    const body = await this.deps.storage.stream(row.storageKey, range ?? undefined)
     if (!body) throw notFound('Attachment')
-    return { meta: row, inline: INLINE_IMAGES.has(row.mimeType), body }
+    return { meta: row, inline: INLINE_IMAGES.has(row.mimeType), typed: typed(row.mimeType), range, body }
   }
 
   /** To the trash. Agents need write access to where it is, and to be allowed to delete and move. */

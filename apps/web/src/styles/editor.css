@@ -290,6 +290,28 @@ span.orq-code-lang .orq-code-chevron {
   top: 5px;
 }
 
+/* A video or a sound attached here, played under its link (media.ts): the link stays, as the
+   file's name, and the player goes on the line below it. One the browser can't play hides. */
+.orq-media {
+  display: block;
+  margin-top: 6px;
+  line-height: 0;
+}
+.orq-media video {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  border-radius: 12px;
+  background: #000;
+}
+.orq-media audio {
+  display: block;
+  width: min(100%, 32rem);
+}
+.orq-media[data-error] {
+  display: none;
+}
+
 /* A diagram (diagram.ts): a code block in Mermaid, its drawing under its code or in its place. A
    switch in its bar shows the drawing (and the code while the cursor is in it), the code, or both.
    What it draws stays in its box: nothing in it can be painted, or fixed, outside of it. */

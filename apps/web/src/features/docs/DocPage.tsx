@@ -666,6 +666,7 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
               workspaceId={workspaceId}
               upload={{ type: 'page', id: page.id }}
               onUploaded={() => void queryClient.invalidateQueries({ queryKey: keys.page(page.id) })}
+              attachments={page.attachments}
               ariaLabel={t('page.content')}
               newSubpage={async () => {
                 const title = await prompt({
