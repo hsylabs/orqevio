@@ -22,7 +22,8 @@ type Purify = typeof DOMPurify
 let library: Promise<{ mermaid: Mermaid; purify: Purify }> | null = null
 function load() {
   library ??= Promise.all([import('mermaid'), import('dompurify')]).then(
-    ([mermaid, purify]) => ({ mermaid: mermaid.default, purify: purify.default }),
+    // A cleaner of its own: Mermaid adds its own rules to the one it shares.
+    ([mermaid, purify]) => ({ mermaid: mermaid.default, purify: purify.default(window) }),
     (error: unknown) => {
       // Offline or a new version deployed since: the next diagram tries again.
       library = null
@@ -55,34 +56,90 @@ export function cleanSvg(purify: Purify, svg: string) {
     ADD_TAGS: ['foreignObject'],
     HTML_INTEGRATION_POINTS: { foreignobject: true },
     FORBID_TAGS: ['script', 'iframe', 'frame', 'object', 'embed', 'form', 'input', 'button', 'textarea', 'select', 'link', 'meta', 'base'],
+    // A link of a diagram opens nothing but a new tab, where the app opens one (see `diagramLink`).
+    FORBID_ATTR: ['target'],
   })
 }
+
+/** How long a diagram may take to be drawn: one with a picture that never comes would hold up every other. */
+const TOO_LONG = 10_000
+/** Drawings already made, by theme and code: a page opened again, or a comment, isn't drawn anew. */
+const drawn = new Map<string, Drawing>()
+const KEPT = 100
+const keyOf = (code: string, light: boolean) => `${light ? 'light' : 'dark'}\u0000${code}`
+/** Whether to draw light: always on paper, or when the app is. */
+const lightFor = (paper: boolean) => paper || !dark()
+
+/** A drawing of `code` already made, if there is one: what can be shown at once. */
+export const drawnBefore = (code: string, paper = false) => drawn.get(keyOf(code, lightFor(paper)))
 
 let count = 0
 
 export type Drawing = { svg: string } | { error: string }
 
-/** `code` drawn: its SVG, cleaned, or why Mermaid can't draw it. */
-export async function drawDiagram(code: string): Promise<Drawing> {
+/** `code` drawn (light on `paper`, whatever the app's theme): its SVG, cleaned, or why it can't be drawn. */
+export async function drawDiagram(code: string, paper = false): Promise<Drawing> {
+  const light = lightFor(paper)
+  const key = keyOf(code, light)
+  const before = drawn.get(key)
+  if (before) return before
   const { mermaid, purify } = await load()
-  mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: 'strict',
-    suppressErrorRendering: true,
-    theme: dark() ? 'dark' : 'neutral',
-    fontFamily: getComputedStyle(document.body).fontFamily,
-    secure: SECURE,
-  })
   const id = `orq-diagram-${++count}`
+  let drawing: Drawing
+  let late = false
   try {
-    const { svg } = await mermaid.render(id, code)
-    return { svg: cleanSvg(purify, svg) }
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      suppressErrorRendering: true,
+      theme: light ? 'neutral' : 'dark',
+      fontFamily: getComputedStyle(document.body).fontFamily,
+      secure: SECURE,
+    })
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const tooLong = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        late = true
+        reject(new Error(t('docs:editor.diagram.slow')))
+      }, TOO_LONG)
+    })
+    try {
+      const { svg } = await Promise.race([mermaid.render(id, code), tooLong])
+      drawing = { svg: cleanSvg(purify, svg) }
+    } finally {
+      clearTimeout(timer)
+    }
   } catch (error) {
+    // A setting it was given in `%%{init}%%` that couldn't be read stays in Mermaid's own until it is
+    // reset, and every other diagram would fail with it.
+    try {
+      mermaid.mermaidAPI.reset()
+    } catch {
+      // Nothing more to undo.
+    }
     // What it was drawing in, left behind when it couldn't.
     document.getElementById(id)?.remove()
     document.getElementById(`d${id}`)?.remove()
-    return { error: error instanceof Error ? error.message : String(error) }
+    drawing = { error: error instanceof Error ? error.message : String(error) }
   }
+  // One that took too long is tried again another time.
+  if (late) return drawing
+  drawn.set(key, drawing)
+  if (drawn.size > KEPT) drawn.delete(drawn.keys().next().value!)
+  return drawing
+}
+
+/**
+ * Where a link of a diagram leads, for a click on it: nowhere in the editor, where a click puts the
+ * cursor in its code, unless with Ctrl (⌘), as any link of the editor. Always in a new tab.
+ */
+export function diagramLink(event: MouseEvent) {
+  const link = event.target instanceof Element ? event.target.closest('a') : null
+  if (!link) return false
+  event.preventDefault()
+  const href = link.getAttribute('href') ?? link.getAttribute('xlink:href')
+  if (href && /^https?:/i.test(href) && (event.metaKey || event.ctrlKey)) window.open(href, '_blank', 'noopener,noreferrer')
+  return true
 }
 
 /** Shows `drawing` in `box`: the drawing, or why there is none, as text. */
@@ -101,26 +158,47 @@ export function showDrawing(box: HTMLElement, drawing: Drawing) {
   return false
 }
 
+/** Shows a diagram shown, not edited, as `drawing`: its code hidden once it is drawn, shown if it can't be. */
+function shownAs(block: HTMLElement, box: HTMLElement, drawing: Drawing) {
+  block.toggleAttribute('data-error', !showDrawing(box, drawing))
+  block.setAttribute('data-drawn', '')
+}
+
+const diagramsIn = (root: ParentNode | null) =>
+  [...(root?.querySelectorAll<HTMLElement>('.orq-code[data-diagram]:not([data-drawn]):not([data-drawing])') ?? [])].flatMap((block) => {
+    const box = block.querySelector<HTMLElement>('.orq-diagram')
+    const code = block.querySelector('pre')?.textContent ?? ''
+    return box && code.trim() ? [{ block, box, code }] : []
+  })
+
+/** Shows at once the diagrams of `root` already drawn (a page printed from the browser's own menu). */
+export function showDrawnBefore(root: ParentNode | null, paper = false) {
+  for (const { block, box, code } of diagramsIn(root)) {
+    const drawing = drawnBefore(code, paper)
+    if (drawing) shownAs(block, box, drawing)
+  }
+}
+
 /**
  * Draws the diagrams of Markdown shown, not edited (a comment, a page printed): each `.orq-code`
- * markdown-html.ts marked as one, once. Its code stays for copying and is shown where it can't be drawn.
+ * markdown-html.ts marked as one, once. Its code stays for copying, shown until it is drawn and where
+ * it can't be. Done once all are, or after `waitAtMost` ms, whichever comes first.
  */
-export async function drawDiagrams(root: ParentNode | null) {
-  const boxes = [...(root?.querySelectorAll<HTMLElement>('.orq-code[data-diagram]:not([data-drawn])') ?? [])]
-  await Promise.all(
-    boxes.map(async (block) => {
-      const box = block.querySelector<HTMLElement>('.orq-diagram')
-      const code = block.querySelector('pre')?.textContent ?? ''
-      if (!box || !code.trim()) return
-      block.setAttribute('data-drawn', '')
+export async function drawDiagrams(root: ParentNode | null, { paper = false, waitAtMost = Infinity } = {}) {
+  const all = Promise.all(
+    diagramsIn(root).map(async ({ block, box, code }) => {
+      block.setAttribute('data-drawing', '')
       try {
-        if (!showDrawing(box, await drawDiagram(code))) block.setAttribute('data-error', '')
+        shownAs(block, box, await drawDiagram(code, paper))
       } catch {
         // Mermaid couldn't be loaded: the code stays, and another time it is drawn.
-        block.removeAttribute('data-drawn')
+      } finally {
+        block.removeAttribute('data-drawing')
       }
     }),
   )
+  if (waitAtMost === Infinity) return void (await all)
+  await Promise.race([all, new Promise((resolve) => setTimeout(resolve, waitAtMost))])
 }
 
 /** Calls `listener` whenever the app turns light or dark; returns how to stop. */

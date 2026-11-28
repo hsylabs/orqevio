@@ -361,7 +361,8 @@
       "code": "Code",
       "both": "Beide",
       "empty": "Schrijf het diagram in Mermaid.",
-      "error": "Het diagram kan niet worden getekend:"
+      "error": "Het diagram kan niet worden getekend:",
+      "slow": "Het tekenen van het diagram duurde te lang."
     },
     "taskCheckbox": "Taak: {{text}}",
     "taskCheckboxEmpty": "Lege taak"

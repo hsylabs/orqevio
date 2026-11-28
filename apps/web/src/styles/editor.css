@@ -328,12 +328,13 @@ span.orq-code-lang .orq-code-chevron {
   white-space: pre-wrap;
   color: var(--ink-2);
 }
-/* Its drawing alone: the code shows only while the cursor is in it; or its code alone. */
-.orq-code[data-view='diagram']:not(.orq-code--current) > pre,
+/* Its drawing alone: the code shows only while the cursor is in it, in the editor being written in;
+   or its code alone. */
+.orq-code[data-view='diagram']:not(.ProseMirror-focused .orq-code--current) > pre,
 .orq-code[data-view='code'] > .orq-diagram {
   display: none;
 }
-.orq-code[data-view='diagram']:not(.orq-code--current) > .orq-diagram,
+.orq-code[data-view='diagram']:not(.ProseMirror-focused .orq-code--current) > .orq-diagram,
 .orq-code[data-diagram][data-drawn]:not([data-error]) > .orq-diagram {
   margin-top: 0;
   padding-top: 40px;

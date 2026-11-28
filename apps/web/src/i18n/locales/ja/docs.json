@@ -359,7 +359,8 @@
       "code": "コード",
       "both": "両方",
       "empty": "Mermaid で図を書いてください。",
-      "error": "図を描けません:"
+      "error": "図を描けません:",
+      "slow": "図を描くのに時間がかかりすぎました。"
     },
     "taskCheckbox": "ToDo：{{text}}",
     "taskCheckboxEmpty": "空のToDo"

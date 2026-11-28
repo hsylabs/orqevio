@@ -444,9 +444,10 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
    */
   async function print() {
     flushSync(() => setPrinting(latest.current))
-    const view = document.querySelector('.orq-print-root')
-    // Its diagrams drawn on paper, when it has any.
-    if (view?.querySelector('[data-diagram]')) await drawDiagrams(view)
+    // The one it put there, not something of the page with its name.
+    const view = document.querySelector('body > .orq-print-root')
+    // Its diagrams drawn for paper, when it has any, as pictures are: for a few seconds at most.
+    if (view?.querySelector('[data-diagram]')) await drawDiagrams(view, { paper: true, waitAtMost: 3000 })
     if (![...(view?.querySelectorAll('img') ?? [])].every((img) => img.complete)) await picturesReady(view)
     window.print()
   }

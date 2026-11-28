@@ -1,12 +1,12 @@
 import type { Editor } from '@tiptap/core'
 import CodeBlockLowlight, { type CodeBlockLowlightOptions } from '@tiptap/extension-code-block-lowlight'
 import type { Node as PMNode } from '@tiptap/pm/model'
-import { NodeSelection, Plugin, PluginKey } from '@tiptap/pm/state'
+import { NodeSelection, Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, type NodeView } from '@tiptap/pm/view'
 import i18next, { t } from 'i18next'
 import { copyText } from '../../../components/ui/CopyButton'
 import { codeColoursLoaded, findLanguage, highlighter, languageOf, loadCodeColours, PLAIN, whenCodeColoursLoad } from './code-languages'
-import { type Drawing, drawDiagram, isDiagram, onThemeChange, showDrawing } from './diagram'
+import { type Drawing, diagramLink, drawDiagram, drawnBefore, isDiagram, onThemeChange, showDrawing } from './diagram'
 import { readPending } from './own-step'
 import { icon } from './svg-icons'
 
@@ -142,9 +142,11 @@ class CodeBlockView implements NodeView {
     const box = document.createElement('div')
     box.className = 'orq-diagram'
     box.contentEditable = 'false'
-    // A press on the drawing puts the cursor at the end of its code, which shows with it.
+    // A press on the drawing puts the cursor at the end of its code, which shows with it. A link in it
+    // leads nowhere, unless with Ctrl (⌘), in a new tab.
     box.addEventListener('mousedown', (event) => event.preventDefault())
-    box.addEventListener('click', () => {
+    box.addEventListener('click', (event) => {
+      if (diagramLink(event) && (event.metaKey || event.ctrlKey)) return
       const pos = this.getPos()
       if (pos === undefined || !this.editor.isEditable) return
       this.editor.chain().focus().setTextSelection(pos + this.node.nodeSize - 1).run()
@@ -152,6 +154,12 @@ class CodeBlockView implements NodeView {
     this.dom.append(box)
     this.dom.setAttribute('data-diagram', '')
     this.diagram = { box, views, view: 'diagram', drawn: null, request: 0, stop: onThemeChange(() => this.redraw(0, true)) }
+    // Drawn before (the page opened again): shown at once.
+    const before = drawnBefore(this.node.textContent)
+    if (before && this.node.textContent.trim()) {
+      this.dom.toggleAttribute('data-error', !showDrawing(box, before))
+      this.diagram.drawn = this.node.textContent
+    }
     this.showAs('diagram')
   }
 
@@ -209,8 +217,11 @@ class CodeBlockView implements NodeView {
   }
 
   // The bar's buttons and the drawing are its own: the editor neither selects nor reads anything there.
+  // A file dropped on the drawing is the editor's, as anywhere else on the page.
   stopEvent(event: Event) {
-    return event.target instanceof Node && (this.bar.contains(event.target) || !!this.diagram?.box.contains(event.target))
+    if (!(event.target instanceof Node)) return false
+    if (this.bar.contains(event.target)) return true
+    return !!this.diagram?.box.contains(event.target) && !event.type.startsWith('drag') && event.type !== 'drop'
   }
 
   ignoreMutation(mutation: MutationRecord | { type: 'selection'; target: Node }) {
@@ -230,20 +241,38 @@ class CodeBlockView implements NodeView {
   }
 }
 
-/** The block with the cursor shows its bar's buttons, as the one under the pointer does. */
+/**
+ * The block with the cursor shows its bar's buttons, as the one under the pointer does; a selection
+ * that starts or ends in one, too (a diagram's code shows while it is selected).
+ */
 const currentCode = (name: string) =>
   new Plugin({
     key: new PluginKey('currentCodeBlock'),
     props: {
       decorations(state) {
-        const { $head } = state.selection
-        for (let depth = $head.depth; depth > 0; depth--) {
-          const node = $head.node(depth)
-          if (node.type.name !== name) continue
-          const pos = $head.before(depth)
-          return DecorationSet.create(state.doc, [Decoration.node(pos, pos + node.nodeSize, { class: 'orq-code--current' })])
+        const found = new Map<number, Decoration>()
+        for (const $pos of [state.selection.$head, state.selection.$anchor]) {
+          for (let depth = $pos.depth; depth > 0; depth--) {
+            const node = $pos.node(depth)
+            if (node.type.name !== name) continue
+            const pos = $pos.before(depth)
+            found.set(pos, Decoration.node(pos, pos + node.nodeSize, { class: 'orq-code--current' }))
+            break
+          }
         }
-        return DecorationSet.empty
+        return found.size ? DecorationSet.create(state.doc, [...found.values()]) : DecorationSet.empty
+      },
+      // ↑ and ↓ from the line next to a diagram go into its code, which the browser can't when it is hidden.
+      handleKeyDown(view, event) {
+        if ((event.key !== 'ArrowDown' && event.key !== 'ArrowUp') || event.shiftKey || event.altKey || event.metaKey || event.ctrlKey) return false
+        const down = event.key === 'ArrowDown'
+        const { selection } = view.state
+        if (!selection.empty || !selection.$head.parent.isTextblock || !view.endOfTextblock(down ? 'down' : 'up')) return false
+        const $edge = view.state.doc.resolve(down ? selection.$head.after() : selection.$head.before())
+        const next = down ? $edge.nodeAfter : $edge.nodeBefore
+        if (next?.type.name !== name || !isDiagram(next.attrs.language as string | null)) return false
+        view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, down ? $edge.pos + 1 : $edge.pos - 1)).scrollIntoView())
+        return true
       },
     },
   })

@@ -37,23 +37,23 @@ test('a diagram shows its drawing in place of its code, which shows with it whil
   await expect(drawing).toBeVisible()
   await expect(drawing).toContainText('Idea')
   await expect(drawing).toContainText('Plan')
-  await expect(block.locator('pre')).toBeHidden()
+  await expect(block.locator(':scope > pre')).toBeHidden()
   await expect(block.getByRole('button', { name: 'Diagrama', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await snap(page, testInfo.outputPath('diagram.png'))
 
   // Its code, and both.
   await block.getByRole('button', { name: 'Código', exact: true }).click()
-  await expect(block.locator('pre')).toBeVisible()
+  await expect(block.locator(':scope > pre')).toBeVisible()
   await expect(block.locator('.orq-diagram')).toBeHidden()
   await block.getByRole('button', { name: 'Ambos', exact: true }).click()
-  await expect(block.locator('pre')).toBeVisible()
+  await expect(block.locator(':scope > pre')).toBeVisible()
   await expect(drawing).toBeVisible()
   await block.getByRole('button', { name: 'Diagrama', exact: true }).click()
-  await expect(block.locator('pre')).toBeHidden()
+  await expect(block.locator(':scope > pre')).toBeHidden()
 
   // A press on the drawing puts the cursor at the end of its code, which shows; what is typed is drawn.
   await drawing.click()
-  await expect(block.locator('pre')).toBeVisible()
+  await expect(block.locator(':scope > pre')).toBeVisible()
   await page.keyboard.type(' --> Hecho')
   await expect(drawing).toContainText('Hecho')
   await snap(page, testInfo.outputPath('diagram-editing.png'))
@@ -61,7 +61,7 @@ test('a diagram shows its drawing in place of its code, which shows with it whil
 
   // Away from it, its drawing alone again.
   await editor.getByText('Después', { exact: true }).click()
-  await expect(block.locator('pre')).toBeHidden()
+  await expect(block.locator(':scope > pre')).toBeHidden()
 })
 
 test('a diagram from the «/» menu starts from one, and one that can\'t be drawn says why', async ({ page }, testInfo) => {
@@ -114,6 +114,39 @@ test('what a diagram holds runs nothing and stays in its box', async ({ page }) 
   await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible()
   await drawing.getByText('Uno').click({ force: true })
   await drawing.getByText('Dos').hover({ force: true })
+})
+
+test('a link in a drawing leads nowhere in the editor, and ↓ and a selection reach its hidden code', async ({ page }) => {
+  const code = '```mermaid\nflowchart LR\n  Idea --> Plan\n  click Plan "https://example.com/login"\n```'
+  const { editor, saved } = await openPage(page, 'Diagramas enlaces E2E', `Antes\n\n${code}\n\nDespués`)
+  const block = editor.locator('.orq-code[data-diagram]')
+  const drawing = block.locator('.orq-diagram svg')
+  await expect(drawing).toContainText('Plan')
+  const address = page.url()
+  // A click on the link: no page left, and the cursor in its code.
+  await drawing.locator('a').first().click()
+  await expect(block.locator(':scope > pre')).toBeVisible()
+  await page.waitForTimeout(300)
+  expect(page.url()).toBe(address)
+
+  // From the line above, ↓ goes into its code, hidden until then.
+  await editor.getByText('Antes', { exact: true }).click()
+  await expect(block.locator(':scope > pre')).toBeHidden()
+  await page.keyboard.press('End')
+  await page.keyboard.press('ArrowDown')
+  await expect(block.locator(':scope > pre')).toBeVisible()
+  await page.keyboard.type('%% nota')
+  await page.keyboard.press('Enter')
+  await expect.poll(saved).toContain('```mermaid\n%% nota\nflowchart LR')
+  await expect(drawing).toContainText('Plan')
+
+  // A selection that starts in it and ends after it keeps it shown.
+  await page.keyboard.press('Home')
+  await page.keyboard.press('Shift+ArrowDown')
+  await page.keyboard.press('Shift+ArrowDown')
+  await page.keyboard.press('Shift+ArrowDown')
+  await page.keyboard.press('Shift+ArrowDown')
+  await expect(block.locator(':scope > pre')).toBeVisible()
 })
 
 test('in a comment, a diagram is drawn in place of its code', async ({ page }, testInfo) => {

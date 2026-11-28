@@ -363,7 +363,8 @@
       "code": "Code",
       "both": "Les deux",
       "empty": "Écrivez le diagramme en Mermaid.",
-      "error": "Impossible de dessiner le diagramme :"
+      "error": "Impossible de dessiner le diagramme :",
+      "slow": "Le diagramme a mis trop de temps à se dessiner."
     },
     "taskCheckbox": "Tâche : {{text}}",
     "taskCheckboxEmpty": "Tâche vide"

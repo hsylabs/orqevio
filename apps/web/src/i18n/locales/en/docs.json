@@ -361,7 +361,8 @@
       "code": "Code",
       "both": "Both",
       "empty": "Write the diagram in Mermaid.",
-      "error": "The diagram can’t be drawn:"
+      "error": "The diagram can’t be drawn:",
+      "slow": "Drawing the diagram took too long."
     },
     "taskCheckbox": "To-do: {{text}}",
     "taskCheckboxEmpty": "Empty to-do"
