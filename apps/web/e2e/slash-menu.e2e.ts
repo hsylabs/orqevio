@@ -138,7 +138,7 @@ test('in a card’s sheet, the menu takes the pointer as well', async ({ page })
   await page.keyboard.type('/')
   const menu = page.getByRole('listbox', { name: 'Insertar bloque' })
   // A card has no pages inside it.
-  await expect(menu.getByRole('option', { name: /^Página / })).toHaveCount(0)
+  await expect(menu.getByRole('option', { name: /Página Una página/ })).toHaveCount(0)
   await menu.getByRole('option', { name: /Lista de tareas/ }).hover()
   await expect(page.getByTestId('slash-preview')).toContainText('Una lista de tareas')
   await menu.getByRole('option', { name: /Lista de tareas/ }).click()
@@ -164,8 +164,11 @@ test('«Página» makes a page inside this one, once named, and links to it wher
   expect(made.parentId).toBe(pageId)
   await expect(link).toHaveAttribute('href', new RegExp(`/doc/${made.id}$`))
   await expect.poll(saved).toMatch(new RegExp(`^Uno\\n\\n\\[Anexo\\]\\(/doc/${made.id}\\)\\s*$`))
-  // In the page tree, under this one.
-  await expect(page.getByRole('link', { name: 'Anexo' }).first()).toBeVisible()
+  // Among this page's subpages, and in the sidebar's tree, under this one.
+  await expect(page.locator('section').filter({ hasText: 'Subpáginas' }).getByRole('link', { name: /Anexo/ })).toBeVisible()
+  const sidebar = page.getByRole('navigation', { name: 'Navegación principal' })
+  await sidebar.getByRole('link', { name: /Plan/ }).getByRole('button', { name: 'Expandir' }).click()
+  await expect(sidebar.getByRole('link', { name: /Anexo/ })).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('subpage-link.png') })
 
   // From the «+» of a block too; and dismissed, nothing is made.
@@ -178,6 +181,16 @@ test('«Página» makes a page inside this one, once named, and links to it wher
   await expect(dialog).toBeHidden()
   expect((await pages()).map((p) => p.title)).not.toContain('Otra')
   await expect(editor.getByRole('link')).toHaveCount(1)
+  await editor.getByText('Uno', { exact: true }).hover()
+  await page.getByRole('button', { name: 'Insertar debajo' }).click()
+  await page.keyboard.type('página')
+  await page.keyboard.press('Enter')
+  await dialog.getByLabel('Nombre de la página').fill('Índice')
+  await dialog.getByRole('button', { name: 'Crear página' }).click()
+  await expect(editor.getByRole('link', { name: 'Índice' })).toBeVisible()
+  const second = (await pages()).find((p) => p.title === 'Índice')!
+  expect(second.parentId).toBe(pageId)
+  await expect.poll(saved).toContain(`[Índice](/doc/${second.id})`)
 })
 
 test.describe('on a phone', () => {

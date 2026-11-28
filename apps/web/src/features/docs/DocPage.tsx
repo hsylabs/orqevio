@@ -675,6 +675,7 @@ function DocBody({ page, missing, readAt }: { page: PageDTO; missing: boolean; r
                 try {
                   const made = await post<PageNodeDTO>(`/projects/${page.projectId}/pages`, { title, parentId: page.id })
                   void queryClient.invalidateQueries({ queryKey: keys.overview(workspaceId) })
+                  void queryClient.invalidateQueries({ queryKey: keys.page(page.id) })
                   return { id: made.id, title: made.title }
                 } catch (error) {
                   toast.error(errorMessage(error))

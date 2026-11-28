@@ -217,12 +217,12 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
         ? [
             item('page', '¶', 'blocks', (e, r) => {
               e.chain().focus().deleteRange(r).run()
-              const at = e.state.selection.from
+              // At the cursor, which the dialog gives back and which follows what changes meanwhile.
               void newSubpageRef.current?.().then((made) => {
                 if (!made || e.isDestroyed) return
                 e.chain()
                   .focus()
-                  .insertContentAt(Math.min(at, e.state.doc.content.size), [
+                  .insertContent([
                     { type: 'text', text: made.title, marks: [{ type: 'link', attrs: { href: docHref(made.id) } }] },
                     { type: 'text', text: ' ' },
                   ])
