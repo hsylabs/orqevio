@@ -72,6 +72,9 @@ type SlashId =
   | 'quote'
   | 'callout'
   | 'toggle'
+  | 'toggleH1'
+  | 'toggleH2'
+  | 'toggleH3'
   | 'code'
   | 'math'
   | 'inlineMath'
@@ -240,6 +243,10 @@ export function Editor({ content, onChange, placeholder, workspaceId, upload, co
       item('quote', '❝', 'blocks', (e, r) => e.chain().focus().deleteRange(r).toggleBlockquote().run()),
       item('callout', 'ⓘ', 'blocks', (e, r) => e.chain().focus().deleteRange(r).wrapIn('callout', { marker: markerFor('note') }).run()),
       item('toggle', '▸', 'blocks', (e, r) => e.chain().focus().deleteRange(r).command(({ tr }) => insertToggle(tr)).run()),
+      // A toggle whose title is a heading, as Notion's toggle headings: `<summary><h2>…</h2></summary>`.
+      ...([1, 2, 3] as const).map((level) =>
+        item(`toggleH${level}`, `▸H${level}`, 'blocks', (e, r) => e.chain().focus().deleteRange(r).command(({ tr }) => insertToggle(tr, level)).run()),
+      ),
       item('code', '</>', 'blocks', (e, r) => e.chain().focus().deleteRange(r).toggleCodeBlock().run()),
       item('math', '∑', 'blocks', (e, r) => startMath(e, r, true)),
       item('inlineMath', '√x', 'insert', (e, r) => startMath(e, r, false)),

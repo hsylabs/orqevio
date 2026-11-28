@@ -566,6 +566,75 @@ details.orq-toggle[open] > summary::before {
   transform: rotate(45deg);
 }
 
+/* A toggle whose title is a heading (<summary><h2>…</h2></summary>, as GitHub shows it): its title as
+   that heading, room above it as above one, and the arrow level with its first line. --toggle-size and
+   --toggle-line are the heading's, in the toggle's own size. */
+.orq-prose .orq-toggle[data-level='1'] {
+  --toggle-size: 1.85;
+  --toggle-line: 1.22;
+}
+.orq-prose .orq-toggle[data-level='2'] {
+  --toggle-size: 1.45;
+  --toggle-line: 1.22;
+}
+.orq-prose .orq-toggle[data-level='3'] {
+  --toggle-size: 1.18;
+  --toggle-line: 1.22;
+}
+.orq-prose .orq-toggle[data-level='4'] {
+  --toggle-size: 1.05;
+  --toggle-line: 1.35;
+}
+.orq-prose .orq-toggle[data-level='5'] {
+  --toggle-size: 0.95;
+  --toggle-line: 1.35;
+}
+.orq-prose .orq-toggle[data-level='6'] {
+  --toggle-size: 0.88;
+  --toggle-line: 1.35;
+}
+.orq-prose--compact .orq-toggle[data-level='1'] {
+  --toggle-size: 1.4;
+}
+.orq-prose--compact .orq-toggle[data-level='2'] {
+  --toggle-size: 1.22;
+}
+.orq-prose--compact .orq-toggle[data-level='3'] {
+  --toggle-size: 1.08;
+}
+.orq-prose > .orq-toggle[data-level]:not(:first-child) {
+  margin-top: calc(var(--toggle-size) * 1.1em);
+}
+.orq-prose .orq-toggle[data-level] > .orq-toggle-content > .orq-toggle-title,
+.orq-prose details.orq-toggle[data-level] > summary > :is(h1, h2, h3, h4, h5, h6) {
+  font-size: calc(var(--toggle-size) * 1em);
+  line-height: var(--toggle-line);
+  font-weight: 650;
+  color: var(--ink);
+}
+.orq-prose :is(.orq-toggle[data-level='1'], .orq-toggle[data-level='2'], .orq-toggle[data-level='3']) > .orq-toggle-content > .orq-toggle-title,
+.orq-prose details.orq-toggle > summary > :is(h1, h2, h3) {
+  font-family: var(--font-display);
+  font-variation-settings: 'SOFT' 60;
+  font-weight: 560;
+  letter-spacing: -0.018em;
+}
+.orq-prose .orq-toggle[data-level='6'] > .orq-toggle-content > .orq-toggle-title,
+.orq-prose details.orq-toggle > summary > h6 {
+  color: var(--ink-2);
+}
+/* Shown, the heading is on the arrow's line, as on GitHub. */
+.orq-prose details.orq-toggle > summary > :is(h1, h2, h3, h4, h5, h6) {
+  display: inline;
+  margin: 0;
+}
+.orq-prose .orq-toggle[data-level] > .orq-toggle-button {
+  top: calc(var(--toggle-size) * var(--toggle-line) * 0.5em - 11px);
+}
+.orq-prose details.orq-toggle[data-level] > summary::before {
+  top: calc(var(--toggle-size) * var(--toggle-line) * 0.5em - 5px);
+}
+
 /* Its menu's icons, in each type's colour. */
 .orq-callout-menu-icon.orq-callout-menu-icon {
   color: var(--callout);

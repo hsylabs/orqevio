@@ -161,6 +161,24 @@
         "keywords": "recolhível toggle details recolher expandir ocultar mostrar acordeão",
         "hint": "Um título que esconde o que está abaixo até ser aberto."
       },
+      "toggleH1": {
+        "title": "Título recolhível 1",
+        "subtitle": "Título grande que recolhe o que está abaixo",
+        "keywords": "título recolhível toggle heading h1 details recolher expandir acordeão",
+        "hint": "Um título para uma seção principal da página que mostra ou oculta o que está abaixo."
+      },
+      "toggleH2": {
+        "title": "Título recolhível 2",
+        "subtitle": "Título médio que recolhe o que está abaixo",
+        "keywords": "título recolhível toggle heading h2 details recolher expandir acordeão",
+        "hint": "Um título para uma seção que mostra ou oculta o que está abaixo."
+      },
+      "toggleH3": {
+        "title": "Título recolhível 3",
+        "subtitle": "Título pequeno que recolhe o que está abaixo",
+        "keywords": "título recolhível toggle heading h3 details recolher expandir acordeão",
+        "hint": "Um título pequeno que mostra ou oculta o que está abaixo."
+      },
       "code": {
         "title": "Código",
         "subtitle": "Bloco de código",

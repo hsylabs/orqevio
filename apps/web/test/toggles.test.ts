@@ -9,7 +9,7 @@ import docs from '../src/i18n/locales/es/docs.json'
 import { turnBlock, turns } from '../src/features/docs/editor/block-commands'
 import { documentExtensions } from '../src/features/docs/editor/markdown'
 import { markdownToHtml } from '../src/features/docs/editor/markdown-html'
-import { insertToggle, outOfTitle, setToggleOpen, showTogglesAsBefore, togglesShown } from '../src/features/docs/editor/toggle'
+import { insertToggle, levelOf, outOfTitle, setToggleOpen, showTogglesAsBefore, togglesShown } from '../src/features/docs/editor/toggle'
 
 // HTML's <details> as a toggle in the editor: a title that shows or hides what is under it, written
 // back as the HTML and Markdown it was.
@@ -463,6 +463,82 @@ describe('a toggle changed in the editor', () => {
     cursorIn(editor, 'toggleTitle', 'start')
     press(editor, 'Backspace')
     expect(saved(editor)).toBe('Más\n\nDentro')
+  })
+})
+
+describe('a toggle whose title is a heading', () => {
+  const github = '<details>\n<summary><h2>Más</h2></summary>\n\nDentro\n\n</details>'
+
+  it('is read as GitHub writes it, shown as that heading, and written back the same', () => {
+    const editor = open(github, 'markdown', true)
+    expect(saved(editor)).toBe(github)
+    expect(editor.state.doc.nodeAt(first(editor, 'toggleTitle'))!.textContent).toBe('Más')
+    expect(editor.view.dom.querySelector('.orq-toggle')!.getAttribute('data-level')).toBe('2')
+    const title = editor.view.dom.querySelector('.orq-toggle-title')!
+    expect([title.getAttribute('role'), title.getAttribute('aria-level')]).toEqual(['heading', '2'])
+  })
+
+  it('keeps its heading, with its attributes, once its title changes', () => {
+    const editor = open('<details>\n<summary><h3 id="faq">Más</h3></summary>\n\nDentro\n\n</details>')
+    cursorIn(editor, 'toggleTitle')
+    editor.commands.insertContent(' & <datos>')
+    expect(saved(editor)).toBe('<details>\n<summary><h3 id="faq">Más &amp; &lt;datos&gt;</h3></summary>\n\nDentro\n\n</details>')
+  })
+
+  it('is one heading alone: two, or text around one, are a title of text', () => {
+    expect(levelOf('<h2>Más</h2>')).toBe(2)
+    expect(levelOf(' <H6 class="x">Más</H6>\n')).toBe(6)
+    for (const other of ['<h2>Uno</h2> <h3>Dos</h3>', 'Ver <h2>Más</h2>', '<h2>Más', '<h7>Más</h7>', '<b>Más</b>', '']) expect(levelOf(other), other).toBe(0)
+    const editor = open('<details>\n<summary><h2>Uno</h2> <h3>Dos</h3></summary>\n\nDentro\n\n</details>')
+    cursorIn(editor, 'toggleTitle')
+    editor.commands.insertContent('!')
+    expect(saved(editor)).toBe('<details>\n<summary>Uno Dos!</summary>\n\nDentro\n\n</details>')
+  })
+
+  it('is put in place of an empty line from the «/» menu, at levels 1 to 3', () => {
+    for (const level of [1, 2, 3]) {
+      const editor = open('', 'markdown', true)
+      editor.commands.command(({ tr }) => insertToggle(tr, level))
+      editor.commands.insertContent('Título')
+      expect(saved(editor)).toBe(`<details>\n<summary><h${level}>Título</h${level}></summary>\n\n</details>`)
+    }
+  })
+
+  it('is made from a line of text or a heading, turned into another level or a toggle, and back into text', () => {
+    const editor = open('Pregunta\n\n### Sección')
+    expect(turns(editor.state.doc, 0).options).toEqual(expect.arrayContaining(['toggle', 'toggleH1', 'toggleH2', 'toggleH3']))
+    turnBlock(editor, 0, 'toggleH2')
+    expect(saved(editor)).toBe('<details>\n<summary><h2>Pregunta</h2></summary>\n\n</details>\n\n### Sección')
+    cursorIn(editor, 'paragraph')
+    editor.commands.insertContent('Respuesta')
+    const toggle = first(editor, 'toggle')
+    expect(turns(editor.state.doc, toggle)).toEqual({ current: 'toggleH2', options: ['p', 'toggle', 'toggleH1', 'toggleH2', 'toggleH3'] })
+    turnBlock(editor, toggle, 'toggleH1')
+    expect(saved(editor)).toBe('<details>\n<summary><h1>Pregunta</h1></summary>\n\nRespuesta\n\n</details>\n\n### Sección')
+    turnBlock(editor, toggle, 'toggle')
+    expect(saved(editor)).toBe('<details>\n<summary>Pregunta</summary>\n\nRespuesta\n\n</details>\n\n### Sección')
+    turnBlock(editor, toggle, 'p')
+    expect(saved(editor)).toBe('Pregunta\n\nRespuesta\n\n### Sección')
+    // A heading keeps its text as the title.
+    const heading = first(editor, 'heading')
+    turnBlock(editor, heading, 'toggleH3')
+    expect(saved(editor)).toBe('Pregunta\n\nRespuesta\n\n<details>\n<summary><h3>Sección</h3></summary>\n\n</details>')
+  })
+
+  it('of level 4 to 6, written elsewhere, is none of the menu\'s but can be turned into one', () => {
+    const editor = open('<details>\n<summary><h5>Nota</h5></summary>\n\nDentro\n\n</details>')
+    expect(turns(editor.state.doc, 0).current).toBeNull()
+    turnBlock(editor, 0, 'toggleH3')
+    expect(saved(editor)).toBe('<details>\n<summary><h3>Nota</h3></summary>\n\nDentro\n\n</details>')
+  })
+
+  it('is the browser\'s own <details> in a comment, with its heading in its summary', () => {
+    expect(markdownToHtml(github)).toMatch(/^<details [^>]*class="orq-toggle" data-level="2"><summary class="orq-toggle-title"><h2>Más<\/h2><\/summary><p>Dentro<\/p><\/details>$/)
+  })
+
+  it('is read from a <details> copied from GitHub, its heading as its title', () => {
+    expect(open('<details><summary><h2>Más</h2></summary><p>Dentro</p></details>', 'html').getMarkdown()).toBe(github)
+    expect(open(open(github).getHTML(), 'html').getMarkdown()).toBe(github)
   })
 })
 

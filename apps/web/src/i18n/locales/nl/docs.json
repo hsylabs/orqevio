@@ -161,6 +161,24 @@
         "keywords": "uitklappen toggle details inklappen verbergen tonen accordeon",
         "hint": "Een titel die verbergt wat eronder staat tot je hem opent."
       },
+      "toggleH1": {
+        "title": "Uitklapbare kop 1",
+        "subtitle": "Grote kop die inklapt wat eronder staat",
+        "keywords": "kop uitklappen toggle heading h1 details inklappen accordeon",
+        "hint": "Een kop voor een hoofdsectie van de pagina die toont of verbergt wat eronder staat."
+      },
+      "toggleH2": {
+        "title": "Uitklapbare kop 2",
+        "subtitle": "Middelgrote kop die inklapt wat eronder staat",
+        "keywords": "kop uitklappen toggle heading h2 details inklappen accordeon",
+        "hint": "Een kop voor een sectie die toont of verbergt wat eronder staat."
+      },
+      "toggleH3": {
+        "title": "Uitklapbare kop 3",
+        "subtitle": "Kleine kop die inklapt wat eronder staat",
+        "keywords": "kop uitklappen toggle heading h3 details inklappen accordeon",
+        "hint": "Een kleine kop die toont of verbergt wat eronder staat."
+      },
       "code": {
         "title": "Code",
         "subtitle": "Codeblok",

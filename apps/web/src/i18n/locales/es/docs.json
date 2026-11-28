@@ -161,6 +161,24 @@
         "keywords": "desplegable toggle details plegar ocultar mostrar acordeón",
         "hint": "Un título que oculta lo que hay debajo hasta que se abre."
       },
+      "toggleH1": {
+        "title": "Título desplegable 1",
+        "subtitle": "Encabezado grande que pliega lo de debajo",
+        "keywords": "titulo desplegable toggle heading h1 details plegar acordeon",
+        "hint": "Un título para una sección principal de la página que muestra u oculta lo que hay debajo."
+      },
+      "toggleH2": {
+        "title": "Título desplegable 2",
+        "subtitle": "Encabezado mediano que pliega lo de debajo",
+        "keywords": "titulo desplegable toggle heading h2 details plegar acordeon",
+        "hint": "Un título para una sección que muestra u oculta lo que hay debajo."
+      },
+      "toggleH3": {
+        "title": "Título desplegable 3",
+        "subtitle": "Encabezado pequeño que pliega lo de debajo",
+        "keywords": "titulo desplegable toggle heading h3 details plegar acordeon",
+        "hint": "Un título pequeño que muestra u oculta lo que hay debajo."
+      },
       "code": {
         "title": "Código",
         "subtitle": "Bloque de código",

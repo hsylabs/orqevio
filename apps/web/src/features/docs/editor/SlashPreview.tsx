@@ -178,6 +178,23 @@ for (const level of Object.keys(HEADING_SIZES)) {
   )
 }
 
+// A toggle whose title is a heading: the heading, with its arrow, over what it folds.
+for (const level of [1, 2, 3]) {
+  PREVIEWS[`toggleH${level}`] = () => (
+    <span className="flex flex-col gap-2">
+      <span className="flex items-center gap-1.5">
+        <span className="text-[10px] leading-none text-ink-2">▾</span>
+        <span className="block leading-none font-semibold text-ink" style={{ fontSize: HEADING_SIZES[`h${level}`] }}>
+          {SPECIMEN}
+        </span>
+      </span>
+      <span className="pl-4">
+        <Lines widths={['88%', '70%']} />
+      </span>
+    </span>
+  )
+}
+
 /** Whether there is a drawing of the block. */
 export const hasSlashPreview = (id: string | undefined) => id !== undefined && id in PREVIEWS
 

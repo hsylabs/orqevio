@@ -34,6 +34,12 @@ function render(markdown: string) {
   for (const quote of root.querySelectorAll('blockquote[data-callout]')) calloutTitle(quote, page)
   for (const img of root.querySelectorAll('img[title], img[width], img[height]')) imageCaption(img, page)
   for (const formula of root.querySelectorAll<HTMLElement>('[data-type="inline-math"], [data-type="block-math"]')) mathShown(formula)
+  // A toggle whose title is a heading has it in its summary, as GitHub shows it (the level, 1 to 6, is the schema's).
+  for (const summary of root.querySelectorAll('details[data-level] > summary')) {
+    const heading = page.createElement(`h${summary.parentElement!.getAttribute('data-level')}`)
+    heading.append(...summary.childNodes)
+    summary.append(heading)
+  }
   // A task's box shows whether it is done; here it can't be ticked.
   for (const box of root.querySelectorAll('input[type="checkbox"]')) box.setAttribute('disabled', '')
   // The empty paragraph the editor keeps after a list or a table at the end is no part of it.
